@@ -166,10 +166,17 @@ public class Player
         Console.WriteLine($"Stopped forwarding traffic from/to {this}");
     }
 
-    public void SetCompressionThreshold(int threshold)
+    public void SetCompressionThreshold(PacketDirection direction, int threshold)
     {
-        serverboundStream.CompressionThreshold = threshold;
-        clientboundStream.CompressionThreshold = threshold;
+        var stream = direction switch
+        {
+            PacketDirection.Clientbound => clientboundStream,
+            PacketDirection.Serverbound => serverboundStream,
+            _ => throw new ArgumentOutOfRangeException(nameof(direction)),
+        };
+
+        stream.CompressionThreshold = threshold;
+        Console.WriteLine($"Player {this} enabled {direction} compression");
     }
 
     public override string ToString() => GameProfile?.Name ?? tcpClient.Client.RemoteEndPoint!.ToString()!;

@@ -1,10 +1,10 @@
-﻿using Org.BouncyCastle.Crypto;
+﻿using Ionic.Zlib;
+using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.IO;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
 using System.Numerics;
-using System.Security.Cryptography;
 
 namespace MinecraftProxy.Network;
 
@@ -22,41 +22,120 @@ public class MinecraftStream(Stream source)
         if (length <= 0)
             return (-1, null!); // Connection closed
 
-        if (CompressionThreshold > 0)
+        var packet = new byte[length];
+        await ReadAsync(packet);
+
+        var buffer = new MinecraftBuffer(packet);
+        var compressionEnabled = CompressionThreshold > 0;
+        var dataLength = compressionEnabled ? buffer.ReadVarInt() : 0;
+        var compressed = dataLength > 0;
+
+        if (compressed)
         {
-            var compressedDataLength = await ReadVarIntAsync();
+            var input = buffer.ReadUInt8Array((int)buffer.Length - GetVarIntSize(dataLength));
+            var output = new byte[dataLength];
 
-            if (compressedDataLength > 0)
-                throw new NotImplementedException();
-            /*{
-                var compressedBuffer = new byte[dataLength];
-                await ReadAsync(compressedBuffer);
+            var zlibCodec = new ZlibCodec
+            {
+                InputBuffer = input,
+                NextIn = 0,
+                OutputBuffer = output,
+                NextOut = 0
+            };
 
-                using var deflateStream = new DeflateStream(new MemoryStream(compressedBuffer), CompressionMode.Decompress);
-                var decompressedLength = deflateStream.Read(compressedBuffer);
+            var status = zlibCodec.InitializeInflate();
 
-                var minecraftBuffer = new MinecraftBuffer(compressedBuffer);
-                var decompressedPacketId = minecraftBuffer.ReadVarInt();
-                var decompressedData = new byte[length - GetVarIntSize(decompressedPacketId)];
-                minecraftBuffer.Read(decompressedData);
+            if (status != ZlibConstants.Z_OK)
+                throw new IOException($"Cannot initialize zlib inflate: {status}");
 
-                return (decompressedPacketId, new(decompressedData));
-            }*/
+            while (zlibCodec.TotalBytesOut < output.Length && zlibCodec.TotalBytesIn < input.Length) 
+            {
+                zlibCodec.AvailableBytesIn = zlibCodec.AvailableBytesOut = 1; // force small buffers
+                status = zlibCodec.Inflate(FlushType.None);
+
+                if (status != ZlibConstants.Z_OK)
+                    throw new IOException($"Cannot do zlib inflate: {status}");
+            }
+
+            status = zlibCodec.EndInflate();
+
+            if (status != ZlibConstants.Z_OK)
+                throw new IOException($"Cannot end zlib inflate: {status}");
+
+            buffer = new(output);
+            length = dataLength;
         }
 
-        var packetId = await ReadVarIntAsync();
+        var packetId = buffer.ReadVarInt();
+        var data = buffer.ReadUInt8Array((int)(buffer.Length - buffer.Position) /*length - GetVarIntSize(packetId) - (compressionEnabled ? GetVarIntSize(dataLength) : 0)*/);
 
-        var data = new byte[length - GetVarIntSize(packetId)];
-        await ReadAsync(data);
+        if (buffer.HasData)
+            throw new Exception("Packet wasn't readed to end");
 
         return (packetId, new(data));
     }
 
     public async Task WritePacketAsync(int packetId, MinecraftBuffer buffer)
     {
-        await WriteVarIntAsync((int)buffer.Length + GetVarIntSize(packetId));
-        await WriteVarIntAsync(packetId);
-        await WriteAsync(buffer.ToArray());
+        byte[] packet = [.. IntToVarInt(packetId), .. buffer.ToArray()];
+        var length = packet.Length;
+
+        var compressionEnabled = CompressionThreshold > 0;
+        var compressed = compressionEnabled && length > CompressionThreshold;
+
+        if (compressed) 
+        {
+            var input = packet;
+            var output = packet;
+
+            var zlibCodec = new ZlibCodec
+            {
+                InputBuffer = input,
+                NextIn = 0,
+                OutputBuffer = output,
+                NextOut = 0
+            };
+
+            var status = zlibCodec.InitializeDeflate();
+
+            if (status != ZlibConstants.Z_OK)
+                throw new IOException($"Cannot initialize zlib deflate: {status}");
+
+            while (zlibCodec.TotalBytesOut < output.Length && zlibCodec.TotalBytesIn < input.Length)
+            {
+                zlibCodec.AvailableBytesIn = zlibCodec.AvailableBytesOut = 1; // force small buffers
+                status = zlibCodec.Deflate(FlushType.None);
+
+                if (status != ZlibConstants.Z_OK)
+                    throw new IOException($"Cannot do zlib deflate: {status}");
+            }
+
+            status = zlibCodec.EndDeflate();
+
+            if (status != ZlibConstants.Z_OK)
+                throw new IOException($"Cannot end zlib deflate: {status}");
+
+            var outputLength = (int)zlibCodec.TotalBytesOut;
+
+            packet = output[..outputLength];
+            // length = outputLength;
+        }
+
+        if (compressionEnabled)
+        {
+            var dataLength = compressed ? length : 0;
+            await WriteVarIntAsync(GetVarIntSize(dataLength) + packet.Length);
+            await WriteVarIntAsync(dataLength);
+
+            Console.WriteLine($"compression enabled: {(compressed ? "compressed" : "uncompressed")} {GetVarIntSize(dataLength) + packet.Length} {dataLength} {packet.Length}");
+        }
+        else
+        {
+            await WriteVarIntAsync(length);
+            Console.WriteLine($"compression disabled: {length} {packet.Length}");
+        }
+
+        await WriteAsync(packet);
     }
 
     public void EnableEncryption(byte[] secret)
@@ -66,8 +145,28 @@ public class MinecraftStream(Stream source)
 
         var decryptCipher = new BufferedBlockCipher(new CfbBlockCipher(new AesEngine(), 8));
         decryptCipher.Init(false, new ParametersWithIV(new KeyParameter(secret), secret, 0, 16));
-
+        
         source = new CipherStream(source, decryptCipher, encryptCipher);
+    }
+
+    protected byte[] IntToVarInt(int value)
+    {
+        var unsigned = (uint)value;
+        var result = new List<byte>();
+
+        do
+        {
+            var temp = (byte)(unsigned & 127);
+            unsigned >>= 7;
+
+            if (unsigned != 0)
+                temp |= 128;
+
+            result.Add(temp);
+        }
+        while (unsigned != 0);
+
+        return result.ToArray();
     }
 
     protected async Task<int> ReadVarIntAsync()
@@ -136,5 +235,6 @@ public class MinecraftStream(Stream source)
     {
         // await source.WriteAsync(buffer, cancellationToken);
         await Task.Run(() => source.Write(buffer, 0, buffer.Length), cancellationToken);
+        await source.FlushAsync();
     }
 }

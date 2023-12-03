@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.2.1" />
     <PackageReference Include="Nito.AsyncEx" Version="5.1.2" />
+    <PackageReference Include="Zlib.Portable.Signed" Version="1.11.0" />
   </ItemGroup>
 
   <ItemGroup>

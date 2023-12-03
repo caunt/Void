@@ -138,8 +138,10 @@ public class MinecraftBuffer
         if (length == 0)
             return result;
 
-        if (Read(result) != length)
-            throw new IndexOutOfRangeException();
+        var k = Read(result);
+
+        if (k != length)
+            throw new IndexOutOfRangeException($"Read only: {k}, expected: {length} (size is {Length}, position is {Position})");
 
         return result;
     }

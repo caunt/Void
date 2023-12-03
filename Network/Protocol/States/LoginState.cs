@@ -65,9 +65,9 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
     public Task<bool> HandleAsync(SetCompressionPacket packet)
     {
         if (packet.Threshold > 0)
-            player.SetCompressionThreshold(packet.Threshold);
+            player.SetCompressionThreshold(PacketDirection.Serverbound, packet.Threshold);
 
-        return Task.FromResult(false);
+        return Task.FromResult(true); // enable compression only with server
     }
 
     public Task<bool> HandleAsync(LoginSuccessPacket packet)
