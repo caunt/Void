@@ -76,7 +76,7 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
             throw new Exception("Game profile not loaded yet");
 
         if (packet.Guid != player.GameProfile.Id)
-            throw new Exception($"Server sen't wrong player UUID: {packet.Guid}, online is: {player.GameProfile.Id}");
+            throw new Exception($"Server sent wrong player UUID: {packet.Guid}, online is: {player.GameProfile.Id}");
 
         return Task.FromResult(false);
     }

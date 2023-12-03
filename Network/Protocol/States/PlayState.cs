@@ -51,7 +51,6 @@ public class PlayState(Player player) : ProtocolState, IPlayableState
             // add other players
         }
 
-        Console.WriteLine(JsonSerializer.Serialize(packet.Players.FirstOrDefault()?.Actions.Select(action => action as PlayerInfoUpdatePacket.AddPlayerAction), new JsonSerializerOptions { WriteIndented = true }));
         return Task.FromResult(false);
     }
 }

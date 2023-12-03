@@ -57,7 +57,7 @@ public class ModernForwarding(string secret) : IForwarding
         if (requested.CompareTo(Version.Default) > 0)
         {
             // if protocol version > 1.19.3
-            // endif
+            // return requested.CompareTo(Version.LazySession) >= 0 ? Version.LazySession : Versions.Default
 
             if (player.IdentifiedKey is not null)
             {

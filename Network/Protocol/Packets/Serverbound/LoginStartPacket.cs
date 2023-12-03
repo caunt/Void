@@ -7,7 +7,6 @@ public class LoginStartPacket : IMinecraftPacket<LoginState>
     public string Username { get; set; }
     public Guid Guid { get; set; }
 
-
     public void Encode(MinecraftBuffer buffer)
     {
         buffer.WriteString(Username);

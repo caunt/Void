@@ -235,6 +235,5 @@ public class MinecraftStream(Stream source)
     {
         // await source.WriteAsync(buffer, cancellationToken);
         await Task.Run(() => source.Write(buffer, 0, buffer.Length), cancellationToken);
-        await source.FlushAsync();
     }
 }
