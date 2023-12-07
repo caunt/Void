@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace MinecraftProxy;
 
@@ -9,6 +10,7 @@ public static class Proxy
 {
     public static readonly HttpClient HttpClient = new();
     public static readonly RSACryptoServiceProvider RSA = new(1024);
+    public static readonly JsonSerializerOptions JsonSerializerOptions = new() { WriteIndented = true };
 
     public static readonly int ListenPort = 25565;
     public static readonly int CompressionThreshold = 256;

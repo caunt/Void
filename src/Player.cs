@@ -237,7 +237,7 @@ public class Player
         }
     }
 
-    protected (int, IMinecraftPacket?, Task<bool>) DecodeMessage(ProtocolState protocolState, MinecraftMessage message, PacketDirection direction)
+    protected static (int, IMinecraftPacket?, Task<bool>) DecodeMessage(ProtocolState protocolState, MinecraftMessage message, PacketDirection direction)
     {
         var buffer = new MinecraftBuffer(message.Memory);
         var packetId = message.PacketId;
@@ -265,7 +265,7 @@ public class Player
     {
         var memoryOwner = MemoryPool<byte>.Shared.Rent(2048);
         var buffer = new MinecraftBuffer(memoryOwner.Memory);
-        Console.WriteLine($"Encoding {direction} 0x{packetId:X2} packet {JsonSerializer.Serialize(packet as object, new JsonSerializerOptions { WriteIndented = true })}");
+        Console.WriteLine($"Encoding {direction} 0x{packetId:X2} packet {JsonSerializer.Serialize(packet as object, Proxy.JsonSerializerOptions)}");
 
         packet.Encode(ref buffer);
 

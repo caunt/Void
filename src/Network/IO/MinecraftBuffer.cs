@@ -69,20 +69,8 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
 
     public void WriteVarInt(int value)
     {
-        var unsigned = (uint)value;
-
-        do
-        {
-            var temp = (byte)(unsigned & 127);
-
-            unsigned >>= 7;
-
-            if (unsigned != 0)
-                temp |= 128;
-
+        foreach (var temp in GetVarInt(value))
             WriteUnsignedByte(temp);
-        }
-        while (unsigned != 0);
     }
 
     public byte ReadUnsignedByte()

@@ -1,7 +1,4 @@
-﻿using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsWPF;
-using MinecraftProxy.Network.IO.Compression;
-using System.Buffers;
-using System.IO;
+﻿using MinecraftProxy.Network.IO.Compression;
 
 namespace MinecraftProxy.Network.IO.Common;
 
@@ -30,6 +27,7 @@ public class PacketStream(Stream baseStream) : Stream
     // not used, prefer ReadPacketAsync
     public override async ValueTask<int> ReadAsync(Memory<byte> output, CancellationToken cancellationToken = default)
     {
+        // where can we get packetId?
         var length = await baseStream.ReadVarIntAsync(cancellationToken);
         await baseStream.ReadExactlyAsync(output[..length], cancellationToken);
         return length;
@@ -47,6 +45,7 @@ public class PacketStream(Stream baseStream) : Stream
     // not used, prefer WritePacketAsync
     public override async ValueTask WriteAsync(ReadOnlyMemory<byte> output, CancellationToken cancellationToken = default)
     {
+        // where can we get packetId?
         await baseStream.WriteVarIntAsync(output.Length, cancellationToken);
         await baseStream.WriteAsync(output, cancellationToken);
     }
