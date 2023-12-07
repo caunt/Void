@@ -7,12 +7,16 @@ public static class MinecraftNetworkExtensions
 {
     public static async ValueTask<MinecraftMessage> ReadMessageAsync(this Stream stream, int length, CancellationToken cancellationToken = default)
     {
+        var packetId = await stream.ReadVarIntAsync(cancellationToken);
+
+        length -= MinecraftBuffer.GetVarIntSize(packetId);
+
         var memoryOwner = MemoryPool<byte>.Shared.Rent(length);
         var memory = memoryOwner.Memory[..length];
 
         await stream.ReadExactlyAsync(memory, cancellationToken);
 
-        return new(memory, memoryOwner);
+        return new(packetId, memory, memoryOwner);
     }
 
     public static async ValueTask<int> ReadVarIntAsync(this Stream stream, CancellationToken cancellationToken = default)

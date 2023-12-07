@@ -47,7 +47,8 @@ public class DeprecatedCompressionStream(Stream baseStream, int threshold) : Str
         {
             await baseStream.ReadExactlyAsync(buffer, cancellationToken);
             ZlibStream.UncompressBuffer(buffer).CopyTo(memory);
-            return new(memory, memoryOwner);
+            var packetId = new MinecraftBuffer(memory).ReadVarInt();
+            return new(packetId, memory[MinecraftBuffer.GetVarIntSize(packetId)..], memoryOwner);
         }
         finally
         {
@@ -57,20 +58,21 @@ public class DeprecatedCompressionStream(Stream baseStream, int threshold) : Str
 
     public async ValueTask WritePacketAsync(MinecraftMessage message, CancellationToken cancellationToken = default)
     {
-        var dataLength = message.Memory.Length;
+        var dataLength = message.Length + MinecraftBuffer.GetVarIntSize(message.PacketId);
 
         if (dataLength < threshold)
         {
-            var length = message.Memory.Length + MinecraftBuffer.GetVarIntSize(0);
+            var length = dataLength + MinecraftBuffer.GetVarIntSize(0);
 
             await baseStream.WriteVarIntAsync(length, cancellationToken);
             await baseStream.WriteVarIntAsync(0, cancellationToken);
+            await baseStream.WriteVarIntAsync(message.PacketId, cancellationToken);
             await baseStream.WriteAsync(message.Memory, cancellationToken);
 
             return;
         }
 
-        var compressedData = ZlibStream.CompressBuffer(message.Memory.Span.ToArray());
+        var compressedData = ZlibStream.CompressBuffer([ ..MinecraftBuffer.GetVarInt(message.PacketId), ..message.Memory.Span]);
 
         await baseStream.WriteVarIntAsync(compressedData.Length + MinecraftBuffer.GetVarIntSize(dataLength), cancellationToken);
         await baseStream.WriteVarIntAsync(dataLength, cancellationToken);

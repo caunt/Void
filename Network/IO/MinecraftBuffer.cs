@@ -28,6 +28,24 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         return (BitOperations.LeadingZeroCount((uint)value | 1) - 38) * -1171 >> 13;
     }
 
+    public static IEnumerable<byte> GetVarInt(int value)
+    {
+        var unsigned = (uint)value;
+
+        do
+        {
+            var temp = (byte)(unsigned & 127);
+
+            unsigned >>= 7;
+
+            if (unsigned != 0)
+                temp |= 128;
+
+            yield return temp;
+        }
+        while (unsigned != 0);
+    }
+
     public int ReadVarInt()
     {
         int numRead = 0;

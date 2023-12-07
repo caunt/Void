@@ -240,7 +240,7 @@ public class Player
     protected (int, IMinecraftPacket?, Task<bool>) DecodeMessage(ProtocolState protocolState, MinecraftMessage message, PacketDirection direction)
     {
         var buffer = new MinecraftBuffer(message.Memory);
-        var packetId = buffer.ReadVarInt();
+        var packetId = message.PacketId;
         Console.WriteLine($"Decoding {direction} 0x{packetId:X2} packet");
 
         try
@@ -267,9 +267,8 @@ public class Player
         var buffer = new MinecraftBuffer(memoryOwner.Memory);
         Console.WriteLine($"Encoding {direction} 0x{packetId:X2} packet {JsonSerializer.Serialize(packet as object, new JsonSerializerOptions { WriteIndented = true })}");
 
-        buffer.WriteVarInt(packetId);
         packet.Encode(ref buffer);
 
-        return new(memoryOwner.Memory[..buffer.Position], memoryOwner);
+        return new(packetId, memoryOwner.Memory[..buffer.Position], memoryOwner);
     }
 }

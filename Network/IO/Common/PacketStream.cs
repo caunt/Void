@@ -1,4 +1,5 @@
-﻿using MinecraftProxy.Network.IO.Compression;
+﻿using Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsWPF;
+using MinecraftProxy.Network.IO.Compression;
 using System.Buffers;
 using System.IO;
 
@@ -58,9 +59,8 @@ public class PacketStream(Stream baseStream) : Stream
             return;
         }
 
-        var length = message.Memory.Length;
-
-        await baseStream.WriteVarIntAsync(length, cancellationToken);
+        await baseStream.WriteVarIntAsync(message.Length + MinecraftBuffer.GetVarIntSize(message.PacketId), cancellationToken);
+        await baseStream.WriteVarIntAsync(message.PacketId, cancellationToken);
         await baseStream.WriteAsync(message.Memory, cancellationToken);
     }
 }
