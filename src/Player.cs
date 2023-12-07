@@ -28,7 +28,7 @@ public class Player
 
     public Guid SignatureHolder { get; protected set; }
 
-    public ProtocolVersion? ProtocolVersion { get; protected set; }
+    public ProtocolVersion ProtocolVersion { get; protected set; }
 
     protected readonly TcpClient tcpClient;
 
@@ -39,7 +39,9 @@ public class Player
     public Player(TcpClient tcpClient)
     {
         this.tcpClient = tcpClient;
-        SwitchState(0);
+
+        State = SwitchState(0);
+        ProtocolVersion = SetProtocolVersion(ProtocolVersion.Oldest);
     }
 
     public void SetGameProfile(GameProfile gameProfile)
@@ -47,12 +49,12 @@ public class Player
         GameProfile = gameProfile;
     }
 
-    public void SetProtocolVersion(ProtocolVersion protocolVersion)
+    public ProtocolVersion SetProtocolVersion(ProtocolVersion protocolVersion)
     {
-        ProtocolVersion = protocolVersion;
+        return ProtocolVersion = protocolVersion;
     }
 
-    public void SwitchState(int state)
+    public ProtocolState SwitchState(int state)
     {
         State = state switch
         {
@@ -64,6 +66,8 @@ public class Player
         };
 
         Console.WriteLine($"Player {this} switch state to {State.GetType().Name}");
+
+        return State;
     }
 
     public void EnableEncryption(PacketDirection direction, byte[] secret)
@@ -156,6 +160,7 @@ public class Player
     public async Task SendPacketAsync(PacketDirection direction, IMinecraftPacket packet)
     {
         ArgumentNullException.ThrowIfNull(State);
+        ArgumentNullException.ThrowIfNull(ProtocolVersion);
 
         var id = State.FindPacketId(direction, packet);
 
@@ -173,7 +178,7 @@ public class Player
 
         ArgumentNullException.ThrowIfNull(channel);
 
-        using var message = EncodeMessage(id.Value, packet, direction);
+        using var message = EncodeMessage(id.Value, packet, direction, ProtocolVersion);
         await channel.WriteMessageAsync(message);
     }
 
@@ -216,6 +221,7 @@ public class Player
     protected async Task ProcessPacketsAsync<T>(MinecraftChannel sourceChannel, MinecraftChannel destinationChannel, string sourceIdentifier, CancellationToken cancellationToken) where T : ProtocolState
     {
         ArgumentNullException.ThrowIfNull(State);
+        ArgumentNullException.ThrowIfNull(ProtocolVersion);
 
         var direction = sourceIdentifier switch
         {
@@ -231,7 +237,7 @@ public class Player
 
             using (var message = await sourceChannel.ReadMessageAsync(cancellationToken))
             {
-                (packetId, packet, var handleTask) = DecodeMessage(State, message, direction);
+                (packetId, packet, var handleTask) = DecodeMessage(State, message, direction, ProtocolVersion);
 
                 if (packet is null)
                 {
@@ -243,7 +249,7 @@ public class Player
                     continue;
             }
 
-            using (var message = EncodeMessage(packetId, packet, direction))
+            using (var message = EncodeMessage(packetId, packet, direction, ProtocolVersion))
             {
                 await destinationChannel.WriteMessageAsync(message, cancellationToken);
             }
@@ -256,7 +262,7 @@ public class Player
         }
     }
 
-    protected static (int, IMinecraftPacket?, Task<bool>) DecodeMessage(ProtocolState protocolState, MinecraftMessage message, PacketDirection direction)
+    protected static (int, IMinecraftPacket?, Task<bool>) DecodeMessage(ProtocolState protocolState, MinecraftMessage message, PacketDirection direction, ProtocolVersion protocolVersion)
     {
         var buffer = new MinecraftBuffer(message.Memory);
         var packetId = message.PacketId;
@@ -266,10 +272,10 @@ public class Player
         {
             return protocolState switch
             {
-                HandshakeState state when state.Decode<HandshakeState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
-                LoginState state when state.Decode<LoginState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
-                ConfigurationState state when state.Decode<ConfigurationState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
-                PlayState state when state.Decode<PlayState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
+                HandshakeState state when state.Decode<HandshakeState>(packetId, direction, ref buffer, protocolVersion) is { } packet => (packetId, packet, packet.HandleAsync(state)),
+                LoginState state when state.Decode<LoginState>(packetId, direction, ref buffer, protocolVersion) is { } packet => (packetId, packet, packet.HandleAsync(state)),
+                ConfigurationState state when state.Decode<ConfigurationState>(packetId, direction, ref buffer, protocolVersion) is { } packet => (packetId, packet, packet.HandleAsync(state)),
+                PlayState state when state.Decode<PlayState>(packetId, direction, ref buffer, protocolVersion) is { } packet => (packetId, packet, packet.HandleAsync(state)),
                 _ => (packetId, null, Task.FromResult(false))
             };
         }
@@ -280,13 +286,13 @@ public class Player
         }
     }
 
-    protected static MinecraftMessage EncodeMessage(int packetId, IMinecraftPacket packet, PacketDirection direction)
+    protected static MinecraftMessage EncodeMessage(int packetId, IMinecraftPacket packet, PacketDirection direction, ProtocolVersion protocolVersion)
     {
         var memoryOwner = MemoryPool<byte>.Shared.Rent(2048);
         var buffer = new MinecraftBuffer(memoryOwner.Memory);
         Console.WriteLine($"Encoding {direction} 0x{packetId:X2} packet {JsonSerializer.Serialize(packet as object, Proxy.JsonSerializerOptions)}");
 
-        packet.Encode(ref buffer);
+        packet.Encode(ref buffer, protocolVersion);
 
         return new(packetId, memoryOwner.Memory[..buffer.Position], memoryOwner);
     }

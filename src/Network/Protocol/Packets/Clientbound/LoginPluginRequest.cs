@@ -9,7 +9,7 @@ public struct LoginPluginRequest : IMinecraftPacket<LoginState>
     public string Identifier { get; set; }
     public byte[] Data { get; set; }
 
-    public void Encode(ref MinecraftBuffer buffer)
+    public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         buffer.WriteVarInt(MessageId);
         buffer.WriteString(Identifier);
@@ -18,7 +18,7 @@ public struct LoginPluginRequest : IMinecraftPacket<LoginState>
 
     public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
 
-    public void Decode(ref MinecraftBuffer buffer)
+    public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         MessageId = buffer.ReadVarInt();
         Identifier = buffer.ReadString();

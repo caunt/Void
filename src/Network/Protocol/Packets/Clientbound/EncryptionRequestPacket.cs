@@ -9,7 +9,7 @@ public struct EncryptionRequestPacket : IMinecraftPacket<LoginState>
     public byte[] PublicKey { get; set; }
     public byte[] VerifyToken { get; set; }
 
-    public void Encode(ref MinecraftBuffer buffer)
+    public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         buffer.WriteString(ServerId ?? string.Empty);
         buffer.WriteVarInt(PublicKey.Length);
@@ -20,7 +20,7 @@ public struct EncryptionRequestPacket : IMinecraftPacket<LoginState>
 
     public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
 
-    public void Decode(ref MinecraftBuffer buffer)
+    public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         ServerId = buffer.ReadString();
 

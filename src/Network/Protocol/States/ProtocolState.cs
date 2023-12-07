@@ -10,7 +10,7 @@ public abstract class ProtocolState : IProtocolState
     protected abstract Dictionary<int, Type> clientboundPackets { get; }
     protected abstract Dictionary<int, Type> serverboundPackets { get; }
 
-    public IMinecraftPacket<T>? Decode<T>(int packetId, PacketDirection direction, ref MinecraftBuffer buffer) where T : ProtocolState
+    public IMinecraftPacket<T>? Decode<T>(int packetId, PacketDirection direction, ref MinecraftBuffer buffer, ProtocolVersion protocolVersion) where T : ProtocolState
     {
         var packets = direction switch
         {
@@ -23,7 +23,7 @@ public abstract class ProtocolState : IProtocolState
             return null;
 
         var packet = Activator.CreateInstance(packetType) as IMinecraftPacket<T> ?? throw new Exception($"Cannot create instance of {packetType} packet");
-        packet.Decode(ref buffer);
+        packet.Decode(ref buffer, protocolVersion);
 
         if (buffer.HasData)
             throw new IOException($"{direction} packet {packetType.Name} has extra data ({buffer.Position} < {buffer.Length})");

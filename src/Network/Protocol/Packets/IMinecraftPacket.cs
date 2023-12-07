@@ -10,6 +10,6 @@ public interface IMinecraftPacket<in T> : IMinecraftPacket where T : IProtocolSt
 
 public interface IMinecraftPacket
 {
-    public void Decode(ref MinecraftBuffer buffer);
-    public void Encode(ref MinecraftBuffer buffer);
+    public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion);
+    public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion);
 }

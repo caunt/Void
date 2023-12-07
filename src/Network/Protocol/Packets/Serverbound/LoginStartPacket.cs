@@ -8,7 +8,7 @@ public struct LoginStartPacket : IMinecraftPacket<LoginState>
     public string Username { get; set; }
     public Guid Guid { get; set; }
 
-    public void Encode(ref MinecraftBuffer buffer)
+    public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         buffer.WriteString(Username);
         buffer.WriteGuid(Guid);
@@ -16,7 +16,7 @@ public struct LoginStartPacket : IMinecraftPacket<LoginState>
 
     public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
 
-    public void Decode(ref MinecraftBuffer buffer)
+    public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         Username = buffer.ReadString();
         Guid = buffer.ReadGuid();

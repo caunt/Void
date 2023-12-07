@@ -10,7 +10,7 @@ public struct HandshakePacket : IMinecraftPacket<HandshakeState>
     public ushort ServerPort { get; set; }
     public int NextState { get; set; }
 
-    public void Encode(ref MinecraftBuffer buffer)
+    public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         buffer.WriteVarInt(ProtocolVersion);
         buffer.WriteString(ServerAddress);
@@ -20,7 +20,7 @@ public struct HandshakePacket : IMinecraftPacket<HandshakeState>
 
     public async Task<bool> HandleAsync(HandshakeState state) => await state.HandleAsync(this);
 
-    public void Decode(ref MinecraftBuffer buffer)
+    public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         ProtocolVersion = buffer.ReadVarInt();
         ServerAddress = buffer.ReadString();
