@@ -1,5 +1,6 @@
 ﻿using MinecraftProxy.Models;
 using MinecraftProxy.Network.IO;
+using MinecraftProxy.Network.Protocol;
 using MinecraftProxy.Network.Protocol.Packets;
 using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.States;
@@ -9,6 +10,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Threading.Channels;
 
 namespace MinecraftProxy;
 
@@ -16,21 +18,23 @@ public class Player
 {
     public GameProfile? GameProfile { get; protected set; }
 
-    public ProtocolState State { get; protected set; }
+    public ProtocolState? State { get; protected set; }
 
     public EndPoint? RemoteEndPoint => tcpClient.Client.RemoteEndPoint;
 
-    public Server CurrentServer { get; protected set; }
+    public Server? CurrentServer { get; protected set; }
 
-    public IdentifiedKey IdentifiedKey { get; protected set; }
+    public IdentifiedKey? IdentifiedKey { get; protected set; }
 
     public Guid SignatureHolder { get; protected set; }
 
+    public ProtocolVersion? ProtocolVersion { get; protected set; }
+
     protected readonly TcpClient tcpClient;
 
-    protected MinecraftChannel serverChannel;
+    protected MinecraftChannel? serverChannel;
 
-    protected MinecraftChannel clientChannel;
+    protected MinecraftChannel? clientChannel;
 
     public Player(TcpClient tcpClient)
     {
@@ -41,6 +45,11 @@ public class Player
     public void SetGameProfile(GameProfile gameProfile)
     {
         GameProfile = gameProfile;
+    }
+
+    public void SetProtocolVersion(ProtocolVersion protocolVersion)
+    {
+        ProtocolVersion = protocolVersion;
     }
 
     public void SwitchState(int state)
@@ -66,6 +75,8 @@ public class Player
             _ => throw new ArgumentOutOfRangeException(nameof(direction)),
         };
 
+        ArgumentNullException.ThrowIfNull(channel);
+
         channel.EnableEncryption(secret);
         Console.WriteLine($"Player {this} enabled {direction} encryption");
     }
@@ -78,6 +89,8 @@ public class Player
             PacketDirection.Serverbound => serverChannel,
             _ => throw new ArgumentOutOfRangeException(nameof(direction)),
         };
+
+        ArgumentNullException.ThrowIfNull(channel);
 
         channel.EnableCompression(threshold);
         Console.WriteLine($"Player {this} enabled {direction} compression");
@@ -142,6 +155,8 @@ public class Player
 
     public async Task SendPacketAsync(PacketDirection direction, IMinecraftPacket packet)
     {
+        ArgumentNullException.ThrowIfNull(State);
+
         var id = State.FindPacketId(direction, packet);
 
         if (!id.HasValue)
@@ -155,6 +170,8 @@ public class Player
             PacketDirection.Serverbound => serverChannel,
             _ => throw new ArgumentOutOfRangeException(nameof(direction)),
         };
+
+        ArgumentNullException.ThrowIfNull(channel);
 
         using var message = EncodeMessage(id.Value, packet, direction);
         await channel.WriteMessageAsync(message);
@@ -198,6 +215,8 @@ public class Player
 
     protected async Task ProcessPacketsAsync<T>(MinecraftChannel sourceChannel, MinecraftChannel destinationChannel, string sourceIdentifier, CancellationToken cancellationToken) where T : ProtocolState
     {
+        ArgumentNullException.ThrowIfNull(State);
+
         var direction = sourceIdentifier switch
         {
             "Player" => PacketDirection.Serverbound,

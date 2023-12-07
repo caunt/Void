@@ -81,6 +81,9 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
         if (player.GameProfile is null)
             throw new Exception("Game profile not loaded yet");
 
+        if (player.CurrentServer is null)
+            throw new Exception("Server not chosen yet");
+
         if (player.CurrentServer.Forwarding is not NoneForwarding)
         {
             if (packet.Guid != player.GameProfile.Id)
@@ -105,6 +108,9 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
 
     public async Task<bool> HandleAsync(LoginPluginRequest packet)
     {
+        if (player.CurrentServer is null)
+            throw new Exception("Server not chosen yet");
+
         if (player.CurrentServer.Forwarding is not ModernForwarding forwarding)
             return false;
 

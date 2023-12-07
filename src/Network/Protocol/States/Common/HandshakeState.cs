@@ -15,7 +15,7 @@ public class HandshakeState(Player player) : ProtocolState
 
     public Task<bool> HandleAsync(HandshakePacket packet)
     {
-        // packet.ProtocolVersion
+        player.SetProtocolVersion(ProtocolVersion.Get(packet.ProtocolVersion));
         player.SwitchState(packet.NextState);
         return Task.FromResult(false);
     }
