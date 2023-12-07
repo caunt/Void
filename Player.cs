@@ -178,7 +178,7 @@ public class Player
 
         cts.Cancel();
 
-        if (completedTask.IsFaulted && completedTask.Exception.InnerExceptions.All(exception => exception is not EndOfStreamException))
+        if (completedTask.IsFaulted && completedTask.Exception.InnerExceptions.All(exception => exception is not EndOfStreamException and not IOException))
             Console.WriteLine($"Unhandled exception while reading {(completedTask == serverTask ? "Server" : "Client")} channel ({this}):\n{completedTask.Exception}");
 
         // graceful opposite disconnection timeout
@@ -243,14 +243,22 @@ public class Player
         var packetId = buffer.ReadVarInt();
         Console.WriteLine($"Decoding {direction} 0x{packetId:X2} packet");
 
-        return protocolState switch
+        try
         {
-            HandshakeState state when state.Decode<HandshakeState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
-            LoginState state when state.Decode<LoginState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
-            ConfigurationState state when state.Decode<ConfigurationState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
-            PlayState state when state.Decode<PlayState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
-            _ => (packetId, null, Task.FromResult(false))
-        };
+            return protocolState switch
+            {
+                HandshakeState state when state.Decode<HandshakeState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
+                LoginState state when state.Decode<LoginState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
+                ConfigurationState state when state.Decode<ConfigurationState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
+                PlayState state when state.Decode<PlayState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
+                _ => (packetId, null, Task.FromResult(false))
+            };
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine($"Couldn't decode packet: {exception}");
+            return (-1, null, Task.FromResult(false));
+        }
     }
 
     protected static MinecraftMessage EncodeMessage(int packetId, IMinecraftPacket packet, PacketDirection direction)
