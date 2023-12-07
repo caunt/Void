@@ -1,9 +1,9 @@
 ﻿using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.Packets.Serverbound;
+using MinecraftProxy.Network.Protocol.States.Custom;
 using Nito.Disposables.Internals;
-using System.Text.Json;
 
-namespace MinecraftProxy.Network.Protocol.States;
+namespace MinecraftProxy.Network.Protocol.States.Common;
 
 public class PlayState(Player player) : ProtocolState, IPlayableState
 {

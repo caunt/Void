@@ -1,15 +1,16 @@
 ﻿using MinecraftProxy.Models;
-using MinecraftProxy.Network.Protocol.States;
+using MinecraftProxy.Network.IO;
+using MinecraftProxy.Network.Protocol.States.Common;
 
 namespace MinecraftProxy.Network.Protocol.Packets.Clientbound;
 
-public class LoginSuccessPacket : IMinecraftPacket<LoginState>
+public struct LoginSuccessPacket : IMinecraftPacket<LoginState>
 {
     public Guid Guid { get; set; }
     public string Username { get; set; }
     public List<Property> Properties { get; set; }
 
-    public void Encode(MinecraftBuffer buffer)
+    public void Encode(ref MinecraftBuffer buffer)
     {
         buffer.WriteGuid(Guid);
         buffer.WriteString(Username);
@@ -18,7 +19,7 @@ public class LoginSuccessPacket : IMinecraftPacket<LoginState>
 
     public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
 
-    public void Decode(MinecraftBuffer buffer)
+    public void Decode(ref MinecraftBuffer buffer)
     {
         Guid = buffer.ReadGuid();
         Username = buffer.ReadString();

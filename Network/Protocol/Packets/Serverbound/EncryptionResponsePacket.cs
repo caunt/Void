@@ -1,13 +1,14 @@
-﻿using MinecraftProxy.Network.Protocol.States;
+﻿using MinecraftProxy.Network.IO;
+using MinecraftProxy.Network.Protocol.States.Common;
 
 namespace MinecraftProxy.Network.Protocol.Packets.Serverbound;
 
-public class EncryptionResponsePacket : IMinecraftPacket<LoginState>
+public struct EncryptionResponsePacket : IMinecraftPacket<LoginState>
 {
     public byte[] SharedSecret { get; set; }
     public byte[] VerifyToken { get; set; }
 
-    public void Encode(MinecraftBuffer buffer)
+    public void Encode(ref MinecraftBuffer buffer)
     {
         buffer.WriteVarInt(SharedSecret.Length);
         buffer.Write(SharedSecret);
@@ -17,12 +18,12 @@ public class EncryptionResponsePacket : IMinecraftPacket<LoginState>
 
     public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
 
-    public void Decode(MinecraftBuffer buffer)
+    public void Decode(ref MinecraftBuffer buffer)
     {
         var sharedSecretLength = buffer.ReadVarInt();
-        SharedSecret = buffer.ReadUInt8Array(sharedSecretLength);
+        SharedSecret = buffer.Read(sharedSecretLength).ToArray();
 
         var verifyTokenLength = buffer.ReadVarInt();
-        VerifyToken = buffer.ReadUInt8Array(verifyTokenLength);
+        VerifyToken = buffer.Read(verifyTokenLength).ToArray();
     }
 }

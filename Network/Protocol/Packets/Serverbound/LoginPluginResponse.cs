@@ -1,14 +1,15 @@
-﻿using MinecraftProxy.Network.Protocol.States;
+﻿using MinecraftProxy.Network.IO;
+using MinecraftProxy.Network.Protocol.States.Common;
 
 namespace MinecraftProxy.Network.Protocol.Packets.Clientbound;
 
-public class LoginPluginResponse : IMinecraftPacket<LoginState>
+public struct LoginPluginResponse : IMinecraftPacket<LoginState>
 {
     public int MessageId { get; set; }
     public bool Successful { get; set; }
     public byte[] Data { get; set; }
 
-    public void Encode(MinecraftBuffer buffer)
+    public void Encode(ref MinecraftBuffer buffer)
     {
         buffer.WriteVarInt(MessageId);
         buffer.WriteBoolean(Successful);
@@ -17,10 +18,10 @@ public class LoginPluginResponse : IMinecraftPacket<LoginState>
 
     public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
 
-    public void Decode(MinecraftBuffer buffer)
+    public void Decode(ref MinecraftBuffer buffer)
     {
         MessageId = buffer.ReadVarInt();
         Successful = buffer.ReadBoolean();
-        Data = buffer.ReadUInt8Array((int)(buffer.Length - buffer.Position));
+        Data = buffer.Read((int)(buffer.Length - buffer.Position)).ToArray();
     }
 }

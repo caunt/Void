@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using MinecraftProxy.Network.IO;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -15,7 +16,7 @@ public class ModernForwarding(string secret) : IForwarding
 
         var requestedVersion = data.Length == 0 ? Version.Default : (Version)data[0];
         var actualVersion = FindForwardingVersion(requestedVersion, player);
-        var buffer = MinecraftBuffer.Empty;
+        var buffer = new MinecraftBuffer();
 
         buffer.WriteVarInt((int)actualVersion);
 
@@ -43,7 +44,7 @@ public class ModernForwarding(string secret) : IForwarding
             }
         }
 
-        var forwardingData = buffer.ToArray();
+        var forwardingData = buffer.Span[..buffer.Position];
         var signature = HMACSHA256.HashData(Encoding.UTF8.GetBytes(secret), forwardingData);
 
         return [.. signature, .. forwardingData];

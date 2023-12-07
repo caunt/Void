@@ -1,14 +1,15 @@
 ﻿using MinecraftProxy.Models;
-using MinecraftProxy.Network.Protocol.States;
+using MinecraftProxy.Network.IO;
+using MinecraftProxy.Network.Protocol.States.Common;
 
 namespace MinecraftProxy.Network.Protocol.Packets.Serverbound;
 
-public class PlayerSessionPacket : IMinecraftPacket<PlayState>
+public struct PlayerSessionPacket : IMinecraftPacket<PlayState>
 {
     public Guid SessionId { get; set; }
     public IdentifiedKey IdentifiedKey { get; set; }
 
-    public void Encode(MinecraftBuffer buffer)
+    public void Encode(ref MinecraftBuffer buffer)
     {
         buffer.WriteGuid(SessionId);
         buffer.WriteIdentifiedKey(IdentifiedKey);
@@ -16,7 +17,7 @@ public class PlayerSessionPacket : IMinecraftPacket<PlayState>
 
     public async Task<bool> HandleAsync(PlayState state) => await state.HandleAsync(this);
 
-    public void Decode(MinecraftBuffer buffer)
+    public void Decode(ref MinecraftBuffer buffer)
     {
         SessionId = buffer.ReadGuid();
         IdentifiedKey = buffer.ReadIdentifiedKey();

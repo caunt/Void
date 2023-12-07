@@ -1,15 +1,16 @@
-﻿using MinecraftProxy.Network.Protocol.States;
+﻿using MinecraftProxy.Network.IO;
+using MinecraftProxy.Network.Protocol.States.Common;
 
 namespace MinecraftProxy.Network.Protocol.Packets.Serverbound;
 
-public class HandshakePacket : IMinecraftPacket<HandshakeState>
+public struct HandshakePacket : IMinecraftPacket<HandshakeState>
 {
     public int ProtocolVersion { get; set; }
     public string ServerAddress { get; set; }
     public ushort ServerPort { get; set; }
     public int NextState { get; set; }
 
-    public void Encode(MinecraftBuffer buffer)
+    public void Encode(ref MinecraftBuffer buffer)
     {
         buffer.WriteVarInt(ProtocolVersion);
         buffer.WriteString(ServerAddress);
@@ -19,7 +20,7 @@ public class HandshakePacket : IMinecraftPacket<HandshakeState>
 
     public async Task<bool> HandleAsync(HandshakeState state) => await state.HandleAsync(this);
 
-    public void Decode(MinecraftBuffer buffer)
+    public void Decode(ref MinecraftBuffer buffer)
     {
         ProtocolVersion = buffer.ReadVarInt();
         ServerAddress = buffer.ReadString();

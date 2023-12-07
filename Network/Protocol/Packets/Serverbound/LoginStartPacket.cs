@@ -1,13 +1,14 @@
-﻿using MinecraftProxy.Network.Protocol.States;
+﻿using MinecraftProxy.Network.IO;
+using MinecraftProxy.Network.Protocol.States.Common;
 
 namespace MinecraftProxy.Network.Protocol.Packets.Serverbound;
 
-public class LoginStartPacket : IMinecraftPacket<LoginState>
+public struct LoginStartPacket : IMinecraftPacket<LoginState>
 {
     public string Username { get; set; }
     public Guid Guid { get; set; }
 
-    public void Encode(MinecraftBuffer buffer)
+    public void Encode(ref MinecraftBuffer buffer)
     {
         buffer.WriteString(Username);
         buffer.WriteGuid(Guid);
@@ -15,7 +16,7 @@ public class LoginStartPacket : IMinecraftPacket<LoginState>
 
     public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
 
-    public void Decode(MinecraftBuffer buffer)
+    public void Decode(ref MinecraftBuffer buffer)
     {
         Username = buffer.ReadString();
         Guid = buffer.ReadGuid();

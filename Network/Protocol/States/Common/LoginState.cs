@@ -1,8 +1,10 @@
 ﻿using MinecraftProxy.Network.Protocol.Forwarding;
+using MinecraftProxy.Network.Protocol.Packets;
 using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.Packets.Serverbound;
+using MinecraftProxy.Network.Protocol.States.Custom;
 
-namespace MinecraftProxy.Network.Protocol.States;
+namespace MinecraftProxy.Network.Protocol.States.Common;
 
 public class LoginState(Player player) : ProtocolState, IPlayableState
 {
@@ -54,7 +56,7 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
             throw new Exception("Unable to verify encryption token");
 
         var secret = Proxy.RSA.Decrypt(packet.SharedSecret, false);
-        player.EnableEncryption(secret);
+        player.EnableEncryption(PacketDirection.Clientbound, secret);
 
         await player.RequestGameProfileAsync(secret);
         await player.SendPacketAsync(PacketDirection.Serverbound, GenerateLoginStartPacket());
@@ -65,7 +67,7 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
     public Task<bool> HandleAsync(SetCompressionPacket packet)
     {
         if (packet.Threshold > 0)
-            player.SetCompressionThreshold(PacketDirection.Serverbound, packet.Threshold);
+            player.EnableCompression(PacketDirection.Serverbound, packet.Threshold);
 
         return Task.FromResult(true); // enable compression only with server
     }
@@ -75,8 +77,18 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
         if (player.GameProfile is null)
             throw new Exception("Game profile not loaded yet");
 
-        if (packet.Guid != player.GameProfile.Id)
-            throw new Exception($"Server sent wrong player UUID: {packet.Guid}, online is: {player.GameProfile.Id}");
+        if (player.CurrentServer.Forwarding is not NoneForwarding)
+        {
+            if (packet.Guid != player.GameProfile.Id)
+                throw new Exception($"Server sent wrong player UUID: {packet.Guid}, online is: {player.GameProfile.Id}");
+        }
+        else
+        {
+            // fallback to offline GameProfile
+            player.GameProfile.Id = packet.Guid;
+            player.GameProfile.Name = packet.Username;
+            player.GameProfile.Properties = packet.Properties;
+        }
 
         return Task.FromResult(false);
     }

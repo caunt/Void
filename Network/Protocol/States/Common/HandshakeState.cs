@@ -1,6 +1,6 @@
 ﻿using MinecraftProxy.Network.Protocol.Packets.Serverbound;
 
-namespace MinecraftProxy.Network.Protocol.States;
+namespace MinecraftProxy.Network.Protocol.States.Common;
 
 public class HandshakeState(Player player) : ProtocolState
 {
@@ -15,6 +15,7 @@ public class HandshakeState(Player player) : ProtocolState
 
     public Task<bool> HandleAsync(HandshakePacket packet)
     {
+        // packet.ProtocolVersion
         player.SwitchState(packet.NextState);
         return Task.FromResult(false);
     }

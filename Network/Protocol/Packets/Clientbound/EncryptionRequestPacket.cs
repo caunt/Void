@@ -1,16 +1,17 @@
-﻿using MinecraftProxy.Network.Protocol.States;
+﻿using MinecraftProxy.Network.IO;
+using MinecraftProxy.Network.Protocol.States.Common;
 
 namespace MinecraftProxy.Network.Protocol.Packets.Clientbound;
 
-public class EncryptionRequestPacket : IMinecraftPacket<LoginState>
+public struct EncryptionRequestPacket : IMinecraftPacket<LoginState>
 {
-    public string ServerId { get; set; } = string.Empty; // must be empty string by default
+    public string ServerId { get; set; }
     public byte[] PublicKey { get; set; }
     public byte[] VerifyToken { get; set; }
 
-    public void Encode(MinecraftBuffer buffer)
+    public void Encode(ref MinecraftBuffer buffer)
     {
-        buffer.WriteString(ServerId);
+        buffer.WriteString(ServerId ?? string.Empty);
         buffer.WriteVarInt(PublicKey.Length);
         buffer.Write(PublicKey);
         buffer.WriteVarInt(VerifyToken.Length);
@@ -19,14 +20,14 @@ public class EncryptionRequestPacket : IMinecraftPacket<LoginState>
 
     public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
 
-    public void Decode(MinecraftBuffer buffer)
+    public void Decode(ref MinecraftBuffer buffer)
     {
         ServerId = buffer.ReadString();
 
         var publicKeyLength = buffer.ReadVarInt();
-        PublicKey = buffer.ReadUInt8Array(publicKeyLength);
+        PublicKey = buffer.Read(publicKeyLength).ToArray();
 
         var verifyTokenLength = buffer.ReadVarInt();
-        VerifyToken = buffer.ReadUInt8Array(verifyTokenLength);
+        VerifyToken = buffer.Read(verifyTokenLength).ToArray();
     }
 }

@@ -1,13 +1,14 @@
-﻿using MinecraftProxy.Network.Protocol.Packets;
-using MinecraftProxy.Network.Protocol.States;
-using MinecraftProxy.Network.Protocol;
-using MinecraftProxy.Network;
-using System.Net.Sockets;
-using System.Net;
-using MinecraftProxy.Models;
-using System.Text.Json;
-using System.Security.Cryptography;
+﻿using MinecraftProxy.Models;
+using MinecraftProxy.Network.IO;
+using MinecraftProxy.Network.Protocol.Packets;
 using MinecraftProxy.Network.Protocol.Packets.Clientbound;
+using MinecraftProxy.Network.Protocol.States;
+using MinecraftProxy.Network.Protocol.States.Common;
+using System.Buffers;
+using System.Net;
+using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace MinecraftProxy;
 
@@ -27,17 +28,13 @@ public class Player
 
     protected readonly TcpClient tcpClient;
 
-    protected readonly NetworkStream stream;
+    protected MinecraftChannel serverChannel;
 
-    protected MinecraftStream serverboundStream;
-
-    protected MinecraftStream clientboundStream;
+    protected MinecraftChannel clientChannel;
 
     public Player(TcpClient tcpClient)
     {
         this.tcpClient = tcpClient;
-
-        stream = tcpClient.GetStream();
         SwitchState(0);
     }
 
@@ -60,10 +57,17 @@ public class Player
         Console.WriteLine($"Player {this} switch state to {State.GetType().Name}");
     }
 
-    public void EnableEncryption(byte[] secret)
+    public void EnableEncryption(PacketDirection direction, byte[] secret)
     {
-        // servers are always in offline mode - serverboundStream.EnableEncryption(secret);
-        clientboundStream.EnableEncryption(secret);
+        var channel = direction switch
+        {
+            PacketDirection.Clientbound => clientChannel,
+            PacketDirection.Serverbound => serverChannel, // servers are always in offline mode
+            _ => throw new ArgumentOutOfRangeException(nameof(direction)),
+        };
+
+        channel.EnableEncryption(secret);
+        Console.WriteLine($"Player {this} enabled {direction} compression");
     }
 
     public void SetIdentifiedKey(IdentifiedKey identifiedKey)
@@ -130,19 +134,17 @@ public class Player
         if (!id.HasValue)
             throw new Exception($"{packet.GetType().Name} packet id not found in {State.GetType().Name}");
 
-        var buffer = new MinecraftBuffer();
-        packet.Encode(buffer);
-
         Console.WriteLine($"Sending {packet.GetType().Name} to {direction}");
 
-        var stream = direction switch
+        var channel = direction switch
         {
-            PacketDirection.Clientbound => clientboundStream,
-            PacketDirection.Serverbound => serverboundStream,
+            PacketDirection.Clientbound => clientChannel,
+            PacketDirection.Serverbound => serverChannel,
             _ => throw new ArgumentOutOfRangeException(nameof(direction)),
         };
 
-        await stream.WritePacketAsync(id.Value, buffer);
+        using var message = EncodeMessage(id.Value, packet, direction);
+        await channel.WriteMessageAsync(message);
     }
 
     public async Task ForwardTrafficAsync(Server server)
@@ -152,36 +154,49 @@ public class Player
         using var forwardClient = new TcpClient(server.Host, server.Port);
         using var forwardStream = forwardClient.GetStream();
 
-        serverboundStream = new MinecraftStream(forwardStream);
-        clientboundStream = new MinecraftStream(stream);
+        serverChannel = new MinecraftChannel(forwardStream);
+        clientChannel = new MinecraftChannel(tcpClient.GetStream());
 
-        var completedTask = await Task.WhenAny(
-                ProcessPacketsAsync<ProtocolState>(clientboundStream, serverboundStream, "Player"),
-                ProcessPacketsAsync<ProtocolState>(serverboundStream, clientboundStream, "Server")
-            );
+        var cts = new CancellationTokenSource();
 
-        if (completedTask.IsFaulted)
-            Console.WriteLine($"Unhandled exception on Player {this}:\n{completedTask.Exception}");
+        var clientTask = ProcessPacketsAsync<ProtocolState>(clientChannel, serverChannel, "Player", cts.Token);
+        var serverTask = ProcessPacketsAsync<ProtocolState>(serverChannel, clientChannel, "Server", cts.Token);
+        var completedTask = await Task.WhenAny(serverTask, clientTask);
+
+        cts.Cancel();
+
+        if (completedTask.IsFaulted && completedTask.Exception.InnerExceptions.All(exception => exception is not EndOfStreamException))
+            Console.WriteLine($"Unhandled exception while reading {(completedTask == serverTask ? "Server" : "Client")} channel ({this}):\n{completedTask.Exception}");
+
+        // graceful opposite disconnection timeout
+        var timeout = Task.Delay(5000);
+        var disconnectTask = await Task.WhenAny(completedTask == serverTask ? clientTask : serverTask, timeout);
+
+        if (disconnectTask == timeout)
+            Console.WriteLine($"Timed out waiting {(completedTask == serverTask ? "Client" : "Server")} disconnection");
 
         Console.WriteLine($"Stopped forwarding traffic from/to {this}");
+
+        forwardClient.Close();
+        tcpClient.Close();
     }
 
-    public void SetCompressionThreshold(PacketDirection direction, int threshold)
+    public void EnableCompression(PacketDirection direction, int threshold)
     {
-        var stream = direction switch
+        var channel = direction switch
         {
-            PacketDirection.Clientbound => clientboundStream,
-            PacketDirection.Serverbound => serverboundStream,
+            PacketDirection.Clientbound => clientChannel,
+            PacketDirection.Serverbound => serverChannel,
             _ => throw new ArgumentOutOfRangeException(nameof(direction)),
         };
 
-        stream.CompressionThreshold = threshold;
+        channel.EnableCompression(threshold);
         Console.WriteLine($"Player {this} enabled {direction} compression");
     }
 
-    public override string ToString() => GameProfile?.Name ?? tcpClient.Client.RemoteEndPoint!.ToString()!;
+    public override string ToString() => GameProfile?.Name ?? tcpClient.Client?.RemoteEndPoint?.ToString() ?? "Disposed?";
 
-    protected async Task ProcessPacketsAsync<T>(MinecraftStream sourceStream, MinecraftStream destinationStream, string sourceIdentifier) where T : ProtocolState
+    protected async Task ProcessPacketsAsync<T>(MinecraftChannel sourceChannel, MinecraftChannel destinationChannel, string sourceIdentifier, CancellationToken cancellationToken) where T : ProtocolState
     {
         var direction = sourceIdentifier switch
         {
@@ -190,44 +205,63 @@ public class Player
             _ => throw new ArgumentException(sourceIdentifier)
         };
 
-        while (sourceStream.CanRead && sourceStream.CanWrite && destinationStream.CanRead && destinationStream.CanWrite)
+        while (sourceChannel.CanRead && sourceChannel.CanWrite && destinationChannel.CanRead && destinationChannel.CanWrite)
         {
-            var (packetId, buffer) = await sourceStream.ReadPacketAsync();
+            int packetId;
+            IMinecraftPacket? packet;
 
-            if (packetId == -1)
-                break; // Connection close
-
-            Console.WriteLine($"{sourceIdentifier} {this} sent 0x{packetId:X2} packet");
-
-            var (minecraftPacket, handleTask) = State switch
+            using (var message = await sourceChannel.ReadMessageAsync(cancellationToken))
             {
-                HandshakeState state when state.Decode<HandshakeState>(direction, packetId, buffer) is { } packet => (packet, packet.HandleAsync(state)),
-                LoginState state when state.Decode<LoginState>(direction, packetId, buffer) is { } packet => (packet, packet.HandleAsync(state)),
-                ConfigurationState state when state.Decode<ConfigurationState>(direction, packetId, buffer) is { } packet => (packet, packet.HandleAsync(state)),
-                PlayState state when state.Decode<PlayState>(direction, packetId, buffer) is { } packet => (packet, packet.HandleAsync(state)),
-                _ => ((IMinecraftPacket)null!, Task.FromResult(false))
-            };
+                (packetId, packet, var handleTask) = DecodeMessage(State, message, direction);
 
-            if (await handleTask)
-            {
-                // cancel packet
-                continue;
+                if (packet is null)
+                {
+                    await destinationChannel.WriteMessageAsync(message, cancellationToken);
+                    continue;
+                }
+
+                if (await handleTask)
+                    continue;
             }
 
-            if (minecraftPacket is not null)
+            using (var message = EncodeMessage(packetId, packet, direction))
             {
-                buffer.Clear();
-                minecraftPacket.Encode(buffer);
+                await destinationChannel.WriteMessageAsync(message, cancellationToken);
             }
 
-            await destinationStream.WritePacketAsync(packetId, buffer);
-            // Console.WriteLine($"Sent 0x{packetId:X2} packet to {direction}");
-
-            if (minecraftPacket is DisconnectPacket disconnect)
+            if (packet is DisconnectPacket disconnect)
             {
                 Console.WriteLine($"Player {this} disconnected from server: {disconnect.Reason}");
                 break;
             }
         }
+    }
+
+    protected (int, IMinecraftPacket?, Task<bool>) DecodeMessage(ProtocolState protocolState, MinecraftMessage message, PacketDirection direction)
+    {
+        var buffer = new MinecraftBuffer(message.Memory);
+        var packetId = buffer.ReadVarInt();
+        Console.WriteLine($"Decoding {direction} 0x{packetId:X2} packet");
+
+        return protocolState switch
+        {
+            HandshakeState state when state.Decode<HandshakeState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
+            LoginState state when state.Decode<LoginState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
+            ConfigurationState state when state.Decode<ConfigurationState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
+            PlayState state when state.Decode<PlayState>(packetId, direction, ref buffer) is { } packet => (packetId, packet, packet.HandleAsync(state)),
+            _ => (packetId, null, Task.FromResult(false))
+        };
+    }
+
+    protected static MinecraftMessage EncodeMessage(int packetId, IMinecraftPacket packet, PacketDirection direction)
+    {
+        var memoryOwner = MemoryPool<byte>.Shared.Rent(2048);
+        var buffer = new MinecraftBuffer(memoryOwner.Memory);
+        Console.WriteLine($"Encoding {direction} 0x{packetId:X2} packet {JsonSerializer.Serialize(packet as object, new JsonSerializerOptions { WriteIndented = true })}");
+
+        buffer.WriteVarInt(packetId);
+        packet.Encode(ref buffer);
+
+        return new(memoryOwner.Memory[..buffer.Position], memoryOwner);
     }
 }

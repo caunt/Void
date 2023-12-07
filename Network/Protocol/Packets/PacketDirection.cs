@@ -1,4 +1,4 @@
-﻿namespace MinecraftProxy.Network;
+﻿namespace MinecraftProxy.Network.Protocol.Packets;
 
 public enum PacketDirection
 {

@@ -21,7 +21,7 @@ public static class Proxy
         while (true)
         {
             var player = new Player(await listener.AcceptTcpClientAsync());
-            var server = new Server("127.0.0.1", 25566, new ModernForwarding("aaa"));
+            var server = new Server("127.0.0.1", 25566, new NoneForwarding() /*new ModernForwarding("aaa")*/);
             _ = player.ForwardTrafficAsync(server);
         }
     }

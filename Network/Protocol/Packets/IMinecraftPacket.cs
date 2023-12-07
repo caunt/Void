@@ -1,12 +1,15 @@
-﻿namespace MinecraftProxy.Network.Protocol.Packets;
+﻿using MinecraftProxy.Network.IO;
+using MinecraftProxy.Network.Protocol.States;
+
+namespace MinecraftProxy.Network.Protocol.Packets;
 
 public interface IMinecraftPacket<in T> : IMinecraftPacket where T : IProtocolState
 {
-    public Task<bool> HandleAsync(T state);
+    Task<bool> HandleAsync(T state);
 }
 
 public interface IMinecraftPacket
 {
-    public void Decode(MinecraftBuffer buffer);
-    public void Encode(MinecraftBuffer buffer);
+    public void Decode(ref MinecraftBuffer buffer);
+    public void Encode(ref MinecraftBuffer buffer);
 }

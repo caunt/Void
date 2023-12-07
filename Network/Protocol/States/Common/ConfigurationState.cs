@@ -1,6 +1,7 @@
 ﻿using MinecraftProxy.Network.Protocol.Packets.Clientbound;
+using MinecraftProxy.Network.Protocol.States.Custom;
 
-namespace MinecraftProxy.Network.Protocol.States;
+namespace MinecraftProxy.Network.Protocol.States.Common;
 
 public class ConfigurationState(Player player) : ProtocolState, IPlayableState
 {

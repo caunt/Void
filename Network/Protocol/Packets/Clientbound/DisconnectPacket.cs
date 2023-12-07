@@ -1,17 +1,20 @@
-﻿namespace MinecraftProxy.Network.Protocol.Packets.Clientbound;
+﻿using MinecraftProxy.Network.IO;
+using MinecraftProxy.Network.Protocol.States.Custom;
 
-public class DisconnectPacket : IMinecraftPacket<IPlayableState>
+namespace MinecraftProxy.Network.Protocol.Packets.Clientbound;
+
+public struct DisconnectPacket : IMinecraftPacket<IPlayableState>
 {
     public string Reason { get; set; }
 
-    public void Encode(MinecraftBuffer buffer)
+    public void Encode(ref MinecraftBuffer buffer)
     {
         buffer.WriteString(Reason);
     }
 
     public async Task<bool> HandleAsync(IPlayableState state) => await state.HandleAsync(this);
 
-    public void Decode(MinecraftBuffer buffer)
+    public void Decode(ref MinecraftBuffer buffer)
     {
         Reason = buffer.ReadString(262144);
     }
