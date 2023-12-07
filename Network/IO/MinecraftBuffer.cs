@@ -23,7 +23,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         Position = 0;
     }
 
-    public int GetVarIntSize(int value)
+    public static int GetVarIntSize(int value)
     {
         return (BitOperations.LeadingZeroCount((uint)value | 1) - 38) * -1171 >> 13;
     }

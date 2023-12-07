@@ -9,7 +9,9 @@ public static class Proxy
 {
     public static readonly HttpClient HttpClient = new();
     public static readonly RSACryptoServiceProvider RSA = new(1024);
+
     public static readonly int ListenPort = 25565;
+    public static readonly int CompressionThreshold = 256;
 
     public static async Task StartAsync()
     {

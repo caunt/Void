@@ -67,6 +67,19 @@ public class Player
         };
 
         channel.EnableEncryption(secret);
+        Console.WriteLine($"Player {this} enabled {direction} encryption");
+    }
+
+    public void EnableCompression(PacketDirection direction, int threshold)
+    {
+        var channel = direction switch
+        {
+            PacketDirection.Clientbound => clientChannel,
+            PacketDirection.Serverbound => serverChannel,
+            _ => throw new ArgumentOutOfRangeException(nameof(direction)),
+        };
+
+        channel.EnableCompression(threshold);
         Console.WriteLine($"Player {this} enabled {direction} compression");
     }
 
@@ -179,19 +192,6 @@ public class Player
 
         forwardClient.Close();
         tcpClient.Close();
-    }
-
-    public void EnableCompression(PacketDirection direction, int threshold)
-    {
-        var channel = direction switch
-        {
-            PacketDirection.Clientbound => clientChannel,
-            PacketDirection.Serverbound => serverChannel,
-            _ => throw new ArgumentOutOfRangeException(nameof(direction)),
-        };
-
-        channel.EnableCompression(threshold);
-        Console.WriteLine($"Player {this} enabled {direction} compression");
     }
 
     public override string ToString() => GameProfile?.Name ?? tcpClient.Client?.RemoteEndPoint?.ToString() ?? "Disposed?";

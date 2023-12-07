@@ -1,9 +1,20 @@
-﻿using System.Buffers;
+﻿using MinecraftProxy.Network.IO;
+using System.Buffers;
 
 namespace MinecraftProxy.Network;
 
 public static class MinecraftNetworkExtensions
 {
+    public static async ValueTask<MinecraftMessage> ReadMessageAsync(this Stream stream, int length, CancellationToken cancellationToken = default)
+    {
+        var memoryOwner = MemoryPool<byte>.Shared.Rent(length);
+        var memory = memoryOwner.Memory[..length];
+
+        await stream.ReadExactlyAsync(memory, cancellationToken);
+
+        return new(memory, memoryOwner);
+    }
+
     public static async ValueTask<int> ReadVarIntAsync(this Stream stream, CancellationToken cancellationToken = default)
     {
         int numRead = 0;

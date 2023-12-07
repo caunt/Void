@@ -58,18 +58,22 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
         var secret = Proxy.RSA.Decrypt(packet.SharedSecret, false);
         player.EnableEncryption(PacketDirection.Clientbound, secret);
 
+        var compressionPacket = new SetCompressionPacket { Threshold = Proxy.CompressionThreshold };
+        await player.SendPacketAsync(PacketDirection.Clientbound, compressionPacket);
+        player.EnableCompression(PacketDirection.Clientbound, Proxy.CompressionThreshold);
+
         await player.RequestGameProfileAsync(secret);
         await player.SendPacketAsync(PacketDirection.Serverbound, GenerateLoginStartPacket());
 
         return true;
     }
 
-    public Task<bool> HandleAsync(SetCompressionPacket packet)
+    public async Task<bool> HandleAsync(SetCompressionPacket packet)
     {
         if (packet.Threshold > 0)
             player.EnableCompression(PacketDirection.Serverbound, packet.Threshold);
 
-        return Task.FromResult(true); // enable compression only with server
+        return true; // we should complete encryption before sending compression packet
     }
 
     public Task<bool> HandleAsync(LoginSuccessPacket packet)
