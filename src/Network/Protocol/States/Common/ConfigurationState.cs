@@ -1,19 +1,12 @@
 ﻿using MinecraftProxy.Network.Protocol.Packets.Clientbound;
+using MinecraftProxy.Network.Protocol.Registry;
 using MinecraftProxy.Network.Protocol.States.Custom;
 
 namespace MinecraftProxy.Network.Protocol.States.Common;
 
 public class ConfigurationState(Player player) : ProtocolState, IPlayableState
 {
-    protected override Dictionary<int, Type> serverboundPackets => new()
-    {
-    };
-
-    protected override Dictionary<int, Type> clientboundPackets => new()
-    {
-        { 0x01, typeof(DisconnectPacket) },
-        { 0x02, typeof(FinishConfiguration) }
-    };
+    protected override StateRegistry Registry { get; } = Registries.ConfigurationStateRegistry;
 
     public Task<bool> HandleAsync(DisconnectPacket packet)
     {

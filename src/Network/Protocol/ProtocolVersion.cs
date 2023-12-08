@@ -4,8 +4,6 @@ public class ProtocolVersion
 {
     private static readonly Dictionary<int, ProtocolVersion> _mapping = [];
 
-    public static readonly ProtocolVersion UNKNOWN = new(-1, "Unknown");
-    public static readonly ProtocolVersion LEGACY = new(-2, "Legacy");
     public static readonly ProtocolVersion MINECRAFT_1_7_2 = new(4, "1.7.2", "1.7.3", "1.7.4", "1.7.5");
     public static readonly ProtocolVersion MINECRAFT_1_7_6 = new(5, "1.7.6", "1.7.7", "1.7.8", "1.7.9", "1.7.10");
     public static readonly ProtocolVersion MINECRAFT_1_8 = new(47, "1.8", "1.8.1", "1.8.2", "1.8.3", "1.8.4", "1.8.5", "1.8.6", "1.8.7", "1.8.8", "1.8.9");
@@ -50,6 +48,8 @@ public class ProtocolVersion
     public static ProtocolVersion Latest => _mapping.OrderByDescending(kv => kv.Key).First().Value;
     public static ProtocolVersion Oldest => _mapping.OrderBy(kv => kv.Key).First().Value;
     public static ProtocolVersion Get(int version) => _mapping[version];
+    public static IEnumerable<ProtocolVersion> Range() => Range(Oldest, Latest);
+    public static IEnumerable<ProtocolVersion> Range(ProtocolVersion start, ProtocolVersion end) => _mapping.Where(pair => pair.Key >= start.Version && pair.Key <= end.Version).Select(pair => pair.Value);
 
     public int Version { get; private set; }
     public string[] Names { get; private set; }
@@ -71,7 +71,7 @@ public class ProtocolVersion
 
     public IEnumerable<string> GetVersionsSupportedBy() => Names.AsReadOnly();
 
-    public int CompareTo(ProtocolVersion other)
+    public int CompareTo(ProtocolVersion? other)
     {
         if (other is null)
             return 1; // null is considered greater than non-null
@@ -87,7 +87,7 @@ public class ProtocolVersion
 
     public static bool operator <=(ProtocolVersion left, ProtocolVersion right) => left.CompareTo(right) <= 0;
 
-    public static bool operator ==(ProtocolVersion left, ProtocolVersion right)
+    public static bool operator ==(ProtocolVersion? left, ProtocolVersion? right)
     {
         if (left is null)
             return right is null;
@@ -95,7 +95,7 @@ public class ProtocolVersion
         return left.Equals(right);
     }
 
-    public static bool operator !=(ProtocolVersion left, ProtocolVersion right) => !(left == right);
+    public static bool operator !=(ProtocolVersion? left, ProtocolVersion? right) => !(left == right);
 
     public override bool Equals(object? obj)
     {
@@ -106,4 +106,6 @@ public class ProtocolVersion
     }
 
     public override int GetHashCode() => Version.GetHashCode();
+
+    public override string ToString() => GetVersionIntroducedIn();
 }

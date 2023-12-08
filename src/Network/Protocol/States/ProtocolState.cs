@@ -1,5 +1,6 @@
 ﻿using MinecraftProxy.Network.IO;
 using MinecraftProxy.Network.Protocol.Packets;
+using MinecraftProxy.Network.Protocol.Registry;
 
 namespace MinecraftProxy.Network.Protocol.States;
 
@@ -7,41 +8,31 @@ public interface IProtocolState { }
 
 public abstract class ProtocolState : IProtocolState
 {
-    protected abstract Dictionary<int, Type> clientboundPackets { get; }
-    protected abstract Dictionary<int, Type> serverboundPackets { get; }
+    protected abstract StateRegistry Registry { get; }
 
     public IMinecraftPacket<T>? Decode<T>(int packetId, PacketDirection direction, ref MinecraftBuffer buffer, ProtocolVersion protocolVersion) where T : ProtocolState
     {
-        var packets = direction switch
-        {
-            PacketDirection.Clientbound => clientboundPackets,
-            PacketDirection.Serverbound => serverboundPackets,
-            _ => throw new ArgumentException(nameof(direction))
-        };
+        var protocolRegistry = Registry.GetProtocolRegistry(direction, protocolVersion);
+        var packet = protocolRegistry.CreatePacket(packetId);
 
-        if (packetId == -1 || !packets.TryGetValue(packetId, out var packetType))
-            return null;
+        if (packet is null) 
+            return null; // packet not registered, proceed
 
-        var packet = Activator.CreateInstance(packetType) as IMinecraftPacket<T> ?? throw new Exception($"Cannot create instance of {packetType} packet");
         packet.Decode(ref buffer, protocolVersion);
 
         if (buffer.HasData)
             throw new IOException($"{direction} packet {packet} has extra data ({buffer.Position} < {buffer.Length})");
 
-        return packet;
+        return packet as IMinecraftPacket<T> ?? throw new Exception($"Cannot cast instance of {packetId} packet to {typeof(IMinecraftPacket<T>)}");
     }
 
-    public int? FindPacketId(PacketDirection direction, IMinecraftPacket packet)
+    public int? FindPacketId(PacketDirection direction, IMinecraftPacket packet, ProtocolVersion protocolVersion)
     {
-        var packets = direction switch
-        {
-            PacketDirection.Clientbound => clientboundPackets,
-            PacketDirection.Serverbound => serverboundPackets,
-            _ => throw new ArgumentException(nameof(direction))
-        };
+        var protocolRegistry = Registry.GetProtocolRegistry(direction, protocolVersion);
 
-        var packetType = packet.GetType();
+        if (protocolRegistry is null)
+            return null;
 
-        return packets.Where(x => x.Value == packetType).Select(x => x.Key).FirstOrDefault();
+        return protocolRegistry.GetPacketId(packet);
     }
 }

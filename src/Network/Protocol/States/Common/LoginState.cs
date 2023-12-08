@@ -2,29 +2,15 @@
 using MinecraftProxy.Network.Protocol.Packets;
 using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.Packets.Serverbound;
+using MinecraftProxy.Network.Protocol.Registry;
 using MinecraftProxy.Network.Protocol.States.Custom;
 
 namespace MinecraftProxy.Network.Protocol.States.Common;
 
 public class LoginState(Player player) : ProtocolState, IPlayableState
 {
-    protected override Dictionary<int, Type> serverboundPackets => new()
-    {
-        { 0x00, typeof(LoginStartPacket) },
-        { 0x01, typeof(EncryptionResponsePacket) },
-        { 0x02, typeof(LoginPluginResponse) },
-        { 0x03, typeof(LoginAcknowledgedPacket) }
-    };
-
-    protected override Dictionary<int, Type> clientboundPackets => new()
-    {
-        { 0x00, typeof(DisconnectPacket) },
-        { 0x01, typeof(EncryptionRequestPacket) },
-        { 0x02, typeof(LoginSuccessPacket) },
-        { 0x03, typeof(SetCompressionPacket) },
-        { 0x04, typeof(LoginPluginRequest) }
-    };
-
+    protected override StateRegistry Registry { get; } = Registries.LoginStateRegistry;
+    
     private byte[]? verifyToken;
 
     public async Task<bool> HandleAsync(LoginStartPacket packet)

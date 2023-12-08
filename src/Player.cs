@@ -10,7 +10,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text.Json;
-using System.Threading.Channels;
 
 namespace MinecraftProxy;
 
@@ -162,7 +161,7 @@ public class Player
         ArgumentNullException.ThrowIfNull(State);
         ArgumentNullException.ThrowIfNull(ProtocolVersion);
 
-        var id = State.FindPacketId(direction, packet);
+        var id = State.FindPacketId(direction, packet, ProtocolVersion);
 
         if (!id.HasValue)
             throw new Exception($"{packet.GetType().Name} packet id not found in {State.GetType().Name}");

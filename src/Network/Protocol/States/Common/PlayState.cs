@@ -1,5 +1,6 @@
 ﻿using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.Packets.Serverbound;
+using MinecraftProxy.Network.Protocol.Registry;
 using MinecraftProxy.Network.Protocol.States.Custom;
 using Nito.Disposables.Internals;
 
@@ -7,16 +8,7 @@ namespace MinecraftProxy.Network.Protocol.States.Common;
 
 public class PlayState(Player player) : ProtocolState, IPlayableState
 {
-    protected override Dictionary<int, Type> serverboundPackets => new()
-    {
-        { 0x06, typeof(PlayerSessionPacket) }
-    };
-
-    protected override Dictionary<int, Type> clientboundPackets => new()
-    {
-        { 0x1B, typeof(DisconnectPacket) },
-        { 0x3C, typeof(PlayerInfoUpdatePacket) }
-    };
+    protected override StateRegistry Registry { get; } = Registries.PlayStateRegistry;
 
     public Task<bool> HandleAsync(DisconnectPacket packet)
     {

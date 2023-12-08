@@ -1,17 +1,11 @@
 ﻿using MinecraftProxy.Network.Protocol.Packets.Serverbound;
+using MinecraftProxy.Network.Protocol.Registry;
 
 namespace MinecraftProxy.Network.Protocol.States.Common;
 
 public class HandshakeState(Player player) : ProtocolState
 {
-    protected override Dictionary<int, Type> serverboundPackets => new()
-    {
-        { 0x00, typeof(HandshakePacket) }
-    };
-
-    protected override Dictionary<int, Type> clientboundPackets => new()
-    {
-    };
+    protected override StateRegistry Registry { get; } = Registries.HandshakeStateRegistry;
 
     public Task<bool> HandleAsync(HandshakePacket packet)
     {
