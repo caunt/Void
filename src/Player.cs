@@ -198,8 +198,6 @@ public class Player
         var serverTask = ProcessPacketsAsync<ProtocolState>(serverChannel, clientChannel, "Server", cts.Token);
         var completedTask = await Task.WhenAny(serverTask, clientTask);
 
-        cts.Cancel();
-
         if (completedTask.IsFaulted && completedTask.Exception.InnerExceptions.All(exception => exception is not EndOfStreamException and not IOException))
             Console.WriteLine($"Unhandled exception while reading {(completedTask == serverTask ? "Server" : "Client")} channel ({this}):\n{completedTask.Exception}");
 
@@ -208,7 +206,10 @@ public class Player
         var disconnectTask = await Task.WhenAny(completedTask == serverTask ? clientTask : serverTask, timeout);
 
         if (disconnectTask == timeout)
+        {
+            cts.Cancel();
             Console.WriteLine($"Timed out waiting {(completedTask == serverTask ? "Client" : "Server")} disconnection");
+        }
 
         Console.WriteLine($"Stopped forwarding traffic from/to {this}");
 
@@ -256,6 +257,7 @@ public class Player
 
             if (packet is DisconnectPacket disconnect)
             {
+                await destinationChannel.FlushAsync(cancellationToken);
                 Console.WriteLine($"Player {this} disconnected from server: {disconnect.Reason}");
                 break;
             }

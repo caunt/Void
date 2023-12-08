@@ -30,6 +30,11 @@ public class MinecraftChannel(Stream baseStream)
         packetStream = new PacketStream(baseStream);
     }
 
+    public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
+    {
+        await packetStream.FlushAsync(cancellationToken);
+    }
+
     public async ValueTask<MinecraftMessage> ReadMessageAsync(CancellationToken cancellationToken = default)
     {
         return await packetStream.ReadPacketAsync(cancellationToken);

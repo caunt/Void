@@ -45,7 +45,7 @@ public class ProtocolVersion
     public static readonly ProtocolVersion MINECRAFT_1_19_4 = new(762, "1.19.4");
     public static readonly ProtocolVersion MINECRAFT_1_20 = new(763, "1.20", "1.20.1");
     public static readonly ProtocolVersion MINECRAFT_1_20_2 = new(764, "1.20.2");
-    public static readonly ProtocolVersion MINECRAFT_1_20_3 = new(765, "1.20.3");
+    public static readonly ProtocolVersion MINECRAFT_1_20_3 = new(765, "1.20.3", "1.20.4");
 
     public static ProtocolVersion Latest => _mapping.OrderByDescending(kv => kv.Key).First().Value;
     public static ProtocolVersion Oldest => _mapping.OrderBy(kv => kv.Key).First().Value;
@@ -70,4 +70,40 @@ public class ProtocolVersion
     public string GetMostRecentSupportedVersion() => Names[^1];
 
     public IEnumerable<string> GetVersionsSupportedBy() => Names.AsReadOnly();
+
+    public int CompareTo(ProtocolVersion other)
+    {
+        if (other is null)
+            return 1; // null is considered greater than non-null
+
+        return Version.CompareTo(other.Version);
+    }
+
+    public static bool operator >(ProtocolVersion left, ProtocolVersion right) => left.CompareTo(right) > 0;
+
+    public static bool operator <(ProtocolVersion left, ProtocolVersion right) => left.CompareTo(right) < 0;
+
+    public static bool operator >=(ProtocolVersion left, ProtocolVersion right) => left.CompareTo(right) >= 0;
+
+    public static bool operator <=(ProtocolVersion left, ProtocolVersion right) => left.CompareTo(right) <= 0;
+
+    public static bool operator ==(ProtocolVersion left, ProtocolVersion right)
+    {
+        if (left is null)
+            return right is null;
+
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(ProtocolVersion left, ProtocolVersion right) => !(left == right);
+
+    public override bool Equals(object? obj)
+    {
+        if (obj == null || obj is not ProtocolVersion)
+            return false;
+
+        return Version == ((ProtocolVersion)obj).Version;
+    }
+
+    public override int GetHashCode() => Version.GetHashCode();
 }

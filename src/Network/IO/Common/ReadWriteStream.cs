@@ -1,4 +1,4 @@
-﻿namespace MinecraftProxy.Network.IO;
+﻿namespace MinecraftProxy.Network.IO.Common;
 
 internal class ReadWriteStream(Stream readStream, Stream writeStream) : Stream
 {

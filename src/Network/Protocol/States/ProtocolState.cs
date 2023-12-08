@@ -19,14 +19,14 @@ public abstract class ProtocolState : IProtocolState
             _ => throw new ArgumentException(nameof(direction))
         };
 
-        if (packetId == -1 || !packets.TryGetValue(packetId, out Type? packetType))
+        if (packetId == -1 || !packets.TryGetValue(packetId, out var packetType))
             return null;
 
         var packet = Activator.CreateInstance(packetType) as IMinecraftPacket<T> ?? throw new Exception($"Cannot create instance of {packetType} packet");
         packet.Decode(ref buffer, protocolVersion);
 
         if (buffer.HasData)
-            throw new IOException($"{direction} packet {packetType.Name} has extra data ({buffer.Position} < {buffer.Length})");
+            throw new IOException($"{direction} packet {packet} has extra data ({buffer.Position} < {buffer.Length})");
 
         return packet;
     }

@@ -1,4 +1,5 @@
-﻿using System.Buffers;
+﻿using Microsoft.Diagnostics.Tracing.Utilities;
+using System.Buffers;
 using System.Security.Cryptography;
 
 namespace MinecraftProxy.Network.IO.Encryption;
@@ -35,11 +36,13 @@ public class AesCfb8Stream : Stream
 
     public override long Position { get => _baseStream.Position; set => _baseStream.Position = value; }
 
-    public override void Flush() => _baseStream.Flush();
-
     public override long Seek(long offset, SeekOrigin origin) => _baseStream.Seek(offset, origin);
 
     public override void SetLength(long value) => _baseStream.SetLength(value);
+
+    public override void Flush() => _baseStream.Flush();
+
+    public override async Task FlushAsync(CancellationToken cancellationToken) => await _baseStream.FlushAsync(cancellationToken);
 
     public override int ReadByte() => throw new NotSupportedException("Use async methods instead");
 

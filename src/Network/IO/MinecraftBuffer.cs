@@ -211,6 +211,11 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         }
     }
 
+    public Span<byte> ReadToEnd()
+    {
+        return Read((int)Length - Position);
+    }
+
     public Span<byte> Read(int length)
     {
         if (Length < Position + length)

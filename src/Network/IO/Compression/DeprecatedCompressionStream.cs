@@ -15,8 +15,6 @@ public class DeprecatedCompressionStream(Stream baseStream, int threshold) : Str
 
     public override long Position { get => baseStream.Position; set => baseStream.Position = value; }
 
-    public override void Flush() => baseStream.Flush();
-
     public override long Seek(long offset, SeekOrigin origin) => baseStream.Seek(offset, origin);
 
     public override void SetLength(long value) => baseStream.SetLength(value);
@@ -24,6 +22,10 @@ public class DeprecatedCompressionStream(Stream baseStream, int threshold) : Str
     public override int Read(byte[] buffer, int offset, int count) => throw new NotImplementedException();
 
     public override void Write(byte[] buffer, int offset, int count) => throw new NotImplementedException();
+
+    public override void Flush() => baseStream.Flush();
+
+    public override async Task FlushAsync(CancellationToken cancellationToken) => await baseStream.FlushAsync(cancellationToken);
 
     public override ValueTask<int> ReadAsync(Memory<byte> output, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
