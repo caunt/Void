@@ -54,7 +54,7 @@ public class IdentifiedKey(IdentifiedKeyRevision revision, long expiresAt, byte[
 
     private bool ValidateData(Guid guid)
     {
-        if (revision == IdentifiedKeyRevision.GENERIC_V1) // not tested
+        if (revision == IdentifiedKeyRevision.GENERIC_V1)
         {
             var publicKeyText = $"-----BEGIN RSA PUBLIC KEY-----\n{Convert.ToBase64String(PublicKey, Base64FormattingOptions.InsertLineBreaks)}\n-----END RSA PUBLIC KEY-----\n";
             var verify = Encoding.ASCII.GetBytes(ExpiresAt + publicKeyText.Replace("\r", string.Empty));
