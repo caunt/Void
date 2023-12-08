@@ -8,6 +8,7 @@ using MinecraftProxy.Network.Protocol.States.Common;
 using System.Buffers;
 using System.Net;
 using System.Net.Sockets;
+using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -64,7 +65,7 @@ public class Player
             _ => throw new ArgumentOutOfRangeException(nameof(state))
         };
 
-        Console.WriteLine($"Player {this} switch state to {State.GetType().Name}");
+        Proxy.Logger.Information($"Player {this} switch state to {State.GetType().Name}");
 
         return State;
     }
@@ -81,7 +82,7 @@ public class Player
         ArgumentNullException.ThrowIfNull(channel);
 
         channel.EnableEncryption(secret);
-        Console.WriteLine($"Player {this} enabled {direction} encryption");
+        Proxy.Logger.Information($"Player {this} enabled {direction} encryption");
     }
 
     public void EnableCompression(PacketDirection direction, int threshold)
@@ -96,7 +97,7 @@ public class Player
         ArgumentNullException.ThrowIfNull(channel);
 
         channel.EnableCompression(threshold);
-        Console.WriteLine($"Player {this} enabled {direction} compression");
+        Proxy.Logger.Information($"Player {this} enabled {direction} compression");
     }
 
     public void SetIdentifiedKey(IdentifiedKey identifiedKey)
@@ -166,7 +167,7 @@ public class Player
         if (!id.HasValue)
             throw new Exception($"{packet.GetType().Name} packet id not found in {State.GetType().Name}");
 
-        Console.WriteLine($"Sending {packet.GetType().Name} to {direction}");
+        Proxy.Logger.Information($"Sending {packet.GetType().Name} to {direction}");
 
         var channel = direction switch
         {
@@ -198,7 +199,7 @@ public class Player
         var completedTask = await Task.WhenAny(serverTask, clientTask);
 
         if (completedTask.IsFaulted && completedTask.Exception.InnerExceptions.All(exception => exception is not EndOfStreamException and not IOException))
-            Console.WriteLine($"Unhandled exception while reading {(completedTask == serverTask ? "Server" : "Client")} channel ({this}):\n{completedTask.Exception}");
+            Proxy.Logger.Information($"Unhandled exception while reading {(completedTask == serverTask ? "Server" : "Client")} channel ({this}):\n{completedTask.Exception}");
 
         // graceful opposite disconnection timeout
         var timeout = Task.Delay(5000);
@@ -207,10 +208,10 @@ public class Player
         if (disconnectTask == timeout)
         {
             cts.Cancel();
-            Console.WriteLine($"Timed out waiting {(completedTask == serverTask ? "Client" : "Server")} disconnection");
+            Proxy.Logger.Information($"Timed out waiting {(completedTask == serverTask ? "Client" : "Server")} disconnection");
         }
 
-        Console.WriteLine($"Stopped forwarding traffic from/to {this}");
+        Proxy.Logger.Information($"Stopped forwarding traffic from/to {this}");
 
         forwardClient.Close();
         tcpClient.Close();
@@ -230,13 +231,16 @@ public class Player
             _ => throw new ArgumentException(sourceIdentifier)
         };
 
+        var isJoining = true;
         while (sourceChannel.CanRead && sourceChannel.CanWrite && destinationChannel.CanRead && destinationChannel.CanWrite)
         {
+            int length;
             int packetId;
             IMinecraftPacket? packet;
 
             using (var message = await sourceChannel.ReadMessageAsync(cancellationToken))
             {
+                length = message.Length;
                 (packetId, packet, var handleTask) = DecodeMessage(State, message, direction, ProtocolVersion);
 
                 if (packet is null)
@@ -249,7 +253,7 @@ public class Player
                     continue;
             }
 
-            using (var message = EncodeMessage(packetId, packet, direction, ProtocolVersion))
+            using (var message = EncodeMessage(packetId, packet, direction, ProtocolVersion, length + 2048))
             {
                 await destinationChannel.WriteMessageAsync(message, cancellationToken);
             }
@@ -257,7 +261,7 @@ public class Player
             if (packet is DisconnectPacket disconnect)
             {
                 await destinationChannel.FlushAsync(cancellationToken);
-                Console.WriteLine($"Player {this} disconnected from server: {disconnect.Reason}");
+                Proxy.Logger.Information($"Player {this} disconnected from server: {disconnect.Reason}");
                 break;
             }
         }
@@ -267,7 +271,7 @@ public class Player
     {
         var buffer = new MinecraftBuffer(message.Memory);
         var packetId = message.PacketId;
-        Console.WriteLine($"Decoding {direction} 0x{packetId:X2} packet");
+        Proxy.Logger.Verbose($"Decoding {direction} 0x{packetId:X2} packet");
 
         try
         {
@@ -282,16 +286,16 @@ public class Player
         }
         catch (Exception exception)
         {
-            Console.WriteLine($"Couldn't decode packet: {exception}");
+            Proxy.Logger.Information($"Couldn't decode packet: {exception}");
             return (packetId, null, Task.FromResult(false));
         }
     }
 
-    protected static MinecraftMessage EncodeMessage(int packetId, IMinecraftPacket packet, PacketDirection direction, ProtocolVersion protocolVersion)
+    protected static MinecraftMessage EncodeMessage(int packetId, IMinecraftPacket packet, PacketDirection direction, ProtocolVersion protocolVersion, int sizeHint = 2048)
     {
-        var memoryOwner = MemoryPool<byte>.Shared.Rent(2048);
+        var memoryOwner = MemoryPool<byte>.Shared.Rent(sizeHint);
         var buffer = new MinecraftBuffer(memoryOwner.Memory);
-        Console.WriteLine($"Encoding {direction} 0x{packetId:X2} packet {JsonSerializer.Serialize(packet as object, Proxy.JsonSerializerOptions)}");
+        Proxy.Logger.Verbose($"Encoding {direction} 0x{packetId:X2} packet {JsonSerializer.Serialize(packet as object, Proxy.JsonSerializerOptions)}");
 
         packet.Encode(ref buffer, protocolVersion);
 

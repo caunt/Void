@@ -1,5 +1,4 @@
-﻿using Microsoft.Diagnostics.Tracing.Utilities;
-using System.Buffers;
+﻿using System.Buffers;
 using System.Security.Cryptography;
 
 namespace MinecraftProxy.Network.IO.Encryption;

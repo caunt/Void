@@ -62,7 +62,7 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
         return true; // we should complete encryption before sending compression packet
     }
 
-    public Task<bool> HandleAsync(LoginSuccessPacket packet)
+    public async Task<bool> HandleAsync(LoginSuccessPacket packet)
     {
         if (player.GameProfile is null)
             throw new Exception("Game profile not loaded yet");
@@ -83,7 +83,10 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
             player.GameProfile.Properties = packet.Properties;
         }
 
-        return Task.FromResult(false);
+        if (player.ProtocolVersion < ProtocolVersion.MINECRAFT_1_20_2)
+            player.SwitchState(4);
+
+        return false;
     }
 
     public Task<bool> HandleAsync(LoginAcknowledgedPacket packet)

@@ -45,4 +45,9 @@ public class PlayState(Player player) : ProtocolState, IPlayableState
 
         return Task.FromResult(false);
     }
+
+    public Task<bool> HandleAsync(JoinGamePacket packet)
+    {
+        return Task.FromResult(false);
+    }
 }
