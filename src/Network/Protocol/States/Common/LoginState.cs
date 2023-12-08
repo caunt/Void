@@ -64,7 +64,7 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(salt);
 
-            if (!player.IdentifiedKey.VerifyDataSignature(packet.VerifyToken, [..verifyToken, ..salt]))
+            if (!player.IdentifiedKey.VerifyDataSignature(packet.VerifyToken, [.. verifyToken, .. salt]))
                 throw new Exception("Invalid client public signature");
         }
         else
@@ -76,9 +76,12 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
         var secret = Proxy.RSA.Decrypt(packet.SharedSecret, false);
         player.EnableEncryption(PacketDirection.Clientbound, secret);
 
-        var compressionPacket = new SetCompressionPacket { Threshold = Proxy.CompressionThreshold };
-        await player.SendPacketAsync(PacketDirection.Clientbound, compressionPacket);
-        player.EnableCompression(PacketDirection.Clientbound, Proxy.CompressionThreshold);
+        if (player.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_8)
+        {
+            var compressionPacket = new SetCompressionPacket { Threshold = Proxy.CompressionThreshold };
+            await player.SendPacketAsync(PacketDirection.Clientbound, compressionPacket);
+            player.EnableCompression(PacketDirection.Clientbound, Proxy.CompressionThreshold);
+        }
 
         await player.RequestGameProfileAsync(secret);
         await player.SendPacketAsync(PacketDirection.Serverbound, GenerateLoginStartPacket());

@@ -172,7 +172,6 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
     {
         var span = Span.Slice(Position, 4);
         Position += 4;
-        
         BitConverter.GetBytes(value).CopyTo(span);
     }
 

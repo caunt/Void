@@ -12,10 +12,23 @@ public struct EncryptionRequestPacket : IMinecraftPacket<LoginState>
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         buffer.WriteString(ServerId ?? string.Empty);
-        buffer.WriteVarInt(PublicKey.Length);
-        buffer.Write(PublicKey);
-        buffer.WriteVarInt(VerifyToken.Length);
-        buffer.Write(VerifyToken);
+
+        if (protocolVersion >= ProtocolVersion.MINECRAFT_1_8)
+        {
+            buffer.WriteVarInt(PublicKey.Length);
+            buffer.Write(PublicKey);
+
+            buffer.WriteVarInt(VerifyToken.Length);
+            buffer.Write(VerifyToken);
+        }
+        else
+        {
+            buffer.WriteExtendedForgeShort(PublicKey.Length);
+            buffer.Write(PublicKey);
+
+            buffer.WriteExtendedForgeShort(VerifyToken.Length);
+            buffer.Write(VerifyToken);
+        }
     }
 
     public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
@@ -24,10 +37,21 @@ public struct EncryptionRequestPacket : IMinecraftPacket<LoginState>
     {
         ServerId = buffer.ReadString();
 
-        var publicKeyLength = buffer.ReadVarInt();
-        PublicKey = buffer.Read(publicKeyLength).ToArray();
+        if (protocolVersion >= ProtocolVersion.MINECRAFT_1_8)
+        {
+            var publicKeyLength = buffer.ReadVarInt();
+            PublicKey = buffer.Read(publicKeyLength).ToArray();
 
-        var verifyTokenLength = buffer.ReadVarInt();
-        VerifyToken = buffer.Read(verifyTokenLength).ToArray();
+            var verifyTokenLength = buffer.ReadVarInt();
+            VerifyToken = buffer.Read(verifyTokenLength).ToArray();
+        }
+        else
+        {
+            var publicKeyLength = buffer.ReadExtendedForgeShort();
+            PublicKey = buffer.Read(publicKeyLength).ToArray();
+
+            var verifyTokenLength = buffer.ReadExtendedForgeShort();
+            VerifyToken = buffer.Read(verifyTokenLength).ToArray();
+        }
     }
 }
