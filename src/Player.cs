@@ -284,7 +284,7 @@ public class Player
         catch (Exception exception)
         {
             Console.WriteLine($"Couldn't decode packet: {exception}");
-            return (-1, null, Task.FromResult(false));
+            return (packetId, null, Task.FromResult(false));
         }
     }
 
