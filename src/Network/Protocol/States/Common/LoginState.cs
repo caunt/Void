@@ -1,4 +1,5 @@
-﻿using MinecraftProxy.Network.Protocol.Forwarding;
+﻿using MinecraftProxy.Models;
+using MinecraftProxy.Network.Protocol.Forwarding;
 using MinecraftProxy.Network.Protocol.Packets;
 using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.Packets.Serverbound;
@@ -21,6 +22,21 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
             Name = packet.Username
         });
 
+        if (packet.IdentifiedKey is not null)
+        {
+            if (packet.IdentifiedKey.ExpiresAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+                throw new Exception("multiplayer.disconnect.invalid_public_key_signature");
+
+            var isKeyValid = packet.IdentifiedKey.Revision == IdentifiedKeyRevision.LINKED_V2 ?
+                packet.IdentifiedKey.AddGuid(packet.Guid) :
+                packet.IdentifiedKey.IsSignatureValid.HasValue && packet.IdentifiedKey.IsSignatureValid.Value;
+
+            if (!isKeyValid)
+                throw new Exception("multiplayer.disconnect.invalid_public_key");
+
+            player.SetIdentifiedKey(packet.IdentifiedKey);
+        }
+
         var encryptionRequestPacket = GenerateEncryptionRequest();
         verifyToken = encryptionRequestPacket.VerifyToken;
 
@@ -38,8 +54,24 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
         if (verifyToken is null)
             throw new Exception("Encryption verify token is not set yet");
 
-        if (!Proxy.RSA.Decrypt(packet.VerifyToken, false).SequenceEqual(verifyToken))
-            throw new Exception("Unable to verify encryption token");
+        if (packet.Salt.HasValue)
+        {
+            if (player.IdentifiedKey is null)
+                throw new Exception($"Encryption response received but IdentifiedKey still not available for player");
+
+            var salt = BitConverter.GetBytes(packet.Salt.Value);
+
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(salt);
+
+            if (!player.IdentifiedKey.VerifyDataSignature(packet.VerifyToken, [..verifyToken, ..salt]))
+                throw new Exception("Invalid client public signature");
+        }
+        else
+        {
+            if (!Proxy.RSA.Decrypt(packet.VerifyToken, false).SequenceEqual(verifyToken))
+                throw new Exception("Unable to verify encryption token");
+        }
 
         var secret = Proxy.RSA.Decrypt(packet.SharedSecret, false);
         player.EnableEncryption(PacketDirection.Clientbound, secret);
@@ -142,7 +174,8 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
         return new()
         {
             Guid = player.GameProfile.Id,
-            Username = player.GameProfile.Name
+            Username = player.GameProfile.Name,
+            IdentifiedKey = player.IdentifiedKey
         };
     }
 

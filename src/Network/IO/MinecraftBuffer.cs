@@ -1,4 +1,5 @@
 ﻿using MinecraftProxy.Models;
+using MinecraftProxy.Network.Protocol;
 using MinecraftProxy.Utils;
 using System.Buffers;
 using System.Buffers.Binary;
@@ -97,6 +98,34 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         BinaryPrimitives.WriteUInt16BigEndian(span, value);
     }
 
+    public int ReadExtendedForgeShort()
+    {
+        var low = ReadUnsignedShort();
+        var high = 0;
+
+        if ((low & 0x8000) != 0)
+        {
+            low &= 0x7FFF;
+            high = ReadUnsignedByte();
+        }
+
+        return ((high & 0xFF) << 15) | low;
+    }
+
+    public void WriteExtendedForgeShort(int value)
+    {
+        var low = (ushort)(value & 0x7FFF);
+        var high = (byte)((value & 0x7F8000) >> 15);
+
+        if (high != 0)
+            low |= 0x8000;
+
+        WriteUnsignedShort(low);
+
+        if (high != 0)
+            WriteUnsignedByte(high);
+    }
+
     public string ReadString(int maxLength = 32767)
     {
         var length = ReadVarInt();
@@ -158,12 +187,11 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         BinaryPrimitives.WriteInt64BigEndian(span, value);
     }
 
-    public IdentifiedKey ReadIdentifiedKey() => new()
-    {
-        ExpiresAt = ReadLong(),
-        PublicKey = Read(ReadVarInt()).ToArray(),
-        KeySignature = Read(ReadVarInt()).ToArray()
-    };
+    public IdentifiedKey ReadIdentifiedKey(ProtocolVersion protocolVersion) => new(
+        revision: protocolVersion == ProtocolVersion.MINECRAFT_1_19 ? IdentifiedKeyRevision.GENERIC_V1 : IdentifiedKeyRevision.LINKED_V2,
+        expiresAt: ReadLong(),
+        publicKey: Read(ReadVarInt()).ToArray(),
+        signature: Read(ReadVarInt()).ToArray());
 
     public void WriteIdentifiedKey(IdentifiedKey identifiedKey)
     {
@@ -172,8 +200,8 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         WriteVarInt(identifiedKey.PublicKey.Length);
         Write(identifiedKey.PublicKey);
 
-        WriteVarInt(identifiedKey.KeySignature.Length);
-        Write(identifiedKey.KeySignature);
+        WriteVarInt(identifiedKey.Signature.Length);
+        Write(identifiedKey.Signature);
     }
 
     public List<Property> ReadPropertyList(int count = -1)

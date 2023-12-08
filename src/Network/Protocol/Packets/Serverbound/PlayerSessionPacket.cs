@@ -20,7 +20,7 @@ public struct PlayerSessionPacket : IMinecraftPacket<PlayState>
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         SessionId = buffer.ReadGuid();
-        IdentifiedKey = buffer.ReadIdentifiedKey();
+        IdentifiedKey = buffer.ReadIdentifiedKey(protocolVersion);
     }
 }
 

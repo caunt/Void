@@ -1,7 +1,6 @@
 ﻿using MinecraftProxy.Models;
 using MinecraftProxy.Network.IO;
 using MinecraftProxy.Network.Protocol.States.Common;
-using System;
 
 namespace MinecraftProxy.Network.Protocol.Packets.Serverbound;
 
@@ -15,8 +14,7 @@ public struct LoginStartPacket : IMinecraftPacket<LoginState>
     {
         buffer.WriteString(Username);
 
-
-        if (protocolVersion > ProtocolVersion.MINECRAFT_1_19)
+        if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19)
         {
             if (protocolVersion < ProtocolVersion.MINECRAFT_1_19_3)
             {
@@ -39,11 +37,10 @@ public struct LoginStartPacket : IMinecraftPacket<LoginState>
 
             if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19_1)
             {
-                if (IdentifiedKey != null/* && IdentifiedKey.GetSignatureHolder() != null*/)
+                if (IdentifiedKey != null && IdentifiedKey.Guid.HasValue)
                 {
-                    throw new NotImplementedException();
-                    // buffer.WriteBoolean(true);
-                    // buffer.WriteGuid(IdentifiedKey.GetSignatureHolder());
+                    buffer.WriteBoolean(true);
+                    buffer.WriteGuid(IdentifiedKey.Guid.Value);
                 }
                 else if (Guid != default)
                 {
@@ -74,7 +71,7 @@ public struct LoginStartPacket : IMinecraftPacket<LoginState>
             {
                 if (buffer.ReadBoolean())
                 {
-                    IdentifiedKey = buffer.ReadIdentifiedKey();
+                    IdentifiedKey = buffer.ReadIdentifiedKey(protocolVersion);
                 }
                 else
                 {

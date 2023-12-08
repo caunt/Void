@@ -130,7 +130,7 @@ public struct PlayerInfoUpdatePacket : IMinecraftPacket<PlayState>
                 return;
 
             SessionId = buffer.ReadGuid();
-            IdentifiedKey = buffer.ReadIdentifiedKey();
+            IdentifiedKey = buffer.ReadIdentifiedKey(protocolVersion);
         }
 
         public override void Encode(ref MinecraftBuffer buffer)

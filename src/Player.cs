@@ -8,7 +8,6 @@ using MinecraftProxy.Network.Protocol.States.Common;
 using System.Buffers;
 using System.Net;
 using System.Net.Sockets;
-using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -152,7 +151,13 @@ public class Player
         if (response.StatusCode is HttpStatusCode.NoContent)
             throw new Exception("Offline user connected to online-mode proxy");
 
-        GameProfile = JsonSerializer.Deserialize<GameProfile>(await response.Content.ReadAsStreamAsync(), new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+        GameProfile = JsonSerializer.Deserialize<GameProfile>(await response.Content.ReadAsStreamAsync(), Proxy.JsonSerializerOptions);
+
+        if (GameProfile != null && IdentifiedKey != null && IdentifiedKey.Revision == IdentifiedKeyRevision.LINKED_V2)
+        {
+            if (!IdentifiedKey.AddGuid(GameProfile.Id))
+                throw new Exception("multiplayer.disconnect.invalid_public_key");
+        }
 
         return GameProfile;
     }
@@ -167,7 +172,7 @@ public class Player
         if (!id.HasValue)
             throw new Exception($"{packet.GetType().Name} packet id not found in {State.GetType().Name}");
 
-        Proxy.Logger.Information($"Sending {packet.GetType().Name} to {direction}");
+        Proxy.Logger.Debug($"Sending {packet.GetType().Name} to {direction} player {this}");
 
         var channel = direction switch
         {
@@ -231,7 +236,6 @@ public class Player
             _ => throw new ArgumentException(sourceIdentifier)
         };
 
-        var isJoining = true;
         while (sourceChannel.CanRead && sourceChannel.CanWrite && destinationChannel.CanRead && destinationChannel.CanWrite)
         {
             int length;
