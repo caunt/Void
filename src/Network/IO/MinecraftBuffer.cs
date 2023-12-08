@@ -161,6 +161,21 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         WriteUnsignedByte((byte)(value ? 0x01 : 0x00));
     }
 
+    public int ReadInt()
+    {
+        var span = Span.Slice(Position, 4);
+        Position += 4;
+        return BitConverter.ToInt32(span);
+    }
+
+    public void WriteInt(int value)
+    {
+        var span = Span.Slice(Position, 4);
+        Position += 4;
+        
+        BitConverter.GetBytes(value).CopyTo(span);
+    }
+
     public Guid ReadGuid() => GuidHelper.FromLongs(ReadLong(), ReadLong());
 
     public void WriteGuid(Guid value)
@@ -173,6 +188,30 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         {
             Write(value.ToByteArray(true));
         }
+    }
+
+    public Guid ReadGuidIntArray()
+    {
+        long msbHigh = (long)ReadInt() << 32;
+        long msbLow = (long)ReadInt() & 0xFFFFFFFFL;
+        long msb = msbHigh | msbLow;
+        long lsbHigh = (long)ReadInt() << 32;
+        long lsbLow = (long)ReadInt() & 0xFFFFFFFFL;
+        long lsb = lsbHigh | lsbLow;
+
+        return GuidHelper.FromLongs(msb, lsb);
+    }
+
+    public void WriteGuidIntArray(Guid value)
+    {
+        var bytes = value.ToByteArray();
+        var msb = BitConverter.ToUInt64(bytes, 0);
+        var lsb = BitConverter.ToUInt64(bytes, 8);
+
+        WriteInt((int)(msb >> 32));
+        WriteInt((int)msb);
+        WriteInt((int)(lsb >> 32));
+        WriteInt((int)lsb);
     }
 
     public long ReadLong()

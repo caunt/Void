@@ -58,6 +58,7 @@ public class Player
         State = state switch
         {
             0 => new HandshakeState(this),
+            1 => throw new NotImplementedException("Ping state not implemented yet"),
             2 => new LoginState(this),
             3 => new ConfigurationState(this),
             4 => new PlayState(this),
