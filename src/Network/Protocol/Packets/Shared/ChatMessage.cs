@@ -9,8 +9,14 @@ public interface IChatMessage
     public string Message { get; set; }
 }
 
-public struct ChatMessage : IMinecraftPacket<PlayState>, IChatMessage
+public interface IChatCommand
 {
+    public string Command { get; set; }
+}
+
+public struct ChatMessage : IMinecraftPacket<PlayState>, IChatMessage, IChatCommand
+{
+    public string Command { get => Message.TrimStart('/'); set => Message = "/" + value; }
     public string Message { get; set; }
     public ChatMessageType Type { get; set; }
     public Guid? Sender { get; set; }
@@ -34,7 +40,7 @@ public struct ChatMessage : IMinecraftPacket<PlayState>, IChatMessage
         }
     }
 
-    public async Task<bool> HandleAsync(PlayState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(PlayState state) => await (Message.StartsWith('/') ? state.HandleAsync(this as IChatCommand) : state.HandleAsync(this as IChatMessage));
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {

@@ -4,23 +4,26 @@ using MinecraftProxy.Network.Protocol.States.Common;
 
 namespace MinecraftProxy.Network.Protocol.Packets.Serverbound;
 
-public struct SessionChatMessage : IMinecraftPacket<PlayState>, IChatMessage
+public struct SessionChatCommand : IMinecraftPacket<PlayState>, IChatCommand
 {
-    public string Message { get; set; }
+    public string Command { get; set; }
     public long Timestamp { get; set; }
     public long Salt { get; set; }
-    public byte[]? Signature { get; set; }
+    public Dictionary<string, byte[]> Arguments { get; set; }
     public SessionLastSeenMessages SessionLastSeenMessages { get; set; }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        buffer.WriteString(Message);
+        buffer.WriteString(Command);
         buffer.WriteLong(Timestamp);
         buffer.WriteLong(Salt);
-        buffer.WriteBoolean(Signature != null);
 
-        if (Signature != null)
-            buffer.Write(Signature);
+        buffer.WriteVarInt(Arguments.Count);
+        foreach (var (argument, signature) in Arguments)
+        {
+            buffer.WriteString(argument);
+            buffer.Write(signature);
+        }
 
         SessionLastSeenMessages.Encode(ref buffer);
     }
@@ -29,12 +32,17 @@ public struct SessionChatMessage : IMinecraftPacket<PlayState>, IChatMessage
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        Message = buffer.ReadString(256);
+        Command = buffer.ReadString(256);
         Timestamp = buffer.ReadLong();
         Salt = buffer.ReadLong();
 
-        if (buffer.ReadBoolean())
-            Signature = buffer.Read(256).ToArray();
+        var size = buffer.ReadVarInt();
+        if (size > 8)
+            throw new Exception($"Too many argument signatures, {size} is above limit 8");
+
+        Arguments = new(size);
+        for (int i = 0; i < size; i++)
+            Arguments.Add(buffer.ReadString(), buffer.Read(256).ToArray());
 
         SessionLastSeenMessages = new SessionLastSeenMessages(ref buffer);
     }

@@ -55,6 +55,11 @@ public static class Registries
             new PacketMapping(0x05, false, ProtocolVersion.MINECRAFT_1_19_1, ProtocolVersion.MINECRAFT_1_19_1));
         PlayStateRegistry.Serverbound.Register<SessionChatMessage>(() => new(),
             new PacketMapping(0x05, false, ProtocolVersion.MINECRAFT_1_19_3, ProtocolVersion.MINECRAFT_1_20_3));
+        PlayStateRegistry.Serverbound.Register<KeyedChatCommand>(() => new(),
+            new PacketMapping(0x03, false, ProtocolVersion.MINECRAFT_1_19),
+            new PacketMapping(0x04, false, ProtocolVersion.MINECRAFT_1_19_1, ProtocolVersion.MINECRAFT_1_19_1));
+        PlayStateRegistry.Serverbound.Register<SessionChatCommand>(() => new(),
+            new PacketMapping(0x04, false, ProtocolVersion.MINECRAFT_1_19_3));
         PlayStateRegistry.Clientbound.Register<ChatMessage>(() => new(Direction.Clientbound),
             new PacketMapping(0x02, true, ProtocolVersion.MINECRAFT_1_7_2),
             new PacketMapping(0x0F, true, ProtocolVersion.MINECRAFT_1_9),

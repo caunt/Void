@@ -94,4 +94,10 @@ public class PlayState(Player player, Server? server) : ProtocolState, ILoginCon
         Proxy.Logger.Information($"<{player}> {packet.Message}");
         return Task.FromResult(false);
     }
+
+    public Task<bool> HandleAsync(IChatCommand packet)
+    {
+        Proxy.Logger.Information($"{player} issued server command /{packet.Command}");
+        return Task.FromResult(false);
+    }
 }
