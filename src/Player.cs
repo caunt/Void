@@ -1,40 +1,35 @@
 ﻿using Minecraft.Component.Component;
-using MinecraftProxy.Models;
+using MinecraftProxy.Models.General;
+using MinecraftProxy.Models.Minecraft.Chat;
+using MinecraftProxy.Models.Minecraft.Encryption;
+using MinecraftProxy.Models.Minecraft.Profile;
 using MinecraftProxy.Network;
-using MinecraftProxy.Network.IO;
 using MinecraftProxy.Network.Protocol;
 using MinecraftProxy.Network.Protocol.Packets;
 using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.Packets.Shared;
-using MinecraftProxy.Network.Protocol.States;
-using MinecraftProxy.Network.Protocol.States.Common;
 using System.Net;
-using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace MinecraftProxy;
 
-public class Player : IDisposable
+public class Player(Link link)
 {
+    public Link Link { get; } = link;
     public string? Brand { get; protected set; }
+    public ClientType ClientType { get; protected set; }
     public GameProfile? GameProfile { get; protected set; }
-    public ProtocolState? State { get; protected set; }
-    public EndPoint? RemoteEndPoint => tcpClient.Client.RemoteEndPoint;
-    public Server? CurrentServer { get; protected set; }
     public IdentifiedKey? IdentifiedKey { get; protected set; }
-    public ProtocolVersion ProtocolVersion { get; protected set; }
-    public ConnectionType ConnectionType { get; protected set; }
 
-    protected readonly TcpClient tcpClient;
-    protected MinecraftChannel? channel;
-
-    public Player(TcpClient tcpClient)
+    public void SetBrand(string brand)
     {
-        this.tcpClient = tcpClient;
+        Brand = brand;
+    }
 
-        State = SwitchState(0);
-        ProtocolVersion = SetProtocolVersion(ProtocolVersion.Oldest);
+    public void SetClientType(ClientType clientType)
+    {
+        ClientType = clientType;
     }
 
     public void SetGameProfile(GameProfile gameProfile)
@@ -42,57 +37,37 @@ public class Player : IDisposable
         GameProfile = gameProfile;
     }
 
-    public void SetBrand(string brand)
+    public void SetIdentifiedKey(IdentifiedKey identifiedKey)
     {
-        Brand = brand;
-    }
-
-    public void SetConnectionType(ConnectionType connectionType)
-    {
-        ConnectionType = connectionType;
-    }
-
-    public ProtocolVersion SetProtocolVersion(ProtocolVersion protocolVersion)
-    {
-        return ProtocolVersion = protocolVersion;
-    }
-
-    public ProtocolState SwitchState(int state)
-    {
-        State = state switch
-        {
-            0 => new HandshakeState(this, CurrentServer),
-            1 => throw new NotImplementedException("Ping state not implemented yet"),
-            2 => new LoginState(this, CurrentServer),
-            3 => new ConfigurationState(this, CurrentServer),
-            4 => new PlayState(this, CurrentServer),
-            _ => throw new ArgumentOutOfRangeException(nameof(state))
-        };
-
-        Proxy.Logger.Information($"Player {this} switch state to {State.GetType().Name}");
-
-        return State;
+        IdentifiedKey = identifiedKey;
     }
 
     public void EnableEncryption(byte[] secret)
     {
-        ArgumentNullException.ThrowIfNull(channel);
-
-        channel.EnableEncryption(secret);
+        Link.PlayerChannel.EnableEncryption(secret);
         Proxy.Logger.Information($"Player {this} enabled encryption");
     }
 
     public void EnableCompression(int threshold)
     {
-        ArgumentNullException.ThrowIfNull(channel);
-
-        channel.EnableCompression(threshold);
+        Link.PlayerChannel.EnableCompression(threshold);
         Proxy.Logger.Information($"Player {this} enabled compression");
     }
 
-    public void SetIdentifiedKey(IdentifiedKey identifiedKey)
+    public async Task SendPacketAsync(IMinecraftPacket packet) => await Link.SendPacketAsync(Direction.Clientbound, packet);
+
+    public async Task SendMessageAsync(string text) => await SendMessageAsync(ChatComponent.FromLegacy(text));
+
+    public async Task SendMessageAsync(ChatComponent component)
     {
-        IdentifiedKey = identifiedKey;
+        IMinecraftPacket packet;
+
+        if (Link.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_19)
+            packet = new SystemChatMessage { Type = ChatMessageType.System, Message = component };
+        else
+            packet = new ChatMessage(Direction.Clientbound) { Type = ChatMessageType.System, Message = component.ToString() };
+
+        await SendPacketAsync(packet);
     }
 
     public async Task<GameProfile?> RequestGameProfileAsync(byte[] secret)
@@ -131,7 +106,7 @@ public class Player : IDisposable
 
         var url = $"{Environment.GetEnvironmentVariable("mojang.sessionserver") ?? "https://sessionserver.mojang.com/session/minecraft/hasJoined"}?username={GameProfile.Name}&serverId={serverIdComplement}";
 
-        var playerIp = RemoteEndPoint switch { IPEndPoint ipEndPoint => ipEndPoint.Address.ToString(), _ => null };
+        var playerIp = Link.PlayerRemoteEndPoint switch { IPEndPoint ipEndPoint => ipEndPoint.Address.ToString(), _ => null };
         var preventProxyConnections = false;
 
         if (preventProxyConnections && playerIp is not null)
@@ -153,117 +128,5 @@ public class Player : IDisposable
         return GameProfile;
     }
 
-    public async Task SendPacketAsync(IMinecraftPacket packet)
-    {
-        ArgumentNullException.ThrowIfNull(State);
-        ArgumentNullException.ThrowIfNull(ProtocolVersion);
-
-        var id = State.FindPacketId(Direction.Clientbound, packet, ProtocolVersion);
-
-        if (!id.HasValue)
-            throw new Exception($"{packet.GetType().Name} packet id not found in {State.GetType().Name}");
-
-        Proxy.Logger.Debug($"Sending {packet.GetType().Name} to player {this}");
-        ArgumentNullException.ThrowIfNull(channel);
-
-        using var message = MinecraftMessage.Encode(id.Value, packet, Direction.Clientbound, ProtocolVersion);
-        await channel.WriteMessageAsync(message);
-    }
-
-    public async Task SendMessageAsync(string text) => await SendMessageAsync(ChatComponent.FromLegacy(text));
-
-    public async Task SendMessageAsync(ChatComponent component)
-    {
-        IMinecraftPacket packet;
-
-        if (ProtocolVersion >= ProtocolVersion.MINECRAFT_1_19)
-            packet = new SystemChatMessage { Type = ChatMessageType.System, Message = component };
-        else
-            packet = new ChatMessage(Direction.Clientbound) { Type = ChatMessageType.System, Message = component.ToString() };
-
-        await SendPacketAsync(packet);
-    }
-
-    public async Task ForwardTrafficAsync(Server server)
-    {
-        CurrentServer = server;
-
-        channel = new MinecraftChannel(tcpClient.GetStream());
-        var cts = new CancellationTokenSource();
-
-        var clientTask = ProcessPacketsAsync<ProtocolState>(channel, server.GetChannel(), "Player", cts.Token);
-        var serverTask = ProcessPacketsAsync<ProtocolState>(server.GetChannel(), channel, "Server", cts.Token);
-        var completedTask = await Task.WhenAny(serverTask, clientTask);
-
-        if (completedTask.IsFaulted && completedTask.Exception.InnerExceptions.All(exception => exception is not EndOfStreamException and not IOException))
-            Proxy.Logger.Information($"Unhandled exception while reading {(completedTask == serverTask ? "Server" : "Client")} channel ({this}):\n{completedTask.Exception}");
-
-        // graceful opposite disconnection timeout
-        var timeout = Task.Delay(5000);
-        var disconnectTask = await Task.WhenAny(completedTask == serverTask ? clientTask : serverTask, timeout);
-
-        if (disconnectTask == timeout)
-        {
-            cts.Cancel();
-            Proxy.Logger.Information($"Timed out waiting {(completedTask == serverTask ? "Client" : "Server")} disconnection");
-        }
-
-        Proxy.Logger.Information($"Stopped forwarding traffic from/to {this}");
-    }
-
-    public override string ToString() => GameProfile?.Name ?? tcpClient.Client?.RemoteEndPoint?.ToString() ?? "Disposed?";
-
-    protected async Task ProcessPacketsAsync<T>(MinecraftChannel sourceChannel, MinecraftChannel destinationChannel, string sourceIdentifier, CancellationToken cancellationToken) where T : ProtocolState
-    {
-        ArgumentNullException.ThrowIfNull(State);
-        ArgumentNullException.ThrowIfNull(ProtocolVersion);
-
-        var direction = sourceIdentifier switch
-        {
-            "Player" => Direction.Serverbound,
-            "Server" => Direction.Clientbound,
-            _ => throw new ArgumentException(sourceIdentifier)
-        };
-
-        while (sourceChannel.CanRead && sourceChannel.CanWrite && destinationChannel.CanRead && destinationChannel.CanWrite)
-        {
-            int length;
-            int packetId;
-            IMinecraftPacket? packet;
-
-            using (var message = await sourceChannel.ReadMessageAsync(cancellationToken))
-            {
-                length = message.Length;
-                (packetId, packet, var handleTask) = message.DecodeAndHandle(State, direction, ProtocolVersion);
-
-                if (packet is null)
-                {
-                    await destinationChannel.WriteMessageAsync(message, cancellationToken);
-                    continue;
-                }
-
-                if (await handleTask)
-                    continue;
-            }
-
-            using (var message = MinecraftMessage.Encode(packetId, packet, direction, ProtocolVersion, length + 2048))
-            {
-                await destinationChannel.WriteMessageAsync(message, cancellationToken);
-            }
-
-            if (packet is DisconnectPacket disconnect)
-            {
-                await destinationChannel.FlushAsync(cancellationToken);
-                Proxy.Logger.Information($"Player {this} disconnected from server: {disconnect.Reason}");
-                break;
-            }
-        }
-    }
-
-    public void Dispose()
-    {
-        tcpClient?.Close();
-        tcpClient?.Dispose();
-        GC.SuppressFinalize(this);
-    }
+    public override string ToString() => GameProfile?.Name ?? Link.PlayerRemoteEndPoint?.ToString() ?? "Disposed?";
 }

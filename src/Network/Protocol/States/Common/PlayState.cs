@@ -1,4 +1,6 @@
-﻿using MinecraftProxy.Network.Protocol.Packets.Clientbound;
+﻿using MinecraftProxy.Commands;
+using MinecraftProxy.Models.General;
+using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.Packets.Serverbound;
 using MinecraftProxy.Network.Protocol.Packets.Shared;
 using MinecraftProxy.Network.Protocol.Registry;
@@ -8,7 +10,7 @@ using System.Text;
 
 namespace MinecraftProxy.Network.Protocol.States.Common;
 
-public class PlayState(Player player, Server? server) : ProtocolState, ILoginConfigurePlayState, IConfigurePlayState
+public class PlayState(Link link) : ProtocolState, ILoginConfigurePlayState, IConfigurePlayState
 {
     protected override StateRegistry Registry { get; } = Registries.PlayStateRegistry;
 
@@ -19,7 +21,7 @@ public class PlayState(Player player, Server? server) : ProtocolState, ILoginCon
 
     public Task<bool> HandleAsync(PlayerSessionPacket packet)
     {
-        player.SetIdentifiedKey(packet.IdentifiedKey);
+        link.Player.SetIdentifiedKey(packet.IdentifiedKey);
         return Task.FromResult(true); // should not cancel?
     }
 
@@ -33,13 +35,13 @@ public class PlayState(Player player, Server? server) : ProtocolState, ILoginCon
             if (addPlayerAction is null)
                 continue;
 
-            if (player.GameProfile is null)
+            if (link.Player.GameProfile is null)
                 continue;
 
-            if (playerInfo.Guid == player.GameProfile.Id)
+            if (playerInfo.Guid == link.Player.GameProfile.Id)
             {
-                addPlayerAction.Name = player.GameProfile.Name;
-                addPlayerAction.Properties = player.GameProfile.Properties;
+                addPlayerAction.Name = link.Player.GameProfile.Name;
+                addPlayerAction.Properties = link.Player.GameProfile.Properties;
             }
 
             // add other players
@@ -58,9 +60,9 @@ public class PlayState(Player player, Server? server) : ProtocolState, ILoginCon
         if (packet.Identifier == "minecraft:brand")
         {
             if (packet.Direction == Direction.Serverbound)
-                player.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
+                link.Player.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
             else if (packet.Direction == Direction.Clientbound)
-                server?.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
+                link.Server.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
 
             return Task.FromResult(false);
         }
@@ -91,15 +93,14 @@ public class PlayState(Player player, Server? server) : ProtocolState, ILoginCon
 
     public Task<bool> HandleAsync(IChatMessage packet)
     {
-        Proxy.Logger.Information($"<{player}> {packet.Message}");
+        Proxy.Logger.Information($"<{link.Player}> {packet.Message}");
         return Task.FromResult(false);
     }
 
     public async Task<bool> HandleAsync(IChatCommand packet)
     {
-        ArgumentNullException.ThrowIfNull(server);
-        Proxy.Logger.Information($"{player} issued server command /{packet.Command}");
-        return await Proxy.ExecuteCommandAsync(player, server, packet.Command);
+        Proxy.Logger.Information($"{link.Player} issued server command /{packet.Command}");
+        return await CommandExecutor.ExecuteAsync(link, packet.Command);
     }
 
     public Task<bool> HandleAsync(SystemChatMessage packet)

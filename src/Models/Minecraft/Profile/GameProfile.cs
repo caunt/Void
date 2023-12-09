@@ -1,7 +1,7 @@
 ﻿using MinecraftProxy.Utils;
 using System.Text.Json.Serialization;
 
-namespace MinecraftProxy.Models;
+namespace MinecraftProxy.Models.Minecraft.Profile;
 
 public class GameProfile
 {

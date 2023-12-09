@@ -1,10 +1,11 @@
-﻿using MinecraftProxy.Network.Protocol.Forge;
+﻿using MinecraftProxy.Models.General;
+using MinecraftProxy.Network.Protocol.Forge;
 using MinecraftProxy.Network.Protocol.Packets.Serverbound;
 using MinecraftProxy.Network.Protocol.Registry;
 
 namespace MinecraftProxy.Network.Protocol.States.Common;
 
-public class HandshakeState(Player player, Server? server) : ProtocolState
+public class HandshakeState(Link link) : ProtocolState
 {
     protected override StateRegistry Registry { get; } = Registries.HandshakeStateRegistry;
 
@@ -14,12 +15,12 @@ public class HandshakeState(Player player, Server? server) : ProtocolState
         var isForge = ForgeMarker.Range().Any(marker => addressParts.Contains(marker.Value));
 
         if (isForge)
-            player.SetConnectionType(ConnectionType.Forge);
+            link.Player.SetClientType(ClientType.Forge);
         else if (addressParts.Length > 1)
-            Proxy.Logger.Warning($"Player {player} had extra marker(s) {string.Join(", ", addressParts[1..])} in handshake, ignoring");
+            Proxy.Logger.Warning($"Player {link.Player} had extra marker(s) {string.Join(", ", addressParts[1..])} in handshake, ignoring");
 
-        player.SetProtocolVersion(ProtocolVersion.Get(packet.ProtocolVersion));
-        player.SwitchState(packet.NextState);
+        link.SetProtocolVersion(ProtocolVersion.Get(packet.ProtocolVersion));
+        link.SwitchState(packet.NextState);
 
         return Task.FromResult(false);
     }

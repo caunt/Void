@@ -20,7 +20,7 @@ public class ModernForwarding(string secret) : IForwarding
 
         buffer.WriteVarInt((int)actualVersion);
 
-        var address = player.RemoteEndPoint is IPEndPoint ipEndPoint ? ipEndPoint.Address.ToString() : throw new NotImplementedException($"Cannot forward player {player} address {player.RemoteEndPoint}");
+        var address = player.Link.PlayerRemoteEndPoint is IPEndPoint ipEndPoint ? ipEndPoint.Address.ToString() : throw new NotImplementedException($"Cannot forward player {player} address {player.Link.PlayerRemoteEndPoint}");
         buffer.WriteString(address);
 
         buffer.WriteGuid(player.GameProfile.Id);

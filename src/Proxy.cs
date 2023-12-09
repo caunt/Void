@@ -1,4 +1,4 @@
-﻿using MinecraftProxy.Models;
+﻿using MinecraftProxy.Models.General;
 using MinecraftProxy.Network.Protocol.Forwarding;
 using Serilog;
 using Serilog.Events;
@@ -26,6 +26,7 @@ public static class Proxy
     public static readonly JsonSerializerOptions JsonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
     public static readonly LoggerConfiguration LoggerConfiguration = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Is(LogLevel);
     public static readonly ILogger Logger = LoggerConfiguration.CreateLogger();
+    public static readonly List<Link> Links = new();
 
     public static async Task StartAsync()
     {
@@ -36,62 +37,14 @@ public static class Proxy
 
         while (true)
         {
-            _ = await listener.AcceptTcpClientAsync()
-                .ContinueWith(async task =>
-                {
-                    Logger.Information($"Client connection accepted from {task.Result.Client.RemoteEndPoint}");
-                    using var player = new Player(task.Result);
-                    using var server = new Server(Servers.Values.First()).Init();
-                    await player.ForwardTrafficAsync(server);
-                }).CatchForwardingExceptions();
+            var client = await listener.AcceptTcpClientAsync();
+            var serverInfo = Servers.Values.First();
+            var server = serverInfo.CreateTcpClient();
+
+            var link = new Link(client, server);
+            link.SetServerInfo(serverInfo);
+
+            Links.Add(link);
         }
-    }
-
-    public static async Task<bool> ExecuteCommandAsync(Player player, Server server, string command)
-    {
-        async Task<bool> HandleServerCommandAsync(string[] arguments)
-        {
-            if (arguments.Length == 0)
-            {
-                await player.SendMessageAsync($"Available servers: {string.Join(", ", Servers.Keys)}\nUsage: /server <name>");
-                return true;
-            }
-
-            var serverName = arguments[0];
-
-            if (!Servers.TryGetValue(serverName, out var serverInfo))
-            {
-                await player.SendMessageAsync($"Server {serverName} not found");
-                return true;
-            }
-
-            await player.SendMessageAsync($"Switch server to {serverName} ({serverInfo.Host}:{serverInfo.Port})");
-            return true;
-        }
-
-        var parts = command.Split(' ');
-
-        return parts[0] switch
-        {
-            "server" => await HandleServerCommandAsync(parts[1..]),
-            _ => false
-        };
-    }
-
-    private static Task<Task> CatchForwardingExceptions(this Task<Task> task)
-    {
-        return task.ContinueWith(async task =>
-        {
-            var forwardingTask = await task;
-
-            try
-            {
-                await forwardingTask;
-            }
-            catch (Exception exception)
-            {
-                Logger.Fatal($"Unhandled forwarding exception: {exception}");
-            }
-        });
     }
 }

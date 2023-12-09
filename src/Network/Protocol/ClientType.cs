@@ -1,6 +1,6 @@
 ﻿namespace MinecraftProxy.Network.Protocol;
 
-public enum ConnectionType
+public enum ClientType
 {
     Vanilla,
     Forge

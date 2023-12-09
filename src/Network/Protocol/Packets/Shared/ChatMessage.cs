@@ -1,4 +1,4 @@
-﻿using MinecraftProxy.Models;
+﻿using MinecraftProxy.Models.Minecraft.Chat;
 using MinecraftProxy.Network.IO;
 using MinecraftProxy.Network.Protocol.States.Common;
 

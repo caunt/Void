@@ -1,4 +1,5 @@
-﻿using MinecraftProxy.Models;
+﻿using MinecraftProxy.Models.Minecraft.Encryption;
+using MinecraftProxy.Models.Minecraft.Profile;
 using MinecraftProxy.Network.IO;
 using MinecraftProxy.Network.Protocol.States.Common;
 

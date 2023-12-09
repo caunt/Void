@@ -1,4 +1,5 @@
-﻿using MinecraftProxy.Models;
+﻿using MinecraftProxy.Models.General;
+using MinecraftProxy.Models.Minecraft.Encryption;
 using MinecraftProxy.Network.Protocol.Forwarding;
 using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.Packets.Serverbound;
@@ -7,7 +8,7 @@ using MinecraftProxy.Network.Protocol.States.Custom;
 
 namespace MinecraftProxy.Network.Protocol.States.Common;
 
-public class LoginState(Player player, Server? server) : ProtocolState, ILoginConfigurePlayState
+public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
 {
     protected override StateRegistry Registry { get; } = Registries.LoginStateRegistry;
 
@@ -15,7 +16,7 @@ public class LoginState(Player player, Server? server) : ProtocolState, ILoginCo
 
     public async Task<bool> HandleAsync(LoginStartPacket packet)
     {
-        player.SetGameProfile(new()
+        link.Player.SetGameProfile(new()
         {
             Id = packet.Guid,
             Name = packet.Username
@@ -33,13 +34,13 @@ public class LoginState(Player player, Server? server) : ProtocolState, ILoginCo
             if (!isKeyValid)
                 throw new Exception("multiplayer.disconnect.invalid_public_key");
 
-            player.SetIdentifiedKey(packet.IdentifiedKey);
+            link.Player.SetIdentifiedKey(packet.IdentifiedKey);
         }
 
         var encryptionRequestPacket = GenerateEncryptionRequest();
         verifyToken = encryptionRequestPacket.VerifyToken;
 
-        await player.SendPacketAsync(encryptionRequestPacket);
+        await link.Player.SendPacketAsync(encryptionRequestPacket);
         return true; // cancelling as we will send login packet to server later with online game profile
     }
 
@@ -55,7 +56,7 @@ public class LoginState(Player player, Server? server) : ProtocolState, ILoginCo
 
         if (packet.Salt.HasValue)
         {
-            if (player.IdentifiedKey is null)
+            if (link.Player.IdentifiedKey is null)
                 throw new Exception($"Encryption response received but IdentifiedKey still not available for player");
 
             var salt = BitConverter.GetBytes(packet.Salt.Value);
@@ -63,7 +64,7 @@ public class LoginState(Player player, Server? server) : ProtocolState, ILoginCo
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(salt);
 
-            if (!player.IdentifiedKey.VerifyDataSignature(packet.VerifyToken, [.. verifyToken, .. salt]))
+            if (!link.Player.IdentifiedKey.VerifyDataSignature(packet.VerifyToken, [.. verifyToken, .. salt]))
                 throw new Exception("Invalid client public signature");
         }
         else
@@ -72,83 +73,70 @@ public class LoginState(Player player, Server? server) : ProtocolState, ILoginCo
                 throw new Exception("Unable to verify encryption token");
         }
 
-        ArgumentNullException.ThrowIfNull(server);
-
         var secret = Proxy.RSA.Decrypt(packet.SharedSecret, false);
-        player.EnableEncryption(secret);
+        link.Player.EnableEncryption(secret);
 
-        if (player.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_8 && Proxy.CompressionThreshold > 0)
+        if (link.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_8 && Proxy.CompressionThreshold > 0)
         {
             var compressionPacket = new SetCompressionPacket { Threshold = Proxy.CompressionThreshold };
-            await player.SendPacketAsync(compressionPacket);
-            player.EnableCompression(Proxy.CompressionThreshold);
+            await link.Player.SendPacketAsync(compressionPacket);
+            link.Player.EnableCompression(Proxy.CompressionThreshold);
         }
 
-        await player.RequestGameProfileAsync(secret);
-        await server.SendPacketAsync(player, GenerateLoginStartPacket());
+        await link.Player.RequestGameProfileAsync(secret);
+        await link.Server.SendPacketAsync(GenerateLoginStartPacket());
 
         return true;
     }
 
     public async Task<bool> HandleAsync(SetCompressionPacket packet)
     {
-        ArgumentNullException.ThrowIfNull(server);
-
         if (packet.Threshold > 0)
-            server.EnableCompression(packet.Threshold);
+            link.Server.EnableCompression(packet.Threshold);
 
-        return true; // we should complete encryption before sending compression packet
+        // we should complete encryption before sending compression packet
+        return true;
     }
 
     public async Task<bool> HandleAsync(LoginSuccessPacket packet)
     {
-        ArgumentNullException.ThrowIfNull(server);
-
-        if (player.GameProfile is null)
+        if (link.Player.GameProfile is null)
             throw new Exception("Game profile not loaded yet");
 
-        if (server is null)
-            throw new Exception("Server not chosen yet");
-
-        if (server.Info.Forwarding is not NoneForwarding)
+        if (link.ServerInfo.Forwarding is not NoneForwarding)
         {
-            if (packet.Guid != player.GameProfile.Id)
-                throw new Exception($"Server sent wrong player UUID: {packet.Guid}, online is: {player.GameProfile.Id}");
+            if (packet.Guid != link.Player.GameProfile.Id)
+                throw new Exception($"Server sent wrong player UUID: {packet.Guid}, online is: {link.Player.GameProfile.Id}");
         }
         else
         {
             // fallback to offline GameProfile
-            player.GameProfile.Id = packet.Guid;
-            player.GameProfile.Name = packet.Username;
-            player.GameProfile.Properties = packet.Properties;
+            link.Player.GameProfile.Id = packet.Guid;
+            link.Player.GameProfile.Name = packet.Username;
+            link.Player.GameProfile.Properties = packet.Properties;
         }
 
-        if (player.ProtocolVersion < ProtocolVersion.MINECRAFT_1_20_2)
-            player.SwitchState(4);
+        if (link.ProtocolVersion < ProtocolVersion.MINECRAFT_1_20_2)
+            link.SwitchState(4);
 
         return false;
     }
 
     public Task<bool> HandleAsync(LoginAcknowledgedPacket packet)
     {
-        player.SwitchState(3);
+        link.SwitchState(3);
         return Task.FromResult(false);
     }
 
     public async Task<bool> HandleAsync(LoginPluginRequest packet)
     {
-        ArgumentNullException.ThrowIfNull(server);
-
-        if (server is null)
-            throw new Exception("Server not chosen yet");
-
-        if (server.Info.Forwarding is ModernForwarding forwarding)
+        if (link.ServerInfo.Forwarding is ModernForwarding forwarding)
         {
             if (!packet.Identifier.Equals("velocity:player_info"))
                 return false;
 
-            var data = forwarding.GenerateForwardingData(packet.Data, player);
-            await server.SendPacketAsync(player, new LoginPluginResponse
+            var data = forwarding.GenerateForwardingData(packet.Data, link.Player);
+            await link.Server.SendPacketAsync(new LoginPluginResponse
             {
                 MessageId = packet.MessageId,
                 Successful = true,
@@ -187,14 +175,14 @@ public class LoginState(Player player, Server? server) : ProtocolState, ILoginCo
 
     public LoginStartPacket GenerateLoginStartPacket()
     {
-        if (player.GameProfile is null)
+        if (link.Player.GameProfile is null)
             throw new Exception("Can't proceed login as we do not have online GameProfile");
 
         return new()
         {
-            Guid = player.GameProfile.Id,
-            Username = player.GameProfile.Name,
-            IdentifiedKey = player.IdentifiedKey
+            Guid = link.Player.GameProfile.Id,
+            Username = link.Player.GameProfile.Name,
+            IdentifiedKey = link.Player.IdentifiedKey
         };
     }
 

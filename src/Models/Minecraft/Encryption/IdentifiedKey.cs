@@ -3,7 +3,7 @@ using MinecraftProxy.Network.Protocol;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace MinecraftProxy.Models;
+namespace MinecraftProxy.Models.Minecraft.Encryption;
 
 public class IdentifiedKey(IdentifiedKeyRevision revision, long expiresAt, byte[] publicKey, byte[] signature)
 {

@@ -1,4 +1,5 @@
-﻿using MinecraftProxy.Network.Protocol.Packets.Clientbound;
+﻿using MinecraftProxy.Models.General;
+using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.Packets.Shared;
 using MinecraftProxy.Network.Protocol.Registry;
 using MinecraftProxy.Network.Protocol.States.Custom;
@@ -6,7 +7,7 @@ using System.Text;
 
 namespace MinecraftProxy.Network.Protocol.States.Common;
 
-public class ConfigurationState(Player player, Server? server) : ProtocolState, ILoginConfigurePlayState, IConfigurePlayState
+public class ConfigurationState(Link link) : ProtocolState, ILoginConfigurePlayState, IConfigurePlayState
 {
     protected override StateRegistry Registry { get; } = Registries.ConfigurationStateRegistry;
 
@@ -17,7 +18,7 @@ public class ConfigurationState(Player player, Server? server) : ProtocolState, 
 
     public Task<bool> HandleAsync(FinishConfiguration packet)
     {
-        player.SwitchState(4);
+        link.SwitchState(4);
         return Task.FromResult(false);
     }
 
@@ -26,18 +27,15 @@ public class ConfigurationState(Player player, Server? server) : ProtocolState, 
         if (packet.Identifier == "minecraft:brand")
         {
             if (packet.Direction == Direction.Serverbound)
-                player.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
+                link.Player.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
             else if (packet.Direction == Direction.Clientbound)
-                server?.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
+                link.Server.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
 
             return Task.FromResult(false);
         }
 
         if (packet.Identifier == "forge:handshake")
         {
-            if (packet.Direction == Direction.Clientbound)
-                server?.SetConnectionType(ConnectionType.Forge);
-
             Proxy.Logger.Debug($"Received {packet.Direction} Configuration {packet.Identifier} with {packet.Data.Length} bytes");
             return Task.FromResult(false);
         }

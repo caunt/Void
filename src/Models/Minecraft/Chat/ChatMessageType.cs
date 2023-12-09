@@ -1,4 +1,4 @@
-﻿namespace MinecraftProxy.Models;
+﻿namespace MinecraftProxy.Models.Minecraft.Chat;
 
 public enum ChatMessageType
 {

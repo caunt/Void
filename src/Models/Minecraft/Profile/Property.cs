@@ -1,4 +1,4 @@
-﻿namespace MinecraftProxy.Models;
+﻿namespace MinecraftProxy.Models.Minecraft.Profile;
 
 public class Property(string name, string value, bool isSigned, string? signature)
 {
