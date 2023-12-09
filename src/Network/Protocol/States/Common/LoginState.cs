@@ -4,6 +4,7 @@ using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.Packets.Serverbound;
 using MinecraftProxy.Network.Protocol.Registry;
 using MinecraftProxy.Network.Protocol.States.Custom;
+using System.Text;
 
 namespace MinecraftProxy.Network.Protocol.States.Common;
 
@@ -158,11 +159,18 @@ public class LoginState(Player player, Server? server) : ProtocolState, ILoginCo
             return true;
         }
 
+        if (packet.Identifier == "fml:loginwrapper")
+        {
+            Proxy.Logger.Debug($"Received Clientbound Login plugin request {packet.Identifier} with {packet.Data.Length} bytes {(packet.Data.Length <= 256 ? $"=> {Encoding.UTF8.GetString(packet.Data).ReplaceLineEndings(string.Empty)}" : string.Empty)}");
+            return false;
+        }
+
         return false;
     }
 
     public Task<bool> HandleAsync(LoginPluginResponse packet)
     {
+        Proxy.Logger.Debug($"Received Clientbound Login plugin response {packet.MessageId} with {packet.Data.Length} bytes {(packet.Data.Length <= 256 ? $"=> {Encoding.UTF8.GetString(packet.Data).ReplaceLineEndings(string.Empty)}" : string.Empty)}");
         return Task.FromResult(false);
     }
 

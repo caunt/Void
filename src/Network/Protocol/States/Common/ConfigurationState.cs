@@ -33,6 +33,31 @@ public class ConfigurationState(Player player, Server? server) : ProtocolState, 
             return Task.FromResult(false);
         }
 
+        if (packet.Identifier == "forge:handshake")
+        {
+            if (packet.Direction == Direction.Clientbound)
+                server?.SetConnectionType(ConnectionType.Forge);
+
+            Proxy.Logger.Debug($"Received {packet.Direction} Configuration {packet.Identifier} with {packet.Data.Length} bytes {(packet.Data.Length <= 256 ? $"=> {Encoding.UTF8.GetString(packet.Data).ReplaceLineEndings(string.Empty)}" : string.Empty)}");
+            return Task.FromResult(false);
+        }
+
+        if (packet.Identifier == "minecraft:register")
+        {
+            var channels = Encoding.UTF8.GetString(packet.Data).Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            Proxy.Logger.Debug($"Received {packet.Direction} Configuration register channels message: {string.Join(", ", channels)}");
+
+            return Task.FromResult(false);
+        }
+
+        if (packet.Identifier == "minecraft:unregister")
+        {
+            var channels = Encoding.UTF8.GetString(packet.Data).Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            Proxy.Logger.Debug($"Received {packet.Direction} Configuration unregister channels message: {string.Join(", ", channels)}");
+
+            return Task.FromResult(false);
+        }
+
         Proxy.Logger.Debug($"Received {packet.Direction} Configuration plugin message in channel {packet.Identifier} with {packet.Data.Length} bytes => {Convert.ToHexString(packet.Data)}");
         return Task.FromResult(false);
     }

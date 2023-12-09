@@ -4,6 +4,7 @@ using MinecraftProxy.Network.Protocol.Packets.Shared;
 using MinecraftProxy.Network.Protocol.Registry;
 using MinecraftProxy.Network.Protocol.States.Custom;
 using Nito.Disposables.Internals;
+using System.Text;
 
 namespace MinecraftProxy.Network.Protocol.States.Common;
 
@@ -54,6 +55,32 @@ public class PlayState(Player player, Server? server) : ProtocolState, ILoginCon
 
     public Task<bool> HandleAsync(PluginMessage packet)
     {
+        if (packet.Identifier == "minecraft:brand")
+        {
+            if (packet.Direction == Direction.Serverbound)
+                player.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
+            else if (packet.Direction == Direction.Clientbound)
+                server?.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
+
+            return Task.FromResult(false);
+        }
+
+        if (packet.Identifier == "minecraft:register")
+        {
+            var channels = Encoding.UTF8.GetString(packet.Data).Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            Proxy.Logger.Debug($"Received {packet.Direction} Play register channels message: {string.Join(", ", channels)}");
+
+            return Task.FromResult(false);
+        }
+
+        if (packet.Identifier == "minecraft:unregister")
+        {
+            var channels = Encoding.UTF8.GetString(packet.Data).Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            Proxy.Logger.Debug($"Received {packet.Direction} Play unregister channels message: {string.Join(", ", channels)}");
+
+            return Task.FromResult(false);
+        }
+
         Proxy.Logger.Debug($"Received {packet.Direction} Play plugin message in channel {packet.Identifier} with {packet.Data.Length} bytes => {Convert.ToHexString(packet.Data)}");
         return Task.FromResult(false);
     }
