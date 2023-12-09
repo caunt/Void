@@ -40,9 +40,21 @@ public static class Proxy
         }
     }
 
-    public static Task<bool> ExecuteCommand(Player player, Server server, string command)
+    public static async Task<bool> ExecuteCommandAsync(Player player, Server server, string command)
     {
-        return Task.FromResult(false);
+        Task<bool> HandleServerCommandAsync(string[] arguments)
+        {
+            Logger.Debug($"switch server to {arguments.FirstOrDefault() ?? "not specified"}");
+            return Task.FromResult(true);
+        }
+
+        var parts = command.Split(' ');
+
+        return parts[0] switch
+        {
+            "server" => await HandleServerCommandAsync(parts[1..]),
+            _ => false
+        };
     }
 
     private static Task<Task> CatchForwardingExceptions(this Task<Task> task)

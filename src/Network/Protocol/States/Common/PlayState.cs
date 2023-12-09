@@ -95,9 +95,10 @@ public class PlayState(Player player, Server? server) : ProtocolState, ILoginCon
         return Task.FromResult(false);
     }
 
-    public Task<bool> HandleAsync(IChatCommand packet)
+    public async Task<bool> HandleAsync(IChatCommand packet)
     {
+        ArgumentNullException.ThrowIfNull(server);
         Proxy.Logger.Information($"{player} issued server command /{packet.Command}");
-        return Task.FromResult(false);
+        return await Proxy.ExecuteCommandAsync(player, server, packet.Command);
     }
 }
