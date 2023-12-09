@@ -88,4 +88,10 @@ public class PlayState(Player player, Server? server) : ProtocolState, ILoginCon
 
         return Task.FromResult(false);
     }
+
+    public Task<bool> HandleAsync(ChatMessage packet)
+    {
+        Proxy.Logger.Information($"<{player}> {packet.Message}");
+        return Task.FromResult(false);
+    }
 }

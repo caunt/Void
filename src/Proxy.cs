@@ -29,12 +29,36 @@ public static class Proxy
 
         while (true)
         {
-            _ = await listener.AcceptTcpClientAsync().ContinueWith(async task =>
-            {
-                using var player = new Player(task.Result);
-                using var server = new Server("127.0.0.1", 25566, new NoneForwarding() /*new ModernForwarding("aaa")*/).Init();
-                await player.ForwardTrafficAsync(server);
-            });
+            _ = await listener.AcceptTcpClientAsync()
+                .ContinueWith(async task =>
+                {
+                    Logger.Information($"Client connection accepted from {task.Result.Client.RemoteEndPoint}");
+                    using var player = new Player(task.Result);
+                    using var server = new Server("127.0.0.1", 25566, new NoneForwarding() /*new ModernForwarding("aaa")*/).Init();
+                    await player.ForwardTrafficAsync(server);
+                }).CatchForwardingExceptions();
         }
+    }
+
+    public static Task<bool> ExecuteCommand(Player player, Server server, string command)
+    {
+        return Task.FromResult(false);
+    }
+
+    private static Task<Task> CatchForwardingExceptions(this Task<Task> task)
+    {
+        return task.ContinueWith(async task =>
+        {
+            var forwardingTask = await task;
+
+            try
+            {
+                await forwardingTask;
+            }
+            catch (Exception exception)
+            {
+                Logger.Fatal($"Unhandled forwarding exception: {exception}");
+            }
+        });
     }
 }
