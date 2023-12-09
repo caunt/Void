@@ -10,7 +10,7 @@ namespace MinecraftProxy.Network.Protocol.States.Common;
 public class LoginState(Player player, Server? server) : ProtocolState, ILoginConfigurePlayState
 {
     protected override StateRegistry Registry { get; } = Registries.LoginStateRegistry;
-    
+
     private byte[]? verifyToken;
 
     public async Task<bool> HandleAsync(LoginStartPacket packet)

@@ -74,7 +74,7 @@ public class DeprecatedCompressionStream(Stream baseStream, int threshold) : Str
             return;
         }
 
-        var compressedData = ZlibStream.CompressBuffer([ ..MinecraftBuffer.GetVarInt(message.PacketId), ..message.Memory.Span]);
+        var compressedData = ZlibStream.CompressBuffer([.. MinecraftBuffer.GetVarInt(message.PacketId), .. message.Memory.Span]);
 
         await baseStream.WriteVarIntAsync(compressedData.Length + MinecraftBuffer.GetVarIntSize(dataLength), cancellationToken);
         await baseStream.WriteVarIntAsync(dataLength, cancellationToken);

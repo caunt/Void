@@ -60,7 +60,7 @@ public struct LoginStartPacket : IMinecraftPacket<LoginState>
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         Username = buffer.ReadString();
-        
+
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19)
         {
             if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19_3)

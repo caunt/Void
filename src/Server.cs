@@ -38,7 +38,7 @@ public class Server(string host, int port, IForwarding forwarding) : IDisposable
     {
         if (!force)
             throw new NotSupportedException("Servers are always in offline mode, encryption doesn't work with it. Specify force to continue anyway.");
-        
+
         ArgumentNullException.ThrowIfNull(channel);
 
         channel.EnableEncryption(secret);

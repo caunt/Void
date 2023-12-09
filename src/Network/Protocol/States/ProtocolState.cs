@@ -15,7 +15,7 @@ public abstract class ProtocolState : IProtocolState
         var protocolRegistry = Registry.GetProtocolRegistry(direction, protocolVersion);
         var packet = protocolRegistry.CreatePacket(packetId);
 
-        if (packet is null) 
+        if (packet is null)
             return null; // packet not registered, proceed
 
         packet.Decode(ref buffer, protocolVersion);
