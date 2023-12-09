@@ -110,7 +110,7 @@ public class LoginState(Player player, Server? server) : ProtocolState, ILoginCo
         if (server is null)
             throw new Exception("Server not chosen yet");
 
-        if (server.Forwarding is not NoneForwarding)
+        if (server.Info.Forwarding is not NoneForwarding)
         {
             if (packet.Guid != player.GameProfile.Id)
                 throw new Exception($"Server sent wrong player UUID: {packet.Guid}, online is: {player.GameProfile.Id}");
@@ -142,7 +142,7 @@ public class LoginState(Player player, Server? server) : ProtocolState, ILoginCo
         if (server is null)
             throw new Exception("Server not chosen yet");
 
-        if (server.Forwarding is ModernForwarding forwarding)
+        if (server.Info.Forwarding is ModernForwarding forwarding)
         {
             if (!packet.Identifier.Equals("velocity:player_info"))
                 return false;

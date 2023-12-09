@@ -1,17 +1,15 @@
-﻿using MinecraftProxy.Network;
+﻿using MinecraftProxy.Models;
+using MinecraftProxy.Network;
 using MinecraftProxy.Network.IO;
 using MinecraftProxy.Network.Protocol;
-using MinecraftProxy.Network.Protocol.Forwarding;
 using MinecraftProxy.Network.Protocol.Packets;
 using System.Net.Sockets;
 
 namespace MinecraftProxy;
 
-public class Server(string host, int port, IForwarding forwarding) : IDisposable
+public class Server(ServerInfo serverInfo) : IDisposable
 {
-    public string Host { get; } = host;
-    public int Port { get; } = port;
-    public IForwarding Forwarding { get; } = forwarding;
+    public ServerInfo Info { get; } = serverInfo;
     public string? Brand { get; protected set; }
     public ConnectionType ConnectionType { get; protected set; }
 
@@ -20,7 +18,7 @@ public class Server(string host, int port, IForwarding forwarding) : IDisposable
 
     public Server Init()
     {
-        tcpClient = new TcpClient(Host, Port);
+        tcpClient = new TcpClient(Info.Host, Info.Port);
         channel = new MinecraftChannel(tcpClient.GetStream());
 
         return this;

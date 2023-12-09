@@ -1,4 +1,5 @@
-﻿using MinecraftProxy.Network.Protocol.Forwarding;
+﻿using MinecraftProxy.Models;
+using MinecraftProxy.Network.Protocol.Forwarding;
 using Serilog;
 using Serilog.Events;
 using System.Net;
@@ -13,6 +14,12 @@ public static class Proxy
     public static readonly LogEventLevel LogLevel = LogEventLevel.Debug;
     public static readonly int ListenPort = 25565;
     public static readonly int CompressionThreshold = 256;
+    public static readonly Dictionary<string, ServerInfo> Servers = new()
+    {
+        { "server1", new ServerInfo("127.0.0.1", 25566, new NoneForwarding()) },
+        { "server2", new ServerInfo("127.0.0.1", 25567, new NoneForwarding()) },
+        { "server3", new ServerInfo("127.0.0.1", 25568, new NoneForwarding()) }
+    };
 
     public static readonly HttpClient HttpClient = new();
     public static readonly RSACryptoServiceProvider RSA = new(1024);
@@ -34,7 +41,7 @@ public static class Proxy
                 {
                     Logger.Information($"Client connection accepted from {task.Result.Client.RemoteEndPoint}");
                     using var player = new Player(task.Result);
-                    using var server = new Server("127.0.0.1", 25566, new NoneForwarding() /*new ModernForwarding("aaa")*/).Init();
+                    using var server = new Server(Servers.Values.First()).Init();
                     await player.ForwardTrafficAsync(server);
                 }).CatchForwardingExceptions();
         }
@@ -44,7 +51,21 @@ public static class Proxy
     {
         async Task<bool> HandleServerCommandAsync(string[] arguments)
         {
-            await player.SendMessageAsync($"Switch server to {arguments.FirstOrDefault() ?? "not specified"}");
+            if (arguments.Length == 0)
+            {
+                await player.SendMessageAsync($"Available servers: {string.Join(", ", Servers.Keys)}\nUsage: /server <name>");
+                return true;
+            }
+
+            var serverName = arguments[0];
+
+            if (!Servers.TryGetValue(serverName, out var serverInfo))
+            {
+                await player.SendMessageAsync($"Server {serverName} not found");
+                return true;
+            }
+
+            await player.SendMessageAsync($"Switch server to {serverName} ({serverInfo.Host}:{serverInfo.Port})");
             return true;
         }
 
