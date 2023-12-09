@@ -1,6 +1,8 @@
-﻿using MinecraftProxy.Models;
+﻿using Minecraft.Component.Component;
+using MinecraftProxy.Models;
 using MinecraftProxy.Network.Protocol;
 using MinecraftProxy.Utils;
+using SharpNBT;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Numerics;
@@ -149,6 +151,51 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         Position += length;
 
         Encoding.UTF8.GetBytes(value, span);
+    }
+
+    public ChatComponent ReadComponent(int maxLength = 32767, ProtocolVersion? protocolVersion = null)
+    {
+        if (protocolVersion != null && protocolVersion >= ProtocolVersion.MINECRAFT_1_20_2)
+        {
+            throw new NotImplementedException(); // how do we read exact array?
+            var span = ReadToEnd();
+            var stream = new MemoryStream();
+
+            stream.Write(span);
+            stream.Position = 0;
+
+            using var reader = new TagReader(stream, FormatOptions.Java);
+            var tag = reader.ReadTag(false);
+
+            return ChatComponent.FromNbt(tag);
+        }
+        else
+        {
+            // read as json
+            return ChatComponent.FromJson(ReadString(maxLength));
+        }
+    }
+
+    public void WriteComponent(ChatComponent component, ProtocolVersion? protocolVersion = null)
+    {
+        if (protocolVersion != null && protocolVersion >= ProtocolVersion.MINECRAFT_1_20_2)
+        {
+            // issue SharpNBT to accept Span<byte> instead of only streams
+            var stream = new MemoryStream();
+            using var writer = new TagWriter(stream, FormatOptions.Java);
+            var tag = component.ToNbt();
+
+            // issue SharpNBT to write TAG type even if tag is unnamed
+            stream.WriteByte((byte)tag.Type);
+            writer.WriteTag(tag);
+
+            Write(stream.ToArray());
+        }
+        else
+        {
+            // write as json
+            WriteString(component.ToString());
+        }
     }
 
     public bool ReadBoolean()

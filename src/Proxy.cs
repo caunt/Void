@@ -42,10 +42,10 @@ public static class Proxy
 
     public static async Task<bool> ExecuteCommandAsync(Player player, Server server, string command)
     {
-        Task<bool> HandleServerCommandAsync(string[] arguments)
+        async Task<bool> HandleServerCommandAsync(string[] arguments)
         {
-            Logger.Debug($"switch server to {arguments.FirstOrDefault() ?? "not specified"}");
-            return Task.FromResult(true);
+            await player.SendMessageAsync($"Switch server to {arguments.FirstOrDefault() ?? "not specified"}");
+            return true;
         }
 
         var parts = command.Split(' ');

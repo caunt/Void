@@ -72,7 +72,8 @@ public static class Registries
             new PacketMapping(0x62, true, ProtocolVersion.MINECRAFT_1_19_1),
             new PacketMapping(0x60, true, ProtocolVersion.MINECRAFT_1_19_3),
             new PacketMapping(0x64, true, ProtocolVersion.MINECRAFT_1_19_4),
-            new PacketMapping(0x67, true, ProtocolVersion.MINECRAFT_1_20_2));
+            new PacketMapping(0x67, true, ProtocolVersion.MINECRAFT_1_20_2),
+            new PacketMapping(0x69, true, ProtocolVersion.MINECRAFT_1_20_3));
         PlayStateRegistry.Clientbound.Register<DisconnectPacket>(() => new(),
             new PacketMapping(0x40, false, ProtocolVersion.MINECRAFT_1_7_2),
             new PacketMapping(0x1A, false, ProtocolVersion.MINECRAFT_1_9),

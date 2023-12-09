@@ -1,9 +1,11 @@
-﻿using MinecraftProxy.Models;
+﻿using Minecraft.Component.Component;
+using MinecraftProxy.Models;
 using MinecraftProxy.Network;
 using MinecraftProxy.Network.IO;
 using MinecraftProxy.Network.Protocol;
 using MinecraftProxy.Network.Protocol.Packets;
 using MinecraftProxy.Network.Protocol.Packets.Clientbound;
+using MinecraftProxy.Network.Protocol.Packets.Shared;
 using MinecraftProxy.Network.Protocol.States;
 using MinecraftProxy.Network.Protocol.States.Common;
 using System.Net;
@@ -166,6 +168,20 @@ public class Player : IDisposable
 
         using var message = MinecraftMessage.Encode(id.Value, packet, Direction.Clientbound, ProtocolVersion);
         await channel.WriteMessageAsync(message);
+    }
+
+    public async Task SendMessageAsync(string text) => await SendMessageAsync(ChatComponent.FromLegacy(text));
+
+    public async Task SendMessageAsync(ChatComponent component)
+    {
+        IMinecraftPacket packet;
+
+        if (ProtocolVersion >= ProtocolVersion.MINECRAFT_1_19)
+            packet = new SystemChatMessage { Type = ChatMessageType.System, Message = component };
+        else
+            packet = new ChatMessage(Direction.Clientbound) { Type = ChatMessageType.System, Message = component.ToString() };
+
+        await SendPacketAsync(packet);
     }
 
     public async Task ForwardTrafficAsync(Server server)

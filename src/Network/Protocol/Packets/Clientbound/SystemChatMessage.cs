@@ -1,18 +1,18 @@
-﻿using MinecraftProxy.Models;
+﻿using Minecraft.Component.Component;
+using MinecraftProxy.Models;
 using MinecraftProxy.Network.IO;
-using MinecraftProxy.Network.Protocol.Packets.Shared;
 using MinecraftProxy.Network.Protocol.States.Common;
 
 namespace MinecraftProxy.Network.Protocol.Packets.Clientbound;
 
-public struct SystemChatMessage : IMinecraftPacket<PlayState>, IChatMessage
+public struct SystemChatMessage : IMinecraftPacket<PlayState>
 {
-    public string Message { get; set; }
+    public ChatComponent Message { get; set; }
     public ChatMessageType Type { get; set; }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        buffer.WriteString(Message);
+        buffer.WriteComponent(Message, protocolVersion);
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19_1)
         {
@@ -38,7 +38,7 @@ public struct SystemChatMessage : IMinecraftPacket<PlayState>, IChatMessage
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        Message = buffer.ReadString(262144);
+        Message = buffer.ReadComponent(262144, protocolVersion);
         Type = (ChatMessageType)buffer.ReadVarInt();
     }
 }
