@@ -49,10 +49,25 @@ public static class Registries
             new PacketMapping(0x02, false, ProtocolVersion.MINECRAFT_1_9),
             new PacketMapping(0x03, false, ProtocolVersion.MINECRAFT_1_12),
             new PacketMapping(0x02, false, ProtocolVersion.MINECRAFT_1_12_1),
-            new PacketMapping(0x03, false, ProtocolVersion.MINECRAFT_1_14),
+            new PacketMapping(0x03, false, ProtocolVersion.MINECRAFT_1_14, ProtocolVersion.MINECRAFT_1_18_2));
+        PlayStateRegistry.Serverbound.Register<KeyedChatMessage>(() => new(),
             new PacketMapping(0x04, false, ProtocolVersion.MINECRAFT_1_19),
-            new PacketMapping(0x05, false, ProtocolVersion.MINECRAFT_1_19_1),
-            new PacketMapping(0x05, false, ProtocolVersion.MINECRAFT_1_19_3));
+            new PacketMapping(0x05, false, ProtocolVersion.MINECRAFT_1_19_1, ProtocolVersion.MINECRAFT_1_19_1));
+        PlayStateRegistry.Serverbound.Register<SessionChatMessage>(() => new(),
+            new PacketMapping(0x05, false, ProtocolVersion.MINECRAFT_1_19_3, ProtocolVersion.MINECRAFT_1_20_3));
+        PlayStateRegistry.Clientbound.Register<ChatMessage>(() => new(Direction.Clientbound),
+            new PacketMapping(0x02, true, ProtocolVersion.MINECRAFT_1_7_2),
+            new PacketMapping(0x0F, true, ProtocolVersion.MINECRAFT_1_9),
+            new PacketMapping(0x0E, true, ProtocolVersion.MINECRAFT_1_13),
+            new PacketMapping(0x0F, true, ProtocolVersion.MINECRAFT_1_15),
+            new PacketMapping(0x0E, true, ProtocolVersion.MINECRAFT_1_16),
+            new PacketMapping(0x0F, true, ProtocolVersion.MINECRAFT_1_17, ProtocolVersion.MINECRAFT_1_18_2));
+        PlayStateRegistry.Clientbound.Register<SystemChatMessage>(() => new(),
+            new PacketMapping(0x5F, true, ProtocolVersion.MINECRAFT_1_19),
+            new PacketMapping(0x62, true, ProtocolVersion.MINECRAFT_1_19_1),
+            new PacketMapping(0x60, true, ProtocolVersion.MINECRAFT_1_19_3),
+            new PacketMapping(0x64, true, ProtocolVersion.MINECRAFT_1_19_4),
+            new PacketMapping(0x67, true, ProtocolVersion.MINECRAFT_1_20_2));
         PlayStateRegistry.Clientbound.Register<DisconnectPacket>(() => new(),
             new PacketMapping(0x40, false, ProtocolVersion.MINECRAFT_1_7_2),
             new PacketMapping(0x1A, false, ProtocolVersion.MINECRAFT_1_9),
