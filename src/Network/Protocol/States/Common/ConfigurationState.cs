@@ -38,7 +38,7 @@ public class ConfigurationState(Player player, Server? server) : ProtocolState, 
             if (packet.Direction == Direction.Clientbound)
                 server?.SetConnectionType(ConnectionType.Forge);
 
-            Proxy.Logger.Debug($"Received {packet.Direction} Configuration {packet.Identifier} with {packet.Data.Length} bytes {(packet.Data.Length <= 256 ? $"=> {Encoding.UTF8.GetString(packet.Data).ReplaceLineEndings(string.Empty)}" : string.Empty)}");
+            Proxy.Logger.Debug($"Received {packet.Direction} Configuration {packet.Identifier} with {packet.Data.Length} bytes");
             return Task.FromResult(false);
         }
 
@@ -58,7 +58,11 @@ public class ConfigurationState(Player player, Server? server) : ProtocolState, 
             return Task.FromResult(false);
         }
 
-        Proxy.Logger.Debug($"Received {packet.Direction} Configuration plugin message in channel {packet.Identifier} with {packet.Data.Length} bytes => {Convert.ToHexString(packet.Data)}");
+        if (new[] { "minecraft", "forge", "fml" }.Any(name => packet.Identifier.Contains(name, StringComparison.InvariantCultureIgnoreCase)))
+            Proxy.Logger.Debug($"Received {packet.Direction} Configuration plugin message in channel {packet.Identifier} with {packet.Data.Length} bytes");
+        else
+            Proxy.Logger.Verbose($"Received {packet.Direction} Configuration plugin message in channel {packet.Identifier} with {packet.Data.Length} bytes");
+
         return Task.FromResult(false);
     }
 }

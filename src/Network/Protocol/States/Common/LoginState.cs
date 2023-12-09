@@ -78,7 +78,7 @@ public class LoginState(Player player, Server? server) : ProtocolState, ILoginCo
         var secret = Proxy.RSA.Decrypt(packet.SharedSecret, false);
         player.EnableEncryption(secret);
 
-        if (player.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_8)
+        if (player.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_8 && Proxy.CompressionThreshold > 0)
         {
             var compressionPacket = new SetCompressionPacket { Threshold = Proxy.CompressionThreshold };
             await player.SendPacketAsync(compressionPacket);
@@ -161,7 +161,7 @@ public class LoginState(Player player, Server? server) : ProtocolState, ILoginCo
 
         if (packet.Identifier == "fml:loginwrapper")
         {
-            Proxy.Logger.Debug($"Received Clientbound Login plugin request {packet.Identifier} with {packet.Data.Length} bytes {(packet.Data.Length <= 256 ? $"=> {Encoding.UTF8.GetString(packet.Data).ReplaceLineEndings(string.Empty)}" : string.Empty)}");
+            Proxy.Logger.Debug($"Received Clientbound Login plugin request {packet.Identifier} with {packet.Data.Length} bytes");
             return false;
         }
 
@@ -170,7 +170,7 @@ public class LoginState(Player player, Server? server) : ProtocolState, ILoginCo
 
     public Task<bool> HandleAsync(LoginPluginResponse packet)
     {
-        Proxy.Logger.Debug($"Received Clientbound Login plugin response {packet.MessageId} with {packet.Data.Length} bytes {(packet.Data.Length <= 256 ? $"=> {Encoding.UTF8.GetString(packet.Data).ReplaceLineEndings(string.Empty)}" : string.Empty)}");
+        Proxy.Logger.Debug($"Received Clientbound Login plugin response {packet.MessageId} with {packet.Data.Length} bytes");
         return Task.FromResult(false);
     }
 

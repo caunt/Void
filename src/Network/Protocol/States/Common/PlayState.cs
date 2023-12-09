@@ -81,7 +81,11 @@ public class PlayState(Player player, Server? server) : ProtocolState, ILoginCon
             return Task.FromResult(false);
         }
 
-        Proxy.Logger.Debug($"Received {packet.Direction} Play plugin message in channel {packet.Identifier} with {packet.Data.Length} bytes => {Convert.ToHexString(packet.Data)}");
+        if (new[] { "minecraft", "forge", "fml" }.Any(name => packet.Identifier.Contains(name, StringComparison.InvariantCultureIgnoreCase)))
+            Proxy.Logger.Debug($"Received {packet.Direction} Play plugin message in channel {packet.Identifier} with {packet.Data.Length} bytes");
+        else
+            Proxy.Logger.Verbose($"Received {packet.Direction} Play plugin message in channel {packet.Identifier} with {packet.Data.Length} bytes");
+
         return Task.FromResult(false);
     }
 }
