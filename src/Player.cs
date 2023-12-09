@@ -1,11 +1,11 @@
 ﻿using MinecraftProxy.Models;
+using MinecraftProxy.Network;
 using MinecraftProxy.Network.IO;
 using MinecraftProxy.Network.Protocol;
 using MinecraftProxy.Network.Protocol.Packets;
 using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.States;
 using MinecraftProxy.Network.Protocol.States.Common;
-using System.Buffers;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -13,27 +13,18 @@ using System.Text.Json;
 
 namespace MinecraftProxy;
 
-public class Player
+public class Player : IDisposable
 {
+    public string? Brand { get; protected set; }
     public GameProfile? GameProfile { get; protected set; }
-
     public ProtocolState? State { get; protected set; }
-
     public EndPoint? RemoteEndPoint => tcpClient.Client.RemoteEndPoint;
-
     public Server? CurrentServer { get; protected set; }
-
     public IdentifiedKey? IdentifiedKey { get; protected set; }
-
-    public Guid SignatureHolder { get; protected set; }
-
     public ProtocolVersion ProtocolVersion { get; protected set; }
 
     protected readonly TcpClient tcpClient;
-
-    protected MinecraftChannel? serverChannel;
-
-    protected MinecraftChannel? clientChannel;
+    protected MinecraftChannel? channel;
 
     public Player(TcpClient tcpClient)
     {
@@ -48,6 +39,11 @@ public class Player
         GameProfile = gameProfile;
     }
 
+    public void SetBrand(string brand)
+    {
+        Brand = brand;
+    }
+
     public ProtocolVersion SetProtocolVersion(ProtocolVersion protocolVersion)
     {
         return ProtocolVersion = protocolVersion;
@@ -57,11 +53,11 @@ public class Player
     {
         State = state switch
         {
-            0 => new HandshakeState(this),
+            0 => new HandshakeState(this, CurrentServer),
             1 => throw new NotImplementedException("Ping state not implemented yet"),
-            2 => new LoginState(this),
-            3 => new ConfigurationState(this),
-            4 => new PlayState(this),
+            2 => new LoginState(this, CurrentServer),
+            3 => new ConfigurationState(this, CurrentServer),
+            4 => new PlayState(this, CurrentServer),
             _ => throw new ArgumentOutOfRangeException(nameof(state))
         };
 
@@ -70,34 +66,20 @@ public class Player
         return State;
     }
 
-    public void EnableEncryption(PacketDirection direction, byte[] secret)
+    public void EnableEncryption(byte[] secret)
     {
-        var channel = direction switch
-        {
-            PacketDirection.Clientbound => clientChannel,
-            PacketDirection.Serverbound => serverChannel, // servers are always in offline mode
-            _ => throw new ArgumentOutOfRangeException(nameof(direction)),
-        };
-
         ArgumentNullException.ThrowIfNull(channel);
 
         channel.EnableEncryption(secret);
-        Proxy.Logger.Information($"Player {this} enabled {direction} encryption");
+        Proxy.Logger.Information($"Player {this} enabled encryption");
     }
 
-    public void EnableCompression(PacketDirection direction, int threshold)
+    public void EnableCompression(int threshold)
     {
-        var channel = direction switch
-        {
-            PacketDirection.Clientbound => clientChannel,
-            PacketDirection.Serverbound => serverChannel,
-            _ => throw new ArgumentOutOfRangeException(nameof(direction)),
-        };
-
         ArgumentNullException.ThrowIfNull(channel);
 
         channel.EnableCompression(threshold);
-        Proxy.Logger.Information($"Player {this} enabled {direction} compression");
+        Proxy.Logger.Information($"Player {this} enabled compression");
     }
 
     public void SetIdentifiedKey(IdentifiedKey identifiedKey)
@@ -163,28 +145,20 @@ public class Player
         return GameProfile;
     }
 
-    public async Task SendPacketAsync(PacketDirection direction, IMinecraftPacket packet)
+    public async Task SendPacketAsync(IMinecraftPacket packet)
     {
         ArgumentNullException.ThrowIfNull(State);
         ArgumentNullException.ThrowIfNull(ProtocolVersion);
 
-        var id = State.FindPacketId(direction, packet, ProtocolVersion);
+        var id = State.FindPacketId(Direction.Clientbound, packet, ProtocolVersion);
 
         if (!id.HasValue)
             throw new Exception($"{packet.GetType().Name} packet id not found in {State.GetType().Name}");
 
-        Proxy.Logger.Debug($"Sending {packet.GetType().Name} to {direction} player {this}");
-
-        var channel = direction switch
-        {
-            PacketDirection.Clientbound => clientChannel,
-            PacketDirection.Serverbound => serverChannel,
-            _ => throw new ArgumentOutOfRangeException(nameof(direction)),
-        };
-
+        Proxy.Logger.Debug($"Sending {packet.GetType().Name} to player {this}");
         ArgumentNullException.ThrowIfNull(channel);
 
-        using var message = EncodeMessage(id.Value, packet, direction, ProtocolVersion);
+        using var message = MinecraftMessage.Encode(id.Value, packet, Direction.Clientbound, ProtocolVersion);
         await channel.WriteMessageAsync(message);
     }
 
@@ -192,16 +166,11 @@ public class Player
     {
         CurrentServer = server;
 
-        using var forwardClient = new TcpClient(server.Host, server.Port);
-        using var forwardStream = forwardClient.GetStream();
-
-        serverChannel = new MinecraftChannel(forwardStream);
-        clientChannel = new MinecraftChannel(tcpClient.GetStream());
-
+        channel = new MinecraftChannel(tcpClient.GetStream());
         var cts = new CancellationTokenSource();
 
-        var clientTask = ProcessPacketsAsync<ProtocolState>(clientChannel, serverChannel, "Player", cts.Token);
-        var serverTask = ProcessPacketsAsync<ProtocolState>(serverChannel, clientChannel, "Server", cts.Token);
+        var clientTask = ProcessPacketsAsync<ProtocolState>(channel, server.GetChannel(), "Player", cts.Token);
+        var serverTask = ProcessPacketsAsync<ProtocolState>(server.GetChannel(), channel, "Server", cts.Token);
         var completedTask = await Task.WhenAny(serverTask, clientTask);
 
         if (completedTask.IsFaulted && completedTask.Exception.InnerExceptions.All(exception => exception is not EndOfStreamException and not IOException))
@@ -218,9 +187,6 @@ public class Player
         }
 
         Proxy.Logger.Information($"Stopped forwarding traffic from/to {this}");
-
-        forwardClient.Close();
-        tcpClient.Close();
     }
 
     public override string ToString() => GameProfile?.Name ?? tcpClient.Client?.RemoteEndPoint?.ToString() ?? "Disposed?";
@@ -232,8 +198,8 @@ public class Player
 
         var direction = sourceIdentifier switch
         {
-            "Player" => PacketDirection.Serverbound,
-            "Server" => PacketDirection.Clientbound,
+            "Player" => Direction.Serverbound,
+            "Server" => Direction.Clientbound,
             _ => throw new ArgumentException(sourceIdentifier)
         };
 
@@ -246,7 +212,7 @@ public class Player
             using (var message = await sourceChannel.ReadMessageAsync(cancellationToken))
             {
                 length = message.Length;
-                (packetId, packet, var handleTask) = DecodeMessage(State, message, direction, ProtocolVersion);
+                (packetId, packet, var handleTask) = message.DecodeAndHandle(State, direction, ProtocolVersion);
 
                 if (packet is null)
                 {
@@ -258,7 +224,7 @@ public class Player
                     continue;
             }
 
-            using (var message = EncodeMessage(packetId, packet, direction, ProtocolVersion, length + 2048))
+            using (var message = MinecraftMessage.Encode(packetId, packet, direction, ProtocolVersion, length + 2048))
             {
                 await destinationChannel.WriteMessageAsync(message, cancellationToken);
             }
@@ -272,38 +238,10 @@ public class Player
         }
     }
 
-    protected static (int, IMinecraftPacket?, Task<bool>) DecodeMessage(ProtocolState protocolState, MinecraftMessage message, PacketDirection direction, ProtocolVersion protocolVersion)
+    public void Dispose()
     {
-        var buffer = new MinecraftBuffer(message.Memory);
-        var packetId = message.PacketId;
-        Proxy.Logger.Verbose($"Decoding {direction} 0x{packetId:X2} packet");
-
-        try
-        {
-            return protocolState switch
-            {
-                HandshakeState state when state.Decode<HandshakeState>(packetId, direction, ref buffer, protocolVersion) is { } packet => (packetId, packet, packet.HandleAsync(state)),
-                LoginState state when state.Decode<LoginState>(packetId, direction, ref buffer, protocolVersion) is { } packet => (packetId, packet, packet.HandleAsync(state)),
-                ConfigurationState state when state.Decode<ConfigurationState>(packetId, direction, ref buffer, protocolVersion) is { } packet => (packetId, packet, packet.HandleAsync(state)),
-                PlayState state when state.Decode<PlayState>(packetId, direction, ref buffer, protocolVersion) is { } packet => (packetId, packet, packet.HandleAsync(state)),
-                _ => (packetId, null, Task.FromResult(false))
-            };
-        }
-        catch (Exception exception)
-        {
-            Proxy.Logger.Information($"Couldn't decode packet: {exception}");
-            return (packetId, null, Task.FromResult(false));
-        }
-    }
-
-    protected static MinecraftMessage EncodeMessage(int packetId, IMinecraftPacket packet, PacketDirection direction, ProtocolVersion protocolVersion, int sizeHint = 2048)
-    {
-        var memoryOwner = MemoryPool<byte>.Shared.Rent(sizeHint);
-        var buffer = new MinecraftBuffer(memoryOwner.Memory);
-        Proxy.Logger.Verbose($"Encoding {direction} 0x{packetId:X2} packet {JsonSerializer.Serialize(packet as object, Proxy.JsonSerializerOptions)}");
-
-        packet.Encode(ref buffer, protocolVersion);
-
-        return new(packetId, memoryOwner.Memory[..buffer.Position], memoryOwner);
+        tcpClient?.Close();
+        tcpClient?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

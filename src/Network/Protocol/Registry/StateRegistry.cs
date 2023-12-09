@@ -1,16 +1,14 @@
-﻿using MinecraftProxy.Network.Protocol.Packets;
-
-namespace MinecraftProxy.Network.Protocol.Registry;
+﻿namespace MinecraftProxy.Network.Protocol.Registry;
 
 public class StateRegistry
 {
-    public PacketRegistry Clientbound { get; } = new(PacketDirection.Clientbound);
-    public PacketRegistry Serverbound { get; } = new(PacketDirection.Serverbound);
+    public PacketRegistry Clientbound { get; } = new(Direction.Clientbound);
+    public PacketRegistry Serverbound { get; } = new(Direction.Serverbound);
 
-    public ProtocolRegistry GetProtocolRegistry(PacketDirection direction, ProtocolVersion version) => direction switch
+    public ProtocolRegistry GetProtocolRegistry(Direction direction, ProtocolVersion version) => direction switch
     {
-        PacketDirection.Serverbound => Serverbound.GetProtocolRegistry(version),
-        PacketDirection.Clientbound => Clientbound.GetProtocolRegistry(version),
+        Direction.Serverbound => Serverbound.GetProtocolRegistry(version),
+        Direction.Clientbound => Clientbound.GetProtocolRegistry(version),
         _ => throw new ArgumentOutOfRangeException(nameof(direction))
     };
 }

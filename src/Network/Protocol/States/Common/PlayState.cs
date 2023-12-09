@@ -1,12 +1,13 @@
 ﻿using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.Packets.Serverbound;
+using MinecraftProxy.Network.Protocol.Packets.Shared;
 using MinecraftProxy.Network.Protocol.Registry;
 using MinecraftProxy.Network.Protocol.States.Custom;
 using Nito.Disposables.Internals;
 
 namespace MinecraftProxy.Network.Protocol.States.Common;
 
-public class PlayState(Player player) : ProtocolState, IPlayableState
+public class PlayState(Player player, Server? server) : ProtocolState, ILoginConfigurePlayState, IConfigurePlayState
 {
     protected override StateRegistry Registry { get; } = Registries.PlayStateRegistry;
 
@@ -48,6 +49,12 @@ public class PlayState(Player player) : ProtocolState, IPlayableState
 
     public Task<bool> HandleAsync(JoinGamePacket packet)
     {
+        return Task.FromResult(false);
+    }
+
+    public Task<bool> HandleAsync(PluginMessage packet)
+    {
+        Proxy.Logger.Debug($"Received {packet.Direction} Play plugin message in channel {packet.Identifier} with {packet.Data.Length} bytes => {Convert.ToHexString(packet.Data)}");
         return Task.FromResult(false);
     }
 }

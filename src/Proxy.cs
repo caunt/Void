@@ -10,7 +10,7 @@ namespace MinecraftProxy;
 
 public static class Proxy
 {
-    public static readonly LogEventLevel LogLevel = LogEventLevel.Verbose;
+    public static readonly LogEventLevel LogLevel = LogEventLevel.Debug;
     public static readonly int ListenPort = 25565;
     public static readonly int CompressionThreshold = 256;
 
@@ -29,9 +29,12 @@ public static class Proxy
 
         while (true)
         {
-            var player = new Player(await listener.AcceptTcpClientAsync());
-            var server = new Server("127.0.0.1", 25566, new NoneForwarding() /*new ModernForwarding("aaa")*/);
-            _ = player.ForwardTrafficAsync(server);
+            _ = await listener.AcceptTcpClientAsync().ContinueWith(async task =>
+            {
+                using var player = new Player(task.Result);
+                using var server = new Server("127.0.0.1", 25566, new NoneForwarding() /*new ModernForwarding("aaa")*/).Init();
+                await player.ForwardTrafficAsync(server);
+            });
         }
     }
 }

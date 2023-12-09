@@ -16,8 +16,4 @@
     <PackageReference Include="Zlib.Portable.Signed" Version="1.11.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Network\Protocol\Packets\Shared\" />
-  </ItemGroup>
-
 </Project>

@@ -3,7 +3,7 @@ using MinecraftProxy.Network.Protocol.Registry;
 
 namespace MinecraftProxy.Network.Protocol.States.Common;
 
-public class HandshakeState(Player player) : ProtocolState
+public class HandshakeState(Player player, Server? server) : ProtocolState
 {
     protected override StateRegistry Registry { get; } = Registries.HandshakeStateRegistry;
 

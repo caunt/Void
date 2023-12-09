@@ -1,14 +1,13 @@
 ﻿using MinecraftProxy.Network.Protocol.Packets;
-using System.Text.Json;
 
 namespace MinecraftProxy.Network.Protocol.Registry;
 
 public class PacketRegistry
 {
     private readonly Dictionary<ProtocolVersion, ProtocolRegistry> _versions = [];
-    private readonly bool fallback = true;
+    private readonly bool _fallback = true;
 
-    public PacketRegistry(PacketDirection direction)
+    public PacketRegistry(Direction direction)
     {
         foreach (var version in ProtocolVersion.Range())
             _versions.Add(version, new ProtocolRegistry(direction, version));
@@ -18,7 +17,7 @@ public class PacketRegistry
     {
         if (!_versions.TryGetValue(version, out var registry))
         {
-            if (fallback && _versions.TryGetValue(ProtocolVersion.Oldest, out registry))
+            if (_fallback && _versions.TryGetValue(ProtocolVersion.Oldest, out registry))
                 return registry;
 
             throw new KeyNotFoundException($"Could not find registry for {version} protocol version ");

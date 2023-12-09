@@ -1,6 +1,5 @@
 ﻿using MinecraftProxy.Models;
 using MinecraftProxy.Network.Protocol.Forwarding;
-using MinecraftProxy.Network.Protocol.Packets;
 using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.Packets.Serverbound;
 using MinecraftProxy.Network.Protocol.Registry;
@@ -8,7 +7,7 @@ using MinecraftProxy.Network.Protocol.States.Custom;
 
 namespace MinecraftProxy.Network.Protocol.States.Common;
 
-public class LoginState(Player player) : ProtocolState, IPlayableState
+public class LoginState(Player player, Server? server) : ProtocolState, ILoginConfigurePlayState
 {
     protected override StateRegistry Registry { get; } = Registries.LoginStateRegistry;
     
@@ -40,7 +39,7 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
         var encryptionRequestPacket = GenerateEncryptionRequest();
         verifyToken = encryptionRequestPacket.VerifyToken;
 
-        await player.SendPacketAsync(PacketDirection.Clientbound, encryptionRequestPacket);
+        await player.SendPacketAsync(encryptionRequestPacket);
         return true; // cancelling as we will send login packet to server later with online game profile
     }
 
@@ -73,39 +72,45 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
                 throw new Exception("Unable to verify encryption token");
         }
 
+        ArgumentNullException.ThrowIfNull(server);
+
         var secret = Proxy.RSA.Decrypt(packet.SharedSecret, false);
-        player.EnableEncryption(PacketDirection.Clientbound, secret);
+        player.EnableEncryption(secret);
 
         if (player.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_8)
         {
             var compressionPacket = new SetCompressionPacket { Threshold = Proxy.CompressionThreshold };
-            await player.SendPacketAsync(PacketDirection.Clientbound, compressionPacket);
-            player.EnableCompression(PacketDirection.Clientbound, Proxy.CompressionThreshold);
+            await player.SendPacketAsync(compressionPacket);
+            player.EnableCompression(Proxy.CompressionThreshold);
         }
 
         await player.RequestGameProfileAsync(secret);
-        await player.SendPacketAsync(PacketDirection.Serverbound, GenerateLoginStartPacket());
+        await server.SendPacketAsync(player, GenerateLoginStartPacket());
 
         return true;
     }
 
     public async Task<bool> HandleAsync(SetCompressionPacket packet)
     {
+        ArgumentNullException.ThrowIfNull(server);
+
         if (packet.Threshold > 0)
-            player.EnableCompression(PacketDirection.Serverbound, packet.Threshold);
+            server.EnableCompression(packet.Threshold);
 
         return true; // we should complete encryption before sending compression packet
     }
 
     public async Task<bool> HandleAsync(LoginSuccessPacket packet)
     {
+        ArgumentNullException.ThrowIfNull(server);
+
         if (player.GameProfile is null)
             throw new Exception("Game profile not loaded yet");
 
-        if (player.CurrentServer is null)
+        if (server is null)
             throw new Exception("Server not chosen yet");
 
-        if (player.CurrentServer.Forwarding is not NoneForwarding)
+        if (server.Forwarding is not NoneForwarding)
         {
             if (packet.Guid != player.GameProfile.Id)
                 throw new Exception($"Server sent wrong player UUID: {packet.Guid}, online is: {player.GameProfile.Id}");
@@ -132,24 +137,28 @@ public class LoginState(Player player) : ProtocolState, IPlayableState
 
     public async Task<bool> HandleAsync(LoginPluginRequest packet)
     {
-        if (player.CurrentServer is null)
+        ArgumentNullException.ThrowIfNull(server);
+
+        if (server is null)
             throw new Exception("Server not chosen yet");
 
-        if (player.CurrentServer.Forwarding is not ModernForwarding forwarding)
-            return false;
-
-        if (!packet.Identifier.Equals("velocity:player_info"))
-            return false;
-
-        var data = forwarding.GenerateForwardingData(packet.Data, player);
-        await player.SendPacketAsync(PacketDirection.Serverbound, new LoginPluginResponse
+        if (server.Forwarding is ModernForwarding forwarding)
         {
-            MessageId = packet.MessageId,
-            Successful = true,
-            Data = data
-        });
+            if (!packet.Identifier.Equals("velocity:player_info"))
+                return false;
 
-        return true;
+            var data = forwarding.GenerateForwardingData(packet.Data, player);
+            await server.SendPacketAsync(player, new LoginPluginResponse
+            {
+                MessageId = packet.MessageId,
+                Successful = true,
+                Data = data
+            });
+
+            return true;
+        }
+
+        return false;
     }
 
     public Task<bool> HandleAsync(LoginPluginResponse packet)

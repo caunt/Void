@@ -1,5 +1,6 @@
 ﻿using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.Packets.Serverbound;
+using MinecraftProxy.Network.Protocol.Packets.Shared;
 
 namespace MinecraftProxy.Network.Protocol.Registry;
 
@@ -24,6 +25,8 @@ public static class Registries
         LoginStateRegistry.Clientbound.Register<SetCompressionPacket>(() => new(), new PacketMapping(0x03, false, ProtocolVersion.MINECRAFT_1_8));
         LoginStateRegistry.Clientbound.Register<LoginPluginRequest>(() => new(), new PacketMapping(0x04, false, ProtocolVersion.MINECRAFT_1_13));
 
+        ConfigurationStateRegistry.Clientbound.Register<PluginMessage>(() => new(Direction.Clientbound, 1048576), new PacketMapping(0x00, false, ProtocolVersion.MINECRAFT_1_20_2));
+        ConfigurationStateRegistry.Serverbound.Register<PluginMessage>(() => new(Direction.Serverbound, 32767), new PacketMapping(0x01, false, ProtocolVersion.MINECRAFT_1_20_2));
         ConfigurationStateRegistry.Clientbound.Register<DisconnectPacket>(() => new(), new PacketMapping(0x01, false, ProtocolVersion.MINECRAFT_1_20_2));
         ConfigurationStateRegistry.Clientbound.Register<FinishConfiguration>(() => new(), new PacketMapping(0x02, false, ProtocolVersion.MINECRAFT_1_20_2));
 
@@ -60,5 +63,32 @@ public static class Registries
             new PacketMapping(0x24, false, ProtocolVersion.MINECRAFT_1_19_3),
             new PacketMapping(0x28, false, ProtocolVersion.MINECRAFT_1_19_4),
             new PacketMapping(0x29, false, ProtocolVersion.MINECRAFT_1_20_2));
+        PlayStateRegistry.Clientbound.Register<PluginMessage>(() => new(Direction.Clientbound, 1048576),
+            new PacketMapping(0x3F, false, ProtocolVersion.MINECRAFT_1_7_2),
+            new PacketMapping(0x18, false, ProtocolVersion.MINECRAFT_1_9),
+            new PacketMapping(0x19, false, ProtocolVersion.MINECRAFT_1_13),
+            new PacketMapping(0x18, false, ProtocolVersion.MINECRAFT_1_14),
+            new PacketMapping(0x19, false, ProtocolVersion.MINECRAFT_1_15),
+            new PacketMapping(0x18, false, ProtocolVersion.MINECRAFT_1_16),
+            new PacketMapping(0x17, false, ProtocolVersion.MINECRAFT_1_16_2),
+            new PacketMapping(0x18, false, ProtocolVersion.MINECRAFT_1_17),
+            new PacketMapping(0x15, false, ProtocolVersion.MINECRAFT_1_19),
+            new PacketMapping(0x16, false, ProtocolVersion.MINECRAFT_1_19_1),
+            new PacketMapping(0x15, false, ProtocolVersion.MINECRAFT_1_19_3),
+            new PacketMapping(0x17, false, ProtocolVersion.MINECRAFT_1_19_4),
+            new PacketMapping(0x18, false, ProtocolVersion.MINECRAFT_1_20_2));
+        PlayStateRegistry.Serverbound.Register<PluginMessage>(() => new(Direction.Serverbound, 32767),
+            new PacketMapping(0x17, false, ProtocolVersion.MINECRAFT_1_7_2),
+            new PacketMapping(0x09, false, ProtocolVersion.MINECRAFT_1_9),
+            new PacketMapping(0x0A, false, ProtocolVersion.MINECRAFT_1_12),
+            new PacketMapping(0x09, false, ProtocolVersion.MINECRAFT_1_12_1),
+            new PacketMapping(0x0A, false, ProtocolVersion.MINECRAFT_1_13),
+            new PacketMapping(0x0B, false, ProtocolVersion.MINECRAFT_1_14),
+            new PacketMapping(0x0A, false, ProtocolVersion.MINECRAFT_1_17),
+            new PacketMapping(0x0C, false, ProtocolVersion.MINECRAFT_1_19),
+            new PacketMapping(0x0D, false, ProtocolVersion.MINECRAFT_1_19_1),
+            new PacketMapping(0x0C, false, ProtocolVersion.MINECRAFT_1_19_3),
+            new PacketMapping(0x0D, false, ProtocolVersion.MINECRAFT_1_19_4),
+            new PacketMapping(0x0F, false, ProtocolVersion.MINECRAFT_1_20_2));
     }
 }

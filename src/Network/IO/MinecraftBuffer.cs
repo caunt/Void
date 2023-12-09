@@ -98,7 +98,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         BinaryPrimitives.WriteUInt16BigEndian(span, value);
     }
 
-    public int ReadExtendedForgeShort()
+    public int ReadVarShort()
     {
         var low = ReadUnsignedShort();
         var high = 0;
@@ -112,7 +112,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         return ((high & 0xFF) << 15) | low;
     }
 
-    public void WriteExtendedForgeShort(int value)
+    public void WriteVarShort(int value)
     {
         var low = (ushort)(value & 0x7FFF);
         var high = (byte)((value & 0x7F8000) >> 15);

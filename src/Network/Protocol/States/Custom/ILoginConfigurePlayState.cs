@@ -2,7 +2,7 @@
 
 namespace MinecraftProxy.Network.Protocol.States.Custom;
 
-public interface IPlayableState : IProtocolState
+public interface ILoginConfigurePlayState : IProtocolState
 {
     public Task<bool> HandleAsync(DisconnectPacket packet);
 }

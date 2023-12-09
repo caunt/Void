@@ -1,10 +1,12 @@
 ﻿using MinecraftProxy.Network.Protocol.Packets.Clientbound;
+using MinecraftProxy.Network.Protocol.Packets.Shared;
 using MinecraftProxy.Network.Protocol.Registry;
 using MinecraftProxy.Network.Protocol.States.Custom;
+using System.Text;
 
 namespace MinecraftProxy.Network.Protocol.States.Common;
 
-public class ConfigurationState(Player player) : ProtocolState, IPlayableState
+public class ConfigurationState(Player player, Server? server) : ProtocolState, ILoginConfigurePlayState, IConfigurePlayState
 {
     protected override StateRegistry Registry { get; } = Registries.ConfigurationStateRegistry;
 
@@ -13,9 +15,25 @@ public class ConfigurationState(Player player) : ProtocolState, IPlayableState
         return Task.FromResult(false);
     }
 
-    public Task<bool> HandleAsync(FinishConfiguration finishConfiguration)
+    public Task<bool> HandleAsync(FinishConfiguration packet)
     {
         player.SwitchState(4);
+        return Task.FromResult(false);
+    }
+
+    public Task<bool> HandleAsync(PluginMessage packet)
+    {
+        if (packet.Identifier == "minecraft:brand")
+        {
+            if (packet.Direction == Direction.Serverbound)
+                player.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
+            else if (packet.Direction == Direction.Clientbound)
+                server?.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
+
+            return Task.FromResult(false);
+        }
+
+        Proxy.Logger.Debug($"Received {packet.Direction} Configuration plugin message in channel {packet.Identifier} with {packet.Data.Length} bytes => {Convert.ToHexString(packet.Data)}");
         return Task.FromResult(false);
     }
 }

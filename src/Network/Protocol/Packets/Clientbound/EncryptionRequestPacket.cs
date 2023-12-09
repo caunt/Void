@@ -23,10 +23,10 @@ public struct EncryptionRequestPacket : IMinecraftPacket<LoginState>
         }
         else
         {
-            buffer.WriteExtendedForgeShort(PublicKey.Length);
+            buffer.WriteVarShort(PublicKey.Length);
             buffer.Write(PublicKey);
 
-            buffer.WriteExtendedForgeShort(VerifyToken.Length);
+            buffer.WriteVarShort(VerifyToken.Length);
             buffer.Write(VerifyToken);
         }
     }
@@ -47,10 +47,10 @@ public struct EncryptionRequestPacket : IMinecraftPacket<LoginState>
         }
         else
         {
-            var publicKeyLength = buffer.ReadExtendedForgeShort();
+            var publicKeyLength = buffer.ReadVarShort();
             PublicKey = buffer.Read(publicKeyLength).ToArray();
 
-            var verifyTokenLength = buffer.ReadExtendedForgeShort();
+            var verifyTokenLength = buffer.ReadVarShort();
             VerifyToken = buffer.Read(verifyTokenLength).ToArray();
         }
     }

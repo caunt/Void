@@ -10,7 +10,7 @@ public abstract class ProtocolState : IProtocolState
 {
     protected abstract StateRegistry Registry { get; }
 
-    public IMinecraftPacket<T>? Decode<T>(int packetId, PacketDirection direction, ref MinecraftBuffer buffer, ProtocolVersion protocolVersion) where T : ProtocolState
+    public IMinecraftPacket<T>? Decode<T>(int packetId, Direction direction, ref MinecraftBuffer buffer, ProtocolVersion protocolVersion) where T : ProtocolState
     {
         var protocolRegistry = Registry.GetProtocolRegistry(direction, protocolVersion);
         var packet = protocolRegistry.CreatePacket(packetId);
@@ -26,7 +26,7 @@ public abstract class ProtocolState : IProtocolState
         return packet as IMinecraftPacket<T> ?? throw new Exception($"Cannot cast instance of {packetId} packet to {typeof(IMinecraftPacket<T>)}");
     }
 
-    public int? FindPacketId(PacketDirection direction, IMinecraftPacket packet, ProtocolVersion protocolVersion)
+    public int? FindPacketId(Direction direction, IMinecraftPacket packet, ProtocolVersion protocolVersion)
     {
         var protocolRegistry = Registry.GetProtocolRegistry(direction, protocolVersion);
 

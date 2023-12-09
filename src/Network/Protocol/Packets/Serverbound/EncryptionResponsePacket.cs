@@ -35,10 +35,10 @@ public struct EncryptionResponsePacket : IMinecraftPacket<LoginState>
         }
         else
         {
-            buffer.WriteExtendedForgeShort(SharedSecret.Length);
+            buffer.WriteVarShort(SharedSecret.Length);
             buffer.Write(SharedSecret);
 
-            buffer.WriteExtendedForgeShort(VerifyToken.Length);
+            buffer.WriteVarShort(VerifyToken.Length);
             buffer.Write(VerifyToken);
         }
     }
@@ -61,10 +61,10 @@ public struct EncryptionResponsePacket : IMinecraftPacket<LoginState>
         }
         else
         {
-            var sharedSecretLength = buffer.ReadExtendedForgeShort();
+            var sharedSecretLength = buffer.ReadVarShort();
             SharedSecret = buffer.Read(sharedSecretLength).ToArray();
 
-            var verifyTokenLength = buffer.ReadExtendedForgeShort();
+            var verifyTokenLength = buffer.ReadVarShort();
             VerifyToken = buffer.Read(verifyTokenLength).ToArray();
         }
     }

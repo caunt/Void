@@ -4,7 +4,7 @@ using MinecraftProxy.Network.Protocol.States.Custom;
 
 namespace MinecraftProxy.Network.Protocol.Packets.Clientbound;
 
-public struct DisconnectPacket : IMinecraftPacket<IPlayableState>
+public struct DisconnectPacket : IMinecraftPacket<ILoginConfigurePlayState>
 {
     public bool EncodeNbt { get; set; }
     public ChatComponent Reason { get; set; }
@@ -35,7 +35,7 @@ public struct DisconnectPacket : IMinecraftPacket<IPlayableState>
         buffer.WriteString(ReasonString);
     }
 
-    public async Task<bool> HandleAsync(IPlayableState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(ILoginConfigurePlayState state) => await state.HandleAsync(this);
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
