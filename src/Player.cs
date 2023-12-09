@@ -22,6 +22,7 @@ public class Player : IDisposable
     public Server? CurrentServer { get; protected set; }
     public IdentifiedKey? IdentifiedKey { get; protected set; }
     public ProtocolVersion ProtocolVersion { get; protected set; }
+    public ConnectionType ConnectionType { get; protected set; }
 
     protected readonly TcpClient tcpClient;
     protected MinecraftChannel? channel;
@@ -42,6 +43,11 @@ public class Player : IDisposable
     public void SetBrand(string brand)
     {
         Brand = brand;
+    }
+
+    public void SetConnectionType(ConnectionType connectionType)
+    {
+        ConnectionType = connectionType;
     }
 
     public ProtocolVersion SetProtocolVersion(ProtocolVersion protocolVersion)

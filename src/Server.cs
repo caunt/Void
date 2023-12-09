@@ -1,5 +1,6 @@
 ﻿using MinecraftProxy.Network;
 using MinecraftProxy.Network.IO;
+using MinecraftProxy.Network.Protocol;
 using MinecraftProxy.Network.Protocol.Forwarding;
 using MinecraftProxy.Network.Protocol.Packets;
 using System.Net.Sockets;
@@ -12,6 +13,7 @@ public class Server(string host, int port, IForwarding forwarding) : IDisposable
     public int Port { get; } = port;
     public IForwarding Forwarding { get; } = forwarding;
     public string? Brand { get; protected set; }
+    public ConnectionType ConnectionType { get; protected set; }
 
     protected MinecraftChannel? channel;
     protected TcpClient? tcpClient;
@@ -32,6 +34,11 @@ public class Server(string host, int port, IForwarding forwarding) : IDisposable
     public void SetBrand(string brand)
     {
         Brand = brand;
+    }
+
+    public void SetConnectionType(ConnectionType connectionType)
+    {
+        ConnectionType = connectionType;
     }
 
     public void EnableEncryption(byte[] secret, bool force = false)

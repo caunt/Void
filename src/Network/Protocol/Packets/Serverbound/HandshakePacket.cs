@@ -1,4 +1,5 @@
 ﻿using MinecraftProxy.Network.IO;
+using MinecraftProxy.Network.Protocol.Forge;
 using MinecraftProxy.Network.Protocol.States.Common;
 
 namespace MinecraftProxy.Network.Protocol.Packets.Serverbound;
@@ -22,8 +23,10 @@ public struct HandshakePacket : IMinecraftPacket<HandshakeState>
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
+        var forgeMarker = ForgeMarker.Longest?.Value.Length + 1 ?? 0;
+
         ProtocolVersion = buffer.ReadVarInt();
-        ServerAddress = buffer.ReadString();
+        ServerAddress = buffer.ReadString(255 + forgeMarker);
         ServerPort = buffer.ReadUnsignedShort();
         NextState = buffer.ReadVarInt();
     }
