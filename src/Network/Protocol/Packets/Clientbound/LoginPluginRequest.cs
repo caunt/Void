@@ -1,5 +1,6 @@
 ﻿using MinecraftProxy.Network.IO;
 using MinecraftProxy.Network.Protocol.States.Common;
+using System.Text;
 
 namespace MinecraftProxy.Network.Protocol.Packets.Clientbound;
 
@@ -24,4 +25,9 @@ public struct LoginPluginRequest : IMinecraftPacket<LoginState>
         Identifier = buffer.ReadString();
         Data = buffer.Read((int)(buffer.Length - buffer.Position)).ToArray();
     }
+
+    public int MaxSize() => 0
+        + 5
+        + Encoding.UTF8.GetByteCount(Identifier) + 5
+        + Data.Length + 5;
 }

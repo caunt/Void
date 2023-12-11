@@ -1,5 +1,6 @@
 ﻿using MinecraftProxy.Models.General;
 using MinecraftProxy.Models.Minecraft.Encryption;
+using MinecraftProxy.Network.IO;
 using MinecraftProxy.Network.Protocol.Forwarding;
 using MinecraftProxy.Network.Protocol.Packets.Clientbound;
 using MinecraftProxy.Network.Protocol.Packets.Serverbound;
@@ -84,7 +85,11 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
         }
 
         await link.Player.RequestGameProfileAsync(secret);
-        await link.Server.SendPacketAsync(GenerateLoginStartPacket());
+
+        var loginStartPacket = GenerateLoginStartPacket();
+        link.SaveLoginStart(loginStartPacket);
+
+        await link.Server.SendPacketAsync(loginStartPacket);
 
         return true;
     }
@@ -119,7 +124,7 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
         if (link.ProtocolVersion < ProtocolVersion.MINECRAFT_1_20_2)
             link.SwitchState(4);
 
-        return false;
+        return link.IsSwitching;
     }
 
     public Task<bool> HandleAsync(LoginAcknowledgedPacket packet)
@@ -148,16 +153,110 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
 
         if (packet.Identifier == "fml:loginwrapper")
         {
-            Proxy.Logger.Debug($"Received Clientbound Login plugin request {packet.Identifier} with {packet.Data.Length} bytes");
-            return false;
+            (int, string, byte[]) Test()
+            {
+                var buffer = new MinecraftBuffer(packet.Data);
+                var channel = buffer.ReadString();
+                var length = buffer.ReadVarInt();
+                var id = buffer.ReadVarInt();
+                var data = buffer.ReadToEnd();
+
+                return (id, channel, data.ToArray());
+            }
+
+            if (link.IsSwitching)
+            {
+                var (id, channel, data) = Test();
+
+                switch (channel)
+                {
+                    case "fml:handshake":
+                        switch (id)
+                        {
+                            case 1:
+                                byte[] Reply(byte[] modlist)
+                                {
+                                    var input = new MinecraftBuffer(modlist);
+
+                                    var names = new string[input.ReadVarInt()];
+                                    for (int i = 0; i < names.Length; i++)
+                                        names[i] = input.ReadString();
+
+                                    var channels = new KeyValuePair<string, string>[input.ReadVarInt()];
+                                    for (int i = 0; i < channels.Length; i++)
+                                        channels[i] = new(input.ReadString(), input.ReadString());
+
+                                    var registries = new string[input.ReadVarInt()];
+                                    for (int i = 0; i < registries.Length; i++)
+                                        registries[i] = input.ReadString();
+
+                                    var output = new MinecraftBuffer(modlist.Length * 2);
+
+                                    output.WriteVarInt(names.Length);
+                                    foreach (var name in names)
+                                        output.WriteString(name);
+
+                                    output.WriteVarInt(channels.Length);
+                                    foreach (var (name, marker) in channels)
+                                    {
+                                        output.WriteString(name);
+                                        output.WriteString(marker);
+                                    }
+
+                                    output.WriteVarInt(registries.Length);
+                                    foreach (var name in registries)
+                                    {
+                                        output.WriteString(name);
+                                        output.WriteString("1");
+                                    }
+
+                                    var packetData = output.Span[..output.Position].ToArray();
+                                    var buffer = new MinecraftBuffer(packet.Data.Length * 2);
+                                    buffer.WriteString(channel!);
+                                    buffer.WriteVarInt(MinecraftBuffer.GetVarIntSize(2) + packetData.Length);
+                                    buffer.WriteVarInt(2);
+                                    buffer.Write(packetData);
+
+                                    return buffer.Span[..buffer.Position].ToArray();
+                                }
+
+                                await link.Server.SendPacketAsync(new LoginPluginResponse { Data = Reply(data), MessageId = packet.MessageId, Successful = true });
+                                break;
+                            case 3 or 4:
+                                await link.Server.SendPacketAsync(new LoginPluginResponse { Data = Convert.FromHexString("0D666D6C3A68616E647368616B650163"), MessageId = packet.MessageId, Successful = true });
+                                break;
+                            case 5:
+                                break;
+                            default:
+                                Proxy.Logger.Debug($"2 Don't know what to do with forge channel {channel} packet id {id}, answering as succesful");
+                                await link.Server.SendPacketAsync(new LoginPluginResponse { Data = [], MessageId = packet.MessageId, Successful = true });
+                                break;
+                        }
+                        break;
+                    case "silentgear:network":
+                        break;
+                    case "exnihilosequentia:handshake":
+                        await link.Server.SendPacketAsync(new LoginPluginResponse { Data = Convert.FromHexString("1B65786E6968696C6F73657175656E7469613A68616E647368616B650163"), MessageId = packet.MessageId, Successful = true });
+                        break;
+                    default:
+                        Proxy.Logger.Debug($"1 Don't know what to do with forge channel {channel} packet id {id}, answering as succesful");
+                        await link.Server.SendPacketAsync(new LoginPluginResponse { Data = [], MessageId = packet.MessageId, Successful = true });
+                        break;
+                }
+
+            }
+
+            Proxy.Logger.Debug($"Received Clientbound Login plugin request {packet.MessageId} on plugin channel {packet.Identifier} with {packet.Data.Length} bytes");
+            return link.IsSwitching;
         }
 
-        return false;
+        return link.IsSwitching;
     }
 
     public Task<bool> HandleAsync(LoginPluginResponse packet)
     {
         Proxy.Logger.Debug($"Received Clientbound Login plugin response {packet.MessageId} with {packet.Data.Length} bytes");
+
         return Task.FromResult(false);
     }
 

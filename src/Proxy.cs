@@ -26,7 +26,7 @@ public static class Proxy
     public static readonly JsonSerializerOptions JsonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
     public static readonly LoggerConfiguration LoggerConfiguration = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Is(LogLevel);
     public static readonly ILogger Logger = LoggerConfiguration.CreateLogger();
-    public static readonly List<Link> Links = new();
+    public static readonly List<Link> Links = [];
 
     public static async Task StartAsync()
     {
@@ -38,7 +38,7 @@ public static class Proxy
         while (true)
         {
             var client = await listener.AcceptTcpClientAsync();
-            var serverInfo = Servers.Values.First();
+            var serverInfo = Servers.Values.ElementAt(0);
             var server = serverInfo.CreateTcpClient();
 
             var link = new Link(client, server);

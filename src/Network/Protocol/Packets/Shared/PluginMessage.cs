@@ -1,5 +1,6 @@
 ﻿using MinecraftProxy.Network.IO;
 using MinecraftProxy.Network.Protocol.States.Custom;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace MinecraftProxy.Network.Protocol.Packets.Shared;
@@ -15,12 +16,12 @@ public partial struct PluginMessage : IMinecraftPacket<IConfigurePlayState>
 
     public string Identifier { get; set; }
     public byte[] Data { get; set; }
-    public int MaxSize { get; }
+    public int MaxDataSize { get; }
     public Direction Direction { get; }
 
     public PluginMessage() : this(0, 0) { throw new NotSupportedException("Specify direction and size limit to plugin message"); }
 
-    public PluginMessage(Direction direction, int maxSize) => (Direction, MaxSize) = (direction, maxSize);
+    public PluginMessage(Direction direction, int maxDataSize) => (Direction, MaxDataSize) = (direction, maxDataSize);
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -32,7 +33,7 @@ public partial struct PluginMessage : IMinecraftPacket<IConfigurePlayState>
         if (protocolVersion < ProtocolVersion.MINECRAFT_1_8)
             buffer.WriteVarShort(Data.Length);
 
-        if (Data.Length > MaxSize)
+        if (Data.Length > MaxDataSize)
             throw new InternalBufferOverflowException($"Plugin message max size is {MaxSize} bytes");
 
         buffer.Write(Data);
@@ -51,9 +52,13 @@ public partial struct PluginMessage : IMinecraftPacket<IConfigurePlayState>
         else
             Data = buffer.Read(buffer.ReadVarShort()).ToArray();
 
-        if (Data.Length > MaxSize)
+        if (Data.Length > MaxDataSize)
             throw new InternalBufferOverflowException($"Plugin message max size is {MaxSize} bytes");
     }
+
+    public int MaxSize() => 0
+        + Encoding.UTF8.GetByteCount(Identifier) + 5
+        + Data.Length + 5;
 
     private string TransformLegacyToModernChannel(string name)
     {

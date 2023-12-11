@@ -1,5 +1,4 @@
 ﻿using Minecraft.Component.Component;
-using MinecraftProxy.Models.General;
 using MinecraftProxy.Models.Minecraft.Chat;
 using MinecraftProxy.Models.Minecraft.Encryption;
 using MinecraftProxy.Models.Minecraft.Profile;
@@ -12,7 +11,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
 
-namespace MinecraftProxy;
+namespace MinecraftProxy.Models.General;
 
 public class Player(Link link)
 {

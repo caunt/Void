@@ -21,6 +21,7 @@ public class HandshakeState(Link link) : ProtocolState
 
         link.SetProtocolVersion(ProtocolVersion.Get(packet.ProtocolVersion));
         link.SwitchState(packet.NextState);
+        link.SaveHandshake(packet);
 
         return Task.FromResult(false);
     }

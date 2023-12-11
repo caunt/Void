@@ -22,6 +22,21 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
 
     public MinecraftBuffer() : this(2048) { }
 
+    public void Seek(int offset) => Seek(offset, SeekOrigin.Current);
+
+    public void Seek(int offset, SeekOrigin origin)
+    {
+        if (origin == SeekOrigin.Begin)
+            Position = offset;
+        else if (origin == SeekOrigin.Current)
+            Position += offset;
+        else
+            Position -= offset;
+
+        if (Position < 0 || Position > Length)
+            throw new IndexOutOfRangeException($"Position {Position}, Length {Length}");
+    }
+
     public void Reset()
     {
         Position = 0;

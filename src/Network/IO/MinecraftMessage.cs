@@ -37,9 +37,9 @@ public readonly struct MinecraftMessage(int packetId, Memory<byte> memory, IMemo
         }
     }
 
-    public static MinecraftMessage Encode(int packetId, IMinecraftPacket packet, Direction direction, ProtocolVersion protocolVersion, int sizeHint = 2048)
+    public static MinecraftMessage Encode(int packetId, IMinecraftPacket packet, Direction direction, ProtocolVersion protocolVersion) // TODO make size calculations in interface
     {
-        var memoryOwner = MemoryPool<byte>.Shared.Rent(sizeHint);
+        var memoryOwner = MemoryPool<byte>.Shared.Rent(packet.MaxSize());
         var buffer = new MinecraftBuffer(memoryOwner.Memory);
         Proxy.Logger.Verbose($"Encoding {direction} 0x{packetId:X2} packet {JsonSerializer.Serialize(packet as object, Proxy.JsonSerializerOptions)}");
 

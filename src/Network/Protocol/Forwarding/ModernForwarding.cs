@@ -1,4 +1,5 @@
-﻿using MinecraftProxy.Network.IO;
+﻿using MinecraftProxy.Models.General;
+using MinecraftProxy.Network.IO;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;

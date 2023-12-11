@@ -50,9 +50,17 @@ public class PlayState(Link link) : ProtocolState, ILoginConfigurePlayState, ICo
         return Task.FromResult(false);
     }
 
-    public Task<bool> HandleAsync(JoinGamePacket packet)
+    public async Task<bool> HandleAsync(JoinGamePacket packet)
     {
-        return Task.FromResult(false);
+        await link.Player.SendPacketAsync(packet);
+
+        if (link.IsSwitching)
+        {
+            await link.Player.SendPacketAsync(RespawnPacket.FromJoinGame(packet));
+            link.SwitchComplete();
+        }
+
+        return true;
     }
 
     public Task<bool> HandleAsync(PluginMessage packet)
@@ -104,6 +112,11 @@ public class PlayState(Link link) : ProtocolState, ILoginConfigurePlayState, ICo
     }
 
     public Task<bool> HandleAsync(SystemChatMessage packet)
+    {
+        return Task.FromResult(false);
+    }
+
+    public Task<bool> HandleAsync(RespawnPacket packet)
     {
         return Task.FromResult(false);
     }

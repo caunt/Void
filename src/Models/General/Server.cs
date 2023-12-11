@@ -1,8 +1,7 @@
-﻿using MinecraftProxy.Models.General;
-using MinecraftProxy.Network;
+﻿using MinecraftProxy.Network;
 using MinecraftProxy.Network.Protocol.Packets;
 
-namespace MinecraftProxy;
+namespace MinecraftProxy.Models.General;
 
 public class Server(Link link)
 {

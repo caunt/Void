@@ -32,7 +32,7 @@ public class PacketStream(Stream baseStream) : Stream
         // where can we get packetId?
         var length = await baseStream.ReadVarIntAsync(cancellationToken);
         await baseStream.ReadExactlyAsync(output[..length], cancellationToken);
-        return length;
+        throw new NotSupportedException();
     }
 
     public async ValueTask<MinecraftMessage> ReadPacketAsync(CancellationToken cancellationToken = default)
@@ -50,6 +50,7 @@ public class PacketStream(Stream baseStream) : Stream
         // where can we get packetId?
         await baseStream.WriteVarIntAsync(output.Length, cancellationToken);
         await baseStream.WriteAsync(output, cancellationToken);
+        throw new NotSupportedException();
     }
 
     public async ValueTask WritePacketAsync(MinecraftMessage message, CancellationToken cancellationToken = default)

@@ -3,8 +3,10 @@ using MinecraftProxy.Network.IO;
 using MinecraftProxy.Network.Protocol;
 using MinecraftProxy.Network.Protocol.Packets;
 using MinecraftProxy.Network.Protocol.Packets.Clientbound;
+using MinecraftProxy.Network.Protocol.Packets.Serverbound;
 using MinecraftProxy.Network.Protocol.States;
 using MinecraftProxy.Network.Protocol.States.Common;
+using Nito.AsyncEx;
 using System.Net;
 using System.Net.Sockets;
 
@@ -21,17 +23,24 @@ public class Link : IDisposable
     public ServerInfo? ServerInfo { get; protected set; }
     public EndPoint? PlayerRemoteEndPoint => _client.Client.RemoteEndPoint;
     public EndPoint? ServerRemoteEndPoint => _server.Client.RemoteEndPoint;
+    public bool IsSwitching => _redirectionServer != null;
+
+    private AsyncLock _lock = new();
 
     private TcpClient _client;
     private TcpClient _server;
 
-    private CancellationTokenSource _clientCancellationTokenSource;
-    private CancellationTokenSource _serverCancellationTokenSource;
+    private CancellationTokenSource _ctsClientForwarding;
+    private CancellationTokenSource _ctsServerForwarding;
+    private CancellationTokenSource _ctsClientForwardingForce;
+    private CancellationTokenSource _ctsServerForwardingForce;
 
     private Task _clientForwardingTask;
     private Task _serverForwardingTask;
 
     private Server? _redirectionServer;
+    private HandshakePacket _redirectionHandshakePacket;
+    private LoginStartPacket _redirectionLoginStartPacket;
 
     public Link(TcpClient client, TcpClient server)
     {
@@ -47,11 +56,13 @@ public class Link : IDisposable
         State = SwitchState(0);
         ProtocolVersion = SetProtocolVersion(ProtocolVersion.Oldest);
 
-        _clientCancellationTokenSource = new();
-        _serverCancellationTokenSource = new();
+        _ctsClientForwarding = new();
+        _ctsServerForwarding = new();
+        _ctsClientForwardingForce = new();
+        _ctsServerForwardingForce = new();
 
-        _clientForwardingTask = ProcessPacketsAsync<ProtocolState>(PlayerChannel, ServerChannel, Direction.Serverbound, _clientCancellationTokenSource.Token);
-        _serverForwardingTask = ProcessPacketsAsync<ProtocolState>(ServerChannel, PlayerChannel, Direction.Clientbound, _serverCancellationTokenSource.Token);
+        _clientForwardingTask = ForwardClientToServer();
+        _serverForwardingTask = ForwardServerToClient();
     }
 
     public ProtocolVersion SetProtocolVersion(ProtocolVersion protocolVersion)
@@ -62,6 +73,22 @@ public class Link : IDisposable
     public void SetServerInfo(ServerInfo serverInfo)
     {
         ServerInfo = serverInfo;
+    }
+
+    public void SaveHandshake(HandshakePacket packet)
+    {
+        _redirectionHandshakePacket = packet;
+    }
+
+    public void SaveLoginStart(LoginStartPacket packet)
+    {
+        _redirectionLoginStartPacket = packet;
+    }
+
+    public void SwitchComplete()
+    {
+        _redirectionServer = null;
+        _clientForwardingTask = ForwardClientToServer();
     }
 
     public ProtocolState SwitchState(int state)
@@ -83,19 +110,36 @@ public class Link : IDisposable
 
     public async Task SwitchServerAsync(ServerInfo serverInfo)
     {
-        Proxy.Logger.Information($"Link {this} executed server switch for player {Player}");
+        Proxy.Logger.Information($"Link {this} started server switch for player {Player}");
 
         var tcpClient = serverInfo.CreateTcpClient();
         var server = new Server(this);
 
-        Proxy.Logger.Debug($"Link {this} stopping previous server forwarding for player {Player}");
         _redirectionServer = server;
-        _serverCancellationTokenSource.Cancel();
 
-        Proxy.Logger.Debug($"Link {this} awaiting forwarding completion for player {Player}");
+        _ctsClientForwarding.Cancel();
+        _ctsServerForwarding.Cancel();
+
+        await _clientForwardingTask;
         await _serverForwardingTask;
 
+        await PlayerChannel.FlushAsync();
+
+        _server.Close();
+        _server.Dispose();
+        _server = tcpClient;
+
+        Server = server;
+        ServerInfo = serverInfo;
+        ServerChannel = new(_server.GetStream());
+
         SwitchState(0);
+        await _redirectionServer.SendPacketAsync(_redirectionHandshakePacket);
+
+        SwitchState(2);
+        await _redirectionServer.SendPacketAsync(_redirectionLoginStartPacket);
+
+        _serverForwardingTask = ForwardServerToClient();
     }
 
     public async Task SendPacketAsync(Direction direction, IMinecraftPacket packet)
@@ -114,40 +158,53 @@ public class Link : IDisposable
             _ => throw new ArgumentOutOfRangeException(nameof(direction)),
         };
 
-        using var message = MinecraftMessage.Encode(id.Value, packet, Direction.Clientbound, ProtocolVersion);
+        using var _ = await _lock.LockAsync();
+        using var message = MinecraftMessage.Encode(id.Value, packet, direction, ProtocolVersion);
         await channel.WriteMessageAsync(message);
     }
 
-    protected async Task ProcessPacketsAsync<T>(MinecraftChannel sourceChannel, MinecraftChannel destinationChannel, Direction direction, CancellationToken cancellationToken) where T : ProtocolState
+    protected Task ForwardClientToServer() => ProcessPacketsAsync<ProtocolState>(PlayerChannel, ServerChannel, Direction.Serverbound, (_ctsClientForwardingForce = new()).Token, (_ctsClientForwarding = new()).Token);
+    protected Task ForwardServerToClient() => ProcessPacketsAsync<ProtocolState>(ServerChannel, PlayerChannel, Direction.Clientbound, (_ctsServerForwardingForce = new()).Token, (_ctsServerForwarding = new()).Token);
+
+    protected async Task ProcessPacketsAsync<T>(MinecraftChannel sourceChannel, MinecraftChannel destinationChannel, Direction direction, CancellationToken forceCancellationToken, CancellationToken cancellationToken) where T : ProtocolState
     {
         Proxy.Logger.Information($"Started forwarding {direction} {Player} traffic");
 
         try
         {
-            while (!cancellationToken.IsCancellationRequested && sourceChannel.CanRead && sourceChannel.CanWrite && destinationChannel.CanRead && destinationChannel.CanWrite)
+            while (!cancellationToken.IsCancellationRequested && !forceCancellationToken.IsCancellationRequested && sourceChannel.CanRead && sourceChannel.CanWrite && destinationChannel.CanRead && destinationChannel.CanWrite)
             {
                 int length;
                 int packetId;
                 IMinecraftPacket? packet;
 
-                using (var message = await sourceChannel.ReadMessageAsync(cancellationToken))
+                using (var message = await sourceChannel.ReadMessageAsync(forceCancellationToken))
                 {
                     length = message.Length;
                     (packetId, packet, var handleTask) = message.DecodeAndHandle(State, direction, ProtocolVersion);
 
+                    if (direction is Direction.Clientbound && packetId == 0x39) // temp cancel recipe book
+                        continue;
+
                     if (packet is null)
                     {
-                        await destinationChannel.WriteMessageAsync(message, cancellationToken);
+                        using var _ = await _lock.LockAsync();
+                        await destinationChannel.WriteMessageAsync(message, forceCancellationToken);
+
                         continue;
                     }
 
                     if (await handleTask)
+                    {
+                        Proxy.Logger.Debug($"Cancelled {direction} 0x{packetId:X2} packet");
                         continue;
+                    }
                 }
 
-                using (var message = MinecraftMessage.Encode(packetId, packet, direction, ProtocolVersion, length + 2048))
+                using (var message = MinecraftMessage.Encode(packetId, packet, direction, ProtocolVersion))
                 {
-                    await destinationChannel.WriteMessageAsync(message, cancellationToken);
+                    using var _ = await _lock.LockAsync();
+                    await destinationChannel.WriteMessageAsync(message, forceCancellationToken);
                 }
 
                 if (packet is DisconnectPacket disconnect)
@@ -155,14 +212,14 @@ public class Link : IDisposable
                     await destinationChannel.FlushAsync(cancellationToken);
                     Proxy.Logger.Information($"Player {Player} disconnected from server: {disconnect.Reason}");
 
-                    // shutdown connection with server
-                    _serverCancellationTokenSource.Cancel();
+                    // shutdown connection with server in case if client forwarding task stops first
+                    _ctsServerForwardingForce.Cancel();
 
                     return;
                 }
             }
         }
-        catch (Exception exception) when (exception is EndOfStreamException or IOException or TaskCanceledException)
+        catch (Exception exception) when (exception is EndOfStreamException or IOException or TaskCanceledException or OperationCanceledException)
         {
             // client disconnected itself
             // server catch unhandled exception
@@ -174,12 +231,14 @@ public class Link : IDisposable
         }
         finally
         {
-            if (direction is Direction.Serverbound || _redirectionServer == null)
+            Proxy.Logger.Information($"Stopped forwarding {direction} {Player} traffic");
+
+            if (!IsSwitching)
             {
                 // one side disconnected, shutting down link, if its not server redirection case
 
-                var thisCancellationTokenSource = direction is Direction.Serverbound ? _clientCancellationTokenSource : _serverCancellationTokenSource;
-                var otherCancellationTokenSource = direction is Direction.Serverbound ? _serverCancellationTokenSource : _clientCancellationTokenSource;
+                var thisCancellationTokenSource = direction is Direction.Serverbound ? _ctsClientForwardingForce : _ctsServerForwardingForce;
+                var otherCancellationTokenSource = direction is Direction.Serverbound ? _ctsServerForwardingForce : _ctsClientForwardingForce;
                 var thisForwardingTask = direction is Direction.Serverbound ? _clientForwardingTask : _serverForwardingTask;
                 var otherForwardingTask = direction is Direction.Serverbound ? _serverForwardingTask : _clientForwardingTask;
 
@@ -200,13 +259,13 @@ public class Link : IDisposable
                 Proxy.Links.Remove(this);
                 Dispose();
             }
-
-            Proxy.Logger.Information($"Stopped forwarding {direction} {Player} traffic");
         }
     }
 
     public void Dispose()
     {
+        Proxy.Logger.Debug($"Link {this.GetHashCode()} with player {Player} disposing");
+
         _client.Close();
         _server.Close();
         _client.Dispose();

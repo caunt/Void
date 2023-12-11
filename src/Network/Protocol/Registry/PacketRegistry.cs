@@ -20,7 +20,7 @@ public class PacketRegistry
             if (_fallback && _versions.TryGetValue(ProtocolVersion.Oldest, out registry))
                 return registry;
 
-            throw new KeyNotFoundException($"Could not find registry for {version} protocol version ");
+            throw new KeyNotFoundException($"Could not find Registry for {version} protocol version ");
         }
 
         return registry;
