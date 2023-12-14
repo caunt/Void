@@ -1,6 +1,6 @@
-﻿using Void.Proxy.Network.IO;
+﻿using System.Text;
+using Void.Proxy.Network.IO;
 using Void.Proxy.Network.Protocol.States.Common;
-using System.Text;
 
 namespace Void.Proxy.Network.Protocol.Packets.Clientbound;
 

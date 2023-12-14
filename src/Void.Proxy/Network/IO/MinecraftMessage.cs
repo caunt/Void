@@ -1,9 +1,9 @@
-﻿using Void.Proxy.Network.Protocol;
+﻿using System.Buffers;
+using System.Text.Json;
+using Void.Proxy.Network.Protocol;
 using Void.Proxy.Network.Protocol.Packets;
 using Void.Proxy.Network.Protocol.States;
 using Void.Proxy.Network.Protocol.States.Common;
-using System.Buffers;
-using System.Text.Json;
 
 namespace Void.Proxy.Network.IO;
 

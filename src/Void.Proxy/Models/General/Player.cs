@@ -1,4 +1,7 @@
 ﻿using Minecraft.Component.Component;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text.Json;
 using Void.Proxy.Models.Minecraft.Chat;
 using Void.Proxy.Models.Minecraft.Encryption;
 using Void.Proxy.Models.Minecraft.Profile;
@@ -7,9 +10,6 @@ using Void.Proxy.Network.Protocol;
 using Void.Proxy.Network.Protocol.Packets;
 using Void.Proxy.Network.Protocol.Packets.Clientbound;
 using Void.Proxy.Network.Protocol.Packets.Shared;
-using System.Net;
-using System.Security.Cryptography;
-using System.Text.Json;
 
 namespace Void.Proxy.Models.General;
 

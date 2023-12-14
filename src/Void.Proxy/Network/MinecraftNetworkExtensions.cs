@@ -1,5 +1,5 @@
-﻿using Void.Proxy.Network.IO;
-using System.Buffers;
+﻿using System.Buffers;
+using Void.Proxy.Network.IO;
 
 namespace Void.Proxy.Network;
 

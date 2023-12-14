@@ -1,9 +1,9 @@
-﻿using Void.Proxy.Models.General;
+﻿using System.Text;
+using Void.Proxy.Models.General;
 using Void.Proxy.Network.Protocol.Packets.Clientbound;
 using Void.Proxy.Network.Protocol.Packets.Shared;
 using Void.Proxy.Network.Protocol.Registry;
 using Void.Proxy.Network.Protocol.States.Custom;
-using System.Text;
 
 namespace Void.Proxy.Network.Protocol.States.Common;
 

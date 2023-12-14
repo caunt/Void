@@ -1,5 +1,5 @@
-﻿using Void.Proxy.Network.Protocol.Forwarding;
-using System.Net.Sockets;
+﻿using System.Net.Sockets;
+using Void.Proxy.Network.Protocol.Forwarding;
 
 namespace Void.Proxy.Models.General;
 

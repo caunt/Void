@@ -1,4 +1,7 @@
-﻿using Void.Proxy.Network;
+﻿using Nito.AsyncEx;
+using System.Net;
+using System.Net.Sockets;
+using Void.Proxy.Network;
 using Void.Proxy.Network.IO;
 using Void.Proxy.Network.Protocol;
 using Void.Proxy.Network.Protocol.Packets;
@@ -6,9 +9,6 @@ using Void.Proxy.Network.Protocol.Packets.Clientbound;
 using Void.Proxy.Network.Protocol.Packets.Serverbound;
 using Void.Proxy.Network.Protocol.States;
 using Void.Proxy.Network.Protocol.States.Common;
-using Nito.AsyncEx;
-using System.Net;
-using System.Net.Sockets;
 
 namespace Void.Proxy.Models.General;
 

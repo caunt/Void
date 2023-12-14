@@ -1,5 +1,5 @@
-﻿using Void.Proxy.Utils;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
+using Void.Proxy.Utils;
 
 namespace Void.Proxy.Models.Minecraft.Profile;
 

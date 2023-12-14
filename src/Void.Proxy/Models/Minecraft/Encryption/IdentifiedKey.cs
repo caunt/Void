@@ -1,7 +1,7 @@
-﻿using Void.Proxy.Network.IO;
-using Void.Proxy.Network.Protocol;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
+using Void.Proxy.Network.IO;
+using Void.Proxy.Network.Protocol;
 
 namespace Void.Proxy.Models.Minecraft.Encryption;
 

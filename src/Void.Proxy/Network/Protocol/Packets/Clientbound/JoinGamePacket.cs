@@ -1,8 +1,8 @@
-﻿using Void.Proxy.Models.Minecraft.Game;
+﻿using System.Text;
+using Void.NBT;
+using Void.Proxy.Models.Minecraft.Game;
 using Void.Proxy.Network.IO;
 using Void.Proxy.Network.Protocol.States.Common;
-using Void.Proxy.Utils.WaxNBT;
-using System.Text;
 
 namespace Void.Proxy.Network.Protocol.Packets.Clientbound;
 

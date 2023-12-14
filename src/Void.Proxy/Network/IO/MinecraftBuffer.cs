@@ -1,13 +1,13 @@
 ﻿using Minecraft.Component.Component;
-using Void.Proxy.Models.Minecraft.Encryption;
-using Void.Proxy.Models.Minecraft.Profile;
-using Void.Proxy.Network.Protocol;
-using Void.Proxy.Utils;
 using SharpNBT;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Numerics;
 using System.Text;
+using Void.Proxy.Models.Minecraft.Encryption;
+using Void.Proxy.Models.Minecraft.Profile;
+using Void.Proxy.Network.Protocol;
+using Void.Proxy.Utils;
 
 namespace Void.Proxy.Network.IO;
 

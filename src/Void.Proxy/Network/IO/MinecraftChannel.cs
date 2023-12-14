@@ -1,7 +1,7 @@
-﻿using Void.Proxy.Network.IO.Common;
+﻿using System.Net.Sockets;
+using Void.Proxy.Network.IO.Common;
 using Void.Proxy.Network.IO.Compression;
 using Void.Proxy.Network.IO.Encryption;
-using System.Net.Sockets;
 
 namespace Void.Proxy.Network.IO;
 

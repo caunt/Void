@@ -1,5 +1,5 @@
-﻿using Void.Proxy.Network.IO;
-using System.Collections;
+﻿using System.Collections;
+using Void.Proxy.Network.IO;
 
 namespace Void.Proxy.Network.Protocol.Packets.Serverbound;
 

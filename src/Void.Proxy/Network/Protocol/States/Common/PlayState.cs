@@ -1,12 +1,12 @@
-﻿using Void.Proxy.Commands;
+﻿using Nito.Disposables.Internals;
+using System.Text;
+using Void.Proxy.Commands;
 using Void.Proxy.Models.General;
 using Void.Proxy.Network.Protocol.Packets.Clientbound;
 using Void.Proxy.Network.Protocol.Packets.Serverbound;
 using Void.Proxy.Network.Protocol.Packets.Shared;
 using Void.Proxy.Network.Protocol.Registry;
 using Void.Proxy.Network.Protocol.States.Custom;
-using Nito.Disposables.Internals;
-using System.Text;
 
 namespace Void.Proxy.Network.Protocol.States.Common;
 

@@ -1,8 +1,8 @@
-﻿using Void.Proxy.Models.General;
-using Void.Proxy.Network.IO;
-using System.Net;
+﻿using System.Net;
 using System.Security.Cryptography;
 using System.Text;
+using Void.Proxy.Models.General;
+using Void.Proxy.Network.IO;
 
 namespace Void.Proxy.Network.Protocol.Forwarding;
 

@@ -1,11 +1,11 @@
-﻿using Void.Proxy.Models.General;
-using Void.Proxy.Network.Protocol.Forwarding;
-using Serilog;
+﻿using Serilog;
 using Serilog.Events;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Void.Proxy.Models.General;
+using Void.Proxy.Network.Protocol.Forwarding;
 
 namespace Void.Proxy;
 

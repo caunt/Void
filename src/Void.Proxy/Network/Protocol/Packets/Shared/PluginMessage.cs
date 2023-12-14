@@ -1,7 +1,7 @@
-﻿using Void.Proxy.Network.IO;
-using Void.Proxy.Network.Protocol.States.Custom;
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
+using Void.Proxy.Network.IO;
+using Void.Proxy.Network.Protocol.States.Custom;
 
 namespace Void.Proxy.Network.Protocol.Packets.Shared;
 
