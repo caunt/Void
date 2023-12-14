@@ -25,6 +25,26 @@ public class PlayState(Link link) : ProtocolState, ILoginConfigurePlayState, ICo
         return Task.FromResult(true); // should not cancel?
     }
 
+    public async Task<bool> HandleAsync(AcknowledgeConfiguration packet)
+    {
+        if (!link.IsSwitching)
+            throw new NotSupportedException($"Client sent unexpected acknowledge configuration");
+
+        // can't be awaited because we need to release channel before replace will happen
+        _ = link.ReplaceRedirectionServerChannel().ContinueWith(task =>
+        {
+            if (!task.IsCompletedSuccessfully)
+                Proxy.Logger.Error($"Player {link.Player} channel replacement caused exception:\n{task.Exception}");
+        });
+
+        return true;
+    }
+
+    public Task<bool> HandleAsync(StartConfiguration packet)
+    {
+        throw new NotSupportedException($"Server requested to restart configuration, which is not supported currently");
+    }
+
     public Task<bool> HandleAsync(PlayerInfoUpdatePacket packet)
     {
         // does this even needed?

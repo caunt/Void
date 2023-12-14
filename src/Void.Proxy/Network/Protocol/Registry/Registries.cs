@@ -31,6 +31,11 @@ public static class Registries
         ConfigurationStateRegistry.Clientbound.Register<FinishConfiguration>(() => new(), new PacketMapping(0x02, false, ProtocolVersion.MINECRAFT_1_20_2));
 
         // not used - PlayStateRegistry.Serverbound.Register<PlayerSessionPacket>(() => new(), new PacketMapping(0x06, false, ProtocolVersion.MINECRAFT_1_7_2));
+        PlayStateRegistry.Clientbound.Register<StartConfiguration>(() => new(),
+            new PacketMapping(0x65, false, ProtocolVersion.MINECRAFT_1_20_2),
+            new PacketMapping(0x67, false, ProtocolVersion.MINECRAFT_1_20_3));
+        PlayStateRegistry.Serverbound.Register<AcknowledgeConfiguration>(() => new(),
+            new PacketMapping(0x0B, false, ProtocolVersion.MINECRAFT_1_20_2));
         PlayStateRegistry.Serverbound.Register<PluginMessage>(() => new(Direction.Serverbound, 32767),
             new PacketMapping(0x17, false, ProtocolVersion.MINECRAFT_1_7_2),
             new PacketMapping(0x09, false, ProtocolVersion.MINECRAFT_1_9),

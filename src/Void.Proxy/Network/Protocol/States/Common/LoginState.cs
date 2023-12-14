@@ -124,6 +124,12 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
         if (link.ProtocolVersion < ProtocolVersion.MINECRAFT_1_20_2)
             link.SwitchState(4);
 
+        if (link.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_20_2 && link.IsSwitching)
+        {
+            await link.ReplaceRedirectionClientChannel();
+            return true;
+        }
+
         return link.IsSwitching;
     }
 

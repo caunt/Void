@@ -39,6 +39,8 @@ public class Link : IDisposable
     private Task _serverForwardingTask;
 
     private Server? _redirectionServer;
+    private ServerInfo? _redirectionServerInfo;
+
     private HandshakePacket _redirectionHandshakePacket;
     private LoginStartPacket _redirectionLoginStartPacket;
 
@@ -112,25 +114,53 @@ public class Link : IDisposable
     {
         Proxy.Logger.Information($"Link {this} started server switch for player {Player}");
 
-        var tcpClient = serverInfo.CreateTcpClient();
-        var server = new Server(this);
+        _redirectionServer = new Server(this);
+        _redirectionServerInfo = serverInfo;
 
-        _redirectionServer = server;
+        await StopServerToClientForwarding();
 
-        _ctsClientForwarding.Cancel();
-        _ctsServerForwarding.Cancel();
+        if (ProtocolVersion >= ProtocolVersion.MINECRAFT_1_20_2)
+        {
+            await Player.SendPacketAsync(new StartConfiguration());
+        }
+        else
+        {
+            await StopClientToServerForwarding();
+            await StartServerSwitchAsync();
+        }
+    }
 
-        await _clientForwardingTask;
-        await _serverForwardingTask;
+    public async Task ReplaceRedirectionServerChannel()
+    {
+        await StopClientToServerForwarding();
+        await StartServerSwitchAsync();
+    }
 
-        await PlayerChannel.FlushAsync();
+    public async Task ReplaceRedirectionClientChannel()
+    {
+        // redirection server waiting us here for login acknowledge
+        await Server.SendPacketAsync(new LoginAcknowledgedPacket());
+
+        SwitchState(3);
+        SwitchComplete();
+    }
+
+    public async Task StartServerSwitchAsync()
+    {
+        if (_redirectionServer is null)
+            throw new Exception($"Not found redirection server to complete");
+
+        if (_redirectionServerInfo is null)
+            throw new Exception($"Not found redirection server info to complete");
+
+        var tcpClient = _redirectionServerInfo.CreateTcpClient();
 
         _server.Close();
         _server.Dispose();
         _server = tcpClient;
 
-        Server = server;
-        ServerInfo = serverInfo;
+        Server = _redirectionServer;
+        ServerInfo = _redirectionServerInfo;
         ServerChannel = new(_server.GetStream());
 
         SwitchState(0);
@@ -161,6 +191,20 @@ public class Link : IDisposable
         using var _ = await _lock.LockAsync();
         using var message = MinecraftMessage.Encode(id.Value, packet, direction, ProtocolVersion);
         await channel.WriteMessageAsync(message);
+    }
+
+    protected async Task StopClientToServerForwarding()
+    {
+        _ctsClientForwarding.Cancel();
+        await _clientForwardingTask;
+        await PlayerChannel.FlushAsync();
+    }
+
+    protected async Task StopServerToClientForwarding()
+    {
+        _ctsServerForwarding.Cancel();
+        await _serverForwardingTask;
+        await ServerChannel.FlushAsync();
     }
 
     protected Task ForwardClientToServer() => ProcessPacketsAsync<ProtocolState>(PlayerChannel, ServerChannel, Direction.Serverbound, (_ctsClientForwardingForce = new()).Token, (_ctsClientForwarding = new()).Token);
