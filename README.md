@@ -1,3 +1,5 @@
+[![.NET](https://github.com/caunt/Void/actions/workflows/dotnet.yml/badge.svg)](https://github.com/caunt/Void/actions/workflows/dotnet.yml)
+
 # Void Project
 
 ## Proxy
