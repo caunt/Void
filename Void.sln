@@ -5,7 +5,7 @@ VisualStudioVersion = 17.8.34212.112
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Void.Proxy", "src\Void.Proxy\Void.Proxy.csproj", "{8EF40869-E6E1-4E1E-834E-4CCF76040444}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Void.NBT", "Void.NBT\Void.NBT.csproj", "{48C0447B-BE31-46D9-8EDC-5ED4EBC3965C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Void.NBT", "src\Void.NBT\Void.NBT.csproj", "{48C0447B-BE31-46D9-8EDC-5ED4EBC3965C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
