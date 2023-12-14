@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Void.NBT\Void.NBT.csproj" />
+    <ProjectReference Include="..\Void.NBT\Void.NBT.csproj" />
   </ItemGroup>
 
 </Project>
