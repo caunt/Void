@@ -157,6 +157,7 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
             return true;
         }
 
+        // this whole block just for testing purposes
         if (packet.Identifier == "fml:loginwrapper")
         {
             (int, string, byte[]) Test()
