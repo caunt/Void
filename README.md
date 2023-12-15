@@ -17,7 +17,7 @@ Void Proxy is a Minecraft proxy, akin to Velocity or BungeeCord. It forwards pla
 - Fully asynchronous codebase.
 
 **Builds:**  
-Releases coming soon.
+Releases coming soon. [Download](https://github.com/caunt/Void/releases) testing builds.
 
 ## NBT
 
