@@ -42,9 +42,6 @@ public class ConfigurationState(Link link) : ProtocolState, ILoginConfigurePlayS
 
         if (packet.Identifier == "minecraft:register")
         {
-            if (packet.Direction == Direction.Clientbound)
-                Task.Delay(15_000).GetAwaiter().GetResult();
-
             var channels = Encoding.UTF8.GetString(packet.Data).Split('\0', StringSplitOptions.RemoveEmptyEntries);
             Proxy.Logger.Debug($"Received {packet.Direction} Configuration register channels message: {string.Join(", ", channels)}");
 
