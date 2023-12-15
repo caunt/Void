@@ -11,7 +11,7 @@ namespace Void.Proxy;
 
 public static class Proxy
 {
-    public static readonly LogEventLevel LogLevel = LogEventLevel.Verbose;
+    public static readonly LogEventLevel LogLevel = LogEventLevel.Debug;
     public static readonly int ListenPort = 25565;
     public static readonly int CompressionThreshold = 256;
     public static readonly Dictionary<string, ServerInfo> Servers = new()
