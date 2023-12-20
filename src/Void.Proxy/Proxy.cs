@@ -42,7 +42,7 @@ public static class Proxy
 
     public static async Task StartAsync()
     {
-        var listener = new TcpListener(IPAddress.Any, Settings.Port);
+        var listener = new TcpListener(Settings.Address, Settings.Port);
         listener.Start();
 
         Logger.Information($"Listening for connections on port {Settings.Port}...");
