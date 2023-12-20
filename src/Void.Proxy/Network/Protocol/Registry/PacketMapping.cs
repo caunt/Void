@@ -7,11 +7,6 @@ public class PacketMapping(int id, bool encodeOnly, ProtocolVersion protocolVers
     public ProtocolVersion ProtocolVersion { get; } = protocolVersion;
     public ProtocolVersion? LastValidProtocolVersion { get; } = lastValidProtocolVersion;
 
-    public override string ToString()
-    {
-        return $"PacketMapping{{id={Id}, encodeOnly={EncodeOnly}, protocolVersion={ProtocolVersion}, lastValidProtocolVersion={(LastValidProtocolVersion ?? ProtocolVersion.Latest)}}}";
-    }
-
     public override bool Equals(object? obj)
     {
         if (this == obj)

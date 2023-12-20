@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Void.Proxy.Configuration;
 using Void.Proxy.Models.General;
+using Void.Proxy.Network.Protocol.Registry;
 using Void.Proxy.Utils;
 
 namespace Void.Proxy;
@@ -30,11 +31,13 @@ public static class Proxy
         Settings = Settings.LoadAsync().GetAwaiter().GetResult();
         Settings.Servers.ForEach(RegisterServer);
 
-        Logger = new LoggerConfiguration().WriteTo.Console(Settings.LogLevel).CreateLogger();
+        Logger = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Is(Settings.LogLevel).CreateLogger();
 
         JsonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
         JsonSerializerOptions.Converters.Add(new JsonIPAddressConverter());
         JsonSerializerOptions.Converters.Add(new JsonIPEndPointConverter());
+
+        Registries.Fill();
     }
 
     public static async Task StartAsync()

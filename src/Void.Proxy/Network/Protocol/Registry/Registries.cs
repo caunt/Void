@@ -11,7 +11,7 @@ public static class Registries
     public static readonly StateRegistry ConfigurationStateRegistry = new();
     public static readonly StateRegistry PlayStateRegistry = new();
 
-    static Registries()
+    public static void Fill()
     {
         HandshakeStateRegistry.Serverbound.Register<HandshakePacket>(() => new(), new PacketMapping(0x00, false, ProtocolVersion.MINECRAFT_1_7_2));
 

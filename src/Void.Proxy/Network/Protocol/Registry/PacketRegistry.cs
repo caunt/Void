@@ -6,9 +6,12 @@ public class PacketRegistry
 {
     private readonly Dictionary<ProtocolVersion, ProtocolRegistry> _versions = [];
     private readonly bool _fallback = true;
+    private readonly Direction _direction;
 
     public PacketRegistry(Direction direction)
     {
+        _direction = direction;
+
         foreach (var version in ProtocolVersion.Range())
             _versions.Add(version, new ProtocolRegistry(direction, version));
     }
@@ -30,6 +33,8 @@ public class PacketRegistry
     {
         if (mappings.Length == 0)
             throw new ArgumentException("At least one mapping must be provided.");
+
+        Proxy.Logger.Verbose($"Registering {_direction} {typeof(T).Name} with {mappings.Length} mappings");
 
         for (var i = 0; i < mappings.Length; i++)
         {
