@@ -77,11 +77,11 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
         var secret = Proxy.RSA.Decrypt(packet.SharedSecret, false);
         link.Player.EnableEncryption(secret);
 
-        if (link.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_8 && Proxy.CompressionThreshold > 0)
+        if (link.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_8 && Proxy.Settings.CompressionThreshold > 0)
         {
-            var compressionPacket = new SetCompressionPacket { Threshold = Proxy.CompressionThreshold };
+            var compressionPacket = new SetCompressionPacket { Threshold = Proxy.Settings.CompressionThreshold };
             await link.Player.SendPacketAsync(compressionPacket);
-            link.Player.EnableCompression(Proxy.CompressionThreshold);
+            link.Player.EnableCompression(Proxy.Settings.CompressionThreshold);
         }
 
         await link.Player.RequestGameProfileAsync(secret);

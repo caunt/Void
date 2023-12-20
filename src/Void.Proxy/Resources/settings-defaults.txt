@@ -2,8 +2,17 @@
 port = 25565
 compressionThreshold = 256
 logLevel = debug
+forwarding = none
 
-[SEVERS]
-lobby = <host>:<port>
-minigames = <host>:<port>
-limbo = <host>:<port>
+[FORWARDING.MODERN]
+secret = {RANDOM_STRING_16}
+
+[FORWARDING.LEGACY]
+includeAddress = true
+includeUuid = true
+includeSkin = true
+
+[SERVERS]
+lobby = 127.0.0.1:25566
+minigames = 127.0.0.1:25567
+limbo = 127.0.0.1:25568
