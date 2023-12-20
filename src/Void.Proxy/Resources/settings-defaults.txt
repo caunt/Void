@@ -1,0 +1,9 @@
+[SETTINGS]
+port = 25565
+compressionThreshold = 256
+logLevel = debug
+
+[SEVERS]
+lobby = <host>:<port>
+minigames = <host>:<port>
+limbo = <host>:<port>

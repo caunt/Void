@@ -32,7 +32,7 @@ public readonly struct MinecraftMessage(int packetId, Memory<byte> memory, IMemo
         }
         catch (Exception exception)
         {
-            Proxy.Logger.Information($"Couldn't decode packet: {exception}");
+            Proxy.Logger.Error($"Couldn't decode packet: {exception}");
             return (packetId, null, Task.FromResult(false));
         }
     }
@@ -41,8 +41,8 @@ public readonly struct MinecraftMessage(int packetId, Memory<byte> memory, IMemo
     {
         var memoryOwner = MemoryPool<byte>.Shared.Rent(packet.MaxSize());
         var buffer = new MinecraftBuffer(memoryOwner.Memory);
-        Proxy.Logger.Verbose($"Encoding {direction} 0x{packetId:X2} packet {JsonSerializer.Serialize(packet as object, Proxy.JsonSerializerOptions)}");
 
+        Proxy.Logger.Verbose($"Encoding {direction} 0x{packetId:X2} packet {JsonSerializer.Serialize(packet as object, Proxy.JsonSerializerOptions)}");
         packet.Encode(ref buffer, protocolVersion);
 
         return new(packetId, memoryOwner.Memory[..buffer.Position], memoryOwner);

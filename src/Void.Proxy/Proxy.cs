@@ -1,9 +1,11 @@
-﻿using Serilog;
+﻿using IniParser;
+using Serilog;
 using Serilog.Events;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Void.Proxy.Configuration;
 using Void.Proxy.Models.General;
 using Void.Proxy.Network.Protocol.Forwarding;
 
@@ -21,12 +23,23 @@ public static class Proxy
         { "server3", new ServerInfo("127.0.0.1", 25568, new NoneForwarding()) }
     };
 
-    public static readonly HttpClient HttpClient = new();
-    public static readonly RSACryptoServiceProvider RSA = new(1024);
-    public static readonly JsonSerializerOptions JsonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
-    public static readonly LoggerConfiguration LoggerConfiguration = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Is(LogLevel);
-    public static readonly ILogger Logger = LoggerConfiguration.CreateLogger();
-    public static readonly List<Link> Links = [];
+    public static readonly ILogger Logger;
+    public static readonly JsonSerializerOptions JsonSerializerOptions;
+    public static readonly Settings Settings;
+    public static readonly RSACryptoServiceProvider RSA;
+    public static readonly List<Link> Links;
+    public static readonly HttpClient HttpClient;
+
+    static Proxy()
+    {
+        Logger = new LoggerConfiguration().WriteTo.Console(LogLevel).CreateLogger();
+        JsonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
+        Settings = Settings.LoadAsync().GetAwaiter().GetResult();
+
+        RSA = new();
+        Links = [];
+        HttpClient = new();
+    }
 
     public static async Task StartAsync()
     {
