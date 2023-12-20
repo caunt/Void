@@ -9,6 +9,7 @@ namespace Void.Proxy.Network.Protocol.Forwarding;
 public class ModernForwarding(string secret) : IForwarding
 {
     public ForwardingMode Mode => ForwardingMode.Modern;
+    public string Secret { get; set; } = secret;
 
     public byte[] GenerateForwardingData(byte[] data, Player player)
     {
@@ -46,7 +47,7 @@ public class ModernForwarding(string secret) : IForwarding
         }
 
         var forwardingData = buffer.Span[..buffer.Position];
-        var signature = HMACSHA256.HashData(Encoding.UTF8.GetBytes(secret), forwardingData);
+        var signature = HMACSHA256.HashData(Encoding.UTF8.GetBytes(Secret), forwardingData);
 
         return [.. signature, .. forwardingData];
     }

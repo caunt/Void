@@ -3,6 +3,7 @@
 public enum ForwardingMode
 {
     None,
+    Auto,
     Legacy,
     Modern
 }

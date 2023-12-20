@@ -27,8 +27,12 @@ public static class Proxy
         Servers = [];
 
         Settings = Settings.LoadAsync().GetAwaiter().GetResult();
+        Settings.Servers.ForEach(RegisterServer);
+
         Logger = new LoggerConfiguration().WriteTo.Console(Settings.LogLevel).CreateLogger();
         JsonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
+
+        Console.WriteLine(JsonSerializer.Serialize(Settings, JsonSerializerOptions));
     }
 
     public static async Task StartAsync()
@@ -50,4 +54,6 @@ public static class Proxy
             Links.Add(link);
         }
     }
+
+    public static void RegisterServer(ServerInfo serverInfo) => Servers.Add(serverInfo.Name, serverInfo);
 }
