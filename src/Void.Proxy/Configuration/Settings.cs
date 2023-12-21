@@ -61,7 +61,7 @@ public partial class Settings(IniData data)
 
     private static async ValueTask GenerateDefaultAsync(string fileName, CancellationToken cancellationToken = default)
     {
-        var defaults = RandomStringRegex().Replace(Resources.settings_defaults, match =>
+        var defaults = RandomStringRegex().Replace(Resources.DefaultSettings, match =>
         {
             const string allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789" + "abcdefghijklmnopqrstuvxyz";
 

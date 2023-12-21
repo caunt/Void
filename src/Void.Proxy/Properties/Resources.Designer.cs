@@ -61,11 +61,29 @@ namespace Void.Proxy.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to .
+        ///   Looks up a localized string similar to [SETTINGS]
+        ///config-version = 1
+        ///bind = 0.0.0.0:25565
+        ///compressionThreshold = 256
+        ///logLevel = debug
+        ///forwarding = auto
+        ///
+        ///[FORWARDING.MODERN]
+        ///secret = {RANDOM_STRING_16}
+        ///
+        ///[FORWARDING.LEGACY]
+        ///includeAddress = true
+        ///includeUuid = true
+        ///includeSkin = true
+        ///
+        ///[SERVERS]
+        ///lobby = 127.0.0.1:25566
+        ///minigames = 127.0.0.1:25567
+        ///limbo = 127.0.0.1:25568.
         /// </summary>
-        internal static string settings_defaults {
+        internal static string DefaultSettings {
             get {
-                return ResourceManager.GetString("settings-defaults", resourceCulture);
+                return ResourceManager.GetString("DefaultSettings", resourceCulture);
             }
         }
     }
