@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Void.NBT", "src\Void.NBT\Vo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Void.Proxy", "src\Void.Proxy\Void.Proxy.csproj", "{D54116EE-75EA-491C-84E3-F1DE82A45728}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Void.Proxy.API", "src\Void.Proxy.Plugins.API\Void.Proxy.API.csproj", "{E042DC85-7EFC-495E-9426-ECE20BF28B0E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Void.Proxy.API", "src\Void.Proxy.API\Void.Proxy.API.csproj", "{E042DC85-7EFC-495E-9426-ECE20BF28B0E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Void.Proxy.ExamplePlugin", "src\Void.Proxy.ExamplePlugin\Void.Proxy.ExamplePlugin.csproj", "{81E0F934-36EA-49C3-BBAA-3459E37E5D7C}"
 EndProject

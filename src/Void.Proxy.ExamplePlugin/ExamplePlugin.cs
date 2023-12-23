@@ -3,9 +3,9 @@ using Void.Proxy.API.Plugins;
 
 namespace VoidTestPlugin;
 
-public class VoidTestPlugin : IPlugin
+public class ExamplePlugin : IPlugin
 {
-    public string Name => nameof(VoidTestPlugin);
+    public string Name => nameof(ExamplePlugin);
 
     public Task ExecuteAsync(CancellationToken cancellationToken)
     {
