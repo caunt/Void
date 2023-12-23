@@ -1,4 +1,4 @@
-﻿namespace Void.Proxy.Plugins.API;
+﻿namespace Void.Proxy.API.Plugins;
 
 public interface IPluginManager
 {

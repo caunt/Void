@@ -1,8 +1,8 @@
 ﻿using Nito.Disposables.Internals;
 using System.Diagnostics;
 using System.Reflection;
-using Void.Proxy.Plugins.API;
-using Void.Proxy.Plugins.API.Reflection;
+using Void.Proxy.API.Plugins;
+using Void.Proxy.API.Reflection;
 
 namespace Void.Proxy.Plugins;
 

@@ -1,4 +1,6 @@
-﻿namespace Void.Proxy.Plugins.API.Reflection;
+﻿using Void.Proxy.API.Plugins;
+
+namespace Void.Proxy.API.Reflection;
 
 public class WeakPluginReference
 {

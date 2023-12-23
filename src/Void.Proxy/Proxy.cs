@@ -3,8 +3,8 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Void.Proxy.Configuration;
-using Void.Proxy.Events;
 using Void.Proxy.Models.General;
+using Void.Proxy.Plugins;
 using Void.Proxy.Utils;
 
 namespace Void.Proxy;

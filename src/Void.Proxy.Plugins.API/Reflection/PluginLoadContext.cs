@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.Loader;
 
-namespace Void.Proxy.Plugins.API.Reflection;
+namespace Void.Proxy.API.Reflection;
 
 public class PluginLoadContext(string pluginPath) : AssemblyLoadContext(Path.GetFileName(pluginPath), true)
 {

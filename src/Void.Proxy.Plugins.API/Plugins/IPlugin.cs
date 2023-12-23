@@ -1,6 +1,6 @@
-﻿using Void.Proxy.Plugins.API.Events;
+﻿using Void.Proxy.API.Events;
 
-namespace Void.Proxy.Plugins.API;
+namespace Void.Proxy.API.Plugins;
 
 public interface IPlugin : IEventListener
 {

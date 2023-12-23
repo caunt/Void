@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Void.NBT\Void.NBT.csproj" />
-    <ProjectReference Include="..\Void.Proxy.Plugins.API\Void.Proxy.Plugins.API.csproj" />
+    <ProjectReference Include="..\Void.Proxy.Plugins.API\Void.Proxy.API.csproj" />
   </ItemGroup>
 
 </Project>

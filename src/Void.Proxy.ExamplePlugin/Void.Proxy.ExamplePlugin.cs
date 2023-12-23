@@ -1,5 +1,5 @@
-﻿using Void.Proxy.Plugins.API;
-using Void.Proxy.Plugins.API.Events;
+﻿using Void.Proxy.API.Events;
+using Void.Proxy.API.Plugins;
 
 namespace VoidTestPlugin;
 

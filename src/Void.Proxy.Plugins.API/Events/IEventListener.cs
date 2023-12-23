@@ -1,4 +1,4 @@
-﻿namespace Void.Proxy.Plugins.API.Events;
+﻿namespace Void.Proxy.API.Events;
 
 public interface IEventListener
 {
