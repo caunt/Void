@@ -92,7 +92,7 @@ public class PluginManager : IPluginManager
         var pluginInterface = typeof(IPlugin);
         var plugins = assembly.GetTypes()
                 .Where(pluginInterface.IsAssignableFrom)
-                .Select(Activator.CreateInstance)
+                .Select(CreatePluginInstance)
                 .Cast<IPlugin?>()
                 .WhereNotNull()
                 .ToArray();
@@ -105,5 +105,18 @@ public class PluginManager : IPluginManager
     {
         foreach (var plugin in plugins)
             _plugins.Remove(plugin);
+    }
+
+    internal object? GetExistingInstance(Type type) => _plugins.FirstOrDefault(plugin => plugin.GetType().IsAssignableFrom(type));
+
+    private object? CreatePluginInstance(Type type)
+    {
+        var instance = Activator.CreateInstance(type);
+        var property = type.GetProperty(nameof(IPlugin.Logger));
+
+        var logger = Proxy.Logger.ForContext("SourceContext", type.Name);
+        property?.SetValue(instance, logger);
+
+        return instance;
     }
 }

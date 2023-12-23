@@ -9,6 +9,11 @@ public class EventManager : IEventManager
     private readonly List<IEventListener> _listeners = [];
     private readonly List<MethodInfo> _methods = [];
 
+    internal async Task ThrowAsync<T>(CancellationToken cancellationToken = default) where T : IEvent, new()
+    {
+        await ThrowAsync(new T(), cancellationToken);
+    }
+
     public async Task ThrowAsync<T>(T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
         var eventType = typeof(T);
@@ -37,7 +42,7 @@ public class EventManager : IEventManager
         var listenerInterface = typeof(IEventListener);
         var listeners = assembly.GetTypes()
                 .Where(listenerInterface.IsAssignableFrom)
-                .Select(Activator.CreateInstance)
+                .Select(CreateListenerInstance)
                 .Cast<IEventListener?>()
                 .WhereNotNull()
                 .ToArray();
@@ -68,5 +73,13 @@ public class EventManager : IEventManager
             _listeners.Remove(listener);
             _methods.RemoveAll(method => method.DeclaringType?.Assembly == assembly);
         }
+    }
+
+    private object? CreateListenerInstance(Type type)
+    {
+        if (Proxy.Plugins.GetExistingInstance(type) is { } instance)
+            return instance;
+
+        return Activator.CreateInstance(type);
     }
 }

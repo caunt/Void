@@ -1,11 +1,14 @@
-﻿using Void.Proxy.API.Events;
+﻿using Serilog;
+using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Handshake;
+using Void.Proxy.API.Events.Proxy;
 using Void.Proxy.API.Plugins;
 
 namespace Void.Proxy.ExamplePlugin;
 
 public class ExamplePlugin : IPlugin
 {
+    public required ILogger Logger { get; init; }
     public string Name => nameof(ExamplePlugin);
 
     public Task ExecuteAsync(CancellationToken cancellationToken)
@@ -14,8 +17,20 @@ public class ExamplePlugin : IPlugin
     }
 
     [Subscribe]
-    public void Test(SearchProtocolCodec @event)
+    public void OnProxyStart(ProxyStart @event)
     {
-        Console.WriteLine("received event");
+        Logger.Information("Received ProxyStart event");
+    }
+
+    [Subscribe]
+    public void OnProxyStop(ProxyStop @event)
+    {
+        Logger.Information("Received ProxyStop event");
+    }
+
+    [Subscribe]
+    public void OnSearchProtocolCodec(SearchProtocolCodec @event)
+    {
+        Logger.Information($"Player {@event.Link.Player} looking for protocol codec");
     }
 }

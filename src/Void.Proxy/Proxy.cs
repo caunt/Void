@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Void.Proxy.API;
 using Void.Proxy.API.Events.Handshake;
+using Void.Proxy.API.Events.Proxy;
 using Void.Proxy.Configuration;
 using Void.Proxy.Events;
 using Void.Proxy.Models.General;
@@ -38,8 +39,13 @@ public static class Proxy
         Settings = Settings.LoadAsync().GetAwaiter().GetResult();
         Settings.Servers.ForEach(RegisterServer);
 
-        _loggerConfiguration = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Is(Settings.LogLevel);
-        Logger = _loggerConfiguration.CreateLogger();
+        _loggerConfiguration = new LoggerConfiguration()
+            .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}")
+            .MinimumLevel.Is(Settings.LogLevel);
+
+        Logger = _loggerConfiguration
+            .CreateLogger()
+            .ForContext("SourceContext", nameof(Proxy));
 
         JsonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
         JsonSerializerOptions.Converters.Add(new JsonIPAddressConverter());
@@ -59,6 +65,8 @@ public static class Proxy
 #else
         await Plugins.LoadAsync(cancellationToken: cancellationToken);
 #endif
+
+        await Events.ThrowAsync<ProxyStart>();
 
         var listener = new TcpListener(Settings.Address, Settings.Port);
         listener.Start();
@@ -81,11 +89,14 @@ public static class Proxy
             }
             catch (OperationCanceledException)
             {
-                Logger.Information("Stopping proxy");
+                // cancellation token set
             }
         }
 
         // global cancellation token already canceled
+
+        Logger.Information("Stopping proxy");
+        await Events.ThrowAsync<ProxyStop>();
         await Plugins.UnloadAsync();
     }
 
@@ -94,7 +105,7 @@ public static class Proxy
         var link = new Link(client);
 
         var handshake = await link.PlayerChannel.ReadMessageAsync();
-        await Events.ThrowAsync(new SearchProtocolCodec());
+        await Events.ThrowAsync(new SearchProtocolCodec { Link = link });
 
         var serverInfo = Servers.Values.ElementAt(0);
         link.Connect(serverInfo);
