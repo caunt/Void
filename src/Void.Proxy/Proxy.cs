@@ -2,7 +2,9 @@
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Void.Proxy.API.Events.Handshake;
 using Void.Proxy.Configuration;
+using Void.Proxy.Events;
 using Void.Proxy.Models.General;
 using Void.Proxy.Plugins;
 using Void.Proxy.Utils;
@@ -17,6 +19,7 @@ public static class Proxy
     public static readonly RSACryptoServiceProvider RSA;
     public static readonly HttpClient HttpClient;
     public static readonly PluginManager Plugins;
+    public static readonly EventManager Events;
     public static readonly List<Link> Links;
     public static readonly Dictionary<string, ServerInfo> Servers;
 
@@ -27,6 +30,7 @@ public static class Proxy
         RSA = new();
         HttpClient = new();
         Plugins = new();
+        Events = new();
         Links = [];
         Servers = [];
 
@@ -89,6 +93,7 @@ public static class Proxy
         var link = new Link(client);
 
         var handshake = await link.PlayerChannel.ReadMessageAsync();
+        await Events.ThrowAsync(new SearchProtocolCodec());
 
         var serverInfo = Servers.Values.ElementAt(0);
         link.Connect(serverInfo);

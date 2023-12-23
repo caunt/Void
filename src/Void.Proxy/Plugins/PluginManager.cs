@@ -22,8 +22,6 @@ public class PluginManager : IPluginManager
 
         Proxy.Logger.Information($"Loading {pluginPaths.Length} plugins");
 
-        var pluginInterface = typeof(IPlugin);
-
         foreach (var pluginPath in pluginPaths)
         {
             var context = new PluginLoadContext(pluginPath);
@@ -31,19 +29,17 @@ public class PluginManager : IPluginManager
             Proxy.Logger.Information($"Loading {context.Name} plugin");
 
             var assembly = context.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(pluginPath)));
-            var plugins = assembly
-                .GetTypes()
-                .Where(pluginInterface.IsAssignableFrom)
-                .Select(Activator.CreateInstance)
-                .Cast<IPlugin?>()
-                .WhereNotNull()
-                .ToArray();
+            var plugins = RegisterPlugins(assembly);
 
             if (plugins.Length == 0)
-                throw new InvalidDataException($"Couldn't load {context.Name} plugin, not found any IPlugin implementations");
+                Proxy.Logger.Error($"Couldn't load {context.Name} plugin, not found any IPlugin implementations");
 
-            _plugins.AddRange(plugins);
-            _references.Add(new(context, plugins));
+            var listeners = Proxy.Events.RegisterListeners(assembly);
+
+            if (listeners.Length == 0)
+                Proxy.Logger.Warning($"Plugin {context.Name} has no event listeners");
+
+            _references.Add(new(context, plugins, listeners));
 
             foreach (var plugin in plugins)
                 await plugin.ExecuteAsync(cancellationToken);
@@ -61,7 +57,9 @@ public class PluginManager : IPluginManager
 
             var name = reference.Context.Name;
 
-            Array.ForEach(reference.Plugins, RemovePlugin);
+            UnregisterPlugins(reference.Plugins);
+            Proxy.Events.UnregisterListeners(reference.Listeners);
+
             reference.Context.Unload();
 
             Proxy.Logger.Information($"Unloading {name} plugin");
@@ -89,5 +87,23 @@ public class PluginManager : IPluginManager
         _references.RemoveAll(reference => !reference.IsAlive);
     }
 
-    internal void RemovePlugin(IPlugin plugin) => _plugins.Remove(plugin);
+    public IPlugin[] RegisterPlugins(Assembly assembly)
+    {
+        var pluginInterface = typeof(IPlugin);
+        var plugins = assembly.GetTypes()
+                .Where(pluginInterface.IsAssignableFrom)
+                .Select(Activator.CreateInstance)
+                .Cast<IPlugin?>()
+                .WhereNotNull()
+                .ToArray();
+
+        _plugins.AddRange(plugins);
+        return plugins;
+    }
+
+    public void UnregisterPlugins(IPlugin[] plugins)
+    {
+        foreach (var plugin in plugins)
+            _plugins.Remove(plugin);
+    }
 }

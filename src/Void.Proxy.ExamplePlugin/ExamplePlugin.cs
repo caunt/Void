@@ -1,7 +1,8 @@
 ﻿using Void.Proxy.API.Events;
+using Void.Proxy.API.Events.Handshake;
 using Void.Proxy.API.Plugins;
 
-namespace VoidTestPlugin;
+namespace Void.Proxy.ExamplePlugin;
 
 public class ExamplePlugin : IPlugin
 {
@@ -9,13 +10,12 @@ public class ExamplePlugin : IPlugin
 
     public Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        Console.WriteLine("i am loaded");
         return Task.CompletedTask;
     }
 
-    [Subscribe<IEvent>]
-    public void Test()
+    [Subscribe]
+    public void Test(SearchProtocolCodec @event)
     {
-
+        Console.WriteLine("received event");
     }
 }
