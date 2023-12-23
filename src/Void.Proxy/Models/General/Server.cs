@@ -1,8 +1,10 @@
-﻿namespace Void.Proxy.Models.General;
+﻿using Void.Proxy.API;
 
-public class Server(Link link)
+namespace Void.Proxy.Models.General;
+
+public class Server(Link link) : IServer
 {
-    public Link Link { get; } = link;
+    public ILink Link { get; } = link;
     public string? Brand { get; protected set; }
 
     public void SetBrand(string brand)

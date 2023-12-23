@@ -1,7 +1,7 @@
 ﻿using System.Net.Sockets;
-using Void.Proxy.Network.Protocol.Forwarding;
+using Void.Proxy.API.Network.Protocol.Forwarding;
 
-namespace Void.Proxy.Models.General;
+namespace Void.Proxy.API;
 
 public class ServerInfo(string name, string host, int port, IForwarding forwarding)
 {

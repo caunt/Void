@@ -1,4 +1,4 @@
-﻿namespace Void.Proxy.Network.Protocol;
+﻿namespace Void.Proxy.API.Network.Protocol;
 
 public enum ClientType
 {

@@ -4,7 +4,7 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Numerics;
 using System.Text;
-using Void.Proxy.Network.Protocol;
+using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.Utils;
 
 namespace Void.Proxy.Network.IO;

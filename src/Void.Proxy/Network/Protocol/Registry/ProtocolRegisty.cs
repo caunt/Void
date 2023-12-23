@@ -1,4 +1,5 @@
-﻿using Void.Proxy.Network.Protocol.Packets;
+﻿using Void.Proxy.API.Network.Protocol;
+using Void.Proxy.Network.Protocol.Packets;
 
 namespace Void.Proxy.Network.Protocol.Registry;
 

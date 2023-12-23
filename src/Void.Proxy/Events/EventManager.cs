@@ -9,7 +9,7 @@ public class EventManager : IEventManager
     private readonly List<IEventListener> _listeners = [];
     private readonly List<MethodInfo> _methods = [];
 
-    public async Task ThrowAsync<T>(T @event) where T : IEvent
+    public async Task ThrowAsync<T>(T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
         var eventType = typeof(T);
 
@@ -20,10 +20,15 @@ public class EventManager : IEventManager
             if (parameters[0].ParameterType != eventType)
                 continue;
 
-            var value = method.Invoke(_listeners.First(listener => listener.GetType() == method.DeclaringType), [@event]);
+            var value = method.Invoke(_listeners.First(listener => listener.GetType() == method.DeclaringType), parameters.Length == 1 ? [@event] : [@event, cancellationToken]);
+            var handle = value switch
+            {
+                Task task => new ValueTask(task),
+                ValueTask task => task,
+                _ => ValueTask.CompletedTask
+            };
 
-            if (value is Task task)
-                await task;
+            await handle;
         }
     }
 

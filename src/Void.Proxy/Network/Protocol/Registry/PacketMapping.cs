@@ -1,4 +1,6 @@
-﻿namespace Void.Proxy.Network.Protocol.Registry;
+﻿using Void.Proxy.API.Network.Protocol;
+
+namespace Void.Proxy.Network.Protocol.Registry;
 
 public class PacketMapping(int id, bool encodeOnly, ProtocolVersion protocolVersion, ProtocolVersion? lastValidProtocolVersion = null)
 {

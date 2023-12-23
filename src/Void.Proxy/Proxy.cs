@@ -2,6 +2,7 @@
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Void.Proxy.API;
 using Void.Proxy.API.Events.Handshake;
 using Void.Proxy.Configuration;
 using Void.Proxy.Events;

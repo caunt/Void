@@ -1,10 +1,11 @@
-﻿using Void.Proxy.Network.Protocol;
+﻿using Void.Proxy.API;
+using Void.Proxy.API.Network.Protocol;
 
 namespace Void.Proxy.Models.General;
 
-public class Player(Link link)
+public class Player(Link link) : IPlayer
 {
-    public Link Link { get; } = link;
+    public ILink Link { get; } = link;
     public string? Brand { get; protected set; }
     public ClientType ClientType { get; protected set; }
 

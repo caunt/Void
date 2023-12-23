@@ -1,16 +1,17 @@
 ﻿using Nito.AsyncEx;
 using System.Net;
 using System.Net.Sockets;
+using Void.Proxy.API;
+using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.Network;
 using Void.Proxy.Network.IO;
-using Void.Proxy.Network.Protocol;
 
 namespace Void.Proxy.Models.General;
 
-public class Link : IDisposable
+public class Link : ILink
 {
-    public Player Player { get; protected set; }
-    public Server? Server { get; protected set; }
+    public IPlayer Player { get; protected set; }
+    public IServer? Server { get; protected set; }
     public MinecraftChannel PlayerChannel { get; protected set; }
     public MinecraftChannel? ServerChannel { get; protected set; }
     public ProtocolVersion? ProtocolVersion { get; protected set; }
@@ -35,7 +36,7 @@ public class Link : IDisposable
     {
         _client = client;
         PlayerChannel = new MinecraftChannel(_client.GetStream());
-        Player = new(this);
+        Player = new Player(this);
     }
 
     public void Connect(ServerInfo serverInfo)
@@ -44,7 +45,7 @@ public class Link : IDisposable
 
         _server = serverInfo.CreateTcpClient();
         ServerChannel = new MinecraftChannel(_server.GetStream());
-        Server = new(this);
+        Server = new Server(this);
     }
 
     public void StartForwarding()
