@@ -2,4 +2,12 @@
 
 Proxy.Logger.Information("Hello, World!");
 
-await Proxy.StartAsync();
+var cts = new CancellationTokenSource();
+
+Console.CancelKeyPress += (sender, eventArgs) =>
+{
+    cts.Cancel();
+    eventArgs.Cancel = true;
+};
+
+await Proxy.ExecuteAsync(cts.Token);

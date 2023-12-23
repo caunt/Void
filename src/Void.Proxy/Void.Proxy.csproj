@@ -1,51 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<AssemblyName>void-proxy-$(RuntimeIdentifier)</AssemblyName>
-		<OutputType>Exe</OutputType>
-		<TargetFramework>net8.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<PublishSingleFile>true</PublishSingleFile>
-		<!--<PublishReadyToRun>true</PublishReadyToRun>-->
-	</PropertyGroup>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
 
-	<PropertyGroup Condition="'$(SelfContained)' == 'true'">
-		<PublishTrimmed>true</PublishTrimmed>
-		<TrimmerRemoveSymbols>true</TrimmerRemoveSymbols>
-	</PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ini-parser-netstandard" Version="2.5.2" />
+    <PackageReference Include="Ionic.Zlib.Core" Version="1.0.0" />
+    <PackageReference Include="NET.Minecraft.Component" Version="1.0.5" />
+    <PackageReference Include="Nito.AsyncEx" Version="5.1.2" />
+    <PackageReference Include="Serilog" Version="3.1.2-dev-02097" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
+  </ItemGroup>
 
-	<PropertyGroup Condition="'$(SelfContained)' == 'false'">
-		<AssemblyName>$(AssemblyName)-minimal</AssemblyName>
-	</PropertyGroup>
-	
-	<ItemGroup>
-		<PackageReference Include="ini-parser-netstandard" Version="2.5.2" />
-		<PackageReference Include="NET.Minecraft.Component" Version="1.0.5" />
-		<PackageReference Include="Nito.AsyncEx" Version="5.1.2" />
-		<PackageReference Include="Serilog" Version="3.1.2-dev-02097" />
-		<PackageReference Include="Serilog.Extensions.Logging" Version="8.0.1-dev-10370" />
-		<PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
-		<PackageReference Include="Zlib.Portable.Signed" Version="1.11.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\Void.NBT\Void.NBT.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Compile Update="Properties\Resources.Designer.cs">
-	    <DesignTime>True</DesignTime>
-	    <AutoGen>True</AutoGen>
-	    <DependentUpon>Resources.resx</DependentUpon>
-	  </Compile>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <EmbeddedResource Update="Properties\Resources.resx">
-	    <Generator>ResXFileCodeGenerator</Generator>
-	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-	  </EmbeddedResource>
-	</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Void.NBT\Void.NBT.csproj" />
+    <ProjectReference Include="..\Void.Proxy.Plugins.API\Void.Proxy.Plugins.API.csproj" />
+  </ItemGroup>
 
 </Project>

@@ -4,6 +4,8 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Numerics;
 using System.Text;
+using Void.Proxy.Models.Minecraft.Encryption;
+using Void.Proxy.Models.Minecraft.Profile;
 using Void.Proxy.Network.Protocol;
 using Void.Proxy.Utils;
 
@@ -284,6 +286,58 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         var span = Span.Slice(Position, 8);
         Position += 8;
         BinaryPrimitives.WriteInt64BigEndian(span, value);
+    }
+
+    public IdentifiedKey ReadIdentifiedKey(ProtocolVersion protocolVersion) => new(
+        revision: protocolVersion == ProtocolVersion.MINECRAFT_1_19 ? IdentifiedKeyRevision.GENERIC_V1 : IdentifiedKeyRevision.LINKED_V2,
+        expiresAt: ReadLong(),
+        publicKey: Read(ReadVarInt()).ToArray(),
+        signature: Read(ReadVarInt()).ToArray());
+
+    public void WriteIdentifiedKey(IdentifiedKey identifiedKey)
+    {
+        WriteLong(identifiedKey.ExpiresAt);
+
+        WriteVarInt(identifiedKey.PublicKey.Length);
+        Write(identifiedKey.PublicKey);
+
+        WriteVarInt(identifiedKey.Signature.Length);
+        Write(identifiedKey.Signature);
+    }
+
+    public List<Property> ReadPropertyList(int count = -1)
+    {
+        if (count < 0)
+            count = ReadVarInt();
+
+        var list = new List<Property>();
+
+        for (int i = 0; i < count; i++)
+        {
+            var name = ReadString();
+            var value = ReadString();
+            var isSigned = ReadBoolean();
+            var signature = isSigned ? ReadString() : null;
+
+            list.Add(new(name, value, isSigned, signature));
+        }
+
+        return list;
+    }
+
+    public void WritePropertyList(IEnumerable<Property> properties)
+    {
+        WriteVarInt(properties.Count());
+
+        foreach (var property in properties)
+        {
+            WriteString(property.Name);
+            WriteString(property.Value);
+            WriteBoolean(property.IsSigned);
+
+            if (property is { IsSigned: true, Signature: not null })
+                WriteString(property.Signature);
+        }
     }
 
     public Span<byte> ReadToEnd()

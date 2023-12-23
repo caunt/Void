@@ -20,8 +20,11 @@ public partial class Settings(IniData data)
     public int Port { get; set; } = 25565;
     public int CompressionThreshold { get; set; } = 256;
     public LogEventLevel LogLevel { get; set; } = LogEventLevel.Information;
-    public ForwardingMode ForwardingMode { get; set; } = ForwardingMode.None;
+    public ForwardingMode ForwardingMode { get; set; } = ForwardingMode.Auto;
     public NoneForwarding DefaultNoneForwarding { get; set; } = new();
+    public AutoForwarding DefaultAutoForwarding { get; set; } = new();
+    public LegacyForwarding DefaultLegacyForwarding { get; set; } = new();
+    public ModernForwarding DefaultModernForwarding { get; set; } = new(string.Empty);
     public List<ServerInfo> Servers { get; set; } = [];
 
     static Settings()
@@ -135,9 +138,54 @@ public partial class Settings(IniData data)
             var forwardingKeyData = global.Keys.GetKeyData("forwarding");
 
             if (!Enum.TryParse(forwardingKeyData.Value, true, out ForwardingMode forwardingMode))
-                throw new Exception($"Invalid forwarding mode specified. Valid values: none");
+                throw new Exception($"Invalid forwarding mode specified. Valid values: none, auto, legacy, modern");
 
             ForwardingMode = forwardingMode;
+        }
+
+        foreach (var forwardingSettingsSection in data.Sections.Where(section => section.SectionName.StartsWith("FORWARDING.", StringComparison.InvariantCultureIgnoreCase)))
+        {
+            if (forwardingSettingsSection.SectionName.EndsWith("LEGACY", StringComparison.InvariantCultureIgnoreCase))
+            {
+                if (forwardingSettingsSection.Keys.ContainsKey("includeAddress"))
+                {
+                    var includeAddressKeyData = forwardingSettingsSection.Keys.GetKeyData("includeAddress");
+
+                    if (!bool.TryParse(includeAddressKeyData.Value, out var includeAddress))
+                        throw new Exception($"Invalid include address value specified. Valid values: true, false");
+
+                    DefaultLegacyForwarding.IncludeAddress = includeAddress;
+                }
+
+                if (forwardingSettingsSection.Keys.ContainsKey("includeUuid"))
+                {
+                    var includeUuidKeyData = forwardingSettingsSection.Keys.GetKeyData("includeUuid");
+
+                    if (!bool.TryParse(includeUuidKeyData.Value, out var includeUuid))
+                        throw new Exception($"Invalid include uuid value specified. Valid values: true, false");
+
+                    DefaultLegacyForwarding.IncludeUuid = includeUuid;
+                }
+
+                if (forwardingSettingsSection.Keys.ContainsKey("includeSkin"))
+                {
+                    var includeSkinKeyData = forwardingSettingsSection.Keys.GetKeyData("includeSkin");
+
+                    if (!bool.TryParse(includeSkinKeyData.Value, out var includeSkin))
+                        throw new Exception($"Invalid include skin value specified. Valid values: true, false");
+
+                    DefaultLegacyForwarding.IncludeSkin = includeSkin;
+                }
+            }
+
+            if (forwardingSettingsSection.SectionName.EndsWith("MODERN", StringComparison.InvariantCultureIgnoreCase))
+            {
+                if (forwardingSettingsSection.Keys.ContainsKey("secret"))
+                {
+                    var secretKeyData = forwardingSettingsSection.Keys.GetKeyData("secret");
+                    DefaultModernForwarding.Secret = secretKeyData.Value;
+                }
+            }
         }
 
         if (data.Sections.ContainsSection("SERVERS"))
@@ -159,6 +207,9 @@ public partial class Settings(IniData data)
                 Servers.Add(new(serverName, serverHostname, serverPort, ForwardingMode switch
                 {
                     ForwardingMode.None => DefaultNoneForwarding,
+                    ForwardingMode.Auto => DefaultAutoForwarding,
+                    ForwardingMode.Legacy => DefaultLegacyForwarding,
+                    ForwardingMode.Modern => DefaultModernForwarding,
                     _ => throw new ArgumentOutOfRangeException($"Invalid forwarding mode specified: {ForwardingMode}")
                 }));
             }
@@ -200,6 +251,38 @@ public partial class Settings(IniData data)
             Value = ForwardingMode.ToString().ToLower(),
             Comments = ["Default forwarding mode to servers listed in this file below. Can be overwritten on per-server basis by plugins. Valid modes: none, auto, legacy, modern"]
         });
+
+        var forwardingModernSection = data.Sections.ContainsSection("FORWARDING.MODERN") ? data.Sections.GetSectionData("FORWARDING.MODERN") : new("FORWARDING.MODERN");
+
+        forwardingModernSection.Keys.SetKeyData(new KeyData("secret")
+        {
+            Value = DefaultModernForwarding.Secret,
+            Comments = ["Secret to enable modern forwarding. This should match with your minecraft servers configs. If you do not have such a config, ignore this and use legacy forwarding or none."]
+        });
+
+        data.Sections.SetSectionData(forwardingModernSection.SectionName, forwardingModernSection);
+
+        var forwardingLegacySection = data.Sections.ContainsSection("FORWARDING.LEGACY") ? data.Sections.GetSectionData("FORWARDING.LEGACY") : new("FORWARDING.LEGACY");
+
+        forwardingLegacySection.Keys.SetKeyData(new KeyData("includeAddress")
+        {
+            Value = DefaultLegacyForwarding.IncludeAddress.ToString().ToLower(),
+            Comments = ["Should proxy share user IP with minecraft server? Valid values: true/false"]
+        });
+
+        forwardingLegacySection.Keys.SetKeyData(new KeyData("includeUuid")
+        {
+            Value = DefaultLegacyForwarding.IncludeUuid.ToString().ToLower(),
+            Comments = ["Should proxy share user UUID with minecraft server? Valid values: true/false"]
+        });
+
+        forwardingLegacySection.Keys.SetKeyData(new KeyData("includeSkin")
+        {
+            Value = DefaultLegacyForwarding.IncludeSkin.ToString().ToLower(),
+            Comments = ["Should proxy share user skin with minecraft server? Valid values: true/false"]
+        });
+
+        data.Sections.SetSectionData(forwardingLegacySection.SectionName, forwardingLegacySection);
 
         var serversSection = data.Sections.ContainsSection("SERVERS") ? data.Sections.GetSectionData("SERVERS") : new("SERVERS");
 

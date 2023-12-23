@@ -1,4 +1,5 @@
-﻿using Void.Proxy.Network.IO;
+﻿using System.Text;
+using Void.Proxy.Network.IO;
 using Void.Proxy.Network.Protocol.Packets.Shared;
 using Void.Proxy.Network.Protocol.States.Common;
 
@@ -38,4 +39,11 @@ public struct SessionChatMessage : IMinecraftPacket<PlayState>, IChatMessage
 
         SessionLastSeenMessages = new SessionLastSeenMessages(ref buffer);
     }
+
+    public int MaxSize() => 0
+        + Encoding.UTF8.GetByteCount(Message)
+        + 8
+        + 8
+        + (Signature == null ? 0 : Signature.Length)
+        + SessionLastSeenMessages.Acknowledged.Count;
 }

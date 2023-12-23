@@ -1,4 +1,5 @@
-﻿using Void.Proxy.Models.Minecraft.Profile;
+﻿using System.Text;
+using Void.Proxy.Models.Minecraft.Profile;
 using Void.Proxy.Network.IO;
 using Void.Proxy.Network.Protocol.States.Common;
 
@@ -51,5 +52,14 @@ public struct LoginSuccessPacket : IMinecraftPacket<LoginState>
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19)
             Properties = buffer.ReadPropertyList();
     }
+
+    public int MaxSize() => 64
+        + 16
+        + Encoding.UTF8.GetByteCount(Username)
+        + Properties?.Sum(property => 0
+            + Encoding.UTF8.GetByteCount(property.Name)
+            + Encoding.UTF8.GetByteCount(property.Value)
+            + 1
+            + (property.Signature == null ? 0 : Encoding.UTF8.GetByteCount(property.Signature))) ?? 0;
 }
 

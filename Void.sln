@@ -3,9 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34212.112
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Void.Proxy", "src\Void.Proxy\Void.Proxy.csproj", "{8EF40869-E6E1-4E1E-834E-4CCF76040444}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Void.Proxy-before", "src\Void.Proxy-before\Void.Proxy-before.csproj", "{8EF40869-E6E1-4E1E-834E-4CCF76040444}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Void.NBT", "src\Void.NBT\Void.NBT.csproj", "{48C0447B-BE31-46D9-8EDC-5ED4EBC3965C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Void.NBT", "src\Void.NBT\Void.NBT.csproj", "{48C0447B-BE31-46D9-8EDC-5ED4EBC3965C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Void.Proxy", "src\Void.Proxy\Void.Proxy.csproj", "{D54116EE-75EA-491C-84E3-F1DE82A45728}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Void.Proxy.Plugins.API", "src\Void.Proxy.Plugins.API\Void.Proxy.Plugins.API.csproj", "{E042DC85-7EFC-495E-9426-ECE20BF28B0E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VoidTestPlugin", "src\VoidTestPlugin\VoidTestPlugin.csproj", "{81E0F934-36EA-49C3-BBAA-3459E37E5D7C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +27,18 @@ Global
 		{48C0447B-BE31-46D9-8EDC-5ED4EBC3965C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{48C0447B-BE31-46D9-8EDC-5ED4EBC3965C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{48C0447B-BE31-46D9-8EDC-5ED4EBC3965C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D54116EE-75EA-491C-84E3-F1DE82A45728}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D54116EE-75EA-491C-84E3-F1DE82A45728}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D54116EE-75EA-491C-84E3-F1DE82A45728}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D54116EE-75EA-491C-84E3-F1DE82A45728}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E042DC85-7EFC-495E-9426-ECE20BF28B0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E042DC85-7EFC-495E-9426-ECE20BF28B0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E042DC85-7EFC-495E-9426-ECE20BF28B0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E042DC85-7EFC-495E-9426-ECE20BF28B0E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81E0F934-36EA-49C3-BBAA-3459E37E5D7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81E0F934-36EA-49C3-BBAA-3459E37E5D7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81E0F934-36EA-49C3-BBAA-3459E37E5D7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81E0F934-36EA-49C3-BBAA-3459E37E5D7C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
