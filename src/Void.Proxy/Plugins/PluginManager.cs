@@ -4,7 +4,7 @@ using System.Reflection;
 using Void.Proxy.Plugins.API;
 using Void.Proxy.Plugins.API.Reflection;
 
-namespace Void.Proxy.Events;
+namespace Void.Proxy.Plugins;
 
 public class PluginManager : IPluginManager
 {
