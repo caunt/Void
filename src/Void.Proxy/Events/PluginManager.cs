@@ -18,7 +18,7 @@ public class PluginManager : IPluginManager
         if (!Directory.Exists(path))
             Directory.CreateDirectory(path);
 
-        var pluginPaths = Directory.GetFiles(path);
+        var pluginPaths = Directory.GetFiles(path, "*.dll");
 
         Proxy.Logger.Information($"Loading {pluginPaths.Length} plugins");
 

@@ -44,7 +44,16 @@ public static class Proxy
 
     public static async Task ExecuteAsync(CancellationToken cancellationToken)
     {
+#if DEBUG
+        var directory = new DirectoryInfo(Environment.CurrentDirectory);
+
+        while (directory != null && directory.GetDirectories("Void.Proxy.ExamplePlugin").Length == 0)
+            directory = directory.Parent;
+
+        await Plugins.LoadAsync(Path.Combine(directory!.FullName, "Void.Proxy.ExamplePlugin", "bin", "Debug", "net8.0"), cancellationToken: cancellationToken);
+#else
         await Plugins.LoadAsync(cancellationToken: cancellationToken);
+#endif
 
         var listener = new TcpListener(Settings.Address, Settings.Port);
         listener.Start();
