@@ -2,18 +2,18 @@
 using System.Net;
 using System.Net.Sockets;
 using Void.Proxy.API;
+using Void.Proxy.API.Network.IO;
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.Network;
-using Void.Proxy.Network.IO;
 
-namespace Void.Proxy.Models.General;
+namespace Void.Proxy;
 
 public class Link : ILink
 {
     public IPlayer Player { get; protected set; }
     public IServer? Server { get; protected set; }
-    public MinecraftChannel PlayerChannel { get; protected set; }
-    public MinecraftChannel? ServerChannel { get; protected set; }
+    public IMinecraftChannel PlayerChannel { get; protected set; }
+    public IMinecraftChannel? ServerChannel { get; protected set; }
     public ProtocolVersion? ProtocolVersion { get; protected set; }
     public ServerInfo? ServerInfo { get; protected set; }
     public EndPoint? PlayerRemoteEndPoint => _client.Client?.RemoteEndPoint;
@@ -32,19 +32,19 @@ public class Link : ILink
     private Task? _clientForwardingTask;
     private Task? _serverForwardingTask;
 
-    public Link(TcpClient client)
+    public Link(TcpClient client, IMinecraftChannel minecraftChannel)
     {
         _client = client;
-        PlayerChannel = new MinecraftChannel(_client.GetStream());
+        PlayerChannel = minecraftChannel;
         Player = new Player(this);
     }
 
-    public void Connect(ServerInfo serverInfo)
+    public void Connect(ServerInfo serverInfo, IMinecraftChannel minecraftChannel)
     {
         ServerInfo = serverInfo;
 
         _server = serverInfo.CreateTcpClient();
-        ServerChannel = new MinecraftChannel(_server.GetStream());
+        ServerChannel = minecraftChannel;
         Server = new Server(this);
     }
 
@@ -76,7 +76,7 @@ public class Link : ILink
     protected Task ForwardClientToServer() => ProcessPacketsAsync(PlayerChannel, ServerChannel, Direction.Serverbound, (_ctsClientForwardingForce = new()).Token, (_ctsClientForwarding = new()).Token);
     protected Task ForwardServerToClient() => ProcessPacketsAsync(ServerChannel, PlayerChannel, Direction.Clientbound, (_ctsServerForwardingForce = new()).Token, (_ctsServerForwarding = new()).Token);
 
-    protected async Task ProcessPacketsAsync(MinecraftChannel sourceChannel, MinecraftChannel destinationChannel, Direction direction, CancellationToken forceCancellationToken, CancellationToken cancellationToken)
+    protected async Task ProcessPacketsAsync(IMinecraftChannel sourceChannel, IMinecraftChannel destinationChannel, Direction direction, CancellationToken forceCancellationToken, CancellationToken cancellationToken)
     {
         Proxy.Logger.Information($"Started forwarding {direction} {Player} traffic");
 
@@ -133,7 +133,7 @@ public class Link : ILink
 
     public void Dispose()
     {
-        Proxy.Logger.Debug($"Link {this.GetHashCode()} with player {Player} disposing");
+        Proxy.Logger.Debug($"Link {GetHashCode()} with player {Player} disposing");
 
         _client.Close();
         _server.Close();

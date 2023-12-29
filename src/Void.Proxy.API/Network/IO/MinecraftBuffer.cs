@@ -1,22 +1,18 @@
-﻿using Minecraft.Component.Component;
-using SharpNBT;
-using System.Buffers;
+﻿using System.Buffers;
 using System.Buffers.Binary;
 using System.Numerics;
 using System.Text;
-using Void.Proxy.API.Network.Protocol;
-using Void.Proxy.Utils;
 
-namespace Void.Proxy.Network.IO;
+namespace Void.Proxy.API.Network.IO;
 
-public ref struct MinecraftBuffer(Memory<byte> memory)
+public ref struct MinecraftBuffer(Span<byte> memory)
 {
     public long Length => Span.Length;
     public bool HasData => Position < Length;
     public int Position { get; private set; }
-    public Span<byte> Span { get; init; } = memory.Span;
+    public Span<byte> Span { get; init; } = memory;
 
-    public MinecraftBuffer(int size) : this(MemoryPool<byte>.Shared.Rent(size).Memory) { } // is it safe? will GC dispose MemoryOwner too early?
+    public MinecraftBuffer(int size) : this(MemoryPool<byte>.Shared.Rent(size).Memory.Span) { } // is it safe? will GC dispose MemoryOwner too early?
 
     public MinecraftBuffer() : this(2048) { }
 
@@ -167,7 +163,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         Encoding.UTF8.GetBytes(value, span);
     }
 
-    public ChatComponent ReadComponent(int maxLength = 32767, ProtocolVersion? protocolVersion = null)
+    /*public ChatComponent ReadComponent(int maxLength = 32767, ProtocolVersion? protocolVersion = null)
     {
         if (protocolVersion != null && protocolVersion >= ProtocolVersion.MINECRAFT_1_20_2)
         {
@@ -210,7 +206,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
             // write as json
             WriteString(component.ToString());
         }
-    }
+    }*/
 
     public bool ReadBoolean()
     {
@@ -236,7 +232,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         BitConverter.GetBytes(value).CopyTo(span);
     }
 
-    public Guid ReadGuid() => GuidHelper.FromLongs(ReadLong(), ReadLong());
+    // public Guid ReadGuid() => GuidHelper.FromLongs(ReadLong(), ReadLong());
 
     public void WriteGuid(Guid value)
     {
@@ -250,7 +246,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         }
     }
 
-    public Guid ReadGuidIntArray()
+    /*public Guid ReadGuidIntArray()
     {
         long msbHigh = (long)ReadInt() << 32;
         long msbLow = (long)ReadInt() & 0xFFFFFFFFL;
@@ -260,7 +256,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         long lsb = lsbHigh | lsbLow;
 
         return GuidHelper.FromLongs(msb, lsb);
-    }
+    }*/
 
     public void WriteGuidIntArray(Guid value)
     {

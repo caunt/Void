@@ -49,7 +49,8 @@ public class EventManager : IEventManager
 
         foreach (var listener in listeners)
         {
-            var methods = listener.GetType().GetMethods()
+            var methods = listener.GetType()
+                .GetMethods()
                 .Where(method => Attribute.IsDefined(method, typeof(SubscribeAttribute)))
                 .ToArray();
 

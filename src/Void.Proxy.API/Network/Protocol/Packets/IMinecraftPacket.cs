@@ -1,7 +1,6 @@
-﻿using Void.Proxy.API.Network.Protocol;
-using Void.Proxy.Network.IO;
+﻿using Void.Proxy.API.Network.IO;
 
-namespace Void.Proxy.Network.Protocol.Packets;
+namespace Void.Proxy.API.Network.Protocol.Packets;
 
 public interface IMinecraftPacket
 {

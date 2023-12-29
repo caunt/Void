@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using Void.Proxy.API.Network.IO;
 
 namespace Void.Proxy.API;
 
@@ -10,6 +11,6 @@ public interface ILink : IDisposable
     public EndPoint? PlayerRemoteEndPoint { get; }
     public EndPoint? ServerRemoteEndPoint { get; }
 
-    public void Connect(ServerInfo serverInfo);
+    public void Connect(ServerInfo serverInfo, IMinecraftChannel minecraftChannel);
     public void StartForwarding();
 }

@@ -1,7 +1,7 @@
 ﻿using Void.Proxy.API;
 using Void.Proxy.API.Network.Protocol;
 
-namespace Void.Proxy.Models.General;
+namespace Void.Proxy;
 
 public class Player(Link link) : IPlayer
 {

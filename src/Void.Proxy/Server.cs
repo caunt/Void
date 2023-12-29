@@ -1,6 +1,6 @@
 ﻿using Void.Proxy.API;
 
-namespace Void.Proxy.Models.General;
+namespace Void.Proxy;
 
 public class Server(Link link) : IServer
 {

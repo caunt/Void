@@ -7,7 +7,7 @@ using Void.Proxy.API.Events.Handshake;
 using Void.Proxy.API.Events.Proxy;
 using Void.Proxy.Configuration;
 using Void.Proxy.Events;
-using Void.Proxy.Models.General;
+using Void.Proxy.Network.IO;
 using Void.Proxy.Plugins;
 using Void.Proxy.Utils;
 
@@ -25,7 +25,7 @@ public static class Proxy
     public static readonly List<Link> Links;
     public static readonly Dictionary<string, ServerInfo> Servers;
 
-    private static readonly LoggerConfiguration _loggerConfiguration;
+    public static int MaxHandshakeSize { get; private set; } = 4096;
 
     static Proxy()
     {
@@ -39,11 +39,9 @@ public static class Proxy
         Settings = Settings.LoadAsync().GetAwaiter().GetResult();
         Settings.Servers.ForEach(RegisterServer);
 
-        _loggerConfiguration = new LoggerConfiguration()
+        Logger = new LoggerConfiguration()
             .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}")
-            .MinimumLevel.Is(Settings.LogLevel);
-
-        Logger = _loggerConfiguration
+            .MinimumLevel.Is(Settings.LogLevel)
             .CreateLogger()
             .ForContext("SourceContext", nameof(Proxy));
 
@@ -79,7 +77,7 @@ public static class Proxy
             {
                 var client = await listener.AcceptTcpClientAsync(cancellationToken);
 
-                _ = ProcessClientAsync(client).ContinueWith(task =>
+                _ = ProcessClientAsync(client, cancellationToken).ContinueWith(task =>
                 {
                     if (task.IsCompletedSuccessfully)
                         return;
@@ -100,17 +98,41 @@ public static class Proxy
         await Plugins.UnloadAsync();
     }
 
-    private static async Task ProcessClientAsync(TcpClient client)
+    private static async Task ProcessClientAsync(TcpClient client, CancellationToken cancellationToken)
     {
-        var link = new Link(client);
+        var buffer = new byte[MaxHandshakeSize];
+        var length = await client.GetStream().ReadAsync(buffer, cancellationToken);
 
-        var handshake = await link.PlayerChannel.ReadMessageAsync();
-        await Events.ThrowAsync(new SearchProtocolCodec { Link = link });
+        var searchClientProtocolCodec = new SearchClientProtocolCodec { Buffer = buffer[..length] };
+        await Events.ThrowAsync(searchClientProtocolCodec, cancellationToken);
 
+        var clientChannel = searchClientProtocolCodec.Result switch
+        {
+            { Channel: { } _channel } => _channel,
+            _ => new SimpleMinecraftChannel(client.GetStream())
+        };
+
+        if (clientChannel is SimpleMinecraftChannel simpleMinecraftChannel)
+        {
+            if (searchClientProtocolCodec.Result is null)
+                simpleMinecraftChannel.Inject(searchClientProtocolCodec.Buffer);
+            else
+                simpleMinecraftChannel.Inject(searchClientProtocolCodec.Result.NextBuffer);
+        }
+
+        var link = new Link(client, clientChannel);
         var serverInfo = Servers.Values.ElementAt(0);
-        link.Connect(serverInfo);
 
-        await link.ServerChannel!.WriteMessageAsync(handshake);
+        var searchServerProtocolCodec = new SearchServerProtocolCodec { Link = link, Server = serverInfo };
+        await Events.ThrowAsync(searchServerProtocolCodec, cancellationToken);
+
+        var serverChannel = searchServerProtocolCodec.Result switch
+        {
+            { } _channel => _channel,
+            _ => new SimpleMinecraftChannel(serverInfo.CreateTcpClient().GetStream())
+        };
+
+        link.Connect(serverInfo, serverChannel);
         link.StartForwarding();
 
         Links.Add(link);

@@ -1,13 +1,11 @@
-﻿using Void.Proxy.Network.IO.Common;
+﻿using Void.Proxy.API.Network.IO;
+using Void.Proxy.API.Network.IO.Streams;
 
 namespace Void.Proxy.Network.IO;
 
-public class MinecraftChannel(Stream baseStream)
+public class MinecraftChannel(IPacketStream baseStream)
 {
-    public bool CanRead => baseStream.CanRead;
-    public bool CanWrite => baseStream.CanWrite;
-
-    private PacketStream _packetStream = new(baseStream);
+    private IPacketStream _packetStream = baseStream;
 
     public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
     {

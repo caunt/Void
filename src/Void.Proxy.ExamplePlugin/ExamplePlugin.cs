@@ -2,6 +2,7 @@
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Handshake;
 using Void.Proxy.API.Events.Proxy;
+using Void.Proxy.API.Network.IO;
 using Void.Proxy.API.Plugins;
 
 namespace Void.Proxy.ExamplePlugin;
@@ -29,8 +30,36 @@ public class ExamplePlugin : IPlugin
     }
 
     [Subscribe]
-    public void OnSearchProtocolCodec(SearchProtocolCodec @event)
+    public void OnSearchProtocolCodec(SearchClientProtocolCodec @event)
     {
-        Logger.Information($"Player {@event.Link.Player} looking for protocol codec");
+        bool IsHandshake(Memory<byte> memory)
+        {
+            var buffer = new MinecraftBuffer(memory.Span);
+
+            try
+            {
+                var length = buffer.ReadVarInt();
+                var packet = buffer.Read(length);
+
+                buffer = new(packet);
+                var protocolVersion = buffer.ReadVarInt();
+                var serverAddress = buffer.ReadString(255);
+                var serverPort = buffer.ReadUnsignedShort();
+                var nextState = buffer.ReadVarInt();
+
+                if (buffer.Position < buffer.Length)
+                    throw new NotSupportedException();
+
+                return true;
+            }
+            catch (Exception exception)
+            {
+                Logger.Information("Handshake cannot be decoded: " + Convert.ToHexString(memory.Span) + "\n" + exception);
+            }
+
+            return false;
+        }
+
+        IsHandshake(@event.Buffer);
     }
 }

@@ -1,11 +1,10 @@
 ﻿using System.Buffers;
-using Void.Proxy.Network.IO;
 
 namespace Void.Proxy.Network;
 
 public static class MinecraftNetworkExtensions
 {
-    public static async ValueTask<MinecraftMessage> ReadMessageAsync(this Stream stream, int length, CancellationToken cancellationToken = default)
+    /*public static async ValueTask<MinecraftMessage> ReadMessageAsync(this Stream stream, int length, CancellationToken cancellationToken = default)
     {
         var packetId = await stream.ReadVarIntAsync(cancellationToken);
 
@@ -17,7 +16,7 @@ public static class MinecraftNetworkExtensions
         await stream.ReadExactlyAsync(memory, cancellationToken);
 
         return new(packetId, memory, memoryOwner);
-    }
+    }*/
 
     public static async ValueTask<int> ReadVarIntAsync(this Stream stream, CancellationToken cancellationToken = default)
     {
