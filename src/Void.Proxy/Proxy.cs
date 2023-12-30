@@ -56,14 +56,22 @@ public static class Proxy
 #if DEBUG
         var directory = new DirectoryInfo(Environment.CurrentDirectory);
 
-        while (directory != null && directory.GetDirectories("Void.Proxy.ExamplePlugin").Length == 0)
+        while (directory != null && directory.Name != "src")
             directory = directory.Parent;
 
-        await Plugins.LoadAsync(Path.Combine(directory!.FullName, "Void.Proxy.ExamplePlugin", "bin", "Debug", "net8.0"), cancellationToken: cancellationToken);
-#else
-        await Plugins.LoadAsync(cancellationToken: cancellationToken);
+        var pluginsDirectory = Path.Combine(Environment.CurrentDirectory, "plugins");
+
+        foreach (var pluginDirectory in directory!.GetDirectories("Void.Proxy.Plugins.*"))
+        {
+            if (pluginDirectory.Name.EndsWith("API"))
+                continue;
+
+            foreach (var file in Directory.GetFiles(Path.Combine(pluginDirectory.FullName, "bin", "Debug", "net8.0"), "*.dll"))
+                File.Copy(file, Path.Combine(pluginsDirectory, Path.GetFileName(file)), true);
+        }
 #endif
 
+        await Plugins.LoadAsync(cancellationToken: cancellationToken);
         await Events.ThrowAsync<ProxyStart>();
 
         var listener = new TcpListener(Settings.Address, Settings.Port);

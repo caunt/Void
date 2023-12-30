@@ -3,14 +3,18 @@ using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Handshake;
 using Void.Proxy.API.Events.Proxy;
 using Void.Proxy.API.Network.IO;
+using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.API.Plugins;
 
-namespace Void.Proxy.ExamplePlugin;
+namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest;
 
-public class ExamplePlugin : IPlugin
+public class ProtocolSupportPlugin : IPlugin
 {
     public required ILogger Logger { get; init; }
-    public string Name => nameof(ExamplePlugin);
+    public string Name => nameof(ProtocolSupportPlugin);
+
+    public readonly ProtocolVersion OldestVersion = ProtocolVersion.MINECRAFT_1_20_2;
+    public readonly ProtocolVersion NewestVersion = ProtocolVersion.Latest;
 
     public Task ExecuteAsync(CancellationToken cancellationToken)
     {
@@ -20,13 +24,11 @@ public class ExamplePlugin : IPlugin
     [Subscribe]
     public void OnProxyStart(ProxyStart @event)
     {
-        Logger.Information("Received ProxyStart event");
     }
 
     [Subscribe]
     public void OnProxyStop(ProxyStop @event)
     {
-        Logger.Information("Received ProxyStop event");
     }
 
     [Subscribe]
