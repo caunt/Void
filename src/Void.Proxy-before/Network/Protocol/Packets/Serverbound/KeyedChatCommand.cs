@@ -64,7 +64,10 @@ public struct KeyedChatCommand : IMinecraftPacket<PlayState>, IChatCommand
         }
     }
 
-    public async Task<bool> HandleAsync(PlayState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(PlayState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -72,15 +75,16 @@ public struct KeyedChatCommand : IMinecraftPacket<PlayState>, IChatCommand
         Timestamp = buffer.ReadLong();
         Salt = buffer.ReadLong();
 
-        int size = buffer.ReadVarInt();
+        var size = buffer.ReadVarInt();
 
         if (size > 8)
             throw new Exception($"Too many argument signatures, {size} is above limit 8");
 
         Arguments = new Dictionary<string, byte[]>(size);
 
-        for (int i = 0; i < size; i++)
-            Arguments.Add(buffer.ReadString(16), buffer.Read(Signed ? 65536 : 0).ToArray());
+        for (var i = 0; i < size; i++)
+            Arguments.Add(buffer.ReadString(16), buffer.Read(Signed ? 65536 : 0)
+                .ToArray());
 
         SignedPreview = buffer.ReadBoolean();
 
@@ -96,11 +100,13 @@ public struct KeyedChatCommand : IMinecraftPacket<PlayState>, IChatCommand
 
             PreviousMessages = new KeyValuePair<Guid, byte[]>[size];
 
-            for (int i = 0; i < size; i++)
-                PreviousMessages[i] = new(buffer.ReadGuid(), buffer.Read(buffer.ReadVarInt()).ToArray());
+            for (var i = 0; i < size; i++)
+                PreviousMessages[i] = new KeyValuePair<Guid, byte[]>(buffer.ReadGuid(), buffer.Read(buffer.ReadVarInt())
+                    .ToArray());
 
             if (buffer.ReadBoolean())
-                LastMessage = new(buffer.ReadGuid(), buffer.Read(buffer.ReadVarInt()).ToArray());
+                LastMessage = new KeyValuePair<Guid, byte[]>(buffer.ReadGuid(), buffer.Read(buffer.ReadVarInt())
+                    .ToArray());
         }
 
         if (Salt != 0L || PreviousMessages.Length != 0)

@@ -12,19 +12,41 @@ public class PacketStream(Stream baseStream) : Stream
 
     public override long Length => baseStream.Length;
 
-    public override long Position { get => baseStream.Position; set => baseStream.Position = value; }
+    public override long Position
+    {
+        get => baseStream.Position;
+        set => baseStream.Position = value;
+    }
 
-    public override int Read(byte[] buffer, int offset, int count) => baseStream.Read(buffer, offset, count);
+    public override int Read(byte[] buffer, int offset, int count)
+    {
+        return baseStream.Read(buffer, offset, count);
+    }
 
-    public override long Seek(long offset, SeekOrigin origin) => baseStream.Seek(offset, origin);
+    public override long Seek(long offset, SeekOrigin origin)
+    {
+        return baseStream.Seek(offset, origin);
+    }
 
-    public override void SetLength(long value) => baseStream.SetLength(value);
+    public override void SetLength(long value)
+    {
+        baseStream.SetLength(value);
+    }
 
-    public override void Flush() => baseStream.Flush();
+    public override void Flush()
+    {
+        baseStream.Flush();
+    }
 
-    public override async Task FlushAsync(CancellationToken cancellationToken) => await baseStream.FlushAsync(cancellationToken);
+    public override async Task FlushAsync(CancellationToken cancellationToken)
+    {
+        await baseStream.FlushAsync(cancellationToken);
+    }
 
-    public override void Write(byte[] buffer, int offset, int count) => baseStream.Write(buffer, offset, count);
+    public override void Write(byte[] buffer, int offset, int count)
+    {
+        baseStream.Write(buffer, offset, count);
+    }
 
     // not used, prefer ReadPacketAsync
     public override async ValueTask<int> ReadAsync(Memory<byte> output, CancellationToken cancellationToken = default)

@@ -44,17 +44,8 @@ public class ProtocolVersion
     public static readonly ProtocolVersion MINECRAFT_1_20 = new(763, "1.20", "1.20.1");
     public static readonly ProtocolVersion MINECRAFT_1_20_2 = new(764, "1.20.2");
     public static readonly ProtocolVersion MINECRAFT_1_20_3 = new(765, "1.20.3", "1.20.4");
-
-    public static ProtocolVersion Latest => _mapping.OrderByDescending(kv => kv.Key).First().Value;
-    public static ProtocolVersion Oldest => _mapping.OrderBy(kv => kv.Key).First().Value;
-    public static ProtocolVersion Get(int version) => _mapping[version];
-    public static IEnumerable<ProtocolVersion> Range() => Range(Oldest, Latest);
-    public static IEnumerable<ProtocolVersion> Range(ProtocolVersion start, ProtocolVersion end) => _mapping.Where(pair => pair.Key >= start.Version && pair.Key <= end.Version).Select(pair => pair.Value);
-
-    public int Version { get; private set; }
-    public string[] Names { get; private set; }
-
-    private ProtocolVersion() => throw new NotSupportedException();
+    public static readonly ProtocolVersion MINECRAFT_1_20_5 = new(766, "1.20.5", "1.20.6");
+    public static readonly ProtocolVersion MINECRAFT_1_21 = new(767, "1.21");
 
     private ProtocolVersion(int version, params string[] names)
     {
@@ -65,27 +56,73 @@ public class ProtocolVersion
             throw new InvalidOperationException($"ProtocolVersion {version} already registered");
     }
 
-    public string GetVersionIntroducedIn() => Names[0];
+    public static ProtocolVersion Latest =>
+        _mapping.MaxBy(kv => kv.Key)
+            .Value;
 
-    public string GetMostRecentSupportedVersion() => Names[^1];
+    public static ProtocolVersion Oldest =>
+        _mapping.MinBy(kv => kv.Key)
+            .Value;
 
-    public IEnumerable<string> GetVersionsSupportedBy() => Names.AsReadOnly();
+    public int Version { get; }
+    public string[] Names { get; }
+
+    public static ProtocolVersion Get(int version)
+    {
+        return _mapping[version];
+    }
+
+    public static ProtocolVersion[] Range()
+    {
+        return Range(Oldest, Latest);
+    }
+
+    public static ProtocolVersion[] Range(ProtocolVersion start, ProtocolVersion end)
+    {
+        return _mapping.Where(pair => pair.Key >= start.Version && pair.Key <= end.Version)
+            .Select(pair => pair.Value)
+            .ToArray();
+    }
+
+    public string GetVersionIntroducedIn()
+    {
+        return Names[0];
+    }
+
+    public string GetMostRecentSupportedVersion()
+    {
+        return Names[^1];
+    }
+
+    public IEnumerable<string> GetVersionsSupportedBy()
+    {
+        return Names.AsReadOnly();
+    }
 
     public int CompareTo(ProtocolVersion? other)
     {
-        if (other is null)
-            return 1; // null is considered greater than non-null
-
-        return Version.CompareTo(other.Version);
+        return other is null ? 1 : Version.CompareTo(other.Version); // null is considered greater than non-null
     }
 
-    public static bool operator >(ProtocolVersion left, ProtocolVersion right) => left.CompareTo(right) > 0;
+    public static bool operator >(ProtocolVersion left, ProtocolVersion right)
+    {
+        return left.CompareTo(right) > 0;
+    }
 
-    public static bool operator <(ProtocolVersion left, ProtocolVersion right) => left.CompareTo(right) < 0;
+    public static bool operator <(ProtocolVersion left, ProtocolVersion right)
+    {
+        return left.CompareTo(right) < 0;
+    }
 
-    public static bool operator >=(ProtocolVersion left, ProtocolVersion right) => left.CompareTo(right) >= 0;
+    public static bool operator >=(ProtocolVersion left, ProtocolVersion right)
+    {
+        return left.CompareTo(right) >= 0;
+    }
 
-    public static bool operator <=(ProtocolVersion left, ProtocolVersion right) => left.CompareTo(right) <= 0;
+    public static bool operator <=(ProtocolVersion left, ProtocolVersion right)
+    {
+        return left.CompareTo(right) <= 0;
+    }
 
     public static bool operator ==(ProtocolVersion? left, ProtocolVersion? right)
     {
@@ -95,17 +132,26 @@ public class ProtocolVersion
         return left.Equals(right);
     }
 
-    public static bool operator !=(ProtocolVersion? left, ProtocolVersion? right) => !(left == right);
+    public static bool operator !=(ProtocolVersion? left, ProtocolVersion? right)
+    {
+        return !(left == right);
+    }
 
     public override bool Equals(object? obj)
     {
-        if (obj == null || obj is not ProtocolVersion)
+        if (obj is not ProtocolVersion version)
             return false;
 
-        return Version == ((ProtocolVersion)obj).Version;
+        return Version == version.Version;
     }
 
-    public override int GetHashCode() => Version.GetHashCode();
+    public override int GetHashCode()
+    {
+        return Version.GetHashCode();
+    }
 
-    public override string ToString() => GetVersionIntroducedIn();
+    public override string ToString()
+    {
+        return GetVersionIntroducedIn();
+    }
 }

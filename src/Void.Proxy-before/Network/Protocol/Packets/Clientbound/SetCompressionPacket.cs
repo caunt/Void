@@ -12,7 +12,10 @@ public struct SetCompressionPacket : IMinecraftPacket<LoginState>
         buffer.WriteVarInt(Threshold);
     }
 
-    public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(LoginState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {

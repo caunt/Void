@@ -4,7 +4,9 @@ using Void.Proxy.Network.Protocol.Registry;
 
 namespace Void.Proxy.Network.Protocol.States;
 
-public interface IProtocolState { }
+public interface IProtocolState
+{
+}
 
 public abstract class ProtocolState : IProtocolState
 {

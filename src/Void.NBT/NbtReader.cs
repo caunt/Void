@@ -8,24 +8,33 @@ namespace Void.NBT
 {
     public class NbtReader
     {
-        public Encoding StringEncoder { get; set; } = Encoding.UTF8;
-        public int Position { get; private set; }
-
         private readonly byte[] _data;
 
         public NbtReader(Stream stream)
         {
-            MemoryStream ms = new MemoryStream();
+            var ms = new MemoryStream();
             stream.CopyTo(ms);
 
             _data = ms.ToArray();
         }
 
-        public NbtReader(byte[] data) => _data = data;
+        public NbtReader(byte[] data)
+        {
+            _data = data;
+        }
 
-        public void Skip(int lenght) => Position += lenght;
+        public Encoding StringEncoder { get; set; } = Encoding.UTF8;
+        public int Position { get; private set; }
 
-        public NbtTagType ReadTagType() => (NbtTagType)ReadByte();
+        public void Skip(int length)
+        {
+            Position += length;
+        }
+
+        public NbtTagType ReadTagType()
+        {
+            return (NbtTagType)ReadByte();
+        }
 
         public NbtTag ReadTag(NbtTagType? type = null, bool readName = true)
         {
@@ -53,41 +62,41 @@ namespace Void.NBT
 
         public byte ReadByte()
         {
-            byte data = _data[Position];
+            var data = _data[Position];
             Position++;
 
             return data;
         }
 
-        public byte[] ReadArray(int lenght)
+        public byte[] ReadArray(int length)
         {
-            byte[] data = _data[Position..(Position + lenght)];
-            Position += lenght;
+            var data = _data[Position..(Position + length)];
+            Position += length;
 
             return data;
         }
 
         public short ReadShort()
         {
-            byte[] data = ReadArray(2);
+            var data = ReadArray(2);
             return BinaryPrimitives.ReadInt16BigEndian(data);
         }
 
         public int ReadInt()
         {
-            byte[] data = ReadArray(4);
+            var data = ReadArray(4);
             return BinaryPrimitives.ReadInt32BigEndian(data);
         }
 
         public long ReadLong()
         {
-            byte[] data = ReadArray(8);
+            var data = ReadArray(8);
             return BinaryPrimitives.ReadInt64BigEndian(data);
         }
 
         public float ReadFloat()
         {
-            byte[] data = ReadArray(4);
+            var data = ReadArray(4);
 
             Array.Reverse(data);
             return BitConverter.ToSingle(data);
@@ -95,7 +104,7 @@ namespace Void.NBT
 
         public double ReadDouble()
         {
-            byte[] data = ReadArray(8);
+            var data = ReadArray(8);
 
             Array.Reverse(data);
             return BitConverter.ToDouble(data);
@@ -103,9 +112,8 @@ namespace Void.NBT
 
         public string ReadString()
         {
-            short lenght = ReadShort();
-
-            byte[] data = ReadArray(lenght);
+            var length = ReadShort();
+            var data = ReadArray(length);
 
             return StringEncoder.GetString(data);
         }

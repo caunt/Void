@@ -1,13 +1,17 @@
-﻿using IniParser.Model;
+﻿using System.Text;
+using IniParser.Model;
 using IniParser.Model.Configuration;
 using IniParser.Model.Formatting;
-using System.Text;
 
 namespace Void.Proxy.Utils;
 
 internal class SettingsDataFormatter : IIniDataFormatter
 {
-    public IniParserConfiguration Configuration { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public IniParserConfiguration Configuration
+    {
+        get => throw new NotImplementedException();
+        set => throw new NotImplementedException();
+    }
 
     public string IniDataToString(IniData iniData)
     {
@@ -45,7 +49,7 @@ internal class SettingsDataFormatter : IIniDataFormatter
 
     protected virtual void WriteComments(List<string> comments, StringBuilder source)
     {
-        for (int i = 0; i < comments.Count; i++)
+        for (var i = 0; i < comments.Count; i++)
             source.AppendLine($"# {comments[i]}");
     }
 }

@@ -11,17 +11,6 @@ public class ConfigurationState(Link link) : ProtocolState, ILoginConfigurePlayS
 {
     protected override StateRegistry Registry { get; } = Registries.ConfigurationStateRegistry;
 
-    public Task<bool> HandleAsync(DisconnectPacket packet)
-    {
-        return Task.FromResult(false);
-    }
-
-    public Task<bool> HandleAsync(FinishConfiguration packet)
-    {
-        link.SwitchState(4);
-        return Task.FromResult(false);
-    }
-
     public Task<bool> HandleAsync(PluginMessage packet)
     {
         if (packet.Identifier == "minecraft:brand")
@@ -42,7 +31,8 @@ public class ConfigurationState(Link link) : ProtocolState, ILoginConfigurePlayS
 
         if (packet.Identifier == "minecraft:register")
         {
-            var channels = Encoding.UTF8.GetString(packet.Data).Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            var channels = Encoding.UTF8.GetString(packet.Data)
+                .Split('\0', StringSplitOptions.RemoveEmptyEntries);
             Proxy.Logger.Debug($"Received {packet.Direction} Configuration register channels message: {string.Join(", ", channels)}");
 
             return Task.FromResult(false);
@@ -50,7 +40,8 @@ public class ConfigurationState(Link link) : ProtocolState, ILoginConfigurePlayS
 
         if (packet.Identifier == "minecraft:unregister")
         {
-            var channels = Encoding.UTF8.GetString(packet.Data).Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            var channels = Encoding.UTF8.GetString(packet.Data)
+                .Split('\0', StringSplitOptions.RemoveEmptyEntries);
             Proxy.Logger.Debug($"Received {packet.Direction} Configuration unregister channels message: {string.Join(", ", channels)}");
 
             return Task.FromResult(false);
@@ -61,6 +52,17 @@ public class ConfigurationState(Link link) : ProtocolState, ILoginConfigurePlayS
         else
             Proxy.Logger.Verbose($"Received {packet.Direction} Configuration plugin message in channel {packet.Identifier} with {packet.Data.Length} bytes");
 
+        return Task.FromResult(false);
+    }
+
+    public Task<bool> HandleAsync(DisconnectPacket packet)
+    {
+        return Task.FromResult(false);
+    }
+
+    public Task<bool> HandleAsync(FinishConfiguration packet)
+    {
+        link.SwitchState(4);
         return Task.FromResult(false);
     }
 }

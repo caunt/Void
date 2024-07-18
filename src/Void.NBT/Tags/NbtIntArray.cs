@@ -4,7 +4,10 @@ namespace Void.NBT.Tags
     {
         public int[] Data;
 
-        public NbtIntArray(int[] data) => Data = data;
+        public NbtIntArray(int[] data)
+        {
+            Data = data;
+        }
 
         public NbtIntArray(string? name, int[] data)
         {
@@ -14,12 +17,12 @@ namespace Void.NBT.Tags
 
         public static NbtIntArray FromReader(NbtReader reader, bool readName = true)
         {
-            string? name = readName ? reader.ReadString() : null;
-            int lenght = reader.ReadInt();
+            var name = readName ? reader.ReadString() : null;
+            var length = reader.ReadInt();
 
-            int[] data = new int[lenght];
+            var data = new int[length];
 
-            for (int i = 0; i < lenght; i++)
+            for (var i = 0; i < length; i++)
                 data[i] = reader.ReadInt();
 
             return new NbtIntArray(name, data);
@@ -28,9 +31,14 @@ namespace Void.NBT.Tags
         internal override void SerializeValue(ref NbtWriter writer)
         {
             writer.Write(Data.Length);
-            foreach (int i in Data) writer.Write(i);
+
+            foreach (var i in Data)
+                writer.Write(i);
         }
 
-        public override NbtTagType GetType() => NbtTagType.IntArray;
+        public override NbtTagType GetType()
+        {
+            return NbtTagType.IntArray;
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Serilog;
+﻿using Microsoft.Extensions.Logging;
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Handshake;
 using Void.Proxy.API.Events.Proxy;
@@ -7,13 +7,12 @@ using Void.Proxy.API.Plugins;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1;
 
-public class ProtocolSupportPlugin : IPlugin
+public class ProtocolSupportPlugin(ILogger<ProtocolSupportPlugin> logger) : IPlugin
 {
-    public required ILogger Logger { get; init; }
-    public string Name => nameof(ProtocolSupportPlugin);
+    public readonly ProtocolVersion NewestVersion = ProtocolVersion.MINECRAFT_1_20;
 
     public readonly ProtocolVersion OldestVersion = ProtocolVersion.MINECRAFT_1_13;
-    public readonly ProtocolVersion NewestVersion = ProtocolVersion.MINECRAFT_1_20;
+    public string Name => nameof(ProtocolSupportPlugin);
 
     public Task ExecuteAsync(CancellationToken cancellationToken)
     {
@@ -31,7 +30,7 @@ public class ProtocolSupportPlugin : IPlugin
     }
 
     [Subscribe]
-    public void OnSearchProtocolCodec(SearchClientProtocolCodec @event)
+    public void OnSearchProtocolCodec(SearchProtocolCodec @event)
     {
     }
 }

@@ -55,7 +55,10 @@ public struct LoginStartPacket : IMinecraftPacket<LoginState>
         }
     }
 
-    public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(LoginState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -70,13 +73,9 @@ public struct LoginStartPacket : IMinecraftPacket<LoginState>
             else
             {
                 if (buffer.ReadBoolean())
-                {
                     IdentifiedKey = buffer.ReadIdentifiedKey(protocolVersion);
-                }
                 else
-                {
                     IdentifiedKey = null;
-                }
             }
 
             if (protocolVersion >= ProtocolVersion.MINECRAFT_1_20_2)
@@ -86,12 +85,8 @@ public struct LoginStartPacket : IMinecraftPacket<LoginState>
             }
 
             if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19_1)
-            {
                 if (buffer.ReadBoolean())
-                {
                     Guid = buffer.ReadGuid();
-                }
-            }
         }
         else
         {
@@ -99,4 +94,3 @@ public struct LoginStartPacket : IMinecraftPacket<LoginState>
         }
     }
 }
-

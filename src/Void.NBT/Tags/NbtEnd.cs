@@ -2,10 +2,18 @@ namespace Void.NBT.Tags
 {
     public class NbtEnd : NbtTag
     {
-        internal override void SerializeValue(ref NbtWriter writer) { }
+        internal override void SerializeValue(ref NbtWriter writer)
+        {
+        }
 
-        public static NbtEnd FromReader() => new NbtEnd();
+        public static NbtEnd FromReader()
+        {
+            return new NbtEnd();
+        }
 
-        public override NbtTagType GetType() => NbtTagType.End;
+        public override NbtTagType GetType()
+        {
+            return NbtTagType.End;
+        }
     }
 }

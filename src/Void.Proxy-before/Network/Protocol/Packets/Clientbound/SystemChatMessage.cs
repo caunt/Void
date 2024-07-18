@@ -15,7 +15,6 @@ public struct SystemChatMessage : IMinecraftPacket<PlayState>
         buffer.WriteComponent(Message, protocolVersion);
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19_1)
-        {
             switch (Type)
             {
                 case ChatMessageType.System:
@@ -27,14 +26,14 @@ public struct SystemChatMessage : IMinecraftPacket<PlayState>
                 default:
                     throw new NotSupportedException($"Chat message type {Type} not supported from 1.19.1");
             }
-        }
         else
-        {
             buffer.WriteVarInt((int)Type);
-        }
     }
 
-    public async Task<bool> HandleAsync(PlayState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(PlayState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {

@@ -8,8 +8,8 @@ namespace Void.Proxy.Network.Protocol.Forwarding;
 
 public class ModernForwarding(string secret) : IForwarding
 {
-    public ForwardingMode Mode => ForwardingMode.Modern;
     public string Secret { get; set; } = secret;
+    public ForwardingMode Mode => ForwardingMode.Modern;
 
     public byte[] GenerateForwardingData(byte[] data, Player player)
     {
@@ -37,13 +37,11 @@ public class ModernForwarding(string secret) : IForwarding
             buffer.WriteIdentifiedKey(player.IdentifiedKey);
 
             if (actualVersion.CompareTo(Version.WithKeyV2) >= 0)
-            {
                 // if key signature holder is not null (seems to be always null)
                 // WriteBoolean(true)
                 // WriteGuid(key.GetSignatureHolder())
                 // else
                 buffer.WriteBoolean(false);
-            }
         }
 
         var forwardingData = buffer.Span[..buffer.Position];
@@ -55,7 +53,9 @@ public class ModernForwarding(string secret) : IForwarding
     // TODO: https://github.com/PaperMC/Velocity/blob/07a525be7f90f1f3ccd515f7c196824d12ed0fff/proxy/src/main/java/com/velocitypowered/proxy/connection/backend/LoginSessionHandler.java#L199
     private Version FindForwardingVersion(Version requested, Player player)
     {
-        requested = (Version)Math.Min((int)requested, Enum.GetValues(typeof(Version)).Cast<int>().Max());
+        requested = (Version)Math.Min((int)requested, Enum.GetValues(typeof(Version))
+            .Cast<int>()
+            .Max());
 
         if (requested.CompareTo(Version.Default) > 0)
         {

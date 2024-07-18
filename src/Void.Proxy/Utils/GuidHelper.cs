@@ -33,38 +33,38 @@ public static class GuidHelper
         var leastSigBytes = BitConverter.GetBytes(leastSig);
 
         Span<byte> guidBytes =
-        //Is there a better way??
-        [
-            mostSigBytes[4],
-            mostSigBytes[5],
-            mostSigBytes[6],
-            mostSigBytes[7],
-            mostSigBytes[2],
-            mostSigBytes[3],
-            mostSigBytes[0],
-            mostSigBytes[1],
-            leastSigBytes[7],
-            leastSigBytes[6],
-            leastSigBytes[5],
-            leastSigBytes[4],
-            leastSigBytes[3],
-            leastSigBytes[2],
-            leastSigBytes[1],
-            leastSigBytes[0]
-        ];
+            //Is there a better way??
+            [
+                mostSigBytes[4],
+                mostSigBytes[5],
+                mostSigBytes[6],
+                mostSigBytes[7],
+                mostSigBytes[2],
+                mostSigBytes[3],
+                mostSigBytes[0],
+                mostSigBytes[1],
+                leastSigBytes[7],
+                leastSigBytes[6],
+                leastSigBytes[5],
+                leastSigBytes[4],
+                leastSigBytes[3],
+                leastSigBytes[2],
+                leastSigBytes[1],
+                leastSigBytes[0]
+            ];
 
         return new Guid(guidBytes);
     }
 
     public static int GetVersion(Guid guid)
     {
-        ref Int128 i128 = ref Unsafe.As<Guid, Int128>(ref guid);
+        ref var i128 = ref Unsafe.As<Guid, Int128>(ref guid);
         return i128.version >> 4;
     }
 
     public static int GetVariant(Guid guid)
     {
-        ref Int128 i128 = ref Unsafe.As<Guid, Int128>(ref guid);
+        ref var i128 = ref Unsafe.As<Guid, Int128>(ref guid);
         return (i128.variant >> 4) switch
         {
             <= 0b0111 => 0,
@@ -78,22 +78,15 @@ public static class GuidHelper
     [StructLayout(LayoutKind.Explicit, Size = 16)]
     private struct Int128
     {
-        [FieldOffset(0)]
-        public int a;
-        [FieldOffset(4)]
-        public int b;
-        [FieldOffset(8)]
-        public int c;
-        [FieldOffset(12)]
-        public int d;
+        [FieldOffset(0)] public int a;
+        [FieldOffset(4)] public int b;
+        [FieldOffset(8)] public int c;
+        [FieldOffset(12)] public int d;
 
-        [FieldOffset(0)]
-        private byte start;
+        [FieldOffset(0)] private byte start;
 
-        [FieldOffset(7)]
-        public byte version;
-        [FieldOffset(8)]
-        public byte variant;
+        [FieldOffset(7)] public byte version;
+        [FieldOffset(8)] public byte variant;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<byte> AsSpan()
@@ -105,7 +98,13 @@ public static class GuidHelper
 
 public class GuidConverter : JsonConverter<Guid>
 {
-    public override Guid Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => Guid.Parse(reader.GetString()!);
+    public override Guid Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return Guid.Parse(reader.GetString()!);
+    }
 
-    public override void Write(Utf8JsonWriter writer, Guid temperature, JsonSerializerOptions options) => writer.WriteStringValue(temperature.ToString());
+    public override void Write(Utf8JsonWriter writer, Guid temperature, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(temperature.ToString());
+    }
 }

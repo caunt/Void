@@ -1,7 +1,7 @@
-﻿using Minecraft.Component.Component;
-using System.Net;
+﻿using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Minecraft.Component.Component;
 using Void.Proxy.Models.Minecraft.Chat;
 using Void.Proxy.Models.Minecraft.Encryption;
 using Void.Proxy.Models.Minecraft.Profile;
@@ -53,9 +53,15 @@ public class Player(Link link)
         Proxy.Logger.Information($"Player {this} enabled compression");
     }
 
-    public async Task SendPacketAsync(IMinecraftPacket packet) => await Link.SendPacketAsync(Direction.Clientbound, packet);
+    public async Task SendPacketAsync(IMinecraftPacket packet)
+    {
+        await Link.SendPacketAsync(Direction.Clientbound, packet);
+    }
 
-    public async Task SendMessageAsync(string text) => await SendMessageAsync(ChatComponent.FromLegacy(text));
+    public async Task SendMessageAsync(string text)
+    {
+        await SendMessageAsync(ChatComponent.FromLegacy(text));
+    }
 
     public async Task SendMessageAsync(ChatComponent component)
     {
@@ -77,7 +83,7 @@ public class Player(Link link)
         static byte[] TwosComplement(byte[] data)
         {
             int i;
-            bool carry = true;
+            var carry = true;
 
             for (i = data.Length - 1; i >= 0; i--)
             {
@@ -98,7 +104,8 @@ public class Player(Link link)
         if (negative)
             serverId = TwosComplement(serverId);
 
-        var serverIdComplement = Convert.ToHexString(serverId).TrimStart('0');
+        var serverIdComplement = Convert.ToHexString(serverId)
+            .TrimStart('0');
 
         if (negative)
             serverIdComplement = "-" + serverIdComplement;
@@ -119,13 +126,14 @@ public class Player(Link link)
         GameProfile = JsonSerializer.Deserialize<GameProfile>(await response.Content.ReadAsStreamAsync(), Proxy.JsonSerializerOptions);
 
         if (GameProfile != null && IdentifiedKey != null && IdentifiedKey.Revision == IdentifiedKeyRevision.LINKED_V2)
-        {
             if (!IdentifiedKey.AddGuid(GameProfile.Id))
                 throw new Exception("multiplayer.disconnect.invalid_public_key");
-        }
 
         return GameProfile;
     }
 
-    public override string ToString() => GameProfile?.Name ?? Link.PlayerRemoteEndPoint?.ToString() ?? "Disposed?";
+    public override string ToString()
+    {
+        return GameProfile?.Name ?? Link.PlayerRemoteEndPoint?.ToString() ?? "Disposed?";
+    }
 }

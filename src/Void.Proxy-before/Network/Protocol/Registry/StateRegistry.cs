@@ -5,10 +5,13 @@ public class StateRegistry
     public PacketRegistry Clientbound { get; } = new(Direction.Clientbound);
     public PacketRegistry Serverbound { get; } = new(Direction.Serverbound);
 
-    public ProtocolRegistry GetProtocolRegistry(Direction direction, ProtocolVersion version) => direction switch
+    public ProtocolRegistry GetProtocolRegistry(Direction direction, ProtocolVersion version)
     {
-        Direction.Serverbound => Serverbound.GetProtocolRegistry(version),
-        Direction.Clientbound => Clientbound.GetProtocolRegistry(version),
-        _ => throw new ArgumentOutOfRangeException(nameof(direction))
-    };
+        return direction switch
+        {
+            Direction.Serverbound => Serverbound.GetProtocolRegistry(version),
+            Direction.Clientbound => Clientbound.GetProtocolRegistry(version),
+            _ => throw new ArgumentOutOfRangeException(nameof(direction))
+        };
+    }
 }

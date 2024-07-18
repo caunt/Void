@@ -6,16 +6,22 @@ namespace Void.NBT.Tags
     {
         public List<NbtTag> Children = new List<NbtTag>();
 
-        public NbtCompound(string? name) => Name = name;
+        public NbtCompound(string? name)
+        {
+            Name = name;
+        }
 
-        public void Add(NbtTag tag) => Children.Add(tag);
+        public void Add(NbtTag tag)
+        {
+            Children.Add(tag);
+        }
 
         public static NbtCompound FromReader(NbtReader reader, bool readName = true)
         {
-            string? name = readName ? reader.ReadString() : null;
+            var name = readName ? reader.ReadString() : null;
 
-            NbtCompound compound = new NbtCompound(name);
-            NbtTag tag = reader.ReadTag();
+            var compound = new NbtCompound(name);
+            var tag = reader.ReadTag();
 
             while (tag.GetType() != NbtTagType.End)
             {
@@ -28,10 +34,15 @@ namespace Void.NBT.Tags
 
         internal override void SerializeValue(ref NbtWriter writer)
         {
-            foreach (NbtTag child in Children) child.Serialize(ref writer);
+            foreach (var child in Children)
+                child.Serialize(ref writer);
+
             writer.Write(NbtTagType.End);
         }
 
-        public override NbtTagType GetType() => NbtTagType.Compound;
+        public override NbtTagType GetType()
+        {
+            return NbtTagType.Compound;
+        }
     }
 }

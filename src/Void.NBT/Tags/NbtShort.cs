@@ -4,7 +4,10 @@ namespace Void.NBT.Tags
     {
         public short Value;
 
-        public NbtShort(short value) => Value = value;
+        public NbtShort(short value)
+        {
+            Value = value;
+        }
 
         public NbtShort(string? name, short value)
         {
@@ -14,14 +17,20 @@ namespace Void.NBT.Tags
 
         public static NbtShort FromReader(NbtReader reader, bool readName = true)
         {
-            string? name = readName ? reader.ReadString() : null;
-            short value = reader.ReadShort();
+            var name = readName ? reader.ReadString() : null;
+            var value = reader.ReadShort();
 
             return new NbtShort(name, value);
         }
 
-        internal override void SerializeValue(ref NbtWriter writer) => writer.Write(Value);
+        internal override void SerializeValue(ref NbtWriter writer)
+        {
+            writer.Write(Value);
+        }
 
-        public override NbtTagType GetType() => NbtTagType.Short;
+        public override NbtTagType GetType()
+        {
+            return NbtTagType.Short;
+        }
     }
 }

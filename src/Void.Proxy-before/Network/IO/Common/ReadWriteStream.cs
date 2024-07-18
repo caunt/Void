@@ -1,6 +1,8 @@
 ﻿namespace Void.Proxy.Network.IO.Common;
 
-internal class ReadWriteStream(Stream readStream, Stream writeStream) : Stream
+internal class ReadWriteStream(
+    Stream readStream,
+    Stream writeStream) : Stream
 {
     public override bool CanRead => readStream.CanRead;
 

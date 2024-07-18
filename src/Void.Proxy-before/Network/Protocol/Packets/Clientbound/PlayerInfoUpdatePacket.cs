@@ -32,15 +32,21 @@ public struct PlayerInfoUpdatePacket : IMinecraftPacket<PlayState>
         }
     }
 
-    public async Task<bool> HandleAsync(PlayState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(PlayState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         var actionsFlags = buffer.ReadUnsignedByte();
-        var actions = Enum.GetValues(typeof(PlayerActionType)).Cast<PlayerActionType>().Where(action => (actionsFlags & (byte)action) != 0).ToList();
+        var actions = Enum.GetValues(typeof(PlayerActionType))
+            .Cast<PlayerActionType>()
+            .Where(action => (actionsFlags & (byte)action) != 0)
+            .ToList();
 
         var count = buffer.ReadVarInt();
-        Players = new(count);
+        Players = new List<PlayerInfo>(count);
 
         for (var i = 0; i < count; i++)
         {
@@ -48,7 +54,6 @@ public struct PlayerInfoUpdatePacket : IMinecraftPacket<PlayState>
             var playerActions = new List<IPlayerAction>();
 
             foreach (var action in actions)
-            {
                 playerActions.Add(action switch
                 {
                     PlayerActionType.AddPlayer => new AddPlayerAction(ref buffer, protocolVersion),
@@ -59,9 +64,8 @@ public struct PlayerInfoUpdatePacket : IMinecraftPacket<PlayState>
                     PlayerActionType.UpdateDisplayName => new UpdateDisplayNameAction(ref buffer, protocolVersion),
                     _ => throw new ArgumentOutOfRangeException($"Unknown update player action type {action}")
                 });
-            }
 
-            Players.Add(new(playerGuid, playerActions));
+            Players.Add(new PlayerInfo(playerGuid, playerActions));
         }
     }
 
@@ -76,7 +80,9 @@ public struct PlayerInfoUpdatePacket : IMinecraftPacket<PlayState>
         UpdateDisplayName = 0x20
     }
 
-    public record PlayerInfo(Guid Guid, List<IPlayerAction> Actions);
+    public record PlayerInfo(
+        Guid Guid,
+        List<IPlayerAction> Actions);
 
     public interface IPlayerAction
     {
@@ -87,19 +93,21 @@ public struct PlayerInfoUpdatePacket : IMinecraftPacket<PlayState>
 
     public abstract class AbstractPlayerAction : IPlayerAction
     {
-        public PlayerActionType Type { get; }
-
         public AbstractPlayerAction(PlayerActionType type, ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
         {
             Type = type;
             Decode(ref buffer);
         }
 
+        public PlayerActionType Type { get; }
+
         public abstract void Decode(ref MinecraftBuffer buffer);
         public abstract void Encode(ref MinecraftBuffer buffer);
     }
 
-    public class AddPlayerAction(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion) : AbstractPlayerAction(PlayerActionType.AddPlayer, ref buffer, protocolVersion)
+    public class AddPlayerAction(
+        ref MinecraftBuffer buffer,
+        ProtocolVersion protocolVersion) : AbstractPlayerAction(PlayerActionType.AddPlayer, ref buffer, protocolVersion)
     {
         public string Name { get; set; }
         public List<Property> Properties { get; set; }
@@ -117,7 +125,9 @@ public struct PlayerInfoUpdatePacket : IMinecraftPacket<PlayState>
         }
     }
 
-    public class InitializeChatAction(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion) : AbstractPlayerAction(PlayerActionType.InitializeChat, ref buffer, protocolVersion)
+    public class InitializeChatAction(
+        ref MinecraftBuffer buffer,
+        ProtocolVersion protocolVersion) : AbstractPlayerAction(PlayerActionType.InitializeChat, ref buffer, protocolVersion)
     {
         public bool HasSignature { get; set; }
         public Guid SessionId { get; set; }
@@ -146,7 +156,9 @@ public struct PlayerInfoUpdatePacket : IMinecraftPacket<PlayState>
         }
     }
 
-    public class UpdateGameModeAction(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion) : AbstractPlayerAction(PlayerActionType.UpdateGameMode, ref buffer, protocolVersion)
+    public class UpdateGameModeAction(
+        ref MinecraftBuffer buffer,
+        ProtocolVersion protocolVersion) : AbstractPlayerAction(PlayerActionType.UpdateGameMode, ref buffer, protocolVersion)
     {
         public int GameMode { get; set; }
 
@@ -161,7 +173,9 @@ public struct PlayerInfoUpdatePacket : IMinecraftPacket<PlayState>
         }
     }
 
-    public class UpdateListedAction(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion) : AbstractPlayerAction(PlayerActionType.UpdateListed, ref buffer, protocolVersion)
+    public class UpdateListedAction(
+        ref MinecraftBuffer buffer,
+        ProtocolVersion protocolVersion) : AbstractPlayerAction(PlayerActionType.UpdateListed, ref buffer, protocolVersion)
     {
         public bool Listed { get; set; }
 
@@ -176,7 +190,9 @@ public struct PlayerInfoUpdatePacket : IMinecraftPacket<PlayState>
         }
     }
 
-    public class UpdateLatencyAction(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion) : AbstractPlayerAction(PlayerActionType.UpdateLatency, ref buffer, protocolVersion)
+    public class UpdateLatencyAction(
+        ref MinecraftBuffer buffer,
+        ProtocolVersion protocolVersion) : AbstractPlayerAction(PlayerActionType.UpdateLatency, ref buffer, protocolVersion)
     {
         public int Ping { get; set; }
 
@@ -191,7 +207,9 @@ public struct PlayerInfoUpdatePacket : IMinecraftPacket<PlayState>
         }
     }
 
-    public class UpdateDisplayNameAction(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion) : AbstractPlayerAction(PlayerActionType.UpdateDisplayName, ref buffer, protocolVersion)
+    public class UpdateDisplayNameAction(
+        ref MinecraftBuffer buffer,
+        ProtocolVersion protocolVersion) : AbstractPlayerAction(PlayerActionType.UpdateDisplayName, ref buffer, protocolVersion)
     {
         public bool HasDisplayName { get; set; }
         public string DisplayName { get; set; }

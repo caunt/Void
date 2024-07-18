@@ -39,7 +39,10 @@ public struct JoinGamePacket : IMinecraftPacket<PlayState>
             EncodeLegacy(ref buffer, protocolVersion);
     }
 
-    public async Task<bool> HandleAsync(PlayState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(PlayState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -51,31 +54,26 @@ public struct JoinGamePacket : IMinecraftPacket<PlayState>
             DecodeLegacy(ref buffer, protocolVersion);
     }
 
-    public int MaxSize() => 0
-        + 8 // EntityId
-        + 2 // Gamemode
-        + 4 // Dimension
-        + 8 // PartialHashedSeed
-        + 2 // Difficulty
-        + 1 // IsHardcore
-        + 4 // MaxPlayers
-        + (LevelType is null ? 1 : Encoding.UTF8.GetByteCount(LevelType) + 5)
-        + 4 // ViewDistance
-        + 1 // ReducedDebugInfo
-        + 1 // ShowRespawnScreen
-        + 1 // DoLimitedCrafting
-        + levelNames.Sum(levelName => Encoding.UTF8.GetByteCount(levelName) + 5)
-        + (Registry?.Length ?? 0)
-        + Encoding.UTF8.GetByteCount(DimensionInfo.LevelName) + 5
-        + Encoding.UTF8.GetByteCount(DimensionInfo.RegistryIdentifier) + 5
-        + 1 // DimensionInfo.IsDebugType
-        + 1 // DimensionInfo.IsFlat
-        + (CurrentDimensionData?.Length ?? 0)
-        + 2 // PreviousGamemode
-        + 4 // SimulationDistance
-        + (LastDeathPosition.HasValue ? Encoding.UTF8.GetByteCount(LastDeathPosition.Value.Key) : 0) + 5
-        + (LastDeathPosition.HasValue ? 8 : 0)
-        + 4; // PortalCooldown*/
+    public int MaxSize()
+    {
+        return 0 + 8 // EntityId
+                 + 2 // Gamemode
+                 + 4 // Dimension
+                 + 8 // PartialHashedSeed
+                 + 2 // Difficulty
+                 + 1 // IsHardcore
+                 + 4 // MaxPlayers
+                 + (LevelType is null ? 1 : Encoding.UTF8.GetByteCount(LevelType) + 5) + 4 // ViewDistance
+                 + 1 // ReducedDebugInfo
+                 + 1 // ShowRespawnScreen
+                 + 1 // DoLimitedCrafting
+                 + levelNames.Sum(levelName => Encoding.UTF8.GetByteCount(levelName) + 5) + (Registry?.Length ?? 0) + Encoding.UTF8.GetByteCount(DimensionInfo.LevelName) + 5 + Encoding.UTF8.GetByteCount(DimensionInfo.RegistryIdentifier) + 5 + 1 // DimensionInfo.IsDebugType
+                 + 1 // DimensionInfo.IsFlat
+                 + (CurrentDimensionData?.Length ?? 0) + 2 // PreviousGamemode
+                 + 4 // SimulationDistance
+                 + (LastDeathPosition.HasValue ? Encoding.UTF8.GetByteCount(LastDeathPosition.Value.Key) : 0) + 5 + (LastDeathPosition.HasValue ? 8 : 0) + 4;
+        // PortalCooldown*/
+    }
 
     private void DecodeLegacy(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -127,11 +125,13 @@ public struct JoinGamePacket : IMinecraftPacket<PlayState>
         PreviousGamemode = buffer.ReadUnsignedByte();
 
         levelNames = new string[buffer.ReadVarInt()];
-        for (int i = 0; i < levelNames.Length; i++)
+        for (var i = 0; i < levelNames.Length; i++)
             levelNames[i] = buffer.ReadString();
 
-        var reader = new NbtReader(buffer.Span[buffer.Position..].ToArray());
-        Registry = ((MemoryStream)NbtFile.Parse(reader).Serialize()).ToArray();
+        var reader = new NbtReader(buffer.Span[buffer.Position..]
+            .ToArray());
+        Registry = ((MemoryStream)NbtFile.Parse(reader)
+            .Serialize()).ToArray();
         buffer.Seek(reader.Position);
 
         var dimensionIdentifier = string.Empty;
@@ -139,8 +139,10 @@ public struct JoinGamePacket : IMinecraftPacket<PlayState>
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2 && protocolVersion < ProtocolVersion.MINECRAFT_1_19)
         {
-            reader = new NbtReader(buffer.Span[buffer.Position..].ToArray());
-            CurrentDimensionData = ((MemoryStream)NbtFile.Parse(reader).Serialize()).ToArray();
+            reader = new NbtReader(buffer.Span[buffer.Position..]
+                .ToArray());
+            CurrentDimensionData = ((MemoryStream)NbtFile.Parse(reader)
+                .Serialize()).ToArray();
             buffer.Seek(reader.Position);
 
             dimensionIdentifier = buffer.ReadString();
@@ -172,7 +174,7 @@ public struct JoinGamePacket : IMinecraftPacket<PlayState>
 
         // optional death location
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19 && buffer.ReadBoolean())
-            LastDeathPosition = new(buffer.ReadString(), buffer.ReadLong());
+            LastDeathPosition = new KeyValuePair<string, long>(buffer.ReadString(), buffer.ReadLong());
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_20)
             PortalCooldown = buffer.ReadVarInt();
@@ -184,7 +186,7 @@ public struct JoinGamePacket : IMinecraftPacket<PlayState>
         IsHardcore = buffer.ReadBoolean();
 
         levelNames = new string[buffer.ReadVarInt()];
-        for (int i = 0; i < levelNames.Length; i++)
+        for (var i = 0; i < levelNames.Length; i++)
             levelNames[i] = buffer.ReadString();
 
         MaxPlayers = buffer.ReadVarInt();
@@ -205,11 +207,11 @@ public struct JoinGamePacket : IMinecraftPacket<PlayState>
 
         var isDebug = buffer.ReadBoolean();
         var isFlat = buffer.ReadBoolean();
-        DimensionInfo = new(dimensionIdentifier, levelName, isFlat, isDebug);
+        DimensionInfo = new DimensionInfo(dimensionIdentifier, levelName, isFlat, isDebug);
 
         // optional death location
         if (buffer.ReadBoolean())
-            LastDeathPosition = new(buffer.ReadString(), buffer.ReadLong());
+            LastDeathPosition = new KeyValuePair<string, long>(buffer.ReadString(), buffer.ReadLong());
 
         PortalCooldown = buffer.ReadVarInt();
     }

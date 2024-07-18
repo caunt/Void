@@ -11,7 +11,6 @@ public struct EncryptionResponsePacket : IMinecraftPacket<LoginState>
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_8)
         {
             buffer.WriteVarInt(SharedSecret.Length);
@@ -43,29 +42,35 @@ public struct EncryptionResponsePacket : IMinecraftPacket<LoginState>
         }
     }
 
-    public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(LoginState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_8)
         {
             var sharedSecretLength = buffer.ReadVarInt();
-            SharedSecret = buffer.Read(sharedSecretLength).ToArray();
+            SharedSecret = buffer.Read(sharedSecretLength)
+                .ToArray();
 
             if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19 && protocolVersion < ProtocolVersion.MINECRAFT_1_19_3 && !buffer.ReadBoolean())
                 Salt = buffer.ReadLong();
 
             var verifyTokenLength = buffer.ReadVarInt();
-            VerifyToken = buffer.Read(verifyTokenLength).ToArray();
+            VerifyToken = buffer.Read(verifyTokenLength)
+                .ToArray();
         }
         else
         {
             var sharedSecretLength = buffer.ReadVarShort();
-            SharedSecret = buffer.Read(sharedSecretLength).ToArray();
+            SharedSecret = buffer.Read(sharedSecretLength)
+                .ToArray();
 
             var verifyTokenLength = buffer.ReadVarShort();
-            VerifyToken = buffer.Read(verifyTokenLength).ToArray();
+            VerifyToken = buffer.Read(verifyTokenLength)
+                .ToArray();
         }
     }
 }

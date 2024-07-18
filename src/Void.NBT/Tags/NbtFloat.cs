@@ -4,7 +4,10 @@ namespace Void.NBT.Tags
     {
         public float Value;
 
-        public NbtFloat(float value) => Value = value;
+        public NbtFloat(float value)
+        {
+            Value = value;
+        }
 
         public NbtFloat(string? name, float value)
         {
@@ -14,14 +17,20 @@ namespace Void.NBT.Tags
 
         public static NbtFloat FromReader(NbtReader reader, bool readName = true)
         {
-            string? name = readName ? reader.ReadString() : null;
-            float value = reader.ReadFloat();
+            var name = readName ? reader.ReadString() : null;
+            var value = reader.ReadFloat();
 
             return new NbtFloat(name, value);
         }
 
-        internal override void SerializeValue(ref NbtWriter writer) => writer.Write(Value);
+        internal override void SerializeValue(ref NbtWriter writer)
+        {
+            writer.Write(Value);
+        }
 
-        public override NbtTagType GetType() => NbtTagType.Float;
+        public override NbtTagType GetType()
+        {
+            return NbtTagType.Float;
+        }
     }
 }

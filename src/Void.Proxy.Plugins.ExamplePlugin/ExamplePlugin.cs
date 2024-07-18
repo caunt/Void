@@ -1,13 +1,12 @@
-﻿using Serilog;
+﻿using Microsoft.Extensions.Logging;
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Proxy;
 using Void.Proxy.API.Plugins;
 
 namespace Void.Proxy.Plugins.ExamplePlugin;
 
-public class ExamplePlugin : IPlugin
+public class ExamplePlugin(ILogger<ExamplePlugin> logger) : IPlugin
 {
-    public required ILogger Logger { get; init; }
     public string Name => nameof(ExamplePlugin);
 
     public Task ExecuteAsync(CancellationToken cancellationToken)
@@ -18,12 +17,12 @@ public class ExamplePlugin : IPlugin
     [Subscribe]
     public void OnProxyStart(ProxyStart @event)
     {
-        Logger.Information("Received ProxyStart event");
+        logger.LogInformation("Received ProxyStart event");
     }
 
     [Subscribe]
     public void OnProxyStop(ProxyStop @event)
     {
-        Logger.Information("Received ProxyStop event");
+        logger.LogInformation("Received ProxyStop event");
     }
 }

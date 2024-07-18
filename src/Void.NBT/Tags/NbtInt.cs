@@ -4,7 +4,10 @@ namespace Void.NBT.Tags
     {
         public int Value;
 
-        public NbtInt(int value) => Value = value;
+        public NbtInt(int value)
+        {
+            Value = value;
+        }
 
         public NbtInt(string? name, int value)
         {
@@ -14,14 +17,20 @@ namespace Void.NBT.Tags
 
         public static NbtInt FromReader(NbtReader reader, bool readName = true)
         {
-            string? name = readName ? reader.ReadString() : null;
-            int value = reader.ReadInt();
+            var name = readName ? reader.ReadString() : null;
+            var value = reader.ReadInt();
 
             return new NbtInt(name, value);
         }
 
-        internal override void SerializeValue(ref NbtWriter writer) => writer.Write(Value);
+        internal override void SerializeValue(ref NbtWriter writer)
+        {
+            writer.Write(Value);
+        }
 
-        public override NbtTagType GetType() => NbtTagType.Int;
+        public override NbtTagType GetType()
+        {
+            return NbtTagType.Int;
+        }
     }
 }

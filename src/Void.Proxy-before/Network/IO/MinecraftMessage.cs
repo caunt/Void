@@ -7,12 +7,19 @@ using Void.Proxy.Network.Protocol.States.Common;
 
 namespace Void.Proxy.Network.IO;
 
-public readonly struct MinecraftMessage(int packetId, Memory<byte> memory, IMemoryOwner<byte> owner) : IDisposable
+public readonly struct MinecraftMessage(
+    int packetId,
+    Memory<byte> memory,
+    IMemoryOwner<byte> owner) : IDisposable
 {
     public int PacketId { get; } = packetId;
     public int Length { get; } = memory.Length;
     public Memory<byte> Memory { get; } = memory;
-    public void Dispose() => owner.Dispose();
+
+    public void Dispose()
+    {
+        owner.Dispose();
+    }
 
     public (int, IMinecraftPacket?, Task<bool>) DecodeAndHandle(ProtocolState protocolState, Direction direction, ProtocolVersion protocolVersion)
     {
@@ -45,6 +52,6 @@ public readonly struct MinecraftMessage(int packetId, Memory<byte> memory, IMemo
         Proxy.Logger.Verbose($"Encoding {direction} 0x{packetId:X2} packet {JsonSerializer.Serialize(packet as object, Proxy.JsonSerializerOptions)}");
         packet.Encode(ref buffer, protocolVersion);
 
-        return new(packetId, memoryOwner.Memory[..buffer.Position], memoryOwner);
+        return new MinecraftMessage(packetId, memoryOwner.Memory[..buffer.Position], memoryOwner);
     }
 }

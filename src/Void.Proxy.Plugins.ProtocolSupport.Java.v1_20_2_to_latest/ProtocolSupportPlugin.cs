@@ -1,20 +1,19 @@
-﻿using Serilog;
+﻿using Microsoft.Extensions.Logging;
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Handshake;
 using Void.Proxy.API.Events.Proxy;
-using Void.Proxy.API.Network.IO;
+using Void.Proxy.API.Network.IO.Buffers;
+using Void.Proxy.API.Network.IO.Channels;
+using Void.Proxy.API.Network.IO.Streams;
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.API.Plugins;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest;
 
-public class ProtocolSupportPlugin : IPlugin
+public class ProtocolSupportPlugin(ILogger<ProtocolSupportPlugin> logger) : IPlugin
 {
-    public required ILogger Logger { get; init; }
+    public static readonly ProtocolVersion[] SupportedVersions = ProtocolVersion.Range(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.Latest);
     public string Name => nameof(ProtocolSupportPlugin);
-
-    public readonly ProtocolVersion OldestVersion = ProtocolVersion.MINECRAFT_1_20_2;
-    public readonly ProtocolVersion NewestVersion = ProtocolVersion.Latest;
 
     public Task ExecuteAsync(CancellationToken cancellationToken)
     {
@@ -32,36 +31,35 @@ public class ProtocolSupportPlugin : IPlugin
     }
 
     [Subscribe]
-    public void OnSearchProtocolCodec(SearchClientProtocolCodec @event)
+    public void OnSearchProtocolCodec(SearchProtocolCodec @event)
     {
-        bool IsHandshake(Memory<byte> memory)
+        if (!IsSupportedHandshake(@event.Buffer))
+            return;
+
+        @event.Result = new SearchProtocolCodec.Data
         {
-            var buffer = new MinecraftBuffer(memory.Span);
-
-            try
+            ChannelBuilder = stream =>
             {
-                var length = buffer.ReadVarInt();
-                var packet = buffer.Read(length);
-
-                buffer = new(packet);
-                var protocolVersion = buffer.ReadVarInt();
-                var serverAddress = buffer.ReadString(255);
-                var serverPort = buffer.ReadUnsignedShort();
-                var nextState = buffer.ReadVarInt();
-
-                if (buffer.Position < buffer.Length)
-                    throw new NotSupportedException();
-
-                return true;
+                var channel = new SimpleMinecraftChannel(new SimpleNetworkStream(stream));
+                // channel.Add<MinecraftCodecMessageStream>();
+                return Task.FromResult<IMinecraftChannel>(channel);
             }
-            catch (Exception exception)
-            {
-                Logger.Information("Handshake cannot be decoded: " + Convert.ToHexString(memory.Span) + "\n" + exception);
-            }
+        };
+    }
 
-            return false;
-        }
+    public static bool IsSupportedHandshake(Memory<byte> memory)
+    {
+        var buffer = new MinecraftBuffer(memory.Span);
+        var length = buffer.ReadVarInt();
+        var packet = buffer.Read(length);
 
-        IsHandshake(@event.Buffer);
+        buffer = new MinecraftBuffer(packet);
+        var packetId = buffer.ReadVarInt();
+        var protocolVersion = buffer.ReadVarInt();
+        var serverAddress = buffer.ReadString(255);
+        var serverPort = buffer.ReadUnsignedShort();
+        var nextState = buffer.ReadVarInt();
+
+        return packetId == 0 && SupportedVersions.Contains(ProtocolVersion.Get(protocolVersion)) && buffer.Position == buffer.Length;
     }
 }

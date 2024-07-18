@@ -7,10 +7,9 @@ namespace Void.Proxy.Network.IO;
 
 public class MinecraftChannel(Stream baseStream)
 {
+    private PacketStream packetStream = new(baseStream);
     public bool CanRead => baseStream.CanRead;
     public bool CanWrite => baseStream.CanWrite;
-
-    private PacketStream packetStream = new(baseStream);
 
     public void EnableEncryption(byte[] secret)
     {
@@ -24,7 +23,7 @@ public class MinecraftChannel(Stream baseStream)
     public void EnableCompression(int threshold) // this is very slow, needs to optimize
     {
         if (baseStream is DeprecatedCompressionStream)
-            throw new InvalidOperationException($"Compression already enabled");
+            throw new InvalidOperationException("Compression already enabled");
 
         baseStream = new DeprecatedCompressionStream(baseStream, threshold);
         packetStream = new PacketStream(baseStream);

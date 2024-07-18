@@ -1,5 +1,6 @@
 ﻿using Void.Proxy.Models.General;
 using Void.Proxy.Models.Minecraft.Encryption;
+using Void.Proxy.Models.Minecraft.Profile;
 using Void.Proxy.Network.IO;
 using Void.Proxy.Network.Protocol.Forwarding;
 using Void.Proxy.Network.Protocol.Packets.Clientbound;
@@ -11,26 +12,24 @@ namespace Void.Proxy.Network.Protocol.States.Common;
 
 public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
 {
+    private byte[]? verifyToken;
     protected override StateRegistry Registry { get; } = Registries.LoginStateRegistry;
 
-    private byte[]? verifyToken;
+    public Task<bool> HandleAsync(DisconnectPacket packet)
+    {
+        return Task.FromResult(false);
+    }
 
     public async Task<bool> HandleAsync(LoginStartPacket packet)
     {
-        link.Player.SetGameProfile(new()
-        {
-            Id = packet.Guid,
-            Name = packet.Username
-        });
+        link.Player.SetGameProfile(new GameProfile { Id = packet.Guid, Name = packet.Username });
 
         if (packet.IdentifiedKey is not null)
         {
             if (packet.IdentifiedKey.ExpiresAt < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
                 throw new Exception("multiplayer.disconnect.invalid_public_key_signature");
 
-            var isKeyValid = packet.IdentifiedKey.Revision == IdentifiedKeyRevision.LINKED_V2 ?
-                packet.IdentifiedKey.AddGuid(packet.Guid) :
-                packet.IdentifiedKey.IsSignatureValid.HasValue && packet.IdentifiedKey.IsSignatureValid.Value;
+            var isKeyValid = packet.IdentifiedKey.Revision == IdentifiedKeyRevision.LINKED_V2 ? packet.IdentifiedKey.AddGuid(packet.Guid) : packet.IdentifiedKey.IsSignatureValid.HasValue && packet.IdentifiedKey.IsSignatureValid.Value;
 
             if (!isKeyValid)
                 throw new Exception("multiplayer.disconnect.invalid_public_key");
@@ -58,7 +57,7 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
         if (packet.Salt.HasValue)
         {
             if (link.Player.IdentifiedKey is null)
-                throw new Exception($"Encryption response received but IdentifiedKey still not available for player");
+                throw new Exception("Encryption response received but IdentifiedKey still not available for player");
 
             var salt = BitConverter.GetBytes(packet.Salt.Value);
 
@@ -70,7 +69,8 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
         }
         else
         {
-            if (!Proxy.RSA.Decrypt(packet.VerifyToken, false).SequenceEqual(verifyToken))
+            if (!Proxy.RSA.Decrypt(packet.VerifyToken, false)
+                    .SequenceEqual(verifyToken))
                 throw new Exception("Unable to verify encryption token");
         }
 
@@ -147,12 +147,7 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
                 return false;
 
             var data = forwarding.GenerateForwardingData(packet.Data, link.Player);
-            await link.Server.SendPacketAsync(new LoginPluginResponse
-            {
-                MessageId = packet.MessageId,
-                Successful = true,
-                Data = data
-            });
+            await link.Server.SendPacketAsync(new LoginPluginResponse { MessageId = packet.MessageId, Successful = true, Data = data });
 
             return true;
         }
@@ -181,20 +176,21 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
                         switch (id)
                         {
                             case 1:
+
                                 byte[] Reply(byte[] modlist)
                                 {
                                     var input = new MinecraftBuffer(modlist);
 
                                     var names = new string[input.ReadVarInt()];
-                                    for (int i = 0; i < names.Length; i++)
+                                    for (var i = 0; i < names.Length; i++)
                                         names[i] = input.ReadString();
 
                                     var channels = new KeyValuePair<string, string>[input.ReadVarInt()];
-                                    for (int i = 0; i < channels.Length; i++)
-                                        channels[i] = new(input.ReadString(), input.ReadString());
+                                    for (var i = 0; i < channels.Length; i++)
+                                        channels[i] = new KeyValuePair<string, string>(input.ReadString(), input.ReadString());
 
                                     var registries = new string[input.ReadVarInt()];
-                                    for (int i = 0; i < registries.Length; i++)
+                                    for (var i = 0; i < registries.Length; i++)
                                         registries[i] = input.ReadString();
 
                                     var output = new MinecraftBuffer(modlist.Length * 2);
@@ -217,14 +213,16 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
                                         output.WriteString("1");
                                     }
 
-                                    var packetData = output.Span[..output.Position].ToArray();
+                                    var packetData = output.Span[..output.Position]
+                                        .ToArray();
                                     var buffer = new MinecraftBuffer(packet.Data.Length * 2);
                                     buffer.WriteString(channel!);
                                     buffer.WriteVarInt(MinecraftBuffer.GetVarIntSize(2) + packetData.Length);
                                     buffer.WriteVarInt(2);
                                     buffer.Write(packetData);
 
-                                    return buffer.Span[..buffer.Position].ToArray();
+                                    return buffer.Span[..buffer.Position]
+                                        .ToArray();
                                 }
 
                                 await link.Server.SendPacketAsync(new LoginPluginResponse { Data = Reply(data), MessageId = packet.MessageId, Successful = true });
@@ -239,6 +237,7 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
                                 await link.Server.SendPacketAsync(new LoginPluginResponse { Data = [], MessageId = packet.MessageId, Successful = true });
                                 break;
                         }
+
                         break;
                     case "silentgear:network":
                         break;
@@ -250,7 +249,6 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
                         await link.Server.SendPacketAsync(new LoginPluginResponse { Data = [], MessageId = packet.MessageId, Successful = true });
                         break;
                 }
-
             }
 
             Proxy.Logger.Debug($"Received Clientbound Login plugin request {packet.MessageId} on plugin channel {packet.Identifier} with {packet.Data.Length} bytes");
@@ -272,11 +270,7 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
         var verify = new byte[4];
         Random.Shared.NextBytes(verify);
 
-        return new()
-        {
-            PublicKey = Proxy.RSA.ExportSubjectPublicKeyInfo(),
-            VerifyToken = verify
-        };
+        return new EncryptionRequestPacket { PublicKey = Proxy.RSA.ExportSubjectPublicKeyInfo(), VerifyToken = verify };
     }
 
     public LoginStartPacket GenerateLoginStartPacket()
@@ -284,16 +278,6 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
         if (link.Player.GameProfile is null)
             throw new Exception("Can't proceed login as we do not have online GameProfile");
 
-        return new()
-        {
-            Guid = link.Player.GameProfile.Id,
-            Username = link.Player.GameProfile.Name,
-            IdentifiedKey = link.Player.IdentifiedKey
-        };
-    }
-
-    public Task<bool> HandleAsync(DisconnectPacket packet)
-    {
-        return Task.FromResult(false);
+        return new LoginStartPacket { Guid = link.Player.GameProfile.Id, Username = link.Player.GameProfile.Name, IdentifiedKey = link.Player.IdentifiedKey };
     }
 }

@@ -16,17 +16,21 @@ public struct LoginPluginResponse : IMinecraftPacket<LoginState>
         buffer.Write(Data);
     }
 
-    public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(LoginState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         MessageId = buffer.ReadVarInt();
         Successful = buffer.ReadBoolean();
-        Data = buffer.Read((int)(buffer.Length - buffer.Position)).ToArray();
+        Data = buffer.Read((int)(buffer.Length - buffer.Position))
+            .ToArray();
     }
 
-    public int MaxSize() => 0
-        + 5
-        + 1
-        + Data.Length + 5;
+    public int MaxSize()
+    {
+        return 0 + 5 + 1 + Data.Length + 5;
+    }
 }

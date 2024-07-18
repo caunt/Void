@@ -12,10 +12,12 @@ public class SubscribeAttribute : Attribute
         if (parameters.Length is < 1 or > 2)
             throw new ArgumentException("The method must have 1 or 2 parameters.");
 
-        if (!parameters[0].ParameterType.IsAssignableTo(typeof(IEvent)))
+        if (!parameters[0]
+                .ParameterType.IsAssignableTo(typeof(IEvent)))
             throw new ArgumentException("The first parameter must be of type IEvent.");
 
-        if (parameters.Length == 2 && !parameters[1].ParameterType.IsAssignableTo(typeof(CancellationToken)))
+        if (parameters.Length == 2 && !parameters[1]
+                .ParameterType.IsAssignableTo(typeof(CancellationToken)))
             throw new ArgumentException("The second parameter must be of type CancellationToken.");
     }
 }

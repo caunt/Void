@@ -1,23 +1,27 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<ContainerRuntimeIdentifier>linux-x64</ContainerRuntimeIdentifier>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="ini-parser-netstandard" Version="2.5.2" />
-    <PackageReference Include="Ionic.Zlib.Core" Version="1.0.0" />
-    <PackageReference Include="NET.Minecraft.Component" Version="1.0.5" />
-    <PackageReference Include="Nito.AsyncEx" Version="5.1.2" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="ini-parser-netstandard" Version="2.5.2" />
+		<PackageReference Include="NET.Minecraft.Component" Version="1.0.5" />
+		<PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
+		<PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Void.NBT\Void.NBT.csproj" />
-    <ProjectReference Include="..\Void.Proxy.API\Void.Proxy.API.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\Void.Proxy.Plugins.ModsSupport.Forge\Void.Proxy.Plugins.ModsSupport.Forge.csproj" />
+		<ProjectReference Include="..\Void.NBT\Void.NBT.csproj" />
+		<ProjectReference Include="..\Void.Proxy.API\Void.Proxy.API.csproj" />
+		<ProjectReference Include="..\Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1\Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.csproj" />
+		<ProjectReference Include="..\Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest\Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.csproj" />
+		<ProjectReference Include="..\Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2\Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.csproj" />
+	</ItemGroup>
 
 </Project>

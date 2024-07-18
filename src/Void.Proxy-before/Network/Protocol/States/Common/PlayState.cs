@@ -1,5 +1,5 @@
-﻿using Nito.Disposables.Internals;
-using System.Text;
+﻿using System.Text;
+using Nito.Disposables.Internals;
 using Void.Proxy.Commands;
 using Void.Proxy.Models.General;
 using Void.Proxy.Network.Protocol.Packets.Clientbound;
@@ -13,6 +13,44 @@ namespace Void.Proxy.Network.Protocol.States.Common;
 public class PlayState(Link link) : ProtocolState, ILoginConfigurePlayState, IConfigurePlayState
 {
     protected override StateRegistry Registry { get; } = Registries.PlayStateRegistry;
+
+    public Task<bool> HandleAsync(PluginMessage packet)
+    {
+        if (packet.Identifier == "minecraft:brand")
+        {
+            if (packet.Direction == Direction.Serverbound)
+                link.Player.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
+            else if (packet.Direction == Direction.Clientbound)
+                link.Server.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
+
+            return Task.FromResult(false);
+        }
+
+        if (packet.Identifier == "minecraft:register")
+        {
+            var channels = Encoding.UTF8.GetString(packet.Data)
+                .Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            Proxy.Logger.Debug($"Received {packet.Direction} Play register channels message: {string.Join(", ", channels)}");
+
+            return Task.FromResult(false);
+        }
+
+        if (packet.Identifier == "minecraft:unregister")
+        {
+            var channels = Encoding.UTF8.GetString(packet.Data)
+                .Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            Proxy.Logger.Debug($"Received {packet.Direction} Play unregister channels message: {string.Join(", ", channels)}");
+
+            return Task.FromResult(false);
+        }
+
+        if (new[] { "minecraft", "forge", "fml" }.Any(name => packet.Identifier.Contains(name, StringComparison.InvariantCultureIgnoreCase)))
+            Proxy.Logger.Debug($"Received {packet.Direction} Play plugin message in channel {packet.Identifier} with {packet.Data.Length} bytes");
+        else
+            Proxy.Logger.Verbose($"Received {packet.Direction} Play plugin message in channel {packet.Identifier} with {packet.Data.Length} bytes");
+
+        return Task.FromResult(false);
+    }
 
     public Task<bool> HandleAsync(DisconnectPacket packet)
     {
@@ -28,21 +66,22 @@ public class PlayState(Link link) : ProtocolState, ILoginConfigurePlayState, ICo
     public async Task<bool> HandleAsync(AcknowledgeConfiguration packet)
     {
         if (!link.IsSwitching)
-            throw new NotSupportedException($"Client sent unexpected acknowledge configuration");
+            throw new NotSupportedException("Client sent unexpected acknowledge configuration");
 
         // can't be awaited because we need to release channel before replace will happen
-        _ = link.ReplaceRedirectionServerChannel().ContinueWith(task =>
-        {
-            if (!task.IsCompletedSuccessfully)
-                Proxy.Logger.Error($"Player {link.Player} channel replacement caused exception:\n{task.Exception}");
-        });
+        _ = link.ReplaceRedirectionServerChannel()
+            .ContinueWith(task =>
+            {
+                if (!task.IsCompletedSuccessfully)
+                    Proxy.Logger.Error($"Player {link.Player} channel replacement caused exception:\n{task.Exception}");
+            });
 
         return true;
     }
 
     public Task<bool> HandleAsync(StartConfiguration packet)
     {
-        throw new NotSupportedException($"Server requested to restart configuration, which is not supported currently");
+        throw new NotSupportedException("Server requested to restart configuration, which is not supported currently");
     }
 
     public Task<bool> HandleAsync(PlayerInfoUpdatePacket packet)
@@ -50,7 +89,9 @@ public class PlayState(Link link) : ProtocolState, ILoginConfigurePlayState, ICo
         // does this even needed?
         foreach (var playerInfo in packet.Players)
         {
-            var addPlayerAction = playerInfo.Actions.Select(action => action as PlayerInfoUpdatePacket.AddPlayerAction).WhereNotNull().FirstOrDefault();
+            var addPlayerAction = playerInfo.Actions.Select(action => action as PlayerInfoUpdatePacket.AddPlayerAction)
+                .WhereNotNull()
+                .FirstOrDefault();
 
             if (addPlayerAction is null)
                 continue;
@@ -81,42 +122,6 @@ public class PlayState(Link link) : ProtocolState, ILoginConfigurePlayState, ICo
         }
 
         return true;
-    }
-
-    public Task<bool> HandleAsync(PluginMessage packet)
-    {
-        if (packet.Identifier == "minecraft:brand")
-        {
-            if (packet.Direction == Direction.Serverbound)
-                link.Player.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
-            else if (packet.Direction == Direction.Clientbound)
-                link.Server.SetBrand(Encoding.UTF8.GetString(packet.Data[1..]));
-
-            return Task.FromResult(false);
-        }
-
-        if (packet.Identifier == "minecraft:register")
-        {
-            var channels = Encoding.UTF8.GetString(packet.Data).Split('\0', StringSplitOptions.RemoveEmptyEntries);
-            Proxy.Logger.Debug($"Received {packet.Direction} Play register channels message: {string.Join(", ", channels)}");
-
-            return Task.FromResult(false);
-        }
-
-        if (packet.Identifier == "minecraft:unregister")
-        {
-            var channels = Encoding.UTF8.GetString(packet.Data).Split('\0', StringSplitOptions.RemoveEmptyEntries);
-            Proxy.Logger.Debug($"Received {packet.Direction} Play unregister channels message: {string.Join(", ", channels)}");
-
-            return Task.FromResult(false);
-        }
-
-        if (new[] { "minecraft", "forge", "fml" }.Any(name => packet.Identifier.Contains(name, StringComparison.InvariantCultureIgnoreCase)))
-            Proxy.Logger.Debug($"Received {packet.Direction} Play plugin message in channel {packet.Identifier} with {packet.Data.Length} bytes");
-        else
-            Proxy.Logger.Verbose($"Received {packet.Direction} Play plugin message in channel {packet.Identifier} with {packet.Data.Length} bytes");
-
-        return Task.FromResult(false);
     }
 
     public Task<bool> HandleAsync(IChatMessage packet)

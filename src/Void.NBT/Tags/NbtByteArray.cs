@@ -4,7 +4,10 @@ namespace Void.NBT.Tags
     {
         public byte[] Data;
 
-        public NbtByteArray(byte[] data) => Data = data;
+        public NbtByteArray(byte[] data)
+        {
+            Data = data;
+        }
 
         public NbtByteArray(string? name, byte[] data)
         {
@@ -14,9 +17,9 @@ namespace Void.NBT.Tags
 
         public static NbtByteArray FromReader(NbtReader reader, bool readName = true)
         {
-            string? name = readName ? reader.ReadString() : null;
-            int lenght = reader.ReadInt();
-            byte[] data = reader.ReadArray(lenght);
+            var name = readName ? reader.ReadString() : null;
+            var length = reader.ReadInt();
+            var data = reader.ReadArray(length);
 
             return new NbtByteArray(name, data);
         }
@@ -27,6 +30,9 @@ namespace Void.NBT.Tags
             writer.Write(Data);
         }
 
-        public override NbtTagType GetType() => NbtTagType.ByteArray;
+        public override NbtTagType GetType()
+        {
+            return NbtTagType.ByteArray;
+        }
     }
 }

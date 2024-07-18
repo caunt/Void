@@ -20,20 +20,23 @@ public struct RespawnPacket : IMinecraftPacket<PlayState>
     public KeyValuePair<string, long>? LastDeathPosition { get; set; } // 1.19+
     public int PortalCooldown { get; set; } // 1.20+
 
-    public static RespawnPacket FromJoinGame(JoinGamePacket packet) => new RespawnPacket
+    public static RespawnPacket FromJoinGame(JoinGamePacket packet)
     {
-        Dimension = packet.Dimension,
-        PartialHashedSeed = packet.PartialHashedSeed,
-        Difficulty = packet.Difficulty,
-        Gamemode = packet.Gamemode,
-        LevelType = packet.LevelType,
-        DataToKeep = 0,
-        DimensionInfo = packet.DimensionInfo,
-        PreviousGamemode = packet.PreviousGamemode,
-        CurrentDimensionData = packet.CurrentDimensionData,
-        LastDeathPosition = packet.LastDeathPosition,
-        PortalCooldown = packet.PortalCooldown
-    };
+        return new RespawnPacket()
+        {
+            Dimension = packet.Dimension,
+            PartialHashedSeed = packet.PartialHashedSeed,
+            Difficulty = packet.Difficulty,
+            Gamemode = packet.Gamemode,
+            LevelType = packet.LevelType,
+            DataToKeep = 0,
+            DimensionInfo = packet.DimensionInfo,
+            PreviousGamemode = packet.PreviousGamemode,
+            CurrentDimensionData = packet.CurrentDimensionData,
+            LastDeathPosition = packet.LastDeathPosition,
+            PortalCooldown = packet.PortalCooldown
+        };
+    }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -100,7 +103,10 @@ public struct RespawnPacket : IMinecraftPacket<PlayState>
             buffer.WriteVarInt(PortalCooldown);
     }
 
-    public async Task<bool> HandleAsync(PlayState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(PlayState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -111,7 +117,9 @@ public struct RespawnPacket : IMinecraftPacket<PlayState>
         {
             if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2 && protocolVersion < ProtocolVersion.MINECRAFT_1_19)
             {
-                CurrentDimensionData = ((MemoryStream)NbtFile.Parse(buffer.Span[buffer.Position..].ToArray()).Serialize()).ToArray();
+                CurrentDimensionData = ((MemoryStream)NbtFile.Parse(buffer.Span[buffer.Position..]
+                        .ToArray())
+                    .Serialize()).ToArray();
                 dimensionIdentifier = buffer.ReadString();
             }
             else
@@ -155,26 +163,23 @@ public struct RespawnPacket : IMinecraftPacket<PlayState>
         }
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19 && buffer.ReadBoolean())
-            LastDeathPosition = new(buffer.ReadString(), buffer.ReadLong());
+            LastDeathPosition = new KeyValuePair<string, long>(buffer.ReadString(), buffer.ReadLong());
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_20)
             PortalCooldown = buffer.ReadVarInt();
     }
 
-    public int MaxSize() => 0
-        + 5 // Dimension
-        + 8 // PartialHashedSeed
-        + 2 // Difficulty
-        + 2 // Gamemode
-        + (LevelType is null ? 1 : Encoding.UTF8.GetByteCount(LevelType) + 5)
-        + 1 // DataToKeep 
-        + Encoding.UTF8.GetByteCount(DimensionInfo.LevelName) + 5
-        + Encoding.UTF8.GetByteCount(DimensionInfo.RegistryIdentifier) + 5
-        + 1 // DimensionInfo.IsDebugType
-        + 1 // DimensionInfo.IsFlat
-        + 2 // PreviousGamemode 
-        + (CurrentDimensionData?.Length ?? 0)
-        + (LastDeathPosition.HasValue ? Encoding.UTF8.GetByteCount(LastDeathPosition.Value.Key) : 0) + 5
-        + (LastDeathPosition.HasValue ? 8 : 0)
-        + 4; // PortalCooldown
+    public int MaxSize()
+    {
+        return 0 + 5 // Dimension
+                 + 8 // PartialHashedSeed
+                 + 2 // Difficulty
+                 + 2 // Gamemode
+                 + (LevelType is null ? 1 : Encoding.UTF8.GetByteCount(LevelType) + 5) + 1 // DataToKeep 
+                 + Encoding.UTF8.GetByteCount(DimensionInfo.LevelName) + 5 + Encoding.UTF8.GetByteCount(DimensionInfo.RegistryIdentifier) + 5 + 1 // DimensionInfo.IsDebugType
+                 + 1 // DimensionInfo.IsFlat
+                 + 2 // PreviousGamemode 
+                 + (CurrentDimensionData?.Length ?? 0) + (LastDeathPosition.HasValue ? Encoding.UTF8.GetByteCount(LastDeathPosition.Value.Key) : 0) + 5 + (LastDeathPosition.HasValue ? 8 : 0) + 4;
+        // PortalCooldown
+    }
 }

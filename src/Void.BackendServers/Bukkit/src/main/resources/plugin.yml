@@ -1,0 +1,4 @@
+name: thevoid
+version: '1.0-SNAPSHOT'
+main: net.caunt.thevoid.EntryPoint
+api-version: '1.21'

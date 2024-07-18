@@ -19,7 +19,10 @@ public struct HandshakePacket : IMinecraftPacket<HandshakeState>
         buffer.WriteVarInt(NextState);
     }
 
-    public async Task<bool> HandleAsync(HandshakeState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(HandshakeState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {

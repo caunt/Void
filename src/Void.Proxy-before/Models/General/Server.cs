@@ -28,5 +28,8 @@ public class Server(Link link)
         Proxy.Logger.Information($"Server {this} enabled compression");
     }
 
-    public async Task SendPacketAsync(IMinecraftPacket packet) => await Link.SendPacketAsync(Direction.Serverbound, packet);
+    public async Task SendPacketAsync(IMinecraftPacket packet)
+    {
+        await Link.SendPacketAsync(Direction.Serverbound, packet);
+    }
 }

@@ -16,40 +16,34 @@ public class JsonIPEndPointConverter : JsonConverter<IPEndPoint>
             throw new InvalidDataException();
 
         Span<char> charData = stackalloc char[53];
-        int count = Encoding.UTF8.GetChars(reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan, charData);
+        var count = Encoding.UTF8.GetChars(reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan, charData);
 
-        int addressLength = count;
-        int lastColonPos = charData.LastIndexOf(':');
+        var addressLength = count;
+        var lastColonPos = charData.LastIndexOf(':');
 
         if (lastColonPos > 0)
         {
             if (charData[lastColonPos - 1] == ']')
-            {
                 addressLength = lastColonPos;
-            }
-            else if (charData[..lastColonPos].LastIndexOf(':') == -1)
-            {
+            else if (charData[..lastColonPos]
+                         .LastIndexOf(':') == -1)
                 // Look to see if this is IPv4 with a port (IPv6 will have another colon)
                 addressLength = lastColonPos;
-            }
         }
 
-        if (!IPAddress.TryParse(charData[..addressLength], out IPAddress? address))
+        if (!IPAddress.TryParse(charData[..addressLength], out var address))
             throw new InvalidDataException();
 
         uint port = 0;
 
-        return addressLength == charData.Length ||
-            (uint.TryParse(charData[(addressLength + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out port) && port <= IPEndPoint.MaxPort)
-            ? new IPEndPoint(address, (int)port)
-            : throw new InvalidDataException();
+        return addressLength == charData.Length || (uint.TryParse(charData[(addressLength + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out port) && port <= IPEndPoint.MaxPort) ? new IPEndPoint(address, (int)port) : throw new InvalidDataException();
     }
 
     public override void Write(Utf8JsonWriter writer, IPEndPoint value, JsonSerializerOptions options)
     {
-        bool isIpv6 = value.AddressFamily == AddressFamily.InterNetworkV6;
+        var isIpv6 = value.AddressFamily == AddressFamily.InterNetworkV6;
         Span<char> data = stackalloc char[isIpv6 ? 21 : 53];
-        int offset = 0;
+        var offset = 0;
 
         if (isIpv6)
         {
@@ -57,7 +51,7 @@ public class JsonIPEndPointConverter : JsonConverter<IPEndPoint>
             offset++;
         }
 
-        if (!value.Address.TryFormat(data[offset..], out int addressCharsWritten))
+        if (!value.Address.TryFormat(data[offset..], out var addressCharsWritten))
             throw new JsonException($"IPEndPoint [{value}] could not be written to JSON.");
 
         offset += addressCharsWritten;
@@ -67,7 +61,7 @@ public class JsonIPEndPointConverter : JsonConverter<IPEndPoint>
 
         data[offset++] = ':';
 
-        if (!value.Port.TryFormat(data[offset..], out int portCharsWritten))
+        if (!value.Port.TryFormat(data[offset..], out var portCharsWritten))
             throw new JsonException($"IPEndPoint [{value}] could not be written to JSON.");
 
         writer.WriteStringValue(data[..(offset + portCharsWritten)]);

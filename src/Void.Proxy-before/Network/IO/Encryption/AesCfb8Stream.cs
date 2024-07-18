@@ -6,9 +6,9 @@ namespace Void.Proxy.Network.IO.Encryption;
 public class AesCfb8Stream : Stream
 {
     private const int BLOCK_SIZE = 16;
+    private readonly Aes _aes;
 
     private readonly Stream _baseStream;
-    private readonly Aes _aes;
     private readonly byte[] _readStreamIV;
     private readonly byte[] _writeStreamIV;
 
@@ -33,17 +33,36 @@ public class AesCfb8Stream : Stream
 
     public override long Length => _baseStream.Length;
 
-    public override long Position { get => _baseStream.Position; set => _baseStream.Position = value; }
+    public override long Position
+    {
+        get => _baseStream.Position;
+        set => _baseStream.Position = value;
+    }
 
-    public override long Seek(long offset, SeekOrigin origin) => _baseStream.Seek(offset, origin);
+    public override long Seek(long offset, SeekOrigin origin)
+    {
+        return _baseStream.Seek(offset, origin);
+    }
 
-    public override void SetLength(long value) => _baseStream.SetLength(value);
+    public override void SetLength(long value)
+    {
+        _baseStream.SetLength(value);
+    }
 
-    public override void Flush() => _baseStream.Flush();
+    public override void Flush()
+    {
+        _baseStream.Flush();
+    }
 
-    public override async Task FlushAsync(CancellationToken cancellationToken) => await _baseStream.FlushAsync(cancellationToken);
+    public override async Task FlushAsync(CancellationToken cancellationToken)
+    {
+        await _baseStream.FlushAsync(cancellationToken);
+    }
 
-    public override int ReadByte() => throw new NotSupportedException("Use async methods instead");
+    public override int ReadByte()
+    {
+        throw new NotSupportedException("Use async methods instead");
+    }
 
     public override int Read(byte[] buffer, int offset, int length)
     {

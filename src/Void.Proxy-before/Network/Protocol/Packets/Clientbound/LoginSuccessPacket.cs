@@ -20,7 +20,8 @@ public struct LoginSuccessPacket : IMinecraftPacket<LoginState>
         else if (protocolVersion >= ProtocolVersion.MINECRAFT_1_7_6)
             buffer.WriteString(Guid.ToString());
         else
-            buffer.WriteString(Guid.ToString().Replace("-", string.Empty));
+            buffer.WriteString(Guid.ToString()
+                .Replace("-", string.Empty));
 
         buffer.WriteString(Username);
 
@@ -33,11 +34,13 @@ public struct LoginSuccessPacket : IMinecraftPacket<LoginState>
         }
     }
 
-    public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(LoginState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19)
             Guid = buffer.ReadGuid();
         else if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16)
@@ -53,13 +56,8 @@ public struct LoginSuccessPacket : IMinecraftPacket<LoginState>
             Properties = buffer.ReadPropertyList();
     }
 
-    public int MaxSize() => 64
-        + 16
-        + Encoding.UTF8.GetByteCount(Username)
-        + Properties?.Sum(property => 0
-            + Encoding.UTF8.GetByteCount(property.Name)
-            + Encoding.UTF8.GetByteCount(property.Value)
-            + 1
-            + (property.Signature == null ? 0 : Encoding.UTF8.GetByteCount(property.Signature))) ?? 0;
+    public int MaxSize()
+    {
+        return 64 + 16 + Encoding.UTF8.GetByteCount(Username) + Properties?.Sum(property => 0 + Encoding.UTF8.GetByteCount(property.Name) + Encoding.UTF8.GetByteCount(property.Value) + 1 + (property.Signature == null ? 0 : Encoding.UTF8.GetByteCount(property.Signature))) ?? 0;
+    }
 }
-

@@ -54,7 +54,10 @@ public struct KeyedChatMessage : IMinecraftPacket<PlayState>, IChatMessage
         }
     }
 
-    public async Task<bool> HandleAsync(PlayState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(PlayState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -76,13 +79,13 @@ public struct KeyedChatMessage : IMinecraftPacket<PlayState>, IChatMessage
         }
         else
         {
-            throw new Exception($"Invalid chat message signature");
+            throw new Exception("Invalid chat message signature");
         }
 
         SignedPreview = buffer.ReadBoolean();
 
         if (SignedPreview && Unsigned)
-            throw new Exception($"Unsigned chat message requested signed preview");
+            throw new Exception("Unsigned chat message requested signed preview");
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19_1)
         {
@@ -94,12 +97,14 @@ public struct KeyedChatMessage : IMinecraftPacket<PlayState>, IChatMessage
             var lastSignatures = new KeyValuePair<Guid, byte[]>[size];
 
             for (var i = 0; i < size; i++)
-                lastSignatures[i] = new(buffer.ReadGuid(), buffer.Read(buffer.ReadVarInt()).ToArray());
+                lastSignatures[i] = new KeyValuePair<Guid, byte[]>(buffer.ReadGuid(), buffer.Read(buffer.ReadVarInt())
+                    .ToArray());
 
             PreviousMessages = lastSignatures;
 
             if (buffer.ReadBoolean())
-                LastMessage = new(buffer.ReadGuid(), buffer.Read(buffer.ReadVarInt()).ToArray());
+                LastMessage = new KeyValuePair<Guid, byte[]>(buffer.ReadGuid(), buffer.Read(buffer.ReadVarInt())
+                    .ToArray());
         }
     }
 }

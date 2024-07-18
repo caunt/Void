@@ -9,10 +9,12 @@ public struct LoginAcknowledgedPacket : IMinecraftPacket<LoginState>
     {
     }
 
-    public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(LoginState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
     }
 }
-

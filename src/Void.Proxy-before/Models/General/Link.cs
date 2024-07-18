@@ -1,6 +1,6 @@
-﻿using Nito.AsyncEx;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
+using Nito.AsyncEx;
 using Void.Proxy.Network;
 using Void.Proxy.Network.IO;
 using Void.Proxy.Network.Protocol;
@@ -14,6 +14,48 @@ namespace Void.Proxy.Models.General;
 
 public class Link : IDisposable
 {
+    private readonly TcpClient _client;
+
+    private Task _clientForwardingTask;
+
+    private CancellationTokenSource _ctsClientForwarding;
+    private CancellationTokenSource _ctsClientForwardingForce;
+    private CancellationTokenSource _ctsServerForwarding;
+    private CancellationTokenSource _ctsServerForwardingForce;
+
+    private readonly AsyncLock _lock = new();
+
+    private HandshakePacket _redirectionHandshakePacket;
+    private LoginStartPacket _redirectionLoginStartPacket;
+
+    private Server? _redirectionServer;
+    private ServerInfo? _redirectionServerInfo;
+    private TcpClient _server;
+    private Task _serverForwardingTask;
+
+    public Link(TcpClient client, TcpClient server)
+    {
+        _client = client;
+        _server = server;
+
+        PlayerChannel = new MinecraftChannel(_client.GetStream());
+        ServerChannel = new MinecraftChannel(_server.GetStream());
+
+        Player = new Player(this);
+        Server = new Server(this);
+
+        State = SwitchState(0);
+        ProtocolVersion = SetProtocolVersion(ProtocolVersion.Oldest);
+
+        _ctsClientForwarding = new CancellationTokenSource();
+        _ctsServerForwarding = new CancellationTokenSource();
+        _ctsClientForwardingForce = new CancellationTokenSource();
+        _ctsServerForwardingForce = new CancellationTokenSource();
+
+        _clientForwardingTask = ForwardClientToServer();
+        _serverForwardingTask = ForwardServerToClient();
+    }
+
     public Player Player { get; protected set; }
     public Server Server { get; protected set; }
     public MinecraftChannel PlayerChannel { get; protected set; }
@@ -25,46 +67,16 @@ public class Link : IDisposable
     public EndPoint? ServerRemoteEndPoint => _server.Client?.RemoteEndPoint;
     public bool IsSwitching => _redirectionServer != null;
 
-    private AsyncLock _lock = new();
-
-    private TcpClient _client;
-    private TcpClient _server;
-
-    private CancellationTokenSource _ctsClientForwarding;
-    private CancellationTokenSource _ctsServerForwarding;
-    private CancellationTokenSource _ctsClientForwardingForce;
-    private CancellationTokenSource _ctsServerForwardingForce;
-
-    private Task _clientForwardingTask;
-    private Task _serverForwardingTask;
-
-    private Server? _redirectionServer;
-    private ServerInfo? _redirectionServerInfo;
-
-    private HandshakePacket _redirectionHandshakePacket;
-    private LoginStartPacket _redirectionLoginStartPacket;
-
-    public Link(TcpClient client, TcpClient server)
+    public void Dispose()
     {
-        _client = client;
-        _server = server;
+        Proxy.Logger.Debug($"Link {GetHashCode()} with player {Player} disposing");
 
-        PlayerChannel = new MinecraftChannel(_client.GetStream());
-        ServerChannel = new MinecraftChannel(_server.GetStream());
+        _client.Close();
+        _server.Close();
+        _client.Dispose();
+        _server.Dispose();
 
-        Player = new(this);
-        Server = new(this);
-
-        State = SwitchState(0);
-        ProtocolVersion = SetProtocolVersion(ProtocolVersion.Oldest);
-
-        _ctsClientForwarding = new();
-        _ctsServerForwarding = new();
-        _ctsClientForwardingForce = new();
-        _ctsServerForwardingForce = new();
-
-        _clientForwardingTask = ForwardClientToServer();
-        _serverForwardingTask = ForwardServerToClient();
+        GC.SuppressFinalize(this);
     }
 
     public ProtocolVersion SetProtocolVersion(ProtocolVersion protocolVersion)
@@ -148,10 +160,10 @@ public class Link : IDisposable
     public async Task StartServerSwitchAsync()
     {
         if (_redirectionServer is null)
-            throw new Exception($"Not found redirection server to complete");
+            throw new Exception("Not found redirection server to complete");
 
         if (_redirectionServerInfo is null)
-            throw new Exception($"Not found redirection server info to complete");
+            throw new Exception("Not found redirection server info to complete");
 
         var tcpClient = _redirectionServerInfo.CreateTcpClient();
 
@@ -161,7 +173,7 @@ public class Link : IDisposable
 
         Server = _redirectionServer;
         ServerInfo = _redirectionServerInfo;
-        ServerChannel = new(_server.GetStream());
+        ServerChannel = new MinecraftChannel(_server.GetStream());
 
         SwitchState(0);
         await _redirectionServer.SendPacketAsync(_redirectionHandshakePacket);
@@ -185,7 +197,7 @@ public class Link : IDisposable
         {
             Direction.Clientbound => PlayerChannel,
             Direction.Serverbound => ServerChannel,
-            _ => throw new ArgumentOutOfRangeException(nameof(direction)),
+            _ => throw new ArgumentOutOfRangeException(nameof(direction))
         };
 
         using var _ = await _lock.LockAsync();
@@ -207,8 +219,15 @@ public class Link : IDisposable
         await ServerChannel.FlushAsync();
     }
 
-    protected Task ForwardClientToServer() => ProcessPacketsAsync<ProtocolState>(PlayerChannel, ServerChannel, Direction.Serverbound, (_ctsClientForwardingForce = new()).Token, (_ctsClientForwarding = new()).Token);
-    protected Task ForwardServerToClient() => ProcessPacketsAsync<ProtocolState>(ServerChannel, PlayerChannel, Direction.Clientbound, (_ctsServerForwardingForce = new()).Token, (_ctsServerForwarding = new()).Token);
+    protected Task ForwardClientToServer()
+    {
+        return ProcessPacketsAsync<ProtocolState>(PlayerChannel, ServerChannel, Direction.Serverbound, (_ctsClientForwardingForce = new CancellationTokenSource()).Token, (_ctsClientForwarding = new CancellationTokenSource()).Token);
+    }
+
+    protected Task ForwardServerToClient()
+    {
+        return ProcessPacketsAsync<ProtocolState>(ServerChannel, PlayerChannel, Direction.Clientbound, (_ctsServerForwardingForce = new CancellationTokenSource()).Token, (_ctsServerForwarding = new CancellationTokenSource()).Token);
+    }
 
     protected async Task ProcessPacketsAsync<T>(MinecraftChannel sourceChannel, MinecraftChannel destinationChannel, Direction direction, CancellationToken forceCancellationToken, CancellationToken cancellationToken) where T : ProtocolState
     {
@@ -304,17 +323,5 @@ public class Link : IDisposable
                 Dispose();
             }
         }
-    }
-
-    public void Dispose()
-    {
-        Proxy.Logger.Debug($"Link {this.GetHashCode()} with player {Player} disposing");
-
-        _client.Close();
-        _server.Close();
-        _client.Dispose();
-        _server.Dispose();
-
-        GC.SuppressFinalize(this);
     }
 }

@@ -1,9 +1,11 @@
-﻿using Void.Proxy.API.Network.Protocol;
-using Void.Proxy.API.Network.Protocol.Packets;
+﻿using Void.Proxy.API.Network.IO.Messages;
+using Void.Proxy.API.Network.Protocol;
 
 namespace Void.Proxy.Network.Protocol.Registry;
 
-public class ProtocolRegistry(Direction direction, ProtocolVersion version)
+public class ProtocolRegistry(
+    Direction direction,
+    ProtocolVersion version)
 {
     public ProtocolVersion Version { get; } = version;
     public Dictionary<int, Func<IMinecraftPacket>> PacketIdToFactory { get; } = [];
@@ -25,5 +27,8 @@ public class ProtocolRegistry(Direction direction, ProtocolVersion version)
         throw new ArgumentException($"Unable to find id for {direction} packet of type {packet.GetType().Name} in protocol {Version}");
     }
 
-    public bool ContainsPacket(IMinecraftPacket packet) => PacketTypeToId.ContainsKey(packet.GetType());
+    public bool ContainsPacket(IMinecraftPacket packet)
+    {
+        return PacketTypeToId.ContainsKey(packet.GetType());
+    }
 }

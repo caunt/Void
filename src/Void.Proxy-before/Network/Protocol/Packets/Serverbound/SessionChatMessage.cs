@@ -26,7 +26,10 @@ public struct SessionChatMessage : IMinecraftPacket<PlayState>, IChatMessage
         SessionLastSeenMessages.Encode(ref buffer);
     }
 
-    public async Task<bool> HandleAsync(PlayState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(PlayState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -35,15 +38,14 @@ public struct SessionChatMessage : IMinecraftPacket<PlayState>, IChatMessage
         Salt = buffer.ReadLong();
 
         if (buffer.ReadBoolean())
-            Signature = buffer.Read(256).ToArray();
+            Signature = buffer.Read(256)
+                .ToArray();
 
         SessionLastSeenMessages = new SessionLastSeenMessages(ref buffer);
     }
 
-    public int MaxSize() => 0
-        + Encoding.UTF8.GetByteCount(Message)
-        + 8
-        + 8
-        + (Signature == null ? 0 : Signature.Length)
-        + SessionLastSeenMessages.Acknowledged.Count;
+    public int MaxSize()
+    {
+        return 0 + Encoding.UTF8.GetByteCount(Message) + 8 + 8 + (Signature == null ? 0 : Signature.Length) + SessionLastSeenMessages.Acknowledged.Count;
+    }
 }

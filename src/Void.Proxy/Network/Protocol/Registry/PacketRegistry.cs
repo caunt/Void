@@ -1,13 +1,13 @@
-﻿using Void.Proxy.API.Network.Protocol;
-using Void.Proxy.API.Network.Protocol.Packets;
+﻿using Void.Proxy.API.Network.IO.Messages;
+using Void.Proxy.API.Network.Protocol;
 
 namespace Void.Proxy.Network.Protocol.Registry;
 
 public class PacketRegistry
 {
-    private readonly Dictionary<ProtocolVersion, ProtocolRegistry> _versions = [];
-    private readonly bool _fallback = true;
     private readonly Direction _direction;
+    private readonly bool _fallback = true;
+    private readonly Dictionary<ProtocolVersion, ProtocolRegistry> _versions = [];
 
     public PacketRegistry(Direction direction)
     {
@@ -35,12 +35,12 @@ public class PacketRegistry
         if (mappings.Length == 0)
             throw new ArgumentException("At least one mapping must be provided.");
 
-        Proxy.Logger.Verbose($"Registering {_direction} {typeof(T).Name} with {mappings.Length} mappings");
+        // TODO uncomment Proxy.Logger.Verbose($"Registering {_direction} {typeof(T).Name} with {mappings.Length} mappings");
 
         for (var i = 0; i < mappings.Length; i++)
         {
             var current = mappings[i];
-            var next = (i + 1 < mappings.Length) ? mappings[i + 1] : current;
+            var next = i + 1 < mappings.Length ? mappings[i + 1] : current;
 
             var from = current.ProtocolVersion;
             var lastValid = current.LastValidProtocolVersion;
@@ -54,7 +54,7 @@ public class PacketRegistry
                     throw new ArgumentException("Last mapping version cannot be higher than the highest mapping version");
             }
 
-            var to = current == next ? (lastValid ?? ProtocolVersion.Latest) : next.ProtocolVersion;
+            var to = current == next ? lastValid ?? ProtocolVersion.Latest : next.ProtocolVersion;
             var lastInList = lastValid ?? ProtocolVersion.Latest;
 
             if (from.CompareTo(to) >= 0 && from != lastInList)

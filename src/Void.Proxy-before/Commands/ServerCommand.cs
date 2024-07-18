@@ -23,11 +23,12 @@ public static class ServerCommand
         await link.Player.SendMessageAsync($"Switch server to {serverName} ({serverInfo.Host}:{serverInfo.Port})");
 
         // can't be awaited because we need to release both channels before switch will happen
-        _ = link.SwitchServerAsync(serverInfo).ContinueWith(task =>
-        {
-            if (!task.IsCompletedSuccessfully)
-                Proxy.Logger.Error($"Player {link.Player} redirection caused exception:\n{task.Exception}");
-        });
+        _ = link.SwitchServerAsync(serverInfo)
+            .ContinueWith(task =>
+            {
+                if (!task.IsCompletedSuccessfully)
+                    Proxy.Logger.Error($"Player {link.Player} redirection caused exception:\n{task.Exception}");
+            });
 
         return true;
     }

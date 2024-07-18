@@ -16,13 +16,13 @@ public static class MinecraftNetworkExtensions
 
         await stream.ReadExactlyAsync(memory, cancellationToken);
 
-        return new(packetId, memory, memoryOwner);
+        return new MinecraftMessage(packetId, memory, memoryOwner);
     }
 
     public static async ValueTask<int> ReadVarIntAsync(this Stream stream, CancellationToken cancellationToken = default)
     {
-        int numRead = 0;
-        int result = 0;
+        var numRead = 0;
+        var result = 0;
         byte read;
         byte[] buffer = [0];
 
@@ -31,14 +31,12 @@ public static class MinecraftNetworkExtensions
             await stream.ReadExactlyAsync(buffer, cancellationToken);
 
             read = buffer[0];
-            int value = read & 0b01111111;
-            result |= value << 7 * numRead;
+            var value = read & 0b01111111;
+            result |= value << (7 * numRead);
 
             numRead++;
             if (numRead > 5)
-            {
                 throw new InvalidOperationException("VarInt is too big");
-            }
         } while ((read & 0b10000000) != 0);
 
         return result;
@@ -60,8 +58,7 @@ public static class MinecraftNetworkExtensions
                 temp |= 128;
 
             buffer[idx++] = temp;
-        }
-        while (unsigned != 0);
+        } while (unsigned != 0);
 
         await stream.WriteAsync(buffer.AsMemory(0, idx), cancellationToken);
         ArrayPool<byte>.Shared.Return(buffer);

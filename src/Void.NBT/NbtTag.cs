@@ -15,7 +15,9 @@ namespace Void.NBT
         protected void WriteHeader(ref NbtWriter writer)
         {
             writer.Write(GetType());
-            if (Name != null) writer.Write(Name);
+
+            if (Name != null)
+                writer.Write(Name);
         }
 
         public new abstract NbtTagType GetType();

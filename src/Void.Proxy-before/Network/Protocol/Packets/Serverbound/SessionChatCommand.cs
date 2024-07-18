@@ -28,7 +28,10 @@ public struct SessionChatCommand : IMinecraftPacket<PlayState>, IChatCommand
         SessionLastSeenMessages.Encode(ref buffer);
     }
 
-    public async Task<bool> HandleAsync(PlayState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(PlayState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -40,9 +43,10 @@ public struct SessionChatCommand : IMinecraftPacket<PlayState>, IChatCommand
         if (size > 8)
             throw new Exception($"Too many argument signatures, {size} is above limit 8");
 
-        Arguments = new(size);
-        for (int i = 0; i < size; i++)
-            Arguments.Add(buffer.ReadString(), buffer.Read(256).ToArray());
+        Arguments = new Dictionary<string, byte[]>(size);
+        for (var i = 0; i < size; i++)
+            Arguments.Add(buffer.ReadString(), buffer.Read(256)
+                .ToArray());
 
         SessionLastSeenMessages = new SessionLastSeenMessages(ref buffer);
     }

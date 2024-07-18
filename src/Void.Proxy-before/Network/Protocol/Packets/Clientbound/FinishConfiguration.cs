@@ -9,7 +9,10 @@ public struct FinishConfiguration : IMinecraftPacket<ConfigurationState>
     {
     }
 
-    public async Task<bool> HandleAsync(ConfigurationState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(ConfigurationState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {

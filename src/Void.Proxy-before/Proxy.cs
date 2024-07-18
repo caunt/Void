@@ -1,7 +1,7 @@
-﻿using Serilog;
-using System.Net.Sockets;
+﻿using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Serilog;
 using Void.Proxy.Configuration;
 using Void.Proxy.Models.General;
 using Void.Proxy.Network.Protocol.Registry;
@@ -11,7 +11,6 @@ namespace Void.Proxy;
 
 public static class Proxy
 {
-
     public static readonly Settings Settings;
     public static readonly ILogger Logger;
     public static readonly JsonSerializerOptions JsonSerializerOptions;
@@ -22,17 +21,21 @@ public static class Proxy
 
     static Proxy()
     {
-        RSA = new();
-        HttpClient = new();
+        RSA = new RSACryptoServiceProvider();
+        HttpClient = new HttpClient();
         Links = [];
         Servers = [];
 
-        Settings = Settings.LoadAsync().GetAwaiter().GetResult();
+        Settings = Settings.LoadAsync()
+            .GetAwaiter()
+            .GetResult();
         Settings.Servers.ForEach(RegisterServer);
 
-        Logger = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Is(Settings.LogLevel).CreateLogger();
+        Logger = new LoggerConfiguration().WriteTo.Console()
+            .MinimumLevel.Is(Settings.LogLevel)
+            .CreateLogger();
 
-        JsonSerializerOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
+        JsonSerializerOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
         JsonSerializerOptions.Converters.Add(new JsonIPAddressConverter());
         JsonSerializerOptions.Converters.Add(new JsonIPEndPointConverter());
 
@@ -59,5 +62,8 @@ public static class Proxy
         }
     }
 
-    public static void RegisterServer(ServerInfo serverInfo) => Servers.Add(serverInfo.Name, serverInfo);
+    public static void RegisterServer(ServerInfo serverInfo)
+    {
+        Servers.Add(serverInfo.Name, serverInfo);
+    }
 }

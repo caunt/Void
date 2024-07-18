@@ -1,9 +1,9 @@
-﻿using Minecraft.Component.Component;
-using SharpNBT;
-using System.Buffers;
+﻿using System.Buffers;
 using System.Buffers.Binary;
 using System.Numerics;
 using System.Text;
+using Minecraft.Component.Component;
+using SharpNBT;
 using Void.Proxy.Models.Minecraft.Encryption;
 using Void.Proxy.Models.Minecraft.Profile;
 using Void.Proxy.Network.Protocol;
@@ -18,11 +18,19 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
     public int Position { get; private set; }
     public Span<byte> Span { get; init; } = memory.Span;
 
-    public MinecraftBuffer(int size) : this(MemoryPool<byte>.Shared.Rent(size).Memory) { } // is it safe? will GC dispose MemoryOwner too early?
+    public MinecraftBuffer(int size) : this(MemoryPool<byte>.Shared.Rent(size)
+        .Memory)
+    {
+    } // is it safe? will GC dispose MemoryOwner too early?
 
-    public MinecraftBuffer() : this(2048) { }
+    public MinecraftBuffer() : this(2048)
+    {
+    }
 
-    public void Seek(int offset) => Seek(offset, SeekOrigin.Current);
+    public void Seek(int offset)
+    {
+        Seek(offset, SeekOrigin.Current);
+    }
 
     public void Seek(int offset, SeekOrigin origin)
     {
@@ -44,7 +52,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
 
     public static int GetVarIntSize(int value)
     {
-        return (BitOperations.LeadingZeroCount((uint)value | 1) - 38) * -1171 >> 13;
+        return ((BitOperations.LeadingZeroCount((uint)value | 1) - 38) * -1171) >> 13;
     }
 
     public static IEnumerable<byte> GetVarInt(int value)
@@ -61,26 +69,23 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
                 temp |= 128;
 
             yield return temp;
-        }
-        while (unsigned != 0);
+        } while (unsigned != 0);
     }
 
     public int ReadVarInt()
     {
-        int numRead = 0;
-        int result = 0;
+        var numRead = 0;
+        var result = 0;
         byte read;
         do
         {
             read = ReadUnsignedByte();
-            int value = read & 0b01111111;
-            result |= value << 7 * numRead;
+            var value = read & 0b01111111;
+            result |= value << (7 * numRead);
 
             numRead++;
             if (numRead > 5)
-            {
                 throw new InvalidOperationException("VarInt is too big");
-            }
         } while ((read & 0b10000000) != 0);
 
         return result;
@@ -185,11 +190,9 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
 
             return ChatComponent.FromNbt(tag);
         }
-        else
-        {
-            // read as json
-            return ChatComponent.FromJson(ReadString(maxLength));
-        }
+
+        // read as json
+        return ChatComponent.FromJson(ReadString(maxLength));
     }
 
     public void WriteComponent(ChatComponent component, ProtocolVersion? protocolVersion = null)
@@ -235,31 +238,31 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
     {
         var span = Span.Slice(Position, 4);
         Position += 4;
-        BitConverter.GetBytes(value).CopyTo(span);
+        BitConverter.GetBytes(value)
+            .CopyTo(span);
     }
 
-    public Guid ReadGuid() => GuidHelper.FromLongs(ReadLong(), ReadLong());
+    public Guid ReadGuid()
+    {
+        return GuidHelper.FromLongs(ReadLong(), ReadLong());
+    }
 
     public void WriteGuid(Guid value)
     {
         if (value == Guid.Empty)
-        {
             Write(new byte[16]);
-        }
         else
-        {
             Write(value.ToByteArray(true));
-        }
     }
 
     public Guid ReadGuidIntArray()
     {
-        long msbHigh = (long)ReadInt() << 32;
-        long msbLow = (long)ReadInt() & 0xFFFFFFFFL;
-        long msb = msbHigh | msbLow;
-        long lsbHigh = (long)ReadInt() << 32;
-        long lsbLow = (long)ReadInt() & 0xFFFFFFFFL;
-        long lsb = lsbHigh | lsbLow;
+        var msbHigh = (long)ReadInt() << 32;
+        var msbLow = ReadInt() & 0xFFFFFFFFL;
+        var msb = msbHigh | msbLow;
+        var lsbHigh = (long)ReadInt() << 32;
+        var lsbLow = ReadInt() & 0xFFFFFFFFL;
+        var lsb = lsbHigh | lsbLow;
 
         return GuidHelper.FromLongs(msb, lsb);
     }
@@ -288,11 +291,12 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         BinaryPrimitives.WriteInt64BigEndian(span, value);
     }
 
-    public IdentifiedKey ReadIdentifiedKey(ProtocolVersion protocolVersion) => new(
-        revision: protocolVersion == ProtocolVersion.MINECRAFT_1_19 ? IdentifiedKeyRevision.GENERIC_V1 : IdentifiedKeyRevision.LINKED_V2,
-        expiresAt: ReadLong(),
-        publicKey: Read(ReadVarInt()).ToArray(),
-        signature: Read(ReadVarInt()).ToArray());
+    public IdentifiedKey ReadIdentifiedKey(ProtocolVersion protocolVersion)
+    {
+        return new IdentifiedKey(protocolVersion == ProtocolVersion.MINECRAFT_1_19 ? IdentifiedKeyRevision.GENERIC_V1 : IdentifiedKeyRevision.LINKED_V2, ReadLong(), Read(ReadVarInt())
+            .ToArray(), Read(ReadVarInt())
+            .ToArray());
+    }
 
     public void WriteIdentifiedKey(IdentifiedKey identifiedKey)
     {
@@ -312,14 +316,14 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
 
         var list = new List<Property>();
 
-        for (int i = 0; i < count; i++)
+        for (var i = 0; i < count; i++)
         {
             var name = ReadString();
             var value = ReadString();
             var isSigned = ReadBoolean();
             var signature = isSigned ? ReadString() : null;
 
-            list.Add(new(name, value, isSigned, signature));
+            list.Add(new Property(name, value, isSigned, signature));
         }
 
         return list;

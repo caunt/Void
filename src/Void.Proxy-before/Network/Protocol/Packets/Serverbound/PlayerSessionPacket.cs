@@ -15,7 +15,10 @@ public struct PlayerSessionPacket : IMinecraftPacket<PlayState>
         buffer.WriteIdentifiedKey(IdentifiedKey);
     }
 
-    public async Task<bool> HandleAsync(PlayState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(PlayState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -23,4 +26,3 @@ public struct PlayerSessionPacket : IMinecraftPacket<PlayState>
         IdentifiedKey = buffer.ReadIdentifiedKey(protocolVersion);
     }
 }
-

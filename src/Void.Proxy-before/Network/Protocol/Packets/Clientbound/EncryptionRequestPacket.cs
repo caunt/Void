@@ -31,7 +31,10 @@ public struct EncryptionRequestPacket : IMinecraftPacket<LoginState>
         }
     }
 
-    public async Task<bool> HandleAsync(LoginState state) => await state.HandleAsync(this);
+    public async Task<bool> HandleAsync(LoginState state)
+    {
+        return await state.HandleAsync(this);
+    }
 
     public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -40,18 +43,22 @@ public struct EncryptionRequestPacket : IMinecraftPacket<LoginState>
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_8)
         {
             var publicKeyLength = buffer.ReadVarInt();
-            PublicKey = buffer.Read(publicKeyLength).ToArray();
+            PublicKey = buffer.Read(publicKeyLength)
+                .ToArray();
 
             var verifyTokenLength = buffer.ReadVarInt();
-            VerifyToken = buffer.Read(verifyTokenLength).ToArray();
+            VerifyToken = buffer.Read(verifyTokenLength)
+                .ToArray();
         }
         else
         {
             var publicKeyLength = buffer.ReadVarShort();
-            PublicKey = buffer.Read(publicKeyLength).ToArray();
+            PublicKey = buffer.Read(publicKeyLength)
+                .ToArray();
 
             var verifyTokenLength = buffer.ReadVarShort();
-            VerifyToken = buffer.Read(verifyTokenLength).ToArray();
+            VerifyToken = buffer.Read(verifyTokenLength)
+                .ToArray();
         }
     }
 }

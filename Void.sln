@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
+# 17
 VisualStudioVersion = 17.8.34212.112
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Void.Proxy-before", "src\Void.Proxy-before\Void.Proxy-before.csproj", "{8EF40869-E6E1-4E1E-834E-4CCF76040444}"
@@ -18,6 +18,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1", "src\Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1\Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.csproj", "{24C6F3E8-C33E-479A-96C3-F8DAAF097E4B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2", "src\Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2\Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.csproj", "{1056EA02-B6CF-491A-B9C8-76CAEDFB35F7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Void.Proxy.Plugins.ModsSupport.Forge", "src\Void.Proxy.Plugins.ModsSupport.Forge\Void.Proxy.Plugins.ModsSupport.Forge.csproj", "{72BD4B67-9ED0-43FE-86C9-E9A744F702E7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -57,6 +59,10 @@ Global
 		{1056EA02-B6CF-491A-B9C8-76CAEDFB35F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1056EA02-B6CF-491A-B9C8-76CAEDFB35F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1056EA02-B6CF-491A-B9C8-76CAEDFB35F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72BD4B67-9ED0-43FE-86C9-E9A744F702E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72BD4B67-9ED0-43FE-86C9-E9A744F702E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72BD4B67-9ED0-43FE-86C9-E9A744F702E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72BD4B67-9ED0-43FE-86C9-E9A744F702E7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -5,9 +5,14 @@ using Void.Proxy.Network.Protocol;
 
 namespace Void.Proxy.Models.Minecraft.Encryption;
 
-public class IdentifiedKey(IdentifiedKeyRevision revision, long expiresAt, byte[] publicKey, byte[] signature)
+public class IdentifiedKey(
+    IdentifiedKeyRevision revision,
+    long expiresAt,
+    byte[] publicKey,
+    byte[] signature)
 {
     public static readonly byte[] YggdrasilSessionPublicKey = Convert.FromBase64String("MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAylB4B6m5lz7jwrcFz6Fd/fnfUhcvlxsTSn5kIK/2aGG1C3kMy4VjhwlxF6BFUSnfxhNswPjh3ZitkBxEAFY25uzkJFRwHwVA9mdwjashXILtR6OqdLXXFVyUPIURLOSWqGNBtb08EN5fMnG8iFLgEJIBMxs9BvF3s3/FhuHyPKiVTZmXY0WY4ZyYqvoKR+XjaTRPPvBsDa4WI2u1zxXMeHlodT3lnCzVvyOYBLXL6CJgByuOxccJ8hnXfF9yY4F0aeL080Jz/3+EBNG8RO4ByhtBf4Ny8NQ6stWsjfeUIvH7bU/4zCYcYOq4WrInXHqS8qruDmIl7P5XXGcabuzQstPf/h2CRAUpP/PlHXcMlvewjmGU6MfDK+lifScNYwjPxRo4nKTGFZf/0aqHCh/EAsQyLKrOIYRE0lDG3bzBh8ogIMLAugsAfBb6M3mqCqKaTMAf/VAjh5FFJnjS+7bE+bZEV0qwax1CEoPPJL1fIQjOS8zj086gjpGRCtSy9+bTPTfTR/SJ+VUB5G2IeCItkNHpJX2ygojFZ9n5Fnj7R9ZnOM+L8nyIjPu3aePvtcrXlyLhH/hvOfIOjPxOlqW+O5QwSFP4OEcyLAUgDdUgyW36Z5mB285uKW/ighzZsOTevVUG2QwDItObIV6i8RCxFbN2oDHyPaO5j1tTaBNyVt8CAwEAAQ==");
+    private bool? isSignatureValid;
 
     public IdentifiedKeyRevision Revision { get; set; } = revision;
     public long ExpiresAt { get; set; } = expiresAt;
@@ -15,8 +20,12 @@ public class IdentifiedKey(IdentifiedKeyRevision revision, long expiresAt, byte[
     public byte[] Signature { get; set; } = signature;
 
     public Guid? Guid { get; set; }
-    public bool? IsSignatureValid { get => isSignatureValid.HasValue ? isSignatureValid : isSignatureValid = ValidateData(Guid ?? default); set => isSignatureValid = value; }
-    private bool? isSignatureValid;
+
+    public bool? IsSignatureValid
+    {
+        get => isSignatureValid.HasValue ? isSignatureValid : isSignatureValid = ValidateData(Guid ?? default);
+        set => isSignatureValid = value;
+    }
 
     public bool VerifyDataSignature(byte[] signature, byte[] data)
     {
@@ -83,7 +92,9 @@ public class IdentifiedKey(IdentifiedKeyRevision revision, long expiresAt, byte[
     }
 }
 
-public class IdentifiedKeyRevision(IEnumerable<IdentifiedKeyRevision> backwardsCompatibleTo, List<ProtocolVersion> applicableTo)
+public class IdentifiedKeyRevision(
+    IEnumerable<IdentifiedKeyRevision> backwardsCompatibleTo,
+    List<ProtocolVersion> applicableTo)
 {
     public static readonly IdentifiedKeyRevision GENERIC_V1 = new(Enumerable.Empty<IdentifiedKeyRevision>(), [ProtocolVersion.MINECRAFT_1_19]);
     public static readonly IdentifiedKeyRevision LINKED_V2 = new(Enumerable.Empty<IdentifiedKeyRevision>(), [ProtocolVersion.MINECRAFT_1_19_1]);
