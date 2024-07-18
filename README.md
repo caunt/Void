@@ -5,7 +5,7 @@
 ## Proxy
 
 **Description:**  
-Void Proxy is a Minecraft proxy, akin to Velocity or BungeeCord. It forwards players between backend servers, supporting versions 1.7.2 to 1.20.4
+Void Proxy is a Minecraft proxy, akin to Velocity or BungeeCord. It forwards players between backend servers, supporting versions 1.7.2 to 1.21
 
 **Goals:**  
 - Redirect players between any servers, including Forge.
