@@ -28,7 +28,7 @@ public class SimpleMinecraftChannel(IMinecraftStreamBase head) : IMinecraftChann
         {
             IMinecraftPacketMessageStream stream => await stream.ReadPacketAsync(),
             IMinecraftCompleteMessageStream stream => await stream.ReadMessageAsync(),
-            IMinecraftBufferedMessageStream stream => await stream.ReadAsMessageAsync(2048),
+            IMinecraftBufferedMessageStream stream => await stream.ReadAsMessageAsync(),
             _ => throw new InvalidOperationException($"{head.GetType()} cannot be used to read messages")
         };
     }

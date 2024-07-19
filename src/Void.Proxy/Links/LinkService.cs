@@ -18,9 +18,9 @@ public class LinkService(
         var serverChannel = await player.BuildServerChannelAsync(server);
 
         var link = new Link(player, server, playerChannel, serverChannel, FinalizeAsync);
-        link.StartForwarding();
-
         _links.Add(link);
+
+        logger.LogInformation("Started forwarding {Link} traffic", link);
     }
 
     private async ValueTask FinalizeAsync(ILink link)
@@ -28,7 +28,8 @@ public class LinkService(
         if (!_links.Remove(link))
             return;
 
-        logger.LogInformation("Link {Player}=>{Server} disposed", link.Player, link.Server);
         await link.DisposeAsync();
+
+        logger.LogInformation("Stopped forwarding {Link} traffic", link);
     }
 }

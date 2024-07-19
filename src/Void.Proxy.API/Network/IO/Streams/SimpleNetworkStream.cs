@@ -16,7 +16,10 @@ public class SimpleNetworkStream(NetworkStream baseStream) : IMinecraftNetworkSt
     public int Read(Span<byte> span)
     {
         if (_nextBuffer is not { Length: > 0 })
-            return baseStream.Read(span);
+        {
+            var read = baseStream.Read(span);
+            return read > 0 ? read : throw new EndOfStreamException();
+        }
 
         var length = Math.Min(_nextBuffer.Length, span.Length);
         _nextBuffer.Span[..length]
@@ -28,7 +31,10 @@ public class SimpleNetworkStream(NetworkStream baseStream) : IMinecraftNetworkSt
     public async ValueTask<int> ReadAsync(Memory<byte> memory)
     {
         if (_nextBuffer is not { Length: > 0 })
-            return await baseStream.ReadAsync(memory);
+        {
+            var read = await baseStream.ReadAsync(memory);
+            return read > 0 ? read : throw new EndOfStreamException();
+        }
 
         var length = Math.Min(_nextBuffer.Length, memory.Length);
         _nextBuffer[..length]
@@ -78,7 +84,6 @@ public class SimpleNetworkStream(NetworkStream baseStream) : IMinecraftNetworkSt
 
     public async ValueTask WriteAsync(Memory<byte> memory)
     {
-        // Console.WriteLine("write " + Convert.ToHexString(memory.Span));
         await baseStream.WriteAsync(memory);
     }
 

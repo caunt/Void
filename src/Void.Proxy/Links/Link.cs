@@ -1,97 +1,76 @@
 ﻿using Nito.AsyncEx;
+using System.Threading.Tasks;
 using Void.Proxy.API.Links;
 using Void.Proxy.API.Network.IO.Channels;
 using Void.Proxy.API.Network.IO.Messages;
-using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Servers;
 using Void.Proxy.Network;
 
 namespace Void.Proxy.Links;
 
-public class Link(
-    IPlayer player,
-    IServer server,
-    IMinecraftChannel playerChannel,
-    IMinecraftChannel serverChannel,
-    Func<ILink, ValueTask> finalize) : ILink
+public class Link : ILink
 {
-    private readonly AsyncLock _lock = new();
-    private readonly ILogger<Link> _logger = player.Scope.ServiceProvider.GetRequiredService<ILogger<Link>>();
+    public IPlayer Player { get; init; }
+    public IServer Server { get; init; }
+    public IMinecraftChannel PlayerChannel { get; init; }
+    public IMinecraftChannel ServerChannel { get; init; }
 
-    private Task? _clientForwardingTask;
+    private readonly Func<ILink, ValueTask> _finalizer;
+    private readonly ILogger<Link> _logger;
+    private readonly AsyncLock _lock;
 
-    private CancellationTokenSource? _ctsClientForwarding;
-    private CancellationTokenSource? _ctsClientForwardingForce;
-    private CancellationTokenSource? _ctsServerForwarding;
-    private CancellationTokenSource? _ctsServerForwardingForce;
-    private Task? _serverForwardingTask;
-    public IPlayer Player => player;
-    public IServer Server => server;
-    public IMinecraftChannel PlayerChannel => playerChannel;
-    public IMinecraftChannel ServerChannel => serverChannel;
+    private readonly Task _playerToServerTask;
+    private readonly Task _serverToPlayerTask;
 
-    public ProtocolVersion ProtocolVersion => player.ProtocolVersion;
+    private readonly CancellationTokenSource _cts;
+    private readonly CancellationTokenSource _ctsForce;
 
-    public void StartForwarding()
+    public Link(IPlayer player, IServer server, IMinecraftChannel playerChannel, IMinecraftChannel serverChannel, Func<ILink, ValueTask> finalize)
     {
-        _ctsClientForwarding = new CancellationTokenSource();
-        _ctsServerForwarding = new CancellationTokenSource();
-        _ctsClientForwardingForce = new CancellationTokenSource();
-        _ctsServerForwardingForce = new CancellationTokenSource();
+        Player = player;
+        Server = server;
+        PlayerChannel = playerChannel;
+        ServerChannel = serverChannel;
 
-        _clientForwardingTask = ForwardClientToServer();
-        _serverForwardingTask = ForwardServerToClient();
+        _lock = new AsyncLock();
+        _finalizer = finalize;
+        _logger = player.Scope.ServiceProvider.GetRequiredService<ILogger<Link>>();
+
+        _cts = new CancellationTokenSource();
+        _ctsForce = new CancellationTokenSource();
+        
+        _playerToServerTask = ExecuteAsync(PlayerChannel, ServerChannel, Direction.Serverbound, _cts.Token, _ctsForce.Token);
+        _serverToPlayerTask = ExecuteAsync(ServerChannel, PlayerChannel, Direction.Clientbound, _cts.Token, _ctsForce.Token);
     }
+    
+    public override string ToString() => Player + " <=> " + Server;
 
     public async ValueTask DisposeAsync()
     {
-        serverChannel.Close();
-        await serverChannel.DisposeAsync();
+        ServerChannel.Close();
+        await ServerChannel.DisposeAsync();
+
+        var timeout = Task.Delay(5000);
+
+        if (await Task.WhenAny(timeout, _serverToPlayerTask) == timeout)
+        {
+            _logger.LogInformation("Timed out waiting Server {Server} disconnection from Player {Player}, closing manually", Server, Player);
+            await _ctsForce.CancelAsync();
+        }
+
+        if (await Task.WhenAny(timeout, _playerToServerTask) == timeout)
+        {
+            _logger.LogInformation("Timed out waiting Player {Player} disconnection from Server {Server}, closing manually", Player, Server);
+            await _ctsForce.CancelAsync();
+        }
+        
+        await Task.WhenAll(_playerToServerTask, _serverToPlayerTask);
     }
 
-    protected async Task StopClientToServerForwarding()
-    {
-        if (_ctsClientForwarding is not null)
-            await _ctsClientForwarding.CancelAsync();
-
-        if (_clientForwardingTask is not null)
-            await _clientForwardingTask;
-
-        await PlayerChannel.FlushAsync();
-    }
-
-    protected async Task StopServerToClientForwarding()
-    {
-        if (_ctsServerForwarding is not null)
-            await _ctsServerForwarding.CancelAsync();
-
-        if (_serverForwardingTask is not null)
-            await _serverForwardingTask;
-
-        await ServerChannel.FlushAsync();
-    }
-
-    protected Task ForwardClientToServer()
-    {
-        _ctsClientForwardingForce = new CancellationTokenSource();
-        _ctsClientForwarding = new CancellationTokenSource();
-
-        return ExecuteAsync(PlayerChannel, ServerChannel, Direction.Serverbound, _ctsClientForwardingForce.Token, _ctsClientForwarding.Token);
-    }
-
-    protected Task ForwardServerToClient()
-    {
-        _ctsServerForwardingForce = new CancellationTokenSource();
-        _ctsServerForwarding = new CancellationTokenSource();
-
-        return ExecuteAsync(ServerChannel, PlayerChannel, Direction.Clientbound, _ctsServerForwardingForce.Token, _ctsServerForwarding.Token);
-    }
-
-    protected async Task ExecuteAsync(IMinecraftChannel sourceChannel, IMinecraftChannel destinationChannel, Direction direction, CancellationToken forceCancellationToken, CancellationToken cancellationToken)
+    protected async Task ExecuteAsync(IMinecraftChannel sourceChannel, IMinecraftChannel destinationChannel, Direction direction, CancellationToken cancellationToken, CancellationToken forceCancellationToken)
     {
         await Task.Yield();
-        _logger.LogInformation("Started forwarding {Direction} {Player} traffic", direction, player);
 
         try
         {
@@ -105,12 +84,14 @@ public class Link(
 
                 if (message is BinaryPacket packet)
                     _logger.LogDebug("{Direction} packet id {PacketId}", direction, packet.Id);
-
+                else if (message is BufferedBinaryMessage binary)
+                    _logger.LogDebug("{Direction} packet length {Length}", direction, binary.Memory.Length);
+                
                 using var _ = await _lock.LockAsync();
                 await destinationChannel.WriteMessageAsync(message /*, forceCancellationToken*/);
             }
         }
-        catch (Exception exception) when (exception is EndOfStreamException or IOException or TaskCanceledException or OperationCanceledException)
+        catch (Exception exception) when (exception is EndOfStreamException or IOException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
         {
             // client disconnected itself
             // server catch unhandled exception
@@ -118,35 +99,17 @@ public class Link(
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Unhandled {Direction} exception from {Player}", direction, player);
+            _logger.LogError(exception, "Unhandled {Direction} exception from {Player}", direction, Player);
         }
         finally
         {
-            _logger.LogInformation("Stopped forwarding {Direction} {Player} traffic", direction, player);
+            // TODO sometimes kick packet do not reach the player
+            
+            await PlayerChannel.FlushAsync();
+            await ServerChannel.FlushAsync();
 
-            // TODO do not wait client, rewrite this to close just Clientbound (Server) connection
-            // one side disconnected, shutting down link, if its not server redirection case
-
-            var thisCancellationTokenSource = direction is Direction.Serverbound ? _ctsClientForwardingForce : _ctsServerForwardingForce;
-            var otherCancellationTokenSource = direction is Direction.Serverbound ? _ctsServerForwardingForce : _ctsClientForwardingForce;
-            var thisForwardingTask = direction is Direction.Serverbound ? _clientForwardingTask : _serverForwardingTask;
-            var otherForwardingTask = direction is Direction.Serverbound ? _serverForwardingTask : _clientForwardingTask;
-
-            await thisCancellationTokenSource!.CancelAsync();
-
-            if (!otherCancellationTokenSource!.IsCancellationRequested)
-            {
-                var timeout = Task.Delay(5000);
-                var disconnectTask = await Task.WhenAny(otherForwardingTask!, timeout);
-
-                if (disconnectTask == timeout)
-                {
-                    _logger.LogInformation("Timed out waiting {Side} {Player} disconnection, closing manually", direction is Direction.Serverbound ? "Server" : "Player", player);
-                    await otherCancellationTokenSource.CancelAsync();
-                }
-            }
-
-            await finalize(this);
+            await _cts.CancelAsync();
+            _ = _finalizer(this);
         }
     }
 }

@@ -16,14 +16,14 @@ public class Link : IDisposable
 {
     private readonly TcpClient _client;
 
+    private readonly AsyncLock _lock = new();
+
     private Task _clientForwardingTask;
 
     private CancellationTokenSource _ctsClientForwarding;
     private CancellationTokenSource _ctsClientForwardingForce;
     private CancellationTokenSource _ctsServerForwarding;
     private CancellationTokenSource _ctsServerForwardingForce;
-
-    private readonly AsyncLock _lock = new();
 
     private HandshakePacket _redirectionHandshakePacket;
     private LoginStartPacket _redirectionLoginStartPacket;

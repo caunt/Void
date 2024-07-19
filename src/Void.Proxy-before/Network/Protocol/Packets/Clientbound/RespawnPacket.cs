@@ -22,7 +22,7 @@ public struct RespawnPacket : IMinecraftPacket<PlayState>
 
     public static RespawnPacket FromJoinGame(JoinGamePacket packet)
     {
-        return new RespawnPacket()
+        return new RespawnPacket
         {
             Dimension = packet.Dimension,
             PartialHashedSeed = packet.PartialHashedSeed,
