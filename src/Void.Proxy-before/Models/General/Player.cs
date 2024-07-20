@@ -87,10 +87,10 @@ public class Player(Link link)
             for (var i = data.Length - 1; i >= 0; i--)
             {
                 data[i] = unchecked((byte)~data[i]);
-                
+
                 if (!carry)
                     continue;
-                
+
                 carry = data[i] == 0xFF;
                 data[i]++;
             }
@@ -127,7 +127,7 @@ public class Player(Link link)
 
         if (GameProfile == null || IdentifiedKey == null || IdentifiedKey.Revision != IdentifiedKeyRevision.LINKED_V2)
             return GameProfile;
-        
+
         if (!IdentifiedKey.AddGuid(GameProfile.Id))
             throw new Exception("multiplayer.disconnect.invalid_public_key");
 

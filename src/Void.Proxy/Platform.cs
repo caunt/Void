@@ -1,6 +1,5 @@
 ﻿using System.Net.Sockets;
 using System.Reflection;
-using System.Security.Cryptography;
 using Serilog.Core;
 using Serilog.Events;
 using Void.Proxy.API;
@@ -56,6 +55,7 @@ public class Platform(
         // TODO disconnect everyone here
 
         if (_backgroundTask is not null)
+        {
             await _backgroundTask.ContinueWith(backgroundTask =>
             {
                 if (backgroundTask.IsCanceled)
@@ -67,6 +67,7 @@ public class Platform(
                 throw backgroundTask.Exception?.Flatten()
                     .InnerException ?? new Exception("Proxy stopped with unknown exception");
             }, cancellationToken);
+        }
 
         _listener?.Stop();
 

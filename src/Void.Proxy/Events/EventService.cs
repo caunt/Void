@@ -37,7 +37,7 @@ public class EventService : IEventService
         }
     }
 
-    public void RegisterListeners(IEventListener[] listeners)
+    public void RegisterListeners(params IEventListener[] listeners)
     {
         foreach (var listener in listeners)
         {
@@ -56,7 +56,7 @@ public class EventService : IEventService
         _listeners.AddRange(listeners);
     }
 
-    public void UnregisterListeners(IEventListener[] listeners)
+    public void UnregisterListeners(params IEventListener[] listeners)
     {
         foreach (var listener in listeners)
         {

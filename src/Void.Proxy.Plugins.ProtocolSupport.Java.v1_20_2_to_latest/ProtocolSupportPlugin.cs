@@ -5,7 +5,6 @@ using Void.Proxy.API.Events.Proxy;
 using Void.Proxy.API.Network.IO.Buffers;
 using Void.Proxy.API.Network.IO.Channels;
 using Void.Proxy.API.Network.IO.Streams;
-using Void.Proxy.API.Network.IO.Streams.Codec;
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.API.Plugins;
 

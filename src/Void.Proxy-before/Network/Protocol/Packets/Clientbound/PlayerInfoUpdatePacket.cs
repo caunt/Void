@@ -12,7 +12,7 @@ public struct PlayerInfoUpdatePacket : IMinecraftPacket<PlayState>
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         // if no players available, notchian server still send actions bitset, we dont?
-        var actions = Players.SelectMany(player => player.Actions.Select(action => action.Type));
+        var actions = Players.SelectMany(player => player.Actions.Select(action => action.Type)).ToArray();
         var actionsFlags = (byte)actions.Aggregate(0, (current, action) => current | (byte)action);
 
         buffer.WriteUnsignedByte(actionsFlags);
@@ -20,7 +20,7 @@ public struct PlayerInfoUpdatePacket : IMinecraftPacket<PlayState>
 
         foreach (var player in Players)
         {
-            var missingActions = actions.Where(actionType => player.Actions.All(action => action.Type != actionType));
+            var missingActions = actions.Where(actionType => player.Actions.All(action => action.Type != actionType)).ToArray();
 
             if (missingActions.Any())
                 throw new Exception($"Player {player.Guid} has missing actions: {string.Join(", ", missingActions)}");
@@ -54,6 +54,7 @@ public struct PlayerInfoUpdatePacket : IMinecraftPacket<PlayState>
             var playerActions = new List<IPlayerAction>();
 
             foreach (var action in actions)
+            {
                 playerActions.Add(action switch
                 {
                     PlayerActionType.AddPlayer => new AddPlayerAction(ref buffer, protocolVersion),
@@ -64,6 +65,7 @@ public struct PlayerInfoUpdatePacket : IMinecraftPacket<PlayState>
                     PlayerActionType.UpdateDisplayName => new UpdateDisplayNameAction(ref buffer, protocolVersion),
                     _ => throw new ArgumentOutOfRangeException($"Unknown update player action type {action}")
                 });
+            }
 
             Players.Add(new PlayerInfo(playerGuid, playerActions));
         }

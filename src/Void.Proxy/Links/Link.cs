@@ -1,4 +1,7 @@
 ﻿using Nito.AsyncEx;
+using Void.Proxy.API.Events;
+using Void.Proxy.API.Events.Links;
+using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Links;
 using Void.Proxy.API.Network.IO.Channels;
 using Void.Proxy.API.Network.IO.Messages;
@@ -15,23 +18,23 @@ public class Link : ILink
     private readonly CancellationTokenSource _ctsServerToPlayer;
     private readonly CancellationTokenSource _ctsServerToPlayerForce;
 
-    private readonly Func<ILink, ValueTask> _finalizer;
-    private readonly AsyncLock _lock;
     private readonly ILogger<Link> _logger;
+    private readonly IEventService _events;
+    private readonly AsyncLock _lock;
 
     private readonly Task _playerToServerTask;
     private readonly Task _serverToPlayerTask;
 
-    public Link(IPlayer player, IServer server, IMinecraftChannel playerChannel, IMinecraftChannel serverChannel, Func<ILink, ValueTask> finalize)
+    public Link(IPlayer player, IServer server, IMinecraftChannel playerChannel, IMinecraftChannel serverChannel, IEventService events)
     {
         Player = player;
         Server = server;
         PlayerChannel = playerChannel;
         ServerChannel = serverChannel;
 
-        _lock = new AsyncLock();
-        _finalizer = finalize;
         _logger = player.Scope.ServiceProvider.GetRequiredService<ILogger<Link>>();
+        _events = events;
+        _lock = new AsyncLock();
 
         _ctsPlayerToServer = new CancellationTokenSource();
         _ctsPlayerToServerForce = new CancellationTokenSource();
@@ -62,7 +65,7 @@ public class Link : ILink
             {
                 _logger.LogInformation("Timed out waiting Server {Server} disconnection from Player {Player} manually, closing forcefully", Server, Player);
                 await _ctsPlayerToServerForce.CancelAsync();
-                
+
                 if (await WaitWithTimeout(_serverToPlayerTask))
                     throw new Exception($"Cannot dispose Link {this} (player=>server)");
             }
@@ -124,8 +127,8 @@ public class Link : ILink
         catch (Exception exception) when (exception is EndOfStreamException or IOException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
         {
             // client disconnected itself
-            // server catch unhandled exception
-            // link does server switch
+            // or server catch unhandled exception
+            // or link does server switch
         }
         catch (Exception exception)
         {
@@ -136,7 +139,7 @@ public class Link : ILink
             await PlayerChannel.FlushAsync();
             await ServerChannel.FlushAsync();
 
-            _ = _finalizer(this);
+            _ = _events.ThrowAsync(new StopLinkEvent { Link = this }, forceCancellationToken);
         }
     }
 }
