@@ -82,17 +82,17 @@ public class Player(Link link)
 
         static byte[] TwosComplement(byte[] data)
         {
-            int i;
             var carry = true;
 
-            for (i = data.Length - 1; i >= 0; i--)
+            for (var i = data.Length - 1; i >= 0; i--)
             {
                 data[i] = unchecked((byte)~data[i]);
-                if (carry)
-                {
-                    carry = data[i] == 0xFF;
-                    data[i]++;
-                }
+                
+                if (!carry)
+                    continue;
+                
+                carry = data[i] == 0xFF;
+                data[i]++;
             }
 
             return data;
@@ -125,9 +125,11 @@ public class Player(Link link)
 
         GameProfile = JsonSerializer.Deserialize<GameProfile>(await response.Content.ReadAsStreamAsync(), Proxy.JsonSerializerOptions);
 
-        if (GameProfile != null && IdentifiedKey != null && IdentifiedKey.Revision == IdentifiedKeyRevision.LINKED_V2)
-            if (!IdentifiedKey.AddGuid(GameProfile.Id))
-                throw new Exception("multiplayer.disconnect.invalid_public_key");
+        if (GameProfile == null || IdentifiedKey == null || IdentifiedKey.Revision != IdentifiedKeyRevision.LINKED_V2)
+            return GameProfile;
+        
+        if (!IdentifiedKey.AddGuid(GameProfile.Id))
+            throw new Exception("multiplayer.disconnect.invalid_public_key");
 
         return GameProfile;
     }

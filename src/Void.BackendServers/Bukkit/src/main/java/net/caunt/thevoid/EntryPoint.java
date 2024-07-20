@@ -4,10 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
 import java.security.KeyPair;
-import java.util.ArrayList;
-import java.util.List;
 
 public final class EntryPoint extends JavaPlugin {
 

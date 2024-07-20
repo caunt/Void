@@ -1,5 +1,6 @@
 ﻿using System.Net.Sockets;
 using System.Reflection;
+using System.Security.Cryptography;
 using Serilog.Core;
 using Serilog.Events;
 using Void.Proxy.API;
@@ -28,8 +29,9 @@ public class Platform(
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        Directory.SetCurrentDirectory(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!);
-        
+        Directory.SetCurrentDirectory(Path.GetDirectoryName(Assembly.GetExecutingAssembly()
+            .Location)!);
+
         await settings.LoadAsync(cancellationToken: cancellationToken);
         LoggingLevelSwitch.MinimumLevel = (LogEventLevel)settings.LogLevel;
 

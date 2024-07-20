@@ -10,4 +10,5 @@ public interface ILink : IAsyncDisposable
     public IServer Server { get; }
     public IMinecraftChannel PlayerChannel { get; }
     public IMinecraftChannel ServerChannel { get; }
+    public bool IsAlive { get; }
 }

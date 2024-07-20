@@ -30,6 +30,9 @@ public class LinkService(
 
         await link.DisposeAsync();
 
+        if (link.IsAlive)
+            throw new Exception($"Link {link} is still alive");
+        
         logger.LogInformation("Stopped forwarding {Link} traffic", link);
     }
 }
