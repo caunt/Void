@@ -5,8 +5,8 @@ namespace Void.NBT
 {
     public class NbtFile
     {
-        private NbtWriter _writer = new NbtWriter();
         public NbtCompound Root;
+        private NbtWriter _writer = new NbtWriter();
 
         public NbtFile(string rootName = "")
         {

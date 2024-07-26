@@ -14,11 +14,8 @@ namespace Void.Proxy.Models.General;
 
 public class Link : IDisposable
 {
-    private readonly TcpClient _client;
-
     private readonly AsyncLock _lock = new();
-
-    private Task _clientForwardingTask;
+    private readonly TcpClient _client;
 
     private CancellationTokenSource _ctsClientForwarding;
     private CancellationTokenSource _ctsClientForwardingForce;
@@ -30,8 +27,10 @@ public class Link : IDisposable
 
     private Server? _redirectionServer;
     private ServerInfo? _redirectionServerInfo;
-    private TcpClient _server;
+
+    private Task _clientForwardingTask;
     private Task _serverForwardingTask;
+    private TcpClient _server;
 
     public Link(TcpClient client, TcpClient server)
     {

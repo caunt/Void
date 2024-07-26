@@ -15,10 +15,10 @@ public class ChannelBuilderService(
     IEventService events) : IChannelBuilderService
 {
     public const int MaxHandshakeSize = 4096;
-    private Memory<byte> _buffer = Memory<byte>.Empty;
+    private bool _found;
 
     private Func<NetworkStream, Task<IMinecraftChannel>> _builder = networkStream => Task.FromResult<IMinecraftChannel>(new SimpleMinecraftChannel(new SimpleNetworkStream(networkStream)));
-    private bool _found;
+    private Memory<byte> _buffer = Memory<byte>.Empty;
 
     public async ValueTask SearchChannelBuilderAsync(IPlayer player, CancellationToken cancellationToken = default)
     {
@@ -29,7 +29,7 @@ public class ChannelBuilderService(
         var buffer = new byte[MaxHandshakeSize];
         var length = await stream.ReadAsync(buffer, cancellationToken);
 
-        var searchProtocolCodec = new CreateChannelBuilderEvent { Buffer = buffer[..length] };
+        var searchProtocolCodec = new SearchChannelBuilderEvent { Buffer = buffer[..length] };
         await events.ThrowAsync(searchProtocolCodec, cancellationToken);
 
         if (searchProtocolCodec.Result is not null)

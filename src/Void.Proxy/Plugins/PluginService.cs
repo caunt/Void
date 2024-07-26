@@ -13,9 +13,9 @@ public class PluginService(
     IEventService events,
     IServiceProvider services) : IPluginService
 {
-    private readonly TimeSpan _gcRate = TimeSpan.FromMilliseconds(500);
     private readonly List<IPlugin> _plugins = [];
     private readonly List<WeakPluginReference> _references = [];
+    private readonly TimeSpan _gcRate = TimeSpan.FromMilliseconds(500);
     private readonly TimeSpan _unloadTimeout = TimeSpan.FromSeconds(10);
 
     public async ValueTask LoadAsync(string path = "plugins", CancellationToken cancellationToken = default)

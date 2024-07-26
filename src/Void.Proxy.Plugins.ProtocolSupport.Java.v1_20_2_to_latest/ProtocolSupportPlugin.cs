@@ -31,7 +31,7 @@ public class ProtocolSupportPlugin(ILogger<ProtocolSupportPlugin> logger) : IPlu
     }
 
     [Subscribe]
-    public void OnCreateChannelBuilder(CreateChannelBuilderEvent @event)
+    public void OnSearchChannelBuilder(SearchChannelBuilderEvent @event)
     {
         if (!IsSupportedHandshake(@event.Buffer))
             return;

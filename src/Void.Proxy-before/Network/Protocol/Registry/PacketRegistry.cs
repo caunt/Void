@@ -4,9 +4,9 @@ namespace Void.Proxy.Network.Protocol.Registry;
 
 public class PacketRegistry
 {
-    private readonly Direction _direction;
     private readonly bool _fallback = true;
     private readonly Dictionary<ProtocolVersion, ProtocolRegistry> _versions = [];
+    private readonly Direction _direction;
 
     public PacketRegistry(Direction direction)
     {

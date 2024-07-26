@@ -7,10 +7,10 @@ public class AesCfb8Stream : Stream
 {
     private const int BLOCK_SIZE = 16;
     private readonly Aes _aes;
-
-    private readonly Stream _baseStream;
     private readonly byte[] _readStreamIV;
     private readonly byte[] _writeStreamIV;
+
+    private readonly Stream _baseStream;
 
     public AesCfb8Stream(Stream stream, byte[] key)
     {

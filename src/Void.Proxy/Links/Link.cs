@@ -12,12 +12,12 @@ namespace Void.Proxy.Links;
 
 public class Link : ILink
 {
+    private readonly AsyncLock _lock;
     private readonly CancellationTokenSource _ctsPlayerToServer;
     private readonly CancellationTokenSource _ctsPlayerToServerForce;
     private readonly CancellationTokenSource _ctsServerToPlayer;
     private readonly CancellationTokenSource _ctsServerToPlayerForce;
     private readonly IEventService _events;
-    private readonly AsyncLock _lock;
 
     private readonly ILogger<Link> _logger;
 

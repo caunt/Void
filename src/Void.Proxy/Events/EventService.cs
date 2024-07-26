@@ -14,6 +14,19 @@ public class EventService : IEventService
         await ThrowAsync(new T(), cancellationToken);
     }
 
+    public async ValueTask<TResult?> ThrowWithResultAsync<TResult>(IEventWithResult<TResult> @event, CancellationToken cancellationToken = default)
+    {
+        await ThrowAsync(@event, cancellationToken);
+        return @event.Result;
+    }
+
+    public async ValueTask<TResult?> ThrowWithResultAsync<T, TResult>(CancellationToken cancellationToken = default) where T : IEventWithResult<TResult?>, new()
+    {
+        var @event = new T();
+        await ThrowAsync(@event, cancellationToken);
+        return @event.Result;
+    }
+
     public async ValueTask ThrowAsync<T>(T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
         var eventType = typeof(T);
