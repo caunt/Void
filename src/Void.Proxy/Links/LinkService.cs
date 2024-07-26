@@ -3,7 +3,6 @@ using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Links;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Links;
-using Void.Proxy.API.Network.IO.Channels;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Servers;
 
@@ -32,7 +31,7 @@ public class LinkService : ILinkService, IEventListener
         var playerChannel = await player.GetChannelAsync();
         var serverChannel = await player.BuildServerChannelAsync(server);
 
-        var link = await CreateLinkAsync(player, server, playerChannel, serverChannel);
+        var link = await _events.ThrowWithResultAsync(new CreateLinkEvent { Player = player, Server = server, PlayerChannel = playerChannel, ServerChannel = serverChannel }) ?? new Link(player, server, playerChannel, serverChannel);
         await _events.ThrowAsync(new LinkStartingEvent { Link = link });
 
         _events.RegisterListeners(link);
@@ -57,19 +56,6 @@ public class LinkService : ILinkService, IEventListener
 
         _logger.LogInformation("Stopped forwarding {Link} traffic", @event.Link);
         await _events.ThrowAsync(new LinkStoppedEvent { Link = @event.Link });
-    }
-
-    private async ValueTask<ILink> CreateLinkAsync(IPlayer player, IServer server, IMinecraftChannel playerChannel, IMinecraftChannel serverChannel)
-    {
-        var link = await _events.ThrowWithResultAsync(new CreateLinkEvent
-        {
-            Player = player,
-            Server = server, 
-            PlayerChannel = playerChannel, 
-            ServerChannel = serverChannel
-        }) ?? new Link(player, server, playerChannel, serverChannel, _events);
-
-        return link;
     }
 
     #region Injected

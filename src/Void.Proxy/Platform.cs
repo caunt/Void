@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System.Diagnostics;
+using System.Net.Sockets;
 using System.Reflection;
 using Serilog.Core;
 using Serilog.Events;
@@ -28,6 +29,8 @@ public class Platform(
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        var startTime = Stopwatch.GetTimestamp();
+        
         Directory.SetCurrentDirectory(Path.GetDirectoryName(Assembly.GetExecutingAssembly()
             .Location)!);
 
@@ -46,6 +49,9 @@ public class Platform(
         logger.LogInformation("Listening for connections on port {Port}...", settings.Port);
 
         _backgroundTask = ExecuteAsync(hostApplicationLifetime.ApplicationStopping);
+
+        var totalTime = Stopwatch.GetElapsedTime(startTime);
+        logger.LogInformation("Proxy started in {StartTimeSeconds} seconds!", totalTime.TotalSeconds.ToString("F"));
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)

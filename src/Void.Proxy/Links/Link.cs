@@ -18,13 +18,11 @@ public class Link : ILink
     private readonly CancellationTokenSource _ctsServerToPlayer;
     private readonly CancellationTokenSource _ctsServerToPlayerForce;
     private readonly IEventService _events;
-
     private readonly ILogger<Link> _logger;
-
     private readonly Task _playerToServerTask;
     private readonly Task _serverToPlayerTask;
 
-    public Link(IPlayer player, IServer server, IMinecraftChannel playerChannel, IMinecraftChannel serverChannel, IEventService events)
+    public Link(IPlayer player, IServer server, IMinecraftChannel playerChannel, IMinecraftChannel serverChannel)
     {
         Player = player;
         Server = server;
@@ -32,7 +30,7 @@ public class Link : ILink
         ServerChannel = serverChannel;
 
         _logger = player.Scope.ServiceProvider.GetRequiredService<ILogger<Link>>();
-        _events = events;
+        _events = player.Scope.ServiceProvider.GetRequiredService<IEventService>();
         _lock = new AsyncLock();
 
         _ctsPlayerToServer = new CancellationTokenSource();
