@@ -33,23 +33,27 @@ public class LinkService : ILinkService, IEventListener
         var serverChannel = await player.BuildServerChannelAsync(server);
 
         var link = await CreateLinkAsync(player, server, playerChannel, serverChannel);
+        
+        _events.RegisterListeners(link);
         _links.Add(link);
 
         _logger.LogInformation("Started forwarding {Link} traffic", link);
+        await _events.ThrowAsync(new LinkStartedEvent { Link = link });
     }
 
     [Subscribe]
-    public async ValueTask OnStopLinkEvent(StopLinkEvent @event)
+    public async ValueTask OnStopLinkEvent(LinkStoppingEvent @event)
     {
         if (!_links.Remove(@event.Link))
             return;
 
-        await using var _ = @event.Link;
+        await @event.Link.DisposeAsync();
 
         if (@event.Link.IsAlive)
             throw new Exception($"Link {@event.Link} is still alive");
 
         _logger.LogInformation("Stopped forwarding {Link} traffic", @event.Link);
+        await _events.ThrowAsync(new LinkStoppedEvent { Link = @event.Link });
     }
 
     private async ValueTask<ILink> CreateLinkAsync(IPlayer player, IServer server, IMinecraftChannel playerChannel, IMinecraftChannel serverChannel)
@@ -66,7 +70,7 @@ public class LinkService : ILinkService, IEventListener
 
         var link = @event.Result ?? new Link(player, server, playerChannel, serverChannel, _events);
         
-        await _events.ThrowAsync(new StartLinkEvent { Link = link });
+        await _events.ThrowAsync(new LinkStartingEvent { Link = link });
 
         return link;
     }

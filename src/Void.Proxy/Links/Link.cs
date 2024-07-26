@@ -1,5 +1,4 @@
 ﻿using Nito.AsyncEx;
-using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Links;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Links;
@@ -139,7 +138,7 @@ public class Link : ILink
             await PlayerChannel.FlushAsync();
             await ServerChannel.FlushAsync();
 
-            _ = _events.ThrowAsync(new StopLinkEvent { Link = this }, forceCancellationToken);
+            _ = _events.ThrowAsync(new LinkStoppingEvent { Link = this }, forceCancellationToken);
         }
     }
 }
