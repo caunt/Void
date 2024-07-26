@@ -21,29 +21,26 @@ public class ProtocolSupportPlugin(ILogger<ProtocolSupportPlugin> logger) : IPlu
     }
 
     [Subscribe]
-    public void OnProxyStart(ProxyStart @event)
+    public void OnProxyStarting(ProxyStartingEvent @event)
     {
     }
 
     [Subscribe]
-    public void OnProxyStop(ProxyStop @event)
+    public void OnProxyStopping(ProxyStoppingEvent @event)
     {
     }
 
     [Subscribe]
-    public void OnSearchProtocolCodec(SearchProtocolCodec @event)
+    public void OnCreateChannelBuilder(CreateChannelBuilderEvent @event)
     {
         if (!IsSupportedHandshake(@event.Buffer))
             return;
 
-        @event.Result = new SearchProtocolCodec.Data
+        @event.Result = stream =>
         {
-            ChannelBuilder = stream =>
-            {
-                var channel = new SimpleMinecraftChannel(new SimpleNetworkStream(stream));
-                // channel.Add<MinecraftCodecMessageStream>();
-                return Task.FromResult<IMinecraftChannel>(channel);
-            }
+            var channel = new SimpleMinecraftChannel(new SimpleNetworkStream(stream));
+            // channel.Add<MinecraftCodecMessageStream>();
+            return Task.FromResult<IMinecraftChannel>(channel);
         };
     }
 

@@ -19,7 +19,7 @@ public struct HandshakePacket : IMinecraftPacket<HandshakeState>
         buffer.WriteVarInt(NextState);
     }
 
-    public async Task<bool> HandleAsync(HandshakeState state)
+    public readonly async Task<bool> HandleAsync(HandshakeState state)
     {
         return await state.HandleAsync(this);
     }
@@ -32,5 +32,9 @@ public struct HandshakePacket : IMinecraftPacket<HandshakeState>
         ServerAddress = buffer.ReadString(255 /* + forgeMarker*/);
         ServerPort = buffer.ReadUnsignedShort();
         NextState = buffer.ReadVarInt();
+    }
+
+    public void Dispose()
+    {
     }
 }

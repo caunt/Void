@@ -10,18 +10,18 @@ namespace Void.Proxy.Links;
 
 public class LinkService : ILinkService, IEventListener
 {
-    private readonly List<ILink> _links =[];
-    
+    private readonly IEventService _events;
+    private readonly List<ILink> _links = [];
+
     private readonly ILogger<LinkService> _logger;
     private readonly IServerService _servers;
-    private readonly IEventService _events;
 
     public LinkService(ILogger<LinkService> logger, IServerService servers, IEventService events)
     {
         _logger = logger;
         _servers = servers;
         _events = events;
-        
+
         events.RegisterListeners(this);
     }
 
@@ -33,7 +33,7 @@ public class LinkService : ILinkService, IEventListener
         var serverChannel = await player.BuildServerChannelAsync(server);
 
         var link = await CreateLinkAsync(player, server, playerChannel, serverChannel);
-        
+
         _events.RegisterListeners(link);
         _links.Add(link);
 
@@ -44,8 +44,11 @@ public class LinkService : ILinkService, IEventListener
     [Subscribe]
     public async ValueTask OnStopLinkEvent(LinkStoppingEvent @event)
     {
-        if (!_links.Remove(@event.Link))
-            return;
+        lock (_links)
+        {
+            if (!_links.Remove(@event.Link))
+                return;
+        }
 
         await @event.Link.DisposeAsync();
 
@@ -58,18 +61,12 @@ public class LinkService : ILinkService, IEventListener
 
     private async ValueTask<ILink> CreateLinkAsync(IPlayer player, IServer server, IMinecraftChannel playerChannel, IMinecraftChannel serverChannel)
     {
-        var @event = new CreateLinkEvent
-        {
-            Player = player,
-            Server = server,
-            PlayerChannel = playerChannel,
-            ServerChannel = serverChannel
-        };
+        var @event = new CreateLinkEvent { Player = player, Server = server, PlayerChannel = playerChannel, ServerChannel = serverChannel };
 
         await _events.ThrowAsync(@event);
 
         var link = @event.Result ?? new Link(player, server, playerChannel, serverChannel, _events);
-        
+
         await _events.ThrowAsync(new LinkStartingEvent { Link = link });
 
         return link;

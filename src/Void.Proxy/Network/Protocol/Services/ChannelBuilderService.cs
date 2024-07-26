@@ -29,11 +29,11 @@ public class ChannelBuilderService(
         var buffer = new byte[MaxHandshakeSize];
         var length = await stream.ReadAsync(buffer, cancellationToken);
 
-        var searchProtocolCodec = new SearchProtocolCodec { Buffer = buffer[..length] };
+        var searchProtocolCodec = new CreateChannelBuilderEvent { Buffer = buffer[..length] };
         await events.ThrowAsync(searchProtocolCodec, cancellationToken);
 
         if (searchProtocolCodec.Result is not null)
-            _builder = searchProtocolCodec.Result.ChannelBuilder;
+            _builder = searchProtocolCodec.Result;
 
         _buffer = searchProtocolCodec.Buffer;
         _found = true;

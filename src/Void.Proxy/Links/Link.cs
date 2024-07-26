@@ -16,10 +16,10 @@ public class Link : ILink
     private readonly CancellationTokenSource _ctsPlayerToServerForce;
     private readonly CancellationTokenSource _ctsServerToPlayer;
     private readonly CancellationTokenSource _ctsServerToPlayerForce;
-
-    private readonly ILogger<Link> _logger;
     private readonly IEventService _events;
     private readonly AsyncLock _lock;
+
+    private readonly ILogger<Link> _logger;
 
     private readonly Task _playerToServerTask;
     private readonly Task _serverToPlayerTask;
@@ -111,8 +111,7 @@ public class Link : ILink
                 if (cancellationToken.IsCancellationRequested || forceCancellationToken.IsCancellationRequested)
                     break;
 
-                // TODO add dispose
-                var message = await sourceChannel.ReadMessageAsync();
+                using var message = await sourceChannel.ReadMessageAsync();
 
                 if (message is BinaryPacket packet)
                     _logger.LogDebug("{Direction} packet id {PacketId}", direction, packet.Id);

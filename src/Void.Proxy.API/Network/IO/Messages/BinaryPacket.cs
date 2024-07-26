@@ -7,7 +7,7 @@ namespace Void.Proxy.API.Network.IO.Messages;
 public readonly struct BinaryPacket(
     int id,
     Memory<byte> memory,
-    IMemoryOwner<byte> owner) : IMinecraftPacket, IDisposable
+    IMemoryOwner<byte> owner) : IMinecraftPacket
 {
     public int Id => id;
     public Memory<byte> Memory => memory;

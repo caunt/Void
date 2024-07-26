@@ -15,14 +15,14 @@ public class ExamplePlugin(ILogger<ExamplePlugin> logger) : IPlugin
     }
 
     [Subscribe]
-    public void OnProxyStart(ProxyStart @event)
+    public void OnProxyStarting(ProxyStartingEvent @event)
     {
-        logger.LogInformation("Received ProxyStart event");
+        logger.LogInformation("Received ProxyStarting event");
     }
 
     [Subscribe]
-    public void OnProxyStop(ProxyStop @event)
+    public void OnProxyStopping(ProxyStoppingEvent @event)
     {
-        logger.LogInformation("Received ProxyStop event");
+        logger.LogInformation("Received ProxyStopping event");
     }
 }

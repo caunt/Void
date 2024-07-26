@@ -38,7 +38,7 @@ public class Platform(
             servers.RegisterServer(server);
 
         await plugins.LoadAsync(cancellationToken: cancellationToken);
-        await events.ThrowAsync<ProxyStart>(cancellationToken);
+        await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
 
         _listener = new TcpListener(settings.Address, settings.Port);
         _listener.Start();
@@ -50,6 +50,7 @@ public class Platform(
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
+        await events.ThrowAsync<ProxyStoppingEvent>(cancellationToken);
         logger.LogInformation("Stopping proxy");
 
         // TODO disconnect everyone here
@@ -72,12 +73,14 @@ public class Platform(
         _listener?.Stop();
 
         await settings.SaveAsync(cancellationToken: cancellationToken);
-        await events.ThrowAsync<ProxyStop>(cancellationToken);
+
+        await events.ThrowAsync<ProxyStoppedEvent>(cancellationToken);
         await plugins.UnloadAsync(cancellationToken);
     }
 
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
+        await events.ThrowAsync<ProxyStartedEvent>(cancellationToken);
         ArgumentNullException.ThrowIfNull(_listener);
         while (!cancellationToken.IsCancellationRequested)
             await players.AcceptPlayerAsync(await _listener.AcceptTcpClientAsync(cancellationToken));

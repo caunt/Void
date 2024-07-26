@@ -1,5 +1,3 @@
 ﻿namespace Void.Proxy.API.Events.Proxy;
 
-public class ProxyStop : IEvent
-{
-}
+public class ProxyStartingEvent : IEvent;

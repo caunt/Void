@@ -20,17 +20,17 @@ public class ProtocolSupportPlugin(ILogger<ProtocolSupportPlugin> logger) : IPlu
     }
 
     [Subscribe]
-    public void OnProxyStart(ProxyStart @event)
+    public void OnProxyStarting(ProxyStartingEvent @event)
     {
     }
 
     [Subscribe]
-    public void OnProxyStop(ProxyStop @event)
+    public void OnProxyStopping(ProxyStoppingEvent @event)
     {
     }
 
     [Subscribe]
-    public void OnSearchProtocolCodec(SearchProtocolCodec @event)
+    public void OnCreateChannelBuilder(CreateChannelBuilderEvent @event)
     {
     }
 }
