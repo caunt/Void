@@ -2,9 +2,10 @@
 using System.Reflection;
 using Nito.Disposables.Internals;
 using Void.Proxy.API.Events;
+using Void.Proxy.API.Events.Plugins;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Plugins;
-using Void.Proxy.API.Reflection;
+using Void.Proxy.Reflection;
 
 namespace Void.Proxy.Plugins;
 
@@ -74,7 +75,7 @@ public class PluginService(
             _references.Add(new WeakPluginReference(context, plugins, listeners));
 
             foreach (var plugin in plugins)
-                await plugin.ExecuteAsync(cancellationToken);
+                await events.ThrowAsync(new PluginLoadEvent { Plugin = plugin }, cancellationToken);
 
             logger.LogDebug("Loaded {Count} plugins from {PluginName}", plugins.Length, context.Name);
         }
@@ -86,6 +87,9 @@ public class PluginService(
         {
             if (!reference.IsAlive)
                 throw new Exception("Plugin context already unloaded");
+
+            foreach (var plugin in reference.Plugins)
+                await events.ThrowAsync(new PluginUnloadEvent { Plugin = plugin }, cancellationToken);
 
             var name = reference.Context.Name;
 

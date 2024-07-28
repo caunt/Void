@@ -29,24 +29,34 @@ public class EventService : IEventService
 
     public async ValueTask ThrowAsync<T>(T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
-        var eventType = typeof(T);
+        var eventType = @event.GetType();
 
-        foreach (var method in _methods)
+        for (var i = 0; i < _methods.Count; i++)
         {
+            var method = _methods[i];
             var parameters = method.GetParameters();
 
             if (parameters[0].ParameterType != eventType)
                 continue;
 
-            var value = method.Invoke(_listeners.First(listener => listener.GetType() == method.DeclaringType), parameters.Length == 1 ? [@event] : [@event, cancellationToken]);
-            var handle = value switch
+            for (var index = 0; index < _listeners.Count; index++)
             {
-                Task task => new ValueTask(task),
-                ValueTask task => task,
-                _ => ValueTask.CompletedTask
-            };
+                var listener = _listeners[index];
 
-            await handle;
+                if (listener.GetType() != method.DeclaringType)
+                    continue;
+
+                var value = method.Invoke(listener, parameters.Length == 1 ? [@event] : [@event, cancellationToken]);
+                var handle = value switch
+                {
+                    Task task => new ValueTask(task),
+                    ValueTask task => task,
+                    _ => ValueTask.CompletedTask
+                };
+
+                await Task.Yield();
+                await handle;
+            }
         }
     }
 

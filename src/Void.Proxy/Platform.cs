@@ -6,6 +6,7 @@ using Serilog.Events;
 using Void.Proxy.API;
 using Void.Proxy.API.Events.Proxy;
 using Void.Proxy.API.Events.Services;
+using Void.Proxy.API.Forwarding;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Plugins;
 using Void.Proxy.API.Servers;
@@ -20,6 +21,7 @@ public class Platform(
     IEventService events,
     IPlayerService players,
     IServerService servers,
+    IForwardingService forwardings,
     IHostApplicationLifetime hostApplicationLifetime) : IProxy
 {
     public static readonly LoggingLevelSwitch LoggingLevelSwitch = new();
@@ -30,18 +32,24 @@ public class Platform(
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         var startTime = Stopwatch.GetTimestamp();
-        
+
         Directory.SetCurrentDirectory(Path.GetDirectoryName(Assembly.GetExecutingAssembly()
             .Location)!);
+
+        await plugins.LoadAsync(cancellationToken: cancellationToken);
+        await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
+
+        forwardings.RegisterDefault();
 
         await settings.LoadAsync(cancellationToken: cancellationToken);
         LoggingLevelSwitch.MinimumLevel = (LogEventLevel)settings.LogLevel;
 
+#if DEBUG
+        LoggingLevelSwitch.MinimumLevel = LogEventLevel.Debug;
+#endif
+
         foreach (var server in settings.Servers)
             servers.RegisterServer(server);
-
-        await plugins.LoadAsync(cancellationToken: cancellationToken);
-        await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
 
         _listener = new TcpListener(settings.Address, settings.Port);
         _listener.Start();
@@ -64,16 +72,17 @@ public class Platform(
         if (_backgroundTask is not null)
         {
             await _backgroundTask.ContinueWith(backgroundTask =>
-            {
-                if (backgroundTask.IsCanceled)
-                    return;
+                {
+                    if (backgroundTask.IsCanceled)
+                        return;
 
-                if (backgroundTask.IsCompletedSuccessfully)
-                    return;
+                    if (backgroundTask.IsCompletedSuccessfully)
+                        return;
 
-                throw backgroundTask.Exception?.Flatten()
-                    .InnerException ?? new Exception("Proxy stopped with unknown exception");
-            }, cancellationToken);
+                    throw backgroundTask.Exception?.Flatten()
+                        .InnerException ?? new Exception("Proxy stopped with unknown exception");
+                },
+                cancellationToken);
         }
 
         _listener?.Stop();
@@ -89,6 +98,6 @@ public class Platform(
         await events.ThrowAsync<ProxyStartedEvent>(cancellationToken);
         ArgumentNullException.ThrowIfNull(_listener);
         while (!cancellationToken.IsCancellationRequested)
-            await players.AcceptPlayerAsync(await _listener.AcceptTcpClientAsync(cancellationToken));
+            await players.AcceptPlayerAsync(await _listener.AcceptTcpClientAsync(cancellationToken), cancellationToken);
     }
 }

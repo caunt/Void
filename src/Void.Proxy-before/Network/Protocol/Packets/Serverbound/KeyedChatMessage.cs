@@ -97,14 +97,16 @@ public struct KeyedChatMessage : IMinecraftPacket<PlayState>, IChatMessage
             var lastSignatures = new KeyValuePair<Guid, byte[]>[size];
 
             for (var i = 0; i < size; i++)
-                lastSignatures[i] = new KeyValuePair<Guid, byte[]>(buffer.ReadGuid(), buffer.Read(buffer.ReadVarInt())
-                    .ToArray());
+                lastSignatures[i] = new KeyValuePair<Guid, byte[]>(buffer.ReadGuid(),
+                    buffer.Read(buffer.ReadVarInt())
+                        .ToArray());
 
             PreviousMessages = lastSignatures;
 
             if (buffer.ReadBoolean())
-                LastMessage = new KeyValuePair<Guid, byte[]>(buffer.ReadGuid(), buffer.Read(buffer.ReadVarInt())
-                    .ToArray());
+                LastMessage = new KeyValuePair<Guid, byte[]>(buffer.ReadGuid(),
+                    buffer.Read(buffer.ReadVarInt())
+                        .ToArray());
         }
     }
 }

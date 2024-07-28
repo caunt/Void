@@ -1,12 +1,12 @@
 ﻿namespace Void.Proxy.API.Network.Protocol;
 
-public class ProtocolVersion
+public class ProtocolVersion : IComparable
 {
-    private static readonly Dictionary<int, ProtocolVersion> _mapping = [];
+    private static readonly Dictionary<int, ProtocolVersion> Mapping = [];
 
     public static readonly ProtocolVersion MINECRAFT_1_7_2 = new(4, "1.7.2", "1.7.3", "1.7.4", "1.7.5");
     public static readonly ProtocolVersion MINECRAFT_1_7_6 = new(5, "1.7.6", "1.7.7", "1.7.8", "1.7.9", "1.7.10");
-    public static readonly ProtocolVersion MINECRAFT_1_8 = new(47, "1.8", "1.8.1", "1.8.2", "1.8.3", "1.8.4", "1.8.5", "1.8.6", "1.8.7", "1.8.8", "1.8.9");
+    public static readonly ProtocolVersion Minecraft_1_8 = new(47, "1.8", "1.8.1", "1.8.2", "1.8.3", "1.8.4", "1.8.5", "1.8.6", "1.8.7", "1.8.8", "1.8.9");
     public static readonly ProtocolVersion MINECRAFT_1_9 = new(107, "1.9");
     public static readonly ProtocolVersion MINECRAFT_1_9_1 = new(108, "1.9.1");
     public static readonly ProtocolVersion MINECRAFT_1_9_2 = new(109, "1.9.2");
@@ -47,29 +47,39 @@ public class ProtocolVersion
     public static readonly ProtocolVersion MINECRAFT_1_20_5 = new(766, "1.20.5", "1.20.6");
     public static readonly ProtocolVersion MINECRAFT_1_21 = new(767, "1.21");
 
-    private ProtocolVersion(int version, params string[] names)
+    public ProtocolVersion(int version, params string[] names)
     {
         Version = version;
         Names = names;
 
-        if (!_mapping.TryAdd(version, this))
-            throw new InvalidOperationException($"ProtocolVersion {version} already registered");
+        if (!Mapping.TryAdd(version, this))
+            throw new InvalidOperationException($"ProtocolVersion {version} already registered, use Get(<version>) instead");
     }
 
     public static ProtocolVersion Latest =>
-        _mapping.MaxBy(kv => kv.Key)
+        Mapping.MaxBy(kv => kv.Key)
             .Value;
 
     public static ProtocolVersion Oldest =>
-        _mapping.MinBy(kv => kv.Key)
+        Mapping.MinBy(kv => kv.Key)
             .Value;
 
     public int Version { get; }
     public string[] Names { get; }
 
+    public int CompareTo(object? obj)
+    {
+        return obj switch
+        {
+            null => 1,
+            ProtocolVersion otherVersion => CompareTo(otherVersion),
+            _ => throw new ArgumentException($"Object is not a {nameof(ProtocolVersion)}")
+        };
+    }
+
     public static ProtocolVersion Get(int version)
     {
-        return _mapping[version];
+        return Mapping[version];
     }
 
     public static ProtocolVersion[] Range()
@@ -79,8 +89,9 @@ public class ProtocolVersion
 
     public static ProtocolVersion[] Range(ProtocolVersion start, ProtocolVersion end)
     {
-        return _mapping.Where(pair => pair.Key >= start.Version && pair.Key <= end.Version)
+        return Mapping.Where(pair => pair.Key >= start.Version && pair.Key <= end.Version)
             .Select(pair => pair.Value)
+            .Order()
             .ToArray();
     }
 

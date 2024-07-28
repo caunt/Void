@@ -20,11 +20,11 @@ public class ZlibCompressionMessageStream : IMinecraftCompleteMessageStream
         };
     }
 
-    public async ValueTask<CompleteBinaryMessage> ReadMessageAsync()
+    public async ValueTask<CompleteBinaryMessage> ReadMessageAsync(CancellationToken cancellationToken = default)
     {
         return BaseStream switch
         {
-            IMinecraftNetworkStream networkStream => await ReadNetworkMessageAsync(networkStream),
+            IMinecraftNetworkStream networkStream => await ReadNetworkMessageAsync(networkStream, cancellationToken),
             // IMinecraftBufferedStream bufferedStream => await ReadBufferPacketAsync(bufferedStream),
             _ => throw new NotImplementedException()
         };
@@ -42,7 +42,7 @@ public class ZlibCompressionMessageStream : IMinecraftCompleteMessageStream
         }
     }
 
-    public async ValueTask WriteMessageAsync(CompleteBinaryMessage message)
+    public async ValueTask WriteMessageAsync(CompleteBinaryMessage message, CancellationToken cancellationToken = default)
     {
         switch (BaseStream)
         {
@@ -70,10 +70,10 @@ public class ZlibCompressionMessageStream : IMinecraftCompleteMessageStream
         BaseStream?.Flush();
     }
 
-    public async ValueTask FlushAsync()
+    public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
     {
         if (BaseStream != null)
-            await BaseStream.FlushAsync();
+            await BaseStream.FlushAsync(cancellationToken);
     }
 
     public void Close()
@@ -117,10 +117,10 @@ public class ZlibCompressionMessageStream : IMinecraftCompleteMessageStream
         }
     }
 
-    private static async ValueTask<CompleteBinaryMessage> ReadNetworkMessageAsync(IMinecraftNetworkStream stream)
+    private static async ValueTask<CompleteBinaryMessage> ReadNetworkMessageAsync(IMinecraftNetworkStream stream, CancellationToken cancellationToken = default)
     {
-        var packetLength = await stream.ReadVarIntAsync();
-        var dataLength = await stream.ReadVarIntAsync();
+        var packetLength = await stream.ReadVarIntAsync(cancellationToken);
+        var dataLength = await stream.ReadVarIntAsync(cancellationToken);
 
         if (dataLength is 0)
         {
@@ -128,7 +128,7 @@ public class ZlibCompressionMessageStream : IMinecraftCompleteMessageStream
             var memoryOwner = MemoryPool<byte>.Shared.Rent(length);
             var memory = memoryOwner.Memory[..length];
 
-            await stream.ReadExactlyAsync(memory);
+            await stream.ReadExactlyAsync(memory, cancellationToken);
             return new CompleteBinaryMessage(memory, memoryOwner);
         }
         else
@@ -141,7 +141,7 @@ public class ZlibCompressionMessageStream : IMinecraftCompleteMessageStream
 
             try
             {
-                await stream.ReadExactlyAsync(buffer);
+                await stream.ReadExactlyAsync(buffer, cancellationToken);
                 ZlibStream.UncompressBuffer(buffer)
                     .CopyTo(memory);
                 return new CompleteBinaryMessage(memory, memoryOwner);

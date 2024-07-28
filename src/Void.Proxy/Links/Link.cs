@@ -1,12 +1,14 @@
 ﻿using Nito.AsyncEx;
 using Void.Proxy.API.Events.Links;
+using Void.Proxy.API.Events.Network;
 using Void.Proxy.API.Events.Services;
+using Void.Proxy.API.Extensions;
 using Void.Proxy.API.Links;
+using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.IO.Channels;
-using Void.Proxy.API.Network.IO.Messages;
+using Void.Proxy.API.Network.IO.Streams.Transparent;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Servers;
-using Void.Proxy.Network;
 
 namespace Void.Proxy.Links;
 
@@ -50,18 +52,25 @@ public class Link : ILink
 
     public async ValueTask DisposeAsync()
     {
+        // if the player does not support redirections, that's the end for him
+        if (PlayerChannel.Head is MinecraftTransparentMessageStream)
+        {
+            PlayerChannel.Close();
+            await PlayerChannel.DisposeAsync();
+        }
+
         ServerChannel.Close();
         await ServerChannel.DisposeAsync();
 
         if (await WaitWithTimeout(_serverToPlayerTask))
         {
             _logger.LogInformation("Timed out waiting Server {Server} disconnection from Player {Player}, closing manually", Server, Player);
-            await _ctsPlayerToServer.CancelAsync();
+            await _ctsServerToPlayer.CancelAsync();
 
             if (await WaitWithTimeout(_serverToPlayerTask))
             {
                 _logger.LogInformation("Timed out waiting Server {Server} disconnection from Player {Player} manually, closing forcefully", Server, Player);
-                await _ctsPlayerToServerForce.CancelAsync();
+                await _ctsServerToPlayerForce.CancelAsync();
 
                 if (await WaitWithTimeout(_serverToPlayerTask))
                     throw new Exception($"Cannot dispose Link {this} (player=>server)");
@@ -71,12 +80,12 @@ public class Link : ILink
         if (await WaitWithTimeout(_playerToServerTask))
         {
             _logger.LogInformation("Timed out waiting Player {Player} disconnection from Server {Server}, closing manually", Player, Server);
-            await _ctsServerToPlayer.CancelAsync();
+            await _ctsPlayerToServer.CancelAsync();
 
             if (await WaitWithTimeout(_playerToServerTask))
             {
                 _logger.LogInformation("Timed out waiting Player {Player} disconnection from Server {Server} manually, closing forcefully", Player, Server);
-                await _ctsServerToPlayerForce.CancelAsync();
+                await _ctsPlayerToServerForce.CancelAsync();
 
                 if (await WaitWithTimeout(_playerToServerTask))
                     throw new Exception($"Cannot dispose Link {this} (server=>player)");
@@ -109,21 +118,43 @@ public class Link : ILink
                 if (cancellationToken.IsCancellationRequested || forceCancellationToken.IsCancellationRequested)
                     break;
 
-                using var message = await sourceChannel.ReadMessageAsync();
+                using var message = await sourceChannel.ReadMessageAsync(forceCancellationToken);
 
-                if (message is BinaryPacket packet)
-                    _logger.LogDebug("{Direction} packet id {PacketId}", direction, packet.Id);
-                else if (message is BufferedBinaryMessage binary)
-                    _logger.LogDebug("{Direction} packet length {Length}", direction, binary.Memory.Length);
+                var cancelled = await _events.ThrowWithResultAsync(new MessageReceivedEvent
+                    {
+                        From = (Side)direction,
+                        To = direction,
+                        Message = message,
+                        Player = Player,
+                        Server = Server,
+                        PlayerChannel = PlayerChannel,
+                        ServerChannel = ServerChannel
+                    },
+                    cancellationToken);
+
+                if (cancelled)
+                    continue;
 
                 using var _ = await _lock.LockAsync();
-                await destinationChannel.WriteMessageAsync(message /*, forceCancellationToken*/);
+                await destinationChannel.WriteMessageAsync(message, forceCancellationToken);
+
+                await _events.ThrowAsync(new MessageSentEvent
+                    {
+                        From = (Side)direction,
+                        To = direction,
+                        Message = message,
+                        Player = Player,
+                        Server = Server,
+                        PlayerChannel = PlayerChannel,
+                        ServerChannel = ServerChannel
+                    },
+                    cancellationToken);
             }
         }
         catch (Exception exception) when (exception is EndOfStreamException or IOException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
         {
-            // client disconnected itself
-            // or server catch unhandled exception
+            // one of sides disconnected itself
+            // or catch unhandled exception
             // or link does server switch
         }
         catch (Exception exception)
@@ -132,10 +163,11 @@ public class Link : ILink
         }
         finally
         {
-            await PlayerChannel.FlushAsync();
-            await ServerChannel.FlushAsync();
+            await PlayerChannel.FlushAsync(forceCancellationToken);
+            await ServerChannel.FlushAsync(forceCancellationToken);
 
-            _ = _events.ThrowAsync(new LinkStoppingEvent { Link = this }, forceCancellationToken);
+            _ = _events.ThrowAsync(new LinkStoppingEvent { Link = this }, forceCancellationToken)
+                .CatchExceptions();
         }
     }
 }

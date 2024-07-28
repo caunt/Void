@@ -14,9 +14,8 @@ public interface IPlayer : IAsyncDisposable
 
     public string? Name { get; set; }
     public string? Brand { get; set; }
-    public ProtocolVersion? ProtocolVersion { get; set; }
-    public ClientType ClientType { get; set; }
+    public ProtocolVersion ProtocolVersion { get; set; }
 
-    ValueTask<IMinecraftChannel> BuildServerChannelAsync(IServer server);
-    ValueTask<IMinecraftChannel> GetChannelAsync();
+    ValueTask<IMinecraftChannel> BuildServerChannelAsync(IServer server, CancellationToken cancellationToken = default);
+    ValueTask<IMinecraftChannel> GetChannelAsync(CancellationToken cancellationToken = default);
 }

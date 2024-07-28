@@ -36,7 +36,7 @@ public static class ManualStreamExtensions
 
         do
         {
-            await stream.ReadExactlyAsync(buffer);
+            await stream.ReadExactlyAsync(buffer, cancellationToken);
 
             read = buffer[0];
             var value = read & 0b01111111;
@@ -90,7 +90,7 @@ public static class ManualStreamExtensions
             buffer[idx++] = temp;
         } while (unsigned != 0);
 
-        await stream.WriteAsync(buffer.AsMemory(0, idx));
+        await stream.WriteAsync(buffer.AsMemory(0, idx), cancellationToken);
         ArrayPool<byte>.Shared.Return(buffer);
     }
 }

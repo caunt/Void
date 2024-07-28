@@ -36,12 +36,12 @@ public class AesCfb8BufferedStream : IMinecraftBufferedMessageStream
         };
     }
 
-    public async ValueTask<int> ReadAsync(Memory<byte> output)
+    public async ValueTask<int> ReadAsync(Memory<byte> output, CancellationToken cancellationToken = default)
     {
         return BaseStream switch
         {
-            IMinecraftNetworkStream networkStream => await DecryptNetworkAsync(networkStream, output),
-            IMinecraftBufferedMessageStream bufferedStream => await DecryptBufferAsync(bufferedStream, output),
+            IMinecraftNetworkStream networkStream => await DecryptNetworkAsync(networkStream, output, cancellationToken),
+            IMinecraftBufferedMessageStream bufferedStream => await DecryptBufferAsync(bufferedStream, output, cancellationToken),
             _ => throw new NotImplementedException()
         };
     }
@@ -61,15 +61,15 @@ public class AesCfb8BufferedStream : IMinecraftBufferedMessageStream
         }
     }
 
-    public async ValueTask ReadExactlyAsync(Memory<byte> output)
+    public async ValueTask ReadExactlyAsync(Memory<byte> output, CancellationToken cancellationToken = default)
     {
         switch (BaseStream)
         {
             case IMinecraftNetworkStream networkStream:
-                await DecryptNetworkExactlyAsync(networkStream, output);
+                await DecryptNetworkExactlyAsync(networkStream, output, cancellationToken);
                 break;
             case IMinecraftBufferedMessageStream bufferedStream:
-                await DecryptBufferExactlyAsync(bufferedStream, output);
+                await DecryptBufferExactlyAsync(bufferedStream, output, cancellationToken);
                 break;
             default:
                 throw new NotImplementedException();
@@ -84,7 +84,7 @@ public class AesCfb8BufferedStream : IMinecraftBufferedMessageStream
         // Encrypt(span, memory.Span);
     }
 
-    public ValueTask WriteAsync(Memory<byte> memory)
+    public ValueTask WriteAsync(Memory<byte> memory, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
@@ -94,10 +94,10 @@ public class AesCfb8BufferedStream : IMinecraftBufferedMessageStream
         BaseStream?.FlushAsync();
     }
 
-    public async ValueTask FlushAsync()
+    public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
     {
         if (BaseStream != null)
-            await BaseStream.FlushAsync();
+            await BaseStream.FlushAsync(cancellationToken);
     }
 
     public void Close()
@@ -125,7 +125,7 @@ public class AesCfb8BufferedStream : IMinecraftBufferedMessageStream
         return new BufferedBinaryMessage(memory, memoryOwner);
     }
 
-    public async ValueTask<BufferedBinaryMessage> ReadAsMessageAsync(int size = 2048)
+    public async ValueTask<BufferedBinaryMessage> ReadAsMessageAsync(int size = 2048, CancellationToken cancellationToken = default)
     {
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(size);
         var memory = memoryOwner.Memory[..size];
@@ -133,10 +133,10 @@ public class AesCfb8BufferedStream : IMinecraftBufferedMessageStream
         switch (BaseStream)
         {
             case IMinecraftNetworkStream networkStream:
-                await DecryptNetworkExactlyAsync(networkStream, memory);
+                await DecryptNetworkExactlyAsync(networkStream, memory, cancellationToken);
                 break;
             case IMinecraftBufferedMessageStream bufferedStream:
-                await DecryptBufferExactlyAsync(bufferedStream, memory);
+                await DecryptBufferExactlyAsync(bufferedStream, memory, cancellationToken);
                 break;
             default:
                 throw new NotImplementedException();
@@ -149,7 +149,7 @@ public class AesCfb8BufferedStream : IMinecraftBufferedMessageStream
     {
     }
 
-    public async ValueTask WriteAsMessageAsync(BufferedBinaryMessage message)
+    public async ValueTask WriteAsMessageAsync(BufferedBinaryMessage message, CancellationToken cancellationToken = default)
     {
     }
 
@@ -184,37 +184,37 @@ public class AesCfb8BufferedStream : IMinecraftBufferedMessageStream
         return length;
     }
 
-    private async Task<int> DecryptNetworkAsync(IMinecraftNetworkStream stream, Memory<byte> output)
+    private async Task<int> DecryptNetworkAsync(IMinecraftNetworkStream stream, Memory<byte> output, CancellationToken cancellationToken = default)
     {
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(output.Length);
         var memory = memoryOwner.Memory[..output.Length];
-        var length = await stream.ReadAsync(memory);
+        var length = await stream.ReadAsync(memory, cancellationToken);
         Decrypt(memory.Span, output.Span);
         return length;
     }
 
-    private async Task<int> DecryptBufferAsync(IMinecraftBufferedMessageStream stream, Memory<byte> output)
+    private async Task<int> DecryptBufferAsync(IMinecraftBufferedMessageStream stream, Memory<byte> output, CancellationToken cancellationToken = default)
     {
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(output.Length);
         var memory = memoryOwner.Memory[..output.Length];
-        var length = await stream.ReadAsync(memory);
+        var length = await stream.ReadAsync(memory, cancellationToken);
         Decrypt(memory.Span, output.Span);
         return length;
     }
 
-    private async Task DecryptNetworkExactlyAsync(IMinecraftNetworkStream stream, Memory<byte> output)
+    private async Task DecryptNetworkExactlyAsync(IMinecraftNetworkStream stream, Memory<byte> output, CancellationToken cancellationToken = default)
     {
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(output.Length);
         var memory = memoryOwner.Memory[..output.Length];
-        await stream.ReadExactlyAsync(memory);
+        await stream.ReadExactlyAsync(memory, cancellationToken);
         Decrypt(memory.Span, output.Span);
     }
 
-    private async Task DecryptBufferExactlyAsync(IMinecraftBufferedMessageStream stream, Memory<byte> output)
+    private async Task DecryptBufferExactlyAsync(IMinecraftBufferedMessageStream stream, Memory<byte> output, CancellationToken cancellationToken = default)
     {
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(output.Length);
         var memory = memoryOwner.Memory[..output.Length];
-        await stream.ReadExactlyAsync(memory);
+        await stream.ReadExactlyAsync(memory, cancellationToken);
         Decrypt(memory.Span, output.Span);
     }
 

@@ -1,12 +1,9 @@
-﻿using Void.Proxy.API.Links;
-using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
+﻿using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.States.Common;
 
-public class HandshakeState(ILink link) : ProtocolState
+public class HandshakeState : ProtocolState
 {
-    //protected override StateRegistry Registry { get; } = Registries.HandshakeStateRegistry;
-
     public Task<bool> HandleAsync(HandshakePacket packet)
     {
         var addressParts = packet.ServerAddress.Split('\0', StringSplitOptions.RemoveEmptyEntries);

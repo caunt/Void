@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using Microsoft.Extensions.Logging;
-using Void.Proxy.API.Network.Protocol.Forwarding;
+using Void.Proxy.API.Forwarding;
 using Void.Proxy.API.Servers;
 
 namespace Void.Proxy.API.Settings;
@@ -12,7 +12,7 @@ public interface ISettings
     public int Port { get; }
     public int CompressionThreshold { get; }
     public LogLevel LogLevel { get; }
-    public ForwardingMode ForwardingMode { get; }
+    public IForwarding Forwarding { get; }
     public List<IServer> Servers { get; }
 
     public ValueTask LoadAsync(string fileName = "settings.ini", bool createDefault = true, CancellationToken cancellationToken = default);

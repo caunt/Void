@@ -13,9 +13,9 @@ public interface IMinecraftChannel : IDisposable, IAsyncDisposable
 
     public void Add<T>() where T : IMinecraftStream, new();
     public void PrependBuffer(Memory<byte> memory);
-    public ValueTask<IMinecraftMessage> ReadMessageAsync();
-    public ValueTask WriteMessageAsync(IMinecraftMessage message);
+    public ValueTask<IMinecraftMessage> ReadMessageAsync(CancellationToken cancellationToken = default);
+    public ValueTask WriteMessageAsync(IMinecraftMessage message, CancellationToken cancellationToken = default);
     public void Flush();
-    public ValueTask FlushAsync();
+    public ValueTask FlushAsync(CancellationToken cancellationToken = default);
     public void Close();
 }

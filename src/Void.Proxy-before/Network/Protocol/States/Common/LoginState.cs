@@ -147,7 +147,12 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
                 return false;
 
             var data = forwarding.GenerateForwardingData(packet.Data, link.Player);
-            await link.Server.SendPacketAsync(new LoginPluginResponse { MessageId = packet.MessageId, Successful = true, Data = data });
+            await link.Server.SendPacketAsync(new LoginPluginResponse
+            {
+                MessageId = packet.MessageId,
+                Successful = true,
+                Data = data
+            });
 
             return true;
         }
@@ -225,16 +230,31 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
                                         .ToArray();
                                 }
 
-                                await link.Server.SendPacketAsync(new LoginPluginResponse { Data = Reply(data), MessageId = packet.MessageId, Successful = true });
+                                await link.Server.SendPacketAsync(new LoginPluginResponse
+                                {
+                                    Data = Reply(data),
+                                    MessageId = packet.MessageId,
+                                    Successful = true
+                                });
                                 break;
                             case 3 or 4:
-                                await link.Server.SendPacketAsync(new LoginPluginResponse { Data = Convert.FromHexString("0D666D6C3A68616E647368616B650163"), MessageId = packet.MessageId, Successful = true });
+                                await link.Server.SendPacketAsync(new LoginPluginResponse
+                                {
+                                    Data = Convert.FromHexString("0D666D6C3A68616E647368616B650163"),
+                                    MessageId = packet.MessageId,
+                                    Successful = true
+                                });
                                 break;
                             case 5:
                                 break;
                             default:
                                 Proxy.Logger.Debug($"2 Don't know what to do with forge channel {channel} packet id {id}, answering as succesful");
-                                await link.Server.SendPacketAsync(new LoginPluginResponse { Data = [], MessageId = packet.MessageId, Successful = true });
+                                await link.Server.SendPacketAsync(new LoginPluginResponse
+                                {
+                                    Data = [],
+                                    MessageId = packet.MessageId,
+                                    Successful = true
+                                });
                                 break;
                         }
 
@@ -242,11 +262,21 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
                     case "silentgear:network":
                         break;
                     case "exnihilosequentia:handshake":
-                        await link.Server.SendPacketAsync(new LoginPluginResponse { Data = Convert.FromHexString("1B65786E6968696C6F73657175656E7469613A68616E647368616B650163"), MessageId = packet.MessageId, Successful = true });
+                        await link.Server.SendPacketAsync(new LoginPluginResponse
+                        {
+                            Data = Convert.FromHexString("1B65786E6968696C6F73657175656E7469613A68616E647368616B650163"),
+                            MessageId = packet.MessageId,
+                            Successful = true
+                        });
                         break;
                     default:
                         Proxy.Logger.Debug($"1 Don't know what to do with forge channel {channel} packet id {id}, answering as succesful");
-                        await link.Server.SendPacketAsync(new LoginPluginResponse { Data = [], MessageId = packet.MessageId, Successful = true });
+                        await link.Server.SendPacketAsync(new LoginPluginResponse
+                        {
+                            Data = [],
+                            MessageId = packet.MessageId,
+                            Successful = true
+                        });
                         break;
                 }
             }
@@ -278,6 +308,11 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
         if (link.Player.GameProfile is null)
             throw new Exception("Can't proceed login as we do not have online GameProfile");
 
-        return new LoginStartPacket { Guid = link.Player.GameProfile.Id, Username = link.Player.GameProfile.Name, IdentifiedKey = link.Player.IdentifiedKey };
+        return new LoginStartPacket
+        {
+            Guid = link.Player.GameProfile.Id,
+            Username = link.Player.GameProfile.Name,
+            IdentifiedKey = link.Player.IdentifiedKey
+        };
     }
 }

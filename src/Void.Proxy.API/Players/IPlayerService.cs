@@ -4,7 +4,7 @@ namespace Void.Proxy.API.Players;
 
 public interface IPlayerService
 {
-    public IReadOnlyList<IPlayer> Players { get; }
+    public IReadOnlyList<IPlayer> All { get; }
 
-    public ValueTask AcceptPlayerAsync(TcpClient client);
+    public ValueTask AcceptPlayerAsync(TcpClient client, CancellationToken cancellationToken = default);
 }

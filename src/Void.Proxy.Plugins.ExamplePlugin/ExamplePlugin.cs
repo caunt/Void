@@ -9,11 +9,6 @@ public class ExamplePlugin(ILogger<ExamplePlugin> logger) : IPlugin
 {
     public string Name => nameof(ExamplePlugin);
 
-    public Task ExecuteAsync(CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
-
     [Subscribe]
     public void OnProxyStarting(ProxyStartingEvent @event)
     {

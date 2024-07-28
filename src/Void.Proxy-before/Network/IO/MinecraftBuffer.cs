@@ -293,9 +293,12 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
 
     public IdentifiedKey ReadIdentifiedKey(ProtocolVersion protocolVersion)
     {
-        return new IdentifiedKey(protocolVersion == ProtocolVersion.MINECRAFT_1_19 ? IdentifiedKeyRevision.GENERIC_V1 : IdentifiedKeyRevision.LINKED_V2, ReadLong(), Read(ReadVarInt())
-            .ToArray(), Read(ReadVarInt())
-            .ToArray());
+        return new IdentifiedKey(protocolVersion == ProtocolVersion.MINECRAFT_1_19 ? IdentifiedKeyRevision.GENERIC_V1 : IdentifiedKeyRevision.LINKED_V2,
+            ReadLong(),
+            Read(ReadVarInt())
+                .ToArray(),
+            Read(ReadVarInt())
+                .ToArray());
     }
 
     public void WriteIdentifiedKey(IdentifiedKey identifiedKey)

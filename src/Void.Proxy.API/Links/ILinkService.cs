@@ -4,5 +4,5 @@ namespace Void.Proxy.API.Links;
 
 public interface ILinkService
 {
-    public ValueTask ConnectPlayerAnywhereAsync(IPlayer player);
+    public ValueTask ConnectPlayerAnywhereAsync(IPlayer player, CancellationToken cancellationToken = default);
 }

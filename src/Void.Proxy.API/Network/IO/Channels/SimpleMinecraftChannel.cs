@@ -13,7 +13,7 @@ public class SimpleMinecraftChannel(IMinecraftStreamBase head) : IMinecraftChann
 
     public void Add<T>() where T : IMinecraftStream, new()
     {
-        head = new T { BaseStream = head };
+        Add(new T());
     }
 
     public void PrependBuffer(Memory<byte> memory)
@@ -22,29 +22,29 @@ public class SimpleMinecraftChannel(IMinecraftStreamBase head) : IMinecraftChann
         stream.PrependBuffer(memory);
     }
 
-    public async ValueTask<IMinecraftMessage> ReadMessageAsync()
+    public async ValueTask<IMinecraftMessage> ReadMessageAsync(CancellationToken cancellationToken = default)
     {
-        return Head switch
+        return head switch
         {
-            IMinecraftPacketMessageStream stream => await stream.ReadPacketAsync(),
-            IMinecraftCompleteMessageStream stream => await stream.ReadMessageAsync(),
-            IMinecraftBufferedMessageStream stream => await stream.ReadAsMessageAsync(),
+            IMinecraftPacketMessageStream stream => await stream.ReadPacketAsync(cancellationToken),
+            IMinecraftCompleteMessageStream stream => await stream.ReadMessageAsync(cancellationToken),
+            IMinecraftBufferedMessageStream stream => await stream.ReadAsMessageAsync(cancellationToken: cancellationToken),
             _ => throw new InvalidOperationException($"{head.GetType()} cannot be used to read messages")
         };
     }
 
-    public async ValueTask WriteMessageAsync(IMinecraftMessage message)
+    public async ValueTask WriteMessageAsync(IMinecraftMessage message, CancellationToken cancellationToken = default)
     {
         switch (head)
         {
             case IMinecraftPacketMessageStream stream:
-                await stream.WritePacketAsync(message as IMinecraftPacket ?? throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(IMinecraftPacket)}."));
+                await stream.WritePacketAsync(message as IMinecraftPacket ?? throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(IMinecraftPacket)}."), cancellationToken);
                 break;
             case IMinecraftCompleteMessageStream stream:
-                await stream.WriteMessageAsync(message is CompleteBinaryMessage completeBinaryMessage ? completeBinaryMessage : throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(CompleteBinaryMessage)}."));
+                await stream.WriteMessageAsync(message is CompleteBinaryMessage completeBinaryMessage ? completeBinaryMessage : throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(CompleteBinaryMessage)}."), cancellationToken);
                 break;
             case IMinecraftBufferedMessageStream stream:
-                await stream.WriteAsMessageAsync(message is BufferedBinaryMessage bufferedBinaryMessage ? bufferedBinaryMessage : throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(CompleteBinaryMessage)}."));
+                await stream.WriteAsMessageAsync(message is BufferedBinaryMessage bufferedBinaryMessage ? bufferedBinaryMessage : throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(CompleteBinaryMessage)}."), cancellationToken);
                 break;
             default:
                 throw new InvalidOperationException($"{head.GetType()} cannot be used to write messages");
@@ -53,27 +53,33 @@ public class SimpleMinecraftChannel(IMinecraftStreamBase head) : IMinecraftChann
 
     public void Flush()
     {
-        Head.Flush();
+        head.Flush();
     }
 
-    public async ValueTask FlushAsync()
+    public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
     {
-        await Head.FlushAsync();
+        await head.FlushAsync(cancellationToken);
     }
 
     public void Close()
     {
-        Head.Close();
+        head.Close();
     }
 
     public void Dispose()
     {
-        Head.Dispose();
+        head.Dispose();
     }
 
     public async ValueTask DisposeAsync()
     {
-        await Head.DisposeAsync();
+        await head.DisposeAsync();
+    }
+
+    public void Add<T>(T stream) where T : IMinecraftStream
+    {
+        stream.BaseStream = head;
+        head = stream;
     }
 
     private static IMinecraftNetworkStream GetNetworkStream(IMinecraftStreamBase? stream)

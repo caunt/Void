@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 
 namespace Void.Proxy.Utils;
 
-public class JsonIPAddressConverter : JsonConverter<IPAddress>
+public class JsonIpAddressConverter : JsonConverter<IPAddress>
 {
     public override IPAddress Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {

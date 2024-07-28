@@ -2,17 +2,17 @@
 using System.Text.RegularExpressions;
 using IniParser;
 using IniParser.Model;
-using Void.Proxy.API.Network.Protocol.Forwarding;
+using Void.Proxy.API.Forwarding;
 using Void.Proxy.API.Servers;
 using Void.Proxy.API.Settings;
-using Void.Proxy.Network.Protocol.Forwarding;
+using Void.Proxy.Forwarding;
 using Void.Proxy.Properties;
 using Void.Proxy.Servers;
 using Void.Proxy.Utils;
 
 namespace Void.Proxy.Settings;
 
-public partial class Settings : ISettings
+public partial class Settings(IForwardingService forwardings) : ISettings
 {
     private static readonly FileIniDataParser Parser = new();
     private static readonly SettingsDataFormatter Formatter = new();
@@ -32,7 +32,7 @@ public partial class Settings : ISettings
     public int Port { get; set; } = 25565;
     public int CompressionThreshold { get; set; } = 256;
     public LogLevel LogLevel { get; set; } = LogLevel.Information;
-    public ForwardingMode ForwardingMode { get; set; } = ForwardingMode.None;
+    public IForwarding Forwarding { get; set; } = new NoneForwarding();
     public List<IServer> Servers { get; set; } = [];
 
     public async ValueTask LoadAsync(string fileName = "settings.ini", bool createDefault = true, CancellationToken cancellationToken = default)
@@ -65,17 +65,18 @@ public partial class Settings : ISettings
     private static async ValueTask GenerateDefaultAsync(string fileName, CancellationToken cancellationToken = default)
     {
         var defaults = RandomStringRegex()
-            .Replace(Resources.DefaultSettings, match =>
-            {
-                const string allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789" + "abcdefghijklmnopqrstuvxyz";
+            .Replace(Resources.DefaultSettings,
+                match =>
+                {
+                    const string allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789" + "abcdefghijklmnopqrstuvxyz";
 
-                var suffix = match.Groups[1].Value;
+                    var suffix = match.Groups[1].Value;
 
-                if (!int.TryParse(suffix, out var size))
-                    throw new Exception($"Invalid random string length specified: {suffix}");
+                    if (!int.TryParse(suffix, out var size))
+                        throw new Exception($"Invalid random string length specified: {suffix}");
 
-                return new string(Random.Shared.GetItems<char>(allowedChars, size));
-            });
+                    return new string(Random.Shared.GetItems<char>(allowedChars, size));
+                });
 
         await File.WriteAllTextAsync(fileName, defaults, cancellationToken);
     }
@@ -142,10 +143,7 @@ public partial class Settings : ISettings
         {
             var forwardingKeyData = global.Keys.GetKeyData("forwarding");
 
-            if (!Enum.TryParse(forwardingKeyData.Value, true, out ForwardingMode forwardingMode))
-                throw new Exception($"Invalid forwarding mode \"{forwardingKeyData.Value}\" specified. Valid values: none");
-
-            ForwardingMode = forwardingMode;
+            Forwarding = forwardings.All.FirstOrDefault(forwarding => forwarding.Name == forwardingKeyData.Value) ?? throw new Exception($"Invalid forwarding mode \"{forwardingKeyData.Value}\" specified. Valid values: {string.Join(", ", forwardings.All.Select(forwarding => forwarding.Name))}");
         }
 
         if (_data.Sections.ContainsSection("SERVERS"))
@@ -164,11 +162,13 @@ public partial class Settings : ISettings
                 if (colonIdx < 0 || !int.TryParse(serverAddress[++colonIdx..], out var serverPort))
                     serverPort = 25565;
 
-                Servers.Add(new Server(serverName, serverHostname, serverPort /*TODO , ForwardingMode switch
-                {
-                    ForwardingMode.None => DefaultNoneForwarding,
-                    _ => throw new ArgumentOutOfRangeException($"Invalid forwarding mode specified: {ForwardingMode}")
-                }*/));
+                Servers.Add(new Server(serverName,
+                    serverHostname,
+                    serverPort /*TODO , ForwardingMode switch
+                    {
+                        ForwardingMode.None => DefaultNoneForwarding,
+                        _ => throw new ArgumentOutOfRangeException($"Invalid forwarding mode specified: {ForwardingMode}")
+                    }*/));
             }
         }
 
@@ -193,12 +193,7 @@ public partial class Settings : ISettings
             Comments = ["Logging level to print in console output. Valid levels: verbose, debug, information, warning, error, fatal"]
         });
 
-        global.Keys.SetKeyData(new KeyData("forwarding")
-        {
-            Value = ForwardingMode.ToString()
-                .ToLower(),
-            Comments = ["Default forwarding mode to servers listed in this file below. Can be overwritten on per-server basis by plugins. Valid modes: none, auto, legacy, modern"]
-        });
+        global.Keys.SetKeyData(new KeyData("forwarding") { Value = Forwarding.Name, Comments = ["Default forwarding mode to servers listed in this file below. Can be overwritten on per-server basis by plugins. Valid modes: none, auto, legacy, modern"] });
 
         var serversSection = _data.Sections.ContainsSection("SERVERS") ? _data.Sections.GetSectionData("SERVERS") : new SectionData("SERVERS");
 

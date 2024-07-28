@@ -28,11 +28,11 @@ public class SimpleNetworkStream(NetworkStream baseStream) : IMinecraftNetworkSt
         return length;
     }
 
-    public async ValueTask<int> ReadAsync(Memory<byte> memory)
+    public async ValueTask<int> ReadAsync(Memory<byte> memory, CancellationToken cancellationToken = default)
     {
         if (_nextBuffer is not { Length: > 0 })
         {
-            var read = await baseStream.ReadAsync(memory);
+            var read = await baseStream.ReadAsync(memory, cancellationToken);
             return read > 0 ? read : throw new EndOfStreamException();
         }
 
@@ -60,7 +60,7 @@ public class SimpleNetworkStream(NetworkStream baseStream) : IMinecraftNetworkSt
         }
     }
 
-    public async ValueTask ReadExactlyAsync(Memory<byte> memory)
+    public async ValueTask ReadExactlyAsync(Memory<byte> memory, CancellationToken cancellationToken = default)
     {
         if (_nextBuffer.Length >= memory.Length)
         {
@@ -73,7 +73,7 @@ public class SimpleNetworkStream(NetworkStream baseStream) : IMinecraftNetworkSt
             var length = _nextBuffer.Length;
             _nextBuffer.CopyTo(memory[..length]);
             _nextBuffer = Memory<byte>.Empty;
-            await baseStream.ReadExactlyAsync(memory[length..]);
+            await baseStream.ReadExactlyAsync(memory[length..], cancellationToken);
         }
     }
 
@@ -82,9 +82,9 @@ public class SimpleNetworkStream(NetworkStream baseStream) : IMinecraftNetworkSt
         baseStream.Write(span);
     }
 
-    public async ValueTask WriteAsync(Memory<byte> memory)
+    public async ValueTask WriteAsync(Memory<byte> memory, CancellationToken cancellationToken = default)
     {
-        await baseStream.WriteAsync(memory);
+        await baseStream.WriteAsync(memory, cancellationToken);
     }
 
     public void Flush()
@@ -92,9 +92,9 @@ public class SimpleNetworkStream(NetworkStream baseStream) : IMinecraftNetworkSt
         baseStream.Flush();
     }
 
-    public async ValueTask FlushAsync()
+    public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
     {
-        await baseStream.FlushAsync();
+        await baseStream.FlushAsync(cancellationToken);
     }
 
     public void Close()

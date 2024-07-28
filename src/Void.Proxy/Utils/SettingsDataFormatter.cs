@@ -49,7 +49,7 @@ internal class SettingsDataFormatter : IIniDataFormatter
 
     protected virtual void WriteComments(List<string> comments, StringBuilder source)
     {
-        for (var i = 0; i < comments.Count; i++)
-            source.AppendLine($"# {comments[i]}");
+        foreach (var comment in comments)
+            source.AppendLine($"# {comment}");
     }
 }

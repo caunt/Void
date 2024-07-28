@@ -62,17 +62,18 @@ public partial class Settings(IniData data)
     private static async ValueTask GenerateDefaultAsync(string fileName, CancellationToken cancellationToken = default)
     {
         var defaults = RandomStringRegex()
-            .Replace(Resources.DefaultSettings, match =>
-            {
-                const string allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789" + "abcdefghijklmnopqrstuvxyz";
+            .Replace(Resources.DefaultSettings,
+                match =>
+                {
+                    const string allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789" + "abcdefghijklmnopqrstuvxyz";
 
-                var suffix = match.Groups[1].Value;
+                    var suffix = match.Groups[1].Value;
 
-                if (!int.TryParse(suffix, out var size))
-                    throw new Exception($"Invalid random string length specified: {suffix}");
+                    if (!int.TryParse(suffix, out var size))
+                        throw new Exception($"Invalid random string length specified: {suffix}");
 
-                return new string(Random.Shared.GetItems<char>(allowedChars, size));
-            });
+                    return new string(Random.Shared.GetItems<char>(allowedChars, size));
+                });
 
         await File.WriteAllTextAsync(fileName, defaults, cancellationToken);
     }
@@ -203,14 +204,17 @@ public partial class Settings(IniData data)
                 if (colonIdx < 0 || !int.TryParse(serverAddress[++colonIdx..], out var serverPort))
                     serverPort = 25565;
 
-                Servers.Add(new ServerInfo(serverName, serverHostname, serverPort, ForwardingMode switch
-                {
-                    ForwardingMode.None => DefaultNoneForwarding,
-                    ForwardingMode.Auto => DefaultAutoForwarding,
-                    ForwardingMode.Legacy => DefaultLegacyForwarding,
-                    ForwardingMode.Modern => DefaultModernForwarding,
-                    _ => throw new ArgumentOutOfRangeException($"Invalid forwarding mode specified: {ForwardingMode}")
-                }));
+                Servers.Add(new ServerInfo(serverName,
+                    serverHostname,
+                    serverPort,
+                    ForwardingMode switch
+                    {
+                        ForwardingMode.None => DefaultNoneForwarding,
+                        ForwardingMode.Auto => DefaultAutoForwarding,
+                        ForwardingMode.Legacy => DefaultLegacyForwarding,
+                        ForwardingMode.Modern => DefaultModernForwarding,
+                        _ => throw new ArgumentOutOfRangeException($"Invalid forwarding mode specified: {ForwardingMode}")
+                    }));
             }
         }
 

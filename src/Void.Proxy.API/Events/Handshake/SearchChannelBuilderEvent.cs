@@ -1,10 +1,11 @@
-﻿using System.Net.Sockets;
-using Void.Proxy.API.Network.IO.Channels;
+﻿using Void.Proxy.API.Network.Protocol.Services;
+using Void.Proxy.API.Players;
 
 namespace Void.Proxy.API.Events.Handshake;
 
-public class SearchChannelBuilderEvent : IEventWithResult<Func<NetworkStream, Task<IMinecraftChannel>>>
+public class SearchChannelBuilderEvent : IEventWithResult<ChannelBuilder>
 {
     public required Memory<byte> Buffer { get; init; }
-    public Func<NetworkStream, Task<IMinecraftChannel>>? Result { get; set; }
+    public required IPlayer Player { get; init; }
+    public ChannelBuilder? Result { get; set; }
 }

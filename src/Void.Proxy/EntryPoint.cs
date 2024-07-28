@@ -4,18 +4,22 @@ using Void.Proxy.API;
 using Void.Proxy.API.Crypto;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Extensions;
+using Void.Proxy.API.Forwarding;
 using Void.Proxy.API.Links;
 using Void.Proxy.API.Network.Protocol.Services;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Plugins;
+using Void.Proxy.API.Registries.Packets;
 using Void.Proxy.API.Servers;
 using Void.Proxy.API.Settings;
 using Void.Proxy.Crypto;
 using Void.Proxy.Events;
+using Void.Proxy.Forwarding;
 using Void.Proxy.Links;
-using Void.Proxy.Network.Protocol.Services;
+using Void.Proxy.Network.Protocol;
 using Void.Proxy.Players;
 using Void.Proxy.Plugins;
+using Void.Proxy.Registries.Packets;
 using Void.Proxy.Servers;
 using Void.Proxy.Settings;
 
@@ -36,9 +40,11 @@ builder.Services.AddSerilog()
     .AddSingleton<IPlayerService, PlayerService>()
     .AddSingleton<IServerService, ServerService>()
     .AddSingleton<ILinkService, LinkService>()
+    .AddSingleton<IForwardingService, ForwardingService>()
     .AddSingleton<IProxy, Platform>()
     .AddHostedService<Platform>()
-    .AddScoped<IChannelBuilderService, ChannelBuilderService>();
+    .AddScoped<IChannelBuilderService, ChannelBuilderService>()
+    .AddScoped<IPacketRegistryHolder, PacketRegistryHolder>();
 
 var host = builder.Build();
 await host.RunAsync();

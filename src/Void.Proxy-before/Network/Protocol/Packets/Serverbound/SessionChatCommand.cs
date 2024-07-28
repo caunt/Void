@@ -45,8 +45,9 @@ public struct SessionChatCommand : IMinecraftPacket<PlayState>, IChatCommand
 
         Arguments = new Dictionary<string, byte[]>(size);
         for (var i = 0; i < size; i++)
-            Arguments.Add(buffer.ReadString(), buffer.Read(256)
-                .ToArray());
+            Arguments.Add(buffer.ReadString(),
+                buffer.Read(256)
+                    .ToArray());
 
         SessionLastSeenMessages = new SessionLastSeenMessages(ref buffer);
     }

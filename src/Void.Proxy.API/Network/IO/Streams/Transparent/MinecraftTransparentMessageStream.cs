@@ -15,12 +15,12 @@ public class MinecraftTransparentMessageStream : IMinecraftBufferedMessageStream
         return stream.Read(span);
     }
 
-    public async ValueTask<int> ReadAsync(Memory<byte> memory)
+    public async ValueTask<int> ReadAsync(Memory<byte> memory, CancellationToken cancellationToken = default)
     {
         if (BaseStream is not IMinecraftNetworkStream stream)
             throw new NotImplementedException();
 
-        return await stream.ReadAsync(memory);
+        return await stream.ReadAsync(memory, cancellationToken);
     }
 
     public void ReadExactly(Span<byte> span)
@@ -31,12 +31,12 @@ public class MinecraftTransparentMessageStream : IMinecraftBufferedMessageStream
         stream.ReadExactly(span);
     }
 
-    public async ValueTask ReadExactlyAsync(Memory<byte> memory)
+    public async ValueTask ReadExactlyAsync(Memory<byte> memory, CancellationToken cancellationToken = default)
     {
         if (BaseStream is not IMinecraftNetworkStream stream)
             throw new NotImplementedException();
 
-        await stream.ReadExactlyAsync(memory);
+        await stream.ReadExactlyAsync(memory, cancellationToken);
     }
 
     public void Write(Span<byte> span)
@@ -47,12 +47,12 @@ public class MinecraftTransparentMessageStream : IMinecraftBufferedMessageStream
         stream.Write(span);
     }
 
-    public async ValueTask WriteAsync(Memory<byte> memory)
+    public async ValueTask WriteAsync(Memory<byte> memory, CancellationToken cancellationToken = default)
     {
         if (BaseStream is not IMinecraftNetworkStream stream)
             throw new NotImplementedException();
 
-        await stream.WriteAsync(memory);
+        await stream.WriteAsync(memory, cancellationToken);
     }
 
     public void Flush()
@@ -60,10 +60,10 @@ public class MinecraftTransparentMessageStream : IMinecraftBufferedMessageStream
         BaseStream?.Flush();
     }
 
-    public async ValueTask FlushAsync()
+    public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
     {
         if (BaseStream != null)
-            await BaseStream.FlushAsync();
+            await BaseStream.FlushAsync(cancellationToken);
     }
 
     public void Close()
@@ -83,14 +83,14 @@ public class MinecraftTransparentMessageStream : IMinecraftBufferedMessageStream
         return new BufferedBinaryMessage(memory[..length], memoryOwner);
     }
 
-    public async ValueTask<BufferedBinaryMessage> ReadAsMessageAsync(int maxSize = 2048)
+    public async ValueTask<BufferedBinaryMessage> ReadAsMessageAsync(int maxSize = 2048, CancellationToken cancellationToken = default)
     {
         if (BaseStream is not IMinecraftNetworkStream stream)
             throw new NotImplementedException();
 
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(maxSize);
         var memory = memoryOwner.Memory[..maxSize];
-        var length = await ReadAsync(memory);
+        var length = await ReadAsync(memory, cancellationToken);
 
         return new BufferedBinaryMessage(memory[..length], memoryOwner);
     }
@@ -103,12 +103,12 @@ public class MinecraftTransparentMessageStream : IMinecraftBufferedMessageStream
         Write(message.Memory.Span);
     }
 
-    public async ValueTask WriteAsMessageAsync(BufferedBinaryMessage message)
+    public async ValueTask WriteAsMessageAsync(BufferedBinaryMessage message, CancellationToken cancellationToken = default)
     {
         if (BaseStream is not IMinecraftNetworkStream stream)
             throw new NotImplementedException();
 
-        await WriteAsync(message.Memory);
+        await WriteAsync(message.Memory, cancellationToken);
     }
 
     public void Dispose()

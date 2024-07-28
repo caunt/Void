@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 
 namespace Void.Proxy.Utils;
 
-public class JsonIPEndPointConverter : JsonConverter<IPEndPoint>
+public class JsonIpEndPointConverter : JsonConverter<IPEndPoint>
 {
     public override IPEndPoint Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
