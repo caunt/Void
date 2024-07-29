@@ -18,9 +18,9 @@ public class PacketRegistry : IPacketRegistry
 
     public required ProtocolVersion ProtocolVersion { get; init; }
 
-    public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out DecodeDelegate<IMinecraftPacket> packet)
+    public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out PacketDecoder<IMinecraftPacket> packet)
     {
-        packet = _mappings.TryGetValue(id, out var type) ? type.GetMethod(nameof(HandshakePacket.Decode))!.CreateDelegate<DecodeDelegate<IMinecraftPacket>>() : null;
+        packet = _mappings.TryGetValue(id, out var type) ? type.GetMethod(nameof(HandshakePacket.Decode))!.CreateDelegate<PacketDecoder<IMinecraftPacket>>() : null;
         return packet != null;
     }
 

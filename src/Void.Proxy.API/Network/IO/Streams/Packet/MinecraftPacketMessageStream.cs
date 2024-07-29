@@ -107,7 +107,7 @@ public class MinecraftPacketMessageStream : IMinecraftPacketMessageStream
         var packetId = packet switch
         {
             BinaryPacket binaryPacket => binaryPacket.Id,
-            _ when GetRegistry(true) is { } registry && registry.TryGetPacketId(packet, out var id) => id,
+            _ when RegistryHolder?.GetRegistry(Flow, Operation.Write) is { } registry && registry.TryGetPacketId(packet, out var id) => id,
             _ => throw new InvalidOperationException($"Cannot find id for packet {packet}")
         };
 
@@ -141,7 +141,7 @@ public class MinecraftPacketMessageStream : IMinecraftPacketMessageStream
         var packetId = packet switch
         {
             BinaryPacket binaryPacket => binaryPacket.Id,
-            _ when GetRegistry(true) is { } registry && registry.TryGetPacketId(packet, out var id) => id,
+            _ when RegistryHolder?.GetRegistry(Flow, Operation.Write) is { } registry && registry.TryGetPacketId(packet, out var id) => id,
             _ => throw new InvalidOperationException($"Cannot find id for packet {packet}")
         };
 
@@ -162,7 +162,7 @@ public class MinecraftPacketMessageStream : IMinecraftPacketMessageStream
         await stream.WriteAsync(memory, cancellationToken);
         return;
 
-        void TryEncodePacket() // divided into local function to support ref struct and Span
+        void TryEncodePacket()
         {
             var buffer = new MinecraftBuffer(memory.Span);
             packet.Encode(ref buffer, ProtocolVersion.Latest);
@@ -177,7 +177,7 @@ public class MinecraftPacketMessageStream : IMinecraftPacketMessageStream
 
         memory = memory[buffer.Position..];
 
-        var result = GetRegistry() switch
+        var result = RegistryHolder?.GetRegistry(Flow, Operation.Read) switch
         {
             { } registry when registry.TryCreateDecoder(id, out var decoder) => TryDecodePacket(decoder),
             _ => new BinaryPacket(id, memory, memoryOwner)
@@ -185,7 +185,7 @@ public class MinecraftPacketMessageStream : IMinecraftPacketMessageStream
 
         return result;
 
-        IMinecraftPacket TryDecodePacket(DecodeDelegate<IMinecraftPacket> decoder) // divided into local function to support ref struct and Span
+        IMinecraftPacket TryDecodePacket(PacketDecoder<IMinecraftPacket> decoder)
         {
             var buffer = new MinecraftBuffer(memory.Span);
             var decodedPacket = decoder(ref buffer, ProtocolVersion.Latest);
@@ -195,17 +195,5 @@ public class MinecraftPacketMessageStream : IMinecraftPacketMessageStream
 
             return decodedPacket;
         }
-    }
-
-    public IPacketRegistry? GetRegistry(bool writing = false)
-    {
-        return Flow switch
-        {
-            Direction.Clientbound when writing => RegistryHolder?.ServerboundRegistry,
-            Direction.Serverbound when writing => RegistryHolder?.ClientboundRegistry,
-            Direction.Clientbound when !writing => RegistryHolder?.ClientboundRegistry,
-            Direction.Serverbound when !writing => RegistryHolder?.ServerboundRegistry,
-            _ => null
-        };
     }
 }

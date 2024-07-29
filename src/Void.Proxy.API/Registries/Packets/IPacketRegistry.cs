@@ -8,7 +8,7 @@ public interface IPacketRegistry
 {
     public ProtocolVersion ProtocolVersion { get; }
 
-    public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out DecodeDelegate<IMinecraftPacket> packet);
+    public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out PacketDecoder<IMinecraftPacket> packet);
     public bool TryGetPacketId(IMinecraftPacket packet, [MaybeNullWhen(false)] out int id);
     public void RegisterPackets(IReadOnlyDictionary<PacketMapping[], Type> mappings);
 }

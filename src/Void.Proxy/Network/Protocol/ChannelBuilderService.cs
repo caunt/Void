@@ -14,10 +14,9 @@ namespace Void.Proxy.Network.Protocol;
 public class ChannelBuilderService(ILogger<ChannelBuilderService> logger, IEventService events) : IChannelBuilderService
 {
     public const int MaxHandshakeSize = 4096;
+
     private Memory<byte> _buffer = Memory<byte>.Empty;
-
     private ChannelBuilder _builder = (_, networkStream, _) => ValueTask.FromResult<IMinecraftChannel>(new SimpleMinecraftChannel(new SimpleNetworkStream(networkStream)));
-
     private bool _found;
 
     public async ValueTask SearchChannelBuilderAsync(IPlayer player, CancellationToken cancellationToken = default)

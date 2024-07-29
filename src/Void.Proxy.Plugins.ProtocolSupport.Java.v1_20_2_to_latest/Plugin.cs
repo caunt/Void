@@ -59,8 +59,7 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
             if (holder.ManagedBy != this)
                 continue;
 
-            holder.ClientboundRegistry = null;
-            holder.ServerboundRegistry = null;
+            holder.Reset();
         }
     }
 
@@ -73,8 +72,8 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
             return;
 
         holder.ManagedBy = this;
-        holder.ClientboundRegistry = new PacketRegistry { ProtocolVersion = @event.Player.ProtocolVersion, Mappings = Mappings.ClientboundHandshakeMappings };
-        holder.ServerboundRegistry = new PacketRegistry { ProtocolVersion = @event.Player.ProtocolVersion, Mappings = Mappings.ServerboundHandshakeMappings };
+        holder.ClientRegistry = new PacketRegistry { ProtocolVersion = @event.Player.ProtocolVersion, Mappings = Mappings.ClientHandshakeMappings };
+        holder.ServerRegistry = new PacketRegistry { ProtocolVersion = @event.Player.ProtocolVersion, Mappings = Mappings.ServerHandshakeMappings };
     }
 
     [Subscribe]
@@ -85,8 +84,7 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
         if (holder.ManagedBy != this)
             return;
 
-        holder.ClientboundRegistry = null;
-        holder.ServerboundRegistry = null;
+        holder.Reset();
     }
 
     [Subscribe]
@@ -122,7 +120,7 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
                 return;
             case HandshakePacket handshake:
                 var holder = @event.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
-                holder.ClientboundRegistry = null;
+                holder.ClientRegistry = null;
                 break;
         }
 
@@ -142,7 +140,7 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
                 return;
             case HandshakePacket handshake:
                 var holder = @event.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
-                holder.ServerboundRegistry = null;
+                holder.ServerRegistry = null;
                 break;
         }
 
