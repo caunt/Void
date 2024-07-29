@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Handshake;
@@ -156,12 +157,9 @@ public class Plugin(
 
             buffer = new MinecraftBuffer(packet);
             var packetId = buffer.ReadVarInt();
-            var protocolVersion = buffer.ReadVarInt();
-            var serverAddress = buffer.ReadString(255);
-            var serverPort = buffer.ReadUnsignedShort();
-            var nextState = buffer.ReadVarInt();
 
-            return packetId == 0 && SupportedVersions.Contains(ProtocolVersion.Get(protocolVersion)) && buffer.Position == buffer.Length;
+            var decoded = HandshakePacket.Decode(ref buffer, ProtocolVersion.Oldest);
+            return packetId == 0 && SupportedVersions.Contains(ProtocolVersion.Get(decoded.ProtocolVersion)) && !buffer.HasData;
         }
         catch
         {

@@ -179,22 +179,21 @@ public class MinecraftPacketMessageStream : IMinecraftPacketMessageStream
 
         var result = GetRegistry() switch
         {
-            { } registry when registry.TryCreatePacket(id, out var packet) => packet,
+            { } registry when registry.TryCreateDecoder(id, out var decoder) => TryDecodePacket(decoder),
             _ => new BinaryPacket(id, memory, memoryOwner)
         };
 
-        if (result is not BinaryPacket)
-            TryDecodePacket();
-
         return result;
 
-        void TryDecodePacket() // divided into local function to support ref struct and Span
+        IMinecraftPacket TryDecodePacket(DecodeDelegate<IMinecraftPacket> decoder) // divided into local function to support ref struct and Span
         {
             var buffer = new MinecraftBuffer(memory.Span);
-            result.Decode(ref buffer, ProtocolVersion.Latest);
+            var decodedPacket = decoder(ref buffer, ProtocolVersion.Latest);
 
             if (buffer.HasData)
                 throw new IndexOutOfRangeException($"The packet was not fully read. Bytes read: {buffer.Position}, Total length: {buffer.Length}.");
+
+            return decodedPacket;
         }
     }
 

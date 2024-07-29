@@ -4,7 +4,7 @@ using Void.Proxy.API.Network.Protocol;
 
 namespace Void.Proxy.API.Network.IO.Messages;
 
-public readonly struct BinaryPacket(
+public class BinaryPacket(
     int id,
     Memory<byte> memory,
     IMemoryOwner<byte> owner) : IMinecraftPacket

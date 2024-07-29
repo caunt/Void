@@ -2,24 +2,25 @@
 using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.API.Registries.Packets;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Registries;
 
 public class PacketRegistry : IPacketRegistry
 {
-    private readonly Dictionary<int, PacketFactory> _mappings = [];
+    private readonly Dictionary<int, Type> _mappings = [];
     private readonly Dictionary<Type, int> _reverseMappings = [];
 
-    public required IReadOnlyDictionary<PacketMapping[], PacketFactory> Mappings
+    public required IReadOnlyDictionary<PacketMapping[], Type> Mappings
     {
         set => RegisterPackets(value);
     }
 
     public required ProtocolVersion ProtocolVersion { get; init; }
 
-    public bool TryCreatePacket(int id, [MaybeNullWhen(false)] out IMinecraftPacket packet)
+    public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out DecodeDelegate<IMinecraftPacket> packet)
     {
-        packet = _mappings.TryGetValue(id, out var factory) ? factory() : null;
+        packet = _mappings.TryGetValue(id, out var type) ? type.GetMethod(nameof(HandshakePacket.Decode))!.CreateDelegate<DecodeDelegate<IMinecraftPacket>>() : null;
         return packet != null;
     }
 
@@ -28,9 +29,9 @@ public class PacketRegistry : IPacketRegistry
         return _reverseMappings.TryGetValue(packet.GetType(), out id);
     }
 
-    public void RegisterPackets(IReadOnlyDictionary<PacketMapping[], PacketFactory> registry)
+    public void RegisterPackets(IReadOnlyDictionary<PacketMapping[], Type> registry)
     {
-        foreach (var (mappings, factory) in registry)
+        foreach (var (mappings, type) in registry)
         {
             if (mappings.Length == 0)
                 continue;
@@ -61,12 +62,10 @@ public class PacketRegistry : IPacketRegistry
                 if (from > ProtocolVersion || to < ProtocolVersion)
                     continue;
 
-                if (!_mappings.TryAdd(current.Id, factory))
-                    throw new ArgumentException($"{nameof(PacketFactory)} is already registered for packet Id {current.Id}");
+                if (!_mappings.TryAdd(current.Id, type))
+                    throw new ArgumentException($"{type} is already registered for packet Id {current.Id}");
 
-                _reverseMappings.Add(factory()
-                        .GetType(),
-                    current.Id);
+                _reverseMappings.Add(type, current.Id);
             }
         }
     }

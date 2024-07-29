@@ -2,7 +2,7 @@
 
 namespace Void.Proxy.API.Network.IO.Messages;
 
-public readonly struct BufferedBinaryMessage(
+public class BufferedBinaryMessage(
     Memory<byte> memory,
     IMemoryOwner<byte> owner) : IMinecraftMessage
 {

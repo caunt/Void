@@ -1,15 +1,27 @@
 ﻿using Void.Proxy.API.Network.IO.Buffers;
+using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.States.Common;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 
-public struct HandshakePacket : IMinecraftPacket<HandshakeState>
+public class HandshakePacket : IMinecraftPacket<HandshakeState, HandshakePacket>
 {
-    public int ProtocolVersion { get; set; }
-    public string ServerAddress { get; set; }
-    public ushort ServerPort { get; set; }
-    public int NextState { get; set; }
+    public required int ProtocolVersion { get; set; }
+    public required string ServerAddress { get; set; }
+    public required ushort ServerPort { get; set; }
+    public required int NextState { get; set; }
+
+    public static HandshakePacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
+    {
+        return new HandshakePacket
+        {
+            ProtocolVersion = buffer.ReadVarInt(),
+            ServerAddress = buffer.ReadString(255 /* + forgeMarker*/),
+            ServerPort = buffer.ReadUnsignedShort(),
+            NextState = buffer.ReadVarInt()
+        };
+    }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -19,19 +31,9 @@ public struct HandshakePacket : IMinecraftPacket<HandshakeState>
         buffer.WriteVarInt(NextState);
     }
 
-    public readonly async Task<bool> HandleAsync(HandshakeState state)
+    public async Task<bool> HandleAsync(HandshakeState state)
     {
         return await state.HandleAsync(this);
-    }
-
-    public void Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
-    {
-        // var forgeMarker = ForgeMarker.Longest?.Value.Length + 1 ?? 0;
-
-        ProtocolVersion = buffer.ReadVarInt();
-        ServerAddress = buffer.ReadString(255 /* + forgeMarker*/);
-        ServerPort = buffer.ReadUnsignedShort();
-        NextState = buffer.ReadVarInt();
     }
 
     public void Dispose()
