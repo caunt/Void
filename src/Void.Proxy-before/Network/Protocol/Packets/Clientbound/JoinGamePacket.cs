@@ -128,10 +128,8 @@ public struct JoinGamePacket : IMinecraftPacket<PlayState>
         for (var i = 0; i < levelNames.Length; i++)
             levelNames[i] = buffer.ReadString();
 
-        var reader = new NbtReader(buffer.Span[buffer.Position..]
-            .ToArray());
-        Registry = ((MemoryStream)NbtFile.Parse(reader)
-            .Serialize()).ToArray();
+        var reader = new NbtReader(buffer.Span[buffer.Position..].ToArray());
+        Registry = ((MemoryStream)NbtFile.Parse(reader).Serialize()).ToArray();
         buffer.Seek(reader.Position);
 
         var dimensionIdentifier = string.Empty;
@@ -139,10 +137,8 @@ public struct JoinGamePacket : IMinecraftPacket<PlayState>
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2 && protocolVersion < ProtocolVersion.MINECRAFT_1_19)
         {
-            reader = new NbtReader(buffer.Span[buffer.Position..]
-                .ToArray());
-            CurrentDimensionData = ((MemoryStream)NbtFile.Parse(reader)
-                .Serialize()).ToArray();
+            reader = new NbtReader(buffer.Span[buffer.Position..].ToArray());
+            CurrentDimensionData = ((MemoryStream)NbtFile.Parse(reader).Serialize()).ToArray();
             buffer.Seek(reader.Position);
 
             dimensionIdentifier = buffer.ReadString();

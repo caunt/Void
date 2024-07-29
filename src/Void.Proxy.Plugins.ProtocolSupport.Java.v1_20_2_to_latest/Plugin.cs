@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Handshake;
@@ -22,11 +21,10 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Registries;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest;
 
-public class Plugin(
-    ILogger<Plugin> logger,
-    IPlayerService players) : IPlugin
+public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
 {
     public static readonly ProtocolVersion[] SupportedVersions = ProtocolVersion.Range(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.Latest);
+
     public string Name => nameof(Plugin);
 
     [Subscribe]
@@ -101,7 +99,11 @@ public class Plugin(
         {
             var channel = new SimpleMinecraftChannel(new SimpleNetworkStream(stream));
 
-            channel.Add(new MinecraftPacketMessageStream { Flow = direction, RegistryHolder = @event.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>() });
+            channel.Add(new MinecraftPacketMessageStream
+            {
+                Flow = direction,
+                RegistryHolder = @event.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>()
+            });
 
             return ValueTask.FromResult(channel as IMinecraftChannel);
         };

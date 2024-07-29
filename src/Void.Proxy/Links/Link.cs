@@ -14,12 +14,12 @@ namespace Void.Proxy.Links;
 
 public class Link : ILink
 {
-    private readonly AsyncLock _lock;
     private readonly CancellationTokenSource _ctsPlayerToServer;
     private readonly CancellationTokenSource _ctsPlayerToServerForce;
     private readonly CancellationTokenSource _ctsServerToPlayer;
     private readonly CancellationTokenSource _ctsServerToPlayerForce;
     private readonly IEventService _events;
+    private readonly AsyncLock _lock;
     private readonly ILogger<Link> _logger;
     private readonly Task _playerToServerTask;
     private readonly Task _serverToPlayerTask;
@@ -48,6 +48,7 @@ public class Link : ILink
     public IServer Server { get; init; }
     public IMinecraftChannel PlayerChannel { get; init; }
     public IMinecraftChannel ServerChannel { get; init; }
+
     public bool IsAlive => _playerToServerTask.Status == TaskStatus.Running && _serverToPlayerTask.Status == TaskStatus.Running;
 
     public async ValueTask DisposeAsync()
@@ -121,16 +122,15 @@ public class Link : ILink
                 using var message = await sourceChannel.ReadMessageAsync(forceCancellationToken);
 
                 var cancelled = await _events.ThrowWithResultAsync(new MessageReceivedEvent
-                    {
-                        From = (Side)direction,
-                        To = direction,
-                        Message = message,
-                        Player = Player,
-                        Server = Server,
-                        PlayerChannel = PlayerChannel,
-                        ServerChannel = ServerChannel
-                    },
-                    cancellationToken);
+                {
+                    From = (Side)direction,
+                    To = direction,
+                    Message = message,
+                    Player = Player,
+                    Server = Server,
+                    PlayerChannel = PlayerChannel,
+                    ServerChannel = ServerChannel
+                }, cancellationToken);
 
                 if (cancelled)
                     continue;
@@ -139,23 +139,24 @@ public class Link : ILink
                 await destinationChannel.WriteMessageAsync(message, forceCancellationToken);
 
                 await _events.ThrowAsync(new MessageSentEvent
-                    {
-                        From = (Side)direction,
-                        To = direction,
-                        Message = message,
-                        Player = Player,
-                        Server = Server,
-                        PlayerChannel = PlayerChannel,
-                        ServerChannel = ServerChannel
-                    },
-                    cancellationToken);
+                {
+                    From = (Side)direction,
+                    To = direction,
+                    Message = message,
+                    Player = Player,
+                    Server = Server,
+                    PlayerChannel = PlayerChannel,
+                    ServerChannel = ServerChannel
+                }, cancellationToken);
             }
         }
         catch (Exception exception) when (exception is EndOfStreamException or IOException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
         {
-            // one of sides disconnected itself
-            // or catch unhandled exception
-            // or link does server switch
+            if (direction is not Direction.Serverbound)
+                return;
+
+            PlayerChannel.Close();
+            await PlayerChannel.DisposeAsync();
         }
         catch (Exception exception)
         {
@@ -166,8 +167,7 @@ public class Link : ILink
             await PlayerChannel.FlushAsync(forceCancellationToken);
             await ServerChannel.FlushAsync(forceCancellationToken);
 
-            _ = _events.ThrowAsync(new LinkStoppingEvent { Link = this }, forceCancellationToken)
-                .CatchExceptions();
+            _ = _events.ThrowAsync(new LinkStoppingEvent { Link = this }, forceCancellationToken).CatchExceptions();
         }
     }
 }

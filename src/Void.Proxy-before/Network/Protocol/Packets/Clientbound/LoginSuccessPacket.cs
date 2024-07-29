@@ -20,8 +20,7 @@ public struct LoginSuccessPacket : IMinecraftPacket<LoginState>
         else if (protocolVersion >= ProtocolVersion.MINECRAFT_1_7_6)
             buffer.WriteString(Guid.ToString());
         else
-            buffer.WriteString(Guid.ToString()
-                .Replace("-", string.Empty));
+            buffer.WriteString(Guid.ToString().Replace("-", string.Empty));
 
         buffer.WriteString(Username);
 

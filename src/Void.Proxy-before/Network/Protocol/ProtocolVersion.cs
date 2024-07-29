@@ -6,7 +6,9 @@ public class ProtocolVersion
 
     public static readonly ProtocolVersion MINECRAFT_1_7_2 = new(4, "1.7.2", "1.7.3", "1.7.4", "1.7.5");
     public static readonly ProtocolVersion MINECRAFT_1_7_6 = new(5, "1.7.6", "1.7.7", "1.7.8", "1.7.9", "1.7.10");
+
     public static readonly ProtocolVersion MINECRAFT_1_8 = new(47, "1.8", "1.8.1", "1.8.2", "1.8.3", "1.8.4", "1.8.5", "1.8.6", "1.8.7", "1.8.8", "1.8.9");
+
     public static readonly ProtocolVersion MINECRAFT_1_9 = new(107, "1.9");
     public static readonly ProtocolVersion MINECRAFT_1_9_1 = new(108, "1.9.1");
     public static readonly ProtocolVersion MINECRAFT_1_9_2 = new(109, "1.9.2");
@@ -61,15 +63,9 @@ public class ProtocolVersion
             throw new InvalidOperationException($"ProtocolVersion {version} already registered");
     }
 
-    public static ProtocolVersion Latest =>
-        _mapping.OrderByDescending(kv => kv.Key)
-            .First()
-            .Value;
+    public static ProtocolVersion Latest => _mapping.OrderByDescending(kv => kv.Key).First().Value;
 
-    public static ProtocolVersion Oldest =>
-        _mapping.OrderBy(kv => kv.Key)
-            .First()
-            .Value;
+    public static ProtocolVersion Oldest => _mapping.OrderBy(kv => kv.Key).First().Value;
 
     public int Version { get; }
     public string[] Names { get; }
@@ -86,8 +82,7 @@ public class ProtocolVersion
 
     public static IEnumerable<ProtocolVersion> Range(ProtocolVersion start, ProtocolVersion end)
     {
-        return _mapping.Where(pair => pair.Key >= start.Version && pair.Key <= end.Version)
-            .Select(pair => pair.Value);
+        return _mapping.Where(pair => pair.Key >= start.Version && pair.Key <= end.Version).Select(pair => pair.Value);
     }
 
     public string GetVersionIntroducedIn()

@@ -23,28 +23,11 @@ using Void.Proxy.Registries.Packets;
 using Void.Proxy.Servers;
 using Void.Proxy.Settings;
 
-Log.Logger = new LoggerConfiguration().Enrich.FromLogContext()
-    .MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch)
-    .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}")
-    .CreateLogger();
+Log.Logger = new LoggerConfiguration().Enrich.FromLogContext().MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch).WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}").CreateLogger();
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddSerilog()
-    .AddJsonOptions()
-    .AddHttpClient()
-    .AddSingleton<ISettings, Settings>()
-    .AddSingleton<ICryptoService, RsaCryptoService>()
-    .AddSingleton<IEventService, EventService>()
-    .AddSingleton<IPluginService, PluginService>()
-    .AddSingleton<IPlayerService, PlayerService>()
-    .AddSingleton<IServerService, ServerService>()
-    .AddSingleton<ILinkService, LinkService>()
-    .AddSingleton<IForwardingService, ForwardingService>()
-    .AddSingleton<IProxy, Platform>()
-    .AddHostedService<Platform>()
-    .AddScoped<IChannelBuilderService, ChannelBuilderService>()
-    .AddScoped<IPacketRegistryHolder, PacketRegistryHolder>();
+builder.Services.AddSerilog().AddJsonOptions().AddHttpClient().AddSingleton<ISettings, Settings>().AddSingleton<ICryptoService, RsaCryptoService>().AddSingleton<IEventService, EventService>().AddSingleton<IPluginService, PluginService>().AddSingleton<IPlayerService, PlayerService>().AddSingleton<IServerService, ServerService>().AddSingleton<ILinkService, LinkService>().AddSingleton<IForwardingService, ForwardingService>().AddSingleton<IProxy, Platform>().AddHostedService<Platform>().AddScoped<IChannelBuilderService, ChannelBuilderService>().AddScoped<IPacketRegistryHolder, PacketRegistryHolder>();
 
 var host = builder.Build();
 await host.RunAsync();

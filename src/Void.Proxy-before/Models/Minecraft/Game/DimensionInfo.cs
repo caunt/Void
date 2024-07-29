@@ -1,10 +1,6 @@
 ﻿namespace Void.Proxy.Models.Minecraft.Game;
 
-public class DimensionInfo(
-    string registryIdentifier,
-    string levelName,
-    bool isFlat,
-    bool isDebugType)
+public class DimensionInfo(string registryIdentifier, string levelName, bool isFlat, bool isDebugType)
 {
     public string RegistryIdentifier { get; set; } = registryIdentifier;
     public string LevelName { get; set; } = levelName ?? string.Empty;

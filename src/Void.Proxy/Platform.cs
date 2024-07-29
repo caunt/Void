@@ -14,15 +14,7 @@ using Void.Proxy.API.Settings;
 
 namespace Void.Proxy;
 
-public class Platform(
-    ILogger<Platform> logger,
-    ISettings settings,
-    IPluginService plugins,
-    IEventService events,
-    IPlayerService players,
-    IServerService servers,
-    IForwardingService forwardings,
-    IHostApplicationLifetime hostApplicationLifetime) : IProxy
+public class Platform(ILogger<Platform> logger, ISettings settings, IPluginService plugins, IEventService events, IPlayerService players, IServerService servers, IForwardingService forwardings, IHostApplicationLifetime hostApplicationLifetime) : IProxy
 {
     public static readonly LoggingLevelSwitch LoggingLevelSwitch = new();
 
@@ -33,8 +25,7 @@ public class Platform(
     {
         var startTime = Stopwatch.GetTimestamp();
 
-        Directory.SetCurrentDirectory(Path.GetDirectoryName(Assembly.GetExecutingAssembly()
-            .Location)!);
+        Directory.SetCurrentDirectory(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!);
 
         await plugins.LoadAsync(cancellationToken: cancellationToken);
         await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
@@ -70,20 +61,16 @@ public class Platform(
         // TODO disconnect everyone here
 
         if (_backgroundTask is not null)
-        {
             await _backgroundTask.ContinueWith(backgroundTask =>
-                {
-                    if (backgroundTask.IsCanceled)
-                        return;
+            {
+                if (backgroundTask.IsCanceled)
+                    return;
 
-                    if (backgroundTask.IsCompletedSuccessfully)
-                        return;
+                if (backgroundTask.IsCompletedSuccessfully)
+                    return;
 
-                    throw backgroundTask.Exception?.Flatten()
-                        .InnerException ?? new Exception("Proxy stopped with unknown exception");
-                },
-                cancellationToken);
-        }
+                throw backgroundTask.Exception?.Flatten().InnerException ?? new Exception("Proxy stopped with unknown exception");
+            }, cancellationToken);
 
         _listener?.Stop();
 

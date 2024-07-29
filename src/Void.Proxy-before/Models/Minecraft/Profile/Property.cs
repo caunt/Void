@@ -1,10 +1,6 @@
 ﻿namespace Void.Proxy.Models.Minecraft.Profile;
 
-public class Property(
-    string name,
-    string value,
-    bool isSigned,
-    string? signature)
+public class Property(string name, string value, bool isSigned, string? signature)
 {
     public string Name { get; } = name;
     public string Value { get; } = value;

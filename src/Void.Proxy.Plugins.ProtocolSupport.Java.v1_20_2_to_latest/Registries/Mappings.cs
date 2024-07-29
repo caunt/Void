@@ -7,7 +7,10 @@ public static class Mappings
 {
     public static readonly IReadOnlyDictionary<PacketMapping[], Type> ClientboundHandshakeMappings = new Dictionary<PacketMapping[], Type>();
 
-    public static readonly IReadOnlyDictionary<PacketMapping[], Type> ServerboundHandshakeMappings = new Dictionary<PacketMapping[], Type> { { [new PacketMapping(0x00, false, ProtocolVersion.MINECRAFT_1_7_2)], typeof(HandshakePacket) } };
+    public static readonly IReadOnlyDictionary<PacketMapping[], Type> ServerboundHandshakeMappings = new Dictionary<PacketMapping[], Type>
+    {
+        { [new PacketMapping(0x00, ProtocolVersion.MINECRAFT_1_7_2)], typeof(HandshakePacket) }
+    };
 
     public static readonly IReadOnlyDictionary<PacketMapping[], Type> ClientboundLoginMappings = new Dictionary<PacketMapping[], Type>();
 

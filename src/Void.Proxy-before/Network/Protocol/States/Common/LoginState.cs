@@ -69,8 +69,7 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
         }
         else
         {
-            if (!Proxy.RSA.Decrypt(packet.VerifyToken, false)
-                    .SequenceEqual(verifyToken))
+            if (!Proxy.RSA.Decrypt(packet.VerifyToken, false).SequenceEqual(verifyToken))
                 throw new Exception("Unable to verify encryption token");
         }
 
@@ -218,16 +217,14 @@ public class LoginState(Link link) : ProtocolState, ILoginConfigurePlayState
                                         output.WriteString("1");
                                     }
 
-                                    var packetData = output.Span[..output.Position]
-                                        .ToArray();
+                                    var packetData = output.Span[..output.Position].ToArray();
                                     var buffer = new MinecraftBuffer(packet.Data.Length * 2);
                                     buffer.WriteString(channel!);
                                     buffer.WriteVarInt(MinecraftBuffer.GetVarIntSize(2) + packetData.Length);
                                     buffer.WriteVarInt(2);
                                     buffer.Write(packetData);
 
-                                    return buffer.Span[..buffer.Position]
-                                        .ToArray();
+                                    return buffer.Span[..buffer.Position].ToArray();
                                 }
 
                                 await link.Server.SendPacketAsync(new LoginPluginResponse

@@ -16,7 +16,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Void.Proxy.Plugins.ModsSupport.Forge\Void.Proxy.Plugins.ModsSupport.Forge.csproj" />
 		<ProjectReference Include="..\Void.NBT\Void.NBT.csproj" />
 		<ProjectReference Include="..\Void.Proxy.API\Void.Proxy.API.csproj" />
 	</ItemGroup>

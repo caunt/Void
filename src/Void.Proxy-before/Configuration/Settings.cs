@@ -61,19 +61,17 @@ public partial class Settings(IniData data)
 
     private static async ValueTask GenerateDefaultAsync(string fileName, CancellationToken cancellationToken = default)
     {
-        var defaults = RandomStringRegex()
-            .Replace(Resources.DefaultSettings,
-                match =>
-                {
-                    const string allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789" + "abcdefghijklmnopqrstuvxyz";
+        var defaults = RandomStringRegex().Replace(Resources.DefaultSettings, match =>
+        {
+            const string allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789" + "abcdefghijklmnopqrstuvxyz";
 
-                    var suffix = match.Groups[1].Value;
+            var suffix = match.Groups[1].Value;
 
-                    if (!int.TryParse(suffix, out var size))
-                        throw new Exception($"Invalid random string length specified: {suffix}");
+            if (!int.TryParse(suffix, out var size))
+                throw new Exception($"Invalid random string length specified: {suffix}");
 
-                    return new string(Random.Shared.GetItems<char>(allowedChars, size));
-                });
+            return new string(Random.Shared.GetItems<char>(allowedChars, size));
+        });
 
         await File.WriteAllTextAsync(fileName, defaults, cancellationToken);
     }
@@ -204,17 +202,14 @@ public partial class Settings(IniData data)
                 if (colonIdx < 0 || !int.TryParse(serverAddress[++colonIdx..], out var serverPort))
                     serverPort = 25565;
 
-                Servers.Add(new ServerInfo(serverName,
-                    serverHostname,
-                    serverPort,
-                    ForwardingMode switch
-                    {
-                        ForwardingMode.None => DefaultNoneForwarding,
-                        ForwardingMode.Auto => DefaultAutoForwarding,
-                        ForwardingMode.Legacy => DefaultLegacyForwarding,
-                        ForwardingMode.Modern => DefaultModernForwarding,
-                        _ => throw new ArgumentOutOfRangeException($"Invalid forwarding mode specified: {ForwardingMode}")
-                    }));
+                Servers.Add(new ServerInfo(serverName, serverHostname, serverPort, ForwardingMode switch
+                {
+                    ForwardingMode.None => DefaultNoneForwarding,
+                    ForwardingMode.Auto => DefaultAutoForwarding,
+                    ForwardingMode.Legacy => DefaultLegacyForwarding,
+                    ForwardingMode.Modern => DefaultModernForwarding,
+                    _ => throw new ArgumentOutOfRangeException($"Invalid forwarding mode specified: {ForwardingMode}")
+                }));
             }
         }
 
@@ -227,27 +222,49 @@ public partial class Settings(IniData data)
 
         global.Keys.SetKeyData(new KeyData("config-version") { Value = "1", Comments = ["Config version. Do not change this."] });
 
-        global.Keys.SetKeyData(new KeyData("bind") { Value = $"{Address}:{Port}", Comments = ["Address and port to bind proxy. Default is all network interfaces and port 25565."] });
+        global.Keys.SetKeyData(new KeyData("bind")
+        {
+            Value = $"{Address}:{Port}",
+            Comments = ["Address and port to bind proxy. Default is all network interfaces and port 25565."]
+        });
 
-        global.Keys.SetKeyData(new KeyData("compressionThreshold") { Value = CompressionThreshold.ToString(), Comments = ["Compressiong threshold. Specifies size of minecraft packets that should be compressed to clients. Accepts -1 to disable compression."] });
+        global.Keys.SetKeyData(new KeyData("compressionThreshold")
+        {
+            Value = CompressionThreshold.ToString(),
+            Comments =
+            [
+                "Compressiong threshold. Specifies size of minecraft packets that should be compressed to clients. Accepts -1 to disable compression."
+            ]
+        });
 
         global.Keys.SetKeyData(new KeyData("logLevel")
         {
-            Value = LogLevel.ToString()
-                .ToLower(),
-            Comments = ["Logging level to print in console output. Valid levels: verbose, debug, information, warning, error, fatal"]
+            Value = LogLevel.ToString().ToLower(),
+            Comments =
+            [
+                "Logging level to print in console output. Valid levels: verbose, debug, information, warning, error, fatal"
+            ]
         });
 
         global.Keys.SetKeyData(new KeyData("forwarding")
         {
-            Value = ForwardingMode.ToString()
-                .ToLower(),
-            Comments = ["Default forwarding mode to servers listed in this file below. Can be overwritten on per-server basis by plugins. Valid modes: none, auto, legacy, modern"]
+            Value = ForwardingMode.ToString().ToLower(),
+            Comments =
+            [
+                "Default forwarding mode to servers listed in this file below. Can be overwritten on per-server basis by plugins. Valid modes: none, auto, legacy, modern"
+            ]
         });
 
         var forwardingModernSection = data.Sections.ContainsSection("FORWARDING.MODERN") ? data.Sections.GetSectionData("FORWARDING.MODERN") : new SectionData("FORWARDING.MODERN");
 
-        forwardingModernSection.Keys.SetKeyData(new KeyData("secret") { Value = DefaultModernForwarding.Secret, Comments = ["Secret to enable modern forwarding. This should match with your minecraft servers configs. If you do not have such a config, ignore this and use legacy forwarding or none."] });
+        forwardingModernSection.Keys.SetKeyData(new KeyData("secret")
+        {
+            Value = DefaultModernForwarding.Secret,
+            Comments =
+            [
+                "Secret to enable modern forwarding. This should match with your minecraft servers configs. If you do not have such a config, ignore this and use legacy forwarding or none."
+            ]
+        });
 
         data.Sections.SetSectionData(forwardingModernSection.SectionName, forwardingModernSection);
 
@@ -255,22 +272,19 @@ public partial class Settings(IniData data)
 
         forwardingLegacySection.Keys.SetKeyData(new KeyData("includeAddress")
         {
-            Value = DefaultLegacyForwarding.IncludeAddress.ToString()
-                .ToLower(),
+            Value = DefaultLegacyForwarding.IncludeAddress.ToString().ToLower(),
             Comments = ["Should proxy share user IP with minecraft server? Valid values: true/false"]
         });
 
         forwardingLegacySection.Keys.SetKeyData(new KeyData("includeUuid")
         {
-            Value = DefaultLegacyForwarding.IncludeUuid.ToString()
-                .ToLower(),
+            Value = DefaultLegacyForwarding.IncludeUuid.ToString().ToLower(),
             Comments = ["Should proxy share user UUID with minecraft server? Valid values: true/false"]
         });
 
         forwardingLegacySection.Keys.SetKeyData(new KeyData("includeSkin")
         {
-            Value = DefaultLegacyForwarding.IncludeSkin.ToString()
-                .ToLower(),
+            Value = DefaultLegacyForwarding.IncludeSkin.ToString().ToLower(),
             Comments = ["Should proxy share user skin with minecraft server? Valid values: true/false"]
         });
 

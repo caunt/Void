@@ -3,9 +3,7 @@ using Ionic.Zlib;
 
 namespace Void.Proxy.Network.IO.Compression;
 
-public class DeprecatedCompressionStream(
-    Stream baseStream,
-    int threshold) : Stream
+public class DeprecatedCompressionStream(Stream baseStream, int threshold) : Stream
 {
     public override bool CanRead => baseStream.CanRead;
 
@@ -78,8 +76,7 @@ public class DeprecatedCompressionStream(
         try
         {
             await baseStream.ReadExactlyAsync(buffer, cancellationToken);
-            ZlibStream.UncompressBuffer(buffer)
-                .CopyTo(memory);
+            ZlibStream.UncompressBuffer(buffer).CopyTo(memory);
             var packetId = new MinecraftBuffer(memory).ReadVarInt();
             return new MinecraftMessage(packetId, memory[MinecraftBuffer.GetVarIntSize(packetId)..], memoryOwner);
         }

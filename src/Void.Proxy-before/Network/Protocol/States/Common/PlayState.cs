@@ -28,8 +28,7 @@ public class PlayState(Link link) : ProtocolState, ILoginConfigurePlayState, ICo
 
         if (packet.Identifier == "minecraft:register")
         {
-            var channels = Encoding.UTF8.GetString(packet.Data)
-                .Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            var channels = Encoding.UTF8.GetString(packet.Data).Split('\0', StringSplitOptions.RemoveEmptyEntries);
             Proxy.Logger.Debug($"Received {packet.Direction} Play register channels message: {string.Join(", ", channels)}");
 
             return Task.FromResult(false);
@@ -37,8 +36,7 @@ public class PlayState(Link link) : ProtocolState, ILoginConfigurePlayState, ICo
 
         if (packet.Identifier == "minecraft:unregister")
         {
-            var channels = Encoding.UTF8.GetString(packet.Data)
-                .Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            var channels = Encoding.UTF8.GetString(packet.Data).Split('\0', StringSplitOptions.RemoveEmptyEntries);
             Proxy.Logger.Debug($"Received {packet.Direction} Play unregister channels message: {string.Join(", ", channels)}");
 
             return Task.FromResult(false);
@@ -69,12 +67,11 @@ public class PlayState(Link link) : ProtocolState, ILoginConfigurePlayState, ICo
             throw new NotSupportedException("Client sent unexpected acknowledge configuration");
 
         // can't be awaited because we need to release channel before replace will happen
-        _ = link.ReplaceRedirectionServerChannel()
-            .ContinueWith(task =>
-            {
-                if (!task.IsCompletedSuccessfully)
-                    Proxy.Logger.Error($"Player {link.Player} channel replacement caused exception:\n{task.Exception}");
-            });
+        _ = link.ReplaceRedirectionServerChannel().ContinueWith(task =>
+        {
+            if (!task.IsCompletedSuccessfully)
+                Proxy.Logger.Error($"Player {link.Player} channel replacement caused exception:\n{task.Exception}");
+        });
 
         return true;
     }
@@ -89,9 +86,7 @@ public class PlayState(Link link) : ProtocolState, ILoginConfigurePlayState, ICo
         // does this even needed?
         foreach (var playerInfo in packet.Players)
         {
-            var addPlayerAction = playerInfo.Actions.Select(action => action as PlayerInfoUpdatePacket.AddPlayerAction)
-                .WhereNotNull()
-                .FirstOrDefault();
+            var addPlayerAction = playerInfo.Actions.Select(action => action as PlayerInfoUpdatePacket.AddPlayerAction).WhereNotNull().FirstOrDefault();
 
             if (addPlayerAction is null)
                 continue;

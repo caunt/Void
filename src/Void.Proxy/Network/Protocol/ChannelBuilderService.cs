@@ -11,15 +11,14 @@ using Void.Proxy.API.Servers;
 
 namespace Void.Proxy.Network.Protocol;
 
-public class ChannelBuilderService(
-    ILogger<ChannelBuilderService> logger,
-    IEventService events) : IChannelBuilderService
+public class ChannelBuilderService(ILogger<ChannelBuilderService> logger, IEventService events) : IChannelBuilderService
 {
     public const int MaxHandshakeSize = 4096;
-    private bool _found;
+    private Memory<byte> _buffer = Memory<byte>.Empty;
 
     private ChannelBuilder _builder = (_, networkStream, _) => ValueTask.FromResult<IMinecraftChannel>(new SimpleMinecraftChannel(new SimpleNetworkStream(networkStream)));
-    private Memory<byte> _buffer = Memory<byte>.Empty;
+
+    private bool _found;
 
     public async ValueTask SearchChannelBuilderAsync(IPlayer player, CancellationToken cancellationToken = default)
     {
@@ -43,10 +42,7 @@ public class ChannelBuilderService(
     public async ValueTask<IMinecraftChannel> BuildPlayerChannelAsync(IPlayer player, CancellationToken cancellationToken = default)
     {
         var channel = await BuildChannelAsync(Direction.Serverbound, player.Client.GetStream(), cancellationToken);
-        logger.LogDebug("Client {RemoteEndPoint} is using {ChannelTypeName} channel implementation",
-            player.RemoteEndPoint,
-            channel.GetType()
-                .Name);
+        logger.LogDebug("Client {RemoteEndPoint} is using {ChannelTypeName} channel implementation", player.RemoteEndPoint, channel.GetType().Name);
 
         if (_buffer.Length <= 0)
             return channel;
@@ -59,14 +55,8 @@ public class ChannelBuilderService(
 
     public async ValueTask<IMinecraftChannel> BuildServerChannelAsync(IServer server, CancellationToken cancellationToken = default)
     {
-        var channel = await BuildChannelAsync(Direction.Clientbound,
-            server.CreateTcpClient()
-                .GetStream(),
-            cancellationToken);
-        logger.LogDebug("Server {Name} is using {ChannelTypeName} channel implementation",
-            server.Name,
-            channel.GetType()
-                .Name);
+        var channel = await BuildChannelAsync(Direction.Clientbound, server.CreateTcpClient().GetStream(), cancellationToken);
+        logger.LogDebug("Server {Name} is using {ChannelTypeName} channel implementation", server.Name, channel.GetType().Name);
 
         return channel;
     }

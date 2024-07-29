@@ -83,9 +83,7 @@ public struct KeyedChatCommand : IMinecraftPacket<PlayState>, IChatCommand
         Arguments = new Dictionary<string, byte[]>(size);
 
         for (var i = 0; i < size; i++)
-            Arguments.Add(buffer.ReadString(16),
-                buffer.Read(Signed ? 65536 : 0)
-                    .ToArray());
+            Arguments.Add(buffer.ReadString(16), buffer.Read(Signed ? 65536 : 0).ToArray());
 
         SignedPreview = buffer.ReadBoolean();
 
@@ -102,14 +100,10 @@ public struct KeyedChatCommand : IMinecraftPacket<PlayState>, IChatCommand
             PreviousMessages = new KeyValuePair<Guid, byte[]>[size];
 
             for (var i = 0; i < size; i++)
-                PreviousMessages[i] = new KeyValuePair<Guid, byte[]>(buffer.ReadGuid(),
-                    buffer.Read(buffer.ReadVarInt())
-                        .ToArray());
+                PreviousMessages[i] = new KeyValuePair<Guid, byte[]>(buffer.ReadGuid(), buffer.Read(buffer.ReadVarInt()).ToArray());
 
             if (buffer.ReadBoolean())
-                LastMessage = new KeyValuePair<Guid, byte[]>(buffer.ReadGuid(),
-                    buffer.Read(buffer.ReadVarInt())
-                        .ToArray());
+                LastMessage = new KeyValuePair<Guid, byte[]>(buffer.ReadGuid(), buffer.Read(buffer.ReadVarInt()).ToArray());
         }
 
         if (Salt != 0L || PreviousMessages.Length != 0)

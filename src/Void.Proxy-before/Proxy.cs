@@ -26,14 +26,10 @@ public static class Proxy
         Links = [];
         Servers = [];
 
-        Settings = Settings.LoadAsync()
-            .GetAwaiter()
-            .GetResult();
+        Settings = Settings.LoadAsync().GetAwaiter().GetResult();
         Settings.Servers.ForEach(RegisterServer);
 
-        Logger = new LoggerConfiguration().WriteTo.Console()
-            .MinimumLevel.Is(Settings.LogLevel)
-            .CreateLogger();
+        Logger = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Is(Settings.LogLevel).CreateLogger();
 
         JsonSerializerOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
         JsonSerializerOptions.Converters.Add(new JsonIPAddressConverter());

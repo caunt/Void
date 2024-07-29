@@ -38,8 +38,7 @@ public struct SessionChatMessage : IMinecraftPacket<PlayState>, IChatMessage
         Salt = buffer.ReadLong();
 
         if (buffer.ReadBoolean())
-            Signature = buffer.Read(256)
-                .ToArray();
+            Signature = buffer.Read(256).ToArray();
 
         SessionLastSeenMessages = new SessionLastSeenMessages(ref buffer);
     }

@@ -2,10 +2,7 @@
 
 namespace Void.Proxy.Servers;
 
-public class Server(
-    string name,
-    string host,
-    int port) : IServer
+public class Server(string name, string host, int port) : IServer
 {
     public string? Brand { get; set; }
     public string Name { get; set; } = name;

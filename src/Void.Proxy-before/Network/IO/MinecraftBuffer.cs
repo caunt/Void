@@ -18,8 +18,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
     public int Position { get; private set; }
     public Span<byte> Span { get; init; } = memory.Span;
 
-    public MinecraftBuffer(int size) : this(MemoryPool<byte>.Shared.Rent(size)
-        .Memory)
+    public MinecraftBuffer(int size) : this(MemoryPool<byte>.Shared.Rent(size).Memory)
     {
     } // is it safe? will GC dispose MemoryOwner too early?
 
@@ -238,8 +237,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
     {
         var span = Span.Slice(Position, 4);
         Position += 4;
-        BitConverter.GetBytes(value)
-            .CopyTo(span);
+        BitConverter.GetBytes(value).CopyTo(span);
     }
 
     public Guid ReadGuid()
@@ -293,12 +291,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
 
     public IdentifiedKey ReadIdentifiedKey(ProtocolVersion protocolVersion)
     {
-        return new IdentifiedKey(protocolVersion == ProtocolVersion.MINECRAFT_1_19 ? IdentifiedKeyRevision.GENERIC_V1 : IdentifiedKeyRevision.LINKED_V2,
-            ReadLong(),
-            Read(ReadVarInt())
-                .ToArray(),
-            Read(ReadVarInt())
-                .ToArray());
+        return new IdentifiedKey(protocolVersion == ProtocolVersion.MINECRAFT_1_19 ? IdentifiedKeyRevision.GENERIC_V1 : IdentifiedKeyRevision.LINKED_V2, ReadLong(), Read(ReadVarInt()).ToArray(), Read(ReadVarInt()).ToArray());
     }
 
     public void WriteIdentifiedKey(IdentifiedKey identifiedKey)

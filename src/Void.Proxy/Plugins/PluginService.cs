@@ -9,14 +9,11 @@ using Void.Proxy.Reflection;
 
 namespace Void.Proxy.Plugins;
 
-public class PluginService(
-    ILogger<PluginService> logger,
-    IEventService events,
-    IServiceProvider services) : IPluginService
+public class PluginService(ILogger<PluginService> logger, IEventService events, IServiceProvider services) : IPluginService
 {
+    private readonly TimeSpan _gcRate = TimeSpan.FromMilliseconds(500);
     private readonly List<IPlugin> _plugins = [];
     private readonly List<WeakPluginReference> _references = [];
-    private readonly TimeSpan _gcRate = TimeSpan.FromMilliseconds(500);
     private readonly TimeSpan _unloadTimeout = TimeSpan.FromSeconds(10);
 
     public async ValueTask LoadAsync(string path = "plugins", CancellationToken cancellationToken = default)
@@ -61,12 +58,7 @@ public class PluginService(
                 continue;
             }
 
-            var listeners = assembly.GetTypes()
-                .Where(typeof(IEventListener).IsAssignableFrom)
-                .Select(CreateListenerInstance)
-                .Cast<IEventListener?>()
-                .WhereNotNull()
-                .ToArray();
+            var listeners = assembly.GetTypes().Where(typeof(IEventListener).IsAssignableFrom).Select(CreateListenerInstance).Cast<IEventListener?>().WhereNotNull().ToArray();
 
             if (listeners.Length == 0)
                 logger.LogWarning("Plugin {PluginName} has no event listeners", context.Name);
@@ -125,12 +117,7 @@ public class PluginService(
     public IPlugin[] RegisterPlugins(Assembly assembly)
     {
         var pluginInterface = typeof(IPlugin);
-        var plugins = assembly.GetTypes()
-            .Where(pluginInterface.IsAssignableFrom)
-            .Select(CreatePluginInstance)
-            .Cast<IPlugin?>()
-            .WhereNotNull()
-            .ToArray();
+        var plugins = assembly.GetTypes().Where(pluginInterface.IsAssignableFrom).Select(CreatePluginInstance).Cast<IPlugin?>().WhereNotNull().ToArray();
 
         _plugins.AddRange(plugins);
         return plugins;
@@ -144,8 +131,7 @@ public class PluginService(
 
     internal object? GetExistingInstance(Type type)
     {
-        return _plugins.FirstOrDefault(plugin => plugin.GetType()
-            .IsAssignableFrom(type));
+        return _plugins.FirstOrDefault(plugin => plugin.GetType().IsAssignableFrom(type));
     }
 
     private object CreatePluginInstance(Type type)

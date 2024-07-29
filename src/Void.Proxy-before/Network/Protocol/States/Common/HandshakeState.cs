@@ -12,8 +12,7 @@ public class HandshakeState(Link link) : ProtocolState
     public Task<bool> HandleAsync(HandshakePacket packet)
     {
         var addressParts = packet.ServerAddress.Split('\0', StringSplitOptions.RemoveEmptyEntries);
-        var isForge = ForgeMarker.Range()
-            .Any(marker => addressParts.Contains(marker.Value));
+        var isForge = ForgeMarker.Range().Any(marker => addressParts.Contains(marker.Value));
 
         if (isForge)
             link.Player.SetClientType(ClientType.Forge);

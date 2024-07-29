@@ -25,8 +25,7 @@ public class JsonIPEndPointConverter : JsonConverter<IPEndPoint>
         {
             if (charData[lastColonPos - 1] == ']')
                 addressLength = lastColonPos;
-            else if (charData[..lastColonPos]
-                         .LastIndexOf(':') == -1)
+            else if (charData[..lastColonPos].LastIndexOf(':') == -1)
                 // Look to see if this is IPv4 with a port (IPv6 will have another colon)
                 addressLength = lastColonPos;
         }

@@ -64,19 +64,17 @@ public partial class Settings(IForwardingService forwardings) : ISettings
 
     private static async ValueTask GenerateDefaultAsync(string fileName, CancellationToken cancellationToken = default)
     {
-        var defaults = RandomStringRegex()
-            .Replace(Resources.DefaultSettings,
-                match =>
-                {
-                    const string allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789" + "abcdefghijklmnopqrstuvxyz";
+        var defaults = RandomStringRegex().Replace(Resources.DefaultSettings, match =>
+        {
+            const string allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789" + "abcdefghijklmnopqrstuvxyz";
 
-                    var suffix = match.Groups[1].Value;
+            var suffix = match.Groups[1].Value;
 
-                    if (!int.TryParse(suffix, out var size))
-                        throw new Exception($"Invalid random string length specified: {suffix}");
+            if (!int.TryParse(suffix, out var size))
+                throw new Exception($"Invalid random string length specified: {suffix}");
 
-                    return new string(Random.Shared.GetItems<char>(allowedChars, size));
-                });
+            return new string(Random.Shared.GetItems<char>(allowedChars, size));
+        });
 
         await File.WriteAllTextAsync(fileName, defaults, cancellationToken);
     }
@@ -162,13 +160,11 @@ public partial class Settings(IForwardingService forwardings) : ISettings
                 if (colonIdx < 0 || !int.TryParse(serverAddress[++colonIdx..], out var serverPort))
                     serverPort = 25565;
 
-                Servers.Add(new Server(serverName,
-                    serverHostname,
-                    serverPort /*TODO , ForwardingMode switch
-                    {
-                        ForwardingMode.None => DefaultNoneForwarding,
-                        _ => throw new ArgumentOutOfRangeException($"Invalid forwarding mode specified: {ForwardingMode}")
-                    }*/));
+                Servers.Add(new Server(serverName, serverHostname, serverPort /*TODO , ForwardingMode switch
+                {
+                    ForwardingMode.None => DefaultNoneForwarding,
+                    _ => throw new ArgumentOutOfRangeException($"Invalid forwarding mode specified: {ForwardingMode}")
+                }*/));
             }
         }
 
@@ -182,18 +178,38 @@ public partial class Settings(IForwardingService forwardings) : ISettings
 
         global.Keys.SetKeyData(new KeyData("config-version") { Value = "1", Comments = ["Config version. Do not change this."] });
 
-        global.Keys.SetKeyData(new KeyData("bind") { Value = $"{Address}:{Port}", Comments = ["Address and port to bind proxy. Default is all network interfaces and port 25565."] });
+        global.Keys.SetKeyData(new KeyData("bind")
+        {
+            Value = $"{Address}:{Port}",
+            Comments = ["Address and port to bind proxy. Default is all network interfaces and port 25565."]
+        });
 
-        global.Keys.SetKeyData(new KeyData("compressionThreshold") { Value = CompressionThreshold.ToString(), Comments = ["Compression threshold. Specifies size of minecraft packets that should be compressed to clients. Accepts -1 to disable compression."] });
+        global.Keys.SetKeyData(new KeyData("compressionThreshold")
+        {
+            Value = CompressionThreshold.ToString(),
+            Comments =
+            [
+                "Compression threshold. Specifies size of minecraft packets that should be compressed to clients. Accepts -1 to disable compression."
+            ]
+        });
 
         global.Keys.SetKeyData(new KeyData("logLevel")
         {
-            Value = LogLevel.ToString()
-                .ToLower(),
-            Comments = ["Logging level to print in console output. Valid levels: verbose, debug, information, warning, error, fatal"]
+            Value = LogLevel.ToString().ToLower(),
+            Comments =
+            [
+                "Logging level to print in console output. Valid levels: verbose, debug, information, warning, error, fatal"
+            ]
         });
 
-        global.Keys.SetKeyData(new KeyData("forwarding") { Value = Forwarding.Name, Comments = ["Default forwarding mode to servers listed in this file below. Can be overwritten on per-server basis by plugins. Valid modes: none, auto, legacy, modern"] });
+        global.Keys.SetKeyData(new KeyData("forwarding")
+        {
+            Value = Forwarding.Name,
+            Comments =
+            [
+                "Default forwarding mode to servers listed in this file below. Can be overwritten on per-server basis by plugins. Valid modes: none, auto, legacy, modern"
+            ]
+        });
 
         var serversSection = _data.Sections.ContainsSection("SERVERS") ? _data.Sections.GetSectionData("SERVERS") : new SectionData("SERVERS");
 

@@ -53,10 +53,7 @@ public class ModernForwarding(string secret) : IForwarding
     // TODO: https://github.com/PaperMC/Velocity/blob/07a525be7f90f1f3ccd515f7c196824d12ed0fff/proxy/src/main/java/com/velocitypowered/proxy/connection/backend/LoginSessionHandler.java#L199
     private Version FindForwardingVersion(Version requested, Player player)
     {
-        requested = (Version)Math.Min((int)requested,
-            Enum.GetValues(typeof(Version))
-                .Cast<int>()
-                .Max());
+        requested = (Version)Math.Min((int)requested, Enum.GetValues(typeof(Version)).Cast<int>().Max());
 
         if (requested.CompareTo(Version.Default) > 0)
         {

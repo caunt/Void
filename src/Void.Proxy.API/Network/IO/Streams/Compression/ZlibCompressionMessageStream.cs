@@ -106,8 +106,7 @@ public class ZlibCompressionMessageStream : IMinecraftCompleteMessageStream
             try
             {
                 stream.ReadExactly(buffer);
-                ZlibStream.UncompressBuffer(buffer)
-                    .CopyTo(memory);
+                ZlibStream.UncompressBuffer(buffer).CopyTo(memory);
                 return new CompleteBinaryMessage(memory, memoryOwner);
             }
             finally
@@ -142,8 +141,7 @@ public class ZlibCompressionMessageStream : IMinecraftCompleteMessageStream
             try
             {
                 await stream.ReadExactlyAsync(buffer, cancellationToken);
-                ZlibStream.UncompressBuffer(buffer)
-                    .CopyTo(memory);
+                ZlibStream.UncompressBuffer(buffer).CopyTo(memory);
                 return new CompleteBinaryMessage(memory, memoryOwner);
             }
             finally

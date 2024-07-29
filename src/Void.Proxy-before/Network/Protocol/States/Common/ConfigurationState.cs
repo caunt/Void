@@ -31,8 +31,7 @@ public class ConfigurationState(Link link) : ProtocolState, ILoginConfigurePlayS
 
         if (packet.Identifier == "minecraft:register")
         {
-            var channels = Encoding.UTF8.GetString(packet.Data)
-                .Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            var channels = Encoding.UTF8.GetString(packet.Data).Split('\0', StringSplitOptions.RemoveEmptyEntries);
             Proxy.Logger.Debug($"Received {packet.Direction} Configuration register channels message: {string.Join(", ", channels)}");
 
             return Task.FromResult(false);
@@ -40,8 +39,7 @@ public class ConfigurationState(Link link) : ProtocolState, ILoginConfigurePlayS
 
         if (packet.Identifier == "minecraft:unregister")
         {
-            var channels = Encoding.UTF8.GetString(packet.Data)
-                .Split('\0', StringSplitOptions.RemoveEmptyEntries);
+            var channels = Encoding.UTF8.GetString(packet.Data).Split('\0', StringSplitOptions.RemoveEmptyEntries);
             Proxy.Logger.Debug($"Received {packet.Direction} Configuration unregister channels message: {string.Join(", ", channels)}");
 
             return Task.FromResult(false);

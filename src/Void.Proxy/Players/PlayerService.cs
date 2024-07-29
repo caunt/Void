@@ -10,12 +10,12 @@ namespace Void.Proxy.Players;
 
 public class PlayerService : IPlayerService, IEventListener
 {
-    private readonly AsyncLock _lock = new();
     private readonly IEventService _events;
     private readonly ILinkService _links;
+    private readonly AsyncLock _lock = new();
     private readonly ILogger<PlayerService> _logger;
-    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly List<IPlayer> _players = [];
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
     public PlayerService(ILogger<PlayerService> logger, IServiceScopeFactory serviceScopeFactory, ILinkService links, IEventService events)
     {

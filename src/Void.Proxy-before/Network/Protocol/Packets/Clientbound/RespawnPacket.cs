@@ -117,9 +117,7 @@ public struct RespawnPacket : IMinecraftPacket<PlayState>
         {
             if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2 && protocolVersion < ProtocolVersion.MINECRAFT_1_19)
             {
-                CurrentDimensionData = ((MemoryStream)NbtFile.Parse(buffer.Span[buffer.Position..]
-                        .ToArray())
-                    .Serialize()).ToArray();
+                CurrentDimensionData = ((MemoryStream)NbtFile.Parse(buffer.Span[buffer.Position..].ToArray()).Serialize()).ToArray();
                 dimensionIdentifier = buffer.ReadString();
             }
             else

@@ -25,8 +25,7 @@ public struct LoginPluginResponse : IMinecraftPacket<LoginState>
     {
         MessageId = buffer.ReadVarInt();
         Successful = buffer.ReadBoolean();
-        Data = buffer.Read((int)(buffer.Length - buffer.Position))
-            .ToArray();
+        Data = buffer.Read((int)(buffer.Length - buffer.Position)).ToArray();
     }
 
     public int MaxSize()

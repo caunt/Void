@@ -1,10 +1,6 @@
 ﻿namespace Void.Proxy.Network.Protocol.Registry;
 
-public class PacketMapping(
-    int id,
-    bool encodeOnly,
-    ProtocolVersion protocolVersion,
-    ProtocolVersion? lastValidProtocolVersion = null)
+public class PacketMapping(int id, bool encodeOnly, ProtocolVersion protocolVersion, ProtocolVersion? lastValidProtocolVersion = null)
 {
     public int Id { get; } = id;
     public bool EncodeOnly { get; } = encodeOnly;

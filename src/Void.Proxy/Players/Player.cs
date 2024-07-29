@@ -7,9 +7,7 @@ using Void.Proxy.API.Servers;
 
 namespace Void.Proxy.Players;
 
-public class Player(
-    AsyncServiceScope scope,
-    TcpClient client) : IPlayer
+public class Player(AsyncServiceScope scope, TcpClient client) : IPlayer
 {
     private IMinecraftChannel? _channel;
 
@@ -19,6 +17,7 @@ public class Player(
 
     public string? Name { get; set; }
     public string? Brand { get; set; }
+
     public ProtocolVersion ProtocolVersion { get; set; } = ProtocolVersion.Oldest; // we do not know Player protocol version yet, use the oldest possible
 
     public async ValueTask<IMinecraftChannel> BuildServerChannelAsync(IServer server, CancellationToken cancellationToken = default)

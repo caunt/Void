@@ -104,8 +104,7 @@ public class Player(Link link)
         if (negative)
             serverId = TwosComplement(serverId);
 
-        var serverIdComplement = Convert.ToHexString(serverId)
-            .TrimStart('0');
+        var serverIdComplement = Convert.ToHexString(serverId).TrimStart('0');
 
         if (negative)
             serverIdComplement = "-" + serverIdComplement;

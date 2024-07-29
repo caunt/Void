@@ -57,11 +57,9 @@ public partial struct PluginMessage : IMinecraftPacket<IConfigurePlayState>
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_13)
             Identifier = TransformLegacyToModernChannel(Identifier);
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_8)
-            Data = buffer.ReadToEnd()
-                .ToArray();
+            Data = buffer.ReadToEnd().ToArray();
         else
-            Data = buffer.Read(buffer.ReadVarShort())
-                .ToArray();
+            Data = buffer.Read(buffer.ReadVarShort()).ToArray();
 
         if (Data.Length > MaxDataSize)
             throw new InternalBufferOverflowException($"Plugin message max size is {MaxSize} bytes");
@@ -82,8 +80,7 @@ public partial struct PluginMessage : IMinecraftPacket<IConfigurePlayState>
             REGISTER_CHANNEL_LEGACY => REGISTER_CHANNEL,
             UNREGISTER_CHANNEL_LEGACY => UNREGISTER_CHANNEL,
             BRAND_CHANNEL_LEGACY => BRAND_CHANNEL,
-            _ => "legacy:" + INVALID_IDENTIFIER_REGEX()
-                .Replace(name.ToLower(), string.Empty)
+            _ => "legacy:" + INVALID_IDENTIFIER_REGEX().Replace(name.ToLower(), string.Empty)
         };
     }
 

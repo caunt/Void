@@ -16,5 +16,6 @@ public interface ISettings
     public List<IServer> Servers { get; }
 
     public ValueTask LoadAsync(string fileName = "settings.ini", bool createDefault = true, CancellationToken cancellationToken = default);
+
     public ValueTask SaveAsync(string fileName = "settings.ini", CancellationToken cancellationToken = default);
 }

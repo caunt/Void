@@ -2,9 +2,7 @@
 
 namespace Void.Proxy.API.Network.IO.Messages;
 
-public readonly struct CompleteBinaryMessage(
-    Memory<byte> memory,
-    IMemoryOwner<byte> owner) : IMinecraftMessage
+public class CompleteBinaryMessage(Memory<byte> memory, IMemoryOwner<byte> owner) : IMinecraftMessage
 {
     public Memory<byte> Memory => memory;
 

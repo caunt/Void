@@ -20,5 +20,6 @@ public class WeakPluginReference
     public PluginLoadContext Context { get; }
 
     public IPlugin[] Plugins => Array.ConvertAll(_plugins, reference => reference.TryGetTarget(out var plugin) ? plugin : throw new ObjectDisposedException(Context.Name));
+
     public IEventListener[] Listeners => Array.ConvertAll(_listeners, reference => reference.TryGetTarget(out var listener) ? listener : throw new ObjectDisposedException(Context.Name));
 }

@@ -38,8 +38,7 @@ public struct DisconnectPacket : IMinecraftPacket<ILoginConfigurePlayState>
     {
         if (EncodeNbt)
             // Message = buffer.ReadComponent(262144, protocolVersion);
-            ReasonBuffer = buffer.ReadToEnd()
-                .ToArray();
+            ReasonBuffer = buffer.ReadToEnd().ToArray();
         else
             ReasonString = buffer.ReadString(262144);
     }

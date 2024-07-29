@@ -12,8 +12,7 @@ public ref struct MinecraftBuffer(Span<byte> memory)
     public int Position { get; private set; }
     public Span<byte> Span { get; init; } = memory;
 
-    public MinecraftBuffer(int size) : this(MemoryPool<byte>.Shared.Rent(size)
-        .Memory.Span)
+    public MinecraftBuffer(int size) : this(MemoryPool<byte>.Shared.Rent(size).Memory.Span)
     {
     } // is it safe? will GC dispose MemoryOwner too early?
 
@@ -234,8 +233,7 @@ public ref struct MinecraftBuffer(Span<byte> memory)
     {
         var span = Span.Slice(Position, 4);
         Position += 4;
-        BitConverter.GetBytes(value)
-            .CopyTo(span);
+        BitConverter.GetBytes(value).CopyTo(span);
     }
 
     // public Guid ReadGuid() => GuidHelper.FromLongs(ReadLong(), ReadLong());

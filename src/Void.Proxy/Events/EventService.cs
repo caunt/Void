@@ -30,23 +30,33 @@ public class EventService : IEventService
     public async ValueTask ThrowAsync<T>(T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
         var eventType = @event.GetType();
+        var simpleParameters = (object[]) [@event];
+        var cancellableParameters = (object[]) [@event, cancellationToken];
 
-        for (var i = 0; i < _methods.Count; i++)
+        for (var methodIndex = 0; methodIndex < _methods.Count; methodIndex++)
         {
-            var method = _methods[i];
+            if (_methods.Count <= methodIndex)
+                continue; // methods may change after event invocation
+
+            var method = _methods[methodIndex];
             var parameters = method.GetParameters();
 
             if (parameters[0].ParameterType != eventType)
                 continue;
 
-            for (var index = 0; index < _listeners.Count; index++)
+            for (var listenerIndex = 0; listenerIndex < _listeners.Count; listenerIndex++)
             {
-                var listener = _listeners[index];
+                if (_listeners.Count <= listenerIndex)
+                    continue; // listeners may change after event invocation
+
+                var listener = _listeners[listenerIndex];
 
                 if (listener.GetType() != method.DeclaringType)
                     continue;
 
-                var value = method.Invoke(listener, parameters.Length == 1 ? [@event] : [@event, cancellationToken]);
+                await Task.Yield();
+
+                var value = method.Invoke(listener, parameters.Length == 1 ? simpleParameters : cancellableParameters);
                 var handle = value switch
                 {
                     Task task => new ValueTask(task),
@@ -54,7 +64,6 @@ public class EventService : IEventService
                     _ => ValueTask.CompletedTask
                 };
 
-                await Task.Yield();
                 await handle;
             }
         }
@@ -64,10 +73,7 @@ public class EventService : IEventService
     {
         foreach (var listener in listeners)
         {
-            var methods = listener.GetType()
-                .GetMethods()
-                .Where(method => Attribute.IsDefined(method, typeof(SubscribeAttribute)))
-                .ToArray();
+            var methods = listener.GetType().GetMethods().Where(method => Attribute.IsDefined(method, typeof(SubscribeAttribute))).ToArray();
 
             foreach (var method in methods)
             {
@@ -83,8 +89,7 @@ public class EventService : IEventService
     {
         foreach (var listener in listeners)
         {
-            var assembly = listener.GetType()
-                .Assembly;
+            var assembly = listener.GetType().Assembly;
 
             _listeners.Remove(listener);
             _methods.RemoveAll(method => method.DeclaringType?.Assembly == assembly);

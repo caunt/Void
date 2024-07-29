@@ -12,8 +12,11 @@ namespace Void.Proxy.Links;
 
 public class LinkService : ILinkService, IEventListener
 {
-    private readonly AsyncLock _lock = new();
+    private readonly IEventService _events;
     private readonly List<ILink> _links = [];
+    private readonly AsyncLock _lock = new();
+    private readonly ILogger<LinkService> _logger;
+    private readonly IServerService _servers;
 
     public LinkService(ILogger<LinkService> logger, IServerService servers, IEventService events)
     {
@@ -47,11 +50,9 @@ public class LinkService : ILinkService, IEventListener
         await _events.ThrowAsync(new LinkStoppedEvent { Link = @event.Link }, cancellationToken);
 
         if (@event.Link.Player.Client.Connected)
-            _ = ConnectPlayerAnywhereAsync(@event.Link.Player, cancellationToken)
-                .CatchExceptions(); // release async lock
+            _ = ConnectPlayerAnywhereAsync(@event.Link.Player, cancellationToken).CatchExceptions(); // release async lock
         else
-            _ = _events.ThrowAsync(new PlayerDisconnectedEvent { Player = @event.Link.Player }, cancellationToken)
-                .CatchExceptions(); // sometimes deadlocks with PlayerService synchronization, so must release async lock
+            _ = _events.ThrowAsync(new PlayerDisconnectedEvent { Player = @event.Link.Player }, cancellationToken).CatchExceptions(); // sometimes deadlocks with PlayerService synchronization, so must release async lock
     }
 
     private async ValueTask ConnectAsync(IPlayer player, IServer server, CancellationToken cancellationToken = default)
@@ -61,14 +62,7 @@ public class LinkService : ILinkService, IEventListener
         var playerChannel = await player.GetChannelAsync(cancellationToken);
         var serverChannel = await player.BuildServerChannelAsync(server, cancellationToken);
 
-        var link = await _events.ThrowWithResultAsync(new CreateLinkEvent
-            {
-                Player = player,
-                Server = server,
-                PlayerChannel = playerChannel,
-                ServerChannel = serverChannel
-            },
-            cancellationToken) ?? new Link(player, server, playerChannel, serverChannel);
+        var link = await _events.ThrowWithResultAsync(new CreateLinkEvent { Player = player, Server = server, PlayerChannel = playerChannel, ServerChannel = serverChannel }, cancellationToken) ?? new Link(player, server, playerChannel, serverChannel);
         await _events.ThrowAsync(new LinkStartingEvent { Link = link }, cancellationToken);
 
         _events.RegisterListeners(link);
@@ -77,12 +71,4 @@ public class LinkService : ILinkService, IEventListener
         _logger.LogInformation("Started forwarding {Link} traffic", link);
         await _events.ThrowAsync(new LinkStartedEvent { Link = link }, cancellationToken);
     }
-
-    #region Injected
-
-    private readonly IEventService _events;
-    private readonly ILogger<LinkService> _logger;
-    private readonly IServerService _servers;
-
-    #endregion Injected
 }

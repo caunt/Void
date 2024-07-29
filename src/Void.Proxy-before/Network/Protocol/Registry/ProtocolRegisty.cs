@@ -2,9 +2,7 @@
 
 namespace Void.Proxy.Network.Protocol.Registry;
 
-public class ProtocolRegistry(
-    Direction direction,
-    ProtocolVersion version)
+public class ProtocolRegistry(Direction direction, ProtocolVersion version)
 {
     public ProtocolVersion Version { get; } = version;
     public Dictionary<int, Func<IMinecraftPacket>> PacketIdToFactory { get; } = [];

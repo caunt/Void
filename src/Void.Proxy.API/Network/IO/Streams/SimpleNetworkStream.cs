@@ -22,8 +22,7 @@ public class SimpleNetworkStream(NetworkStream baseStream) : IMinecraftNetworkSt
         }
 
         var length = Math.Min(_nextBuffer.Length, span.Length);
-        _nextBuffer.Span[..length]
-            .CopyTo(span);
+        _nextBuffer.Span[..length].CopyTo(span);
         _nextBuffer = _nextBuffer[length..];
         return length;
     }
@@ -37,8 +36,7 @@ public class SimpleNetworkStream(NetworkStream baseStream) : IMinecraftNetworkSt
         }
 
         var length = Math.Min(_nextBuffer.Length, memory.Length);
-        _nextBuffer[..length]
-            .CopyTo(memory);
+        _nextBuffer[..length].CopyTo(memory);
         _nextBuffer = _nextBuffer[length..];
         return length;
     }
@@ -47,8 +45,7 @@ public class SimpleNetworkStream(NetworkStream baseStream) : IMinecraftNetworkSt
     {
         if (_nextBuffer.Length >= span.Length)
         {
-            _nextBuffer.Span[..span.Length]
-                .CopyTo(span);
+            _nextBuffer.Span[..span.Length].CopyTo(span);
             _nextBuffer = _nextBuffer[span.Length..];
         }
         else
@@ -64,8 +61,7 @@ public class SimpleNetworkStream(NetworkStream baseStream) : IMinecraftNetworkSt
     {
         if (_nextBuffer.Length >= memory.Length)
         {
-            _nextBuffer[..memory.Length]
-                .CopyTo(memory);
+            _nextBuffer[..memory.Length].CopyTo(memory);
             _nextBuffer = _nextBuffer[memory.Length..];
         }
         else
