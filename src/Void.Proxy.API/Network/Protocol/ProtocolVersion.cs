@@ -6,9 +6,7 @@ public class ProtocolVersion : IComparable
 
     public static readonly ProtocolVersion MINECRAFT_1_7_2 = new(4, "1.7.2", "1.7.3", "1.7.4", "1.7.5");
     public static readonly ProtocolVersion MINECRAFT_1_7_6 = new(5, "1.7.6", "1.7.7", "1.7.8", "1.7.9", "1.7.10");
-
-    public static readonly ProtocolVersion Minecraft_1_8 = new(47, "1.8", "1.8.1", "1.8.2", "1.8.3", "1.8.4", "1.8.5", "1.8.6", "1.8.7", "1.8.8", "1.8.9");
-
+    public static readonly ProtocolVersion MINECRAFT_1_8 = new(47, "1.8", "1.8.1", "1.8.2", "1.8.3", "1.8.4", "1.8.5", "1.8.6", "1.8.7", "1.8.8", "1.8.9");
     public static readonly ProtocolVersion MINECRAFT_1_9 = new(107, "1.9");
     public static readonly ProtocolVersion MINECRAFT_1_9_1 = new(108, "1.9.1");
     public static readonly ProtocolVersion MINECRAFT_1_9_2 = new(109, "1.9.2");

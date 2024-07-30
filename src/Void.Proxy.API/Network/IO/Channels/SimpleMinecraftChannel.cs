@@ -13,12 +13,27 @@ public class SimpleMinecraftChannel(IMinecraftStreamBase head) : IMinecraftChann
 
     public void Add<T>() where T : IMinecraftStream, new()
     {
-        Add(new T());
+        var stream = new T();
+        stream.BaseStream = head;
+        head = stream;
+    }
+
+    public T Get<T>() where T : IMinecraftStreamBase
+    {
+        return Get<T>(head);
+    }
+
+    public void AddBefore<TBefore, TValue>() where TBefore : IMinecraftStream where TValue : IMinecraftStream, new()
+    {
+        var before = Get<TBefore>();
+        var beforeBaseStream = before.BaseStream;
+        var addedBaseStream = new TValue { BaseStream = beforeBaseStream };
+        before.BaseStream = addedBaseStream;
     }
 
     public void PrependBuffer(Memory<byte> memory)
     {
-        var stream = GetNetworkStream(head);
+        var stream = Get<IMinecraftNetworkStream>();
         stream.PrependBuffer(memory);
     }
 
@@ -76,28 +91,19 @@ public class SimpleMinecraftChannel(IMinecraftStreamBase head) : IMinecraftChann
         await head.DisposeAsync();
     }
 
-    public void Add<T>(T stream) where T : IMinecraftStream
+    private T Get<T>(IMinecraftStreamBase? baseStream) where T : IMinecraftStreamBase
     {
-        stream.BaseStream = head;
-        head = stream;
-    }
-
-    private static IMinecraftNetworkStream GetNetworkStream(IMinecraftStreamBase? stream)
-    {
+        var current = baseStream ?? head;
         while (true)
-        {
-            switch (stream)
+            switch (current)
             {
-                case IMinecraftNetworkStream minecraftNetworkStream:
-                    return minecraftNetworkStream;
-                case null:
-                    throw new Exception($"{nameof(IMinecraftNetworkStream)} not found");
+                case T found:
+                    return found;
+                case IMinecraftStream stream:
+                    current = stream.BaseStream;
+                    break;
+                default:
+                    throw new InvalidOperationException($"{typeof(T)} not found in channel");
             }
-
-            if (stream is not IMinecraftStream minecraftStream)
-                throw new InvalidDataException($"Unexpected stream type \"{stream.GetType()}\" found");
-
-            stream = minecraftStream.BaseStream;
-        }
     }
 }

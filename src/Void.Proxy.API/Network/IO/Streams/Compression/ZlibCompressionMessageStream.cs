@@ -1,6 +1,6 @@
-﻿using System.Buffers;
-using Ionic.Zlib;
+﻿using Ionic.Zlib;
 using Void.Proxy.API.Network.IO.Buffers;
+using Void.Proxy.API.Network.IO.Memory;
 using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.IO.Streams.Extensions;
 
@@ -8,6 +8,7 @@ namespace Void.Proxy.API.Network.IO.Streams.Compression;
 
 public class ZlibCompressionMessageStream : IMinecraftCompleteMessageStream
 {
+    public int CompressionThreshold { get; set; } = 256;
     public IMinecraftStreamBase? BaseStream { get; set; }
 
     public CompleteBinaryMessage ReadMessage()
@@ -16,7 +17,7 @@ public class ZlibCompressionMessageStream : IMinecraftCompleteMessageStream
         {
             IMinecraftNetworkStream networkStream => ReadNetworkMessage(networkStream),
             // IMinecraftBufferedStream bufferedStream => ReadBufferPacket(bufferedStream),
-            _ => throw new NotImplementedException()
+            _ => throw new NotImplementedException(BaseStream?.GetType().FullName)
         };
     }
 
@@ -26,7 +27,7 @@ public class ZlibCompressionMessageStream : IMinecraftCompleteMessageStream
         {
             IMinecraftNetworkStream networkStream => await ReadNetworkMessageAsync(networkStream, cancellationToken),
             // IMinecraftBufferedStream bufferedStream => await ReadBufferPacketAsync(bufferedStream),
-            _ => throw new NotImplementedException()
+            _ => throw new NotImplementedException(BaseStream?.GetType().FullName)
         };
     }
 
@@ -35,10 +36,10 @@ public class ZlibCompressionMessageStream : IMinecraftCompleteMessageStream
         switch (BaseStream)
         {
             case IMinecraftNetworkStream networkStream:
-                // WriteNetworkMessage(networkStream);
+                WriteNetworkMessage(networkStream, message);
                 break;
             default:
-                throw new NotImplementedException();
+                throw new NotImplementedException(BaseStream?.GetType().FullName);
         }
     }
 
@@ -47,10 +48,10 @@ public class ZlibCompressionMessageStream : IMinecraftCompleteMessageStream
         switch (BaseStream)
         {
             case IMinecraftNetworkStream networkStream:
-                // await WriteNetworkMessageAsync(networkStream);
+                await WriteNetworkMessageAsync(networkStream, message, cancellationToken);
                 break;
             default:
-                throw new NotImplementedException();
+                throw new NotImplementedException(BaseStream?.GetType().FullName);
         }
     }
 
@@ -88,31 +89,22 @@ public class ZlibCompressionMessageStream : IMinecraftCompleteMessageStream
 
         if (dataLength is 0)
         {
-            var length = packetLength - MinecraftBuffer.GetVarIntSize(dataLength);
-            var memoryOwner = MemoryPool<byte>.Shared.Rent(length);
-            var memory = memoryOwner.Memory[..length];
-
-            stream.ReadExactly(memory.Span);
-            return new CompleteBinaryMessage(memory, memoryOwner);
+            var holder = MemoryHolder.RentExact(packetLength - 1);
+            stream.ReadExactly(holder.Slice.Span);
+            return new CompleteBinaryMessage(holder);
         }
         else
         {
-            var rent = ArrayPool<byte>.Shared.Rent(packetLength);
-            var buffer = rent[..(packetLength - MinecraftBuffer.GetVarIntSize(dataLength))];
+            using var holder = MemoryHolder.RentExact(packetLength - MinecraftBuffer.GetVarIntSize(dataLength));
+            stream.ReadExactly(holder.Slice.Span);
 
-            var memoryOwner = MemoryPool<byte>.Shared.Rent(dataLength);
-            var memory = memoryOwner.Memory[..dataLength];
+            // TODO replace with something Span-compatible
+            var dataHolder = MemoryHolder.From(ZlibStream.UncompressBuffer(holder.Slice.Span.ToArray()));
 
-            try
-            {
-                stream.ReadExactly(buffer);
-                ZlibStream.UncompressBuffer(buffer).CopyTo(memory);
-                return new CompleteBinaryMessage(memory, memoryOwner);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(rent);
-            }
+            if (dataHolder.Slice.Length != dataLength)
+                throw new InvalidOperationException($"Received dataLength is {dataLength}, but uncompressed data length is {dataHolder.Slice.Length}");
+
+            return new CompleteBinaryMessage(dataHolder);
         }
     }
 
@@ -123,31 +115,56 @@ public class ZlibCompressionMessageStream : IMinecraftCompleteMessageStream
 
         if (dataLength is 0)
         {
-            var length = packetLength - MinecraftBuffer.GetVarIntSize(dataLength);
-            var memoryOwner = MemoryPool<byte>.Shared.Rent(length);
-            var memory = memoryOwner.Memory[..length];
-
-            await stream.ReadExactlyAsync(memory, cancellationToken);
-            return new CompleteBinaryMessage(memory, memoryOwner);
+            var holder = MemoryHolder.RentExact(packetLength - 1);
+            await stream.ReadExactlyAsync(holder.Slice, cancellationToken);
+            return new CompleteBinaryMessage(holder);
         }
         else
         {
-            var rent = ArrayPool<byte>.Shared.Rent(packetLength);
-            var buffer = rent[..(packetLength - MinecraftBuffer.GetVarIntSize(dataLength))];
+            using var holder = MemoryHolder.RentExact(packetLength - MinecraftBuffer.GetVarIntSize(dataLength));
+            await stream.ReadExactlyAsync(holder.Slice, cancellationToken);
 
-            var memoryOwner = MemoryPool<byte>.Shared.Rent(dataLength);
-            var memory = memoryOwner.Memory[..dataLength];
+            // TODO replace with something Span-compatible
+            var dataHolder = MemoryHolder.From(ZlibStream.UncompressBuffer(holder.Slice.Span.ToArray()));
 
-            try
-            {
-                await stream.ReadExactlyAsync(buffer, cancellationToken);
-                ZlibStream.UncompressBuffer(buffer).CopyTo(memory);
-                return new CompleteBinaryMessage(memory, memoryOwner);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(rent);
-            }
+            if (dataHolder.Slice.Length != dataLength)
+                throw new InvalidOperationException($"Received dataLength is {dataLength}, but uncompressed data length is {dataHolder.Slice.Length}");
+
+            return new CompleteBinaryMessage(dataHolder);
         }
+    }
+
+    private void WriteNetworkMessage(IMinecraftNetworkStream stream, CompleteBinaryMessage message)
+    {
+        var dataLength = message.Holder.Slice.Length < CompressionThreshold ? 0 : message.Holder.Slice.Length;
+        var data = dataLength switch
+        {
+            > 0 => ZlibStream.CompressBuffer(message.Holder.Slice.Span.ToArray()),
+            0 => message.Holder.Slice,
+            _ => throw new InvalidOperationException($"{nameof(dataLength)} cannot be less than 0")
+        };
+
+        var packetLength = MinecraftBuffer.GetVarIntSize(dataLength) + data.Length;
+
+        stream.WriteVarInt(packetLength);
+        stream.WriteVarInt(dataLength);
+        stream.Write(data.Span);
+    }
+
+    private async ValueTask WriteNetworkMessageAsync(IMinecraftNetworkStream stream, CompleteBinaryMessage message, CancellationToken cancellationToken = default)
+    {
+        var dataLength = message.Holder.Slice.Length < CompressionThreshold ? 0 : message.Holder.Slice.Length;
+        var data = dataLength switch
+        {
+            > 0 => ZlibStream.CompressBuffer(message.Holder.Slice.Span.ToArray()),
+            0 => message.Holder.Slice,
+            _ => throw new InvalidOperationException($"{nameof(dataLength)} cannot be less than 0")
+        };
+
+        var packetLength = MinecraftBuffer.GetVarIntSize(dataLength) + data.Length;
+
+        await stream.WriteVarIntAsync(packetLength, cancellationToken);
+        await stream.WriteVarIntAsync(dataLength, cancellationToken);
+        await stream.WriteAsync(data, cancellationToken);
     }
 }

@@ -1,17 +1,17 @@
-﻿using System.Buffers;
-using Void.Proxy.API.Network.IO.Buffers;
+﻿using Void.Proxy.API.Network.IO.Buffers;
+using Void.Proxy.API.Network.IO.Memory;
 using Void.Proxy.API.Network.Protocol;
 
 namespace Void.Proxy.API.Network.IO.Messages;
 
-public class BinaryPacket(int id, Memory<byte> memory, IMemoryOwner<byte> owner) : IMinecraftPacket
+public class BinaryPacket(int id, MemoryHolder holder) : IMinecraftPacket
 {
     public int Id => id;
-    public Memory<byte> Memory => memory;
+    public MemoryHolder Holder => holder;
 
     public void Dispose()
     {
-        owner.Dispose();
+        holder.Dispose();
     }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)

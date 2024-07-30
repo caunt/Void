@@ -12,6 +12,8 @@ public interface IMinecraftChannel : IDisposable, IAsyncDisposable
     public bool IsConfigured { get; }
 
     public void Add<T>() where T : IMinecraftStream, new();
+    public T Get<T>() where T : IMinecraftStreamBase;
+    public void AddBefore<TBefore, TValue>() where TBefore : IMinecraftStream where TValue : IMinecraftStream, new();
     public void PrependBuffer(Memory<byte> memory);
     public ValueTask<IMinecraftMessage> ReadMessageAsync(CancellationToken cancellationToken = default);
     public ValueTask WriteMessageAsync(IMinecraftMessage message, CancellationToken cancellationToken = default);

@@ -11,11 +11,13 @@ using Void.Proxy.API.Network.IO.Buffers;
 using Void.Proxy.API.Network.IO.Channels;
 using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.IO.Streams;
+using Void.Proxy.API.Network.IO.Streams.Compression;
 using Void.Proxy.API.Network.IO.Streams.Packet;
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Plugins;
 using Void.Proxy.API.Registries.Packets;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Registries;
 
@@ -72,8 +74,8 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
             return;
 
         holder.ManagedBy = this;
-        holder.ClientRegistry = new PacketRegistry { ProtocolVersion = @event.Player.ProtocolVersion, Mappings = Mappings.ClientHandshakeMappings };
-        holder.ServerRegistry = new PacketRegistry { ProtocolVersion = @event.Player.ProtocolVersion, Mappings = Mappings.ServerHandshakeMappings };
+        holder.ClientboundRegistry = new PacketRegistry { ProtocolVersion = @event.Player.ProtocolVersion, Mappings = Mappings.ClientboundHandshakeMappings };
+        holder.ServerboundRegistry = new PacketRegistry { ProtocolVersion = @event.Player.ProtocolVersion, Mappings = Mappings.ServerboundHandshakeMappings };
     }
 
     [Subscribe]
@@ -96,12 +98,11 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
         @event.Result = (direction, stream, builderCancellationToken) =>
         {
             var channel = new SimpleMinecraftChannel(new SimpleNetworkStream(stream));
+            channel.Add<MinecraftPacketMessageStream>();
 
-            channel.Add(new MinecraftPacketMessageStream
-            {
-                Flow = direction,
-                RegistryHolder = @event.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>()
-            });
+            var packetStream = channel.Get<MinecraftPacketMessageStream>();
+            packetStream.Flow = direction;
+            packetStream.RegistryHolder = @event.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
 
             return ValueTask.FromResult(channel as IMinecraftChannel);
         };
@@ -113,18 +114,34 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
         switch (@event.Message)
         {
             case BufferedBinaryMessage bufferedBinaryMessage:
-                logger.LogTrace("Received buffer length {Length} from {Side} {PlayerOrServer}", bufferedBinaryMessage.Memory.Length, @event.From, @event.From == Side.Client ? @event.Player : @event.Server);
+                logger.LogTrace("Received buffer length {Length} from {Side} {PlayerOrServer}", bufferedBinaryMessage.Holder.Slice.Length, @event.From, @event.From == Side.Client ? @event.Link.Player : @event.Link.Server);
                 return;
             case BinaryPacket binaryPacket:
-                logger.LogTrace("Received packet id {PacketId}, length {Length} from {Side} {PlayerOrServer}", binaryPacket.Id, binaryPacket.Memory.Length, @event.From, @event.From == Side.Client ? @event.Player : @event.Server);
+                logger.LogTrace("Received packet id {PacketId:X2}, length {Length} from {Side} {PlayerOrServer}", binaryPacket.Id, binaryPacket.Holder.Slice.Length, @event.From, @event.From == Side.Client ? @event.Link.Player : @event.Link.Server);
                 return;
-            case HandshakePacket handshake:
-                var holder = @event.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
-                holder.ClientRegistry = null;
-                break;
         }
 
         logger.LogDebug("Received packet {Packet}", @event.Message);
+
+        switch (@event.Message)
+        {
+            case HandshakePacket handshake:
+                @event.Link.Player.ProtocolVersion = ProtocolVersion.Get(handshake.ProtocolVersion);
+
+                var holder = @event.Link.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+                holder.ClientboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ClientboundLoginMappings };
+                break;
+            case SetCompressionPacket setCompression:
+                @event.Link.ServerChannel.AddBefore<MinecraftPacketMessageStream, ZlibCompressionMessageStream>();
+                logger.LogDebug("Link {Link} enabled compression in server channel with threshold {CompressionThreshold}", @event.Link, setCompression.Threshold);
+
+                var zlibStream = @event.Link.ServerChannel.Get<ZlibCompressionMessageStream>();
+                zlibStream.CompressionThreshold = setCompression.Threshold;
+
+                // cannot be awaited because default ILink implementation awaits for all event listeners one of which we are
+                _ = @event.Link.RestartAsync(cancellationToken);
+                break;
+        }
     }
 
     [Subscribe]
@@ -133,18 +150,36 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
         switch (@event.Message)
         {
             case BufferedBinaryMessage bufferedBinaryMessage:
-                logger.LogTrace("Sent buffer length {Length} to {Direction} direction {PlayerOrServer}", bufferedBinaryMessage.Memory.Length, @event.To, @event.From == Side.Client ? @event.Player : @event.Server);
+                logger.LogTrace("Sent buffer length {Length} to {Direction} {PlayerOrServer}", bufferedBinaryMessage.Holder.Slice.Length, @event.To, @event.To == Side.Client ? @event.Link.Player : @event.Link.Server);
                 return;
             case BinaryPacket binaryPacket:
-                logger.LogTrace("Sent packet id {PacketId}, length {Length} to {Direction} direction {PlayerOrServer}", binaryPacket.Id, binaryPacket.Memory.Length, @event.To, @event.From == Side.Client ? @event.Player : @event.Server);
+                logger.LogTrace("Sent packet id {PacketId:X2}, length {Length} to {Direction} {PlayerOrServer}", binaryPacket.Id, binaryPacket.Holder.Slice.Length, @event.To, @event.To == Side.Client ? @event.Link.Player : @event.Link.Server);
                 return;
-            case HandshakePacket handshake:
-                var holder = @event.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
-                holder.ServerRegistry = null;
-                break;
         }
 
         logger.LogDebug("Sent packet {Packet}", @event.Message);
+        
+        switch (@event.Message)
+        {
+            case HandshakePacket handshake:
+                var holder = @event.Link.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+                holder.ServerboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ServerboundLoginMappings };
+                break;
+            case SetCompressionPacket setCompression:
+                @event.Link.PlayerChannel.AddBefore<MinecraftPacketMessageStream, ZlibCompressionMessageStream>();
+
+                // ILink restart is already scheduled there, should we enable compression with client separately?
+
+                var zlibStream = @event.Link.PlayerChannel.Get<ZlibCompressionMessageStream>();
+                zlibStream.CompressionThreshold = setCompression.Threshold;
+
+                logger.LogDebug("Link {Link} enabled compression in player channel with threshold {CompressionThreshold}", @event.Link, setCompression.Threshold);
+
+                holder = @event.Link.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+                holder.ServerboundRegistry = null;
+                holder.ClientboundRegistry = null;
+                break;
+        }
     }
 
     public static bool IsSupportedHandshake(Memory<byte> memory)

@@ -1,5 +1,5 @@
-﻿using System.Buffers;
-using Void.Proxy.API.Network.IO.Buffers;
+﻿using Void.Proxy.API.Network.IO.Buffers;
+using Void.Proxy.API.Network.IO.Memory;
 using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.IO.Streams.Extensions;
 using Void.Proxy.API.Network.Protocol;
@@ -12,14 +12,15 @@ public class MinecraftPacketMessageStream : IMinecraftPacketMessageStream
     public IMinecraftStreamBase? BaseStream { get; set; }
     public IPacketRegistryHolder? RegistryHolder { get; set; }
     public Direction? Flow { get; set; }
+    public ProtocolVersion ProtocolVersion => RegistryHolder?.GetProtocolVersion(Flow) ?? ProtocolVersion.Oldest;
 
     public IMinecraftPacket ReadPacket()
     {
         return BaseStream switch
         {
             IMinecraftNetworkStream stream => DecodeNetwork(stream),
-            // IMinecraftCompleteMessageStream stream => DecodeCompleteMessage(stream),
-            _ => throw new NotImplementedException()
+            IMinecraftCompleteMessageStream stream => DecodeCompleteMessage(stream),
+            _ => throw new NotImplementedException(BaseStream?.GetType().FullName)
         };
     }
 
@@ -28,8 +29,8 @@ public class MinecraftPacketMessageStream : IMinecraftPacketMessageStream
         return BaseStream switch
         {
             IMinecraftNetworkStream stream => await DecodeNetworkAsync(stream, cancellationToken),
-            // IMinecraftCompleteMessageStream stream => await DecodeCompleteMessageAsync(stream),
-            _ => throw new NotImplementedException()
+            IMinecraftCompleteMessageStream stream => await DecodeCompleteMessageAsync(stream, cancellationToken),
+            _ => throw new NotImplementedException(BaseStream?.GetType().FullName)
         };
     }
 
@@ -40,8 +41,11 @@ public class MinecraftPacketMessageStream : IMinecraftPacketMessageStream
             case IMinecraftNetworkStream networkStream:
                 EncodeNetwork(networkStream, packet);
                 break;
+            case IMinecraftCompleteMessageStream completeMessageStream:
+                EncodeCompleteMessage(completeMessageStream, packet);
+                break;
             default:
-                throw new NotImplementedException();
+                throw new NotImplementedException(BaseStream?.GetType().FullName);
         }
     }
 
@@ -52,8 +56,11 @@ public class MinecraftPacketMessageStream : IMinecraftPacketMessageStream
             case IMinecraftNetworkStream networkStream:
                 await EncodeNetworkAsync(networkStream, packet, cancellationToken);
                 break;
+            case IMinecraftCompleteMessageStream completeMessageStream:
+                await EncodeCompleteMessageAsync(completeMessageStream, packet, cancellationToken);
+                break;
             default:
-                throw new NotImplementedException();
+                throw new NotImplementedException(BaseStream?.GetType().FullName);
         }
     }
 
@@ -84,116 +91,123 @@ public class MinecraftPacketMessageStream : IMinecraftPacketMessageStream
         BaseStream?.Close();
     }
 
+    private IMinecraftPacket DecodeCompleteMessage(IMinecraftCompleteMessageStream stream)
+    {
+        var message = stream.ReadMessage();
+        return DecodePacket(message.Holder);
+    }
+
+    private async ValueTask<IMinecraftPacket> DecodeCompleteMessageAsync(IMinecraftCompleteMessageStream stream, CancellationToken cancellationToken = default)
+    {
+        var message = await stream.ReadMessageAsync(cancellationToken);
+        return DecodePacket(message.Holder);
+    }
+
+    private void EncodeCompleteMessage(IMinecraftCompleteMessageStream stream, IMinecraftPacket packet)
+    {
+        stream.WriteMessage(new CompleteBinaryMessage(MemoryHolder.Concatenate(EncodePacket(packet))));
+    }
+
+    private async ValueTask EncodeCompleteMessageAsync(IMinecraftCompleteMessageStream stream, IMinecraftPacket packet, CancellationToken cancellationToken = default)
+    {
+        await stream.WriteMessageAsync(new CompleteBinaryMessage(MemoryHolder.Concatenate(EncodePacket(packet))), cancellationToken);
+    }
+
     private IMinecraftPacket DecodeNetwork(IMinecraftNetworkStream stream)
     {
         var length = stream.ReadVarInt();
-        var memoryOwner = MemoryPool<byte>.Shared.Rent(length);
-        var memory = memoryOwner.Memory[..length];
-        stream.ReadExactly(memory.Span);
-        return ToPacket(memory, memoryOwner);
+        var holder = MemoryHolder.RentExact(length);
+        stream.ReadExactly(holder.Slice.Span);
+        return DecodePacket(holder);
     }
 
     private async ValueTask<IMinecraftPacket> DecodeNetworkAsync(IMinecraftNetworkStream stream, CancellationToken cancellationToken = default)
     {
         var length = await stream.ReadVarIntAsync(cancellationToken);
-        var memoryOwner = MemoryPool<byte>.Shared.Rent(length);
-        var memory = memoryOwner.Memory[..length];
-        await stream.ReadExactlyAsync(memory, cancellationToken);
-        return ToPacket(memory, memoryOwner);
+        var holder = MemoryHolder.RentExact(length);
+        await stream.ReadExactlyAsync(holder.Slice, cancellationToken);
+        return DecodePacket(holder);
     }
 
     private void EncodeNetwork(IMinecraftNetworkStream stream, IMinecraftPacket packet)
     {
-        var packetId = packet switch
+        foreach (var holder in EncodePacketWithLength(packet))
         {
-            BinaryPacket binaryPacket => binaryPacket.Id,
-            _ when RegistryHolder?.GetRegistry(Flow, Operation.Write) is { } registry && registry.TryGetPacketId(packet, out var id) => id,
-            _ => throw new InvalidOperationException($"Cannot find id for packet {packet}")
-        };
-
-        using var memoryOwner = packet is BinaryPacket ? null : MemoryPool<byte>.Shared.Rent(2048);
-
-        var memory = memoryOwner switch
-        {
-            not null => memoryOwner.Memory,
-            _ when packet is BinaryPacket binaryPacket => binaryPacket.Memory,
-            _ => null
-        };
-
-        if (packet is not BinaryPacket)
-            TryEncodePacket();
-
-        stream.WriteVarInt(memory.Length + MinecraftBuffer.GetVarIntSize(packetId));
-        stream.WriteVarInt(packetId);
-        stream.Write(memory.Span);
-        return;
-
-        void TryEncodePacket() // divided into local function to support ref struct and Span
-        {
-            var buffer = new MinecraftBuffer(memory.Span);
-            packet.Encode(ref buffer, ProtocolVersion.Latest);
-            memory = memory[..buffer.Position];
+            stream.Write(holder.Slice.Span);
+            holder.Dispose();
         }
     }
 
     private async ValueTask EncodeNetworkAsync(IMinecraftNetworkStream stream, IMinecraftPacket packet, CancellationToken cancellationToken = default)
     {
-        var packetId = packet switch
+        foreach (var holder in EncodePacketWithLength(packet))
         {
-            BinaryPacket binaryPacket => binaryPacket.Id,
-            _ when RegistryHolder?.GetRegistry(Flow, Operation.Write) is { } registry && registry.TryGetPacketId(packet, out var id) => id,
-            _ => throw new InvalidOperationException($"Cannot find id for packet {packet}")
-        };
-
-        using var memoryOwner = packet is BinaryPacket ? null : MemoryPool<byte>.Shared.Rent(2048);
-
-        var memory = memoryOwner switch
-        {
-            not null => memoryOwner.Memory,
-            _ when packet is BinaryPacket binaryPacket => binaryPacket.Memory,
-            _ => null
-        };
-
-        if (packet is not BinaryPacket)
-            TryEncodePacket();
-
-        await stream.WriteVarIntAsync(memory.Length + MinecraftBuffer.GetVarIntSize(packetId), cancellationToken);
-        await stream.WriteVarIntAsync(packetId, cancellationToken);
-        await stream.WriteAsync(memory, cancellationToken);
-        return;
-
-        void TryEncodePacket()
-        {
-            var buffer = new MinecraftBuffer(memory.Span);
-            packet.Encode(ref buffer, ProtocolVersion.Latest);
-            memory = memory[..buffer.Position];
+            await stream.WriteAsync(holder.Slice, cancellationToken);
+            holder.Dispose();
         }
     }
 
-    public IMinecraftPacket ToPacket(Memory<byte> memory, IMemoryOwner<byte> memoryOwner)
+    public IMinecraftPacket DecodePacket(MemoryHolder holder)
     {
-        var buffer = new MinecraftBuffer(memory.Span);
+        var buffer = new MinecraftBuffer(holder.Slice.Span);
         var id = buffer.ReadVarInt();
 
-        memory = memory[buffer.Position..];
-
-        var result = RegistryHolder?.GetRegistry(Flow, Operation.Read) switch
+        if (RegistryHolder?.GetRegistry(Flow, Operation.Read) is { } registry && registry.TryCreateDecoder(id, out var decoder))
         {
-            { } registry when registry.TryCreateDecoder(id, out var decoder) => TryDecodePacket(decoder),
-            _ => new BinaryPacket(id, memory, memoryOwner)
-        };
-
-        return result;
-
-        IMinecraftPacket TryDecodePacket(PacketDecoder<IMinecraftPacket> decoder)
-        {
-            var buffer = new MinecraftBuffer(memory.Span);
-            var decodedPacket = decoder(ref buffer, ProtocolVersion.Latest);
+            var packet = decoder(ref buffer, ProtocolVersion);
 
             if (buffer.HasData)
                 throw new IndexOutOfRangeException($"The packet was not fully read. Bytes read: {buffer.Position}, Total length: {buffer.Length}.");
 
-            return decodedPacket;
+            return packet;
         }
+
+        holder.Slice = holder.Slice[buffer.Position..];
+        return new BinaryPacket(id, holder);
+    }
+
+    private IEnumerable<MemoryHolder> EncodePacketWithLength(IMinecraftPacket packet)
+    {
+        var slices = new List<MemoryHolder>(2);
+        slices.AddRange(EncodePacket(packet));
+
+        yield return EncodeVarInt(slices.Sum(holder => holder.Slice.Length));
+
+        foreach (var slice in slices)
+            yield return slice;
+    }
+
+    private IEnumerable<MemoryHolder> EncodePacket(IMinecraftPacket packet)
+    {
+        if (packet is BinaryPacket binaryPacket)
+        {
+            yield return EncodeVarInt(binaryPacket.Id);
+            yield return binaryPacket.Holder;
+        }
+        else
+        {
+            if (RegistryHolder?.GetRegistry(Flow, Operation.Write) is not { } registry || !registry.TryGetPacketId(packet, out var id))
+                throw new InvalidOperationException($"Cannot find id for packet {packet}");
+
+            yield return EncodeVarInt(id);
+
+            var holder = MemoryHolder.RentExact(2048);
+            var buffer = new MinecraftBuffer(holder.Slice.Span);
+
+            packet.Encode(ref buffer, ProtocolVersion.Latest);
+            holder.Slice = holder.Slice[..buffer.Position];
+
+            yield return holder;
+        }
+    }
+
+    private static MemoryHolder EncodeVarInt(int id)
+    {
+        var holder = MemoryHolder.RentExact(MinecraftBuffer.GetVarIntSize(id));
+        var buffer = new MinecraftBuffer(holder.Slice.Span);
+
+        buffer.WriteVarInt(id);
+
+        return holder;
     }
 }

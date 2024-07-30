@@ -1,13 +1,13 @@
-﻿using System.Buffers;
+﻿using Void.Proxy.API.Network.IO.Memory;
 
 namespace Void.Proxy.API.Network.IO.Messages;
 
-public class CompleteBinaryMessage(Memory<byte> memory, IMemoryOwner<byte> owner) : IMinecraftMessage
+public class CompleteBinaryMessage(MemoryHolder holder) : IMinecraftMessage
 {
-    public Memory<byte> Memory => memory;
+    public MemoryHolder Holder => holder;
 
     public void Dispose()
     {
-        owner.Dispose();
+        holder.Dispose();
     }
 }
