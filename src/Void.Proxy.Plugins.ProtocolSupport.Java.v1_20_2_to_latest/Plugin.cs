@@ -1,5 +1,4 @@
-﻿using System.Net.Sockets;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -213,8 +212,6 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
 
                 @event.Link.ServerChannel.AddBefore<MinecraftPacketMessageStream, AesCfb8BufferedStream>(new AesCfb8BufferedStream(secret));
                 @event.Link.PlayerChannel.AddBefore<MinecraftPacketMessageStream, AesCfb8BufferedStream>(new AesCfb8BufferedStream(secret));
-
-                logger.LogDebug("added decryption");
 
                 // cannot be awaited because default ILink implementation awaits for all event listeners one of which we are
                 var restartTask = @event.Link.RestartAsync(cancellationToken);

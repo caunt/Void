@@ -52,21 +52,21 @@ public class EncryptionResponsePacket : IMinecraftPacket<EncryptionResponsePacke
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_8)
         {
             var sharedSecretLength = buffer.ReadVarInt();
-            sharedSecret = buffer.Read(sharedSecretLength).ToArray();
+            sharedSecret = buffer.Read(sharedSecretLength);
 
             if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19 && protocolVersion < ProtocolVersion.MINECRAFT_1_19_3 && !buffer.ReadBoolean())
                 salt = buffer.ReadLong();
 
             var verifyTokenLength = buffer.ReadVarInt();
-            verifyToken = buffer.Read(verifyTokenLength).ToArray();
+            verifyToken = buffer.Read(verifyTokenLength);
         }
         else
         {
             var sharedSecretLength = buffer.ReadVarShort();
-            sharedSecret = buffer.Read(sharedSecretLength).ToArray();
+            sharedSecret = buffer.Read(sharedSecretLength);
 
             var verifyTokenLength = buffer.ReadVarShort();
-            verifyToken = buffer.Read(verifyTokenLength).ToArray();
+            verifyToken = buffer.Read(verifyTokenLength);
         }
 
         return new EncryptionResponsePacket

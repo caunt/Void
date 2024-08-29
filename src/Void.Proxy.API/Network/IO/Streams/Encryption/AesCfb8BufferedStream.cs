@@ -1,8 +1,5 @@
-﻿using System;
-using System.Buffers;
+﻿using System.Buffers;
 using System.Security.Cryptography;
-using System.Threading;
-using Serilog;
 using Void.Proxy.API.Network.IO.Messages;
 
 namespace Void.Proxy.API.Network.IO.Streams.Encryption;
