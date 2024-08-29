@@ -63,6 +63,11 @@ public ref struct MinecraftBuffer
         return _backingBuffer.ReadBoolean();
     }
 
+    public void WriteBoolean(bool value)
+    {
+        _backingBuffer.WriteBoolean(value);
+    }
+
     public ushort ReadUnsignedShort()
     {
         return _backingBuffer.ReadUnsignedShort();
@@ -146,6 +151,11 @@ public ref struct MinecraftBuffer
     public ReadOnlySpan<byte> Read(int length)
     {
         return _backingBuffer.Read(length);
+    }
+
+    public void Write(ReadOnlySpan<byte> data)
+    {
+        _backingBuffer.Write(data);
     }
 
     public ReadOnlySpan<byte> ReadToEnd()

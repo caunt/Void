@@ -112,12 +112,7 @@ public ref struct SpanBackingBuffer(Span<byte> span)
         return Slice(length);
     }
 
-    public ReadOnlySpan<byte> ReadToEnd()
-    {
-        return Read(_block.Length - Position);
-    }
-
-    public void Write(Span<byte> data)
+    public void Write(ReadOnlySpan<byte> data)
     {
         if (_block.Length < Position + data.Length)
             throw new InternalBufferOverflowException($"Buffer length with max {_block.Length} at position {Position} attempted to write {data.Length} bytes");
@@ -125,5 +120,10 @@ public ref struct SpanBackingBuffer(Span<byte> span)
         var span = _block.Slice(Position, data.Length);
         Position += data.Length;
         data.CopyTo(span);
+    }
+
+    public ReadOnlySpan<byte> ReadToEnd()
+    {
+        return Read(_block.Length - Position);
     }
 }

@@ -15,11 +15,13 @@ public static class Mappings
 
     public static readonly IReadOnlyDictionary<PacketMapping[], Type> ClientboundLoginMappings = new Dictionary<PacketMapping[], Type>
     {
+        { [new PacketMapping(0x01, ProtocolVersion.MINECRAFT_1_7_2)], typeof(EncryptionRequestPacket) },
         { [new PacketMapping(0x03, ProtocolVersion.MINECRAFT_1_8)], typeof(SetCompressionPacket) }
     };
 
     public static readonly IReadOnlyDictionary<PacketMapping[], Type> ServerboundLoginMappings = new Dictionary<PacketMapping[], Type>
     {
+        { [new PacketMapping(0x01, ProtocolVersion.MINECRAFT_1_7_2)], typeof(EncryptionResponsePacket) },
         { [new PacketMapping(0x03, ProtocolVersion.MINECRAFT_1_20_2)], typeof(LoginAcknowledgedPacket) }
     };
 

@@ -143,6 +143,8 @@ public ref struct ReadOnlySequenceBackingBuffer
 
     public ReadOnlySpan<byte> Slice(int length)
     {
+        // Should be safe in most cases, but prefer throw new NotSupportedException("That implementation would allocate memory, not supported yet")
+
         if (_currentBlock.Length < _blockPosition + length)
             throw new IndexOutOfRangeException($"Current block length with length {_currentBlock.Length} at position {_blockPosition} attempted to slice {length} bytes, reading from next blocks not implemented");
 
@@ -157,12 +159,18 @@ public ref struct ReadOnlySequenceBackingBuffer
         return Slice(length);
     }
 
-    public ReadOnlySequence<byte> ReadToEnd()
+    public ReadOnlySpan<byte> ReadToEnd()
     {
-        var sequencePosition = _sequence.GetPosition(Position);
-        Position = Length;
-        return _sequence.Slice(sequencePosition);
+        return Read(Length - Position);
     }
+
+    // Read Slice(int length) for explanation
+    // public ReadOnlySequence<byte> ReadToEnd()
+    // {
+    //     var sequencePosition = _sequence.GetPosition(Position);
+    //     Position = Length;
+    //     return _sequence.Slice(sequencePosition);
+    // }
 
     private void MoveNextBlock()
     {

@@ -13,22 +13,32 @@ public class SimpleMinecraftChannel(IMinecraftStreamBase head) : IMinecraftChann
 
     public void Add<T>() where T : IMinecraftStream, new()
     {
-        var stream = new T();
+        Add(new T());
+    }
+
+    public void Add<T>(T stream) where T : IMinecraftStream
+    {
         stream.BaseStream = head;
         head = stream;
+    }
+
+    public void AddBefore<TBefore, TValue>() where TBefore : IMinecraftStream where TValue : IMinecraftStream, new()
+    {
+        AddBefore<TBefore, TValue>(new TValue());
+    }
+
+    public void AddBefore<TBefore, TValue>(TValue stream) where TBefore : IMinecraftStream where TValue : IMinecraftStream
+    {
+        var before = Get<TBefore>();
+        var beforeBaseStream = before.BaseStream;
+
+        stream.BaseStream = beforeBaseStream;
+        before.BaseStream = stream;
     }
 
     public T Get<T>() where T : IMinecraftStreamBase
     {
         return Get<T>(head);
-    }
-
-    public void AddBefore<TBefore, TValue>() where TBefore : IMinecraftStream where TValue : IMinecraftStream, new()
-    {
-        var before = Get<TBefore>();
-        var beforeBaseStream = before.BaseStream;
-        var addedBaseStream = new TValue { BaseStream = beforeBaseStream };
-        before.BaseStream = addedBaseStream;
     }
 
     public void PrependBuffer(Memory<byte> memory)

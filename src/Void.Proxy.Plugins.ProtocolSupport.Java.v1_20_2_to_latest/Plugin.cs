@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Handshake;
@@ -12,6 +15,7 @@ using Void.Proxy.API.Network.IO.Channels;
 using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.IO.Streams;
 using Void.Proxy.API.Network.IO.Streams.Compression;
+using Void.Proxy.API.Network.IO.Streams.Encryption;
 using Void.Proxy.API.Network.IO.Streams.Packet;
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.API.Players;
@@ -199,6 +203,29 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
                 holder = @event.Link.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
                 holder.ClientboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ClientboundPlayMappings };
                 break;
+            case EncryptionRequestPacket encryptionRequest:
+                logger.LogDebug(JsonSerializer.Serialize(encryptionRequest));
+                break;
+            case EncryptionResponsePacket encryptionResponse:
+                var serverPrivateKey = Convert.FromHexString("30820276020100300d06092a864886f70d0101010500048202603082025c0201000281810084e9eaab73f9a5eb70b8388b275bb0c9f3ff0d9c0bf86970161fb8e4d6cfa4018df8c40ae67001e7d26f8b855dcaf8eb202636dbe9e19a5b68845985aef317cacfb7e23593ea2eb98454e0c0baa466c2b11dc1d1744c38f023755b84dd1a273b2a5c3f09aaafffea1c2c7d145ef8622d0dd1bc8359b992a18ee1cee2528eb77f020301000102818008cd025c6af7ff5c092131a149306192e5c4a02e927e56e0f49e121c98fab3c5e49431caf4fa3aae12798f57fbdf6a3f0b686c5e806c8f4f792ab650cb464e6f669ac54d2131d8c777d7080b54155c6a4a83b3970d1a8cc8079ff0dbed58c536a3594f9cb2db63fafdaf9df0fcc87af51aee297c711135eacebca152167d67410241008c4040c6e1cbb1d98f7f7a7a3bef5523a472ebfca12fd0d0901fca24564e6fd58df66eb499ae26e7992600e519964185da1ad2c1ed1952da375e9c67986948bf024100f29b7970e88312857bcf3dd80d758892573493e44c83357194cf90f8ce04a41c92eeae06fdb614b02d6402ccea9fe1062ff3e324695039e0d8e3438b8595814102410088b35feff9c956d25da1bd39430de6085593861cb8e7283b011f5b21cbd5abff94dd6bce3034a4cafc65245e297060f11c4324c5cc59f07dad9654104d67e17502402a5866cf0556737227151a374eca18076aff3b5d1ad9c0074e31189dc4dfdc813c483ac9ef98cb6da0ce970a8b5d529a90de21e4661961b0d44a7eaca8a95ac102403773371ef2776d2e87d8b1a2e4814f3e44f4961f909926b056361dc843dfdb31d3fafd3bd0d3c2956c0fd386cb68ba55464a439feec4f9be60530b8f76c6bdca");
+
+                var secret = Decrypt(serverPrivateKey, encryptionResponse.SharedSecret);
+
+                @event.Link.ServerChannel.AddBefore<MinecraftPacketMessageStream, AesCfb8BufferedStream>(new AesCfb8BufferedStream(secret));
+                @event.Link.PlayerChannel.AddBefore<MinecraftPacketMessageStream, AesCfb8BufferedStream>(new AesCfb8BufferedStream(secret));
+
+                logger.LogDebug("added decryption");
+
+                // cannot be awaited because default ILink implementation awaits for all event listeners one of which we are
+                var restartTask = @event.Link.RestartAsync(cancellationToken);
+                break;
+
+                static byte[] Decrypt(byte[] key, byte[] data)
+                {
+                    using var rsa = RSA.Create();
+                    rsa.ImportPkcs8PrivateKey(key, out _);
+                    return rsa.Decrypt(data, RSAEncryptionPadding.Pkcs1);
+                }
         }
     }
 

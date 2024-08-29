@@ -13,10 +13,6 @@ public ref struct MinecraftBackingBuffer
     private ReadOnlySequenceBackingBuffer _readOnlySequenceBackingBuffer;
     private readonly BufferType _bufferType;
 
-    // public long Length => Span.Length;
-    // public bool HasData => Position < Length;
-    // public int Position { get; private set; }
-
     public MinecraftBackingBuffer(Span<byte> span)
     {
         _spanBackingBuffer = new SpanBackingBuffer(span);
@@ -97,6 +93,11 @@ public ref struct MinecraftBackingBuffer
     public bool ReadBoolean()
     {
         return Convert.ToBoolean(ReadUnsignedByte());
+    }
+
+    public void WriteBoolean(bool value)
+    {
+        WriteUnsignedByte(Convert.ToByte(value));
     }
 
     public ushort ReadUnsignedShort()
@@ -319,9 +320,24 @@ public ref struct MinecraftBackingBuffer
         {
             BufferType.Span => _spanBackingBuffer.Read(length),
             BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.Read(length),
-            BufferType.ReadOnlySequence => throw new NotSupportedException("That implementation would allocate memory, not supported yet"),
+            BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.Read(length),
             _ => throw new NotSupportedException(_bufferType.ToString())
         };
+    }
+
+    public void Write(ReadOnlySpan<byte> data)
+    {
+        switch (_bufferType)
+        {
+            case BufferType.Span:
+                _spanBackingBuffer.Write(data);
+                break;
+            case BufferType.ReadOnlySpan:
+            case BufferType.ReadOnlySequence:
+                throw new ReadOnlyException();
+            default:
+                throw new NotSupportedException(_bufferType.ToString());
+        }
     }
 
     public ReadOnlySpan<byte> ReadToEnd()
@@ -330,7 +346,7 @@ public ref struct MinecraftBackingBuffer
         {
             BufferType.Span => _spanBackingBuffer.ReadToEnd(),
             BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.ReadToEnd(),
-            BufferType.ReadOnlySequence => throw new NotSupportedException("That implementation would allocate memory, not supported yet"), // possible to implement by returning ReadOnlySequence - _readOnlySequenceBackingBuffer.ReadToEnd()
+            BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.ReadToEnd(),
             _ => throw new NotSupportedException(_bufferType.ToString())
         };
     }
