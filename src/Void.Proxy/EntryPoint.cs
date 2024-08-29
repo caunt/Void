@@ -25,9 +25,34 @@ using Void.Proxy.Settings;
 
 Log.Logger = new LoggerConfiguration().Enrich.FromLogContext().MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch).WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}").CreateLogger();
 
-var builder = Host.CreateApplicationBuilder(args);
+try
+{
+    var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddSerilog().AddJsonOptions().AddHttpClient().AddSingleton<ISettings, Settings>().AddSingleton<ICryptoService, RsaCryptoService>().AddSingleton<IEventService, EventService>().AddSingleton<IPluginService, PluginService>().AddSingleton<IPlayerService, PlayerService>().AddSingleton<IServerService, ServerService>().AddSingleton<ILinkService, LinkService>().AddSingleton<IForwardingService, ForwardingService>().AddSingleton<IProxy, Platform>().AddHostedService<Platform>().AddScoped<IChannelBuilderService, ChannelBuilderService>().AddScoped<IPacketRegistryHolder, PacketRegistryHolder>();
+    builder.Services.AddSerilog();
+    builder.Services.AddJsonOptions();
+    builder.Services.AddHttpClient();
+    builder.Services.AddSingleton<ISettings, Settings>();
+    builder.Services.AddSingleton<ICryptoService, RsaCryptoService>();
+    builder.Services.AddSingleton<IEventService, EventService>();
+    builder.Services.AddSingleton<IPluginService, PluginService>();
+    builder.Services.AddSingleton<IPlayerService, PlayerService>();
+    builder.Services.AddSingleton<IServerService, ServerService>();
+    builder.Services.AddSingleton<ILinkService, LinkService>();
+    builder.Services.AddSingleton<IForwardingService, ForwardingService>();
+    builder.Services.AddSingleton<IProxy, Platform>();
+    builder.Services.AddHostedService<Platform>();
+    builder.Services.AddScoped<IChannelBuilderService, ChannelBuilderService>();
+    builder.Services.AddScoped<IPacketRegistryHolder, PacketRegistryHolder>();
 
-var host = builder.Build();
-await host.RunAsync();
+    var host = builder.Build();
+    await host.RunAsync();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Host terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

@@ -1,13 +1,13 @@
-﻿using Void.Proxy.API.Network.IO.Memory;
+﻿using Microsoft.IO;
 
 namespace Void.Proxy.API.Network.IO.Messages;
 
-public class CompleteBinaryMessage(MemoryHolder holder) : IMinecraftMessage
+public class CompleteBinaryMessage(RecyclableMemoryStream recyclableMemoryStream) : IMinecraftMessage
 {
-    public MemoryHolder Holder => holder;
+    public RecyclableMemoryStream Stream => recyclableMemoryStream;
 
     public void Dispose()
     {
-        holder.Dispose();
+        recyclableMemoryStream.Dispose();
     }
 }

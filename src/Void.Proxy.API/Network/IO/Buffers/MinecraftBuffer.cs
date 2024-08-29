@@ -1,46 +1,29 @@
 ﻿using System.Buffers;
-using System.Buffers.Binary;
 using System.Numerics;
-using System.Text;
 
 namespace Void.Proxy.API.Network.IO.Buffers;
 
-public ref struct MinecraftBuffer(Span<byte> memory)
+public ref struct MinecraftBuffer
 {
-    public long Length => Span.Length;
-    public bool HasData => Position < Length;
-    public int Position { get; private set; }
-    public Span<byte> Span { get; init; } = memory;
+    private MinecraftBackingBuffer _backingBuffer;
 
-    public MinecraftBuffer(int minSize) : this(MemoryPool<byte>.Shared.Rent(minSize).Memory.Span)
-    {
-    } // is it safe? will GC dispose MemoryOwner too early?
+    public bool HasData => _backingBuffer.HasData();
+    public int Position => _backingBuffer.GetPosition();
+    public long Length => _backingBuffer.GetLength();
 
-    public MinecraftBuffer() : this(2048)
+    public MinecraftBuffer(Span<byte> memory)
     {
+        _backingBuffer = new MinecraftBackingBuffer(memory);
     }
 
-    public void Seek(int offset)
+    public MinecraftBuffer(ReadOnlySpan<byte> span)
     {
-        Seek(offset, SeekOrigin.Current);
+        _backingBuffer = new MinecraftBackingBuffer(span);
     }
 
-    public void Seek(int offset, SeekOrigin origin)
+    public MinecraftBuffer(ReadOnlySequence<byte> sequence)
     {
-        if (origin == SeekOrigin.Begin)
-            Position = offset;
-        else if (origin == SeekOrigin.Current)
-            Position += offset;
-        else
-            Position -= offset;
-
-        if (Position < 0 || Position > Length)
-            throw new IndexOutOfRangeException($"Position {Position}, Length {Length}");
-    }
-
-    public void Reset()
-    {
-        Position = 0;
+        _backingBuffer = new MinecraftBackingBuffer(sequence);
     }
 
     public static int GetVarIntSize(int value)
@@ -48,7 +31,7 @@ public ref struct MinecraftBuffer(Span<byte> memory)
         return ((BitOperations.LeadingZeroCount((uint)value | 1) - 38) * -1171) >> 13;
     }
 
-    public static IEnumerable<byte> GetVarInt(int value)
+    public static IEnumerable<byte> EnumerateVarInt(int value)
     {
         var unsigned = (uint)value;
 
@@ -65,106 +48,114 @@ public ref struct MinecraftBuffer(Span<byte> memory)
         } while (unsigned != 0);
     }
 
-    public int ReadVarInt()
-    {
-        var numRead = 0;
-        var result = 0;
-        byte read;
-        do
-        {
-            read = ReadUnsignedByte();
-            var value = read & 0b01111111;
-            result |= value << (7 * numRead);
-
-            numRead++;
-            if (numRead > 5)
-                throw new InvalidOperationException("VarInt is too big");
-        } while ((read & 0b10000000) != 0);
-
-        return result;
-    }
-
-    public void WriteVarInt(int value)
-    {
-        foreach (var temp in GetVarInt(value))
-            WriteUnsignedByte(temp);
-    }
-
     public byte ReadUnsignedByte()
     {
-        return Span[Position++];
+        return _backingBuffer.ReadUnsignedByte();
     }
 
     public void WriteUnsignedByte(byte value)
     {
-        Span[Position++] = value;
+        _backingBuffer.WriteUnsignedByte(value);
+    }
+
+    public bool ReadBoolean()
+    {
+        return _backingBuffer.ReadBoolean();
     }
 
     public ushort ReadUnsignedShort()
     {
-        var span = Span.Slice(Position, 2);
-        Position += 2;
-        return BinaryPrimitives.ReadUInt16BigEndian(span);
+        return _backingBuffer.ReadUnsignedShort();
     }
 
     public void WriteUnsignedShort(ushort value)
     {
-        var span = Span.Slice(Position, 2);
-        Position += 2;
-        BinaryPrimitives.WriteUInt16BigEndian(span, value);
+        _backingBuffer.WriteUnsignedShort(value);
     }
 
     public int ReadVarShort()
     {
-        var low = ReadUnsignedShort();
-        var high = 0;
-
-        if ((low & 0x8000) != 0)
-        {
-            low &= 0x7FFF;
-            high = ReadUnsignedByte();
-        }
-
-        return ((high & 0xFF) << 15) | low;
+        return _backingBuffer.ReadVarShort();
     }
 
     public void WriteVarShort(int value)
     {
-        var low = (ushort)(value & 0x7FFF);
-        var high = (byte)((value & 0x7F8000) >> 15);
+        _backingBuffer.WriteVarShort(value);
+    }
 
-        if (high != 0)
-            low |= 0x8000;
+    public int ReadVarInt()
+    {
+        return _backingBuffer.ReadVarInt();
+    }
 
-        WriteUnsignedShort(low);
+    public void WriteVarInt(int value)
+    {
+        _backingBuffer.WriteVarInt(value);
+    }
 
-        if (high != 0)
-            WriteUnsignedByte(high);
+    public int ReadInt()
+    {
+        return _backingBuffer.ReadInt();
+    }
+
+    public void WriteInt(int value)
+    {
+        _backingBuffer.WriteInt(value);
+    }
+
+    public long ReadLong()
+    {
+        return _backingBuffer.ReadLong();
+    }
+
+    public void WriteLong(long value)
+    {
+        _backingBuffer.WriteLong(value);
+    }
+
+    public void WriteGuid(Guid value)
+    {
+        _backingBuffer.WriteGuid(value);
+    }
+
+    public void WriteGuidIntArray(Guid value)
+    {
+        _backingBuffer.WriteGuidIntArray(value);
     }
 
     public string ReadString(int maxLength = 32767)
     {
-        var length = ReadVarInt();
-        var span = Span.Slice(Position, length);
-        Position += length;
-
-        var value = Encoding.UTF8.GetString(span);
-
-        if (maxLength > 0 && value.Length > maxLength)
-            throw new IndexOutOfRangeException($"string ({value.Length}) exceeded maximum length ({maxLength})");
-
-        return value;
+        return _backingBuffer.ReadString();
     }
 
     public void WriteString(string value)
     {
-        var length = Encoding.UTF8.GetByteCount(value);
-        WriteVarInt(length);
+        _backingBuffer.WriteString(value);
+    }
 
-        var span = Span.Slice(Position, length);
-        Position += length;
+    public void Seek(int offset)
+    {
+        Seek(offset, SeekOrigin.Begin);
+    }
 
-        Encoding.UTF8.GetBytes(value, span);
+    public void Seek(int offset, SeekOrigin origin)
+    {
+        _backingBuffer.Seek(offset, origin);
+    }
+
+    public ReadOnlySpan<byte> Read(int length)
+    {
+        return _backingBuffer.Read(length);
+    }
+
+    public ReadOnlySpan<byte> ReadToEnd()
+    {
+        return _backingBuffer.ReadToEnd();
+    }
+
+    public void Reset()
+    {
+        _backingBuffer.Reset();
     }
 
     /*public ChatComponent ReadComponent(int maxLength = 32767, ProtocolVersion? protocolVersion = null)
@@ -212,39 +203,7 @@ public ref struct MinecraftBuffer(Span<byte> memory)
         }
     }*/
 
-    public bool ReadBoolean()
-    {
-        return ReadUnsignedByte() == 0x01;
-    }
-
-    public void WriteBoolean(bool value)
-    {
-        WriteUnsignedByte((byte)(value ? 0x01 : 0x00));
-    }
-
-    public int ReadInt()
-    {
-        var span = Span.Slice(Position, 4);
-        Position += 4;
-        return BitConverter.ToInt32(span);
-    }
-
-    public void WriteInt(int value)
-    {
-        var span = Span.Slice(Position, 4);
-        Position += 4;
-        BitConverter.GetBytes(value).CopyTo(span);
-    }
-
     // public Guid ReadGuid() => GuidHelper.FromLongs(ReadLong(), ReadLong());
-
-    public void WriteGuid(Guid value)
-    {
-        if (value == Guid.Empty)
-            Write(new byte[16]);
-        else
-            Write(value.ToByteArray(true));
-    }
 
     /*public Guid ReadGuidIntArray()
     {
@@ -257,53 +216,4 @@ public ref struct MinecraftBuffer(Span<byte> memory)
 
         return GuidHelper.FromLongs(msb, lsb);
     }*/
-
-    public void WriteGuidIntArray(Guid value)
-    {
-        var bytes = value.ToByteArray();
-        var msb = BitConverter.ToUInt64(bytes, 0);
-        var lsb = BitConverter.ToUInt64(bytes, 8);
-
-        WriteInt((int)(msb >> 32));
-        WriteInt((int)msb);
-        WriteInt((int)(lsb >> 32));
-        WriteInt((int)lsb);
-    }
-
-    public long ReadLong()
-    {
-        return BinaryPrimitives.ReadInt64BigEndian(Read(8));
-    }
-
-    public void WriteLong(long value)
-    {
-        var span = Span.Slice(Position, 8);
-        Position += 8;
-        BinaryPrimitives.WriteInt64BigEndian(span, value);
-    }
-
-    public Span<byte> ReadToEnd()
-    {
-        return Read((int)Length - Position);
-    }
-
-    public Span<byte> Read(int length)
-    {
-        if (Length < Position + length)
-            throw new InternalBufferOverflowException($"Buffer length with max {Length} at position {Position} attempted to read {length} bytes");
-
-        var span = Span.Slice(Position, length);
-        Position += length;
-        return span;
-    }
-
-    public void Write(Span<byte> data)
-    {
-        if (Length < Position + data.Length)
-            throw new InternalBufferOverflowException($"Buffer length with max {Length} at position {Position} attempted to write {data.Length} bytes");
-
-        var span = Span.Slice(Position, data.Length);
-        Position += data.Length;
-        data.CopyTo(span);
-    }
 }

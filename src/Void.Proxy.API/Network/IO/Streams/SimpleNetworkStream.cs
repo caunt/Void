@@ -73,12 +73,12 @@ public class SimpleNetworkStream(NetworkStream baseStream) : IMinecraftNetworkSt
         }
     }
 
-    public void Write(Span<byte> span)
+    public void Write(ReadOnlySpan<byte> span)
     {
         baseStream.Write(span);
     }
 
-    public async ValueTask WriteAsync(Memory<byte> memory, CancellationToken cancellationToken = default)
+    public async ValueTask WriteAsync(ReadOnlyMemory<byte> memory, CancellationToken cancellationToken = default)
     {
         await baseStream.WriteAsync(memory, cancellationToken);
     }

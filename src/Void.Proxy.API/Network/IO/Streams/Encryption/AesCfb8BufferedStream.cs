@@ -1,11 +1,10 @@
 ﻿using System.Buffers;
 using System.Security.Cryptography;
-using Void.Proxy.API.Network.IO.Memory;
 using Void.Proxy.API.Network.IO.Messages;
 
 namespace Void.Proxy.API.Network.IO.Streams.Encryption;
 
-public class AesCfb8BufferedStream : IMinecraftBufferedMessageStream
+public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBufferedMessageStream
 {
     private const int BlockSize = 16;
 
@@ -33,7 +32,7 @@ public class AesCfb8BufferedStream : IMinecraftBufferedMessageStream
         {
             IMinecraftNetworkStream networkStream => DecryptNetwork(networkStream, output),
             IMinecraftBufferedMessageStream bufferedStream => DecryptBuffer(bufferedStream, output),
-            _ => throw new NotImplementedException(BaseStream?.GetType().FullName)
+            _ => throw new NotSupportedException(BaseStream?.GetType().FullName)
         };
     }
 
@@ -43,7 +42,7 @@ public class AesCfb8BufferedStream : IMinecraftBufferedMessageStream
         {
             IMinecraftNetworkStream networkStream => await DecryptNetworkAsync(networkStream, output, cancellationToken),
             IMinecraftBufferedMessageStream bufferedStream => await DecryptBufferAsync(bufferedStream, output, cancellationToken),
-            _ => throw new NotImplementedException(BaseStream?.GetType().FullName)
+            _ => throw new NotSupportedException(BaseStream?.GetType().FullName)
         };
     }
 
@@ -58,7 +57,7 @@ public class AesCfb8BufferedStream : IMinecraftBufferedMessageStream
                 DecryptBufferExactly(bufferedStream, output);
                 break;
             default:
-                throw new NotImplementedException(BaseStream?.GetType().FullName);
+                throw new NotSupportedException(BaseStream?.GetType().FullName);
         }
     }
 
@@ -73,11 +72,11 @@ public class AesCfb8BufferedStream : IMinecraftBufferedMessageStream
                 await DecryptBufferExactlyAsync(bufferedStream, output, cancellationToken);
                 break;
             default:
-                throw new NotImplementedException(BaseStream?.GetType().FullName);
+                throw new NotSupportedException(BaseStream?.GetType().FullName);
         }
     }
 
-    public void Write(Span<byte> span)
+    public void Write(ReadOnlySpan<byte> span)
     {
         // switch
         // using var memoryOwner = MemoryPool<byte>.Shared.Rent(span.Length);
@@ -85,9 +84,9 @@ public class AesCfb8BufferedStream : IMinecraftBufferedMessageStream
         // Encrypt(span, memory.Span);
     }
 
-    public ValueTask WriteAsync(Memory<byte> memory, CancellationToken cancellationToken = default)
+    public ValueTask WriteAsync(ReadOnlyMemory<byte> memory, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException(BaseStream?.GetType().FullName);
+        throw new NotSupportedException(BaseStream?.GetType().FullName);
     }
 
     public void Flush()
@@ -108,40 +107,40 @@ public class AesCfb8BufferedStream : IMinecraftBufferedMessageStream
 
     public BufferedBinaryMessage ReadAsMessage(int size = 2048)
     {
-        var holder = MemoryHolder.RentExact(size);
+        var stream = RecyclableMemoryStreamManager.GetStream();
 
         switch (BaseStream)
         {
             case IMinecraftNetworkStream networkStream:
-                DecryptNetworkExactly(networkStream, holder.Slice.Span);
+                DecryptNetworkExactly(networkStream, stream.GetSpan(size));
                 break;
             case IMinecraftBufferedMessageStream bufferedStream:
-                DecryptBufferExactly(bufferedStream, holder.Slice.Span);
+                DecryptBufferExactly(bufferedStream, stream.GetSpan(size));
                 break;
             default:
-                throw new NotImplementedException(BaseStream?.GetType().FullName);
+                throw new NotSupportedException(BaseStream?.GetType().FullName);
         }
 
-        return new BufferedBinaryMessage(holder);
+        return new BufferedBinaryMessage(stream);
     }
 
     public async ValueTask<BufferedBinaryMessage> ReadAsMessageAsync(int size = 2048, CancellationToken cancellationToken = default)
     {
-        var holder = MemoryHolder.RentExact(size);
+        var stream = RecyclableMemoryStreamManager.GetStream();
 
         switch (BaseStream)
         {
             case IMinecraftNetworkStream networkStream:
-                await DecryptNetworkExactlyAsync(networkStream, holder.Slice, cancellationToken);
+                await DecryptNetworkExactlyAsync(networkStream, stream.GetMemory(size), cancellationToken);
                 break;
             case IMinecraftBufferedMessageStream bufferedStream:
-                await DecryptBufferExactlyAsync(bufferedStream, holder.Slice, cancellationToken);
+                await DecryptBufferExactlyAsync(bufferedStream, stream.GetMemory(size), cancellationToken);
                 break;
             default:
-                throw new NotImplementedException(BaseStream?.GetType().FullName);
+                throw new NotSupportedException(BaseStream?.GetType().FullName);
         }
 
-        return new BufferedBinaryMessage(holder);
+        return new BufferedBinaryMessage(stream);
     }
 
     public void WriteAsMessage(BufferedBinaryMessage message)

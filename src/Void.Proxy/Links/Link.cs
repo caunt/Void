@@ -14,13 +14,13 @@ namespace Void.Proxy.Links;
 
 public class Link : ILink
 {
+    private readonly IEventService _events;
+    private readonly AsyncLock _lock;
+    private readonly ILogger<Link> _logger;
     private CancellationTokenSource _ctsPlayerToServer;
     private CancellationTokenSource _ctsPlayerToServerForce;
     private CancellationTokenSource _ctsServerToPlayer;
     private CancellationTokenSource _ctsServerToPlayerForce;
-    private readonly IEventService _events;
-    private readonly AsyncLock _lock;
-    private readonly ILogger<Link> _logger;
     private Task _playerToServerTask;
     private Task _serverToPlayerTask;
 
@@ -152,7 +152,7 @@ public class Link : ILink
     {
         await Task.Yield();
 
-        // not sure if reading should be cancelled with grace token
+        // not sure if reading should be cancelled with grace token, but helps with link restarts after compression enabled
         var readingCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, forceCancellationToken);
 
         try

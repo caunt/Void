@@ -114,10 +114,10 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
         switch (@event.Message)
         {
             case BufferedBinaryMessage bufferedBinaryMessage:
-                logger.LogTrace("Received buffer length {Length} from {Side} {PlayerOrServer}", bufferedBinaryMessage.Holder.Slice.Length, @event.From, @event.From == Side.Client ? @event.Link.Player : @event.Link.Server);
+                logger.LogTrace("Received buffer length {Length} from {Side} {PlayerOrServer}", bufferedBinaryMessage.Stream.Length, @event.From, @event.From == Side.Client ? @event.Link.Player : @event.Link.Server);
                 return;
             case BinaryPacket binaryPacket:
-                logger.LogTrace("Received packet id {PacketId:X2}, length {Length} from {Side} {PlayerOrServer}", binaryPacket.Id, binaryPacket.Holder.Slice.Length, @event.From, @event.From == Side.Client ? @event.Link.Player : @event.Link.Server);
+                logger.LogTrace("Received packet id {PacketId:X2}, length {Length} from {Side} {PlayerOrServer}", binaryPacket.Id, binaryPacket.Stream.Length, @event.From, @event.From == Side.Client ? @event.Link.Player : @event.Link.Server);
                 return;
         }
 
@@ -126,20 +126,36 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
         switch (@event.Message)
         {
             case HandshakePacket handshake:
-                @event.Link.Player.ProtocolVersion = ProtocolVersion.Get(handshake.ProtocolVersion);
+                var playerProtocolVersion = ProtocolVersion.Get(handshake.ProtocolVersion);
+
+                if (!SupportedVersions.Contains(playerProtocolVersion))
+                    break;
+
+                @event.Link.Player.ProtocolVersion = playerProtocolVersion;
 
                 var holder = @event.Link.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
                 holder.ClientboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ClientboundLoginMappings };
                 break;
             case SetCompressionPacket setCompression:
-                @event.Link.ServerChannel.AddBefore<MinecraftPacketMessageStream, ZlibCompressionMessageStream>();
+                @event.Link.ServerChannel.AddBefore<MinecraftPacketMessageStream, SharpZipLibCompressionMessageStream>();
                 logger.LogDebug("Link {Link} enabled compression in server channel with threshold {CompressionThreshold}", @event.Link, setCompression.Threshold);
 
-                var zlibStream = @event.Link.ServerChannel.Get<ZlibCompressionMessageStream>();
+                var zlibStream = @event.Link.ServerChannel.Get<SharpZipLibCompressionMessageStream>();
                 zlibStream.CompressionThreshold = setCompression.Threshold;
 
                 // cannot be awaited because default ILink implementation awaits for all event listeners one of which we are
-                _ = @event.Link.RestartAsync(cancellationToken);
+                var restartTask = @event.Link.RestartAsync(cancellationToken);
+                break;
+            case LoginAcknowledgedPacket loginAcknowledged:
+                holder = @event.Link.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+                holder.ClientboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ClientboundConfigurationMappings };
+                break;
+            case FinishConfigurationPacket finishConfiguration:
+                holder = @event.Link.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+                holder.ServerboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ServerboundPlayMappings };
+                break;
+            case KeepAliveResponsePacket keepAliveResponse:
+                logger.LogDebug("Player {Link} sent keep alive response ({Id})", @event.Link.Player, keepAliveResponse.Id);
                 break;
         }
     }
@@ -150,15 +166,15 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
         switch (@event.Message)
         {
             case BufferedBinaryMessage bufferedBinaryMessage:
-                logger.LogTrace("Sent buffer length {Length} to {Direction} {PlayerOrServer}", bufferedBinaryMessage.Holder.Slice.Length, @event.To, @event.To == Side.Client ? @event.Link.Player : @event.Link.Server);
+                logger.LogTrace("Sent buffer length {Length} to {Direction} {PlayerOrServer}", bufferedBinaryMessage.Stream.Length, @event.To, @event.To == Side.Client ? @event.Link.Player : @event.Link.Server);
                 return;
             case BinaryPacket binaryPacket:
-                logger.LogTrace("Sent packet id {PacketId:X2}, length {Length} to {Direction} {PlayerOrServer}", binaryPacket.Id, binaryPacket.Holder.Slice.Length, @event.To, @event.To == Side.Client ? @event.Link.Player : @event.Link.Server);
+                logger.LogTrace("Sent packet id {PacketId:X2}, length {Length} to {Direction} {PlayerOrServer}", binaryPacket.Id, binaryPacket.Stream.Length, @event.To, @event.To == Side.Client ? @event.Link.Player : @event.Link.Server);
                 return;
         }
 
         logger.LogDebug("Sent packet {Packet}", @event.Message);
-        
+
         switch (@event.Message)
         {
             case HandshakePacket handshake:
@@ -166,18 +182,22 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
                 holder.ServerboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ServerboundLoginMappings };
                 break;
             case SetCompressionPacket setCompression:
-                @event.Link.PlayerChannel.AddBefore<MinecraftPacketMessageStream, ZlibCompressionMessageStream>();
+                @event.Link.PlayerChannel.AddBefore<MinecraftPacketMessageStream, SharpZipLibCompressionMessageStream>();
 
-                // ILink restart is already scheduled there, should we enable compression with client separately?
+                // ILink restart is already scheduled here, should we enable compression with client separately?
 
-                var zlibStream = @event.Link.PlayerChannel.Get<ZlibCompressionMessageStream>();
+                var zlibStream = @event.Link.PlayerChannel.Get<SharpZipLibCompressionMessageStream>();
                 zlibStream.CompressionThreshold = setCompression.Threshold;
 
                 logger.LogDebug("Link {Link} enabled compression in player channel with threshold {CompressionThreshold}", @event.Link, setCompression.Threshold);
-
+                break;
+            case LoginAcknowledgedPacket loginAcknowledged:
                 holder = @event.Link.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
-                holder.ServerboundRegistry = null;
-                holder.ClientboundRegistry = null;
+                holder.ServerboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ServerboundConfigurationMappings };
+                break;
+            case FinishConfigurationPacket finishConfiguration:
+                holder = @event.Link.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+                holder.ClientboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ClientboundPlayMappings };
                 break;
         }
     }

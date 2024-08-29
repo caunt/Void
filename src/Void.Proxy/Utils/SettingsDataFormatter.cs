@@ -9,8 +9,8 @@ internal class SettingsDataFormatter : IIniDataFormatter
 {
     public IniParserConfiguration Configuration
     {
-        get => throw new NotImplementedException();
-        set => throw new NotImplementedException();
+        get => throw new NotSupportedException();
+        set => throw new NotSupportedException();
     }
 
     public string IniDataToString(IniData iniData)
