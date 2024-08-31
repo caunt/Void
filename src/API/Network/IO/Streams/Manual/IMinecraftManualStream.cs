@@ -1,4 +1,4 @@
-﻿namespace Void.Proxy.API.Network.IO.Streams;
+﻿namespace Void.Proxy.API.Network.IO.Streams.Manual;
 
 public interface IMinecraftManualStream
 {

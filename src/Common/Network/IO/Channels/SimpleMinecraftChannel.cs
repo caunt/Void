@@ -1,7 +1,12 @@
-﻿using Void.Proxy.API.Network.IO.Messages;
+﻿using Void.Proxy.API.Network.IO.Channels;
+using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.IO.Streams;
+using Void.Proxy.API.Network.IO.Streams.Manual.Binary;
+using Void.Proxy.API.Network.IO.Streams.Manual.Network;
+using Void.Proxy.API.Network.IO.Streams.Packet;
+using Void.Proxy.Common.Network.IO.Messages;
 
-namespace Void.Proxy.API.Network.IO.Channels;
+namespace Void.Proxy.Common.Network.IO.Channels;
 
 public class SimpleMinecraftChannel(IMinecraftStreamBase head) : IMinecraftChannel
 {

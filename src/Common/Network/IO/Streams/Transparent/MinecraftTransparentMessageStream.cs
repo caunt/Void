@@ -1,6 +1,11 @@
-﻿using Void.Proxy.API.Network.IO.Messages;
+﻿using Void.Proxy.API.Network.IO.Messages.Binary;
+using Void.Proxy.API.Network.IO.Streams;
+using Void.Proxy.API.Network.IO.Streams.Manual.Binary;
+using Void.Proxy.API.Network.IO.Streams.Manual.Network;
+using Void.Proxy.API.Network.IO.Streams.Recyclable;
+using Void.Proxy.Common.Network.IO.Messages;
 
-namespace Void.Proxy.API.Network.IO.Streams.Transparent;
+namespace Void.Proxy.Common.Network.IO.Streams.Transparent;
 
 public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IMinecraftBufferedMessageStream
 {
@@ -70,7 +75,7 @@ public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IMin
         BaseStream?.Close();
     }
 
-    public BufferedBinaryMessage ReadAsMessage(int size = 2048)
+    public IBufferedBinaryMessage ReadAsMessage(int size = 2048)
     {
         if (BaseStream is not IMinecraftNetworkStream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);
@@ -83,7 +88,7 @@ public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IMin
         return new BufferedBinaryMessage(stream);
     }
 
-    public async ValueTask<BufferedBinaryMessage> ReadAsMessageAsync(int size = 2048, CancellationToken cancellationToken = default)
+    public async ValueTask<IBufferedBinaryMessage> ReadAsMessageAsync(int size = 2048, CancellationToken cancellationToken = default)
     {
         if (BaseStream is not IMinecraftNetworkStream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);
@@ -96,7 +101,7 @@ public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IMin
         return new BufferedBinaryMessage(stream);
     }
 
-    public void WriteAsMessage(BufferedBinaryMessage message)
+    public void WriteAsMessage(IBufferedBinaryMessage message)
     {
         if (BaseStream is not IMinecraftNetworkStream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);
@@ -105,7 +110,7 @@ public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IMin
             Write(chunk.Span);
     }
 
-    public async ValueTask WriteAsMessageAsync(BufferedBinaryMessage message, CancellationToken cancellationToken = default)
+    public async ValueTask WriteAsMessageAsync(IBufferedBinaryMessage message, CancellationToken cancellationToken = default)
     {
         if (BaseStream is not IMinecraftNetworkStream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);

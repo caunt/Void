@@ -3,11 +3,12 @@ using Void.Proxy.API.Events.Handshake;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.IO.Channels;
-using Void.Proxy.API.Network.IO.Streams;
-using Void.Proxy.API.Network.IO.Streams.Transparent;
 using Void.Proxy.API.Network.Protocol.Services;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Servers;
+using Void.Proxy.Common.Network.IO.Channels;
+using Void.Proxy.Common.Network.IO.Streams.Network;
+using Void.Proxy.Common.Network.IO.Streams.Transparent;
 
 namespace Void.Proxy.Network.Protocol;
 

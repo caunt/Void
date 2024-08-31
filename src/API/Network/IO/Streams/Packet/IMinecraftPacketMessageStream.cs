@@ -1,7 +1,7 @@
 ﻿using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Registries.Packets;
 
-namespace Void.Proxy.API.Network.IO.Streams;
+namespace Void.Proxy.API.Network.IO.Streams.Packet;
 
 public interface IMinecraftPacketMessageStream : IMinecraftStream
 {

@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using Void.Proxy.API.Network.IO.Streams.Manual;
 
 namespace Void.Proxy.API.Network.IO.Streams.Extensions;
 

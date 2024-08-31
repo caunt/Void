@@ -1,6 +1,7 @@
 ﻿using System.Net.Sockets;
+using Void.Proxy.API.Network.IO.Streams.Manual.Network;
 
-namespace Void.Proxy.API.Network.IO.Streams;
+namespace Void.Proxy.Common.Network.IO.Streams.Network;
 
 public class SimpleNetworkStream(NetworkStream baseStream) : IMinecraftNetworkStream
 {

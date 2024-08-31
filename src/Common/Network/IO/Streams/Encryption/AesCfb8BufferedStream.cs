@@ -1,8 +1,13 @@
 ﻿using System.Buffers;
 using System.Security.Cryptography;
-using Void.Proxy.API.Network.IO.Messages;
+using Void.Proxy.API.Network.IO.Messages.Binary;
+using Void.Proxy.API.Network.IO.Streams;
+using Void.Proxy.API.Network.IO.Streams.Manual;
+using Void.Proxy.API.Network.IO.Streams.Manual.Binary;
+using Void.Proxy.API.Network.IO.Streams.Recyclable;
+using Void.Proxy.Common.Network.IO.Messages;
 
-namespace Void.Proxy.API.Network.IO.Streams.Encryption;
+namespace Void.Proxy.Common.Network.IO.Streams.Encryption;
 
 public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBufferedMessageStream
 {
@@ -92,7 +97,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
         await manualStream.WriteAsync(memory, cancellationToken);
     }
 
-    public BufferedBinaryMessage ReadAsMessage(int size = 2048)
+    public IBufferedBinaryMessage ReadAsMessage(int size = 2048)
     {
         var stream = RecyclableMemoryStreamManager.GetStream();
 
@@ -108,7 +113,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
         return new BufferedBinaryMessage(stream);
     }
 
-    public async ValueTask<BufferedBinaryMessage> ReadAsMessageAsync(int size = 2048, CancellationToken cancellationToken = default)
+    public async ValueTask<IBufferedBinaryMessage> ReadAsMessageAsync(int size = 2048, CancellationToken cancellationToken = default)
     {
         var stream = RecyclableMemoryStreamManager.GetStream();
 
@@ -124,13 +129,13 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
         return new BufferedBinaryMessage(stream);
     }
 
-    public void WriteAsMessage(BufferedBinaryMessage message)
+    public void WriteAsMessage(IBufferedBinaryMessage message)
     {
         foreach (var memory in message.Stream.GetReadOnlySequence())
             Write(memory.Span);
     }
 
-    public async ValueTask WriteAsMessageAsync(BufferedBinaryMessage message, CancellationToken cancellationToken = default)
+    public async ValueTask WriteAsMessageAsync(IBufferedBinaryMessage message, CancellationToken cancellationToken = default)
     {
         foreach (var memory in message.Stream.GetReadOnlySequence())
             await WriteAsync(memory, cancellationToken);

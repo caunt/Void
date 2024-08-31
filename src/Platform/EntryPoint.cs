@@ -60,3 +60,8 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+public record Test(int Version, string[] Names)
+{
+    public static readonly Test MinecraftV1_7_2 = new(4, ["1.7.2", "1.7.3", "1.7.4", "1.7.5"]);
+}

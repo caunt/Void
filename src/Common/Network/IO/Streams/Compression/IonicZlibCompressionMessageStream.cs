@@ -1,10 +1,16 @@
 ﻿using Ionic.Zlib;
 using Microsoft.IO;
 using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.API.Network.IO.Messages;
+using Void.Proxy.API.Network.IO.Messages.Binary;
+using Void.Proxy.API.Network.IO.Streams;
+using Void.Proxy.API.Network.IO.Streams.Compression;
 using Void.Proxy.API.Network.IO.Streams.Extensions;
+using Void.Proxy.API.Network.IO.Streams.Manual;
+using Void.Proxy.API.Network.IO.Streams.Manual.Binary;
+using Void.Proxy.API.Network.IO.Streams.Recyclable;
+using Void.Proxy.Common.Network.IO.Messages;
 
-namespace Void.Proxy.API.Network.IO.Streams.Compression;
+namespace Void.Proxy.Common.Network.IO.Streams.Compression;
 
 public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMinecraftCompleteMessageStream, IZlibCompressionStream
 {
@@ -12,7 +18,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
 
     public IMinecraftStreamBase? BaseStream { get; set; }
 
-    public CompleteBinaryMessage ReadMessage()
+    public ICompleteBinaryMessage ReadMessage()
     {
         return BaseStream switch
         {
@@ -22,7 +28,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
         };
     }
 
-    public async ValueTask<CompleteBinaryMessage> ReadMessageAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<ICompleteBinaryMessage> ReadMessageAsync(CancellationToken cancellationToken = default)
     {
         return BaseStream switch
         {
@@ -32,7 +38,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
         };
     }
 
-    public void WriteMessage(CompleteBinaryMessage message)
+    public void WriteMessage(ICompleteBinaryMessage message)
     {
         switch (BaseStream)
         {
@@ -44,7 +50,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
         }
     }
 
-    public async ValueTask WriteMessageAsync(CompleteBinaryMessage message, CancellationToken cancellationToken = default)
+    public async ValueTask WriteMessageAsync(ICompleteBinaryMessage message, CancellationToken cancellationToken = default)
     {
         switch (BaseStream)
         {
@@ -83,7 +89,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
         BaseStream?.Close();
     }
 
-    private static CompleteBinaryMessage ReadManual(IMinecraftManualStream manualStream)
+    private static ICompleteBinaryMessage ReadManual(IMinecraftManualStream manualStream)
     {
         var packetLength = manualStream.ReadVarInt();
         var dataLength = manualStream.ReadVarInt();
@@ -119,7 +125,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
         }
     }
 
-    private static async ValueTask<CompleteBinaryMessage> ReadManualAsync(IMinecraftManualStream manualStream, CancellationToken cancellationToken = default)
+    private static async ValueTask<ICompleteBinaryMessage> ReadManualAsync(IMinecraftManualStream manualStream, CancellationToken cancellationToken = default)
     {
         var packetLength = await manualStream.ReadVarIntAsync(cancellationToken);
         var dataLength = await manualStream.ReadVarIntAsync(cancellationToken);
@@ -155,7 +161,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
         }
     }
 
-    private void WriteManual(IMinecraftManualStream manualStream, CompleteBinaryMessage message)
+    private void WriteManual(IMinecraftManualStream manualStream, ICompleteBinaryMessage message)
     {
         var dataLength = message.Stream.Length < CompressionThreshold ? 0 : (int)message.Stream.Length;
 
@@ -184,7 +190,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
         message.Dispose();
     }
 
-    private async ValueTask WriteManualAsync(IMinecraftManualStream manualStream, CompleteBinaryMessage message, CancellationToken cancellationToken = default)
+    private async ValueTask WriteManualAsync(IMinecraftManualStream manualStream, ICompleteBinaryMessage message, CancellationToken cancellationToken = default)
     {
         var dataLength = message.Stream.Length < CompressionThreshold ? 0 : (int)message.Stream.Length;
 

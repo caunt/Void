@@ -1,6 +1,6 @@
 ﻿using Microsoft.IO;
 
-namespace Void.Proxy.API.Network.IO.Streams;
+namespace Void.Proxy.API.Network.IO.Streams.Recyclable;
 
 public abstract class MinecraftRecyclableStream
 {

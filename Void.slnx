@@ -2,14 +2,15 @@
   <Properties Name="Visual Studio">
     <Property Name="OpenWith" Value="Visual Studio Version 17" />
   </Properties>
-  <Project Path="src\NBT\Void.NBT.csproj" />
-  <Project Path="src\Benchmarks\Void.Benchmarks.csproj" />
-  <Project Path="src\Platform\Void.Proxy.csproj" />
-  <Project Path="src\API\Void.Proxy.API.csproj" />
-  <Project Path="src\Plugins\ExamplePlugin\Void.Proxy.Plugins.ExamplePlugin.csproj" />
-  <Project Path="src\Plugins\ModsSupport\Forge\Void.Proxy.Plugins.ModsSupport.Forge.csproj" />
-  <Project Path="src\Plugins\ProtocolSupport\Java\v1_13_to_1_20_1\Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.csproj" />
-  <Project Path="src\Plugins\ProtocolSupport\Java\v1_20_2_to_latest\Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.csproj" />
-  <Project Path="src\Plugins\ProtocolSupport\Java\v1_7_2_to_1_12_2\Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.csproj" />
-  <Project Path="src\Platform-Deprecated\Void.Proxy-Deprecated.csproj" />
+  <Project Path="src\NBT\Void.NBT.csproj" Type="C#" />
+  <Project Path="src\Benchmarks\Void.Benchmarks.csproj" Type="C#" />
+  <Project Path="src\Common\Void.Proxy.Common.csproj" Type="C#" />
+  <Project Path="src\Platform\Void.Proxy.csproj" Type="C#" />
+  <Project Path="src\API\Void.Proxy.API.csproj" Type="C#" />
+  <Project Path="src\Plugins\ExamplePlugin\Void.Proxy.Plugins.ExamplePlugin.csproj" Type="C#" />
+  <Project Path="src\Plugins\ModsSupport\Forge\Void.Proxy.Plugins.ModsSupport.Forge.csproj" Type="C#" />
+  <Project Path="src\Plugins\ProtocolSupport\Java\v1_13_to_1_20_1\Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.csproj" Type="C#" />
+  <Project Path="src\Plugins\ProtocolSupport\Java\v1_20_2_to_latest\Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.csproj" Type="C#" />
+  <Project Path="src\Plugins\ProtocolSupport\Java\v1_7_2_to_1_12_2\Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.csproj" Type="C#" />
+  <Project Path="src\Platform-Deprecated\Void.Proxy-Deprecated.csproj" Type="C#" />
 </Solution>

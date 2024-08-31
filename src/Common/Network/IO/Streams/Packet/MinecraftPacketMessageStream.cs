@@ -1,12 +1,19 @@
 ﻿using System.Buffers;
 using Microsoft.IO;
+using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.IO.Buffers;
 using Void.Proxy.API.Network.IO.Messages;
+using Void.Proxy.API.Network.IO.Streams;
 using Void.Proxy.API.Network.IO.Streams.Extensions;
+using Void.Proxy.API.Network.IO.Streams.Manual;
+using Void.Proxy.API.Network.IO.Streams.Manual.Binary;
+using Void.Proxy.API.Network.IO.Streams.Packet;
+using Void.Proxy.API.Network.IO.Streams.Recyclable;
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.API.Registries.Packets;
+using Void.Proxy.Common.Network.IO.Messages;
 
-namespace Void.Proxy.API.Network.IO.Streams.Packet;
+namespace Void.Proxy.Common.Network.IO.Streams.Packet;
 
 public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraftPacketMessageStream
 {

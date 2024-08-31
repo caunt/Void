@@ -1,8 +1,9 @@
 ﻿using Microsoft.IO;
 using Void.Proxy.API.Network.IO.Buffers;
+using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.Protocol;
 
-namespace Void.Proxy.API.Network.IO.Messages;
+namespace Void.Proxy.Common.Network.IO.Messages;
 
 public class BinaryPacket(int id, RecyclableMemoryStream stream) : IMinecraftPacket
 {
