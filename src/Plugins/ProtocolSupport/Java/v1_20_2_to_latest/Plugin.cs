@@ -14,13 +14,13 @@ using Void.Proxy.API.Network.IO.Channels;
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Plugins;
-using Void.Proxy.API.Registries.Packets;
 using Void.Proxy.Common.Network.IO.Channels;
 using Void.Proxy.Common.Network.IO.Messages;
 using Void.Proxy.Common.Network.IO.Streams.Compression;
 using Void.Proxy.Common.Network.IO.Streams.Encryption;
 using Void.Proxy.Common.Network.IO.Streams.Network;
 using Void.Proxy.Common.Network.IO.Streams.Packet;
+using Void.Proxy.Common.Registries.Packets;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Registries;
@@ -101,7 +101,7 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
 
         @event.Result = (direction, stream, builderCancellationToken) =>
         {
-            var channel = new SimpleMinecraftChannel(new SimpleNetworkStream(stream));
+            var channel = new SimpleChannel(new SimpleNetworkStream(stream));
             channel.Add<MinecraftPacketMessageStream>();
 
             var packetStream = channel.Get<MinecraftPacketMessageStream>();

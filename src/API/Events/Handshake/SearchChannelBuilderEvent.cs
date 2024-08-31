@@ -1,4 +1,4 @@
-﻿using Void.Proxy.API.Network.Protocol.Services;
+﻿using Void.Proxy.API.Network.IO.Channels.Services;
 using Void.Proxy.API.Players;
 
 namespace Void.Proxy.API.Events.Handshake;

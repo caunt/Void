@@ -8,7 +8,6 @@ using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.IO.Channels;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Servers;
-using Void.Proxy.Common.Network.IO.Streams.Transparent;
 
 namespace Void.Proxy.Links;
 
@@ -101,7 +100,7 @@ public class Link : ILink
     public async ValueTask DisposeAsync()
     {
         // if the player does not support redirections, that's the end for him
-        if (PlayerChannel.Head is MinecraftTransparentMessageStream)
+        if (!PlayerChannel.IsRedirectionSupported)
         {
             PlayerChannel.Close();
             await PlayerChannel.DisposeAsync();

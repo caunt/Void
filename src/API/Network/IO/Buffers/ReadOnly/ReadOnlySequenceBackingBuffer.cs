@@ -2,7 +2,7 @@
 
 namespace Void.Proxy.API.Network.IO.Buffers.ReadOnly;
 
-public ref struct ReadOnlySequenceBackingBuffer
+internal ref struct ReadOnlySequenceBackingBuffer
 {
     private readonly ReadOnlySequence<byte> _sequence;
     private ReadOnlySequence<byte>.Enumerator? _enumerator;

@@ -1,7 +1,7 @@
 ﻿using System.Net.Sockets;
 using Void.Proxy.API.Network.IO.Channels;
+using Void.Proxy.API.Network.IO.Channels.Services;
 using Void.Proxy.API.Network.Protocol;
-using Void.Proxy.API.Network.Protocol.Services;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Servers;
 
@@ -47,9 +47,9 @@ public class Player(AsyncServiceScope scope, TcpClient client) : IPlayer
         return Name ?? RemoteEndPoint;
     }
 
-    private async ValueTask<IChannelBuilderService> GetChannelBuilderAsync(CancellationToken cancellationToken = default)
+    private async ValueTask<IMinecraftChannelBuilderService> GetChannelBuilderAsync(CancellationToken cancellationToken = default)
     {
-        var channelBuilder = scope.ServiceProvider.GetRequiredService<IChannelBuilderService>();
+        var channelBuilder = scope.ServiceProvider.GetRequiredService<IMinecraftChannelBuilderService>();
         await channelBuilder.SearchChannelBuilderAsync(this, cancellationToken);
 
         return channelBuilder;

@@ -6,7 +6,7 @@ using Void.Proxy.API.Network.IO.Buffers.ReadWrite;
 
 namespace Void.Proxy.API.Network.IO.Buffers;
 
-public ref struct MinecraftBackingBuffer
+internal ref struct MinecraftBackingBuffer
 {
     private SpanBackingBuffer _spanBackingBuffer;
     private ReadOnlySpanBackingBuffer _readOnlySpanBackingBuffer;

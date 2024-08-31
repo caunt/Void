@@ -1,7 +1,6 @@
 ﻿using Void.Proxy.API.Plugins;
-using Void.Proxy.API.Registries.Packets;
 
-namespace Void.Proxy.Registries.Packets;
+namespace Void.Proxy.Common.Registries.Packets;
 
 public class PacketRegistryHolder : IPacketRegistryHolder
 {

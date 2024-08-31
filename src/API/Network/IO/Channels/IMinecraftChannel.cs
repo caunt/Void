@@ -10,6 +10,7 @@ public interface IMinecraftChannel : IDisposable, IAsyncDisposable
 
     public IMinecraftStreamBase Head { get; }
     public bool IsConfigured { get; }
+    public bool IsRedirectionSupported { get; }
 
     public void Add<T>() where T : IMinecraftStream, new();
     public void Add<T>(T stream) where T : IMinecraftStream;

@@ -2,7 +2,7 @@
 
 namespace Void.Proxy.API.Network.IO.Buffers.ReadOnly;
 
-public ref struct ReadOnlySpanBackingBuffer(ReadOnlySpan<byte> span)
+internal ref struct ReadOnlySpanBackingBuffer(ReadOnlySpan<byte> span)
 {
     private readonly ReadOnlySpan<byte> _block = span;
 

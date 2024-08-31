@@ -16,13 +16,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Common\Void.Proxy.Common.csproj" />
 		<ProjectReference Include="..\NBT\Void.NBT.csproj" />
 		<ProjectReference Include="..\API\Void.Proxy.API.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Registries\Items\" />
 	</ItemGroup>
 
 </Project>

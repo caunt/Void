@@ -7,20 +7,16 @@ using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Extensions;
 using Void.Proxy.API.Forwarding;
 using Void.Proxy.API.Links;
-using Void.Proxy.API.Network.Protocol.Services;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Plugins;
-using Void.Proxy.API.Registries.Packets;
 using Void.Proxy.API.Servers;
 using Void.Proxy.API.Settings;
 using Void.Proxy.Crypto;
 using Void.Proxy.Events;
 using Void.Proxy.Forwarding;
 using Void.Proxy.Links;
-using Void.Proxy.Network.Protocol;
 using Void.Proxy.Players;
 using Void.Proxy.Plugins;
-using Void.Proxy.Registries.Packets;
 using Void.Proxy.Servers;
 using Void.Proxy.Settings;
 
@@ -46,8 +42,8 @@ try
     builder.Services.AddSingleton<IForwardingService, ForwardingService>();
     builder.Services.AddSingleton<IProxy, Platform>();
     builder.Services.AddHostedService<Platform>();
-    builder.Services.AddScoped<IChannelBuilderService, ChannelBuilderService>();
-    builder.Services.AddScoped<IPacketRegistryHolder, PacketRegistryHolder>();
+    // builder.Services.AddScoped<IMinecraftChannelBuilderService, SimpleChannelBuilderService>();
+    // builder.Services.AddScoped<IPacketRegistryHolder, PacketRegistryHolder>();
 
     var host = builder.Build();
     await host.RunAsync();
@@ -59,9 +55,4 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
-}
-
-public record Test(int Version, string[] Names)
-{
-    public static readonly Test MinecraftV1_7_2 = new(4, ["1.7.2", "1.7.3", "1.7.4", "1.7.5"]);
 }

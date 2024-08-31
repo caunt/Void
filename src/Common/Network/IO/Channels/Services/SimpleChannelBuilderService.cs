@@ -1,23 +1,23 @@
 ﻿using System.Net.Sockets;
+using Microsoft.Extensions.Logging;
 using Void.Proxy.API.Events.Handshake;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.IO.Channels;
-using Void.Proxy.API.Network.Protocol.Services;
+using Void.Proxy.API.Network.IO.Channels.Services;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Servers;
-using Void.Proxy.Common.Network.IO.Channels;
 using Void.Proxy.Common.Network.IO.Streams.Network;
 using Void.Proxy.Common.Network.IO.Streams.Transparent;
 
-namespace Void.Proxy.Network.Protocol;
+namespace Void.Proxy.Common.Network.IO.Channels.Services;
 
-public class ChannelBuilderService(ILogger<ChannelBuilderService> logger, IEventService events) : IChannelBuilderService
+public class SimpleChannelBuilderService(ILogger<SimpleChannelBuilderService> logger, IEventService events) : IMinecraftChannelBuilderService
 {
     public const int MaxHandshakeSize = 4096;
 
     private Memory<byte> _buffer = Memory<byte>.Empty;
-    private ChannelBuilder _builder = (_, networkStream, _) => ValueTask.FromResult<IMinecraftChannel>(new SimpleMinecraftChannel(new SimpleNetworkStream(networkStream)));
+    private ChannelBuilder _builder = (_, networkStream, _) => ValueTask.FromResult<IMinecraftChannel>(new SimpleChannel(new SimpleNetworkStream(networkStream)));
     private bool _found;
 
     public async ValueTask SearchChannelBuilderAsync(IPlayer player, CancellationToken cancellationToken = default)

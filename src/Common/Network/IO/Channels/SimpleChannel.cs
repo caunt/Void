@@ -3,18 +3,19 @@ using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.IO.Streams;
 using Void.Proxy.API.Network.IO.Streams.Manual.Binary;
 using Void.Proxy.API.Network.IO.Streams.Manual.Network;
-using Void.Proxy.API.Network.IO.Streams.Packet;
 using Void.Proxy.Common.Network.IO.Messages;
+using Void.Proxy.Common.Network.IO.Streams.Packet;
 
 namespace Void.Proxy.Common.Network.IO.Channels;
 
-public class SimpleMinecraftChannel(IMinecraftStreamBase head) : IMinecraftChannel
+public class SimpleChannel(IMinecraftStreamBase head) : IMinecraftChannel
 {
     public bool CanRead => true;
     public bool CanWrite => true;
 
     public IMinecraftStreamBase Head => head;
     public bool IsConfigured => head is IMinecraftStream;
+    public bool IsRedirectionSupported => false;
 
     public void Add<T>() where T : IMinecraftStream, new()
     {

@@ -1,10 +1,9 @@
-﻿using Void.Proxy.API.Network.IO.Channels;
-using Void.Proxy.API.Players;
+﻿using Void.Proxy.API.Players;
 using Void.Proxy.API.Servers;
 
-namespace Void.Proxy.API.Network.Protocol.Services;
+namespace Void.Proxy.API.Network.IO.Channels.Services;
 
-public interface IChannelBuilderService
+public interface IMinecraftChannelBuilderService
 {
     public ValueTask SearchChannelBuilderAsync(IPlayer player, CancellationToken cancellationToken = default);
 
