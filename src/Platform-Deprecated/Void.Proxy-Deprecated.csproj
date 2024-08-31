@@ -30,7 +30,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\NBT\Void.NBT.csproj" />
+		<ProjectReference Include="..\NBT\Void.NBT.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

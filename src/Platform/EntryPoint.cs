@@ -25,7 +25,7 @@ using Void.Proxy.Servers;
 using Void.Proxy.Settings;
 
 if (OperatingSystem.IsWindows())
-    Console.WindowWidth = 150;
+    Console.WindowWidth = 165;
 
 Log.Logger = new LoggerConfiguration().Enrich.FromLogContext().MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch).MinimumLevel.Override("Microsoft", LogEventLevel.Warning).WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}").CreateLogger();
 
