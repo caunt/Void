@@ -1,4 +1,5 @@
 ﻿using Serilog;
+using Serilog.Events;
 using Void.Proxy;
 using Void.Proxy.API;
 using Void.Proxy.API.Crypto;
@@ -23,7 +24,10 @@ using Void.Proxy.Registries.Packets;
 using Void.Proxy.Servers;
 using Void.Proxy.Settings;
 
-Log.Logger = new LoggerConfiguration().Enrich.FromLogContext().MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch).WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}").CreateLogger();
+if (OperatingSystem.IsWindows())
+    Console.WindowWidth = 150;
+
+Log.Logger = new LoggerConfiguration().Enrich.FromLogContext().MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch).MinimumLevel.Override("Microsoft", LogEventLevel.Warning).WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}").CreateLogger();
 
 try
 {

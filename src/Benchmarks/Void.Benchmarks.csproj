@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Proxy\Platform\Void.Proxy.csproj" />
     <ProjectReference Include="..\Void.Proxy\Void.Proxy.csproj" />
   </ItemGroup>
 

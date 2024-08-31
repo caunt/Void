@@ -18,28 +18,42 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
     public async ValueTask LoadAsync(string path = "plugins", CancellationToken cancellationToken = default)
     {
+        var fullPath = new DirectoryInfo(path);
 #if DEBUG
-        var directory = new DirectoryInfo(Environment.CurrentDirectory);
+        var src = new DirectoryInfo(Environment.CurrentDirectory);
 
-        while (directory != null && directory.Name != "src")
-            directory = directory.Parent;
+        while (src != null && src.Name != "src")
+            src = src.Parent;
 
-        var pluginsDirectory = Path.Combine(Environment.CurrentDirectory, "plugins");
+        if (src is null)
+            throw new Exception("src directory could not be located for copying plugins");
 
-        foreach (var pluginDirectory in directory!.GetDirectories("Void.Proxy.Plugins.*"))
+        var obj = Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar;
+
+        foreach (var dll in src.GetFiles("Void.Proxy.Plugins.*.dll", SearchOption.AllDirectories))
         {
-            if (pluginDirectory.Name.EndsWith("API"))
+            if (dll.DirectoryName is not { } directory || directory.Contains(obj))
                 continue;
 
-            foreach (var file in Directory.GetFiles(Path.Combine(pluginDirectory.FullName, "bin", "Debug", "net9.0"), "*.dll"))
-                File.Copy(file, Path.Combine(pluginsDirectory, Path.GetFileName(file)), true);
+            var destination = new FileInfo(Path.Combine(fullPath.FullName, dll.Name));
+
+            if (destination.FullName == dll.FullName)
+                continue;
+
+            if (dll.Length == destination.Length && dll.LastWriteTime == destination.LastWriteTime)
+                continue;
+
+            if (destination.Exists)
+                logger.LogDebug("Overwriting existing plugin {PluginName} in {Directory} directory", dll.Name, path);
+
+            File.Copy(dll.FullName, destination.FullName, true);
         }
 #endif
 
-        if (!Directory.Exists(path))
-            Directory.CreateDirectory(path);
+        if (!fullPath.Exists)
+            fullPath.Create();
 
-        var pluginPaths = Directory.GetFiles(path, "*.dll");
+        var pluginPaths = fullPath.GetFiles("*.dll").Select(fileInfo => fileInfo.FullName).ToArray();
 
         logger.LogInformation("Loading {Count} plugins", pluginPaths.Length);
 

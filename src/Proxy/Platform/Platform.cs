@@ -23,6 +23,8 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        LoggingLevelSwitch.MinimumLevel = LogEventLevel.Debug;
+
         var startTime = Stopwatch.GetTimestamp();
 
         Directory.SetCurrentDirectory(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!);
@@ -33,10 +35,9 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
         forwardings.RegisterDefault();
 
         await settings.LoadAsync(cancellationToken: cancellationToken);
-        LoggingLevelSwitch.MinimumLevel = (LogEventLevel)settings.LogLevel;
 
-#if DEBUG
-        LoggingLevelSwitch.MinimumLevel = LogEventLevel.Debug;
+#if RELEASE
+        LoggingLevelSwitch.MinimumLevel = (LogEventLevel)settings.LogLevel;
 #endif
 
         foreach (var server in settings.Servers)

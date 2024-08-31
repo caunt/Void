@@ -16,7 +16,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Void.Proxy.API\Void.Proxy.API.csproj">
+		<ProjectReference Include="..\..\API\Void.Proxy.API.csproj">
 			<Private>false</Private>
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</ProjectReference>
