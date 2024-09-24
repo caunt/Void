@@ -20,10 +20,18 @@ using Void.Proxy.Plugins;
 using Void.Proxy.Servers;
 using Void.Proxy.Settings;
 
-if (OperatingSystem.IsWindows())
-    Console.WindowWidth = 165;
+const int width = 165;
 
-Log.Logger = new LoggerConfiguration().Enrich.FromLogContext().MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch).MinimumLevel.Override("Microsoft", LogEventLevel.Warning).WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}").CreateLogger();
+if (OperatingSystem.IsWindows() && Console.WindowWidth < width)
+    Console.WindowWidth = width;
+
+var configuration = new LoggerConfiguration();
+configuration.Enrich.FromLogContext();
+configuration.MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch);
+configuration.MinimumLevel.Override("Microsoft", LogEventLevel.Warning);
+configuration.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}");
+
+Log.Logger = configuration.CreateLogger();
 
 try
 {

@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Void.Proxy.API.Events;
+﻿using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Handshake;
 using Void.Proxy.API.Events.Plugins;
 using Void.Proxy.API.Events.Proxy;
@@ -8,7 +7,7 @@ using Void.Proxy.API.Plugins;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2;
 
-public class Plugin(ILogger<Plugin> logger) : IPlugin
+public class Plugin : IPlugin
 {
     public readonly ProtocolVersion NewestVersion = ProtocolVersion.MINECRAFT_1_12_2;
 

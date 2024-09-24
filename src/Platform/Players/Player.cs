@@ -40,6 +40,7 @@ public class Player(AsyncServiceScope scope, TcpClient client) : IPlayer
     public async ValueTask DisposeAsync()
     {
         await scope.DisposeAsync();
+        GC.SuppressFinalize(this);
     }
 
     public override string ToString()

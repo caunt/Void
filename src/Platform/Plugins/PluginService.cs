@@ -6,6 +6,7 @@ using Void.Proxy.API.Events.Plugins;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Plugins;
 using Void.Proxy.Reflection;
+using Void.Proxy.Utils;
 
 namespace Void.Proxy.Plugins;
 
@@ -18,42 +19,14 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
     public async ValueTask LoadAsync(string path = "plugins", CancellationToken cancellationToken = default)
     {
-        var fullPath = new DirectoryInfo(path);
-#if DEBUG
-        var src = new DirectoryInfo(Environment.CurrentDirectory);
+        var pluginsDirectoryInfo = new DirectoryInfo(path);
 
-        while (src != null && src.Name != "src")
-            src = src.Parent;
+        if (!pluginsDirectoryInfo.Exists)
+            pluginsDirectoryInfo.Create();
 
-        if (src is null)
-            throw new Exception("src directory could not be located for copying plugins");
+        await ExtractEmbeddedPluginsAsync(path, cancellationToken);
 
-        var obj = Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar;
-
-        foreach (var dll in src.GetFiles("Void.Proxy.Plugins.*.dll", SearchOption.AllDirectories))
-        {
-            if (dll.DirectoryName is not { } directory || directory.Contains(obj))
-                continue;
-
-            var destination = new FileInfo(Path.Combine(fullPath.FullName, dll.Name));
-
-            if (destination.FullName == dll.FullName)
-                continue;
-
-            if (dll.Length == destination.Length && dll.LastWriteTime == destination.LastWriteTime)
-                continue;
-
-            if (destination.Exists)
-                logger.LogDebug("Overwriting existing plugin {PluginName} in {Directory} directory", dll.Name, path);
-
-            File.Copy(dll.FullName, destination.FullName, true);
-        }
-#endif
-
-        if (!fullPath.Exists)
-            fullPath.Create();
-
-        var pluginPaths = fullPath.GetFiles("*.dll").Select(fileInfo => fileInfo.FullName).ToArray();
+        var pluginPaths = pluginsDirectoryInfo.GetFiles("*.dll").Select(fileInfo => fileInfo.FullName).ToArray();
 
         logger.LogInformation("Loading {Count} plugins", pluginPaths.Length);
 
@@ -64,7 +37,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
             logger.LogInformation("Loading {PluginName} plugin", context.Name);
 
             var assembly = context.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(pluginPath)));
-            var plugins = RegisterPlugins(assembly);
+            var plugins = RegisterPlugins(context.Name, assembly);
 
             if (plugins.Length == 0)
             {
@@ -104,7 +77,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
             reference.Context.Unload();
 
-            logger.LogInformation($"Unloading {name} plugin");
+            logger.LogInformation("Unloading {PluginName} plugin", name);
 
             var collectionTime = Stopwatch.GetTimestamp();
 
@@ -122,19 +95,36 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
             if (reference.IsAlive)
                 throw new Exception($"Plugin {name} refuses to unload");
 
-            logger.LogDebug($"Plugin {name} unloaded successfully");
+            logger.LogDebug("Plugin {PluginName} unloaded successfully", name);
         }
 
         _references.RemoveAll(reference => !reference.IsAlive);
     }
 
-    public IPlugin[] RegisterPlugins(Assembly assembly)
+    public IPlugin[] RegisterPlugins(string? name, Assembly assembly)
     {
         var pluginInterface = typeof(IPlugin);
-        var plugins = assembly.GetTypes().Where(pluginInterface.IsAssignableFrom).Select(CreatePluginInstance).Cast<IPlugin?>().WhereNotNull().ToArray();
 
-        _plugins.AddRange(plugins);
-        return plugins;
+        try
+        {
+            var plugins = assembly.GetTypes().Where(pluginInterface.IsAssignableFrom).Select(CreatePluginInstance).Cast<IPlugin?>().WhereNotNull().ToArray();
+
+            _plugins.AddRange(plugins);
+            return plugins;
+        }
+        catch (ReflectionTypeLoadException exception)
+        {
+            logger.LogError("Assembly {AssemblyName} cannot be loaded:", name);
+
+            var noStackTrace = exception.LoaderExceptions.WhereNotNull().Where(loaderException => string.IsNullOrWhiteSpace(loaderException?.StackTrace)).ToArray();
+
+            if (noStackTrace.Length == exception.LoaderExceptions.Length)
+                logger.LogError("{Exceptions}", string.Join(", ", noStackTrace.Select(loaderException => loaderException.Message)));
+            else
+                logger.LogError(exception, "Multiple Exceptions:");
+        }
+
+        return [];
     }
 
     public void UnregisterPlugins(IPlugin[] plugins)
@@ -159,5 +149,78 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
             return instance;
 
         return Activator.CreateInstance(type);
+    }
+
+    private async ValueTask ExtractEmbeddedPluginsAsync(string path, CancellationToken cancellationToken)
+    {
+        var platformAssembly = Assembly.GetExecutingAssembly();
+        var buildDate = platformAssembly.GetCustomAttribute<BuildDateAttribute>();
+
+        var embeddedPlugins = platformAssembly.GetManifestResourceNames().Where(name => name.Contains(nameof(Plugins))).Select(embeddedPluginName =>
+        {
+            var fileName = Path.Combine(path, embeddedPluginName);
+
+            return new
+            {
+                ResourceName = embeddedPluginName,
+                FileName = fileName,
+                Exists = File.Exists(fileName)
+            };
+        }).ToArray();
+
+        var extractedOnceBefore = embeddedPlugins.Any(plugin => plugin.Exists);
+
+        foreach (var plugin in embeddedPlugins)
+        {
+            var upgrading = false;
+
+            if (plugin.Exists)
+            {
+                if (buildDate is null)
+                    continue;
+
+                var extractionDateTime = File.GetLastWriteTimeUtc(plugin.FileName);
+
+                if (extractionDateTime >= buildDate.DateTime)
+                    continue;
+
+                logger.LogInformation("Upgrading {PluginName} plugin with newest build", plugin.ResourceName);
+                upgrading = true;
+            }
+
+            if (!upgrading && extractedOnceBefore)
+            {
+                logger.LogWarning("Embedded plugin {PluginName} disappeared", plugin.ResourceName);
+
+                var key = ConsoleKey.None;
+                while (key is ConsoleKey.None)
+                {
+                    logger.LogInformation("Do you want to install it again? [y/n]");
+
+                    var keyInfo = Console.ReadKey(true);
+
+                    if (keyInfo.Key is not ConsoleKey.Y and not ConsoleKey.N)
+                        continue;
+
+                    key = keyInfo.Key;
+                }
+
+                if (key is ConsoleKey.N)
+                    continue;
+
+                logger.LogInformation("Proceeding with installation.");
+            }
+
+            if (platformAssembly.GetManifestResourceStream(plugin.ResourceName) is not { } stream)
+            {
+                logger.LogWarning("Embedded plugin {PluginName} couldn't be extracted", plugin.ResourceName);
+                continue;
+            }
+
+            logger.LogInformation("Extracting {PluginName} embedded plugin", plugin.ResourceName);
+
+            await using var fileStream = File.OpenWrite(plugin.FileName);
+            await stream.CopyToAsync(fileStream, cancellationToken);
+        }
     }
 }

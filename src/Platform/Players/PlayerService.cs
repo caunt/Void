@@ -59,5 +59,7 @@ public class PlayerService : IPlayerService, IEventListener
             return;
 
         _logger.LogInformation("Player {Player} disconnected", @event.Player);
+
+        await @event.Player.DisposeAsync();
     }
 }
