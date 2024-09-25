@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using System.Runtime.Versioning;
-using System.Security.Principal;
 using Nito.Disposables.Internals;
 using NuGet.Common;
 using NuGet.Configuration;
@@ -17,7 +16,6 @@ namespace Void.Proxy.Plugins;
 
 public class PluginDependencyService(ILogger<PluginDependencyService> logger) : IPluginDependencyService
 {
-
     private static readonly string FrameworkName = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName ?? throw new InvalidOperationException("Cannot determine the target framework.");
     private static readonly SourceRepository NuGetRepository = Repository.Factory.GetCoreV3(new PackageSource("https://api.nuget.org/v3/index.json").Source);
     private static readonly SourceCacheContext NuGetCache = new();
@@ -33,8 +31,16 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
             return null;
         }
 
-        var assemblyPath = ResolveAssemblyFromOfflineNuGetAsync(assemblyName, CancellationToken.None).GetAwaiter().GetResult() ?? 
-                           ResolveAssemblyFromNuGetAsync(assemblyName, CancellationToken.None).GetAwaiter().GetResult();
+        var assemblyPath = ResolveAssemblyFromNuGetAsync(assemblyName).GetAwaiter().GetResult();
+        return assemblyPath;
+    }
+
+    private async ValueTask<string?> ResolveAssemblyFromNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)
+    {
+        var assemblyPath = await ResolveAssemblyFromOfflineNuGetAsync(assemblyName, cancellationToken);
+        
+        if (string.IsNullOrWhiteSpace(assemblyPath))
+            assemblyPath = await ResolveAssemblyFromOnlineNuGetAsync(assemblyName, cancellationToken);
 
         return assemblyPath;
     }
@@ -107,7 +113,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
         return null;
     }
 
-    private async ValueTask<string?> ResolveAssemblyFromNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
+    private async ValueTask<string?> ResolveAssemblyFromOnlineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
     {
         try
         {

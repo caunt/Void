@@ -32,7 +32,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
         foreach (var pluginPath in pluginPaths)
         {
-            var context = new PluginLoadContext(dependencies, pluginPath);
+            var context = new PluginLoadContext(services.GetRequiredService<ILogger<PluginLoadContext>>(), dependencies, pluginPath);
 
             logger.LogInformation("Loading {PluginName} plugin", context.Name);
 
