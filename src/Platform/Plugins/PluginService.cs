@@ -10,7 +10,7 @@ using Void.Proxy.Utils;
 
 namespace Void.Proxy.Plugins;
 
-public class PluginService(ILogger<PluginService> logger, IEventService events, IServiceProvider services) : IPluginService
+public class PluginService(ILogger<PluginService> logger, IEventService events, IServiceProvider services, IPluginDependencyService dependencies) : IPluginService
 {
     private readonly TimeSpan _gcRate = TimeSpan.FromMilliseconds(500);
     private readonly List<IPlugin> _plugins = [];
@@ -32,12 +32,11 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
         foreach (var pluginPath in pluginPaths)
         {
-            var context = new PluginLoadContext(pluginPath);
+            var context = new PluginLoadContext(dependencies, pluginPath);
 
             logger.LogInformation("Loading {PluginName} plugin", context.Name);
 
-            var assembly = context.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(pluginPath)));
-            var plugins = RegisterPlugins(context.Name, assembly);
+            var plugins = RegisterPlugins(context.Name, context.PluginAssembly);
 
             if (plugins.Length == 0)
             {
@@ -45,7 +44,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
                 continue;
             }
 
-            var listeners = assembly.GetTypes().Where(typeof(IEventListener).IsAssignableFrom).Select(CreateListenerInstance).Cast<IEventListener?>().WhereNotNull().ToArray();
+            var listeners = context.PluginAssembly.GetTypes().Where(typeof(IEventListener).IsAssignableFrom).Select(CreateListenerInstance).Cast<IEventListener?>().WhereNotNull().ToArray();
 
             if (listeners.Length == 0)
                 logger.LogWarning("Plugin {PluginName} has no event listeners", context.Name);
@@ -116,7 +115,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
         {
             logger.LogError("Assembly {AssemblyName} cannot be loaded:", name);
 
-            var noStackTrace = exception.LoaderExceptions.WhereNotNull().Where(loaderException => string.IsNullOrWhiteSpace(loaderException?.StackTrace)).ToArray();
+            var noStackTrace = exception.LoaderExceptions.WhereNotNull().Where(loaderException => string.IsNullOrWhiteSpace(loaderException.StackTrace)).ToArray();
 
             if (noStackTrace.Length == exception.LoaderExceptions.Length)
                 logger.LogError("{Exceptions}", string.Join(", ", noStackTrace.Select(loaderException => loaderException.Message)));

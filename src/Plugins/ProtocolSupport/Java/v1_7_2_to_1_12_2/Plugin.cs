@@ -1,4 +1,7 @@
-﻿using Void.Proxy.API.Events;
+﻿using Microsoft.Extensions.Logging;
+using MinecraftNotifier.Lib;
+using MinecraftNotifier.Lib.Models;
+using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Handshake;
 using Void.Proxy.API.Events.Plugins;
 using Void.Proxy.API.Events.Proxy;
@@ -7,7 +10,7 @@ using Void.Proxy.API.Plugins;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2;
 
-public class Plugin : IPlugin
+public class Plugin(ILogger<Plugin> logger) : IPlugin
 {
     public readonly ProtocolVersion NewestVersion = ProtocolVersion.MINECRAFT_1_12_2;
 
@@ -17,6 +20,22 @@ public class Plugin : IPlugin
     [Subscribe]
     public void OnProxyStarting(ProxyStartingEvent @event, CancellationToken cancellationToken)
     {
+        var type = typeof(MinecraftVersion);
+        logger.LogInformation(type.GetConstructors()[0].ToString());
+
+        var instance = new MinecraftVersion();
+
+        MinecraftVersion? declaration = null;
+        declaration?.Start();
+
+        logger.LogInformation("{Boolean}", declaration == null);
+
+        var feed = new MinecraftRssFeed { RssChannel = new RssChannel { Description = "test" } };
+        logger.LogInformation(feed.RssChannel.Description);
+        logger.LogInformation(instance.ToString());
+
+        var mapping = new PacketMapping(1, ProtocolVersion.MINECRAFT_1_10);
+        logger.LogInformation(mapping.ToString());
     }
 
     [Subscribe]

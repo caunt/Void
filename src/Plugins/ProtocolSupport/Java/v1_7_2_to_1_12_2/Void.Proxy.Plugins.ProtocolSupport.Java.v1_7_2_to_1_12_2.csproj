@@ -7,13 +7,9 @@
 		<EnableDynamicLoading>true</EnableDynamicLoading>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<DebugType>none</DebugType>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-		<DebugType>none</DebugType>
-	</PropertyGroup>
+	<ItemGroup>
+	  <PackageReference Include="MinecraftNotifier" Version="1.2.0" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\..\..\API\Void.Proxy.API.csproj">

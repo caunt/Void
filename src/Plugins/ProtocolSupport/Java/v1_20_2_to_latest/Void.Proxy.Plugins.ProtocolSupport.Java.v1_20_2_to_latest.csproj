@@ -7,14 +7,6 @@
 		<EnableDynamicLoading>true</EnableDynamicLoading>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<DebugType>none</DebugType>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-		<DebugType>none</DebugType>
-	</PropertyGroup>
-
 	<ItemGroup>
 		<ProjectReference Include="..\..\..\..\API\Void.Proxy.API.csproj">
 			<Private>false</Private>

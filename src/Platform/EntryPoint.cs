@@ -43,6 +43,7 @@ try
     builder.Services.AddSingleton<ISettings, Settings>();
     builder.Services.AddSingleton<ICryptoService, RsaCryptoService>();
     builder.Services.AddSingleton<IEventService, EventService>();
+    builder.Services.AddSingleton<IPluginDependencyService, PluginDependencyService>();
     builder.Services.AddSingleton<IPluginService, PluginService>();
     builder.Services.AddSingleton<IPlayerService, PlayerService>();
     builder.Services.AddSingleton<IServerService, ServerService>();

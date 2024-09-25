@@ -4,7 +4,7 @@ using Void.Proxy.API.Events.Services;
 
 namespace Void.Proxy.Events;
 
-public class EventService : IEventService
+public class EventService(ILogger<EventService> logger) : IEventService
 {
     private readonly List<IEventListener> _listeners = [];
     private readonly List<MethodInfo> _methods = [];
@@ -30,6 +30,7 @@ public class EventService : IEventService
     public async ValueTask ThrowAsync<T>(T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
         var eventType = @event.GetType();
+
         var simpleParameters = (object[]) [@event];
         var cancellableParameters = (object[]) [@event, cancellationToken];
 
@@ -56,15 +57,22 @@ public class EventService : IEventService
 
                 await Task.Yield();
 
-                var value = method.Invoke(listener, parameters.Length == 1 ? simpleParameters : cancellableParameters);
-                var handle = value switch
+                try
                 {
-                    Task task => new ValueTask(task),
-                    ValueTask task => task,
-                    _ => ValueTask.CompletedTask
-                };
+                    var value = method.Invoke(listener, parameters.Length == 1 ? simpleParameters : cancellableParameters);
+                    var handle = value switch
+                    {
+                        Task task => new ValueTask(task),
+                        ValueTask task => task,
+                        _ => ValueTask.CompletedTask
+                    };
 
-                await handle;
+                    await handle;
+                }
+                catch (TargetInvocationException exception)
+                {
+                    logger.LogError(exception.InnerException, "{EventName} cannot be invoked on {ListenerName}", eventType.Name, listener.GetType().FullName);
+                }
             }
         }
     }
