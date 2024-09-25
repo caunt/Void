@@ -54,12 +54,10 @@ public class PluginLoadContext : AssemblyLoadContext
             return Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.GetName().Name == assemblyName.Name) ?? Default.LoadFromAssemblyName(assemblyName);
 
         // fallback to local folder and NuGet
-        assembly = _localResolver.ResolveAssemblyToPath(assemblyName) switch
-        {
-            { } assemblyPath => LoadFromAssemblyPath(assemblyPath),
-            _ when _dependencies.ResolveAssemblyPath(assemblyName) is { } assemblyPath => LoadFromAssemblyPath(assemblyPath),
-            _ => null
-        };
+        var assemblyPath = _localResolver.ResolveAssemblyToPath(assemblyName) ?? _dependencies.ResolveAssemblyPath(assemblyName);
+        
+        if (assemblyPath is not null)
+            assembly = LoadFromAssemblyPath(assemblyPath);
 
         // sorry, but where am I supposed to find your dependency?
         // throw is mandatory to prevent search in Default context
