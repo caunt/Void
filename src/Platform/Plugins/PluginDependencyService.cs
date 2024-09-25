@@ -1,5 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.Versioning;
+using System.Security.Principal;
+using Nito.Disposables.Internals;
 using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Frameworks;
@@ -8,12 +10,15 @@ using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
+using NuGet.Versioning;
 using Void.Proxy.API.Plugins;
 
 namespace Void.Proxy.Plugins;
 
 public class PluginDependencyService(ILogger<PluginDependencyService> logger) : IPluginDependencyService
 {
+
+    private static readonly string FrameworkName = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName ?? throw new InvalidOperationException("Cannot determine the target framework.");
     private static readonly SourceRepository NuGetRepository = Repository.Factory.GetCoreV3(new PackageSource("https://api.nuget.org/v3/index.json").Source);
     private static readonly SourceCacheContext NuGetCache = new();
     private static readonly string NuGetPackagesPath = Path.Combine(Directory.GetCurrentDirectory(), SettingsUtility.DefaultGlobalPackagesFolderPath);
@@ -28,52 +33,123 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
             return null;
         }
 
-        var assemblyPath = ResolveAssemblyFromNuGetAsync(assemblyName, CancellationToken.None).GetAwaiter().GetResult();
+        var assemblyPath = ResolveAssemblyFromOfflineNuGetAsync(assemblyName, CancellationToken.None).GetAwaiter().GetResult() ?? 
+                           ResolveAssemblyFromNuGetAsync(assemblyName, CancellationToken.None).GetAwaiter().GetResult();
 
         return assemblyPath;
     }
 
+    private async ValueTask<string?> ResolveAssemblyFromOfflineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(assemblyName.Name))
+                return null;
+
+            // TODO: directory name does not guarantee NuGet package name 
+            var localPackagePath = Path.Combine(NuGetPackagesPath, assemblyName.Name.ToLower());
+
+            if (!Directory.Exists(localPackagePath))
+            {
+                logger.LogWarning("Dependency {DependencyName} not found in the offline NuGet cache", assemblyName.Name);
+
+                // some packages easily resolved with just removed suffixes
+                if (!assemblyName.Name.Contains('.'))
+                    return null;
+
+                var prefix = assemblyName.Name[..assemblyName.Name.LastIndexOf('.')];
+                assemblyName.Name = prefix;
+
+                return await ResolveAssemblyFromOfflineNuGetAsync(assemblyName, cancellationToken);
+            }
+
+            var availableVersions = Directory.GetDirectories(localPackagePath).Select(Path.GetFileName).WhereNotNull().ToArray();
+
+            if (availableVersions.Length == 0)
+            {
+                logger.LogWarning("No versions found for {DependencyName} in the offline NuGet cache", assemblyName.Name);
+                return null;
+            }
+
+            var identities = availableVersions.Select(version => new PackageIdentity(assemblyName.Name, NuGetVersion.Parse(version)));
+            var identity = SelectBestNuGetPackageVersion(identities, assemblyName.Version);
+
+            if (identity == null)
+            {
+                logger.LogError("No matching version found for {DependencyName} in the offline NuGet cache", assemblyName.Name);
+                return null;
+            }
+
+            var packagePath = Path.Combine(NuGetPackagesPath, identity.Id.ToLower(), identity.Version.ToString());
+            var packageReader = new PackageFolderReader(packagePath);
+
+            var frameworks = await packageReader.GetLibItemsAsync(cancellationToken);
+            var targetFramework = NuGetFramework.ParseFrameworkName(FrameworkName, new DefaultFrameworkNameProvider());
+
+            foreach (var framework in frameworks)
+            {
+                if (!DefaultCompatibilityProvider.Instance.IsCompatible(targetFramework, framework.TargetFramework))
+                    continue;
+
+                var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
+
+                if (assembly is null)
+                    throw new FileNotFoundException($"Dependency {assemblyName.Name} was found in the offline NuGet cache but the file cannot be located");
+
+                return Path.Combine(packagePath, assembly);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to resolve {DependencyName} from the offline NuGet cache", assemblyName.Name);
+        }
+
+        return null;
+    }
+
     private async ValueTask<string?> ResolveAssemblyFromNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
     {
-        var identity = await TryResolveNuGetIdentityAsync(assemblyName, cancellationToken);
-
-        if (identity is null)
+        try
         {
-            logger.LogError("Dependency {DependencyName} not found in NuGet at all", assemblyName.Name);
-            return null;
+            var identity = await TryResolveNuGetIdentityAsync(assemblyName, cancellationToken);
+
+            if (identity is null)
+            {
+                logger.LogWarning("Dependency {DependencyName} not found in NuGet at all", assemblyName.Name);
+                return null;
+            }
+
+            var packagePath = Path.Combine(NuGetPackagesPath, identity.Id.ToLower(), identity.Version.ToString());
+
+            if (!Directory.Exists(packagePath))
+                await TryDownloadNuGetPackageAsync(identity, cancellationToken);
+
+            if (!Directory.Exists(packagePath))
+            {
+                logger.LogWarning("Dependency {DependencyName} cannot be downloaded from NuGet", identity.Id);
+                return null;
+            }
+
+            var packageReader = new PackageFolderReader(packagePath);
+            var frameworks = await packageReader.GetLibItemsAsync(cancellationToken);
+            var targetFramework = NuGetFramework.ParseFrameworkName(FrameworkName, new DefaultFrameworkNameProvider());
+
+            foreach (var framework in frameworks)
+            {
+                if (!DefaultCompatibilityProvider.Instance.IsCompatible(targetFramework, framework.TargetFramework))
+                    continue;
+
+                var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
+
+                if (assembly is null)
+                    throw new FileNotFoundException($"Dependency {identity.Id} was downloaded from NuGet but file cannot be located");
+
+                return Path.Combine(packagePath, assembly);
+            }
         }
-
-        var packagePath = Path.Combine(NuGetPackagesPath, identity.Id.ToLower(), identity.Version.ToString());
-
-        if (!Directory.Exists(packagePath))
-            await TryDownloadNuGetPackageAsync(identity, cancellationToken);
-
-        if (!Directory.Exists(packagePath))
+        catch (Exception exception)
         {
-            logger.LogError("Dependency {DependencyName} cannot be downloaded from NuGet", assemblyName.Name);
-            return null;
-        }
-
-        var targetFrameworkName = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName;
-
-        if (targetFrameworkName == null)
-            throw new InvalidOperationException("Cannot determine the target framework.");
-
-        var packageReader = new PackageFolderReader(packagePath);
-        var frameworks = await packageReader.GetLibItemsAsync(cancellationToken);
-        var targetFramework = NuGetFramework.ParseFrameworkName(targetFrameworkName, new DefaultFrameworkNameProvider());
-
-        foreach (var framework in frameworks)
-        {
-            if (!DefaultCompatibilityProvider.Instance.IsCompatible(targetFramework, framework.TargetFramework))
-                continue;
-
-            var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
-
-            if (assembly is null)
-                throw new FileNotFoundException($"Dependency {identity.Id} was downloaded but file cannot be located");
-
-            return Path.Combine(packagePath, assembly);
+            logger.LogError(exception, "Dependency {PackageId} cannot be resolved from NuGet", assemblyName.Name);
         }
 
         return null;
@@ -88,7 +164,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
         }
         catch (FatalProtocolException exception)
         {
-            logger.LogCritical("Dependency {PackageId} cannot be resolved: {Reason}", identity.Id, exception.Message);
+            logger.LogCritical("Dependency {PackageId} cannot be downloaded: {Reason}", identity.Id, exception.Message);
         }
         catch (RetriableProtocolException exception)
         {
@@ -120,7 +196,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
             return null;
 
         var packages = await GetNuGetPackageVersionAsync(assemblyName.Name, cancellationToken);
-        var best = SelectBestNuGetPackageVersion(packages, assemblyName.Version);
+        var best = SelectBestNuGetPackageVersion(packages.Select(package => package.Identity), assemblyName.Version);
 
         return best;
     }
@@ -134,7 +210,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
         foreach (var packageSearchResult in packageSearchResults)
         {
             var packages = await GetNuGetPackageVersionAsync(packageSearchResult.Identity.Id, cancellationToken);
-            var best = SelectBestNuGetPackageVersion(packages, assemblyName.Version);
+            var best = SelectBestNuGetPackageVersion(packages.Select(package => package.Identity), assemblyName.Version);
 
             return best;
         }
@@ -142,34 +218,35 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
         return null;
     }
 
-    private PackageIdentity? SelectBestNuGetPackageVersion(IEnumerable<IPackageSearchMetadata> packages, Version? assemblyVersion)
+    private PackageIdentity? SelectBestNuGetPackageVersion(IEnumerable<PackageIdentity> identities, Version? assemblyVersion)
     {
-        IPackageSearchMetadata? result = null;
+        PackageIdentity? result = null;
 
-        foreach (var package in packages)
+        foreach (var identity in identities)
         {
             if (result is null)
             {
-                result = package;
+                result = identity;
                 continue;
             }
 
-            if (!package.Identity.HasVersion)
+            if (!identity.HasVersion)
                 continue;
 
-            if (package.Identity.Version.CompareTo(result.Identity.Version) < 0)
+            if (identity.Version.CompareTo(identity.Version) < 0)
                 continue;
 
             if (assemblyVersion is null)
-                result = package;
-            else if (assemblyVersion.Major == package.Identity.Version.Major) result = package;
+                result = identity;
+            else if (assemblyVersion.Major == identity.Version.Major)
+                result = identity;
         }
 
         if (result is null)
             return null;
 
-        logger.LogInformation("Dependency {DependencyName} resolved with version {DependencyVersion}", result.Identity.Id, result.Identity.Version);
-        return result.Identity;
+        logger.LogInformation("Dependency {DependencyName} resolved with version {DependencyVersion}", result.Id, result.Version);
+        return result;
     }
 
     private static async ValueTask<IEnumerable<IPackageSearchMetadata>> GetNuGetPackageVersionAsync(string packageId, CancellationToken cancellationToken)
