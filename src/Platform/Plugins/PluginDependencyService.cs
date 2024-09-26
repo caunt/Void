@@ -24,7 +24,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
 
     public string? ResolveAssemblyPath(AssemblyName assemblyName)
     {
-        logger.LogInformation("Resolving {AssemblyName} dependency", assemblyName.Name);
+        logger.LogTrace("Resolving {AssemblyName} dependency", assemblyName.Name);
 
         if (assemblyName.FullName.StartsWith(nameof(Void) + '.'))
         {
@@ -38,7 +38,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
 
     public Stream? ResolveEmbeddedAssemblyStream(AssemblyName assemblyName)
     {
-        logger.LogInformation("Resolving {AssemblyName} embedded dependency", assemblyName.Name);
+        logger.LogTrace("Resolving {AssemblyName} embedded dependency", assemblyName.Name);
 
         if (string.IsNullOrWhiteSpace(assemblyName.Name))
             return null;
@@ -78,7 +78,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
 
             if (!Directory.Exists(localPackagePath))
             {
-                logger.LogWarning("Dependency {DependencyName} not found in the offline NuGet cache", assemblyName.Name);
+                logger.LogTrace("Dependency {DependencyName} not found in the offline NuGet cache", assemblyName.Name);
 
                 // some packages easily resolved with just removed suffixes
                 if (!assemblyName.Name.Contains('.'))
@@ -126,9 +126,9 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
                 return Path.Combine(packagePath, assembly);
             }
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            logger.LogError(ex, "Failed to resolve {DependencyName} from the offline NuGet cache", assemblyName.Name);
+            logger.LogError(exception, "Failed to resolve {DependencyName} from the offline NuGet cache", assemblyName.Name);
         }
 
         return null;
@@ -142,7 +142,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
 
             if (identity is null)
             {
-                logger.LogWarning("Dependency {DependencyName} not found in NuGet at all", assemblyName.Name);
+                logger.LogTrace("Dependency {DependencyName} not found in NuGet at all", assemblyName.Name);
                 return null;
             }
 
@@ -187,33 +187,33 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
         try
         {
             using var result = await PackageDownloader.GetDownloadResourceResultAsync(NuGetRepository, identity, new PackageDownloadContext(NuGetCache), NuGetPackagesPath, NullLogger.Instance, cancellationToken);
-            logger.LogInformation("Downloaded {PackageId} {PackageVersion}", identity.Id, identity.Version);
+            logger.LogTrace("Downloaded {PackageId} version {PackageVersion} dependency", identity.Id, identity.Version);
         }
         catch (FatalProtocolException exception)
         {
-            logger.LogCritical("Dependency {PackageId} cannot be downloaded: {Reason}", identity.Id, exception.Message);
+            logger.LogError("Dependency {PackageId} cannot be downloaded: {Reason}", identity.Id, exception.Message);
         }
         catch (RetriableProtocolException exception)
         {
-            logger.LogError("Dependency {PackageId} loading was cancelled: {Message}", identity.Id, exception.Message);
+            logger.LogWarning("Dependency {PackageId} loading was cancelled: {Message}", identity.Id, exception.Message);
         }
     }
 
     private async ValueTask<PackageIdentity?> TryResolveNuGetIdentityAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
     {
-        logger.LogInformation("Looking for dependency {DependencyName} as Identity in NuGet", assemblyName.Name);
+        logger.LogTrace("Looking for dependency {DependencyName} as Identity in NuGet", assemblyName.Name);
         var identity = await TryResolveNuGetPackageIdAsync(assemblyName, cancellationToken);
 
         if (identity is not null)
             return identity;
 
-        logger.LogInformation("Looking for dependency {DependencyName} with Search in NuGet", assemblyName.Name);
+        logger.LogTrace("Looking for dependency {DependencyName} with Search in NuGet", assemblyName.Name);
         identity = await TryResolveNuGetPackageSearchAsync(assemblyName, cancellationToken);
 
         if (identity is not null)
             return identity;
 
-        logger.LogWarning("Dependency {DependencyName} not found in NuGet", assemblyName.Name);
+        logger.LogTrace("Dependency {DependencyName} not found in NuGet", assemblyName.Name);
         return null;
     }
 
@@ -272,7 +272,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
         if (result is null)
             return null;
 
-        logger.LogInformation("Dependency {DependencyName} resolved with version {DependencyVersion}", result.Id, result.Version);
+        logger.LogTrace("Dependency {DependencyName} selected best version {DependencyVersion}", result.Id, result.Version);
         return result;
     }
 

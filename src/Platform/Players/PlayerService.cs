@@ -33,6 +33,7 @@ public class PlayerService : IPlayerService, IEventListener
     {
         using var sync = await _lock.LockAsync(cancellationToken);
 
+        _logger.LogTrace("Accepted client from {RemoteEndPoint}", client.Client.RemoteEndPoint);
         var scope = _serviceScopeFactory.CreateAsyncScope();
         var player = new Player(scope, client);
 

@@ -25,6 +25,8 @@ public class SimpleChannelBuilderService(ILogger<SimpleChannelBuilderService> lo
         if (_found)
             return;
 
+        logger.LogTrace("Searching for channel builder for a {Player} player", player);
+
         var stream = player.Client.GetStream();
         var buffer = new byte[MaxHandshakeSize];
         var length = await stream.ReadAsync(buffer, cancellationToken);
@@ -34,6 +36,8 @@ public class SimpleChannelBuilderService(ILogger<SimpleChannelBuilderService> lo
 
         if (searchProtocolCodec.Result is not null)
             _builder = searchProtocolCodec.Result;
+        else
+            logger.LogWarning("Channel builder not found for a {Player} player", player);
 
         _buffer = searchProtocolCodec.Buffer;
         _found = true;
@@ -41,8 +45,9 @@ public class SimpleChannelBuilderService(ILogger<SimpleChannelBuilderService> lo
 
     public async ValueTask<IMinecraftChannel> BuildPlayerChannelAsync(IPlayer player, CancellationToken cancellationToken = default)
     {
+        logger.LogTrace("Building channel for a {Player} player", player);
         var channel = await BuildChannelAsync(Direction.Serverbound, player.Client.GetStream(), cancellationToken);
-        logger.LogDebug("Client {RemoteEndPoint} is using {ChannelTypeName} channel implementation", player.RemoteEndPoint, channel.GetType().Name);
+        logger.LogTrace("Client {RemoteEndPoint} is using {ChannelTypeName} channel implementation", player.RemoteEndPoint, channel.GetType().Name);
 
         if (_buffer.Length <= 0)
             return channel;
@@ -55,8 +60,9 @@ public class SimpleChannelBuilderService(ILogger<SimpleChannelBuilderService> lo
 
     public async ValueTask<IMinecraftChannel> BuildServerChannelAsync(IServer server, CancellationToken cancellationToken = default)
     {
+        logger.LogTrace("Building channel for a {Server} server", server);
         var channel = await BuildChannelAsync(Direction.Clientbound, server.CreateTcpClient().GetStream(), cancellationToken);
-        logger.LogDebug("Server {Name} is using {ChannelTypeName} channel implementation", server.Name, channel.GetType().Name);
+        logger.LogTrace("Server {Name} is using {ChannelTypeName} channel implementation", server.Name, channel.GetType().Name);
 
         return channel;
     }

@@ -29,6 +29,7 @@ public class LinkService : ILinkService, IEventListener
 
     public async ValueTask ConnectPlayerAnywhereAsync(IPlayer player, CancellationToken cancellationToken = default)
     {
+        _logger.LogTrace("Looking for a server for {Player} player", player);
         var server = await _events.ThrowWithResultAsync(new PlayerSearchServerEvent { Player = player }, cancellationToken) ?? _servers.RegisteredServers.First();
         await ConnectAsync(player, server, cancellationToken);
     }
@@ -58,6 +59,8 @@ public class LinkService : ILinkService, IEventListener
     private async ValueTask ConnectAsync(IPlayer player, IServer server, CancellationToken cancellationToken = default)
     {
         using var sync = await _lock.LockAsync(cancellationToken);
+
+        _logger.LogTrace("Connecting {Player} player to a {Server} server", player, server);
 
         var playerChannel = await player.GetChannelAsync(cancellationToken);
         var serverChannel = await player.BuildServerChannelAsync(server, cancellationToken);

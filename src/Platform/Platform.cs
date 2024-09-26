@@ -23,32 +23,41 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        LoggingLevelSwitch.MinimumLevel = LogEventLevel.Debug;
+        LoggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
 
+        logger.LogInformation("Starting Void proxy");
         var startTime = Stopwatch.GetTimestamp();
 
         if (Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) is { } currentDirectory)
+        {
+            logger.LogTrace("Changing working directory to {Path}", currentDirectory);
             Directory.SetCurrentDirectory(currentDirectory);
+        }
 
+        logger.LogInformation("Loading embedded plugins");
         await plugins.LoadEmbeddedPluginsAsync(cancellationToken);
+        logger.LogInformation("Loading directory plugins");
         await plugins.LoadPluginsAsync(cancellationToken: cancellationToken);
         await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
 
         forwardings.RegisterDefault();
 
+        logger.LogInformation("Loading settings file");
         await settings.LoadAsync(cancellationToken: cancellationToken);
 
 #if RELEASE
         LoggingLevelSwitch.MinimumLevel = (LogEventLevel)settings.LogLevel;
 #endif
 
+        logger.LogInformation("Registering servers from settings file");
         foreach (var server in settings.Servers)
             servers.RegisterServer(server);
 
+        logger.LogInformation("Starting connection listener");
         _listener = new TcpListener(settings.Address, settings.Port);
         _listener.Start();
 
-        logger.LogInformation("Listening for connections on port {Port}...", settings.Port);
+        logger.LogInformation("Connection listener started on port {Port}", settings.Port);
 
         _backgroundTask = ExecuteAsync(hostApplicationLifetime.ApplicationStopping);
 
@@ -58,11 +67,12 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        await events.ThrowAsync<ProxyStoppingEvent>(cancellationToken);
         logger.LogInformation("Stopping proxy");
+        await events.ThrowAsync<ProxyStoppingEvent>(cancellationToken);
 
         // TODO disconnect everyone here
 
+        logger.LogInformation("Awaiting completion of connection listener");
         if (_backgroundTask is not null)
             await _backgroundTask.ContinueWith(backgroundTask =>
             {
@@ -77,10 +87,15 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
 
         _listener?.Stop();
 
+        logger.LogInformation("Saving settings file");
         await settings.SaveAsync(cancellationToken: cancellationToken);
 
         await events.ThrowAsync<ProxyStoppedEvent>(cancellationToken);
+
+        logger.LogInformation("Unloading plugins");
         await plugins.UnloadPluginsAsync(cancellationToken);
+
+        logger.LogInformation("Proxy stopped!");
     }
 
     public async Task ExecuteAsync(CancellationToken cancellationToken)

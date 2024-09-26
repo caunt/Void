@@ -1,4 +1,5 @@
-﻿using Serilog;
+﻿using System.Diagnostics;
+using Serilog;
 using Serilog.Events;
 using Void.Proxy;
 using Void.Proxy.API;
@@ -22,7 +23,7 @@ using Void.Proxy.Settings;
 
 const int width = 165;
 
-if (OperatingSystem.IsWindows() && Console.WindowWidth < width)
+if (Debugger.IsAttached && OperatingSystem.IsWindows() && Console.WindowWidth < width)
     Console.WindowWidth = width;
 
 var configuration = new LoggerConfiguration();

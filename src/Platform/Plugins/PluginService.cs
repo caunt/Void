@@ -23,6 +23,8 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
         foreach (var resourceName in pluginsResources)
         {
+            logger.LogTrace("Found {ResourceName} embedded plugin", resourceName);
+
             if (assembly.GetManifestResourceStream(resourceName) is not { } stream)
             {
                 logger.LogWarning("Embedded plugin {PluginName} couldn't be loaded", resourceName);
@@ -41,11 +43,12 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
         if (!pluginsDirectoryInfo.Exists)
             pluginsDirectoryInfo.Create();
 
-        var pluginsFiles = pluginsDirectoryInfo.GetFiles("*.dll").Select(fileInfo => fileInfo.FullName).ToArray();
-        logger.LogInformation("Loading {Count} plugins", pluginsFiles.Length);
+        var pluginsFiles = pluginsDirectoryInfo.GetFiles("*.dll").Select(fileInfo => fileInfo.FullName);
 
         foreach (var pluginPath in pluginsFiles)
         {
+            logger.LogTrace("Found {ResourceName} directory plugin", Path.GetFileName(pluginPath));
+
             await using var stream = File.OpenRead(pluginPath);
             await LoadPluginsAsync(Path.GetFileName(pluginPath), stream, cancellationToken);
         }
@@ -53,10 +56,9 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
     public async ValueTask LoadPluginsAsync(string assemblyName, Stream assemblyStream, CancellationToken cancellationToken = default)
     {
+        logger.LogTrace("Loading {AssemblyName} plugins", assemblyName);
+
         var context = new PluginLoadContext(services.GetRequiredService<ILogger<PluginLoadContext>>(), dependencies, assemblyName, assemblyStream);
-
-        logger.LogInformation("Loading {PluginName} plugin", context.Name);
-
         var plugins = GetPlugins(assemblyName, context.PluginAssembly);
 
         foreach (var plugin in plugins)
@@ -79,11 +81,13 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
         foreach (var plugin in plugins)
             await events.ThrowAsync(new PluginLoadEvent { Plugin = plugin }, cancellationToken);
 
-        logger.LogDebug("Loaded {Count} plugins from {PluginName}", plugins.Length, context.Name);
+        logger.LogInformation("Loaded {Count} plugin(s) from {AssemblyName} ", plugins.Length, assemblyName);
     }
 
     public async ValueTask UnloadPluginsAsync(CancellationToken cancellationToken = default)
     {
+        logger.LogInformation("Unloading all plugins");
+
         for (var index = _references.Count - 1; index >= 0; index--)
             await UnloadPluginAsync(_references[index].Context.Name!, cancellationToken);
     }
@@ -97,6 +101,8 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
             var name = reference.Context.Name;
 
+            logger.LogInformation("Unloading {ContextName} {Count} plugin(s)", name, reference.Plugins.Length);
+
             foreach (var plugin in reference.Plugins)
             {
                 await events.ThrowAsync(new PluginUnloadEvent { Plugin = plugin }, cancellationToken);
@@ -106,8 +112,6 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
             events.UnregisterListeners(reference.Listeners);
 
             reference.Context.Unload();
-
-            logger.LogInformation("Unloading {PluginName} plugin", name);
 
             var collectionTime = Stopwatch.GetTimestamp();
 
@@ -123,9 +127,9 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
             } while (Stopwatch.GetElapsedTime(collectionTime) < _unloadTimeout);
 
             if (reference.IsAlive)
-                throw new Exception($"Plugin {name} refuses to unload");
+                throw new Exception($"Plugins context {name} refuses to unload");
 
-            logger.LogDebug("Plugin {PluginName} unloaded successfully", name);
+            logger.LogInformation("Unloaded {ContextName} {Count} plugin(s)", name, reference.Plugins.Length);
         }
 
         _references.RemoveAll(reference => !reference.IsAlive);
@@ -133,6 +137,8 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
     public IPlugin[] GetPlugins(string assemblyName, Assembly assembly)
     {
+        logger.LogTrace("Searching for IPlugin interfaces in {AssemblyName}", assemblyName);
+
         var pluginInterface = typeof(IPlugin);
 
         try
@@ -157,15 +163,17 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
     public void RegisterPlugin(IPlugin plugin)
     {
+        logger.LogTrace("Registering {PluginName} plugin", plugin.Name);
         _plugins.Add(plugin);
     }
 
     public void UnregisterPlugin(IPlugin plugin)
     {
+        logger.LogTrace("Unregistering {PluginName} plugin", plugin.Name);
         _plugins.Remove(plugin);
     }
 
-    internal object? GetExistingInstance(Type type)
+    private object? GetExistingInstance(Type type)
     {
         return _plugins.FirstOrDefault(plugin => plugin.GetType().IsAssignableFrom(type));
     }

@@ -21,21 +21,21 @@ public class Plugin(ILogger<Plugin> logger) : IPlugin
     public void OnProxyStarting(ProxyStartingEvent @event, CancellationToken cancellationToken)
     {
         var type = typeof(MinecraftVersion);
-        logger.LogInformation(type.GetConstructors()[0].ToString());
+        logger.LogDebug("TEST: {Value}", type.GetConstructors()[0].ToString());
 
         var instance = new MinecraftVersion();
 
         MinecraftVersion? declaration = null;
         declaration?.Start();
 
-        logger.LogInformation("{Boolean}", declaration == null);
+        logger.LogDebug("TEST: {Value}", declaration == null);
 
         var feed = new MinecraftRssFeed { RssChannel = new RssChannel { Description = "test" } };
-        logger.LogInformation(feed.RssChannel.Description);
-        logger.LogInformation(instance.ToString());
+        logger.LogDebug("TEST: {Value}", feed.RssChannel.Description);
+        logger.LogDebug("TEST: {Value}", instance.ToString());
 
         var mapping = new PacketMapping(1, ProtocolVersion.MINECRAFT_1_10);
-        logger.LogInformation(mapping.ToString());
+        logger.LogDebug("TEST: {Value}", mapping.ToString());
     }
 
     [Subscribe]

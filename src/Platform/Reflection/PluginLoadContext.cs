@@ -43,7 +43,7 @@ public class PluginLoadContext : AssemblyLoadContext
                 using var assemblyStream = _dependencies.ResolveEmbeddedAssemblyStream(assemblyName);
 
                 if (assemblyStream is not null)
-                    assembly = LoadFromStream(assemblyStream);
+                    assembly = Default.LoadFromStream(assemblyStream);
             }
         }
 
