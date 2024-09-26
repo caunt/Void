@@ -38,7 +38,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
     private async ValueTask<string?> ResolveAssemblyFromNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)
     {
         var assemblyPath = await ResolveAssemblyFromOfflineNuGetAsync(assemblyName, cancellationToken);
-        
+
         if (string.IsNullOrWhiteSpace(assemblyPath))
             assemblyPath = await ResolveAssemblyFromOnlineNuGetAsync(assemblyName, cancellationToken);
 

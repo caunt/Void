@@ -29,7 +29,8 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
 
         Directory.SetCurrentDirectory(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!);
 
-        await plugins.LoadAsync(cancellationToken: cancellationToken);
+        await plugins.LoadEmbeddedPluginsAsync(cancellationToken);
+        await plugins.LoadPluginsAsync(cancellationToken: cancellationToken);
         await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
 
         forwardings.RegisterDefault();
@@ -78,7 +79,7 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
         await settings.SaveAsync(cancellationToken: cancellationToken);
 
         await events.ThrowAsync<ProxyStoppedEvent>(cancellationToken);
-        await plugins.UnloadAsync(cancellationToken);
+        await plugins.UnloadPluginsAsync(cancellationToken);
     }
 
     public async Task ExecuteAsync(CancellationToken cancellationToken)

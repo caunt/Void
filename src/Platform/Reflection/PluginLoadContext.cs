@@ -10,17 +10,19 @@ public class PluginLoadContext : AssemblyLoadContext
     private static readonly string[] SharedDependencies = [nameof(Microsoft)];
     private static readonly string[] SystemDependencies = [nameof(System), "netstandard"];
     private readonly IPluginDependencyService _dependencies;
-    private readonly AssemblyDependencyResolver _localResolver;
+    private readonly AssemblyDependencyResolver? _localDependencies;
 
     private readonly ILogger<PluginLoadContext> _logger;
 
-    public PluginLoadContext(ILogger<PluginLoadContext> logger, IPluginDependencyService dependencies, string pluginPath) : base(Path.GetFileName(pluginPath), true)
+    public PluginLoadContext(ILogger<PluginLoadContext> logger, IPluginDependencyService dependencies, string assemblyName, Stream assemblyStream, string? componentAssemblyPath = null) : base(assemblyName, true)
     {
         _logger = logger;
         _dependencies = dependencies;
 
-        _localResolver = new AssemblyDependencyResolver(pluginPath);
-        PluginAssembly = LoadFromAssemblyPath(pluginPath);
+        if (!string.IsNullOrWhiteSpace(componentAssemblyPath))
+            _localDependencies = new AssemblyDependencyResolver(componentAssemblyPath);
+
+        PluginAssembly = LoadFromStream(assemblyStream);
     }
 
     public Assembly PluginAssembly { get; }
@@ -54,8 +56,8 @@ public class PluginLoadContext : AssemblyLoadContext
             return Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.GetName().Name == assemblyName.Name) ?? Default.LoadFromAssemblyName(assemblyName);
 
         // fallback to local folder and NuGet
-        var assemblyPath = _localResolver.ResolveAssemblyToPath(assemblyName) ?? _dependencies.ResolveAssemblyPath(assemblyName);
-        
+        var assemblyPath = _localDependencies?.ResolveAssemblyToPath(assemblyName) ?? _dependencies.ResolveAssemblyPath(assemblyName);
+
         if (assemblyPath is not null)
             assembly = LoadFromAssemblyPath(assemblyPath);
 
@@ -69,7 +71,7 @@ public class PluginLoadContext : AssemblyLoadContext
 
     protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
     {
-        var libraryPath = _localResolver.ResolveUnmanagedDllToPath(unmanagedDllName);
-        return libraryPath != null ? LoadUnmanagedDllFromPath(libraryPath) : IntPtr.Zero;
+        var libraryPath = _localDependencies?.ResolveUnmanagedDllToPath(unmanagedDllName);
+        return libraryPath is null ? IntPtr.Zero : LoadUnmanagedDllFromPath(libraryPath);
     }
 }

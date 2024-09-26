@@ -6,7 +6,6 @@ using Void.Proxy.API.Events.Plugins;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Plugins;
 using Void.Proxy.Reflection;
-using Void.Proxy.Utils;
 
 namespace Void.Proxy.Plugins;
 
@@ -17,61 +16,92 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
     private readonly List<WeakPluginReference> _references = [];
     private readonly TimeSpan _unloadTimeout = TimeSpan.FromSeconds(10);
 
-    public async ValueTask LoadAsync(string path = "plugins", CancellationToken cancellationToken = default)
+    public async ValueTask LoadEmbeddedPluginsAsync(CancellationToken cancellationToken = default)
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        var pluginsResources = assembly.GetManifestResourceNames().Where(name => name.Contains(nameof(Plugins)));
+
+        foreach (var resourceName in pluginsResources)
+        {
+            if (assembly.GetManifestResourceStream(resourceName) is not { } stream)
+            {
+                logger.LogWarning("Embedded plugin {PluginName} couldn't be extracted", resourceName);
+                continue;
+            }
+
+            await LoadPluginsAsync(resourceName, stream, cancellationToken);
+            stream.Close();
+        }
+    }
+
+    public async ValueTask LoadPluginsAsync(string path = "plugins", CancellationToken cancellationToken = default)
     {
         var pluginsDirectoryInfo = new DirectoryInfo(path);
 
         if (!pluginsDirectoryInfo.Exists)
             pluginsDirectoryInfo.Create();
 
-        await ExtractEmbeddedPluginsAsync(path, cancellationToken);
+        var pluginsFiles = pluginsDirectoryInfo.GetFiles("*.dll").Select(fileInfo => fileInfo.FullName).ToArray();
+        logger.LogInformation("Loading {Count} plugins", pluginsFiles.Length);
 
-        var pluginPaths = pluginsDirectoryInfo.GetFiles("*.dll").Select(fileInfo => fileInfo.FullName).ToArray();
-
-        logger.LogInformation("Loading {Count} plugins", pluginPaths.Length);
-
-        foreach (var pluginPath in pluginPaths)
+        foreach (var pluginPath in pluginsFiles)
         {
-            var context = new PluginLoadContext(services.GetRequiredService<ILogger<PluginLoadContext>>(), dependencies, pluginPath);
-
-            logger.LogInformation("Loading {PluginName} plugin", context.Name);
-
-            var plugins = RegisterPlugins(context.Name, context.PluginAssembly);
-
-            if (plugins.Length == 0)
-            {
-                logger.LogWarning("Plugin {PluginName} has no IPlugin implementations", context.Name);
-                continue;
-            }
-
-            var listeners = context.PluginAssembly.GetTypes().Where(typeof(IEventListener).IsAssignableFrom).Select(CreateListenerInstance).Cast<IEventListener?>().WhereNotNull().ToArray();
-
-            if (listeners.Length == 0)
-                logger.LogWarning("Plugin {PluginName} has no event listeners", context.Name);
-
-            events.RegisterListeners(listeners);
-            _references.Add(new WeakPluginReference(context, plugins, listeners));
-
-            foreach (var plugin in plugins)
-                await events.ThrowAsync(new PluginLoadEvent { Plugin = plugin }, cancellationToken);
-
-            logger.LogDebug("Loaded {Count} plugins from {PluginName}", plugins.Length, context.Name);
+            await using var stream = File.OpenRead(pluginPath);
+            await LoadPluginsAsync(Path.GetFileName(pluginPath), stream, cancellationToken);
         }
     }
 
-    public async ValueTask UnloadAsync(CancellationToken cancellationToken = default)
+    public async ValueTask LoadPluginsAsync(string assemblyName, Stream assemblyStream, CancellationToken cancellationToken = default)
     {
-        foreach (var reference in _references)
+        var context = new PluginLoadContext(services.GetRequiredService<ILogger<PluginLoadContext>>(), dependencies, assemblyName, assemblyStream);
+
+        logger.LogInformation("Loading {PluginName} plugin", context.Name);
+
+        var plugins = GetPlugins(assemblyName, context.PluginAssembly);
+
+        foreach (var plugin in plugins)
+            RegisterPlugin(plugin);
+
+        if (plugins.Length == 0)
+        {
+            logger.LogWarning("Plugin {PluginName} has no IPlugin implementations", context.Name);
+            return;
+        }
+
+        var listeners = context.PluginAssembly.GetTypes().Where(typeof(IEventListener).IsAssignableFrom).Select(CreateListenerInstance).Cast<IEventListener?>().WhereNotNull().ToArray();
+
+        if (listeners.Length == 0)
+            logger.LogWarning("Plugin {PluginName} has no event listeners", context.Name);
+
+        events.RegisterListeners(listeners);
+        _references.Add(new WeakPluginReference(context, plugins, listeners));
+
+        foreach (var plugin in plugins)
+            await events.ThrowAsync(new PluginLoadEvent { Plugin = plugin }, cancellationToken);
+
+        logger.LogDebug("Loaded {Count} plugins from {PluginName}", plugins.Length, context.Name);
+    }
+
+    public async ValueTask UnloadPluginsAsync(CancellationToken cancellationToken = default)
+    {
+        foreach (var plugin in _references.SelectMany(reference => reference.Plugins)) await UnloadPluginAsync(plugin, cancellationToken);
+    }
+
+    public async ValueTask UnloadPluginAsync(IPlugin plugin, CancellationToken cancellationToken = default)
+    {
+        foreach (var reference in _references.Where(reference => reference.Plugins.Contains(plugin)))
         {
             if (!reference.IsAlive)
                 throw new Exception("Plugin context already unloaded");
 
-            foreach (var plugin in reference.Plugins)
-                await events.ThrowAsync(new PluginUnloadEvent { Plugin = plugin }, cancellationToken);
-
             var name = reference.Context.Name;
 
-            UnregisterPlugins(reference.Plugins);
+            foreach (var referencePlugin in reference.Plugins)
+            {
+                await events.ThrowAsync(new PluginUnloadEvent { Plugin = referencePlugin }, cancellationToken);
+                UnregisterPlugin(referencePlugin);
+            }
+
             events.UnregisterListeners(reference.Listeners);
 
             reference.Context.Unload();
@@ -100,20 +130,18 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
         _references.RemoveAll(reference => !reference.IsAlive);
     }
 
-    public IPlugin[] RegisterPlugins(string? name, Assembly assembly)
+    public IPlugin[] GetPlugins(string assemblyName, Assembly assembly)
     {
         var pluginInterface = typeof(IPlugin);
 
         try
         {
             var plugins = assembly.GetTypes().Where(pluginInterface.IsAssignableFrom).Select(CreatePluginInstance).Cast<IPlugin?>().WhereNotNull().ToArray();
-
-            _plugins.AddRange(plugins);
             return plugins;
         }
         catch (ReflectionTypeLoadException exception)
         {
-            logger.LogError("Assembly {AssemblyName} cannot be loaded:", name);
+            logger.LogError("Assembly {AssemblyName} cannot be loaded:", assemblyName);
 
             var noStackTrace = exception.LoaderExceptions.WhereNotNull().Where(loaderException => string.IsNullOrWhiteSpace(loaderException.StackTrace)).ToArray();
 
@@ -126,10 +154,14 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
         return [];
     }
 
-    public void UnregisterPlugins(IPlugin[] plugins)
+    public void RegisterPlugin(IPlugin plugin)
     {
-        foreach (var plugin in plugins)
-            _plugins.Remove(plugin);
+        _plugins.Add(plugin);
+    }
+
+    public void UnregisterPlugin(IPlugin plugin)
+    {
+        _plugins.Remove(plugin);
     }
 
     internal object? GetExistingInstance(Type type)
@@ -148,78 +180,5 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
             return instance;
 
         return Activator.CreateInstance(type);
-    }
-
-    private async ValueTask ExtractEmbeddedPluginsAsync(string path, CancellationToken cancellationToken)
-    {
-        var platformAssembly = Assembly.GetExecutingAssembly();
-        var buildDate = platformAssembly.GetCustomAttribute<BuildDateAttribute>();
-
-        var embeddedPlugins = platformAssembly.GetManifestResourceNames().Where(name => name.Contains(nameof(Plugins))).Select(embeddedPluginName =>
-        {
-            var fileName = Path.Combine(path, embeddedPluginName);
-
-            return new
-            {
-                ResourceName = embeddedPluginName,
-                FileName = fileName,
-                Exists = File.Exists(fileName)
-            };
-        }).ToArray();
-
-        var extractedOnceBefore = embeddedPlugins.Any(plugin => plugin.Exists);
-
-        foreach (var plugin in embeddedPlugins)
-        {
-            var upgrading = false;
-
-            if (plugin.Exists)
-            {
-                if (buildDate is null)
-                    continue;
-
-                var extractionDateTime = File.GetLastWriteTimeUtc(plugin.FileName);
-
-                if (extractionDateTime >= buildDate.DateTime)
-                    continue;
-
-                logger.LogInformation("Upgrading {PluginName} plugin with newest build", plugin.ResourceName);
-                upgrading = true;
-            }
-
-            if (!upgrading && extractedOnceBefore)
-            {
-                logger.LogWarning("Embedded plugin {PluginName} disappeared", plugin.ResourceName);
-
-                var key = ConsoleKey.None;
-                while (key is ConsoleKey.None)
-                {
-                    logger.LogInformation("Do you want to install it again? [y/n]");
-
-                    var keyInfo = Console.ReadKey(true);
-
-                    if (keyInfo.Key is not ConsoleKey.Y and not ConsoleKey.N)
-                        continue;
-
-                    key = keyInfo.Key;
-                }
-
-                if (key is ConsoleKey.N)
-                    continue;
-
-                logger.LogInformation("Proceeding with installation.");
-            }
-
-            if (platformAssembly.GetManifestResourceStream(plugin.ResourceName) is not { } stream)
-            {
-                logger.LogWarning("Embedded plugin {PluginName} couldn't be extracted", plugin.ResourceName);
-                continue;
-            }
-
-            logger.LogInformation("Extracting {PluginName} embedded plugin", plugin.ResourceName);
-
-            await using var fileStream = File.OpenWrite(plugin.FileName);
-            await stream.CopyToAsync(fileStream, cancellationToken);
-        }
     }
 }
