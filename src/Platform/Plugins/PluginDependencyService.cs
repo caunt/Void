@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.Versioning;
+using System.Threading;
 using Nito.Disposables.Internals;
 using NuGet.Common;
 using NuGet.Configuration;
@@ -33,6 +34,26 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
 
         var assemblyPath = ResolveAssemblyFromNuGetAsync(assemblyName).GetAwaiter().GetResult();
         return assemblyPath;
+    }
+
+    public Stream? ResolveEmbeddedAssemblyStream(AssemblyName assemblyName)
+    {
+        logger.LogInformation("Resolving {AssemblyName} embedded dependency", assemblyName.Name);
+
+        if (string.IsNullOrWhiteSpace(assemblyName.Name))
+            return null;
+
+        var assembly = Assembly.GetExecutingAssembly();
+        var resource = assembly.GetManifestResourceNames().FirstOrDefault(name => name.StartsWith(assemblyName.Name));
+
+        if (string.IsNullOrWhiteSpace(resource))
+            return null;
+
+        if (assembly.GetManifestResourceStream(resource) is { } stream) 
+            return stream;
+
+        logger.LogWarning("Embedded assembly {ResourceName} couldn't be loaded", resource);
+        return null;
     }
 
     private async ValueTask<string?> ResolveAssemblyFromNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)

@@ -25,7 +25,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
         {
             if (assembly.GetManifestResourceStream(resourceName) is not { } stream)
             {
-                logger.LogWarning("Embedded plugin {PluginName} couldn't be extracted", resourceName);
+                logger.LogWarning("Embedded plugin {PluginName} couldn't be loaded", resourceName);
                 continue;
             }
 

@@ -34,7 +34,17 @@ public class PluginLoadContext : AssemblyLoadContext
         _logger.LogTrace("Loading {AssemblyName} assembly into {ContextName} context", assemblyName.Name, Name);
 
         if (VersionedDependencies.Any(assemblyName.FullName.StartsWith))
+        {
             assembly = Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.FullName == assemblyName.FullName);
+
+            if (assembly is null)
+            {
+                using var assemblyStream = _dependencies.ResolveEmbeddedAssemblyStream(assemblyName);
+
+                if (assemblyStream is not null)
+                    return LoadFromStream(assemblyStream);
+            }
+        }
 
         if (SharedDependencies.Any(assemblyName.FullName.StartsWith) && assembly is null)
             assembly = Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.GetName().Name == assemblyName.Name);
