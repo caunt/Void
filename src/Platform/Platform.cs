@@ -27,7 +27,8 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
 
         var startTime = Stopwatch.GetTimestamp();
 
-        Directory.SetCurrentDirectory(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!);
+        if (Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) is { } currentDirectory)
+            Directory.SetCurrentDirectory(currentDirectory);
 
         await plugins.LoadEmbeddedPluginsAsync(cancellationToken);
         await plugins.LoadPluginsAsync(cancellationToken: cancellationToken);

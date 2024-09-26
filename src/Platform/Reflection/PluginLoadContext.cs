@@ -6,7 +6,7 @@ namespace Void.Proxy.Reflection;
 
 public class PluginLoadContext : AssemblyLoadContext
 {
-    private static readonly string[] VersionedDependencies = [nameof(Void)];
+    private static readonly string[] VoidDependencies = [nameof(Void)];
     private static readonly string[] SharedDependencies = [nameof(Microsoft)];
     private static readonly string[] SystemDependencies = [nameof(System), "netstandard"];
     private readonly IPluginDependencyService _dependencies;
@@ -33,7 +33,8 @@ public class PluginLoadContext : AssemblyLoadContext
 
         _logger.LogTrace("Loading {AssemblyName} assembly into {ContextName} context", assemblyName.Name, Name);
 
-        if (VersionedDependencies.Any(assemblyName.FullName.StartsWith))
+        // try loading embedded assemblies
+        if (VoidDependencies.Any(assemblyName.FullName.StartsWith))
         {
             assembly = Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.FullName == assemblyName.FullName);
 
@@ -42,34 +43,36 @@ public class PluginLoadContext : AssemblyLoadContext
                 using var assemblyStream = _dependencies.ResolveEmbeddedAssemblyStream(assemblyName);
 
                 if (assemblyStream is not null)
-                    return LoadFromStream(assemblyStream);
+                    assembly = LoadFromStream(assemblyStream);
             }
         }
 
+        // try loading platform referenced assemblies
         if (SharedDependencies.Any(assemblyName.FullName.StartsWith) && assembly is null)
+        {
             assembly = Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.GetName().Name == assemblyName.Name);
 
-        if (assembly is not null)
-        {
-            if (assemblyName.Version is not null)
+            if (assembly is not null && assemblyName.Version is not null)
             {
                 var loadedAssemblyName = assembly.GetName();
 
                 if (loadedAssemblyName.Version is not null && loadedAssemblyName.Version.CompareTo(assemblyName.Version) is not 0)
                     _logger.LogWarning("In {ContextName} context {AssemblyName} version {AssemblyVersion} mismatch requested {RequestedAssemblyVersion} version", Name, loadedAssemblyName.Name, loadedAssemblyName.Version, assemblyName.Version);
             }
-
-            return assembly;
         }
 
+        // try loading system assemblies
         if (SystemDependencies.Any(assemblyName.FullName.StartsWith) && assembly is null)
             return Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.GetName().Name == assemblyName.Name) ?? Default.LoadFromAssemblyName(assemblyName);
 
         // fallback to local folder and NuGet
-        var assemblyPath = _localDependencies?.ResolveAssemblyToPath(assemblyName) ?? _dependencies.ResolveAssemblyPath(assemblyName);
+        if (assembly is null)
+        {
+            var assemblyPath = _localDependencies?.ResolveAssemblyToPath(assemblyName) ?? _dependencies.ResolveAssemblyPath(assemblyName);
 
-        if (assemblyPath is not null)
-            assembly = LoadFromAssemblyPath(assemblyPath);
+            if (assemblyPath is not null)
+                assembly = LoadFromAssemblyPath(assemblyPath);
+        }
 
         // sorry, but where am I supposed to find your dependency?
         // throw is mandatory to prevent search in Default context
