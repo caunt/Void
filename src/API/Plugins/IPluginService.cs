@@ -9,7 +9,7 @@ public interface IPluginService
     public ValueTask LoadPluginsAsync(string assemblyName, Stream assemblyStream, CancellationToken cancellationToken = default);
 
     public ValueTask UnloadPluginsAsync(CancellationToken cancellationToken = default);
-    public ValueTask UnloadPluginAsync(IPlugin plugin, CancellationToken cancellationToken = default);
+    public ValueTask UnloadPluginAsync(string assemblyName, CancellationToken cancellationToken = default);
 
     public IPlugin[] GetPlugins(string assemblyName, Assembly assembly);
     public void RegisterPlugin(IPlugin plugin);

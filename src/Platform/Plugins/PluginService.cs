@@ -84,22 +84,23 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
     public async ValueTask UnloadPluginsAsync(CancellationToken cancellationToken = default)
     {
-        foreach (var plugin in _references.SelectMany(reference => reference.Plugins)) await UnloadPluginAsync(plugin, cancellationToken);
+        for (var index = _references.Count - 1; index >= 0; index--)
+            await UnloadPluginAsync(_references[index].Context.Name!, cancellationToken);
     }
 
-    public async ValueTask UnloadPluginAsync(IPlugin plugin, CancellationToken cancellationToken = default)
+    public async ValueTask UnloadPluginAsync(string assemblyName, CancellationToken cancellationToken = default)
     {
-        foreach (var reference in _references.Where(reference => reference.Plugins.Contains(plugin)))
+        foreach (var reference in _references.Where(reference => reference.Context.Name == assemblyName).ToArray())
         {
             if (!reference.IsAlive)
                 throw new Exception("Plugin context already unloaded");
 
             var name = reference.Context.Name;
 
-            foreach (var referencePlugin in reference.Plugins)
+            foreach (var plugin in reference.Plugins)
             {
-                await events.ThrowAsync(new PluginUnloadEvent { Plugin = referencePlugin }, cancellationToken);
-                UnregisterPlugin(referencePlugin);
+                await events.ThrowAsync(new PluginUnloadEvent { Plugin = plugin }, cancellationToken);
+                UnregisterPlugin(plugin);
             }
 
             events.UnregisterListeners(reference.Listeners);
