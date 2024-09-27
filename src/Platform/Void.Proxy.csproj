@@ -49,25 +49,25 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="..\Common\bin\$(Configuration)\**\Void.Proxy.Common.dll">
+		<EmbeddedResource Include="..\Common\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Common.dll">
 			<Link>Embedded\Void.Proxy.Common.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
 
-		<EmbeddedResource Include="..\Plugins\ModsSupport\**\bin\$(Configuration)\**\Void.Proxy.Plugins.ModsSupport.Forge.dll">
+		<EmbeddedResource Include="..\Plugins\ModsSupport\Forge\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ModsSupport.Forge.dll">
 			<Link>Embedded\Void.Proxy.Plugins.ModsSupport.Forge.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
 
-		<EmbeddedResource Include="..\Plugins\ProtocolSupport\Java\v1_7_2_to_1_12_2\bin\$(Configuration)\**\Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.dll">
+		<EmbeddedResource Include="..\Plugins\ProtocolSupport\Java\v1_7_2_to_1_12_2\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.dll">
 			<Link>Embedded\Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="..\Plugins\ProtocolSupport\Java\v1_13_to_1_20_1\bin\$(Configuration)\**\Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.dll">
+		<EmbeddedResource Include="..\Plugins\ProtocolSupport\Java\v1_13_to_1_20_1\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.dll">
 			<Link>Embedded\Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="..\Plugins\ProtocolSupport\Java\v1_20_2_to_latest\bin\$(Configuration)\**\Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.dll">
+		<EmbeddedResource Include="..\Plugins\ProtocolSupport\Java\v1_20_2_to_latest\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.dll">
 			<Link>Embedded\Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
