@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.Protocol;
+using Void.Proxy.Common.Network.IO.Messages;
+using Void.Proxy.Common.Network.Protocol;
 using Void.Proxy.Common.Registries.Packets;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 

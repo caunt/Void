@@ -4,6 +4,7 @@ using Void.Proxy.API.Network.IO.Streams;
 using Void.Proxy.API.Network.IO.Streams.Manual.Binary;
 using Void.Proxy.API.Network.IO.Streams.Manual.Network;
 using Void.Proxy.Common.Network.IO.Messages;
+using Void.Proxy.Common.Network.IO.Messages.Binary;
 using Void.Proxy.Common.Network.IO.Streams.Packet;
 
 namespace Void.Proxy.Common.Network.IO.Channels;

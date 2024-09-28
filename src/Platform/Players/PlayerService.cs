@@ -1,10 +1,14 @@
 ﻿using System.Net.Sockets;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Nito.AsyncEx;
+using Serilog;
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Player;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Links;
 using Void.Proxy.API.Players;
+using Void.Proxy.Plugins;
 
 namespace Void.Proxy.Players;
 
@@ -15,12 +19,12 @@ public class PlayerService : IPlayerService, IEventListener
     private readonly AsyncLock _lock = new();
     private readonly ILogger<PlayerService> _logger;
     private readonly List<IPlayer> _players = [];
-    private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly IServiceProvider _services;
 
-    public PlayerService(ILogger<PlayerService> logger, IServiceScopeFactory serviceScopeFactory, ILinkService links, IEventService events)
+    public PlayerService(ILogger<PlayerService> logger, IServiceProvider services, ILinkService links, IEventService events)
     {
         _logger = logger;
-        _serviceScopeFactory = serviceScopeFactory;
+        _services = services;
         _links = links;
         _events = events;
 
@@ -34,8 +38,12 @@ public class PlayerService : IPlayerService, IEventListener
         using var sync = await _lock.LockAsync(cancellationToken);
 
         _logger.LogTrace("Accepted client from {RemoteEndPoint}", client.Client.RemoteEndPoint);
-        var scope = _serviceScopeFactory.CreateAsyncScope();
-        var player = new Player(scope, client);
+        
+        var collection = new ServiceCollection();
+
+        await _events.ThrowAsync(new PlayerConnectingEvent { Client = client, Services = collection }, cancellationToken);
+
+        var player = new Player(client, new PlayerContext(new PluginServiceProvider(_services, collection.BuildServiceProvider())));
 
         try
         {

@@ -65,7 +65,7 @@ public class LinkService : ILinkService, IEventListener
         var playerChannel = await player.GetChannelAsync(cancellationToken);
         var serverChannel = await player.BuildServerChannelAsync(server, cancellationToken);
 
-        var link = await _events.ThrowWithResultAsync(new CreateLinkEvent { Player = player, Server = server, PlayerChannel = playerChannel, ServerChannel = serverChannel }, cancellationToken) ?? new Link(player, server, playerChannel, serverChannel);
+        var link = await _events.ThrowWithResultAsync(new CreateLinkEvent { Player = player, Server = server, PlayerChannel = playerChannel, ServerChannel = serverChannel }, cancellationToken) ?? new Link(player, server, playerChannel, serverChannel, _logger, _events);
         await _events.ThrowAsync(new LinkStartingEvent { Link = link }, cancellationToken);
 
         _events.RegisterListeners(link);

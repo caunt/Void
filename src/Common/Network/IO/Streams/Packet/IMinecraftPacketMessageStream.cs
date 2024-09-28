@@ -1,6 +1,6 @@
 ﻿using Void.Proxy.API.Network;
-using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.IO.Streams;
+using Void.Proxy.Common.Network.IO.Messages;
 using Void.Proxy.Common.Registries.Packets;
 
 namespace Void.Proxy.Common.Network.IO.Streams.Packet;

@@ -7,6 +7,7 @@ using Void.Proxy.API.Events.Plugins;
 using Void.Proxy.API.Events.Proxy;
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.API.Plugins;
+using Void.Proxy.Common.Network.Protocol;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2;
 

@@ -8,14 +8,17 @@ using Void.Proxy.API.Events.Network;
 using Void.Proxy.API.Events.Player;
 using Void.Proxy.API.Events.Plugins;
 using Void.Proxy.API.Events.Proxy;
+using Void.Proxy.API.Extensions;
 using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.IO.Buffers;
 using Void.Proxy.API.Network.IO.Channels;
+using Void.Proxy.API.Network.IO.Channels.Services;
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Plugins;
 using Void.Proxy.Common.Network.IO.Channels;
-using Void.Proxy.Common.Network.IO.Messages;
+using Void.Proxy.Common.Network.IO.Channels.Services;
+using Void.Proxy.Common.Network.IO.Messages.Binary;
 using Void.Proxy.Common.Network.IO.Streams.Compression;
 using Void.Proxy.Common.Network.IO.Streams.Encryption;
 using Void.Proxy.Common.Network.IO.Streams.Network;
@@ -60,7 +63,7 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
 
         foreach (var player in players.All)
         {
-            var holder = player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+            var holder = player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
 
             if (holder.ManagedBy != this)
                 continue;
@@ -70,9 +73,19 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
     }
 
     [Subscribe]
+    public void OnPlayerConnecting(PlayerConnectingEvent @event, CancellationToken cancellationToken)
+    {
+        if (!@event.Services.HasService<IMinecraftChannelBuilderService>())
+            @event.Services.AddSingleton<IMinecraftChannelBuilderService, SimpleChannelBuilderService>();
+
+        if (!@event.Services.HasService<IPacketRegistryHolder>())
+            @event.Services.AddSingleton<IPacketRegistryHolder, PacketRegistryHolder>();
+    }
+
+    [Subscribe]
     public void OnPlayerConnected(PlayerConnectedEvent @event, CancellationToken cancellationToken)
     {
-        var holder = @event.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+        var holder = @event.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
 
         if (!holder.IsEmpty)
             return;
@@ -85,7 +98,7 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
     [Subscribe]
     public void OnPlayerDisconnected(PlayerDisconnectedEvent @event, CancellationToken cancellationToken)
     {
-        var holder = @event.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+        var holder = @event.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
 
         if (holder.ManagedBy != this)
             return;
@@ -106,7 +119,7 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
 
             var packetStream = channel.Get<MinecraftPacketMessageStream>();
             packetStream.Flow = direction;
-            packetStream.RegistryHolder = @event.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+            packetStream.RegistryHolder = @event.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
 
             return ValueTask.FromResult(channel as IMinecraftChannel);
         };
@@ -137,7 +150,7 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
 
                 @event.Link.Player.ProtocolVersion = playerProtocolVersion;
 
-                var holder = @event.Link.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+                var holder = @event.Link.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
                 holder.ClientboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ClientboundLoginMappings };
                 break;
             case SetCompressionPacket setCompression:
@@ -151,11 +164,11 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
                 var restartTask = @event.Link.RestartAsync(cancellationToken);
                 break;
             case LoginAcknowledgedPacket loginAcknowledged:
-                holder = @event.Link.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+                holder = @event.Link.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
                 holder.ClientboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ClientboundConfigurationMappings };
                 break;
             case FinishConfigurationPacket finishConfiguration:
-                holder = @event.Link.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+                holder = @event.Link.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
                 holder.ServerboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ServerboundPlayMappings };
                 break;
             case KeepAliveResponsePacket keepAliveResponse:
@@ -182,7 +195,7 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
         switch (@event.Message)
         {
             case HandshakePacket handshake:
-                var holder = @event.Link.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+                var holder = @event.Link.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
                 holder.ServerboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ServerboundLoginMappings };
                 break;
             case SetCompressionPacket setCompression:
@@ -196,11 +209,11 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
                 logger.LogDebug("Link {Link} enabled compression in player channel with threshold {CompressionThreshold}", @event.Link, setCompression.Threshold);
                 break;
             case LoginAcknowledgedPacket loginAcknowledged:
-                holder = @event.Link.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+                holder = @event.Link.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
                 holder.ServerboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ServerboundConfigurationMappings };
                 break;
             case FinishConfigurationPacket finishConfiguration:
-                holder = @event.Link.Player.Scope.ServiceProvider.GetRequiredService<IPacketRegistryHolder>();
+                holder = @event.Link.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
                 holder.ClientboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ClientboundPlayMappings };
                 break;
             case EncryptionRequestPacket encryptionRequest:

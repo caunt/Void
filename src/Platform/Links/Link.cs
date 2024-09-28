@@ -15,7 +15,7 @@ public class Link : ILink
 {
     private readonly IEventService _events;
     private readonly AsyncLock _lock;
-    private readonly ILogger<Link> _logger;
+    private readonly ILogger _logger;
     private CancellationTokenSource _ctsPlayerToServer;
     private CancellationTokenSource _ctsPlayerToServerForce;
     private CancellationTokenSource _ctsServerToPlayer;
@@ -23,15 +23,16 @@ public class Link : ILink
     private Task _playerToServerTask;
     private Task _serverToPlayerTask;
 
-    public Link(IPlayer player, IServer server, IMinecraftChannel playerChannel, IMinecraftChannel serverChannel)
+    public Link(IPlayer player, IServer server, IMinecraftChannel playerChannel, IMinecraftChannel serverChannel, ILogger logger, IEventService events)
     {
         Player = player;
         Server = server;
         PlayerChannel = playerChannel;
         ServerChannel = serverChannel;
 
-        _logger = player.Scope.ServiceProvider.GetRequiredService<ILogger<Link>>();
-        _events = player.Scope.ServiceProvider.GetRequiredService<IEventService>();
+        _logger = logger;
+        _events = events;
+
         _lock = new AsyncLock();
 
         _ctsPlayerToServer = new CancellationTokenSource();
@@ -59,7 +60,7 @@ public class Link : ILink
             return;
         }
 
-        _logger.LogDebug("Link {Link} is restarting", this);
+        _logger.LogTrace("Link {Link} is restarting", this);
 
         IsRestarting = true;
 
@@ -68,7 +69,7 @@ public class Link : ILink
 
         if (await WaitWithTimeout(_serverToPlayerTask))
         {
-            _logger.LogInformation("Timed out waiting Server {Server} disconnection from Player {Player} manually, closing forcefully (Restart)", Server, Player);
+            _logger.LogTrace("Timed out waiting Server {Server} disconnection from Player {Player} manually, closing forcefully (Restart)", Server, Player);
             await _ctsServerToPlayerForce.CancelAsync();
             _ctsServerToPlayerForce = new CancellationTokenSource();
 
@@ -81,7 +82,7 @@ public class Link : ILink
 
         if (await WaitWithTimeout(_playerToServerTask))
         {
-            _logger.LogInformation("Timed out waiting Player {Player} disconnection from Server {Server} manually, closing forcefully (Restart)", Player, Server);
+            _logger.LogTrace("Timed out waiting Player {Player} disconnection from Server {Server} manually, closing forcefully (Restart)", Player, Server);
             await _ctsPlayerToServerForce.CancelAsync();
             _ctsPlayerToServerForce = new CancellationTokenSource();
 
@@ -94,7 +95,7 @@ public class Link : ILink
         _playerToServerTask = ExecuteAsync(PlayerChannel, ServerChannel, Direction.Serverbound, _ctsPlayerToServer.Token, _ctsPlayerToServerForce.Token);
         _serverToPlayerTask = ExecuteAsync(ServerChannel, PlayerChannel, Direction.Clientbound, _ctsServerToPlayer.Token, _ctsServerToPlayerForce.Token);
 
-        _logger.LogDebug("Link {Link} successfully restarted", this);
+        _logger.LogTrace("Link {Link} successfully restarted", this);
     }
 
     public async ValueTask DisposeAsync()
@@ -111,12 +112,12 @@ public class Link : ILink
 
         if (await WaitWithTimeout(_serverToPlayerTask))
         {
-            _logger.LogInformation("Timed out waiting Server {Server} disconnection from Player {Player}, closing manually", Server, Player);
+            _logger.LogTrace("Timed out waiting Server {Server} disconnection from Player {Player}, closing manually", Server, Player);
             await _ctsServerToPlayer.CancelAsync();
 
             if (await WaitWithTimeout(_serverToPlayerTask))
             {
-                _logger.LogInformation("Timed out waiting Server {Server} disconnection from Player {Player} manually, closing forcefully", Server, Player);
+                _logger.LogTrace("Timed out waiting Server {Server} disconnection from Player {Player} manually, closing forcefully", Server, Player);
                 await _ctsServerToPlayerForce.CancelAsync();
 
                 if (await WaitWithTimeout(_serverToPlayerTask))
@@ -126,12 +127,12 @@ public class Link : ILink
 
         if (await WaitWithTimeout(_playerToServerTask))
         {
-            _logger.LogInformation("Timed out waiting Player {Player} disconnection from Server {Server}, closing manually", Player, Server);
+            _logger.LogTrace("Timed out waiting Player {Player} disconnection from Server {Server}, closing manually", Player, Server);
             await _ctsPlayerToServer.CancelAsync();
 
             if (await WaitWithTimeout(_playerToServerTask))
             {
-                _logger.LogInformation("Timed out waiting Player {Player} disconnection from Server {Server} manually, closing forcefully", Player, Server);
+                _logger.LogTrace("Timed out waiting Player {Player} disconnection from Server {Server} manually, closing forcefully", Player, Server);
                 await _ctsPlayerToServerForce.CancelAsync();
 
                 if (await WaitWithTimeout(_playerToServerTask))

@@ -8,6 +8,7 @@ using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Extensions;
 using Void.Proxy.API.Forwarding;
 using Void.Proxy.API.Links;
+using Void.Proxy.API.Network.IO.Channels.Services;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Plugins;
 using Void.Proxy.API.Servers;
@@ -52,9 +53,7 @@ try
     builder.Services.AddSingleton<IForwardingService, ForwardingService>();
     builder.Services.AddSingleton<IProxy, Platform>();
     builder.Services.AddHostedService<Platform>();
-    // builder.Services.AddScoped<IMinecraftChannelBuilderService, SimpleChannelBuilderService>();
-    // builder.Services.AddScoped<IPacketRegistryHolder, PacketRegistryHolder>();
-
+    
     var host = builder.Build();
     await host.RunAsync();
 }

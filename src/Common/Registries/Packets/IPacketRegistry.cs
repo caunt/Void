@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.Protocol;
+using Void.Proxy.Common.Network.IO.Messages;
+using Void.Proxy.Common.Network.Protocol;
 
 namespace Void.Proxy.Common.Registries.Packets;
 

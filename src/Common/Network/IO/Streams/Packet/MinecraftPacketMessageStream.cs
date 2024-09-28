@@ -10,6 +10,7 @@ using Void.Proxy.API.Network.IO.Streams.Manual.Binary;
 using Void.Proxy.API.Network.IO.Streams.Recyclable;
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.Common.Network.IO.Messages;
+using Void.Proxy.Common.Network.IO.Messages.Binary;
 using Void.Proxy.Common.Registries.Packets;
 
 namespace Void.Proxy.Common.Network.IO.Streams.Packet;

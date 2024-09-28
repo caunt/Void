@@ -1,17 +1,12 @@
 ﻿using System.Net.Sockets;
-using Void.Proxy.API.Network.IO.Channels;
-using Void.Proxy.API.Network.IO.Channels.Services;
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.API.Players;
-using Void.Proxy.API.Servers;
 
 namespace Void.Proxy.Players;
 
-public class Player(AsyncServiceScope scope, TcpClient client) : IPlayer
+public class Player(TcpClient client, IPlayerContext context) : IPlayer
 {
-    private IMinecraftChannel? _channel;
-
-    public AsyncServiceScope Scope => scope;
+    public IPlayerContext Context => context;
     public TcpClient Client => client;
     public string RemoteEndPoint { get; } = client.Client.RemoteEndPoint?.ToString() ?? "Unknown?";
 
@@ -20,39 +15,14 @@ public class Player(AsyncServiceScope scope, TcpClient client) : IPlayer
 
     public ProtocolVersion ProtocolVersion { get; set; } = ProtocolVersion.Oldest; // we do not know Player protocol version yet, use the oldest possible
 
-    public async ValueTask<IMinecraftChannel> BuildServerChannelAsync(IServer server, CancellationToken cancellationToken = default)
-    {
-        var channelBuilder = await GetChannelBuilderAsync(cancellationToken);
-        return await channelBuilder.BuildServerChannelAsync(server, cancellationToken);
-    }
-
-    public async ValueTask<IMinecraftChannel> GetChannelAsync(CancellationToken cancellationToken = default)
-    {
-        if (_channel is not null)
-            return _channel;
-
-        var channelBuilder = await GetChannelBuilderAsync(cancellationToken);
-        _channel = await channelBuilder.BuildPlayerChannelAsync(this, cancellationToken);
-
-        return _channel;
-    }
-
     public async ValueTask DisposeAsync()
     {
-        await scope.DisposeAsync();
+        await context.DisposeAsync();
         GC.SuppressFinalize(this);
     }
 
     public override string ToString()
     {
         return Name ?? RemoteEndPoint;
-    }
-
-    private async ValueTask<IMinecraftChannelBuilderService> GetChannelBuilderAsync(CancellationToken cancellationToken = default)
-    {
-        var channelBuilder = scope.ServiceProvider.GetRequiredService<IMinecraftChannelBuilderService>();
-        await channelBuilder.SearchChannelBuilderAsync(this, cancellationToken);
-
-        return channelBuilder;
     }
 }

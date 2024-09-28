@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Void.Proxy.API.Extensions;
 
-public static class HostingJsonOptionsExtensions
+public static class HostingExtensions
 {
     public static IServiceCollection AddJsonOptions(this IServiceCollection services)
     {
@@ -14,5 +14,10 @@ public static class HostingJsonOptionsExtensions
             options.WriteIndented = true;
             options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         });
+    }
+
+    public static bool HasService<TInterface>(this IServiceCollection services)
+    {
+        return services.Any(descriptor => descriptor.ServiceType == typeof(TInterface));
     }
 }
