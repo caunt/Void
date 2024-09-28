@@ -9,7 +9,6 @@ using Void.Proxy.API.Network.IO.Streams.Extensions;
 using Void.Proxy.API.Network.IO.Streams.Manual;
 using Void.Proxy.API.Network.IO.Streams.Manual.Binary;
 using Void.Proxy.API.Network.IO.Streams.Recyclable;
-using Void.Proxy.Common.Network.IO.Messages;
 using Void.Proxy.Common.Network.IO.Messages.Binary;
 
 namespace Void.Proxy.Common.Network.IO.Streams.Compression;

@@ -1,14 +1,11 @@
 ﻿using System.Net.Sockets;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Nito.AsyncEx;
-using Serilog;
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Player;
 using Void.Proxy.API.Events.Services;
+using Void.Proxy.API.Extensions;
 using Void.Proxy.API.Links;
 using Void.Proxy.API.Players;
-using Void.Proxy.Plugins;
 
 namespace Void.Proxy.Players;
 
@@ -38,12 +35,13 @@ public class PlayerService : IPlayerService, IEventListener
         using var sync = await _lock.LockAsync(cancellationToken);
 
         _logger.LogTrace("Accepted client from {RemoteEndPoint}", client.Client.RemoteEndPoint);
-        
+
         var collection = new ServiceCollection();
+        _services.ForwardServices(collection);
 
         await _events.ThrowAsync(new PlayerConnectingEvent { Client = client, Services = collection }, cancellationToken);
 
-        var player = new Player(client, new PlayerContext(new PluginServiceProvider(_services, collection.BuildServiceProvider())));
+        var player = new Player(client, new PlayerContext(collection.BuildServiceProvider()));
 
         try
         {

@@ -66,7 +66,7 @@ public class EncryptionRequestPacket : IMinecraftPacket<EncryptionRequestPacket>
             verifyToken = buffer.Read(verifyTokenLength);
         }
 
-        if (protocolVersion >= ProtocolVersion.MINECRAFT_1_20_5) 
+        if (protocolVersion >= ProtocolVersion.MINECRAFT_1_20_5)
             shouldAuthenticate = buffer.ReadBoolean();
 
         return new EncryptionRequestPacket

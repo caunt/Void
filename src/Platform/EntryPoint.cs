@@ -8,7 +8,6 @@ using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Extensions;
 using Void.Proxy.API.Forwarding;
 using Void.Proxy.API.Links;
-using Void.Proxy.API.Network.IO.Channels.Services;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Plugins;
 using Void.Proxy.API.Servers;
@@ -53,13 +52,13 @@ try
     builder.Services.AddSingleton<IForwardingService, ForwardingService>();
     builder.Services.AddSingleton<IProxy, Platform>();
     builder.Services.AddHostedService<Platform>();
-    
+
     var host = builder.Build();
     await host.RunAsync();
 }
-catch (Exception ex)
+catch (Exception exception)
 {
-    Log.Fatal(ex, "Host terminated unexpectedly");
+    Log.Fatal(exception, "Host terminated unexpectedly");
 }
 finally
 {

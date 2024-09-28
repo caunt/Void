@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using System.Runtime.Versioning;
-using System.Threading;
 using Nito.Disposables.Internals;
 using NuGet.Common;
 using NuGet.Configuration;
@@ -49,7 +48,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
         if (string.IsNullOrWhiteSpace(resource))
             return null;
 
-        if (assembly.GetManifestResourceStream(resource) is { } stream) 
+        if (assembly.GetManifestResourceStream(resource) is { } stream)
             return stream;
 
         logger.LogWarning("Embedded assembly {ResourceName} couldn't be loaded", resource);

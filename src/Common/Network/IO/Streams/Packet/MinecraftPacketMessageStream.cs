@@ -2,7 +2,6 @@
 using Microsoft.IO;
 using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.IO.Streams;
 using Void.Proxy.API.Network.IO.Streams.Extensions;
 using Void.Proxy.API.Network.IO.Streams.Manual;
@@ -213,7 +212,7 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
 
             EncodeVarInt(stream, id);
 
-            // TODO remove this constant length
+            // TODO remove this constant length, implement MinecraftBuffer(IMemoryStream) constructor
             var length = 2048;
 
             var array = ArrayPool<byte>.Shared.Rent(length);
@@ -222,7 +221,7 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
             try
             {
                 var buffer = new MinecraftBuffer(span);
-                packet.Encode(ref buffer, ProtocolVersion.Latest);
+                packet.Encode(ref buffer, ProtocolVersion);
 
                 span = span[..buffer.Position];
                 stream.Write(span);

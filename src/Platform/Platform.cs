@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Net.Sockets;
-using System.Reflection;
 using Serilog.Core;
 using Serilog.Events;
 using Void.Proxy.API;
@@ -23,7 +22,7 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        LoggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
+        LoggingLevelSwitch.MinimumLevel = LogEventLevel.Debug;
 
         logger.LogInformation("Starting Void proxy");
         var startTime = Stopwatch.GetTimestamp();
@@ -56,7 +55,17 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
 
         logger.LogInformation("Connection listener started on port {Port}", settings.Port);
 
-        _backgroundTask = ExecuteAsync(hostApplicationLifetime.ApplicationStopping);
+        _backgroundTask = ExecuteAsync(hostApplicationLifetime.ApplicationStopping).ContinueWith(backgroundTask =>
+        {
+            if (backgroundTask.IsCanceled)
+                return;
+
+            if (backgroundTask.IsCompletedSuccessfully)
+                return;
+
+            logger.LogCritical(backgroundTask.Exception?.Flatten().InnerException, "Platform background task completed with exception");
+            throw backgroundTask.Exception?.Flatten().InnerException ?? new Exception("Platform background task completed with unknown exception");
+        }, cancellationToken);
 
         var totalTime = Stopwatch.GetElapsedTime(startTime);
         logger.LogInformation("Proxy started in {StartTimeSeconds} seconds!", totalTime.TotalSeconds.ToString("F"));
@@ -71,16 +80,7 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
 
         logger.LogInformation("Awaiting completion of connection listener");
         if (_backgroundTask is not null)
-            await _backgroundTask.ContinueWith(backgroundTask =>
-            {
-                if (backgroundTask.IsCanceled)
-                    return;
-
-                if (backgroundTask.IsCompletedSuccessfully)
-                    return;
-
-                throw backgroundTask.Exception?.Flatten().InnerException ?? new Exception("Proxy stopped with unknown exception");
-            }, cancellationToken);
+            await _backgroundTask;
 
         _listener?.Stop();
 
