@@ -143,19 +143,23 @@ internal ref struct ReadOnlySequenceBackingBuffer
 
     public ReadOnlySpan<byte> Slice(int length)
     {
-        // Should be safe in most cases, but prefer throw new NotSupportedException("That implementation would allocate memory, not supported yet")
+        if (_sequence.Length < Position + length)
+            throw new IndexOutOfRangeException($"Cannot slice {length} bytes from sequence with length {_sequence.Length}, and current position {Position}. Only {_sequence.Length - Position} bytes is available to slice.");
 
+        // Should be safe in most cases, but prefer throw new NotSupportedException("That implementation would allocate memory, not supported yet")
         if (_currentBlock.Length < _blockPosition + length)
-            throw new IndexOutOfRangeException($"Current block length with length {_currentBlock.Length} at position {_blockPosition} attempted to slice {length} bytes, reading from next blocks not implemented");
+            throw new IndexOutOfRangeException($"Current block length is {_currentBlock.Length} and position is {_blockPosition}, attempted to slice {length} bytes, reading from next blocks not implemented.");
 
         var span = _currentBlock.Slice(_blockPosition, length);
+
         _blockPosition += length;
+        Position += length;
+
         return span;
     }
 
     public ReadOnlySpan<byte> Read(int length)
     {
-        Position += length;
         return Slice(length);
     }
 

@@ -7,9 +7,10 @@ namespace Void.Proxy.Common.Registries.Packets;
 public interface IPacketRegistryHolder
 {
     public bool IsEmpty { get; }
+    public ProtocolVersion? ProtocolVersion { get; set; }
     public IPlugin? ManagedBy { get; set; }
-    public IPacketRegistry? ClientboundRegistry { get; set; }
-    public IPacketRegistry? ServerboundRegistry { get; set; }
+    public IPacketRegistry ClientboundRegistry { get; set; }
+    public IPacketRegistry ServerboundRegistry { get; set; }
 
     public IPacketRegistry? GetRegistry(Direction? flow, Operation? operation)
     {
@@ -19,16 +20,6 @@ public interface IPacketRegistryHolder
             (Direction.Serverbound, Operation.Write) => ClientboundRegistry,
             (Direction.Clientbound, Operation.Read) => ClientboundRegistry,
             (Direction.Serverbound, Operation.Read) => ServerboundRegistry,
-            _ => null
-        };
-    }
-
-    public ProtocolVersion? GetProtocolVersion(Direction? flow)
-    {
-        return flow switch
-        {
-            Direction.Clientbound => ClientboundRegistry?.ProtocolVersion,
-            Direction.Serverbound => ServerboundRegistry?.ProtocolVersion,
             _ => null
         };
     }

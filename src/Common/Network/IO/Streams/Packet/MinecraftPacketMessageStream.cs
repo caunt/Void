@@ -16,7 +16,7 @@ namespace Void.Proxy.Common.Network.IO.Streams.Packet;
 
 public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraftPacketMessageStream
 {
-    public ProtocolVersion ProtocolVersion => RegistryHolder?.GetProtocolVersion(Flow) ?? ProtocolVersion.Oldest;
+    public ProtocolVersion ProtocolVersion => RegistryHolder?.ProtocolVersion ?? ProtocolVersion.Oldest;
     public IMinecraftStreamBase? BaseStream { get; set; }
     public IPacketRegistryHolder? RegistryHolder { get; set; }
     public Direction? Flow { get; set; }

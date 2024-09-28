@@ -7,9 +7,11 @@ namespace Void.Proxy.Common.Registries.Packets;
 
 public interface IPacketRegistry
 {
-    public ProtocolVersion ProtocolVersion { get; }
+    public bool IsEmpty { get; }
 
     public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out PacketDecoder<IMinecraftPacket> packet);
     public bool TryGetPacketId(IMinecraftPacket packet, [MaybeNullWhen(false)] out int id);
-    public void RegisterPackets(IReadOnlyDictionary<PacketMapping[], Type> mappings);
+    public IPacketRegistry ReplacePackets(IReadOnlyDictionary<PacketMapping[], Type> mappings, ProtocolVersion? maximumSupportedProtocolVersion = null);
+    public IPacketRegistry AddPackets(IReadOnlyDictionary<PacketMapping[], Type> mappings, ProtocolVersion? maximumSupportedProtocolVersion = null);
+    public void Clear();
 }

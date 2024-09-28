@@ -91,8 +91,8 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
             return;
 
         holder.ManagedBy = this;
-        holder.ClientboundRegistry = new PacketRegistry { ProtocolVersion = @event.Player.ProtocolVersion, Mappings = Mappings.ClientboundHandshakeMappings };
-        holder.ServerboundRegistry = new PacketRegistry { ProtocolVersion = @event.Player.ProtocolVersion, Mappings = Mappings.ServerboundHandshakeMappings };
+        holder.ClientboundRegistry.ReplacePackets(Mappings.ClientboundHandshakeMappings, SupportedVersions.Last());
+        holder.ServerboundRegistry.ReplacePackets(Mappings.ServerboundHandshakeMappings, SupportedVersions.Last());
     }
 
     [Subscribe]
@@ -151,7 +151,8 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
                 @event.Link.Player.ProtocolVersion = playerProtocolVersion;
 
                 var holder = @event.Link.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
-                holder.ClientboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ClientboundLoginMappings };
+                holder.ProtocolVersion = playerProtocolVersion;
+                holder.ClientboundRegistry.ReplacePackets(Mappings.ClientboundLoginMappings, SupportedVersions.Last());
                 break;
             case SetCompressionPacket setCompression:
                 @event.Link.ServerChannel.AddBefore<MinecraftPacketMessageStream, SharpZipLibCompressionMessageStream>();
@@ -165,11 +166,11 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
                 break;
             case LoginAcknowledgedPacket loginAcknowledged:
                 holder = @event.Link.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
-                holder.ClientboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ClientboundConfigurationMappings };
+                holder.ClientboundRegistry.ReplacePackets(Mappings.ClientboundConfigurationMappings, SupportedVersions.Last());
                 break;
             case FinishConfigurationPacket finishConfiguration:
                 holder = @event.Link.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
-                holder.ServerboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ServerboundPlayMappings };
+                holder.ServerboundRegistry.ReplacePackets(Mappings.ServerboundPlayMappings, SupportedVersions.Last());
                 break;
             case KeepAliveResponsePacket keepAliveResponse:
                 logger.LogDebug("Player {Link} sent keep alive response ({Id})", @event.Link.Player, keepAliveResponse.Id);
@@ -196,7 +197,7 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
         {
             case HandshakePacket handshake:
                 var holder = @event.Link.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
-                holder.ServerboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ServerboundLoginMappings };
+                holder.ServerboundRegistry.ReplacePackets(Mappings.ServerboundLoginMappings, SupportedVersions.Last());
                 break;
             case SetCompressionPacket setCompression:
                 @event.Link.PlayerChannel.AddBefore<MinecraftPacketMessageStream, SharpZipLibCompressionMessageStream>();
@@ -210,11 +211,11 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
                 break;
             case LoginAcknowledgedPacket loginAcknowledged:
                 holder = @event.Link.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
-                holder.ServerboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ServerboundConfigurationMappings };
+                holder.ServerboundRegistry.ReplacePackets(Mappings.ServerboundConfigurationMappings, SupportedVersions.Last());
                 break;
             case FinishConfigurationPacket finishConfiguration:
                 holder = @event.Link.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
-                holder.ClientboundRegistry = new PacketRegistry { ProtocolVersion = @event.Link.Player.ProtocolVersion, Mappings = Mappings.ClientboundPlayMappings };
+                holder.ClientboundRegistry.ReplacePackets(Mappings.ClientboundPlayMappings, SupportedVersions.Last());
                 break;
             case EncryptionRequestPacket encryptionRequest:
                 logger.LogDebug(JsonSerializer.Serialize(encryptionRequest));

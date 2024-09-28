@@ -100,8 +100,9 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
                 throw new Exception("Plugin context already unloaded");
 
             var name = reference.Context.Name;
+            var count = reference.Plugins.Length;
 
-            logger.LogInformation("Unloading {ContextName} {Count} plugin(s)", name, reference.Plugins.Length);
+            logger.LogTrace("Unloading {ContextName} {Count} plugin(s)", name, count);
 
             foreach (var plugin in reference.Plugins)
             {
@@ -129,7 +130,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
             if (reference.IsAlive)
                 throw new Exception($"Plugins context {name} refuses to unload");
 
-            logger.LogInformation("Unloaded {ContextName} {Count} plugin(s)", name, reference.Plugins.Length);
+            logger.LogInformation("Unloaded {ContextName} {Count} plugin(s)", name, count);
         }
 
         _references.RemoveAll(reference => !reference.IsAlive);

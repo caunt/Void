@@ -2,26 +2,19 @@
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.Common.Network.IO.Messages;
 using Void.Proxy.Common.Network.Protocol;
-using Void.Proxy.Common.Registries.Packets;
-using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 
-namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Registries;
+namespace Void.Proxy.Common.Registries.Packets;
 
 public class PacketRegistry : IPacketRegistry
 {
     private readonly Dictionary<int, Type> _mappings = [];
     private readonly Dictionary<Type, int> _reverseMappings = [];
 
-    public required IReadOnlyDictionary<PacketMapping[], Type> Mappings
-    {
-        set => RegisterPackets(value);
-    }
-
-    public required ProtocolVersion ProtocolVersion { get; init; }
+    public bool IsEmpty => this is { _mappings.Count: 0, _reverseMappings.Count: 0 };
 
     public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out PacketDecoder<IMinecraftPacket> packet)
     {
-        packet = _mappings.TryGetValue(id, out var type) ? type.GetMethod(nameof(HandshakePacket.Decode))!.CreateDelegate<PacketDecoder<IMinecraftPacket>>() : null;
+        packet = _mappings.TryGetValue(id, out var type) ? type.GetMethod(nameof(IMinecraftPacket<IMinecraftPacket>.Decode))!.CreateDelegate<PacketDecoder<IMinecraftPacket>>() : null;
         return packet != null;
     }
 
@@ -30,8 +23,18 @@ public class PacketRegistry : IPacketRegistry
         return _reverseMappings.TryGetValue(packet.GetType(), out id);
     }
 
-    public void RegisterPackets(IReadOnlyDictionary<PacketMapping[], Type> registry)
+    public IPacketRegistry ReplacePackets(IReadOnlyDictionary<PacketMapping[], Type> registry, ProtocolVersion? maximumSupportedProtocolVersion = null)
     {
+        Clear();
+        AddPackets(registry, maximumSupportedProtocolVersion);
+
+        return this;
+    }
+
+    public IPacketRegistry AddPackets(IReadOnlyDictionary<PacketMapping[], Type> registry, ProtocolVersion? maximumSupportedProtocolVersion = null)
+    {
+        maximumSupportedProtocolVersion ??= ProtocolVersion.Latest;
+
         foreach (var (mappings, type) in registry)
         {
             if (mappings.Length == 0)
@@ -54,14 +57,14 @@ public class PacketRegistry : IPacketRegistry
                         throw new ArgumentException("Last mapping version cannot be higher than the highest mapping version");
                 }
 
-                var to = current.Equals(next) ? lastValid ?? Plugin.SupportedVersions.Last() : next.ProtocolVersion;
-                var lastInList = lastValid ?? Plugin.SupportedVersions.Last();
+                var to = current.Equals(next) ? lastValid ?? maximumSupportedProtocolVersion : next.ProtocolVersion;
+                var lastInList = lastValid ?? maximumSupportedProtocolVersion;
 
                 if (from.CompareTo(to) >= 0 && from != lastInList)
                     throw new ArgumentException($"Next mapping version ({to}) should be lower than the current ({from})");
 
-                if (from > ProtocolVersion || to < ProtocolVersion)
-                    continue;
+                // if (from > ProtocolVersion || to < ProtocolVersion)
+                //     continue;
 
                 if (!_mappings.TryAdd(current.Id, type))
                     throw new ArgumentException($"{type} is already registered for packet Id {current.Id}");
@@ -69,5 +72,13 @@ public class PacketRegistry : IPacketRegistry
                 _reverseMappings.Add(type, current.Id);
             }
         }
+
+        return this;
+    }
+
+    public void Clear()
+    {
+        _mappings.Clear();
+        _reverseMappings.Clear();
     }
 }
