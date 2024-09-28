@@ -24,41 +24,33 @@ public static class HostingExtensions
 
     public static ServiceDescriptor[] GetAllServices(this IServiceProvider provider)
     {
-        try
+        var root = provider;
+        var rootType = root.GetType();
+
+        if (rootType.Name is "ServiceProviderEngineScope")
         {
-            var root = provider;
-            var rootType = root.GetType();
-
-            if (rootType.Name is "ServiceProviderEngineScope")
-            {
-                if (rootType.GetProperty("RootProvider", BindingFlags.Instance | BindingFlags.NonPublic) is not { } rootProviderProperty)
-                    return [];
-
-                if (rootProviderProperty.GetValue(provider) is not { } rootProviderValue)
-                    return [];
-
-                root = (IServiceProvider)rootProviderValue;
-            }
-
-            if (typeof(ServiceProvider).GetProperty("CallSiteFactory", BindingFlags.Instance | BindingFlags.NonPublic) is not { } callSiteFactoryProperty)
+            if (rootType.GetProperty("RootProvider", BindingFlags.Instance | BindingFlags.NonPublic) is not { } rootProviderProperty)
                 return [];
 
-            if (callSiteFactoryProperty.GetValue(root) is not { } callSiteFactoryValue)
+            if (rootProviderProperty.GetValue(provider) is not { } rootProviderValue)
                 return [];
 
-            if (callSiteFactoryValue.GetType().GetField("_descriptors", BindingFlags.Instance | BindingFlags.NonPublic) is not { } descriptorsProperty)
-                return [];
-
-            if (descriptorsProperty.GetValue(callSiteFactoryValue) is not { } descriptorsValue)
-                return [];
-
-            return descriptorsValue as ServiceDescriptor[] ?? [];
+            root = (IServiceProvider)rootProviderValue;
         }
-        catch (Exception exc)
-        {
-            Console.WriteLine(exc);
-            throw;
-        }
+
+        if (typeof(ServiceProvider).GetProperty("CallSiteFactory", BindingFlags.Instance | BindingFlags.NonPublic) is not { } callSiteFactoryProperty)
+            return [];
+
+        if (callSiteFactoryProperty.GetValue(root) is not { } callSiteFactoryValue)
+            return [];
+
+        if (callSiteFactoryValue.GetType().GetField("_descriptors", BindingFlags.Instance | BindingFlags.NonPublic) is not { } descriptorsProperty)
+            return [];
+
+        if (descriptorsProperty.GetValue(callSiteFactoryValue) is not { } descriptorsValue)
+            return [];
+
+        return descriptorsValue as ServiceDescriptor[] ?? [];
     }
 
     public static void ForwardServices(this IServiceProvider provider, IServiceCollection collection)
