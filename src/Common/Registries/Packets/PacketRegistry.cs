@@ -23,18 +23,16 @@ public class PacketRegistry : IPacketRegistry
         return _reverseMappings.TryGetValue(packet.GetType(), out id);
     }
 
-    public IPacketRegistry ReplacePackets(IReadOnlyDictionary<PacketMapping[], Type> registry, ProtocolVersion? maximumSupportedProtocolVersion = null)
+    public IPacketRegistry ReplacePackets(IReadOnlyDictionary<PacketMapping[], Type> registry, ProtocolVersion protocolVersion)
     {
         Clear();
-        AddPackets(registry, maximumSupportedProtocolVersion);
+        AddPackets(registry, protocolVersion);
 
         return this;
     }
 
-    public IPacketRegistry AddPackets(IReadOnlyDictionary<PacketMapping[], Type> registry, ProtocolVersion? maximumSupportedProtocolVersion = null)
+    public IPacketRegistry AddPackets(IReadOnlyDictionary<PacketMapping[], Type> registry, ProtocolVersion protocolVersion)
     {
-        maximumSupportedProtocolVersion ??= ProtocolVersion.Latest;
-
         foreach (var (mappings, type) in registry)
         {
             if (mappings.Length == 0)
@@ -46,30 +44,16 @@ public class PacketRegistry : IPacketRegistry
                 var next = i + 1 < mappings.Length ? mappings[i + 1] : current;
 
                 var from = current.ProtocolVersion;
-                var lastValid = current.LastValidProtocolVersion;
+                var to = current.Equals(next) ? current.LastValidProtocolVersion ?? ProtocolVersion.Latest : next.ProtocolVersion;
 
-                if (lastValid != null)
-                {
-                    if (!next.Equals(current))
-                        throw new ArgumentException("Cannot add a mapping after the last valid mapping");
-
-                    if (from.CompareTo(lastValid) > 0)
-                        throw new ArgumentException("Last mapping version cannot be higher than the highest mapping version");
-                }
-
-                var to = current.Equals(next) ? lastValid ?? maximumSupportedProtocolVersion : next.ProtocolVersion;
-                var lastInList = lastValid ?? maximumSupportedProtocolVersion;
-
-                if (from.CompareTo(to) >= 0 && from != lastInList)
+                if (from.CompareTo(to) > 0)
                     throw new ArgumentException($"Next mapping version ({to}) should be lower than the current ({from})");
 
-                // if (from > ProtocolVersion || to < ProtocolVersion)
-                //     continue;
+                if (!ProtocolVersion.Range(from, to).Contains(protocolVersion))
+                    continue;
 
-                if (!_mappings.TryAdd(current.Id, type))
+                if (!_mappings.TryAdd(current.Id, type) || !_reverseMappings.TryAdd(type, current.Id))
                     throw new ArgumentException($"{type} is already registered for packet Id {current.Id}");
-
-                _reverseMappings.Add(type, current.Id);
             }
         }
 

@@ -15,22 +15,11 @@ public class EncryptionRequestPacket : IMinecraftPacket<EncryptionRequestPacket>
     {
         buffer.WriteString(ServerId);
 
-        if (protocolVersion >= ProtocolVersion.MINECRAFT_1_8)
-        {
-            buffer.WriteVarInt(PublicKey.Length);
-            buffer.Write(PublicKey);
+        buffer.WriteVarInt(PublicKey.Length);
+        buffer.Write(PublicKey);
 
-            buffer.WriteVarInt(VerifyToken.Length);
-            buffer.Write(VerifyToken);
-        }
-        else
-        {
-            buffer.WriteVarShort(PublicKey.Length);
-            buffer.Write(PublicKey);
-
-            buffer.WriteVarShort(VerifyToken.Length);
-            buffer.Write(VerifyToken);
-        }
+        buffer.WriteVarInt(VerifyToken.Length);
+        buffer.Write(VerifyToken);
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_20_5)
         {
@@ -45,26 +34,13 @@ public class EncryptionRequestPacket : IMinecraftPacket<EncryptionRequestPacket>
     {
         var serverId = buffer.ReadString();
 
-        ReadOnlySpan<byte> publicKey;
-        ReadOnlySpan<byte> verifyToken;
+        var publicKeyLength = buffer.ReadVarInt();
+        var publicKey = buffer.Read(publicKeyLength);
+
+        var verifyTokenLength = buffer.ReadVarInt();
+        var verifyToken = buffer.Read(verifyTokenLength);
+
         bool? shouldAuthenticate = null;
-
-        if (protocolVersion >= ProtocolVersion.MINECRAFT_1_8)
-        {
-            var publicKeyLength = buffer.ReadVarInt();
-            publicKey = buffer.Read(publicKeyLength);
-
-            var verifyTokenLength = buffer.ReadVarInt();
-            verifyToken = buffer.Read(verifyTokenLength);
-        }
-        else
-        {
-            var publicKeyLength = buffer.ReadVarShort();
-            publicKey = buffer.Read(publicKeyLength);
-
-            var verifyTokenLength = buffer.ReadVarShort();
-            verifyToken = buffer.Read(verifyTokenLength);
-        }
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_20_5)
             shouldAuthenticate = buffer.ReadBoolean();

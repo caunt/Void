@@ -8,72 +8,26 @@ public class EncryptionResponsePacket : IMinecraftPacket<EncryptionResponsePacke
 {
     public required byte[] SharedSecret { get; set; }
     public required byte[] VerifyToken { get; set; }
-    public long? Salt { get; set; }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        if (protocolVersion >= ProtocolVersion.MINECRAFT_1_8)
-        {
-            buffer.WriteVarInt(SharedSecret.Length);
-            buffer.Write(SharedSecret);
-
-            if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19 && protocolVersion < ProtocolVersion.MINECRAFT_1_19_3)
-            {
-                if (Salt.HasValue)
-                {
-                    buffer.WriteBoolean(false);
-                    buffer.WriteLong(Salt.Value);
-                }
-                else
-                {
-                    buffer.WriteBoolean(true);
-                }
-            }
-
-            buffer.WriteVarInt(VerifyToken.Length);
-            buffer.Write(VerifyToken);
-        }
-        else
-        {
-            buffer.WriteVarShort(SharedSecret.Length);
-            buffer.Write(SharedSecret);
-
-            buffer.WriteVarShort(VerifyToken.Length);
-            buffer.Write(VerifyToken);
-        }
+        buffer.WriteVarInt(SharedSecret.Length);
+        buffer.Write(SharedSecret);
+        buffer.WriteVarInt(VerifyToken.Length);
+        buffer.Write(VerifyToken);
     }
 
     public static EncryptionResponsePacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        ReadOnlySpan<byte> sharedSecret;
-        ReadOnlySpan<byte> verifyToken;
-        long? salt = null;
-
-        if (protocolVersion >= ProtocolVersion.MINECRAFT_1_8)
-        {
-            var sharedSecretLength = buffer.ReadVarInt();
-            sharedSecret = buffer.Read(sharedSecretLength);
-
-            if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19 && protocolVersion < ProtocolVersion.MINECRAFT_1_19_3 && !buffer.ReadBoolean())
-                salt = buffer.ReadLong();
-
-            var verifyTokenLength = buffer.ReadVarInt();
-            verifyToken = buffer.Read(verifyTokenLength);
-        }
-        else
-        {
-            var sharedSecretLength = buffer.ReadVarShort();
-            sharedSecret = buffer.Read(sharedSecretLength);
-
-            var verifyTokenLength = buffer.ReadVarShort();
-            verifyToken = buffer.Read(verifyTokenLength);
-        }
+        var sharedSecretLength = buffer.ReadVarInt();
+        var sharedSecret = buffer.Read(sharedSecretLength);
+        var verifyTokenLength = buffer.ReadVarInt();
+        var verifyToken = buffer.Read(verifyTokenLength);
 
         return new EncryptionResponsePacket
         {
             SharedSecret = sharedSecret.ToArray(),
-            VerifyToken = verifyToken.ToArray(),
-            Salt = salt
+            VerifyToken = verifyToken.ToArray()
         };
     }
 

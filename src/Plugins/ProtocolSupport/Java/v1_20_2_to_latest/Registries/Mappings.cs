@@ -44,7 +44,7 @@ public static class Mappings
     {
         { [new PacketMapping(0x14, Plugin.SupportedVersions.First(), ProtocolVersion.MINECRAFT_1_20_2)], typeof(KeepAliveResponsePacket) },
         { [new PacketMapping(0x15, ProtocolVersion.MINECRAFT_1_20_3, ProtocolVersion.MINECRAFT_1_20_3)], typeof(KeepAliveResponsePacket) },
-        { [new PacketMapping(0x18, ProtocolVersion.MINECRAFT_1_20_5)], typeof(KeepAliveResponsePacket) },
+        { [new PacketMapping(0x18, ProtocolVersion.MINECRAFT_1_20_5)], typeof(KeepAliveResponsePacket) }
     };
 
     public static void Fill()

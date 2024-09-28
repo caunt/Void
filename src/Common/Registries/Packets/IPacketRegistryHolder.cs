@@ -1,6 +1,7 @@
 ﻿using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.API.Plugins;
+using Void.Proxy.Common.Network.Protocol;
 
 namespace Void.Proxy.Common.Registries.Packets;
 
@@ -24,5 +25,7 @@ public interface IPacketRegistryHolder
         };
     }
 
+    public void ReplacePackets(Direction direction, IReadOnlyDictionary<PacketMapping[], Type> mappings);
+    public void AddPackets(Direction direction, IReadOnlyDictionary<PacketMapping[], Type> mappings);
     public void Reset();
 }

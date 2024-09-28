@@ -11,7 +11,7 @@ public interface IPacketRegistry
 
     public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out PacketDecoder<IMinecraftPacket> packet);
     public bool TryGetPacketId(IMinecraftPacket packet, [MaybeNullWhen(false)] out int id);
-    public IPacketRegistry ReplacePackets(IReadOnlyDictionary<PacketMapping[], Type> mappings, ProtocolVersion? maximumSupportedProtocolVersion = null);
-    public IPacketRegistry AddPackets(IReadOnlyDictionary<PacketMapping[], Type> mappings, ProtocolVersion? maximumSupportedProtocolVersion = null);
+    public IPacketRegistry ReplacePackets(IReadOnlyDictionary<PacketMapping[], Type> mappings, ProtocolVersion protocolVersion);
+    public IPacketRegistry AddPackets(IReadOnlyDictionary<PacketMapping[], Type> mappings, ProtocolVersion protocolVersion);
     public void Clear();
 }
