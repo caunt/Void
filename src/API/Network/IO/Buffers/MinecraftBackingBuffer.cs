@@ -132,13 +132,13 @@ internal ref struct MinecraftBackingBuffer
     {
         var low = ReadUnsignedShort();
         var high = 0;
-
+        
         if ((low & 0x8000) == 0)
             return ((high & 0xFF) << 15) | low;
-
+        
         low &= 0x7FFF;
         high = ReadUnsignedByte();
-
+        
         return ((high & 0xFF) << 15) | low;
     }
 

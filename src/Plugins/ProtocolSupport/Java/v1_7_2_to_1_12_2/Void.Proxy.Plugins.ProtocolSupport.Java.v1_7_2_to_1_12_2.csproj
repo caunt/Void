@@ -8,10 +8,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="MinecraftNotifier" Version="1.2.0" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<ProjectReference Include="..\..\..\..\API\Void.Proxy.API.csproj">
 			<Private>false</Private>
 			<ExcludeAssets>runtime</ExcludeAssets>

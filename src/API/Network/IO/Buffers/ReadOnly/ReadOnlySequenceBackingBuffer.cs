@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Buffers.Binary;
 
 namespace Void.Proxy.API.Network.IO.Buffers.ReadOnly;
 
@@ -35,7 +36,7 @@ internal ref struct ReadOnlySequenceBackingBuffer
         if (_blockPosition + 2 <= _currentBlock.Length)
         {
             // Attempt to read the unsigned short from the current block
-            var result = BitConverter.ToUInt16(_currentBlock.Slice(_blockPosition, 2));
+            var result = BinaryPrimitives.ReadUInt16BigEndian(_currentBlock.Slice(_blockPosition, 2));
 
             _blockPosition += 2;
             Position += 2;
@@ -59,7 +60,7 @@ internal ref struct ReadOnlySequenceBackingBuffer
         if (_blockPosition + 4 <= _currentBlock.Length)
         {
             // Attempt to read the int from the current block
-            var result = BitConverter.ToInt32(_currentBlock.Slice(_blockPosition, 4));
+            var result = BinaryPrimitives.ReadInt32BigEndian(_currentBlock.Slice(_blockPosition, 4));
 
             _blockPosition += 4;
             Position += 4;
@@ -83,7 +84,7 @@ internal ref struct ReadOnlySequenceBackingBuffer
         if (_blockPosition + 8 <= _currentBlock.Length)
         {
             // Attempt to read the long from the current block
-            var result = BitConverter.ToInt64(_currentBlock.Slice(_blockPosition, 8));
+            var result = BinaryPrimitives.ReadInt64BigEndian(_currentBlock.Slice(_blockPosition, 8));
 
             _blockPosition += 8;
             Position += 8;
