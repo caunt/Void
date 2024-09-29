@@ -177,7 +177,7 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
         stream.Dispose();
 
         if (buffer.HasData)
-            throw new IndexOutOfRangeException($"The packet was not fully read. Bytes read: {buffer.Position}, Total length: {buffer.Length}.");
+            throw new IndexOutOfRangeException($"{packet} packet was not fully read. Bytes read: {buffer.Position}, Total length: {buffer.Length}.");
 
         return packet;
     }

@@ -11,11 +11,15 @@ namespace Void.Proxy.Common.Network.IO.Channels;
 
 public class SimpleChannel(IMinecraftStreamBase head) : IMinecraftChannel
 {
+    private TaskCompletionSource? _pause;
+
     public bool CanRead => true;
     public bool CanWrite => true;
 
     public IMinecraftStreamBase Head => head;
+
     public bool IsConfigured => head is IMinecraftStream;
+    public bool IsPaused => _pause is { Task.IsCompleted: false };
     public bool IsRedirectionSupported => false;
 
     public void Add<T>() where T : IMinecraftStream, new()
@@ -56,6 +60,9 @@ public class SimpleChannel(IMinecraftStreamBase head) : IMinecraftChannel
 
     public async ValueTask<IMinecraftMessage> ReadMessageAsync(CancellationToken cancellationToken = default)
     {
+        if (_pause is not null)
+            await _pause.Task;
+
         return head switch
         {
             IMinecraftPacketMessageStream stream => await stream.ReadPacketAsync(cancellationToken),
@@ -83,9 +90,20 @@ public class SimpleChannel(IMinecraftStreamBase head) : IMinecraftChannel
         }
     }
 
-    public void Flush()
+    public void Pause()
     {
-        head.Flush();
+        if (_pause is { Task.IsCompleted: false })
+            throw new InvalidOperationException($"{nameof(IMinecraftChannel)} is already paused");
+
+        _pause = new TaskCompletionSource();
+    }
+
+    public void Resume()
+    {
+        if (_pause is null or { Task.IsCompleted: true })
+            throw new InvalidOperationException($"{nameof(IMinecraftChannel)} is not paused");
+
+        _pause.SetResult();
     }
 
     public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
@@ -106,6 +124,11 @@ public class SimpleChannel(IMinecraftStreamBase head) : IMinecraftChannel
     public async ValueTask DisposeAsync()
     {
         await head.DisposeAsync();
+    }
+
+    public void Flush()
+    {
+        head.Flush();
     }
 
     private T Get<T>(IMinecraftStreamBase? baseStream) where T : IMinecraftStreamBase

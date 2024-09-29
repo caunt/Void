@@ -13,5 +13,4 @@ public interface ILink : IEventListener, IAsyncDisposable
     public IMinecraftChannel ServerChannel { get; }
     public bool IsAlive { get; }
     public bool IsRestarting { get; }
-    public ValueTask RestartAsync(CancellationToken cancellationToken = default);
 }

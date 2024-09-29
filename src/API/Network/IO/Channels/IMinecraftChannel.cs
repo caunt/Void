@@ -9,7 +9,9 @@ public interface IMinecraftChannel : IDisposable, IAsyncDisposable
     public bool CanWrite { get; }
 
     public IMinecraftStreamBase Head { get; }
+
     public bool IsConfigured { get; }
+    public bool IsPaused { get; }
     public bool IsRedirectionSupported { get; }
 
     public void Add<T>() where T : IMinecraftStream, new();
@@ -20,7 +22,8 @@ public interface IMinecraftChannel : IDisposable, IAsyncDisposable
     public void PrependBuffer(Memory<byte> memory);
     public ValueTask<IMinecraftMessage> ReadMessageAsync(CancellationToken cancellationToken = default);
     public ValueTask WriteMessageAsync(IMinecraftMessage message, CancellationToken cancellationToken = default);
-    public void Flush();
+    public void Pause();
+    public void Resume();
     public ValueTask FlushAsync(CancellationToken cancellationToken = default);
     public void Close();
 }

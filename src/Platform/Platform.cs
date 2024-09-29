@@ -51,6 +51,7 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
 
         logger.LogInformation("Starting connection listener");
         _listener = new TcpListener(settings.Address, settings.Port);
+        _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
         _listener.Start();
 
         logger.LogInformation("Connection listener started on port {Port}", settings.Port);

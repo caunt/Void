@@ -1,4 +1,6 @@
-﻿namespace Void.Proxy.API.Extensions;
+﻿using Serilog;
+
+namespace Void.Proxy.API.Extensions;
 
 public static class TaskExtensions
 {
@@ -7,7 +9,7 @@ public static class TaskExtensions
         return task.ContinueWith(completedTask =>
         {
             if (completedTask.Exception != null)
-                Console.WriteLine("Unhandled task Exception:\n" + completedTask.Exception.InnerException);
+                Log.Logger.Fatal("Unhandled task Exception:\n{Exception}", completedTask.Exception.InnerException);
         }, TaskContinuationOptions.OnlyOnFaulted);
     }
 

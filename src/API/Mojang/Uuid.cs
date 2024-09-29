@@ -7,6 +7,8 @@ namespace Void.Proxy.API.Mojang;
 
 public struct Uuid(Guid guid)
 {
+    public static Uuid Empty { get; } = new(Guid.Empty);
+
     public Guid AsGuid => guid;
 
     public override string ToString()

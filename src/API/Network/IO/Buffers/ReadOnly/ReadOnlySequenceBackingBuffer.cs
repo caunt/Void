@@ -149,7 +149,7 @@ internal ref struct ReadOnlySequenceBackingBuffer
 
         // Should be safe in most cases, but prefer throw new NotSupportedException("That implementation would allocate memory, not supported yet")
         if (_currentBlock.Length < _blockPosition + length)
-            throw new IndexOutOfRangeException($"Current block length is {_currentBlock.Length} and position is {_blockPosition}, attempted to slice {length} bytes, reading from next blocks not implemented.");
+            throw new IndexOutOfRangeException($"Current block length is {_currentBlock.Length} and position is {_blockPosition}, attempted to slice {length} bytes, reading from next blocks not implemented. Sequence length is {_sequence.Length}.");
 
         var span = _currentBlock.Slice(_blockPosition, length);
 

@@ -61,7 +61,11 @@ public class SimpleChannelBuilderService(ILogger<SimpleChannelBuilderService> lo
     public async ValueTask<IMinecraftChannel> BuildServerChannelAsync(IServer server, CancellationToken cancellationToken = default)
     {
         logger.LogTrace("Building channel for a {Server} server", server);
-        var channel = await BuildChannelAsync(Direction.Clientbound, server.CreateTcpClient().GetStream(), cancellationToken);
+
+        var client = server.CreateTcpClient();
+        client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+
+        var channel = await BuildChannelAsync(Direction.Clientbound, client.GetStream(), cancellationToken);
         logger.LogTrace("Server {Name} is using {ChannelTypeName} channel implementation", server.Name, channel.GetType().Name);
 
         return channel;
