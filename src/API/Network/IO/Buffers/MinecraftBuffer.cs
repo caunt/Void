@@ -1,5 +1,7 @@
 ﻿using System.Buffers;
 using System.Numerics;
+using Void.Proxy.API.Mojang;
+using Void.Proxy.API.Mojang.Profiles;
 
 namespace Void.Proxy.API.Network.IO.Buffers;
 
@@ -118,14 +120,24 @@ public ref struct MinecraftBuffer
         _backingBuffer.WriteLong(value);
     }
 
-    public void WriteGuid(Guid value)
+    public Uuid ReadUuid()
     {
-        _backingBuffer.WriteGuid(value);
+        return _backingBuffer.ReadUuid();
     }
 
-    public void WriteGuidIntArray(Guid value)
+    public void WriteUuid(Uuid value)
     {
-        _backingBuffer.WriteGuidIntArray(value);
+        _backingBuffer.WriteUuid(value);
+    }
+
+    public Uuid ReadUuidAsIntArray()
+    {
+        return _backingBuffer.ReadUuidAsIntArray();
+    }
+
+    public void WriteUuidAsIntArray(Uuid value)
+    {
+        _backingBuffer.WriteUuidAsIntArray(value);
     }
 
     public string ReadString(int maxLength = 32767)
@@ -136,6 +148,26 @@ public ref struct MinecraftBuffer
     public void WriteString(string value)
     {
         _backingBuffer.WriteString(value);
+    }
+
+    public Property ReadProperty()
+    {
+        return _backingBuffer.ReadProperty();
+    }
+
+    public void WriteProperty(Property value)
+    {
+        _backingBuffer.WriteProperty(value);
+    }
+
+    public Property[] ReadPropertyArray()
+    {
+        return _backingBuffer.ReadPropertyArray();
+    }
+
+    public void WritePropertyArray(Property[] value)
+    {
+        _backingBuffer.WritePropertyArray(value);
     }
 
     public void Seek(int offset)

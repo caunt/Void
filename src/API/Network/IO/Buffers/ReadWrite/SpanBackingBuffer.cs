@@ -54,23 +54,6 @@ internal ref struct SpanBackingBuffer(Span<byte> span)
         BinaryPrimitives.WriteInt64BigEndian(Slice(8), value);
     }
 
-    public void WriteGuid(Guid value)
-    {
-        Write(value == Guid.Empty ? new byte[16] : value.ToByteArray(true));
-    }
-
-    public void WriteGuidIntArray(Guid value)
-    {
-        var bytes = value.ToByteArray();
-        var msb = BitConverter.ToUInt64(bytes, 0);
-        var lsb = BitConverter.ToUInt64(bytes, 8);
-
-        WriteInt((int)(msb >> 32));
-        WriteInt((int)msb);
-        WriteInt((int)(lsb >> 32));
-        WriteInt((int)lsb);
-    }
-
     public void Seek(int offset, SeekOrigin origin)
     {
         switch (origin)

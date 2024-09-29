@@ -48,7 +48,6 @@ public class PlayerService : IPlayerService, IEventListener
             _players.Add(player);
             _logger.LogInformation("Player {Player} connected", player);
 
-            await _events.ThrowAsync(new PlayerConnectedEvent { Player = player }, cancellationToken);
             await _links.ConnectPlayerAnywhereAsync(player, cancellationToken);
         }
         catch (Exception exception)

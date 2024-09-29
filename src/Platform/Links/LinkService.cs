@@ -62,8 +62,13 @@ public class LinkService : ILinkService, IEventListener
 
         _logger.LogTrace("Connecting {Player} player to a {Server} server", player, server);
 
+        var firstConnection = player.Context.Channel is null;
+
         var playerChannel = await player.GetChannelAsync(cancellationToken);
         var serverChannel = await player.BuildServerChannelAsync(server, cancellationToken);
+
+        if (firstConnection)
+            await _events.ThrowAsync(new PlayerConnectedEvent { Player = player }, cancellationToken);
 
         var link = await _events.ThrowWithResultAsync(new CreateLinkEvent { Player = player, Server = server, PlayerChannel = playerChannel, ServerChannel = serverChannel }, cancellationToken) ?? new Link(player, server, playerChannel, serverChannel, _logger, _events);
         await _events.ThrowAsync(new LinkStartingEvent { Link = link }, cancellationToken);

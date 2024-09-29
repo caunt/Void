@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -30,9 +31,9 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Registries;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest;
 
-public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
+public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IProtocolPlugin
 {
-    public static readonly ProtocolVersion[] SupportedVersions = ProtocolVersion.Range(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.Latest).ToArray();
+    public static IEnumerable<ProtocolVersion> SupportedVersions => ProtocolVersion.Range(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.Latest);
 
     public string Name => nameof(Plugin);
 
@@ -85,13 +86,17 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
     [Subscribe]
     public void OnPlayerConnected(PlayerConnectedEvent @event, CancellationToken cancellationToken)
     {
+        if (!SupportedVersions.Contains(@event.Player.ProtocolVersion))
+            return;
+
         var holder = @event.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
 
         if (!holder.IsEmpty)
             return;
 
         holder.ManagedBy = this;
-        holder.ProtocolVersion = SupportedVersions.First();
+        holder.ProtocolVersion = @event.Player.ProtocolVersion;
+
         holder.ReplacePackets(Direction.Clientbound, Mappings.ClientboundHandshakeMappings);
         holder.ReplacePackets(Direction.Serverbound, Mappings.ServerboundHandshakeMappings);
     }
@@ -110,9 +115,10 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
     [Subscribe]
     public void OnSearchChannelBuilder(SearchChannelBuilderEvent @event, CancellationToken cancellationToken)
     {
-        if (!IsSupportedHandshake(@event.Buffer))
+        if (!IsSupportedHandshake(@event.Buffer, out var protocolVersion))
             return;
 
+        @event.Player.ProtocolVersion = protocolVersion;
         @event.Result = (direction, stream, builderCancellationToken) =>
         {
             var channel = new SimpleChannel(new SimpleNetworkStream(stream));
@@ -149,10 +155,7 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
                 if (!SupportedVersions.Contains(playerProtocolVersion))
                     break;
 
-                @event.Link.Player.ProtocolVersion = playerProtocolVersion;
-
                 var holder = @event.Link.Player.Context.Services.GetRequiredService<IPacketRegistryHolder>();
-                holder.ProtocolVersion = playerProtocolVersion;
                 holder.ReplacePackets(Direction.Clientbound, Mappings.ClientboundLoginMappings);
                 break;
             case SetCompressionPacket setCompression:
@@ -242,7 +245,7 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
         }
     }
 
-    public static bool IsSupportedHandshake(Memory<byte> memory)
+    public static bool IsSupportedHandshake(Memory<byte> memory, [MaybeNullWhen(false)] out ProtocolVersion protocolVersion)
     {
         try
         {
@@ -253,11 +256,14 @@ public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
             buffer = new MinecraftBuffer(packet);
             var packetId = buffer.ReadVarInt();
 
-            var decoded = HandshakePacket.Decode(ref buffer, ProtocolVersion.Oldest);
-            return packetId == 0 && SupportedVersions.Contains(ProtocolVersion.Get(decoded.ProtocolVersion)) && !buffer.HasData;
+            var decoded = HandshakePacket.Decode(ref buffer, SupportedVersions.First());
+            protocolVersion = ProtocolVersion.Get(decoded.ProtocolVersion);
+
+            return packetId == 0 && SupportedVersions.Contains(protocolVersion) && !buffer.HasData;
         }
         catch
         {
+            protocolVersion = null;
             return false;
         }
     }

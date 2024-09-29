@@ -1,6 +1,8 @@
 ﻿using System.Buffers;
 using System.Data;
 using System.Text;
+using Void.Proxy.API.Mojang;
+using Void.Proxy.API.Mojang.Profiles;
 using Void.Proxy.API.Network.IO.Buffers.ReadOnly;
 using Void.Proxy.API.Network.IO.Buffers.ReadWrite;
 
@@ -232,34 +234,38 @@ internal ref struct MinecraftBackingBuffer
         }
     }
 
-    public void WriteGuid(Guid value)
+    public Uuid ReadUuid()
     {
-        switch (_bufferType)
-        {
-            case BufferType.Span:
-                _spanBackingBuffer.WriteGuid(value);
-                break;
-            case BufferType.ReadOnlySpan:
-            case BufferType.ReadOnlySequence:
-                throw new ReadOnlyException();
-            default:
-                throw new NotSupportedException(_bufferType.ToString());
-        }
+        return Uuid.FromLongs(ReadLong(), ReadLong());
     }
 
-    public void WriteGuidIntArray(Guid value)
+    public void WriteUuid(Uuid value)
     {
-        switch (_bufferType)
-        {
-            case BufferType.Span:
-                _spanBackingBuffer.WriteGuidIntArray(value);
-                break;
-            case BufferType.ReadOnlySpan:
-            case BufferType.ReadOnlySequence:
-                throw new ReadOnlyException();
-            default:
-                throw new NotSupportedException(_bufferType.ToString());
-        }
+        Write(value.AsGuid == Guid.Empty ? new byte[16] : value.AsGuid.ToByteArray(true));
+    }
+
+    public Uuid ReadUuidAsIntArray()
+    {
+        var msbHigh = (long)ReadInt() << 32;
+        var msbLow = ReadInt() & 0xFFFFFFFFL;
+        var msb = msbHigh | msbLow;
+        var lsbHigh = (long)ReadInt() << 32;
+        var lsbLow = ReadInt() & 0xFFFFFFFFL;
+        var lsb = lsbHigh | lsbLow;
+
+        return Uuid.FromLongs(msb, lsb);
+    }
+
+    public void WriteUuidAsIntArray(Uuid value)
+    {
+        var bytes = value.AsGuid.ToByteArray();
+        var msb = BitConverter.ToUInt64(bytes, 0);
+        var lsb = BitConverter.ToUInt64(bytes, 8);
+
+        WriteInt((int)(msb >> 32));
+        WriteInt((int)msb);
+        WriteInt((int)(lsb >> 32));
+        WriteInt((int)lsb);
     }
 
     public string ReadString(int maxLength = 32767)
@@ -294,6 +300,52 @@ internal ref struct MinecraftBackingBuffer
         };
 
         Encoding.UTF8.GetBytes(value, span);
+    }
+
+    public Property ReadProperty()
+    {
+        var name = ReadString();
+        var value = ReadString();
+        var isSigned = ReadBoolean();
+        var signature = isSigned ? ReadString() : null;
+
+        return new Property(name, value, isSigned, signature);
+    }
+
+    public void WriteProperty(Property value)
+    {
+        WriteString(value.Name);
+        WriteString(value.Value);
+        WriteBoolean(value.IsSigned);
+
+        if (!value.IsSigned)
+            return;
+
+        if (string.IsNullOrWhiteSpace(value.Signature))
+            throw new InvalidDataException("Signature is null or whitespace, but IsSigned set to true");
+
+        WriteString(value.Signature);
+    }
+
+    public Property[] ReadPropertyArray(int count = -1)
+    {
+        if (count < 0)
+            count = ReadVarInt();
+
+        var array = new Property[count];
+
+        for (var i = 0; i < count; i++)
+            array[i] = ReadProperty();
+
+        return array;
+    }
+
+    public void WritePropertyArray(Property[] value)
+    {
+        WriteVarInt(value.Length);
+
+        foreach (var property in value)
+            WriteProperty(property);
     }
 
     public void Seek(int offset, SeekOrigin origin)
