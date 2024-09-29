@@ -132,13 +132,13 @@ internal ref struct MinecraftBackingBuffer
     {
         var low = ReadUnsignedShort();
         var high = 0;
-        
+
         if ((low & 0x8000) == 0)
             return ((high & 0xFF) << 15) | low;
-        
+
         low &= 0x7FFF;
         high = ReadUnsignedByte();
-        
+
         return ((high & 0xFF) << 15) | low;
     }
 
@@ -258,26 +258,18 @@ internal ref struct MinecraftBackingBuffer
 
     public void WriteUuidAsIntArray(Uuid value)
     {
-        var bytes = value.AsGuid.ToByteArray();
-        var msb = BitConverter.ToUInt64(bytes, 0);
-        var lsb = BitConverter.ToUInt64(bytes, 8);
+        var span = value.AsGuid.ToByteArray().AsSpan();
 
-        WriteInt((int)(msb >> 32));
-        WriteInt((int)msb);
-        WriteInt((int)(lsb >> 32));
-        WriteInt((int)lsb);
+        WriteInt(BitConverter.ToInt32(span[..4]));
+        WriteInt(BitConverter.ToInt32(span[4..8]));
+        WriteInt(BitConverter.ToInt32(span[8..12]));
+        WriteInt(BitConverter.ToInt32(span[12..16]));
     }
 
     public string ReadString(int maxLength = 32767)
     {
         var length = ReadVarInt();
-        var span = _bufferType switch
-        {
-            BufferType.Span => _spanBackingBuffer.Read(length),
-            BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.Read(length),
-            BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.Read(length),
-            _ => throw new NotSupportedException(_bufferType.ToString())
-        };
+        var span = Read(length);
 
         var value = Encoding.UTF8.GetString(span);
 
@@ -394,13 +386,7 @@ internal ref struct MinecraftBackingBuffer
 
     public ReadOnlySpan<byte> ReadToEnd()
     {
-        return _bufferType switch
-        {
-            BufferType.Span => _spanBackingBuffer.ReadToEnd(),
-            BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.ReadToEnd(),
-            BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.ReadToEnd(),
-            _ => throw new NotSupportedException(_bufferType.ToString())
-        };
+        return Read(GetLength() - GetPosition());
     }
 
     public void Reset()

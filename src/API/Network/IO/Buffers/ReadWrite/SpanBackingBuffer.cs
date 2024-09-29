@@ -19,11 +19,6 @@ internal ref struct SpanBackingBuffer(Span<byte> span)
         _block[Position++] = value;
     }
 
-    public void WriteBoolean(bool value)
-    {
-        WriteUnsignedByte(Convert.ToByte(value));
-    }
-
     public ushort ReadUnsignedShort()
     {
         return BinaryPrimitives.ReadUInt16BigEndian(Slice(2));
@@ -41,7 +36,7 @@ internal ref struct SpanBackingBuffer(Span<byte> span)
 
     public void WriteInt(int value)
     {
-        BitConverter.GetBytes(value).CopyTo(Slice(4));
+        BinaryPrimitives.WriteInt32BigEndian(Slice(4), value);
     }
 
     public long ReadLong()
@@ -103,10 +98,5 @@ internal ref struct SpanBackingBuffer(Span<byte> span)
         var span = _block.Slice(Position, data.Length);
         Position += data.Length;
         data.CopyTo(span);
-    }
-
-    public ReadOnlySpan<byte> ReadToEnd()
-    {
-        return Read(_block.Length - Position);
     }
 }

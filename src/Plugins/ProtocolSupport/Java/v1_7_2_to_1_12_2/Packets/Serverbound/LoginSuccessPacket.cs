@@ -12,7 +12,13 @@ public class LoginSuccessPacket : IMinecraftPacket<LoginSuccessPacket>
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        buffer.WriteString(GameProfile.Id.ToString());
+        var id = protocolVersion switch
+        {
+            _ when protocolVersion >= ProtocolVersion.MINECRAFT_1_7_6 => GameProfile.Id.ToString(),
+            _ => GameProfile.Id.ToString().Replace("-", string.Empty)
+        };
+
+        buffer.WriteString(id);
         buffer.WriteString(GameProfile.Username);
     }
 

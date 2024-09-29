@@ -69,9 +69,4 @@ internal ref struct ReadOnlySpanBackingBuffer(ReadOnlySpan<byte> span)
     {
         return Slice(length);
     }
-
-    public ReadOnlySpan<byte> ReadToEnd()
-    {
-        return Read(_block.Length - Position);
-    }
 }

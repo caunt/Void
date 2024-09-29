@@ -103,7 +103,7 @@ internal ref struct ReadOnlySequenceBackingBuffer
         }
     }
 
-    // TODO not sure if works properly
+    // not sure if works properly
     public void Seek(int offset, SeekOrigin origin)
     {
         var targetPosition = origin switch
@@ -162,11 +162,6 @@ internal ref struct ReadOnlySequenceBackingBuffer
     public ReadOnlySpan<byte> Read(int length)
     {
         return Slice(length);
-    }
-
-    public ReadOnlySpan<byte> ReadToEnd()
-    {
-        return Read(Length - Position);
     }
 
     // Read Slice(int length) for explanation
