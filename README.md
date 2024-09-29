@@ -6,7 +6,7 @@
 
 **Description:**  
 Void Proxy is a Minecraft proxy, akin to Velocity or BungeeCord.\
-It redirects players between servers, supporting versions from Classic 0.0.15a, Alpha, Beta and up to latest releases, including Bedrock Edition.\
+It redirects players between servers, supporting versions from Classic 0.0.15a, Alpha, Beta and up to latest Java and Bedrock releases.\
 *Server redirection is currently supported only from Java 1.7.2*
 
 **Goals:**  
