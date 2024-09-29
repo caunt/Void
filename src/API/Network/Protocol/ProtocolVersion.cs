@@ -78,14 +78,14 @@ public class ProtocolVersion : IComparable
         return Mapping[version];
     }
 
-    public static ProtocolVersion[] Range()
+    public static IEnumerable<ProtocolVersion> Range()
     {
         return Range(Oldest, Latest);
     }
 
-    public static ProtocolVersion[] Range(ProtocolVersion start, ProtocolVersion end)
+    public static IEnumerable<ProtocolVersion> Range(ProtocolVersion start, ProtocolVersion end)
     {
-        return Mapping.Where(pair => pair.Key >= start.Version && pair.Key <= end.Version).Select(pair => pair.Value).Order().ToArray();
+        return Mapping.Where(pair => pair.Key >= start.Version && pair.Key <= end.Version).Select(pair => pair.Value).Order();
     }
 
     public string GetVersionIntroducedIn()

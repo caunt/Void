@@ -32,7 +32,7 @@ namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest;
 
 public class Plugin(ILogger<Plugin> logger, IPlayerService players) : IPlugin
 {
-    public static readonly ProtocolVersion[] SupportedVersions = ProtocolVersion.Range(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.Latest);
+    public static readonly ProtocolVersion[] SupportedVersions = ProtocolVersion.Range(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.Latest).ToArray();
 
     public string Name => nameof(Plugin);
 
