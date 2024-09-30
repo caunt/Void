@@ -9,7 +9,7 @@ using Void.Proxy.API.Extensions;
 using Void.Proxy.API.Forwarding;
 using Void.Proxy.API.Links;
 using Void.Proxy.API.Players;
-using Void.Proxy.API.Plugins;
+using Void.Proxy.API.Plugins.Services;
 using Void.Proxy.API.Servers;
 using Void.Proxy.API.Settings;
 using Void.Proxy.Crypto;

@@ -1,6 +1,6 @@
 ﻿using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
-using Void.Proxy.API.Events.Handshake;
+using Void.Proxy.API.Events.Channels;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.IO.Channels;

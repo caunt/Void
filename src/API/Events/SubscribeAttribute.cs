@@ -3,8 +3,10 @@
 namespace Void.Proxy.API.Events;
 
 [AttributeUsage(AttributeTargets.Method)]
-public class SubscribeAttribute : Attribute
+public class SubscribeAttribute(PostOrder order = PostOrder.Normal) : Attribute
 {
+    public PostOrder Order => order;
+
     public static void SanityChecks(MethodInfo methodInfo)
     {
         var parameters = methodInfo.GetParameters();

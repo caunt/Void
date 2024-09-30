@@ -5,6 +5,7 @@ using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Plugins;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Plugins;
+using Void.Proxy.API.Plugins.Services;
 using Void.Proxy.Reflection;
 
 namespace Void.Proxy.Plugins;
@@ -70,7 +71,8 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
             return;
         }
 
-        var listeners = context.PluginAssembly.GetTypes().Where(typeof(IEventListener).IsAssignableFrom).Select(CreateListenerInstance).Cast<IEventListener?>().WhereNotNull().ToArray();
+        var listeners = plugins.Cast<IEventListener>().ToArray();
+        // context.PluginAssembly.GetTypes().Where(typeof(IEventListener).IsAssignableFrom).Select(CreateListenerInstance).Cast<IEventListener?>().WhereNotNull().ToArray();
 
         if (listeners.Length == 0)
             logger.LogWarning("Plugin {PluginName} has no event listeners", context.Name);

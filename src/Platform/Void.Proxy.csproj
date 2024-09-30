@@ -54,6 +54,11 @@
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
 
+		<EmbeddedResource Include="..\Plugins\ExamplePlugin\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ExamplePlugin.dll">
+			<Link>Embedded\Void.Proxy.Plugins.ExamplePlugin.dll</Link>
+			<LogicalName>%(Filename)%(Extension)</LogicalName>
+		</EmbeddedResource>
+
 		<EmbeddedResource Include="..\Plugins\ModsSupport\Forge\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ModsSupport.Forge.dll">
 			<Link>Embedded\Void.Proxy.Plugins.ModsSupport.Forge.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>

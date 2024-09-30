@@ -4,10 +4,9 @@ using Void.Proxy.API.Events.Services;
 
 namespace Void.Proxy.Events;
 
-public class EventService(ILogger<EventService> logger) : IEventService
+public class EventService(ILogger<EventService> logger, IServiceProvider services) : IEventService
 {
-    private readonly List<IEventListener> _listeners = [];
-    private readonly List<MethodInfo> _methods = [];
+    private readonly List<Entry> _entries = [];
 
     public async ValueTask ThrowAsync<T>(CancellationToken cancellationToken = default) where T : IEvent, new()
     {
@@ -35,79 +34,90 @@ public class EventService(ILogger<EventService> logger) : IEventService
         var simpleParameters = (object[]) [@event];
         var cancellableParameters = (object[]) [@event, cancellationToken];
 
-        for (var methodIndex = _methods.Count - 1; methodIndex >= 0; methodIndex--)
-        {
-            if (_methods.Count <= methodIndex)
-                continue; // methods may change after event invocation
+        var entries = _entries.OrderByDescending(entry => entry.Order).ToArray();
 
-            var method = _methods[methodIndex];
-            var parameters = method.GetParameters();
+        for (var i = entries.Length - 1; i >= 0; i--)
+        {
+            if (entries.Length <= i)
+                continue; // entries may change after event invocation
+
+            var entry = entries[i];
+            var parameters = entry.Method.GetParameters();
 
             if (parameters[0].ParameterType != eventType)
                 continue;
 
-            for (var listenerIndex = _listeners.Count - 1; listenerIndex >= 0; listenerIndex--)
+            if (entry.Listener.GetType() != entry.Method.DeclaringType)
+                continue;
+
+            await Task.Yield();
+
+            try
             {
-                if (_listeners.Count <= listenerIndex)
-                    continue; // listeners may change after event invocation
-
-                var listener = _listeners[listenerIndex];
-
-                if (listener.GetType() != method.DeclaringType)
-                    continue;
-
-                await Task.Yield();
-
-                try
+                var value = entry.Method.Invoke(entry.Listener, parameters.Length == 1 ? simpleParameters : cancellableParameters);
+                var handle = value switch
                 {
-                    var value = method.Invoke(listener, parameters.Length == 1 ? simpleParameters : cancellableParameters);
-                    var handle = value switch
-                    {
-                        Task task => new ValueTask(task),
-                        ValueTask task => task,
-                        _ => ValueTask.CompletedTask
-                    };
+                    Task task => new ValueTask(task),
+                    ValueTask task => task,
+                    _ => ValueTask.CompletedTask
+                };
 
-                    await handle;
-                }
-                catch (TargetInvocationException exception)
-                {
-                    logger.LogError(exception.InnerException, "{EventName} cannot be invoked on {ListenerName}", eventType.Name, listener.GetType().FullName);
-                }
+                await handle;
+            }
+            catch (TargetInvocationException exception)
+            {
+                logger.LogError(exception.InnerException, "{EventName} cannot be invoked on {ListenerName}", eventType.Name, entry.Listener);
             }
         }
 
         logger.LogTrace("Completed invoking {TypeName} event", eventType.Name);
     }
 
+    public T RegisterListeners<T>(params object[] parameters) where T : IEventListener
+    {
+        var instance = ActivatorUtilities.CreateInstance<T>(services, parameters);
+        RegisterListeners(instance);
+        return instance;
+    }
+
     public void RegisterListeners(params IEventListener[] listeners)
     {
         foreach (var listener in listeners)
         {
-            logger.LogTrace("Registering {ListenerName} event listener", listener.GetType().Name);
+            logger.LogTrace("Registering {ListenerType} event listener", listener);
 
-            var methods = listener.GetType().GetMethods().Where(method => Attribute.IsDefined(method, typeof(SubscribeAttribute))).ToArray();
+            var methods = listener.GetType().GetMethods().Where(method => Attribute.IsDefined(method, typeof(SubscribeAttribute)));
 
             foreach (var method in methods)
             {
                 SubscribeAttribute.SanityChecks(method);
-                _methods.Add(method);
+
+                var attribute = method.GetCustomAttribute<SubscribeAttribute>()!;
+                _entries.Add(new Entry(listener, method, attribute.Order));
             }
         }
-
-        _listeners.AddRange(listeners);
     }
 
     public void UnregisterListeners(params IEventListener[] listeners)
     {
         foreach (var listener in listeners)
         {
-            logger.LogTrace("Unregistering {ListenerName} event listener", listener.GetType().Name);
+            logger.LogTrace("Unregistering {ListenerType} event listener", listener);
 
-            var assembly = listener.GetType().Assembly;
+            for (var i = _entries.Count - 1; i >= 0; i--)
+            {
+                if (_entries.Count <= i)
+                    continue;
 
-            _listeners.Remove(listener);
-            _methods.RemoveAll(method => method.DeclaringType?.Assembly == assembly);
+                var entry = _entries[i];
+
+                if (entry.Listener != listener)
+                    continue;
+
+                _entries.Remove(entry);
+            }
         }
     }
+
+    private record Entry(IEventListener Listener, MethodInfo Method, PostOrder Order);
 }

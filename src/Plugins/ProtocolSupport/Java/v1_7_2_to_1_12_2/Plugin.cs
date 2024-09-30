@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Void.Proxy.API.Events;
-using Void.Proxy.API.Events.Handshake;
+using Void.Proxy.API.Events.Channels;
 using Void.Proxy.API.Events.Network;
 using Void.Proxy.API.Events.Player;
 using Void.Proxy.API.Events.Plugins;

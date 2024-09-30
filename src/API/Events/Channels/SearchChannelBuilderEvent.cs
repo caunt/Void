@@ -1,7 +1,7 @@
 ﻿using Void.Proxy.API.Network.IO.Channels.Services;
 using Void.Proxy.API.Players;
 
-namespace Void.Proxy.API.Events.Handshake;
+namespace Void.Proxy.API.Events.Channels;
 
 public class SearchChannelBuilderEvent : IEventWithResult<ChannelBuilder>
 {

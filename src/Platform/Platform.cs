@@ -7,7 +7,7 @@ using Void.Proxy.API.Events.Proxy;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Forwarding;
 using Void.Proxy.API.Players;
-using Void.Proxy.API.Plugins;
+using Void.Proxy.API.Plugins.Services;
 using Void.Proxy.API.Servers;
 using Void.Proxy.API.Settings;
 
@@ -22,7 +22,7 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        LoggingLevelSwitch.MinimumLevel = LogEventLevel.Debug;
+        LoggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
 
         logger.LogInformation("Starting Void proxy");
         var startTime = Stopwatch.GetTimestamp();

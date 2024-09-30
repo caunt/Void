@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace Void.Proxy.API.Plugins;
+namespace Void.Proxy.API.Plugins.Services;
 
 public interface IPluginService
 {
