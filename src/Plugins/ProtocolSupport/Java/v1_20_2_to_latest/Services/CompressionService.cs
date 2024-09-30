@@ -23,7 +23,7 @@ public class CompressionService(ILogger<CompressionService> logger) : IPluginSer
         zlibStream.CompressionThreshold = setCompression.Threshold;
     }
 
-    [Subscribe]
+    [Subscribe(PostOrder.First)]
     public void OnMessageSent(MessageSentEvent @event, CancellationToken cancellationToken)
     {
         if (@event.Message is not SetCompressionPacket setCompression)
@@ -34,7 +34,5 @@ public class CompressionService(ILogger<CompressionService> logger) : IPluginSer
 
         var zlibStream = @event.Link.PlayerChannel.Get<SharpZipLibCompressionMessageStream>();
         zlibStream.CompressionThreshold = setCompression.Threshold;
-
-        @event.Link.PlayerChannel.Resume();
     }
 }

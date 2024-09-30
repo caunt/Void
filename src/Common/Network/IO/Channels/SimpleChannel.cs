@@ -1,4 +1,5 @@
-﻿using Void.Proxy.API.Network.IO.Channels;
+﻿using System.Diagnostics.CodeAnalysis;
+using Void.Proxy.API.Network.IO.Channels;
 using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.IO.Streams;
 using Void.Proxy.API.Network.IO.Streams.Manual.Binary;
@@ -22,23 +23,23 @@ public class SimpleChannel(IMinecraftStreamBase head) : IMinecraftChannel
     public bool IsPaused => _pause is { Task.IsCompleted: false };
     public bool IsRedirectionSupported => false;
 
-    public void Add<T>() where T : IMinecraftStream, new()
+    public void Add<T>() where T : class, IMinecraftStream, new()
     {
         Add(new T());
     }
 
-    public void Add<T>(T stream) where T : IMinecraftStream
+    public void Add<T>(T stream) where T : class, IMinecraftStream
     {
         stream.BaseStream = head;
         head = stream;
     }
 
-    public void AddBefore<TBefore, TValue>() where TBefore : IMinecraftStream where TValue : IMinecraftStream, new()
+    public void AddBefore<TBefore, TValue>() where TBefore : class, IMinecraftStream where TValue : class, IMinecraftStream, new()
     {
         AddBefore<TBefore, TValue>(new TValue());
     }
 
-    public void AddBefore<TBefore, TValue>(TValue stream) where TBefore : IMinecraftStream where TValue : IMinecraftStream
+    public void AddBefore<TBefore, TValue>(TValue stream) where TBefore : class, IMinecraftStream where TValue : class, IMinecraftStream
     {
         var before = Get<TBefore>();
         var beforeBaseStream = before.BaseStream;
@@ -47,9 +48,51 @@ public class SimpleChannel(IMinecraftStreamBase head) : IMinecraftChannel
         before.BaseStream = stream;
     }
 
-    public T Get<T>() where T : IMinecraftStreamBase
+    public void Remove<T>() where T : class, IMinecraftStream, new()
     {
-        return Get<T>(head);
+        Remove(Get<T>());
+    }
+
+    public void Remove<T>(T value) where T : class, IMinecraftStream
+    {
+        if (head != value)
+        {
+            var previousStreamBase = head;
+            var currentStreamBase = previousStreamBase;
+
+            while (currentStreamBase is not null)
+            {
+                if (currentStreamBase is not IMinecraftStream currentStream || previousStreamBase is not IMinecraftStream previousStream)
+                    break;
+
+                if (currentStream == value)
+                    previousStream.BaseStream = currentStream.BaseStream;
+
+                previousStreamBase = currentStream;
+                currentStreamBase = currentStream.BaseStream;
+            }
+        }
+        else if (value.BaseStream is not null)
+        {
+            head = value.BaseStream;
+        }
+        else
+        {
+            throw new InvalidOperationException($"Cannot remove {value} stream with unset BaseStream");
+        }
+    }
+
+    public T Get<T>() where T : class, IMinecraftStreamBase
+    {
+        if (Search<T>(out var stream))
+            return stream;
+
+        throw new InvalidOperationException($"{typeof(T)} not found in channel");
+    }
+
+    public bool Search<T>([MaybeNullWhen(false)] out T result) where T : class, IMinecraftStreamBase
+    {
+        return Get(head, out result);
     }
 
     public void PrependBuffer(Memory<byte> memory)
@@ -131,19 +174,22 @@ public class SimpleChannel(IMinecraftStreamBase head) : IMinecraftChannel
         head.Flush();
     }
 
-    private T Get<T>(IMinecraftStreamBase? baseStream) where T : IMinecraftStreamBase
+    private bool Get<T>(IMinecraftStreamBase? baseStream, [MaybeNullWhen(false)] out T result) where T : class, IMinecraftStreamBase
     {
         var current = baseStream ?? head;
+
         while (true)
             switch (current)
             {
                 case T found:
-                    return found;
+                    result = found;
+                    return true;
                 case IMinecraftStream stream:
                     current = stream.BaseStream;
                     break;
                 default:
-                    throw new InvalidOperationException($"{typeof(T)} not found in channel");
+                    result = null;
+                    return false;
             }
     }
 }

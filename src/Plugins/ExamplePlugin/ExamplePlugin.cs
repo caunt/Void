@@ -31,5 +31,6 @@ public class ExamplePlugin(ILogger<ExamplePlugin> logger, IEventService events) 
             return;
 
         events.RegisterListeners<TraceService>();
+        events.RegisterListeners<DebugService>();
     }
 }

@@ -30,6 +30,10 @@
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 			<CopyToOutputDirectory>false</CopyToOutputDirectory>
 		</ProjectReference>
+		<ProjectReference Include="..\Plugins\ExamplePlugin\Void.Proxy.Plugins.ExamplePlugin.csproj">
+			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+			<CopyToOutputDirectory>false</CopyToOutputDirectory>
+		</ProjectReference>
 		<ProjectReference Include="..\Plugins\ModsSupport\Forge\Void.Proxy.Plugins.ModsSupport.Forge.csproj">
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 			<CopyToOutputDirectory>false</CopyToOutputDirectory>

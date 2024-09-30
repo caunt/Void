@@ -53,7 +53,7 @@ public class ProtocolVersion : IComparable
         Names = names;
 
         if (!Mapping.TryAdd(version, this))
-            throw new InvalidOperationException($"ProtocolVersion {version} already registered, use Get(<version>) instead");
+            throw new InvalidOperationException($"ProtocolVersion {version} already registered, use Search(<version>) instead");
     }
 
     public static ProtocolVersion Latest => Mapping.MaxBy(kv => kv.Key).Value;

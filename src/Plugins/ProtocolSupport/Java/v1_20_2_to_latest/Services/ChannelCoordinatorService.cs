@@ -1,5 +1,6 @@
 ﻿using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Network;
+using Void.Proxy.Common.Network.IO.Streams.Packet;
 using Void.Proxy.Common.Services;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
@@ -8,8 +9,8 @@ namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Services;
 
 public class ChannelCoordinatorService : IPluginService
 {
-    [Subscribe(PostOrder.Last)]
-    public void OnMessageSent(MessageSentEvent @event, CancellationToken cancellationToken)
+    [Subscribe]
+    public void OnMessageSent(MessageSentEvent @event)
     {
         switch (@event.Message)
         {
@@ -33,5 +34,16 @@ public class ChannelCoordinatorService : IPluginService
                     @event.Link.PlayerChannel.Resume();
                 break;
         }
+    }
+
+    [Subscribe(PostOrder.Last)]
+    public void OnMessageSentLast(MessageSentEvent @event)
+    {
+        if (@event.Message is not EncryptionResponsePacket)
+            return;
+
+        // if encryption forced channel to remove packet stream, resume reading with what has left
+        if (!@event.Link.PlayerChannel.Search<MinecraftPacketMessageStream>(out _))
+            @event.Link.PlayerChannel.Resume();
     }
 }
