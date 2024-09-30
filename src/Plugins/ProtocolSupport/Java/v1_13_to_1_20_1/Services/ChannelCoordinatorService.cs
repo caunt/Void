@@ -25,7 +25,8 @@ public class ChannelCoordinatorService : IPluginService
                 @event.Link.ServerChannel.Resume();
                 break;
             case SetCompressionPacket:
-                @event.Link.PlayerChannel.Resume();
+                if (@event.Link.PlayerChannel.IsPaused)
+                    @event.Link.PlayerChannel.Resume();
                 break;
             case LoginSuccessPacket:
                 if (@event.Link.PlayerChannel.IsPaused)

@@ -50,7 +50,6 @@ public class Link : ILink
     public IMinecraftChannel ServerChannel { get; init; }
 
     public bool IsAlive => _playerToServerTask.Status == TaskStatus.Running && _serverToPlayerTask.Status == TaskStatus.Running;
-    public bool IsRestarting { get; }
 
     public async ValueTask DisposeAsync()
     {
@@ -145,9 +144,6 @@ public class Link : ILink
         }
         catch (Exception exception) when (exception is EndOfStreamException or IOException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
         {
-            if (IsRestarting)
-                return;
-
             if (direction is not Direction.Serverbound)
                 return;
 
@@ -163,7 +159,7 @@ public class Link : ILink
             await PlayerChannel.FlushAsync(forceCancellationToken);
             await ServerChannel.FlushAsync(forceCancellationToken);
 
-            if (!IsRestarting)
+            if (sourceChannel == PlayerChannel) // throw event only once
                 _ = _events.ThrowAsync(new LinkStoppingEvent { Link = this }, forceCancellationToken).CatchExceptions();
         }
     }

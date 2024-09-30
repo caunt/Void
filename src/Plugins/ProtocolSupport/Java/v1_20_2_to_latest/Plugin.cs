@@ -1,6 +1,5 @@
 ﻿using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Plugins;
-using Void.Proxy.API.Events.Proxy;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Network.Protocol;
 using Void.Proxy.API.Plugins;

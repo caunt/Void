@@ -4,9 +4,9 @@ using Void.Proxy.API.Events.Network;
 using Void.Proxy.Common.Network.IO.Streams.Encryption;
 using Void.Proxy.Common.Network.IO.Streams.Packet;
 using Void.Proxy.Common.Services;
-using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Serverbound;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Serverbound;
 
-namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Services;
+namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Services;
 
 public class EncryptionService : IPluginService
 {

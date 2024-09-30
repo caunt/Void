@@ -1,10 +1,10 @@
 ﻿using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Network;
 using Void.Proxy.Common.Services;
-using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
-using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clientbound;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Serverbound;
 
-namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Services;
+namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Services;
 
 public class ChannelCoordinatorService : IPluginService
 {
