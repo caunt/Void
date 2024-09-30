@@ -16,18 +16,6 @@ public class Plugin(IEventService events) : IProtocolPlugin
     public string Name => nameof(Plugin);
 
     [Subscribe]
-    public ValueTask OnProxyStarting(ProxyStartingEvent @event)
-    {
-        return ValueTask.CompletedTask;
-    }
-
-    [Subscribe]
-    public ValueTask OnProxyStopping(ProxyStoppingEvent @event)
-    {
-        return ValueTask.CompletedTask;
-    }
-
-    [Subscribe]
     public void OnPluginLoad(PluginLoadEvent @event)
     {
         if (@event.Plugin != this)
