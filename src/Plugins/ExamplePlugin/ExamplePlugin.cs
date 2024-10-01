@@ -30,7 +30,7 @@ public class ExamplePlugin(ILogger<ExamplePlugin> logger, IEventService events) 
         if (@event.Plugin != this)
             return;
 
-        events.RegisterListeners<TraceService>();
-        events.RegisterListeners<DebugService>();
+        events.RegisterListener<TraceService>();
+        events.RegisterListener<DebugService>();
     }
 }

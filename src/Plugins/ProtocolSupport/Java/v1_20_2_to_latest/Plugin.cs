@@ -22,11 +22,11 @@ public class Plugin(IEventService events) : IProtocolPlugin
 
         Mappings.Fill();
 
-        events.RegisterListeners<ChannelService>();
-        events.RegisterListeners<ChannelCoordinatorService>();
-        events.RegisterListeners<RegistryService>(this);
-        events.RegisterListeners<CompressionService>();
-        events.RegisterListeners<EncryptionService>();
-        events.RegisterListeners<AuthenticationService>();
+        events.RegisterListener<ChannelService>();
+        events.RegisterListener<ChannelCoordinatorService>();
+        events.RegisterListener<RegistryService>(this);
+        events.RegisterListener<CompressionService>();
+        events.RegisterListener<EncryptionService>();
+        events.RegisterListener<AuthenticationService>();
     }
 }

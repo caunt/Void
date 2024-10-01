@@ -9,7 +9,9 @@ public interface IEventService
 
     public ValueTask<TResult?> ThrowWithResultAsync<T, TResult>(CancellationToken cancellationToken = default) where T : IEventWithResult<TResult?>, new();
 
-    public T RegisterListeners<T>(params object[] parameters) where T : IEventListener;
+    public T RegisterListener<T>(params object[] parameters) where T : IEventListener;
+    public void RegisterListeners(IEnumerable<IEventListener> listeners);
     public void RegisterListeners(params IEventListener[] listeners);
+    public void UnregisterListeners(IEnumerable<IEventListener> listeners);
     public void UnregisterListeners(params IEventListener[] listeners);
 }

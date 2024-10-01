@@ -3,6 +3,7 @@ using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Network;
 using Void.Proxy.API.Events.Player;
 using Void.Proxy.API.Events.Plugins;
+using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Extensions;
 using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.Protocol;
@@ -17,7 +18,7 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Registries;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Services;
 
-public class RegistryService(IPlugin plugin, IPlayerService players) : IPluginService
+public class RegistryService(IPlugin plugin, IPlayerService players, IEventService events) : IPluginService
 {
     [Subscribe]
     public void OnPlayerConnecting(PlayerConnectingEvent @event)
@@ -99,6 +100,8 @@ public class RegistryService(IPlugin plugin, IPlayerService players) : IPluginSe
     {
         if (@event.Plugin != plugin)
             return;
+
+        events.UnregisterListeners(this);
 
         foreach (var player in players.All)
             ClearRegistry(player);

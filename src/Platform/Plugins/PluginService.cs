@@ -71,14 +71,8 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
             return;
         }
 
-        var listeners = plugins.Cast<IEventListener>().ToArray();
-        // context.PluginAssembly.GetTypes().Where(typeof(IEventListener).IsAssignableFrom).Select(CreateListenerInstance).Cast<IEventListener?>().WhereNotNull().ToArray();
-
-        if (listeners.Length == 0)
-            logger.LogWarning("Plugin {PluginName} has no event listeners", context.Name);
-
-        events.RegisterListeners(listeners);
-        _references.Add(new WeakPluginReference(context, plugins, listeners));
+        events.RegisterListeners(plugins.Cast<IEventListener>());
+        _references.Add(new WeakPluginReference(context, plugins));
 
         foreach (var plugin in plugins)
             await events.ThrowAsync(new PluginLoadEvent { Plugin = plugin }, cancellationToken);
@@ -112,7 +106,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
                 UnregisterPlugin(plugin);
             }
 
-            events.UnregisterListeners(reference.Listeners);
+            events.UnregisterListeners(reference.Plugins.Cast<IEventListener>());
 
             reference.Context.Unload();
 
@@ -146,7 +140,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
         try
         {
-            var plugins = assembly.GetTypes().Where(pluginInterface.IsAssignableFrom).Select(CreatePluginInstance).Cast<IPlugin?>().WhereNotNull().ToArray();
+            var plugins = assembly.GetTypes().Where(pluginInterface.IsAssignableFrom).Select(type => ActivatorUtilities.CreateInstance(services, type)).Cast<IPlugin?>().WhereNotNull().ToArray();
             return plugins;
         }
         catch (ReflectionTypeLoadException exception)
@@ -174,23 +168,5 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
     {
         logger.LogTrace("Unregistering {PluginName} plugin", plugin.Name);
         _plugins.Remove(plugin);
-    }
-
-    private object? GetExistingInstance(Type type)
-    {
-        return _plugins.FirstOrDefault(plugin => plugin.GetType().IsAssignableFrom(type));
-    }
-
-    private object CreatePluginInstance(Type type)
-    {
-        return ActivatorUtilities.CreateInstance(services, type);
-    }
-
-    private object? CreateListenerInstance(Type type)
-    {
-        if (GetExistingInstance(type) is { } instance)
-            return instance;
-
-        return Activator.CreateInstance(type);
     }
 }

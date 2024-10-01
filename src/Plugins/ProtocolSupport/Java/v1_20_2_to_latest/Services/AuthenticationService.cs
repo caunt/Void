@@ -23,6 +23,9 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
     [Subscribe]
     public async ValueTask OnAuthenticationStarted(AuthenticationStartedEvent @event, CancellationToken cancellationToken)
     {
+        if (!Plugin.SupportedVersions.Contains(@event.Link.Player.ProtocolVersion))
+            return;
+
         if (@event.Side is AuthenticationSide.Server)
             return;
 

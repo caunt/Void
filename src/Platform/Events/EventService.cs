@@ -36,12 +36,8 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
 
         var entries = _entries.OrderByDescending(entry => entry.Order).ToArray();
 
-        for (var i = entries.Length - 1; i >= 0; i--)
+        foreach (var entry in entries)
         {
-            if (entries.Length <= i)
-                continue; // entries may change after event invocation
-
-            var entry = entries[i];
             var parameters = entry.Method.GetParameters();
 
             if (parameters[0].ParameterType != eventType)
@@ -73,11 +69,17 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
         logger.LogTrace("Completed invoking {TypeName} event", eventType.Name);
     }
 
-    public T RegisterListeners<T>(params object[] parameters) where T : IEventListener
+    public T RegisterListener<T>(params object[] parameters) where T : IEventListener
     {
         var instance = ActivatorUtilities.CreateInstance<T>(services, parameters);
         RegisterListeners(instance);
         return instance;
+    }
+
+    public void RegisterListeners(IEnumerable<IEventListener> listeners)
+    {
+        foreach (var listener in listeners)
+            RegisterListeners(listener);
     }
 
     public void RegisterListeners(params IEventListener[] listeners)
@@ -96,6 +98,12 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
                 _entries.Add(new Entry(listener, method, attribute.Order));
             }
         }
+    }
+
+    public void UnregisterListeners(IEnumerable<IEventListener> listeners)
+    {
+        foreach (var listener in listeners)
+            UnregisterListeners(listener);
     }
 
     public void UnregisterListeners(params IEventListener[] listeners)
