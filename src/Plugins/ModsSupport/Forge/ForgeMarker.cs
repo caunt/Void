@@ -1,4 +1,4 @@
-﻿namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Forge;
+﻿namespace Void.Proxy.Plugins.ModsSupport.Forge;
 
 // (HandshakePacket packet)
 // var addressParts = packet.ServerAddress.Split('\0', StringSplitOptions.RemoveEmptyEntries);
@@ -9,7 +9,7 @@
 // else if (addressParts.Length > 1)
 //     Console.WriteLine($"Player {link.Player} had extra marker(s) {string.Join(", ", addressParts[1..])} in handshake, ignoring");
 // 
-// link.SetProtocolVersion(ProtocolVersion.Search(packet.ProtocolVersion));
+// link.SetProtocolVersion(ProtocolVersion.Get(packet.ProtocolVersion));
 // link.SwitchState(packet.NextState);
 // link.SaveHandshake(packet);
 

@@ -17,12 +17,14 @@ public class SimpleChannelBuilderService(ILogger<SimpleChannelBuilderService> lo
     public const int MaxHandshakeSize = 4096;
 
     private Memory<byte> _buffer = Memory<byte>.Empty;
-    private ChannelBuilder _builder = (_, networkStream, _) => ValueTask.FromResult<IMinecraftChannel>(new SimpleChannel(new SimpleNetworkStream(networkStream)));
-    private bool _found;
+    private ChannelBuilder _builder = FallbackBuilder;
+    private bool _executed;
+
+    public bool IsFallbackBuilder { get; private set; }
 
     public async ValueTask SearchChannelBuilderAsync(IPlayer player, CancellationToken cancellationToken = default)
     {
-        if (_found)
+        if (_executed)
             return;
 
         logger.LogTrace("Searching for channel builder for a {Player} player", player);
@@ -35,12 +37,17 @@ public class SimpleChannelBuilderService(ILogger<SimpleChannelBuilderService> lo
         await events.ThrowAsync(searchProtocolCodec, cancellationToken);
 
         if (searchProtocolCodec.Result is not null)
+        {
             _builder = searchProtocolCodec.Result;
+        }
         else
+        {
+            IsFallbackBuilder = true;
             logger.LogWarning("Channel builder not found for a {Player} player", player);
+        }
 
         _buffer = searchProtocolCodec.Buffer;
-        _found = true;
+        _executed = true;
     }
 
     public async ValueTask<IMinecraftChannel> BuildPlayerChannelAsync(IPlayer player, CancellationToken cancellationToken = default)
@@ -79,5 +86,10 @@ public class SimpleChannelBuilderService(ILogger<SimpleChannelBuilderService> lo
             channel.Add<MinecraftTransparentMessageStream>();
 
         return channel;
+    }
+
+    private static ValueTask<IMinecraftChannel> FallbackBuilder(Direction direction, NetworkStream networkStream, CancellationToken cancellationToken)
+    {
+        return ValueTask.FromResult<IMinecraftChannel>(new SimpleChannel(new SimpleNetworkStream(networkStream)));
     }
 }

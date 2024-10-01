@@ -21,7 +21,6 @@ public class SimpleChannel(IMinecraftStreamBase head) : IMinecraftChannel
 
     public bool IsConfigured => head is IMinecraftStream;
     public bool IsPaused => _pause is { Task.IsCompleted: false };
-    public bool IsRedirectionSupported => false;
 
     public void Add<T>() where T : class, IMinecraftStream, new()
     {

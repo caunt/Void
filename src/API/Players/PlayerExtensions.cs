@@ -24,6 +24,12 @@ public static class PlayerExtensions
         return player.Context.Channel;
     }
 
+    public static async ValueTask<bool> IsProtocolSupportedAsync(this IPlayer player, CancellationToken cancellationToken = default)
+    {
+        var channelBuilder = await player.GetChannelBuilderAsync(cancellationToken);
+        return !channelBuilder.IsFallbackBuilder;
+    }
+
     private static async ValueTask<IMinecraftChannelBuilderService> GetChannelBuilderAsync(this IPlayer player, CancellationToken cancellationToken = default)
     {
         var channelBuilder = player.Context.Services.GetRequiredService<IMinecraftChannelBuilderService>();

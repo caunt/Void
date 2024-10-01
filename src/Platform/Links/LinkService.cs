@@ -1,5 +1,6 @@
 ﻿using Nito.AsyncEx;
 using Void.Proxy.API.Events;
+using Void.Proxy.API.Events.Authentication;
 using Void.Proxy.API.Events.Links;
 using Void.Proxy.API.Events.Player;
 using Void.Proxy.API.Events.Services;
@@ -70,13 +71,25 @@ public class LinkService : ILinkService, IEventListener
         if (firstConnection)
             await _events.ThrowAsync(new PlayerConnectedEvent { Player = player }, cancellationToken);
 
-        var link = await _events.ThrowWithResultAsync(new CreateLinkEvent { Player = player, Server = server, PlayerChannel = playerChannel, ServerChannel = serverChannel }, cancellationToken) ?? new Link(player, server, playerChannel, serverChannel, _logger, _events);
-        await _events.ThrowAsync(new LinkStartingEvent { Link = link }, cancellationToken);
+        var link = await _events.ThrowWithResultAsync(new CreateLinkEvent
+        {
+            Player = player,
+            Server = server,
+            PlayerChannel = playerChannel,
+            ServerChannel = serverChannel
+        }, cancellationToken) ?? new Link(player, server, playerChannel, serverChannel, _logger, _events);
 
-        _events.RegisterListeners(link);
         _links.Add(link);
 
-        _logger.LogInformation("Started forwarding {Link} traffic", link);
-        await _events.ThrowAsync(new LinkStartedEvent { Link = link }, cancellationToken);
+        var side = await _events.ThrowWithResultAsync(new AuthenticationStartingEvent { Link = link }, cancellationToken);
+
+        if (side is AuthenticationSide.Proxy && !await player.IsProtocolSupportedAsync(cancellationToken))
+        {
+            _logger.LogWarning("Player {Player} protocol is not supported, forcing authentication to Server side", player);
+            side = AuthenticationSide.Server;
+        }
+
+        await _events.ThrowAsync(new AuthenticationStartedEvent { Link = link, Side = side }, cancellationToken);
+        await link.StartAsync(cancellationToken);
     }
 }

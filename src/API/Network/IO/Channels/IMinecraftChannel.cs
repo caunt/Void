@@ -13,7 +13,6 @@ public interface IMinecraftChannel : IDisposable, IAsyncDisposable
 
     public bool IsConfigured { get; }
     public bool IsPaused { get; }
-    public bool IsRedirectionSupported { get; }
 
     public void Add<T>() where T : class, IMinecraftStream, new();
     public void Add<T>(T stream) where T : class, IMinecraftStream;
