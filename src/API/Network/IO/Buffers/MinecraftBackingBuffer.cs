@@ -13,6 +13,7 @@ internal ref struct MinecraftBackingBuffer
     private SpanBackingBuffer _spanBackingBuffer;
     private ReadOnlySpanBackingBuffer _readOnlySpanBackingBuffer;
     private ReadOnlySequenceBackingBuffer _readOnlySequenceBackingBuffer;
+    private MemoryStreamBackingBuffer _memoryStreamBackingBuffer;
     private readonly BufferType _bufferType;
 
     public MinecraftBackingBuffer(Span<byte> span)
@@ -33,6 +34,12 @@ internal ref struct MinecraftBackingBuffer
         _bufferType = BufferType.ReadOnlySequence;
     }
 
+    public MinecraftBackingBuffer(MemoryStream memoryStream)
+    {
+        _memoryStreamBackingBuffer = new MemoryStreamBackingBuffer(memoryStream);
+        _bufferType = BufferType.MemoryStream;
+    }
+
     public bool HasData()
     {
         return _bufferType switch
@@ -40,6 +47,7 @@ internal ref struct MinecraftBackingBuffer
             BufferType.Span => _spanBackingBuffer.Position < _spanBackingBuffer.Length,
             BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.Position < _readOnlySpanBackingBuffer.Length,
             BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.Position < _readOnlySequenceBackingBuffer.Length,
+            BufferType.MemoryStream => _memoryStreamBackingBuffer.Position < _readOnlySequenceBackingBuffer.Length,
             _ => throw new NotSupportedException(_bufferType.ToString())
         };
     }
@@ -51,6 +59,7 @@ internal ref struct MinecraftBackingBuffer
             BufferType.Span => _spanBackingBuffer.Position,
             BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.Position,
             BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.Position,
+            BufferType.MemoryStream => _memoryStreamBackingBuffer.Position,
             _ => throw new NotSupportedException(_bufferType.ToString())
         };
     }
@@ -62,6 +71,7 @@ internal ref struct MinecraftBackingBuffer
             BufferType.Span => _spanBackingBuffer.Length,
             BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.Length,
             BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.Length,
+            BufferType.MemoryStream => _memoryStreamBackingBuffer.Length,
             _ => throw new NotSupportedException(_bufferType.ToString())
         };
     }
@@ -73,6 +83,7 @@ internal ref struct MinecraftBackingBuffer
             BufferType.Span => _spanBackingBuffer.ReadUnsignedByte(),
             BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.ReadUnsignedByte(),
             BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.ReadUnsignedByte(),
+            BufferType.MemoryStream => _memoryStreamBackingBuffer.ReadUnsignedByte(),
             _ => throw new NotSupportedException(_bufferType.ToString())
         };
     }
@@ -87,6 +98,9 @@ internal ref struct MinecraftBackingBuffer
             case BufferType.ReadOnlySpan:
             case BufferType.ReadOnlySequence:
                 throw new ReadOnlyException();
+            case BufferType.MemoryStream:
+                _memoryStreamBackingBuffer.WriteUnsignedByte(value);
+                break;
             default:
                 throw new NotSupportedException(_bufferType.ToString());
         }
@@ -109,6 +123,7 @@ internal ref struct MinecraftBackingBuffer
             BufferType.Span => _spanBackingBuffer.ReadUnsignedShort(),
             BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.ReadUnsignedShort(),
             BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.ReadUnsignedShort(),
+            BufferType.MemoryStream => _memoryStreamBackingBuffer.ReadUnsignedShort(),
             _ => throw new NotSupportedException(_bufferType.ToString())
         };
     }
@@ -123,6 +138,9 @@ internal ref struct MinecraftBackingBuffer
             case BufferType.ReadOnlySpan:
             case BufferType.ReadOnlySequence:
                 throw new ReadOnlyException();
+            case BufferType.MemoryStream:
+                _memoryStreamBackingBuffer.WriteUnsignedShort(value);
+                break;
             default:
                 throw new NotSupportedException(_bufferType.ToString());
         }
@@ -189,6 +207,7 @@ internal ref struct MinecraftBackingBuffer
             BufferType.Span => _spanBackingBuffer.ReadInt(),
             BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.ReadInt(),
             BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.ReadInt(),
+            BufferType.MemoryStream => _memoryStreamBackingBuffer.ReadInt(),
             _ => throw new NotSupportedException(_bufferType.ToString())
         };
     }
@@ -203,6 +222,9 @@ internal ref struct MinecraftBackingBuffer
             case BufferType.ReadOnlySpan:
             case BufferType.ReadOnlySequence:
                 throw new ReadOnlyException();
+            case BufferType.MemoryStream:
+                _memoryStreamBackingBuffer.WriteInt(value);
+                break;
             default:
                 throw new NotSupportedException(_bufferType.ToString());
         }
@@ -215,6 +237,7 @@ internal ref struct MinecraftBackingBuffer
             BufferType.Span => _spanBackingBuffer.ReadLong(),
             BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.ReadLong(),
             BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.ReadLong(),
+            BufferType.MemoryStream => _memoryStreamBackingBuffer.ReadLong(),
             _ => throw new NotSupportedException(_bufferType.ToString())
         };
     }
@@ -229,6 +252,9 @@ internal ref struct MinecraftBackingBuffer
             case BufferType.ReadOnlySpan:
             case BufferType.ReadOnlySequence:
                 throw new ReadOnlyException();
+            case BufferType.MemoryStream:
+                _memoryStreamBackingBuffer.WriteLong(value);
+                break;
             default:
                 throw new NotSupportedException(_bufferType.ToString());
         }
@@ -284,14 +310,20 @@ internal ref struct MinecraftBackingBuffer
         var length = Encoding.UTF8.GetByteCount(value);
         WriteVarInt(length);
 
-        var span = _bufferType switch
+        switch (_bufferType)
         {
-            BufferType.Span => _spanBackingBuffer.Slice(length),
-            BufferType.ReadOnlySpan or BufferType.ReadOnlySequence => throw new ReadOnlyException(),
-            _ => throw new NotSupportedException(_bufferType.ToString())
-        };
-
-        Encoding.UTF8.GetBytes(value, span);
+            case BufferType.Span:
+                var span = _spanBackingBuffer.Slice(length);
+                Encoding.UTF8.GetBytes(value, span);
+                break;
+            case BufferType.ReadOnlySpan or BufferType.ReadOnlySequence:
+                throw new ReadOnlyException();
+            case BufferType.MemoryStream:
+                _memoryStreamBackingBuffer.Write(Encoding.UTF8.GetBytes(value));
+                break;
+            default:
+                throw new NotSupportedException(_bufferType.ToString());
+        }
     }
 
     public Property ReadProperty()
@@ -353,6 +385,9 @@ internal ref struct MinecraftBackingBuffer
             case BufferType.ReadOnlySequence:
                 _readOnlySequenceBackingBuffer.Seek(offset, origin);
                 break;
+            case BufferType.MemoryStream:
+                _memoryStreamBackingBuffer.Seek(offset, origin);
+                break;
             default:
                 throw new NotSupportedException(_bufferType.ToString());
         }
@@ -365,6 +400,7 @@ internal ref struct MinecraftBackingBuffer
             BufferType.Span => _spanBackingBuffer.Read(length),
             BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.Read(length),
             BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.Read(length),
+            BufferType.MemoryStream => _memoryStreamBackingBuffer.Read(length),
             _ => throw new NotSupportedException(_bufferType.ToString())
         };
     }
@@ -379,6 +415,27 @@ internal ref struct MinecraftBackingBuffer
             case BufferType.ReadOnlySpan:
             case BufferType.ReadOnlySequence:
                 throw new ReadOnlyException();
+            case BufferType.MemoryStream:
+                _memoryStreamBackingBuffer.Write(data);
+                break;
+            default:
+                throw new NotSupportedException(_bufferType.ToString());
+        }
+    }
+
+    public void Write(Stream stream)
+    {
+        switch (_bufferType)
+        {
+            case BufferType.Span:
+                _spanBackingBuffer.Write(stream);
+                break;
+            case BufferType.ReadOnlySpan:
+            case BufferType.ReadOnlySequence:
+                throw new ReadOnlyException();
+            case BufferType.MemoryStream:
+                _memoryStreamBackingBuffer.Write(stream);
+                break;
             default:
                 throw new NotSupportedException(_bufferType.ToString());
         }
@@ -402,6 +459,9 @@ internal ref struct MinecraftBackingBuffer
             case BufferType.ReadOnlySequence:
                 _readOnlySequenceBackingBuffer.Reset();
                 break;
+            case BufferType.MemoryStream:
+                _memoryStreamBackingBuffer.Reset();
+                break;
             default:
                 throw new NotSupportedException(_bufferType.ToString());
         }
@@ -411,6 +471,7 @@ internal ref struct MinecraftBackingBuffer
     {
         Span,
         ReadOnlySpan,
-        ReadOnlySequence
+        ReadOnlySequence,
+        MemoryStream
     }
 }

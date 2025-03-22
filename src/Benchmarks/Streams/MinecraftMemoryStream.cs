@@ -7,6 +7,9 @@ internal class MinecraftMemoryStream : IMinecraftNetworkStream
 {
     private readonly MemoryStream _memoryStream = new();
     public NetworkStream BaseStream => null!;
+    public bool CanRead => true;
+    public bool CanWrite => true;
+    public bool IsAlive => true;
 
     public void PrependBuffer(Memory<byte> buffer)
     {

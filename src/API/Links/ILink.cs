@@ -14,4 +14,5 @@ public interface ILink : IEventListener, IAsyncDisposable
     public bool IsAlive { get; }
 
     public ValueTask StartAsync(CancellationToken cancellationToken);
+    public ValueTask StopAsync(CancellationToken cancellationToken);
 }

@@ -1,10 +1,10 @@
-﻿using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.API.Network.Protocol;
-using Void.Proxy.Common.Network.IO.Messages;
+﻿using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Network.IO.Buffers;
+using Void.Proxy.Plugins.Common.Packets;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 
-public class LoginAcknowledgedPacket : IMinecraftPacket<LoginAcknowledgedPacket>
+public class LoginAcknowledgedPacket : IServerboundPacket<LoginAcknowledgedPacket>
 {
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -17,5 +17,6 @@ public class LoginAcknowledgedPacket : IMinecraftPacket<LoginAcknowledgedPacket>
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
     }
 }

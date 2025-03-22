@@ -1,7 +1,7 @@
-﻿using System.Diagnostics;
-using System.Net.Sockets;
-using Serilog.Core;
+﻿using Serilog.Core;
 using Serilog.Events;
+using System.Diagnostics;
+using System.Net.Sockets;
 using Void.Proxy.API;
 using Void.Proxy.API.Events.Proxy;
 using Void.Proxy.API.Events.Services;
@@ -22,7 +22,7 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        LoggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
+        LoggingLevelSwitch.MinimumLevel = LogEventLevel.Debug;
 
         logger.LogInformation("Starting Void proxy");
         var startTime = Stopwatch.GetTimestamp();

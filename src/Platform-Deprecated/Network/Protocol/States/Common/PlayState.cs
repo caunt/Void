@@ -1,5 +1,5 @@
-﻿using System.Text;
-using Nito.Disposables.Internals;
+﻿using Nito.Disposables.Internals;
+using System.Text;
 using Void.Proxy.Commands;
 using Void.Proxy.Models.General;
 using Void.Proxy.Network.Protocol.Packets.Clientbound;

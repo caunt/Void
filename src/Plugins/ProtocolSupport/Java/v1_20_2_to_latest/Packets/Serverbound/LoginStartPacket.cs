@@ -1,11 +1,11 @@
-﻿using Void.Proxy.API.Mojang.Profiles;
+﻿using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Mojang.Profiles;
 using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.API.Network.Protocol;
-using Void.Proxy.Common.Network.IO.Messages;
+using Void.Proxy.Plugins.Common.Packets;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 
-public class LoginStartPacket : IMinecraftPacket<LoginStartPacket>
+public class LoginStartPacket : IServerboundPacket<LoginStartPacket>
 {
     public required GameProfile Profile { get; set; }
 
@@ -25,5 +25,6 @@ public class LoginStartPacket : IMinecraftPacket<LoginStartPacket>
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
     }
 }

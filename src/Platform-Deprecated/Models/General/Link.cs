@@ -1,6 +1,6 @@
-﻿using System.Net;
+﻿using Nito.AsyncEx;
+using System.Net;
 using System.Net.Sockets;
-using Nito.AsyncEx;
 using Void.Proxy.Network;
 using Void.Proxy.Network.IO;
 using Void.Proxy.Network.Protocol;

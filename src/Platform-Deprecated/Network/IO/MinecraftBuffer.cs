@@ -1,9 +1,9 @@
-﻿using System.Buffers;
+﻿using Minecraft.Component.Component;
+using SharpNBT;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Numerics;
 using System.Text;
-using Minecraft.Component.Component;
-using SharpNBT;
 using Void.Proxy.Models.Minecraft.Encryption;
 using Void.Proxy.Models.Minecraft.Profile;
 using Void.Proxy.Network.Protocol;

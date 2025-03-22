@@ -1,7 +1,7 @@
-﻿using System.Net;
+﻿using Minecraft.Component.Component;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
-using Minecraft.Component.Component;
 using Void.Proxy.Models.Minecraft.Chat;
 using Void.Proxy.Models.Minecraft.Encryption;
 using Void.Proxy.Models.Minecraft.Profile;

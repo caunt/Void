@@ -5,5 +5,5 @@ namespace Void.Proxy.Crypto;
 
 public class RsaCryptoService : ICryptoService
 {
-    public readonly RSACryptoServiceProvider Instance = new();
+    public RSACryptoServiceProvider Instance { get; } = new();
 }

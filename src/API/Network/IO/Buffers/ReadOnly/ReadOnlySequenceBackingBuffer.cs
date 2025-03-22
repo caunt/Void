@@ -1,4 +1,5 @@
-﻿using System.Buffers;
+﻿using Serilog;
+using System.Buffers;
 using System.Buffers.Binary;
 
 namespace Void.Proxy.API.Network.IO.Buffers.ReadOnly;
@@ -6,7 +7,7 @@ namespace Void.Proxy.API.Network.IO.Buffers.ReadOnly;
 internal ref struct ReadOnlySequenceBackingBuffer
 {
     private readonly ReadOnlySequence<byte> _sequence;
-    private ReadOnlySequence<byte>.Enumerator? _enumerator;
+    private ReadOnlySequence<byte>.Enumerator _enumerator;
     private ReadOnlySpan<byte> _currentBlock;
     private int _blockPosition;
 
@@ -19,6 +20,7 @@ internal ref struct ReadOnlySequenceBackingBuffer
         Length = (int)sequence.Length;
 
         _sequence = sequence;
+        _enumerator = sequence.GetEnumerator();
         MoveNextBlock();
     }
 
@@ -137,7 +139,7 @@ internal ref struct ReadOnlySequenceBackingBuffer
 
     public void Reset()
     {
-        _enumerator = null;
+        _enumerator = _sequence.GetEnumerator();
         Position = 0;
         MoveNextBlock();
     }
@@ -147,16 +149,29 @@ internal ref struct ReadOnlySequenceBackingBuffer
         if (_sequence.Length < Position + length)
             throw new IndexOutOfRangeException($"Cannot slice {length} bytes from sequence with length {_sequence.Length}, and current position {Position}. Only {_sequence.Length - Position} bytes is available to slice.");
 
-        // Should be safe in most cases, but prefer throw new NotSupportedException("That implementation would allocate memory, not supported yet")
         if (_currentBlock.Length < _blockPosition + length)
-            throw new IndexOutOfRangeException($"Current block length is {_currentBlock.Length} and position is {_blockPosition}, attempted to slice {length} bytes, reading from next blocks not implemented. Sequence length is {_sequence.Length}.");
+        {
+            // very bad case (for example, protocol message is split across multiple segments)
+            // TODO if possible, rework this to avoid allocation as they are large here
+            // previous code:
+            // throw new IndexOutOfRangeException($"Current block length is {_currentBlock.Length} and position is {_blockPosition}, attempted to slice {length} bytes, but reading from next blocks not supported. Sequence length is {_sequence.Length}.");
+            var sequence = _sequence.Slice(Position, length);
+            Position += length;
+            Seek(Position, SeekOrigin.Begin);
 
-        var span = _currentBlock.Slice(_blockPosition, length);
+            Log.ForContext("SourceContext", nameof(ReadOnlySequenceBackingBuffer)).Warning("Allocated {Size:N0} bytes on heap when reading not contiguous blocks of memory", sequence.Length);
+            return sequence.ToArray();
+        }
+        else
+        {
+            // goes here in most cases
+            var span = _currentBlock.Slice(_blockPosition, length);
 
-        _blockPosition += length;
-        Position += length;
+            _blockPosition += length;
+            Position += length;
 
-        return span;
+            return span;
+        }
     }
 
     public ReadOnlySpan<byte> Read(int length)
@@ -165,7 +180,9 @@ internal ref struct ReadOnlySequenceBackingBuffer
     }
 
     // Read Slice(int length) for explanation
-    // public ReadOnlySequence<byte> ReadToEnd()
+    // TODO: is it now possible? review please
+    // may be we are in last block and we can read it to the end
+    // public ReadOnlySpan<byte> ReadToEnd()
     // {
     //     var sequencePosition = _sequence.GetPosition(Position);
     //     Position = Length;
@@ -174,12 +191,10 @@ internal ref struct ReadOnlySequenceBackingBuffer
 
     private void MoveNextBlock()
     {
-        var enumerator = _enumerator ??= _sequence.GetEnumerator();
-
-        if (!enumerator.MoveNext())
+        if (!_enumerator.MoveNext())
             throw new IndexOutOfRangeException();
 
         _blockPosition = 0;
-        _currentBlock = enumerator.Current.Span;
+        _currentBlock = _enumerator.Current.Span;
     }
 }

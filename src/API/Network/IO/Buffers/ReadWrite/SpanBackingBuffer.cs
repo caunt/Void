@@ -99,4 +99,16 @@ internal ref struct SpanBackingBuffer(Span<byte> span)
         Position += data.Length;
         data.CopyTo(span);
     }
+
+    public void Write(Stream stream)
+    {
+        var length = (int)stream.Length;
+        if (_block.Length < Position + length)
+            throw new InternalBufferOverflowException($"Buffer length with max {_block.Length} at position {Position} attempted to write {stream.Length} bytes");
+
+        var span = _block.Slice(Position, length);
+        Position += length;
+
+        stream.ReadExactly(span);
+    }
 }

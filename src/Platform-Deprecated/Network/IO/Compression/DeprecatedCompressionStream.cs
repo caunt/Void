@@ -1,5 +1,5 @@
-﻿using System.Buffers;
-using Ionic.Zlib;
+﻿using Ionic.Zlib;
+using System.Buffers;
 
 namespace Void.Proxy.Network.IO.Compression;
 

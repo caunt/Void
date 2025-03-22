@@ -1,7 +1,7 @@
-﻿using System.Net.Sockets;
+﻿using Serilog;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text.Json;
-using Serilog;
 using Void.Proxy.Configuration;
 using Void.Proxy.Models.General;
 using Void.Proxy.Network.Protocol.Registry;

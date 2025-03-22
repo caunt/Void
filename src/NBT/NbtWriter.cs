@@ -73,6 +73,7 @@ namespace Void.NBT
 
         public Stream GetStream()
         {
+            _stream.Position = 0;
             return _stream;
         }
     }

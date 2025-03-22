@@ -1,7 +1,7 @@
-﻿using System.Net;
-using System.Text.RegularExpressions;
-using IniParser;
+﻿using IniParser;
 using IniParser.Model;
+using System.Net;
+using System.Text.RegularExpressions;
 using Void.Proxy.API.Forwarding;
 using Void.Proxy.API.Servers;
 using Void.Proxy.API.Settings;
@@ -31,6 +31,7 @@ public partial class Settings(IForwardingService forwardings) : ISettings
     public IPAddress Address { get; set; } = IPAddress.Any;
     public int Port { get; set; } = 25565;
     public int CompressionThreshold { get; set; } = 256;
+    public int KickTimeout { get; set; } = 10_000;
     public LogLevel LogLevel { get; set; } = LogLevel.Information;
     public IForwarding Forwarding { get; set; } = new NoneForwarding();
     public List<IServer> Servers { get; set; } = [];

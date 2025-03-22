@@ -1,10 +1,15 @@
 ﻿using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Plugins;
 using Void.Proxy.API.Events.Services;
-using Void.Proxy.API.Network.Protocol;
+using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
 using Void.Proxy.API.Plugins;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Authentication;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Channels;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Commands;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Compression;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Encryption;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Lifecycle;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Registries;
-using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Services;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2;
 
@@ -20,12 +25,15 @@ public class Plugin(IEventService events) : IProtocolPlugin
         if (@event.Plugin != this)
             return;
 
-        Mappings.Fill();
+        Registry.Fill();
 
         events.RegisterListener<ChannelService>();
-        events.RegisterListener<ChannelCoordinatorService>();
         events.RegisterListener<RegistryService>(this);
         events.RegisterListener<CompressionService>();
         events.RegisterListener<EncryptionService>();
+        events.RegisterListener<AuthenticationService>();
+
+        events.RegisterListener<CommandService>();
+        events.RegisterListener<LifecycleService>();
     }
 }

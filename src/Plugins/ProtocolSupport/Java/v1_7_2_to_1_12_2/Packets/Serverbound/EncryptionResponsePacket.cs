@@ -1,10 +1,10 @@
-﻿using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.API.Network.Protocol;
-using Void.Proxy.Common.Network.IO.Messages;
+﻿using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Network.IO.Buffers;
+using Void.Proxy.Plugins.Common.Packets;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Serverbound;
 
-public class EncryptionResponsePacket : IMinecraftPacket<EncryptionResponsePacket>
+public class EncryptionResponsePacket : IServerboundPacket<EncryptionResponsePacket>
 {
     public required byte[] SharedSecret { get; set; }
     public required byte[] VerifyToken { get; set; }

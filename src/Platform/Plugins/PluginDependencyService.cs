@@ -1,6 +1,4 @@
-﻿using System.Reflection;
-using System.Runtime.Versioning;
-using Nito.Disposables.Internals;
+﻿using Nito.Disposables.Internals;
 using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Frameworks;
@@ -10,6 +8,8 @@ using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
+using System.Reflection;
+using System.Runtime.Versioning;
 using Void.Proxy.API.Plugins.Services;
 
 namespace Void.Proxy.Plugins;
@@ -206,7 +206,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
         if (identity is not null)
             return identity;
 
-        logger.LogTrace("Looking for dependency {DependencyName} with Search in NuGet", assemblyName.Name);
+        logger.LogTrace("Looking for dependency {DependencyName} with TryGet in NuGet", assemblyName.Name);
         identity = await TryResolveNuGetPackageSearchAsync(assemblyName, cancellationToken);
 
         if (identity is not null)

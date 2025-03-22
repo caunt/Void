@@ -1,5 +1,5 @@
-﻿using System.Net;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using System.Net;
 using Void.Proxy.API.Forwarding;
 using Void.Proxy.API.Servers;
 
@@ -11,6 +11,7 @@ public interface ISettings
     public IPAddress Address { get; }
     public int Port { get; }
     public int CompressionThreshold { get; }
+    public int KickTimeout { get; }
     public LogLevel LogLevel { get; }
     public IForwarding Forwarding { get; }
     public List<IServer> Servers { get; }

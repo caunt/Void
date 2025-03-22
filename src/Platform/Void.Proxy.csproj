@@ -5,13 +5,12 @@
 		<TargetFramework>net9.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<ContainerRuntimeIdentifier>linux-x64</ContainerRuntimeIdentifier>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="ini-parser-netstandard" Version="2.5.2" />
 		<PackageReference Include="NET.Minecraft.Component" Version="1.0.5" />
-		<PackageReference Include="NuGet.PackageManagement" Version="6.11.0" />
+		<PackageReference Include="NuGet.PackageManagement" Version="6.11.1" />
 		<PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
 		<PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
 	</ItemGroup>
@@ -26,15 +25,11 @@
 		<ProjectReference Include="..\NBT\Void.NBT.csproj" />
 		<ProjectReference Include="..\API\Void.Proxy.API.csproj" />
 		
-		<ProjectReference Include="..\Common\Void.Proxy.Common.csproj">
+		<ProjectReference Include="..\Plugins\Common\Void.Proxy.Plugins.Common.csproj">
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 			<CopyToOutputDirectory>false</CopyToOutputDirectory>
 		</ProjectReference>
 		<ProjectReference Include="..\Plugins\ExamplePlugin\Void.Proxy.Plugins.ExamplePlugin.csproj">
-			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-			<CopyToOutputDirectory>false</CopyToOutputDirectory>
-		</ProjectReference>
-		<ProjectReference Include="..\Plugins\ModsSupport\Forge\Void.Proxy.Plugins.ModsSupport.Forge.csproj">
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 			<CopyToOutputDirectory>false</CopyToOutputDirectory>
 		</ProjectReference>
@@ -50,21 +45,33 @@
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 			<CopyToOutputDirectory>false</CopyToOutputDirectory>
 		</ProjectReference>
+		<ProjectReference Include="..\Plugins\ForwardingSupport\Velocity\Void.Proxy.Plugins.ForwardingSupport.Velocity.csproj">
+			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+			<CopyToOutputDirectory>false</CopyToOutputDirectory>
+		</ProjectReference>
+		<ProjectReference Include="..\Plugins\ModsSupport\Forge\Void.Proxy.Plugins.ModsSupport.Forge.csproj">
+			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+			<CopyToOutputDirectory>false</CopyToOutputDirectory>
+		</ProjectReference>
+		<ProjectReference Include="..\Plugins\Essentials\Void.Proxy.Plugins.Essentials.csproj">
+			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+			<CopyToOutputDirectory>false</CopyToOutputDirectory>
+		</ProjectReference>
 	</ItemGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="..\Common\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Common.dll">
-			<Link>Embedded\Void.Proxy.Common.dll</Link>
+		<EmbeddedResource Include="..\NBT\bin\$(Configuration)\netstandard2.1\Void.NBT.dll">
+			<Link>Embedded\Void.NBT.dll</Link>
+			<LogicalName>%(Filename)%(Extension)</LogicalName>
+		</EmbeddedResource>
+		
+		<EmbeddedResource Include="..\Plugins\Common\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.Common.dll">
+			<Link>Embedded\Void.Proxy.Plugins.Common.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
 
 		<EmbeddedResource Include="..\Plugins\ExamplePlugin\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ExamplePlugin.dll">
 			<Link>Embedded\Void.Proxy.Plugins.ExamplePlugin.dll</Link>
-			<LogicalName>%(Filename)%(Extension)</LogicalName>
-		</EmbeddedResource>
-
-		<EmbeddedResource Include="..\Plugins\ModsSupport\Forge\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ModsSupport.Forge.dll">
-			<Link>Embedded\Void.Proxy.Plugins.ModsSupport.Forge.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
 
@@ -78,6 +85,21 @@
 		</EmbeddedResource>
 		<EmbeddedResource Include="..\Plugins\ProtocolSupport\Java\v1_20_2_to_latest\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.dll">
 			<Link>Embedded\Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.dll</Link>
+			<LogicalName>%(Filename)%(Extension)</LogicalName>
+		</EmbeddedResource>
+		
+		<EmbeddedResource Include="..\Plugins\ForwardingSupport\Velocity\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ForwardingSupport.Velocity.dll">
+			<Link>Embedded\Void.Proxy.Plugins.ForwardingSupport.Velocity.dll</Link>
+			<LogicalName>%(Filename)%(Extension)</LogicalName>
+		</EmbeddedResource>
+
+		<EmbeddedResource Include="..\Plugins\ModsSupport\Forge\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ModsSupport.Forge.dll">
+			<Link>Embedded\Void.Proxy.Plugins.ModsSupport.Forge.dll</Link>
+			<LogicalName>%(Filename)%(Extension)</LogicalName>
+		</EmbeddedResource>
+
+		<EmbeddedResource Include="..\Plugins\Essentials\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.Essentials.dll">
+			<Link>Embedded\Void.Proxy.Plugins.Essentials.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
 	</ItemGroup>

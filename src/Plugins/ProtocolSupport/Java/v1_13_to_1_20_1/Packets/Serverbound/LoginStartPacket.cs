@@ -1,12 +1,12 @@
 ﻿using Void.Proxy.API.Mojang;
+using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
 using Void.Proxy.API.Mojang.Profiles;
 using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.API.Network.Protocol;
-using Void.Proxy.Common.Network.IO.Messages;
+using Void.Proxy.Plugins.Common.Packets;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Serverbound;
 
-public class LoginStartPacket : IMinecraftPacket<LoginStartPacket>
+public class LoginStartPacket : IServerboundPacket<LoginStartPacket>
 {
     public required GameProfile Profile { get; set; }
     public required IdentifiedKey? Key { get; set; }
@@ -34,19 +34,22 @@ public class LoginStartPacket : IMinecraftPacket<LoginStartPacket>
                 }
             }
 
-            if (Key is { ProfileUuid: not null })
+            if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19_1)
             {
-                buffer.WriteBoolean(true);
-                buffer.WriteUuid(Key.ProfileUuid.Value);
-            }
-            else if (Profile.Id.AsGuid != default)
-            {
-                buffer.WriteBoolean(true);
-                buffer.WriteUuid(Profile.Id);
-            }
-            else
-            {
-                buffer.WriteBoolean(false);
+                if (Key is { ProfileUuid: not null })
+                {
+                    buffer.WriteBoolean(true);
+                    buffer.WriteUuid(Key.ProfileUuid.Value);
+                }
+                else if (Profile.Id.AsGuid != default)
+                {
+                    buffer.WriteBoolean(true);
+                    buffer.WriteUuid(Profile.Id);
+                }
+                else
+                {
+                    buffer.WriteBoolean(false);
+                }
             }
         }
     }
@@ -59,7 +62,7 @@ public class LoginStartPacket : IMinecraftPacket<LoginStartPacket>
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19)
         {
-            if (protocolVersion < ProtocolVersion.MINECRAFT_1_19_3)
+            if (protocolVersion <= ProtocolVersion.MINECRAFT_1_19_1)
             {
                 var hasSignatureData = buffer.ReadBoolean();
 
@@ -81,10 +84,13 @@ public class LoginStartPacket : IMinecraftPacket<LoginStartPacket>
                 }
             }
 
-            var hasUuid = buffer.ReadBoolean();
+            if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19_1)
+            {
+                var hasUuid = buffer.ReadBoolean();
 
-            if (hasUuid)
-                uuid = buffer.ReadUuid();
+                if (hasUuid)
+                    uuid = buffer.ReadUuid();
+            }
         }
 
         return new LoginStartPacket
@@ -96,5 +102,6 @@ public class LoginStartPacket : IMinecraftPacket<LoginStartPacket>
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
     }
 }

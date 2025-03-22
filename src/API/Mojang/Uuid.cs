@@ -2,6 +2,8 @@
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Void.Proxy.API.Mojang;
 
@@ -98,6 +100,19 @@ public struct Uuid(Guid guid)
         public Span<byte> AsSpan()
         {
             return MemoryMarshal.CreateSpan(ref start, 16);
+        }
+    }
+
+    public class JsonConverter : JsonConverter<Uuid>
+    {
+        public override Uuid Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            return Parse(reader.GetString() ?? string.Empty);
+        }
+
+        public override void Write(Utf8JsonWriter writer, Uuid value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value.ToString());
         }
     }
 }

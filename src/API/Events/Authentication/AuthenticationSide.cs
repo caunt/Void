@@ -2,6 +2,6 @@
 
 public enum AuthenticationSide
 {
-    Proxy,
-    Server
+    Server,
+    Proxy
 }

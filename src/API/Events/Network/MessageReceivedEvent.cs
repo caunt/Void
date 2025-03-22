@@ -6,6 +6,7 @@ namespace Void.Proxy.API.Events.Network;
 
 public class MessageReceivedEvent : IEventWithResult<bool>
 {
+    public required Side Origin { get; init; }
     public required Side From { get; init; }
     public required Side To { get; init; }
     public required Direction Direction { get; init; }

@@ -1,6 +1,6 @@
-﻿using System.Diagnostics;
+﻿using Nito.Disposables.Internals;
+using System.Diagnostics;
 using System.Reflection;
-using Nito.Disposables.Internals;
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Plugins;
 using Void.Proxy.API.Events.Services;
@@ -42,7 +42,18 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
         var pluginsDirectoryInfo = new DirectoryInfo(path);
 
         if (!pluginsDirectoryInfo.Exists)
-            pluginsDirectoryInfo.Create();
+        {
+            try
+            {
+                pluginsDirectoryInfo.Create();
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                logger.LogWarning("Cannot create {Path} plugins path: {Message}", path, exception.Message);
+            }
+
+            return;
+        }
 
         var pluginsFiles = pluginsDirectoryInfo.GetFiles("*.dll").Select(fileInfo => fileInfo.FullName);
 

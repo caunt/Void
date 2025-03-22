@@ -2,8 +2,7 @@
 
 namespace Void.Proxy.API.Events.Authentication;
 
-public class AuthenticationStartedEvent : IEvent
+public record AuthenticationStartedEvent(ILink Link, AuthenticationSide Side) : IEventWithResult<AuthenticationResult>
 {
-    public required ILink Link { get; init; }
-    public required AuthenticationSide Side { get; init; }
+    public AuthenticationResult Result { get; set; }
 }

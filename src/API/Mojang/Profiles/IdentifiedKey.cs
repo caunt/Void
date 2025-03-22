@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
 using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.API.Network.Protocol;
 
 namespace Void.Proxy.API.Mojang.Profiles;
 
@@ -19,7 +19,7 @@ public record IdentifiedKey(IdentifiedKeyRevision Revision, long ExpiresAt, byte
         set => _isSignatureValid = value;
     }
 
-    public bool VerifyDataSignature(byte[] signature, byte[] data)
+    public bool VerifyDataSignature(ReadOnlySpan<byte> signature, params ReadOnlySpan<byte> data)
     {
         try
         {
@@ -74,7 +74,7 @@ public record IdentifiedKey(IdentifiedKeyRevision Revision, long ExpiresAt, byte
             if (guid == default)
                 return false;
 
-            var verify = new byte[PublicKey.Length + 24];
+            var verify = new byte[PublicKey.Length + 24].AsSpan();
             var buffer = new MinecraftBuffer(verify);
             buffer.WriteUuid(uuid);
             buffer.WriteLong(ExpiresAt);
@@ -83,7 +83,7 @@ public record IdentifiedKey(IdentifiedKeyRevision Revision, long ExpiresAt, byte
             using var rsa = RSA.Create();
             rsa.ImportSubjectPublicKeyInfo(YggdrasilSessionPublicKey, out _);
 
-            return rsa.VerifyData(verify.AsSpan(0, buffer.Position), Signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+            return rsa.VerifyData(verify[..buffer.Position], Signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
         }
     }
 }

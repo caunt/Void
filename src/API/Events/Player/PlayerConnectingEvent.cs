@@ -1,5 +1,5 @@
-﻿using System.Net.Sockets;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System.Net.Sockets;
 
 namespace Void.Proxy.API.Events.Player;
 

@@ -7,10 +7,16 @@ namespace Void.Proxy.API.Players;
 
 public static class PlayerExtensions
 {
+    public static async ValueTask<bool> IsProtocolSupportedAsync(this IPlayer player, CancellationToken cancellationToken = default)
+    {
+        var channelBuilder = await player.GetChannelBuilderAsync(cancellationToken);
+        return !channelBuilder.IsFallbackBuilder;
+    }
+
     public static async ValueTask<IMinecraftChannel> BuildServerChannelAsync(this IPlayer player, IServer server, CancellationToken cancellationToken = default)
     {
         var channelBuilder = await player.GetChannelBuilderAsync(cancellationToken);
-        return await channelBuilder.BuildServerChannelAsync(server, cancellationToken);
+        return await channelBuilder.BuildServerChannelAsync(player, server, cancellationToken);
     }
 
     public static async ValueTask<IMinecraftChannel> GetChannelAsync(this IPlayer player, CancellationToken cancellationToken = default)
@@ -24,15 +30,9 @@ public static class PlayerExtensions
         return player.Context.Channel;
     }
 
-    public static async ValueTask<bool> IsProtocolSupportedAsync(this IPlayer player, CancellationToken cancellationToken = default)
+    private static async ValueTask<IChannelBuilderService> GetChannelBuilderAsync(this IPlayer player, CancellationToken cancellationToken = default)
     {
-        var channelBuilder = await player.GetChannelBuilderAsync(cancellationToken);
-        return !channelBuilder.IsFallbackBuilder;
-    }
-
-    private static async ValueTask<IMinecraftChannelBuilderService> GetChannelBuilderAsync(this IPlayer player, CancellationToken cancellationToken = default)
-    {
-        var channelBuilder = player.Context.Services.GetRequiredService<IMinecraftChannelBuilderService>();
+        var channelBuilder = player.Context.Services.GetRequiredService<IChannelBuilderService>();
         await channelBuilder.SearchChannelBuilderAsync(player, cancellationToken);
 
         return channelBuilder;

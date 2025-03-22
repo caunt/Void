@@ -31,19 +31,16 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
         var eventType = @event.GetType();
         logger.LogTrace("Invoking {TypeName} event", eventType.Name);
 
-        var simpleParameters = (object[]) [@event];
-        var cancellableParameters = (object[]) [@event, cancellationToken];
+        var simpleParameters = (object[])[@event];
+        var cancellableParameters = (object[])[@event, cancellationToken];
 
-        var entries = _entries.OrderByDescending(entry => entry.Order).ToArray();
+        var entries = _entries.OrderBy(entry => entry.Order).ToArray();
 
         foreach (var entry in entries)
         {
             var parameters = entry.Method.GetParameters();
 
             if (parameters[0].ParameterType != eventType)
-                continue;
-
-            if (entry.Listener.GetType() != entry.Method.DeclaringType)
                 continue;
 
             await Task.Yield();
@@ -86,16 +83,30 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
     {
         foreach (var listener in listeners)
         {
-            logger.LogTrace("Registering {ListenerType} event listener", listener);
+            logger.LogTrace("Registering {Type} event listener", listener);
 
-            var methods = listener.GetType().GetMethods().Where(method => Attribute.IsDefined(method, typeof(SubscribeAttribute)));
-
-            foreach (var method in methods)
+            var type = listener.GetType();
+            while (type != null)
             {
-                SubscribeAttribute.SanityChecks(method);
+                var methods = type
+                    .GetMethods(
+                        BindingFlags.Public |
+                        BindingFlags.NonPublic |
+                        BindingFlags.Static |
+                        BindingFlags.Instance |
+                        BindingFlags.DeclaredOnly)
+                    .Where(method => Attribute.IsDefined(method, typeof(SubscribeAttribute)));
 
-                var attribute = method.GetCustomAttribute<SubscribeAttribute>()!;
-                _entries.Add(new Entry(listener, method, attribute.Order));
+                foreach (var method in methods)
+                {
+                    logger.LogTrace("Registering {Type} event listener method {Name}", listener, method.Name);
+                    SubscribeAttribute.SanityChecks(method);
+
+                    var attribute = method.GetCustomAttribute<SubscribeAttribute>()!;
+                    _entries.Add(new Entry(listener, method, attribute.Order));
+                }
+
+                type = type.BaseType;
             }
         }
     }

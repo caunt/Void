@@ -1,10 +1,10 @@
-﻿using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.API.Network.Protocol;
-using Void.Proxy.Common.Network.IO.Messages;
+﻿using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Network.IO.Buffers;
+using Void.Proxy.Plugins.Common.Packets;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clientbound;
 
-public class EncryptionRequestPacket : IMinecraftPacket<EncryptionRequestPacket>
+public class EncryptionRequestPacket : IClientboundPacket<EncryptionRequestPacket>
 {
     public required string ServerId { get; set; }
     public required byte[] PublicKey { get; set; }

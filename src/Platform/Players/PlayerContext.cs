@@ -13,5 +13,7 @@ public class PlayerContext(IServiceProvider services) : IPlayerContext
     {
         if (Channel is not null)
             await Channel.DisposeAsync();
+
+        GC.SuppressFinalize(this);
     }
 }

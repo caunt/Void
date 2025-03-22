@@ -1,7 +1,7 @@
-﻿using System.Text;
-using IniParser.Model;
+﻿using IniParser.Model;
 using IniParser.Model.Configuration;
 using IniParser.Model.Formatting;
+using System.Text;
 
 namespace Void.Proxy.Utils;
 

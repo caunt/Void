@@ -3,9 +3,7 @@ using Void.Proxy.API.Players;
 
 namespace Void.Proxy.API.Events.Channels;
 
-public class SearchChannelBuilderEvent : IEventWithResult<ChannelBuilder>
+public record SearchChannelBuilderEvent(IPlayer Player, Memory<byte> Buffer) : IEventWithResult<ChannelBuilder>
 {
-    public required Memory<byte> Buffer { get; init; }
-    public required IPlayer Player { get; init; }
     public ChannelBuilder? Result { get; set; }
 }

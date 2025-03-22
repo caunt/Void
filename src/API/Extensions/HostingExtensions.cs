@@ -1,7 +1,7 @@
-﻿using System.Reflection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Void.Proxy.API.Extensions;
 
@@ -62,29 +62,29 @@ public static class HostingExtensions
             switch (descriptor.Lifetime)
             {
                 case ServiceLifetime.Singleton:
-                {
-                    if (descriptor.ImplementationType is { ContainsGenericParameters: true } type)
-                        collection.AddSingleton(descriptor.ServiceType, type);
-                    else
-                        collection.AddSingleton(descriptor.ServiceType, factory);
-                    break;
-                }
+                    {
+                        if (descriptor.ImplementationType is { ContainsGenericParameters: true } type)
+                            collection.AddSingleton(descriptor.ServiceType, type);
+                        else
+                            collection.AddSingleton(descriptor.ServiceType, factory);
+                        break;
+                    }
                 case ServiceLifetime.Scoped:
-                {
-                    if (descriptor.ImplementationType is { ContainsGenericParameters: true } type)
-                        collection.AddScoped(descriptor.ServiceType, type);
-                    else
-                        collection.AddScoped(descriptor.ServiceType, factory);
-                    break;
-                }
+                    {
+                        if (descriptor.ImplementationType is { ContainsGenericParameters: true } type)
+                            collection.AddScoped(descriptor.ServiceType, type);
+                        else
+                            collection.AddScoped(descriptor.ServiceType, factory);
+                        break;
+                    }
                 case ServiceLifetime.Transient:
-                {
-                    if (descriptor.ImplementationType is { ContainsGenericParameters: true } type)
-                        collection.AddTransient(descriptor.ServiceType, type);
-                    else
-                        collection.AddTransient(descriptor.ServiceType, factory);
-                    break;
-                }
+                    {
+                        if (descriptor.ImplementationType is { ContainsGenericParameters: true } type)
+                            collection.AddTransient(descriptor.ServiceType, type);
+                        else
+                            collection.AddTransient(descriptor.ServiceType, factory);
+                        break;
+                    }
                 default:
                     throw new NotSupportedException($"Unsupported service lifetime: {descriptor.Lifetime}");
             }

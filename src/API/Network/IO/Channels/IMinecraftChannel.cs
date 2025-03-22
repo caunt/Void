@@ -11,6 +11,7 @@ public interface IMinecraftChannel : IDisposable, IAsyncDisposable
 
     public IMinecraftStreamBase Head { get; }
 
+    public bool IsAlive { get; }
     public bool IsConfigured { get; }
     public bool IsPaused { get; }
 
@@ -21,12 +22,16 @@ public interface IMinecraftChannel : IDisposable, IAsyncDisposable
     public void Remove<T>() where T : class, IMinecraftStream, new();
     public void Remove<T>(T stream) where T : class, IMinecraftStream;
     public T Get<T>() where T : class, IMinecraftStreamBase;
-    public bool Search<T>([MaybeNullWhen(false)] out T result) where T : class, IMinecraftStreamBase;
+    public bool Has<T>() where T : class, IMinecraftStreamBase;
+    public bool TryGet<T>([MaybeNullWhen(false)] out T result) where T : class, IMinecraftStreamBase;
     public void PrependBuffer(Memory<byte> memory);
     public ValueTask<IMinecraftMessage> ReadMessageAsync(CancellationToken cancellationToken = default);
     public ValueTask WriteMessageAsync(IMinecraftMessage message, CancellationToken cancellationToken = default);
-    public void Pause();
-    public void Resume();
+    public void Pause(Operation operation = Operation.Read);
+    public bool TryPause(Operation operation = Operation.Read);
+    public void Resume(Operation operation = Operation.Read);
+    public bool TryResume(Operation operation = Operation.Read);
+    public void Flush();
     public ValueTask FlushAsync(CancellationToken cancellationToken = default);
     public void Close();
 }

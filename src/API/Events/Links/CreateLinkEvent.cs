@@ -5,11 +5,7 @@ using Void.Proxy.API.Servers;
 
 namespace Void.Proxy.API.Events.Links;
 
-public class CreateLinkEvent : IEventWithResult<ILink>
+public record CreateLinkEvent(IPlayer Player, IServer Server, IMinecraftChannel PlayerChannel, IMinecraftChannel ServerChannel) : IEventWithResult<ILink>
 {
-    public required IPlayer Player { get; init; }
-    public required IServer Server { get; init; }
-    public required IMinecraftChannel PlayerChannel { get; init; }
-    public required IMinecraftChannel ServerChannel { get; init; }
     public ILink? Result { get; set; }
 }

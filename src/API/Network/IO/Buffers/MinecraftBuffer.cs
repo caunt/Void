@@ -28,6 +28,11 @@ public ref struct MinecraftBuffer
         _backingBuffer = new MinecraftBackingBuffer(sequence);
     }
 
+    public MinecraftBuffer(MemoryStream memoryStream)
+    {
+        _backingBuffer = new MinecraftBackingBuffer(memoryStream);
+    }
+
     public static int GetVarIntSize(int value)
     {
         return ((BitOperations.LeadingZeroCount((uint)value | 1) - 38) * -1171) >> 13;
@@ -188,6 +193,11 @@ public ref struct MinecraftBuffer
     public void Write(ReadOnlySpan<byte> data)
     {
         _backingBuffer.Write(data);
+    }
+
+    public void Write(Stream stream)
+    {
+        _backingBuffer.Write(stream);
     }
 
     public ReadOnlySpan<byte> ReadToEnd()

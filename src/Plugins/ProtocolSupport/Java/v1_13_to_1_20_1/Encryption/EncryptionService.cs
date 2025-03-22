@@ -1,0 +1,49 @@
+﻿using Void.Proxy.API.Crypto;
+using Void.Proxy.API.Events.Services;
+using Void.Proxy.API.Links;
+using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Network.IO.Messages;
+using Void.Proxy.Plugins.Common.Extensions;
+using Void.Proxy.Plugins.Common.Network.Protocol.Encryption;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientbound;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Serverbound;
+
+namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Encryption;
+
+public class EncryptionService(IEventService events, ICryptoService crypto) : AbstractEncryptionService(events, crypto)
+{
+    protected override bool IsSupportedVersion(ProtocolVersion protocolVersion)
+    {
+        return Plugin.SupportedVersions.Contains(protocolVersion);
+    }
+
+    protected override async ValueTask SendEncryptionRequestAsync(ILink link, EncryptionRequest request, CancellationToken cancellationToken)
+    {
+        var encryptionRequest = new EncryptionRequestPacket
+        {
+            PublicKey = request.PublicKey,
+            ServerId = request.ServerId,
+            VerifyToken = request.VerifyToken
+        };
+
+        await link.SendPacketAsync(encryptionRequest, cancellationToken);
+    }
+
+    protected override async ValueTask<EncryptionResponse> ReceiveEncryptionResponseAsync(ILink link, CancellationToken cancellationToken)
+    {
+        var encryptionResponse = await link.ReceivePacketAsync<EncryptionResponsePacket>(cancellationToken);
+        return new EncryptionResponse(encryptionResponse.SharedSecret, encryptionResponse.VerifyToken, encryptionResponse.Salt);
+    }
+
+    protected override bool IsEncrypionResponsePacket(IMinecraftMessage message, out byte[] sharedSecret)
+    {
+        if (message is EncryptionResponsePacket encryptionResponse)
+        {
+            sharedSecret = encryptionResponse.SharedSecret;
+            return true;
+        }
+
+        sharedSecret = [];
+        return false;
+    }
+}

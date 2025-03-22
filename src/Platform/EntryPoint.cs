@@ -1,6 +1,6 @@
-﻿using System.Diagnostics;
-using Serilog;
+﻿using Serilog;
 using Serilog.Events;
+using System.Diagnostics;
 using Void.Proxy;
 using Void.Proxy.API;
 using Void.Proxy.API.Crypto;

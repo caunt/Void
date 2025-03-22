@@ -1,11 +1,11 @@
-﻿using Nito.AsyncEx;
-using Void.Proxy.API.Events.Links;
+﻿using Void.Proxy.API.Events.Links;
 using Void.Proxy.API.Events.Network;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Extensions;
 using Void.Proxy.API.Links;
 using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.IO.Channels;
+using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Servers;
 
@@ -17,26 +17,29 @@ public class Link(IPlayer player, IServer server, IMinecraftChannel playerChanne
     private readonly CancellationTokenSource _ctsPlayerToServerForce = new();
     private readonly CancellationTokenSource _ctsServerToPlayer = new();
     private readonly CancellationTokenSource _ctsServerToPlayerForce = new();
-    private readonly AsyncLock _lock = new();
 
     private Task? _playerToServerTask;
     private Task? _serverToPlayerTask;
+    private bool _playerToServerTaskDisposed;
+    private bool _serverToPlayerTaskDisposed;
+    private bool _stopping;
+    private bool _stopped;
 
     public IPlayer Player { get; init; } = player;
     public IServer Server { get; init; } = server;
     public IMinecraftChannel PlayerChannel { get; init; } = playerChannel;
     public IMinecraftChannel ServerChannel { get; init; } = serverChannel;
 
-    public bool IsAlive => _playerToServerTask?.Status == TaskStatus.Running && _serverToPlayerTask?.Status == TaskStatus.Running;
+    public bool IsAlive => this is { _playerToServerTask.IsCompleted: false, _serverToPlayerTask.IsCompleted: false };
 
     public async ValueTask StartAsync(CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (this is { _playerToServerTask: not null } or { _serverToPlayerTask: not null })
             throw new InvalidOperationException("Link was already started");
 
         await events.ThrowAsync(new LinkStartingEvent { Link = this }, cancellationToken);
-
-        events.RegisterListeners(this);
 
         _playerToServerTask = ExecuteAsync(PlayerChannel, ServerChannel, Direction.Serverbound, _ctsPlayerToServer.Token, _ctsPlayerToServerForce.Token);
         _serverToPlayerTask = ExecuteAsync(ServerChannel, PlayerChannel, Direction.Clientbound, _ctsServerToPlayer.Token, _ctsServerToPlayerForce.Token);
@@ -45,56 +48,80 @@ public class Link(IPlayer player, IServer server, IMinecraftChannel playerChanne
         await events.ThrowAsync(new LinkStartedEvent { Link = this }, cancellationToken);
     }
 
+    public async ValueTask StopAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (this is { _playerToServerTask: null } or { _serverToPlayerTask: null })
+            throw new InvalidOperationException("Link is not started");
+
+        await DisposeAsync();
+    }
+
     public async ValueTask DisposeAsync()
     {
-        // if the player does not support redirections, that's the end for him
-        if (true /*!PlayerChannel.IsRedirectionSupported*/)
+        await DisposeClientboundAsync();
+        await DisposeServerboundAsync();
+
+        GC.SuppressFinalize(this);
+    }
+
+    protected async ValueTask DisposeServerboundAsync()
+    {
+        if (!await Player.IsProtocolSupportedAsync())
         {
-            PlayerChannel.Close();
-            await PlayerChannel.DisposeAsync();
+            // PlayerChannel.Close();
+            // await PlayerChannel.DisposeAsync();
         }
 
-        ServerChannel.Close();
-        await ServerChannel.DisposeAsync();
-
-        if (_serverToPlayerTask is not null)
-        {
-            if (await WaitWithTimeout(_serverToPlayerTask))
-            {
-                logger.LogTrace("Timed out waiting Server {Server} disconnection from Player {Player}, closing manually", Server, Player);
-                await _ctsServerToPlayer.CancelAsync();
-
-                if (await WaitWithTimeout(_serverToPlayerTask))
-                {
-                    logger.LogTrace("Timed out waiting Server {Server} disconnection from Player {Player} manually, closing forcefully", Server, Player);
-                    await _ctsServerToPlayerForce.CancelAsync();
-
-                    if (await WaitWithTimeout(_serverToPlayerTask))
-                        throw new Exception($"Cannot dispose Link {this} (player=>server)");
-                }
-            }
-
-            await _serverToPlayerTask;
-        }
+        if (_playerToServerTaskDisposed)
+            return;
 
         if (_playerToServerTask is not null)
         {
+            await _ctsPlayerToServer.CancelAsync();
+
             if (await WaitWithTimeout(_playerToServerTask))
             {
-                logger.LogTrace("Timed out waiting Player {Player} disconnection from Server {Server}, closing manually", Player, Server);
-                await _ctsPlayerToServer.CancelAsync();
+                logger.LogTrace("Timed out waiting Player {Player} disconnection from Server {Server} manually, closing forcefully", Player, Server);
+                await _ctsPlayerToServerForce.CancelAsync();
 
                 if (await WaitWithTimeout(_playerToServerTask))
-                {
-                    logger.LogTrace("Timed out waiting Player {Player} disconnection from Server {Server} manually, closing forcefully", Player, Server);
-                    await _ctsPlayerToServerForce.CancelAsync();
-
-                    if (await WaitWithTimeout(_playerToServerTask))
-                        throw new Exception($"Cannot dispose Link {this} (server=>player)");
-                }
+                    throw new Exception($"Cannot dispose Link {this} (server=>player)");
             }
 
+            if (_playerToServerTask.IsCanceled)
+                return;
+
             await _playerToServerTask;
+        }
+    }
+
+    protected async ValueTask DisposeClientboundAsync()
+    {
+        // ServerChannel.Close();
+        // await ServerChannel.DisposeAsync();
+
+        if (_serverToPlayerTaskDisposed)
+            return;
+
+        if (_serverToPlayerTask is not null)
+        {
+            await _ctsServerToPlayer.CancelAsync();
+
+            if (await WaitWithTimeout(_serverToPlayerTask))
+            {
+                logger.LogTrace("Timed out waiting Server {Server} disconnection from Player {Player} manually, closing forcefully", Server, Player);
+                await _ctsServerToPlayerForce.CancelAsync();
+
+                if (await WaitWithTimeout(_serverToPlayerTask))
+                    throw new Exception($"Cannot dispose Link {this} (player=>server)");
+            }
+
+            if (_serverToPlayerTask.IsCanceled)
+                return;
+
+            await _serverToPlayerTask;
         }
     }
 
@@ -102,22 +129,25 @@ public class Link(IPlayer player, IServer server, IMinecraftChannel playerChanne
     {
         await Task.Yield();
 
-        // not sure if reading should be cancelled with grace token, but helps with link restarts after compression enabled
-        var readingCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, forceCancellationToken);
-
-        try
+        while (sourceChannel is { CanRead: true } && destinationChannel is { CanWrite: true })
         {
-            while (sourceChannel is { CanRead: true, CanWrite: true } && destinationChannel is { CanRead: true, CanWrite: true })
-            {
-                if (cancellationToken.IsCancellationRequested || forceCancellationToken.IsCancellationRequested)
-                    break;
+            if (cancellationToken.IsCancellationRequested || forceCancellationToken.IsCancellationRequested)
+                break;
 
-                using var message = await sourceChannel.ReadMessageAsync(readingCancellationTokenSource.Token);
+            IMinecraftMessage message;
+
+            var sourceSide = direction is Direction.Serverbound ? Side.Client : Side.Server;
+            var destinationSide = direction is Direction.Serverbound ? Side.Server : Side.Client;
+
+            try
+            {
+                message = await sourceChannel.ReadMessageAsync(forceCancellationToken);
 
                 var cancelled = await events.ThrowWithResultAsync(new MessageReceivedEvent
                 {
-                    From = (Side)direction,
-                    To = direction == Direction.Serverbound ? Side.Server : Side.Client,
+                    Origin = sourceSide,
+                    From = sourceSide,
+                    To = Side.Proxy,
                     Direction = direction,
                     Message = message,
                     Link = this
@@ -125,39 +155,107 @@ public class Link(IPlayer player, IServer server, IMinecraftChannel playerChanne
 
                 if (cancelled)
                     continue;
+            }
+            catch (Exception exception) when (exception is EndOfStreamException or IOException)
+            {
+                if (direction is Direction.Serverbound)
+                {
+                    // PlayerChannel.Close();
+                    // await PlayerChannel.DisposeAsync();
+                }
 
-                using var _ = await _lock.LockAsync();
+                // ServerChannel.Close();
+                // await ServerChannel.DisposeAsync();
+                break;
+            }
+            catch (Exception exception) when (exception is TaskCanceledException or OperationCanceledException or ObjectDisposedException)
+            {
+                break;
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "Unhandled read {Direction} exception in {Link} link", direction, this);
+                break;
+            }
+
+            // using var sync = await _lock.LockAsync();
+
+            try
+            {
                 await destinationChannel.WriteMessageAsync(message, forceCancellationToken);
 
                 await events.ThrowAsync(new MessageSentEvent
                 {
-                    From = (Side)direction,
-                    To = direction == Direction.Serverbound ? Side.Server : Side.Client,
+                    Origin = sourceSide,
+                    From = Side.Proxy,
+                    To = destinationSide,
                     Direction = direction,
                     Message = message,
                     Link = this
                 }, cancellationToken);
             }
-        }
-        catch (Exception exception) when (exception is EndOfStreamException or IOException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
-        {
-            if (direction is not Direction.Serverbound)
-                return;
+            catch (Exception exception) when (exception is EndOfStreamException or IOException)
+            {
+                if (direction is Direction.Clientbound)
+                {
+                    // PlayerChannel.Close();
+                    // await PlayerChannel.DisposeAsync();
+                }
 
-            PlayerChannel.Close();
-            await PlayerChannel.DisposeAsync();
+                // ServerChannel.Close();
+                // await ServerChannel.DisposeAsync();
+                break;
+            }
+            catch (Exception exception) when (exception is TaskCanceledException or OperationCanceledException or ObjectDisposedException)
+            {
+                break;
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "Unhandled write {Direction} exception in {Link} link", direction, this);
+            }
+            finally
+            {
+                message.Dispose();
+            }
         }
-        catch (Exception exception)
-        {
-            logger.LogError(exception, "Unhandled {Direction} exception from {Player}", direction, Player);
-        }
-        finally
-        {
-            await PlayerChannel.FlushAsync(forceCancellationToken);
-            await ServerChannel.FlushAsync(forceCancellationToken);
 
-            if (sourceChannel == PlayerChannel) // throw event only once
-                _ = events.ThrowAsync(new LinkStoppingEvent { Link = this }, forceCancellationToken).CatchExceptions();
+        // cancellationToken here most likely canceled already
+        // use forceCancellationToken for events
+
+        if (!_stopping)
+        {
+            _stopping = true;
+            await events.ThrowAsync(new LinkStoppingEvent(this), forceCancellationToken);
+        }
+
+        if (destinationChannel.CanWrite)
+            await destinationChannel.FlushAsync(forceCancellationToken);
+
+        switch (direction)
+        {
+            case Direction.Clientbound:
+                _serverToPlayerTaskDisposed = true;
+                await DisposeServerboundAsync();
+                break;
+            case Direction.Serverbound:
+                _playerToServerTaskDisposed = true;
+                await DisposeClientboundAsync();
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(direction), direction, null);
+        }
+
+        lock (this)
+        {
+            if (_stopped)
+            {
+                // do not wait completion as this may start initiating new ILink instance
+                var @event = events.ThrowAsync(new LinkStoppedEvent(this), forceCancellationToken).CatchExceptions(logger, $"{nameof(LinkStoppedEvent)} caused exception(s)");
+            }
+
+            if (!_stopped)
+                _stopped = true;
         }
     }
 
@@ -166,7 +264,7 @@ public class Link(IPlayer player, IServer server, IMinecraftChannel playerChanne
         return Player + " <=> " + Server;
     }
 
-    private static async Task<bool> WaitWithTimeout(Task task, int milliseconds = 5000)
+    private static async ValueTask<bool> WaitWithTimeout(Task task, int milliseconds = 5000)
     {
         var timeout = Task.Delay(milliseconds);
         return await Task.WhenAny(timeout, task) == timeout;
