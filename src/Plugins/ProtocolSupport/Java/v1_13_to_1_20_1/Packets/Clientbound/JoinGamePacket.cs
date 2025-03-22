@@ -1,13 +1,13 @@
 ﻿using Void.NBT;
 using Void.Proxy.API.Extensions;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Mojang.Minecraft.World;
 using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.Plugins.Common.Packets;
+using Void.Proxy.API.Network.IO.Messages.Packets;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientbound;
 
-public class JoinGamePacket : IClientboundPacket<JoinGamePacket>
+public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
 {
     public required int EntityId { get; set; }
     public required short Gamemode { get; set; }
@@ -107,8 +107,8 @@ public class JoinGamePacket : IClientboundPacket<JoinGamePacket>
     {
         var entityId = buffer.ReadInt();
 
-        var isHardcore = default(bool);
-        var gamemode = default(short);
+        short gamemode;
+        bool isHardcore;
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2)
         {
             isHardcore = buffer.ReadBoolean();
@@ -131,14 +131,14 @@ public class JoinGamePacket : IClientboundPacket<JoinGamePacket>
         var reader = new NbtReader(buffer.ReadToEnd().ToArray()); // TODO remove the allocation
         var registry = ((MemoryStream)NbtFile.Parse(reader).Serialize()).ToArray();
         buffer.Seek(bufferPosition + reader.Position);
-
-        var dimensionIdentifier = string.Empty;
         var levelName = string.Empty;
+
+        string? dimensionIdentifier;
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2 && protocolVersion < ProtocolVersion.MINECRAFT_1_19)
         {
             bufferPosition = buffer.Position;
             reader = new NbtReader(buffer.ReadToEnd().ToArray());// TODO remove the allocation
-            var currentDimensionData = ((MemoryStream)NbtFile.Parse(reader).Serialize()).ToArray();
+            _ = ((MemoryStream)NbtFile.Parse(reader).Serialize()).ToArray();
             buffer.Seek(bufferPosition + reader.Position);
 
             dimensionIdentifier = buffer.ReadString();

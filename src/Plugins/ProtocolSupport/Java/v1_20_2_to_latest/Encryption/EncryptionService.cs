@@ -1,10 +1,11 @@
 ﻿using Void.Proxy.API.Crypto;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Links;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Links.Extensions;
+using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.Plugins.Common.Extensions;
-using Void.Proxy.Plugins.Common.Network.Protocol.Encryption;
+using Void.Proxy.Plugins.Common.Services.Encryption;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 

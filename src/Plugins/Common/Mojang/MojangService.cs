@@ -17,7 +17,7 @@ public class MojangService(ICryptoService crypto) : IMojangService
     public async ValueTask<GameProfile?> VerifyAsync(IPlayer player, ReadOnlyMemory<byte> secret, CancellationToken cancellationToken = default)
     {
         if (player.Profile is null)
-            throw new ArgumentNullException(nameof(player.Profile), "Player profile should be set in order to verify his session");
+            throw new ArgumentNullException(nameof(player), "Player profile should be set in order to verify his session");
 
         var serverId = SHA1.HashData([.. secret.Span, .. crypto.Instance.ExportSubjectPublicKeyInfo()]);
         var negative = (serverId[0] & 0x80) == 0x80;

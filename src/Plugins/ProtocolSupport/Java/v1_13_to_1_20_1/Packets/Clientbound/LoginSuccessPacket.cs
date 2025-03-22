@@ -1,12 +1,12 @@
 ﻿using Void.Proxy.API.Mojang;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Mojang.Profiles;
 using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.Plugins.Common.Packets;
+using Void.Proxy.API.Network.IO.Messages.Packets;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientbound;
 
-public class LoginSuccessPacket : IClientboundPacket<LoginSuccessPacket>
+public class LoginSuccessPacket : IMinecraftClientboundPacket<LoginSuccessPacket>
 {
     public required GameProfile GameProfile { get; set; }
 

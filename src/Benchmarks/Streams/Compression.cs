@@ -120,7 +120,7 @@ public class Compression
 
         for (var i = 0; i < 1000; i++)
         {
-            var message = await _ionicZlibStream.ReadMessageAsync();
+            _ = await _ionicZlibStream.ReadMessageAsync();
         }
     }
 }

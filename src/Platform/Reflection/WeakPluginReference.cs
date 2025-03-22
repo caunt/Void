@@ -6,7 +6,7 @@ public class WeakPluginReference
 {
     private readonly WeakReference<IPlugin>[] _plugins;
 
-    // do not use primary constructor because they are saving strict reference to parameters
+    // Do not use primary constructor because they are saving strict reference to parameters
     public WeakPluginReference(PluginLoadContext context, IPlugin[] plugins)
     {
         Context = context;

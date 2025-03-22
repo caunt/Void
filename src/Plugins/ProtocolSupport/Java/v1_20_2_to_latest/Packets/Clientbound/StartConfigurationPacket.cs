@@ -1,10 +1,10 @@
-﻿using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+﻿using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.Plugins.Common.Packets;
+using Void.Proxy.API.Network.IO.Messages.Packets;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
 
-public class StartConfigurationPacket : IClientboundPacket<StartConfigurationPacket>
+public class StartConfigurationPacket : IMinecraftClientboundPacket<StartConfigurationPacket>
 {
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {

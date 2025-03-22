@@ -40,7 +40,7 @@ internal ref struct MinecraftBackingBuffer
         _bufferType = BufferType.MemoryStream;
     }
 
-    public bool HasData()
+    public readonly bool HasData()
     {
         return _bufferType switch
         {
@@ -52,7 +52,7 @@ internal ref struct MinecraftBackingBuffer
         };
     }
 
-    public int GetPosition()
+    public readonly int GetPosition()
     {
         return _bufferType switch
         {
@@ -64,7 +64,7 @@ internal ref struct MinecraftBackingBuffer
         };
     }
 
-    public int GetLength()
+    public readonly int GetLength()
     {
         return _bufferType switch
         {

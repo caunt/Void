@@ -68,12 +68,15 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
     public void Dispose()
     {
         BaseStream?.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     public async ValueTask DisposeAsync()
     {
         if (BaseStream != null)
             await BaseStream.DisposeAsync();
+
+        GC.SuppressFinalize(this);
     }
 
     public void Flush()
@@ -92,7 +95,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
         BaseStream?.Close();
     }
 
-    private static ICompleteBinaryMessage ReadManual(IMinecraftManualStream manualStream)
+    private static CompleteBinaryMessage ReadManual(IMinecraftManualStream manualStream)
     {
         var packetLength = manualStream.ReadVarInt();
         var dataLength = manualStream.ReadVarInt();

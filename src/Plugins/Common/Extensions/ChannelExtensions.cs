@@ -1,10 +1,9 @@
 ﻿using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.IO.Channels;
+using Void.Proxy.API.Network.IO.Channels.Extensions;
+using Void.Proxy.API.Network.IO.Messages.Packets;
+using Void.Proxy.API.Network.IO.Streams.Packet;
 using Void.Proxy.API.Plugins;
-using Void.Proxy.Plugins.Common.Network.IO.Messages;
-using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
-using Void.Proxy.Plugins.Common.Network.Protocol.Packets;
-using Void.Proxy.Plugins.Common.Registries.Packets;
 
 namespace Void.Proxy.Plugins.Common.Extensions;
 
@@ -32,12 +31,7 @@ public static class ChannelExtensions
         return packet;
     }
 
-    public static async ValueTask SendPacketAsync<T>(this IMinecraftChannel channel, T packet, CancellationToken cancellationToken) where T : IMinecraftPacket
-    {
-        await channel.WriteMessageAsync(packet, cancellationToken);
-    }
-
-    public static void SetReadingPacketsMappings(this IMinecraftChannel channel, IPlugin plugin, IReadOnlyDictionary<PacketMapping[], Type> mappings)
+    public static void SetReadingPacketsMappings(this IMinecraftChannel channel, IPlugin plugin, IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings)
     {
         var registry = channel.GetPacketRegistryHolder();
 
@@ -47,7 +41,7 @@ public static class ChannelExtensions
         registry.ReplacePackets(Operation.Read, mappings);
     }
 
-    public static void SetWritingPacketsMappings(this IMinecraftChannel channel, IPlugin plugin, IReadOnlyDictionary<PacketMapping[], Type> mappings)
+    public static void SetWritingPacketsMappings(this IMinecraftChannel channel, IPlugin plugin, IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings)
     {
         var registry = channel.GetPacketRegistryHolder();
 
@@ -65,13 +59,5 @@ public static class ChannelExtensions
             return;
 
         registry.Reset();
-    }
-
-    public static IPacketRegistryHolder GetPacketRegistryHolder(this IMinecraftChannel channel)
-    {
-        if (channel.TryGet<IMinecraftPacketMessageStream>(out var stream) && stream.RegistryHolder is { } registry)
-            return registry;
-
-        throw new InvalidOperationException($"{nameof(IPacketRegistryHolder)} is not set yet on this channel");
     }
 }

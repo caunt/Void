@@ -9,9 +9,9 @@ public ref struct MinecraftBuffer
 {
     private MinecraftBackingBuffer _backingBuffer;
 
-    public bool HasData => _backingBuffer.HasData();
-    public int Position => _backingBuffer.GetPosition();
-    public long Length => _backingBuffer.GetLength();
+    public readonly bool HasData => _backingBuffer.HasData();
+    public readonly int Position => _backingBuffer.GetPosition();
+    public readonly long Length => _backingBuffer.GetLength();
 
     public MinecraftBuffer(Span<byte> memory)
     {
@@ -147,7 +147,7 @@ public ref struct MinecraftBuffer
 
     public string ReadString(int maxLength = 32767)
     {
-        return _backingBuffer.ReadString();
+        return _backingBuffer.ReadString(maxLength);
     }
 
     public void WriteString(string value)

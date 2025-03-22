@@ -73,12 +73,15 @@ public class SharpZipLibCompressionMessageStream : MinecraftRecyclableStream, IM
     public void Dispose()
     {
         BaseStream?.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     public async ValueTask DisposeAsync()
     {
         if (BaseStream != null)
             await BaseStream.DisposeAsync();
+
+        GC.SuppressFinalize(this);
     }
 
     public void Flush()
@@ -97,7 +100,7 @@ public class SharpZipLibCompressionMessageStream : MinecraftRecyclableStream, IM
         BaseStream?.Close();
     }
 
-    private ICompleteBinaryMessage ReadManual(IMinecraftManualStream manualStream)
+    private CompleteBinaryMessage ReadManual(IMinecraftManualStream manualStream)
     {
         var packetLength = manualStream.ReadVarInt();
         var dataLength = manualStream.ReadVarInt();

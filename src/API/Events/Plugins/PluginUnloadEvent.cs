@@ -2,7 +2,4 @@
 
 namespace Void.Proxy.API.Events.Plugins;
 
-public class PluginUnloadEvent : IEvent
-{
-    public required IPlugin Plugin { get; init; }
-}
+public record PluginUnloadEvent(IPlugin Plugin) : IEvent;

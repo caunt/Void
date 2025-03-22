@@ -86,7 +86,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
         _references.Add(new WeakPluginReference(context, plugins));
 
         foreach (var plugin in plugins)
-            await events.ThrowAsync(new PluginLoadEvent { Plugin = plugin }, cancellationToken);
+            await events.ThrowAsync(new PluginLoadEvent(plugin), cancellationToken);
 
         logger.LogInformation("Loaded {Count} plugin(s) from {AssemblyName} ", plugins.Length, assemblyName);
     }
@@ -113,7 +113,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
             foreach (var plugin in reference.Plugins)
             {
-                await events.ThrowAsync(new PluginUnloadEvent { Plugin = plugin }, cancellationToken);
+                await events.ThrowAsync(new PluginUnloadEvent(plugin), cancellationToken);
                 UnregisterPlugin(plugin);
             }
 

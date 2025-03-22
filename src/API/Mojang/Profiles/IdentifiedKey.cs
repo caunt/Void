@@ -1,6 +1,6 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Network.IO.Buffers;
 
 namespace Void.Proxy.API.Mojang.Profiles;

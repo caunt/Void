@@ -1,11 +1,11 @@
 ﻿using System.Collections;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.Plugins.Common.Packets;
+using Void.Proxy.API.Network.IO.Messages.Packets;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 
-public class SignedChatCommandPacket : IServerboundPacket<SignedChatCommandPacket>
+public class SignedChatCommandPacket : IMinecraftServerboundPacket<SignedChatCommandPacket>
 {
     public const int WindowSize = 20;
     public const int DivFloor = (WindowSize + 8 - 1) / 8;

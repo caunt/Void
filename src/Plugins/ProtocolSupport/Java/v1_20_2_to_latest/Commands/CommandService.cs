@@ -1,7 +1,7 @@
 ﻿using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Network;
 using Void.Proxy.API.Events.Services;
-using Void.Proxy.Plugins.Common.Network.Protocol.Commands;
+using Void.Proxy.Plugins.Common.Services.Commands;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Commands;

@@ -1,5 +1,5 @@
 ﻿using Void.Proxy.API.Network.IO.Messages;
-using Void.Proxy.Plugins.Common.Network.Protocol.Bundles;
+using Void.Proxy.Plugins.Common.Services.Bundles;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Bundles;

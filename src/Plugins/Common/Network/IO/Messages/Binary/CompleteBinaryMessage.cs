@@ -10,5 +10,6 @@ public class CompleteBinaryMessage(RecyclableMemoryStream recyclableMemoryStream
     public void Dispose()
     {
         recyclableMemoryStream.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

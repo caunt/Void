@@ -16,6 +16,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="Packets\NewFolder\**" />
+	  <EmbeddedResource Remove="Packets\NewFolder\**" />
+	  <None Remove="Packets\NewFolder\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\..\API\Void.Proxy.API.csproj">
 			<Private>false</Private>
 			<ExcludeAssets>runtime</ExcludeAssets>

@@ -119,10 +119,9 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
 
                 var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
 
-                if (assembly is null)
-                    throw new FileNotFoundException($"Dependency {assemblyName.Name} was found in the offline NuGet cache but the file cannot be located");
-
-                return Path.Combine(packagePath, assembly);
+                return assembly is null
+                    ? throw new FileNotFoundException($"Dependency {assemblyName.Name} was found in the offline NuGet cache but the file cannot be located")
+                    : Path.Combine(packagePath, assembly);
             }
         }
         catch (Exception exception)
@@ -167,10 +166,9 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
 
                 var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
 
-                if (assembly is null)
-                    throw new FileNotFoundException($"Dependency {identity.Id} was downloaded from NuGet but file cannot be located");
-
-                return Path.Combine(packagePath, assembly);
+                return assembly is null
+                    ? throw new FileNotFoundException($"Dependency {identity.Id} was downloaded from NuGet but file cannot be located")
+                    : Path.Combine(packagePath, assembly);
             }
         }
         catch (Exception exception)

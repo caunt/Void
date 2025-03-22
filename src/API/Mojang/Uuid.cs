@@ -11,9 +11,9 @@ public struct Uuid(Guid guid)
 {
     public static Uuid Empty { get; } = new(Guid.Empty);
 
-    public Guid AsGuid => guid;
+    public readonly Guid AsGuid => guid;
 
-    public override string ToString()
+    public override readonly string ToString()
     {
         return AsGuid.ToString();
     }

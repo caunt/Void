@@ -1,14 +1,13 @@
 ﻿using Void.NBT;
 using Void.Proxy.API.Extensions;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Mojang.Minecraft.World;
 using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.Plugins.Common.Packets;
-using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientbound;
+using Void.Proxy.API.Network.IO.Messages.Packets;
 
-namespace Void.Proxy.Network.Protocol.Packets.Clientbound;
+namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientbound;
 
-public class RespawnPacket : IClientboundPacket<RespawnPacket>
+public class RespawnPacket : IMinecraftClientboundPacket<RespawnPacket>
 {
     public required int Dimension { get; set; }
     public required long PartialHashedSeed { get; set; }

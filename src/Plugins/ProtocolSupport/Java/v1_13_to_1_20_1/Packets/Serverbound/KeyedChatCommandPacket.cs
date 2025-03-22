@@ -1,13 +1,13 @@
 ﻿using Void.Proxy.API.Extensions;
 using Void.Proxy.API.Mojang;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.Plugins.Common.Packets;
+using Void.Proxy.API.Network.IO.Messages.Packets;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Commands;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Serverbound;
 
-public class KeyedChatCommandPacket : IServerboundPacket<KeyedChatCommandPacket>, IChatCommand
+public class KeyedChatCommandPacket : IMinecraftServerboundPacket<KeyedChatCommandPacket>, IChatCommand
 {
     public required bool IsSigned { get; set; }
     public required string Command { get; set; }

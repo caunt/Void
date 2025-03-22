@@ -35,7 +35,7 @@ public class LinkService : ILinkService, IEventListener
     {
         _logger.LogTrace("Looking for a server for {Player} player", player);
 
-        var server = await _events.ThrowWithResultAsync(new PlayerSearchServerEvent { Player = player }, cancellationToken)
+        var server = await _events.ThrowWithResultAsync(new PlayerSearchServerEvent(player), cancellationToken)
                      ?? _servers.RegisteredServers[0];
 
         return await ConnectAsync(player, server, cancellationToken);
@@ -73,7 +73,7 @@ public class LinkService : ILinkService, IEventListener
         }
 
         if (firstConnection)
-            await _events.ThrowAsync(new PlayerConnectedEvent { Player = player }, cancellationToken);
+            await _events.ThrowAsync(new PlayerConnectedEvent(player), cancellationToken);
 
         link = await _events.ThrowWithResultAsync(new CreateLinkEvent(player, server, playerChannel, serverChannel), cancellationToken)
                    ?? new Link(player, server, playerChannel, serverChannel, _logger, _events);

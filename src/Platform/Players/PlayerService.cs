@@ -42,7 +42,7 @@ public class PlayerService : IPlayerService, IEventListener
         var collection = new ServiceCollection();
         _services.ForwardServices(collection);
 
-        await _events.ThrowAsync(new PlayerConnectingEvent { Client = client, Services = collection }, cancellationToken);
+        await _events.ThrowAsync(new PlayerConnectingEvent(client, collection), cancellationToken);
 
         var player = new Player(client, new PlayerContext(collection.BuildServiceProvider()));
 

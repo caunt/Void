@@ -1,3 +1,3 @@
 ﻿namespace Void.Proxy.API.Events.Proxy;
 
-public class ProxyStoppingEvent : IEvent;
+public record ProxyStoppingEvent : IEvent;

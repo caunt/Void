@@ -3,8 +3,7 @@ using Void.Proxy.API.Servers;
 
 namespace Void.Proxy.API.Events.Player;
 
-public class PlayerSearchServerEvent : IEventWithResult<IServer>
+public record PlayerSearchServerEvent(IPlayer Player) : IEventWithResult<IServer>
 {
-    public required IPlayer Player { get; init; }
     public IServer? Result { get; set; }
 }

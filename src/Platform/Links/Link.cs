@@ -39,13 +39,13 @@ public class Link(IPlayer player, IServer server, IMinecraftChannel playerChanne
         if (this is { _playerToServerTask: not null } or { _serverToPlayerTask: not null })
             throw new InvalidOperationException("Link was already started");
 
-        await events.ThrowAsync(new LinkStartingEvent { Link = this }, cancellationToken);
+        await events.ThrowAsync(new LinkStartingEvent(this), cancellationToken);
 
         _playerToServerTask = ExecuteAsync(PlayerChannel, ServerChannel, Direction.Serverbound, _ctsPlayerToServer.Token, _ctsPlayerToServerForce.Token);
         _serverToPlayerTask = ExecuteAsync(ServerChannel, PlayerChannel, Direction.Clientbound, _ctsServerToPlayer.Token, _ctsServerToPlayerForce.Token);
 
         logger.LogTrace("Started forwarding {Link} traffic", this);
-        await events.ThrowAsync(new LinkStartedEvent { Link = this }, cancellationToken);
+        await events.ThrowAsync(new LinkStartedEvent(this), cancellationToken);
     }
 
     public async ValueTask StopAsync(CancellationToken cancellationToken)
@@ -143,15 +143,7 @@ public class Link(IPlayer player, IServer server, IMinecraftChannel playerChanne
             {
                 message = await sourceChannel.ReadMessageAsync(forceCancellationToken);
 
-                var cancelled = await events.ThrowWithResultAsync(new MessageReceivedEvent
-                {
-                    Origin = sourceSide,
-                    From = sourceSide,
-                    To = Side.Proxy,
-                    Direction = direction,
-                    Message = message,
-                    Link = this
-                }, cancellationToken);
+                var cancelled = await events.ThrowWithResultAsync(new MessageReceivedEvent(sourceSide, sourceSide, Side.Proxy, direction, message, this), cancellationToken);
 
                 if (cancelled)
                     continue;
@@ -184,15 +176,7 @@ public class Link(IPlayer player, IServer server, IMinecraftChannel playerChanne
             {
                 await destinationChannel.WriteMessageAsync(message, forceCancellationToken);
 
-                await events.ThrowAsync(new MessageSentEvent
-                {
-                    Origin = sourceSide,
-                    From = Side.Proxy,
-                    To = destinationSide,
-                    Direction = direction,
-                    Message = message,
-                    Link = this
-                }, cancellationToken);
+                await events.ThrowAsync(new MessageSentEvent(sourceSide, Side.Proxy, destinationSide, direction, message, this), cancellationToken);
             }
             catch (Exception exception) when (exception is EndOfStreamException or IOException)
             {

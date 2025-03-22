@@ -3,7 +3,7 @@ using System.Text;
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Plugins;
 using Void.Proxy.API.Links;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Network.IO.Buffers;
 using Void.Proxy.API.Plugins;
 using Void.Proxy.Plugins.Common.Events;
@@ -24,7 +24,7 @@ public class Plugin : IProtocolPlugin
     }
 
     [Subscribe]
-    public void OnLoginPluginRequest(LoginPluginRequestEvent @event)
+    public static void OnLoginPluginRequest(LoginPluginRequestEvent @event)
     {
         if (@event.Channel is not "velocity:player_info")
             return;
@@ -67,7 +67,7 @@ public class Plugin : IProtocolPlugin
 
     private static ForwardingVersion FindForwardingVersion(ILink link, ForwardingVersion requested)
     {
-        requested = (ForwardingVersion)Math.Min((int)requested, Enum.GetValues(typeof(ForwardingVersion)).Cast<int>().Max());
+        requested = (ForwardingVersion)Math.Min((int)requested, Enum.GetValues<ForwardingVersion>().Cast<int>().Max());
 
         if (requested.CompareTo(ForwardingVersion.Default) > 0)
         {

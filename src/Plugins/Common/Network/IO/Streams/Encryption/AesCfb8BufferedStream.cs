@@ -146,7 +146,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
 
     public void Flush()
     {
-        BaseStream?.FlushAsync();
+        BaseStream?.Flush();
     }
 
     public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
@@ -164,6 +164,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
     {
         _aes.Dispose();
         BaseStream?.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     public async ValueTask DisposeAsync()
@@ -171,6 +172,8 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
         _aes.Dispose();
         if (BaseStream != null)
             await BaseStream.DisposeAsync();
+
+        GC.SuppressFinalize(this);
     }
 
     private int DecryptManual(IMinecraftManualStream stream, Span<byte> output)

@@ -1,14 +1,14 @@
 ﻿using Microsoft.IO;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Network.IO.Buffers;
+using Void.Proxy.API.Network.IO.Messages.Packets;
 using Void.Proxy.API.Network.IO.Streams;
 using Void.Proxy.API.Network.IO.Streams.Extensions;
 using Void.Proxy.API.Network.IO.Streams.Manual;
 using Void.Proxy.API.Network.IO.Streams.Manual.Binary;
+using Void.Proxy.API.Network.IO.Streams.Packet;
 using Void.Proxy.API.Network.IO.Streams.Recyclable;
-using Void.Proxy.Plugins.Common.Network.IO.Messages;
 using Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
-using Void.Proxy.Plugins.Common.Registries.Packets;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
 
@@ -19,7 +19,7 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
     public bool CanRead => BaseStream?.CanRead ?? false;
     public bool CanWrite => BaseStream?.CanWrite ?? false;
     public bool IsAlive => BaseStream?.IsAlive ?? false;
-    public IPacketRegistryHolder? RegistryHolder { get; set; }
+    public IMinecraftPacketRegistryHolder? RegistryHolder { get; set; }
 
     public IMinecraftPacket ReadPacket()
     {
@@ -74,12 +74,15 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
     public void Dispose()
     {
         BaseStream?.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     public async ValueTask DisposeAsync()
     {
         if (BaseStream != null)
             await BaseStream.DisposeAsync();
+
+        GC.SuppressFinalize(this);
     }
 
     public void Flush()
@@ -171,7 +174,7 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
         stream.Position = buffer.Position;
 
         if (RegistryHolder?.Read is not { } registry || !registry.TryCreateDecoder(id, out var decoder))
-            return new BinaryPacket(id, stream);
+            return new MinecraftBinaryPacket(id, stream);
 
         var packet = decoder(ref buffer, ProtocolVersion);
         stream.Dispose();
@@ -200,7 +203,7 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
     {
         var stream = RecyclableMemoryStreamManager.GetStream();
 
-        if (packet is BinaryPacket binaryPacket)
+        if (packet is MinecraftBinaryPacket binaryPacket)
         {
             EncodeVarInt(stream, binaryPacket.Id);
             binaryPacket.Stream.CopyTo(stream);

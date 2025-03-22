@@ -10,5 +10,6 @@ public class BufferedBinaryMessage(RecyclableMemoryStream stream) : IBufferedBin
     public void Dispose()
     {
         stream.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

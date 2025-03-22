@@ -1,25 +1,29 @@
 ﻿using System.Diagnostics;
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Channels;
+using Void.Proxy.API.Events.Minecraft;
 using Void.Proxy.API.Events.Network;
 using Void.Proxy.API.Events.Services;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Mojang.Minecraft.Network;
+using Void.Proxy.API.Network;
+using Void.Proxy.API.Network.IO.Channels.Extensions;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Plugins;
 using Void.Proxy.Plugins.Common.Extensions;
-using Void.Proxy.Plugins.Common.Network.Protocol.Registries;
+using Void.Proxy.Plugins.Common.Services.Registries;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Registries;
 
 public class RegistryService(IPlugin plugin, IPlayerService players, IEventService events) : AbstractRegistryService(plugin, players, events)
 {
+    private readonly IEventService _events = events;
     private readonly IPlugin _plugin = plugin;
 
     [Subscribe]
-    public void OnChannelCreated(ChannelCreatedEvent @event)
+    public async ValueTask OnChannelCreated(ChannelCreatedEvent @event, CancellationToken cancellationToken)
     {
-        if (!Plugin.SupportedVersions.Contains(@event.Initiator.ProtocolVersion))
+        if (!Plugin.SupportedVersions.Contains(@event.Player.ProtocolVersion))
             return;
 
         var registry = @event.Channel.GetPacketRegistryHolder();
@@ -28,11 +32,9 @@ public class RegistryService(IPlugin plugin, IPlayerService players, IEventServi
             return;
 
         registry.ManagedBy = _plugin;
-        registry.ProtocolVersion = @event.Initiator.ProtocolVersion;
+        registry.ProtocolVersion = @event.Player.ProtocolVersion;
 
-        var isPlayerChannel = @event.Initiator.Context.Channel is null;
-
-        if (isPlayerChannel)
+        if (@event.Side is Side.Client)
         {
             @event.Channel.SetReadingPacketsMappings(_plugin, Registry.ServerboundHandshakeMappings);
             @event.Channel.SetWritingPacketsMappings(_plugin, Registry.ClientboundHandshakeMappings);
@@ -42,10 +44,12 @@ public class RegistryService(IPlugin plugin, IPlayerService players, IEventServi
             @event.Channel.SetReadingPacketsMappings(_plugin, Registry.ClientboundHandshakeMappings);
             @event.Channel.SetWritingPacketsMappings(_plugin, Registry.ServerboundHandshakeMappings);
         }
+
+        await _events.ThrowAsync(new PhaseChangedEvent(@event.Player, @event.Side, @event.Channel, Phase.Handshake), cancellationToken);
     }
 
     [Subscribe]
-    public void OnMessageReceived(MessageReceivedEvent @event)
+    public async ValueTask OnMessageReceived(MessageReceivedEvent @event, CancellationToken cancellationToken)
     {
         switch (@event.Message)
         {
@@ -56,11 +60,13 @@ public class RegistryService(IPlugin plugin, IPlayerService players, IEventServi
                 {
                     @event.Link.PlayerChannel.SetReadingPacketsMappings(_plugin, Registry.ServerboundStatusMappings);
                     @event.Link.PlayerChannel.SetWritingPacketsMappings(_plugin, Registry.ClientboundStatusMappings);
+                    await _events.ThrowAsync(new PhaseChangedEvent(@event.Link.Player, Side.Client, @event.Link.PlayerChannel, Phase.Status), cancellationToken);
                 }
                 else if (handshake.NextState is 2 or 3)
                 {
                     @event.Link.PlayerChannel.SetReadingPacketsMappings(_plugin, Registry.ServerboundLoginMappings);
                     @event.Link.PlayerChannel.SetWritingPacketsMappings(_plugin, Registry.ClientboundLoginMappings);
+                    await _events.ThrowAsync(new PhaseChangedEvent(@event.Link.Player, Side.Client, @event.Link.PlayerChannel, Phase.Login), cancellationToken);
                 }
 
                 break;
@@ -68,16 +74,18 @@ public class RegistryService(IPlugin plugin, IPlayerService players, IEventServi
             case LoginAcknowledgedPacket:
                 @event.Link.PlayerChannel.SetReadingPacketsMappings(_plugin, Registry.ServerboundConfigurationMappings);
                 @event.Link.PlayerChannel.SetWritingPacketsMappings(_plugin, Registry.ClientboundConfigurationMappings);
+                await _events.ThrowAsync(new PhaseChangedEvent(@event.Link.Player, Side.Client, @event.Link.PlayerChannel, Phase.Configuration), cancellationToken);
                 break;
             case AcknowledgeFinishConfigurationPacket:
                 @event.Link.PlayerChannel.SetReadingPacketsMappings(_plugin, Registry.ServerboundPlayMappings);
                 @event.Link.PlayerChannel.SetWritingPacketsMappings(_plugin, Registry.ClientboundPlayMappings);
+                await _events.ThrowAsync(new PhaseChangedEvent(@event.Link.Player, Side.Client, @event.Link.PlayerChannel, Phase.Play), cancellationToken);
                 break;
         }
     }
 
     [Subscribe]
-    public void OnMessageSent(MessageSentEvent @event)
+    public async ValueTask OnMessageSent(MessageSentEvent @event, CancellationToken cancellationToken)
     {
         switch (@event.Message)
         {
@@ -86,11 +94,13 @@ public class RegistryService(IPlugin plugin, IPlayerService players, IEventServi
                 {
                     @event.Link.ServerChannel.SetReadingPacketsMappings(_plugin, Registry.ClientboundStatusMappings);
                     @event.Link.ServerChannel.SetWritingPacketsMappings(_plugin, Registry.ServerboundStatusMappings);
+                    await _events.ThrowAsync(new PhaseChangedEvent(@event.Link.Player, Side.Server, @event.Link.ServerChannel, Phase.Status), cancellationToken);
                 }
                 else if (handshake.NextState is 2 or 3)
                 {
                     @event.Link.ServerChannel.SetReadingPacketsMappings(_plugin, Registry.ClientboundLoginMappings);
                     @event.Link.ServerChannel.SetWritingPacketsMappings(_plugin, Registry.ServerboundLoginMappings);
+                    await _events.ThrowAsync(new PhaseChangedEvent(@event.Link.Player, Side.Server, @event.Link.ServerChannel, Phase.Login), cancellationToken);
                 }
                 else
                 {
@@ -102,10 +112,12 @@ public class RegistryService(IPlugin plugin, IPlayerService players, IEventServi
             case LoginAcknowledgedPacket:
                 @event.Link.ServerChannel.SetReadingPacketsMappings(_plugin, Registry.ClientboundConfigurationMappings);
                 @event.Link.ServerChannel.SetWritingPacketsMappings(_plugin, Registry.ServerboundConfigurationMappings);
+                await _events.ThrowAsync(new PhaseChangedEvent(@event.Link.Player, Side.Server, @event.Link.ServerChannel, Phase.Configuration), cancellationToken);
                 break;
             case AcknowledgeFinishConfigurationPacket:
                 @event.Link.ServerChannel.SetReadingPacketsMappings(_plugin, Registry.ClientboundPlayMappings);
                 @event.Link.ServerChannel.SetWritingPacketsMappings(_plugin, Registry.ServerboundPlayMappings);
+                await _events.ThrowAsync(new PhaseChangedEvent(@event.Link.Player, Side.Server, @event.Link.ServerChannel, Phase.Play), cancellationToken);
                 break;
         }
     }

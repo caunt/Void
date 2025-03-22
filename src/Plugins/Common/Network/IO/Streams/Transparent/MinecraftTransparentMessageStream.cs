@@ -125,11 +125,14 @@ public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IMin
     public void Dispose()
     {
         BaseStream?.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     public async ValueTask DisposeAsync()
     {
         if (BaseStream != null)
             await BaseStream.DisposeAsync();
+
+        GC.SuppressFinalize(this);
     }
 }

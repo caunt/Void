@@ -1,5 +1,5 @@
 ﻿using System.Net.Sockets;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Mojang.Profiles;
 
 namespace Void.Proxy.API.Players;

@@ -2,8 +2,7 @@
 
 namespace Void.Proxy.API.Events.Encryption;
 
-public class SearchServerPrivateKey : IEventWithResult<byte[]>
+public record SearchServerPrivateKey(IServer Server) : IEventWithResult<byte[]>
 {
-    public required IServer Server { get; init; }
     public byte[]? Result { get; set; }
 }

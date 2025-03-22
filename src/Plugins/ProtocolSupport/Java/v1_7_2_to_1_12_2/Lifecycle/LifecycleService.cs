@@ -1,8 +1,9 @@
 ﻿using Void.Proxy.API.Links;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Links.Extensions;
+using Void.Proxy.API.Mojang.Minecraft.Network;
+using Void.Proxy.API.Network.IO.Channels.Extensions;
 using Void.Proxy.API.Players;
-using Void.Proxy.Plugins.Common.Extensions;
-using Void.Proxy.Plugins.Common.Network.Protocol.Lifecycle;
+using Void.Proxy.Plugins.Common.Services.Lifecycle;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Extensions;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clientbound;
 

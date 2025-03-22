@@ -2,7 +2,4 @@
 
 namespace Void.Proxy.API.Events.Links;
 
-public class LinkStartedEvent : IEvent
-{
-    public required ILink Link { get; init; }
-}
+public record LinkStartedEvent(ILink Link) : IEvent;

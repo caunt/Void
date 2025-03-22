@@ -2,11 +2,11 @@
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Network;
 using Void.Proxy.API.Events.Services;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.IO.Buffers;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
-using Void.Proxy.Plugins.Common.Network.Protocol.Channels;
+using Void.Proxy.Plugins.Common.Services.Channels;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Serverbound;
 

@@ -3,13 +3,14 @@ using Microsoft.Extensions.Logging;
 using Void.Proxy.API.Events.Authentication;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Links;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Links.Extensions;
+using Void.Proxy.API.Mojang.Minecraft.Network;
+using Void.Proxy.API.Network.IO.Messages.Packets;
 using Void.Proxy.API.Players;
 using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Network.IO.Bundles;
-using Void.Proxy.Plugins.Common.Network.Protocol.Authentication;
-using Void.Proxy.Plugins.Common.Packets;
+using Void.Proxy.Plugins.Common.Services.Authentication;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Extensions;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
@@ -60,8 +61,8 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         // IPlayer might be still sending Play state packets, read them all until configuration acknowledged
         var playPacketsLimit = 128;
 
-        IServerboundPacket packet;
-        while ((packet = await link.ReceivePacketAsync<IServerboundPacket>(cancellationToken)) is not AcknowledgeConfigurationPacket)
+        IMinecraftServerboundPacket packet;
+        while ((packet = await link.ReceivePacketAsync<IMinecraftServerboundPacket>(cancellationToken)) is not AcknowledgeConfigurationPacket)
         {
             if (playPacketsLimit-- is 0)
                 throw new Exception("Client expected to send acknowledge configuration packet in order to start authentication");
@@ -114,7 +115,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         }, cancellationToken);
     }
 
-    protected override async ValueTask<AuthenticationResult> HandleServerPacketAsync(ILink link, IClientboundPacket packet, CancellationToken cancellationToken)
+    protected override async ValueTask<AuthenticationResult> HandleServerPacketAsync(ILink link, IMinecraftClientboundPacket packet, CancellationToken cancellationToken)
     {
         switch (packet)
         {

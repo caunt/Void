@@ -1,10 +1,10 @@
-﻿using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+﻿using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.Plugins.Common.Packets;
+using Void.Proxy.API.Network.IO.Messages.Packets;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientbound;
 
-public class LoginPluginRequestPacket : IClientboundPacket<LoginPluginRequestPacket>
+public class LoginPluginRequestPacket : IMinecraftClientboundPacket<LoginPluginRequestPacket>
 {
     public required int MessageId { get; set; }
     public required string Channel { get; set; }

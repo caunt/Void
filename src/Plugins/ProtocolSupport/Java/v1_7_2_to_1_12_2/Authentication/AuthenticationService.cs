@@ -2,12 +2,13 @@
 using Void.Proxy.API.Events.Authentication;
 using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Links;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Links.Extensions;
+using Void.Proxy.API.Mojang.Minecraft.Network;
+using Void.Proxy.API.Network.IO.Messages.Packets;
 using Void.Proxy.API.Players;
 using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Extensions;
-using Void.Proxy.Plugins.Common.Network.Protocol.Authentication;
-using Void.Proxy.Plugins.Common.Packets;
+using Void.Proxy.Plugins.Common.Services.Authentication;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Extensions;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Serverbound;
@@ -95,7 +96,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
             await link.SendPacketAsync(joinGamePacket, cancellationToken);
     }
 
-    protected override async ValueTask<AuthenticationResult> HandleServerPacketAsync(ILink link, IClientboundPacket packet, CancellationToken cancellationToken)
+    protected override async ValueTask<AuthenticationResult> HandleServerPacketAsync(ILink link, IMinecraftClientboundPacket packet, CancellationToken cancellationToken)
     {
         switch (packet)
         {

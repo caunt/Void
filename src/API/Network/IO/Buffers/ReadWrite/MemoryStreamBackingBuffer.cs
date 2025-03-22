@@ -5,10 +5,10 @@ namespace Void.Proxy.API.Network.IO.Buffers.ReadWrite;
 
 internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
 {
-    public int Position => (int)memoryStream.Position;
+    public readonly int Position => (int)memoryStream.Position;
     public int Length { get; } = (int)memoryStream.Length;
 
-    public byte ReadUnsignedByte()
+    public readonly byte ReadUnsignedByte()
     {
         var result = memoryStream.ReadByte();
 
@@ -18,17 +18,17 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
         return (byte)result;
     }
 
-    public void WriteUnsignedByte(byte value)
+    public readonly void WriteUnsignedByte(byte value)
     {
         memoryStream.WriteByte(value);
     }
 
-    public ushort ReadUnsignedShort()
+    public readonly ushort ReadUnsignedShort()
     {
         return BinaryPrimitives.ReadUInt16BigEndian(Read(2));
     }
 
-    public void WriteUnsignedShort(ushort value)
+    public readonly void WriteUnsignedShort(ushort value)
     {
         // TODO may be unsafe stackalloc?
         var block = ArrayPool<byte>.Shared.Rent(2);
@@ -45,12 +45,12 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
         }
     }
 
-    public int ReadInt()
+    public readonly int ReadInt()
     {
         return BinaryPrimitives.ReadInt32BigEndian(Read(4));
     }
 
-    public void WriteInt(int value)
+    public readonly void WriteInt(int value)
     {
         // TODO may be unsafe stackalloc?
         var block = ArrayPool<byte>.Shared.Rent(4);
@@ -67,12 +67,12 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
         }
     }
 
-    public long ReadLong()
+    public readonly long ReadLong()
     {
         return BinaryPrimitives.ReadInt64BigEndian(Read(8));
     }
 
-    public void WriteLong(long value)
+    public readonly void WriteLong(long value)
     {
         // TODO may be unsafe stackalloc?
         var block = ArrayPool<byte>.Shared.Rent(8);
@@ -89,17 +89,17 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
         }
     }
 
-    public void Seek(int offset, SeekOrigin origin)
+    public readonly void Seek(int offset, SeekOrigin origin)
     {
         memoryStream.Seek(offset, origin);
     }
 
-    public void Reset()
+    public readonly void Reset()
     {
         memoryStream.Position = 0;
     }
 
-    public ReadOnlySpan<byte> Read(int length)
+    public readonly ReadOnlySpan<byte> Read(int length)
     {
         // TODO is there way to get ReadOnlySequence from MemoryStream? do not allocate please
         var block = new byte[length];
@@ -107,12 +107,12 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
         return block;
     }
 
-    public void Write(ReadOnlySpan<byte> data)
+    public readonly void Write(ReadOnlySpan<byte> data)
     {
         memoryStream.Write(data);
     }
 
-    public void Write(Stream stream)
+    public readonly void Write(Stream stream)
     {
         stream.CopyTo(memoryStream);
     }

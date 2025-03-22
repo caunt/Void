@@ -1,7 +1,7 @@
 ﻿using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Plugins;
 using Void.Proxy.API.Events.Services;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Plugins;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Authentication;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Bundles;

@@ -4,7 +4,7 @@ using MCStatus;
 using Nito.AsyncEx;
 using System.Net.Sockets;
 using System.Reflection;
-using Void.Proxy.API.Mojang.Minecraft.Network.Protocol;
+using Void.Proxy.API.Mojang.Minecraft.Network;
 
 var version = ProtocolVersion.Latest;
 await StartDockerEnvironmentAsync(count: 2);
