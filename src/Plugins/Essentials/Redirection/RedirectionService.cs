@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Commands;
 using Void.Proxy.API.Events.Player;
@@ -8,7 +9,7 @@ using Void.Proxy.Plugins.Common.Services;
 
 namespace Void.Proxy.Plugins.Essentials.Redirection;
 
-public class RedirectionService(IServerService servers) : IPluginService
+public class RedirectionService(IServerService servers, ILogger<RedirectionService> logger) : IPluginService
 {
     private readonly ConcurrentDictionary<IPlayer, IServer> _connecting = [];
 
@@ -44,7 +45,10 @@ public class RedirectionService(IServerService servers) : IPluginService
     [Subscribe]
     public void OnPlayerSearchServer(PlayerSearchServerEvent @event)
     {
-        if (_connecting.TryRemove(@event.Player, out var server))
-            @event.Result = server;
+        if (!_connecting.TryRemove(@event.Player, out var server))
+            return;
+
+        @event.Result = server;
+        logger.LogInformation("Player {Player} connected to server {Server}", @event.Player, server);
     }
 }

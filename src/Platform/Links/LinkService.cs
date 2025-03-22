@@ -130,7 +130,7 @@ public class LinkService : ILinkService, IEventListener
         else if (!await @event.Link.Player.IsProtocolSupportedAsync(cancellationToken))
             @event.Link.PlayerChannel.Close();
 
-        _logger.LogInformation("Stopped forwarding {Link} traffic", @event.Link);
+        _logger.LogTrace("Stopped forwarding {Link} traffic", @event.Link);
     }
 
     public bool TryGetLink(IPlayer player, [NotNullWhen(true)] out ILink? link)

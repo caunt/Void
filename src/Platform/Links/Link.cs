@@ -44,7 +44,7 @@ public class Link(IPlayer player, IServer server, IMinecraftChannel playerChanne
         _playerToServerTask = ExecuteAsync(PlayerChannel, ServerChannel, Direction.Serverbound, _ctsPlayerToServer.Token, _ctsPlayerToServerForce.Token);
         _serverToPlayerTask = ExecuteAsync(ServerChannel, PlayerChannel, Direction.Clientbound, _ctsServerToPlayer.Token, _ctsServerToPlayerForce.Token);
 
-        logger.LogInformation("Started forwarding {Link} traffic", this);
+        logger.LogTrace("Started forwarding {Link} traffic", this);
         await events.ThrowAsync(new LinkStartedEvent { Link = this }, cancellationToken);
     }
 
