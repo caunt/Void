@@ -29,7 +29,7 @@ public class LifecycleService : AbstractLifecycleService
         {
             await channel.SendPacketAsync(new PlayDisconnectPacket { Reason = reason }, cancellationToken);
         }
-        else
+        else if (await player.IsLoggingInAsync(cancellationToken))
         {
             await channel.SendPacketAsync(new LoginDisconnectPacket { Reason = reason }, cancellationToken);
         }
