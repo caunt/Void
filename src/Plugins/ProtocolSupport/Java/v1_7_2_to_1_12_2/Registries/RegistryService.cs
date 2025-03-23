@@ -5,6 +5,7 @@ using Void.Proxy.API.Events.Channels;
 using Void.Proxy.API.Events.Minecraft;
 using Void.Proxy.API.Events.Network;
 using Void.Proxy.API.Events.Services;
+using Void.Proxy.API.Links;
 using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.IO.Channels.Extensions;
@@ -17,7 +18,7 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Serverbou
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Registries;
 
-public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IPlayerService players, IEventService events) : AbstractRegistryService(logger, plugin, players, events)
+public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IPlayerService players, ILinkService links, IEventService events) : AbstractRegistryService(logger, plugin, players, links, events)
 {
     private readonly IEventService _events = events;
     private readonly IPlugin _plugin = plugin;
@@ -28,13 +29,17 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
         if (!Plugin.SupportedVersions.Contains(@event.Player.ProtocolVersion))
             return;
 
-        var registry = @event.Channel.GetSystemPacketRegistryHolder();
+        var systemRegistry = @event.Channel.GetSystemPacketRegistryHolder();
+        var pluginsRegistry = @event.Channel.GetPluginsPacketRegistryHolder();
 
-        if (!registry.IsEmpty)
+        if (!systemRegistry.IsEmpty || !pluginsRegistry.IsEmpty)
             return;
 
-        registry.ManagedBy = _plugin;
-        registry.ProtocolVersion = @event.Player.ProtocolVersion;
+        systemRegistry.ManagedBy = _plugin;
+        systemRegistry.ProtocolVersion = @event.Player.ProtocolVersion;
+
+        pluginsRegistry.ManagedBy = _plugin;
+        pluginsRegistry.ProtocolVersion = @event.Player.ProtocolVersion;
 
         if (@event.Side is Side.Client)
         {

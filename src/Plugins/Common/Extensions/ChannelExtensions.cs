@@ -54,12 +54,12 @@ public static class ChannelExtensions
     public static void ClearPacketsMappings(this IMinecraftChannel channel, IPlugin plugin)
     {
         var systemRegistry = channel.GetSystemPacketRegistryHolder();
-        var pluginRegistry = channel.GetSystemPacketRegistryHolder();
+        var pluginsRegistry = channel.GetPluginsPacketRegistryHolder();
 
         if (systemRegistry.ManagedBy == plugin)
             systemRegistry.Reset();
 
-        if (pluginRegistry.ManagedBy == plugin)
-            pluginRegistry.Reset();
+        if (pluginsRegistry.ManagedBy == plugin)
+            pluginsRegistry.Reset();
     }
 }

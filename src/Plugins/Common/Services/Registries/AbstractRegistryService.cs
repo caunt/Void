@@ -21,7 +21,7 @@ using Void.Proxy.Plugins.Common.Extensions;
 
 namespace Void.Proxy.Plugins.Common.Services.Registries;
 
-public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> logger, IPlugin plugin, IPlayerService players, IEventService events) : IPluginCommonService
+public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> logger, IPlugin plugin, IPlayerService players, ILinkService links, IEventService events) : IPluginCommonService
 {
     [Subscribe]
     public void OnPlayerDisconnected(PlayerDisconnectedEvent @event)
@@ -131,6 +131,9 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             if (!channel.TryGet<IMinecraftPacketMessageStream>(out _))
                 continue;
+
+            if (links.TryGetLink(player, out var link))
+                link.ServerChannel.ClearPacketsMappings(plugin);
 
             channel.ClearPacketsMappings(plugin);
         }

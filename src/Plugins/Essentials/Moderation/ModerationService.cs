@@ -18,7 +18,6 @@ public class ModerationService(IPlayerService players) : IPluginCommonService
         switch (parts[0].ToLower())
         {
             case "kick":
-
                 @event.Result = true;
 
                 if (parts.Length is 1)

@@ -77,7 +77,8 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
         logger.LogInformation("Stopping proxy");
         await events.ThrowAsync<ProxyStoppingEvent>(cancellationToken);
 
-        // TODO disconnect everyone here
+        for (var i = players.All.Count - 1; i >= 0; i--)
+            await players.KickPlayerAsync(players.All[i], "Proxy is shutting down", cancellationToken);
 
         logger.LogInformation("Awaiting completion of connection listener");
         if (_backgroundTask is not null)

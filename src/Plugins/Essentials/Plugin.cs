@@ -4,6 +4,7 @@ using Void.Proxy.API.Events.Services;
 using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Plugins;
 using Void.Proxy.Plugins.Essentials.Moderation;
+using Void.Proxy.Plugins.Essentials.Platform;
 using Void.Proxy.Plugins.Essentials.Redirection;
 
 namespace Void.Proxy.Plugins.Essentials;
@@ -22,5 +23,6 @@ public class Plugin(IEventService events) : IProtocolPlugin
 
         events.RegisterListener<RedirectionService>();
         events.RegisterListener<ModerationService>();
+        events.RegisterListener<PlatformService>();
     }
 }

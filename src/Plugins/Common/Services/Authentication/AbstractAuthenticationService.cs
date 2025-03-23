@@ -57,17 +57,17 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
     [Subscribe]
     public async ValueTask OnAuthenticationStarted(AuthenticationStartedEvent @event, CancellationToken cancellationToken)
     {
-        if (!IsSupportedVersion(@event.Link.Player.ProtocolVersion))
-            return;
-
-        if (!await @event.Link.Player.IsProtocolSupportedAsync(cancellationToken))
-            return;
-
         if (@event.Side is AuthenticationSide.Server)
         {
             @event.Result = AuthenticationResult.Authenticated;
             return;
         }
+
+        if (!IsSupportedVersion(@event.Link.Player.ProtocolVersion))
+            return;
+
+        if (!await @event.Link.Player.IsProtocolSupportedAsync(cancellationToken))
+            return;
 
         var authenticationResult = await AuthenticatePlayerAsync(@event.Link, cancellationToken);
 
