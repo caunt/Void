@@ -8,7 +8,7 @@ using Void.Proxy.API.Mojang.Minecraft.Network;
 
 var version = ProtocolVersion.Latest;
 var count = 1;
-await StartDockerEnvironmentAsync(count: args.Length is 0 ? count : int.TryParse(args[0], out count) ? count : count);
+await StartDockerEnvironmentAsync(count: args.Length is 1 && int.TryParse(args[0], out count) ? count : count);
 
 return;
 
