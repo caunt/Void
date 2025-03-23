@@ -100,6 +100,8 @@ async ValueTask StartDockerEnvironmentAsync(int count = 3, CancellationToken can
                     await docker.Containers.RemoveContainerAsync(found.ID, new ContainerRemoveParameters(), cancellationToken);
                     break;
             }
+
+            await Task.Delay(500, cancellationToken);
         }
 
         var createContainerParameters = new CreateContainerParameters
