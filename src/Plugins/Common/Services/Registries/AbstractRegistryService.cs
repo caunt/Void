@@ -156,8 +156,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
     protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, IMinecraftPacketRegistryPlugins registries, IMinecraftPacket minecraftPacket)
     {
-        var playerPacketRegistryHolder = link.PlayerChannel.GetPacketRegistryHolder();
-        var serverPacketRegistryHolder = link.ServerChannel.GetPacketRegistryHolder();
+        var playerPacketRegistryHolder = link.PlayerChannel.GetSystemPacketRegistryHolder();
+        var serverPacketRegistryHolder = link.ServerChannel.GetSystemPacketRegistryHolder();
 
         if (!playerPacketRegistryHolder.Read.TryGetPacketId(minecraftPacket, out var id) &&
             !playerPacketRegistryHolder.Write.TryGetPacketId(minecraftPacket, out id) &&

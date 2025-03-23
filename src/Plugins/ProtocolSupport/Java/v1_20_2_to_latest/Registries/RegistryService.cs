@@ -27,7 +27,7 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
         if (!Plugin.SupportedVersions.Contains(@event.Player.ProtocolVersion))
             return;
 
-        var registry = @event.Channel.GetPacketRegistryHolder();
+        var registry = @event.Channel.GetSystemPacketRegistryHolder();
 
         if (!registry.IsEmpty)
             return;
