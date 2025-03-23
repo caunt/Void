@@ -47,7 +47,7 @@ public class PlayerService : IPlayerService, IEventListener
         await _events.ThrowAsync(new PlayerConnectingEvent(client, collection), cancellationToken);
 
         var player = new Player(client);
-        collection.AddSingleton(player);
+        collection.AddSingleton<IPlayer>(player);
         player.Context = new PlayerContext(collection.BuildServiceProvider());
 
         try
