@@ -31,12 +31,16 @@ public static class PlayerExtensions
         registry.RegisterPacket<T>(player.ProtocolVersion, mappings);
     }
 
+    public static async ValueTask RemovePluginPacketRegistryAsync(this IPlayer player, IPlugin plugin, CancellationToken cancellationToken = default)
+    {
+        var registries = await player.GetPluginsPacketRegistriesAsync(cancellationToken);
+        registries.Remove(plugin);
+    }
+
     public static async ValueTask ClearPluginsPacketRegistryAsync(this IPlayer player, CancellationToken cancellationToken = default)
     {
         var registries = await player.GetPluginsPacketRegistriesAsync(cancellationToken);
-
-        foreach (var registry in registries.All)
-            registry.Clear();
+        registries.Clear();
     }
 
     public static async ValueTask<IMinecraftPacketRegistry> GetPluginPacketRegistryAsync(this IPlayer player, IPlugin plugin, CancellationToken cancellationToken = default)

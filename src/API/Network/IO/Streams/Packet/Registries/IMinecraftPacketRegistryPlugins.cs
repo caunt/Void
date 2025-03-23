@@ -13,10 +13,12 @@ public interface IMinecraftPacketRegistryPlugins
     public IReadOnlyCollection<IMinecraftPacketRegistry> All { get; }
 
     public IMinecraftPacketRegistry Get(IPlugin plugin);
+    public void Remove(IPlugin plugin);
     public bool Contains<T>() where T : IMinecraftPacket;
     public bool Contains(IMinecraftMessage message);
     public bool Contains(Type type);
     public void ReplacePackets(IPlugin plugin, IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings);
     public void AddPackets(IPlugin plugin, IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings);
+    public void Clear();
     public void Reset();
 }

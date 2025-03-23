@@ -9,7 +9,7 @@ namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Registries;
 
 public class MinecraftPacketRegistryPlugins : IMinecraftPacketRegistryPlugins
 {
-    private readonly Dictionary<IPlugin, IMinecraftPacketRegistry> _map = [];
+    private Dictionary<IPlugin, IMinecraftPacketRegistry> _map = [];
 
     public bool IsEmpty => All.All(registry => registry.IsEmpty);
     public ProtocolVersion? ProtocolVersion { get; set; }
@@ -22,6 +22,11 @@ public class MinecraftPacketRegistryPlugins : IMinecraftPacketRegistryPlugins
             _map[plugin] = registry = new MinecraftPacketRegistry();
 
         return registry;
+    }
+
+    public void Remove(IPlugin plugin)
+    {
+        _map.Remove(plugin);
     }
 
     public bool Contains<T>() where T : IMinecraftPacket
@@ -55,12 +60,15 @@ public class MinecraftPacketRegistryPlugins : IMinecraftPacketRegistryPlugins
         _map[plugin].AddPackets(mappings, ProtocolVersion);
     }
 
+    public void Clear()
+    {
+        _map = [];
+    }
+
     public void Reset()
     {
+        Clear();
         ProtocolVersion = null;
         ManagedBy = null;
-
-        foreach (var registry in All)
-            registry.Clear();
     }
 }
