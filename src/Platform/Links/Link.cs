@@ -7,6 +7,7 @@ using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.IO.Channels;
 using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Players;
+using Void.Proxy.API.Players.Extensions;
 using Void.Proxy.API.Servers;
 
 namespace Void.Proxy.Links;

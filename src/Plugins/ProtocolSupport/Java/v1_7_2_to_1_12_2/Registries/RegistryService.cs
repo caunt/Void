@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Channels;
 using Void.Proxy.API.Events.Minecraft;
@@ -16,7 +17,7 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Serverbou
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Registries;
 
-public class RegistryService(IPlugin plugin, IPlayerService players, IEventService events) : AbstractRegistryService(plugin, players, events)
+public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IPlayerService players, IEventService events) : AbstractRegistryService(logger, plugin, players, events)
 {
     private readonly IEventService _events = events;
     private readonly IPlugin _plugin = plugin;
@@ -110,5 +111,10 @@ public class RegistryService(IPlugin plugin, IPlayerService players, IEventServi
                 await _events.ThrowAsync(new PhaseChangedEvent(@event.Link.Player, Side.Client, @event.Link.PlayerChannel, Phase.Play), cancellationToken);
                 break;
         }
+    }
+
+    protected override bool IsSupportedVersion(ProtocolVersion protocolVersion)
+    {
+        return Plugin.SupportedVersions.Contains(protocolVersion);
     }
 }

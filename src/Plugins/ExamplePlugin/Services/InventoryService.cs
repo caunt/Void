@@ -6,9 +6,10 @@ using Void.Proxy.API.Events.Network;
 using Void.Proxy.API.Links.Extensions;
 using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Network;
-using Void.Proxy.API.Network.IO.Channels;
 using Void.Proxy.API.Network.IO.Channels.Extensions;
 using Void.Proxy.API.Network.IO.Streams.Packet;
+using Void.Proxy.API.Players;
+using Void.Proxy.API.Players.Extensions;
 using Void.Proxy.Plugins.ExamplePlugin.Packets.Clientbound;
 using Void.Proxy.Plugins.ExamplePlugin.Packets.Serverbound;
 
@@ -33,7 +34,7 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
         switch (@event)
         {
             case { Phase: Phase.Play }:
-                RegisterPlayMappings(@event.Channel, @event.Side);
+                RegisterPlayMappings(@event.Player, @event.Side);
                 break;
         }
     }
@@ -63,15 +64,15 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
         }
     }
 
-    private void RegisterPlayMappings(IMinecraftChannel channel, Side side)
+    private void RegisterPlayMappings(IPlayer player, Side side)
     {
-        channel.RegisterPacket<SetHeldItemServerboundPacket>([
+        player.RegisterPacket<SetHeldItemServerboundPacket>([
             new MinecraftPacketMapping(0x2B, ProtocolVersion.MINECRAFT_1_20_2),
             new MinecraftPacketMapping(0x2C, ProtocolVersion.MINECRAFT_1_20_3),
             new MinecraftPacketMapping(0x2F, ProtocolVersion.MINECRAFT_1_20_5),
             new MinecraftPacketMapping(0x33, ProtocolVersion.MINECRAFT_1_21_4)
         ]);
-        channel.RegisterPacket<SetHeldItemClientboundPacket>([
+        player.RegisterPacket<SetHeldItemClientboundPacket>([
             new MinecraftPacketMapping(0x4F, ProtocolVersion.MINECRAFT_1_20_2),
             new MinecraftPacketMapping(0x51, ProtocolVersion.MINECRAFT_1_20_3),
             new MinecraftPacketMapping(0x53, ProtocolVersion.MINECRAFT_1_20_5),

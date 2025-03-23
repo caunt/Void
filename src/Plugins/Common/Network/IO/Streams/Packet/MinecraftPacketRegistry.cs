@@ -15,7 +15,17 @@ public class MinecraftPacketRegistry : IMinecraftPacketRegistry
 
     public bool Contains<T>() where T : IMinecraftPacket
     {
-        return _reverseMappings.Keys.Any(typeof(T).IsAssignableFrom);
+        return Contains(typeof(T));
+    }
+
+    public bool Contains(object packet)
+    {
+        return Contains(packet.GetType());
+    }
+
+    public bool Contains(Type type)
+    {
+        return _reverseMappings.Keys.Any(type.IsAssignableFrom);
     }
 
     public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out MinecraftPacketDecoder<IMinecraftPacket> packet)

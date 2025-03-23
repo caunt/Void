@@ -10,14 +10,15 @@ public static class MinecraftChannelExtensions
         await channel.WriteMessageAsync(packet, cancellationToken);
     }
 
-    public static void RegisterPacket<T>(this IMinecraftChannel channel, params MinecraftPacketMapping[] mappings)
-    {
-        var registry = channel.GetPacketRegistryHolder();
-        registry.AddPackets(Operation.Any, new Dictionary<MinecraftPacketMapping[], Type>()
-        {
-            { mappings, typeof(T) }
-        });
-    }
+    // Obsolete
+    // public static void RegisterPacket<T>(this IMinecraftChannel channel, params MinecraftPacketMapping[] mappings)
+    // {
+    //     var registry = channel.GetPacketRegistryHolder();
+    //     registry.AddPackets(Operation.Any, new Dictionary<MinecraftPacketMapping[], Type>()
+    //     {
+    //         { mappings, typeof(T) }
+    //     });
+    // }
 
     public static IMinecraftPacketRegistryHolder GetPacketRegistryHolder(this IMinecraftChannel channel)
     {

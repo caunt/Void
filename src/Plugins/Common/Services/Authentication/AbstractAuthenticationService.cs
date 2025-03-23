@@ -9,6 +9,7 @@ using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Mojang.Services;
 using Void.Proxy.API.Network.IO.Messages.Packets;
 using Void.Proxy.API.Players;
+using Void.Proxy.API.Players.Extensions;
 using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Mojang;

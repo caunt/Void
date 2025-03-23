@@ -10,6 +10,8 @@ public interface IMinecraftPacketRegistry
     public bool IsEmpty { get; }
 
     public bool Contains<T>() where T : IMinecraftPacket;
+    public bool Contains(object packet);
+    public bool Contains(Type type);
     public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out MinecraftPacketDecoder<IMinecraftPacket> packet);
     public bool TryGetPacketId(IMinecraftPacket packet, [MaybeNullWhen(false)] out int id);
     public IMinecraftPacketRegistry ReplacePackets(IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings, ProtocolVersion protocolVersion);

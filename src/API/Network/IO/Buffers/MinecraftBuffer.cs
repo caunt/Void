@@ -13,6 +13,8 @@ public ref struct MinecraftBuffer
     public readonly int Position => _backingBuffer.GetPosition();
     public readonly long Length => _backingBuffer.GetLength();
 
+    public MinecraftBuffer() => throw new NotSupportedException("Parameterless constructor not supported");
+
     public MinecraftBuffer(Span<byte> memory)
     {
         _backingBuffer = new MinecraftBackingBuffer(memory);
