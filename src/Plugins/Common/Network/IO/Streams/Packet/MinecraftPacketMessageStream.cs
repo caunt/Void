@@ -223,8 +223,11 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
             {
                 foreach (var registry in pluginsRegistries.All)
                 {
-                    if (registry.TryGetPacketId(packet, out id))
+                    if (registry.TryGetPacketId(packet, out var pluginPacketId))
+                    {
+                        id = pluginPacketId;
                         break;
+                    }
                 }
             }
 
