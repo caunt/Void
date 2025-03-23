@@ -20,7 +20,7 @@ using Void.Proxy.Plugins.Common.Network.IO.Streams.Transparent;
 
 namespace Void.Proxy.Plugins.Common.Services.Encryption;
 
-public abstract class AbstractEncryptionService(IEventService events, ICryptoService crypto) : IPluginService
+public abstract class AbstractEncryptionService(IEventService events, ICryptoService crypto) : IPluginCommonService
 {
     [Subscribe]
     public static void OnPlayerConnecting(PlayerConnectingEvent @event)

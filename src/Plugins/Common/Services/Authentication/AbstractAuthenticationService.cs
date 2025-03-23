@@ -16,7 +16,7 @@ using Void.Proxy.Plugins.Common.Mojang;
 
 namespace Void.Proxy.Plugins.Common.Services.Authentication;
 
-public abstract class AbstractAuthenticationService(IEventService events, IPlayerService players) : IPluginService
+public abstract class AbstractAuthenticationService(IEventService events, IPlayerService players) : IPluginCommonService
 {
     [Subscribe]
     public static void OnPlayerConnecting(PlayerConnectingEvent @event)

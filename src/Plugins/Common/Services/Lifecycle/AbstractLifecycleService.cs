@@ -8,7 +8,7 @@ using Void.Proxy.Plugins.Common.Events;
 
 namespace Void.Proxy.Plugins.Common.Services.Lifecycle;
 
-public abstract class AbstractLifecycleService : IPluginService
+public abstract class AbstractLifecycleService : IPluginCommonService
 {
     [Subscribe(PostOrder.Last)]
     public async ValueTask OnPlayerKickEvent(PlayerKickEvent @event, CancellationToken cancellationToken)

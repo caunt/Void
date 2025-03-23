@@ -7,7 +7,7 @@ using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
 
 namespace Void.Proxy.Plugins.Common.Services.Compression;
 
-public abstract class AbstractCompressionService(ILogger<AbstractCompressionService> logger) : IPluginService
+public abstract class AbstractCompressionService(ILogger<AbstractCompressionService> logger) : IPluginCommonService
 {
     [Subscribe]
     public void OnMessageReceived(MessageReceivedEvent @event)

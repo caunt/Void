@@ -20,7 +20,7 @@ public static class PlayerExtensions
         if (!channel.TryGet<IMinecraftPacketMessageStream>(out var stream))
             return false;
 
-        if (stream.RegistryHolder is not { } registry)
+        if (stream.SystemRegistryHolder is not { } registry)
             return false;
 
         // if registry contains one of Play state packet
@@ -34,7 +34,7 @@ public static class PlayerExtensions
         if (!channel.TryGet<IMinecraftPacketMessageStream>(out var stream))
             return false;
 
-        if (stream.RegistryHolder is not { } registry)
+        if (stream.SystemRegistryHolder is not { } registry)
             return false;
 
         // if registry contains one of Configuration state packet
@@ -48,7 +48,7 @@ public static class PlayerExtensions
         if (!channel.TryGet<IMinecraftPacketMessageStream>(out var stream))
             return false;
 
-        if (stream.RegistryHolder is not { } registry)
+        if (stream.SystemRegistryHolder is not { } registry)
             return false;
 
         // if registry contains one of Login state packet

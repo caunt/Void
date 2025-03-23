@@ -1,7 +1,7 @@
 ﻿using Void.Proxy.API.Network.IO.Channels;
 using Void.Proxy.API.Players;
 
-namespace Void.Proxy.Players;
+namespace Void.Proxy.Players.Contexts;
 
 public class PlayerContext(IServiceProvider services) : IPlayerContext
 {

@@ -17,6 +17,8 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
     private readonly List<WeakPluginReference> _references = [];
     private readonly TimeSpan _unloadTimeout = TimeSpan.FromSeconds(10);
 
+    public IReadOnlyList<IPlugin> All => _plugins;
+
     public async ValueTask LoadEmbeddedPluginsAsync(CancellationToken cancellationToken = default)
     {
         var assembly = Assembly.GetExecutingAssembly();

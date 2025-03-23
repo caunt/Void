@@ -10,6 +10,7 @@ using Void.Proxy.API.Links;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Players.Extensions;
 using Void.Proxy.API.Settings;
+using Void.Proxy.Players.Contexts;
 
 namespace Void.Proxy.Players;
 
@@ -45,7 +46,9 @@ public class PlayerService : IPlayerService, IEventListener
 
         await _events.ThrowAsync(new PlayerConnectingEvent(client, collection), cancellationToken);
 
-        var player = new Player(client, new PlayerContext(collection.BuildServiceProvider()));
+        var player = new Player(client);
+        collection.AddSingleton(player);
+        player.Context = new PlayerContext(collection.BuildServiceProvider());
 
         try
         {

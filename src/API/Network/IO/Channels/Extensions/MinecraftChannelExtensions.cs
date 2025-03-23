@@ -1,5 +1,6 @@
 ﻿using Void.Proxy.API.Network.IO.Messages.Packets;
 using Void.Proxy.API.Network.IO.Streams.Packet;
+using Void.Proxy.API.Network.IO.Streams.Packet.Registries;
 
 namespace Void.Proxy.API.Network.IO.Channels.Extensions;
 
@@ -10,21 +11,11 @@ public static class MinecraftChannelExtensions
         await channel.WriteMessageAsync(packet, cancellationToken);
     }
 
-    // Obsolete
-    // public static void RegisterPacket<T>(this IMinecraftChannel channel, params MinecraftPacketMapping[] mappings)
-    // {
-    //     var registry = channel.GetPacketRegistryHolder();
-    //     registry.AddPackets(Operation.Any, new Dictionary<MinecraftPacketMapping[], Type>()
-    //     {
-    //         { mappings, typeof(T) }
-    //     });
-    // }
-
-    public static IMinecraftPacketRegistryHolder GetPacketRegistryHolder(this IMinecraftChannel channel)
+    public static IMinecraftPacketRegistrySystem GetPacketRegistryHolder(this IMinecraftChannel channel)
     {
-        if (channel.TryGet<IMinecraftPacketMessageStream>(out var stream) && stream.RegistryHolder is { } registry)
+        if (channel.TryGet<IMinecraftPacketMessageStream>(out var stream) && stream.SystemRegistryHolder is { } registry)
             return registry;
 
-        throw new InvalidOperationException($"{nameof(IMinecraftPacketRegistryHolder)} is not set yet on this channel");
+        throw new InvalidOperationException($"{nameof(IMinecraftPacketRegistrySystem)} is not set yet on this channel");
     }
 }

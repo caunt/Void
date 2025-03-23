@@ -1,5 +1,3 @@
 ﻿namespace Void.Proxy.API.Events;
 
-public interface IEventListener
-{
-}
+public interface IEventListener;

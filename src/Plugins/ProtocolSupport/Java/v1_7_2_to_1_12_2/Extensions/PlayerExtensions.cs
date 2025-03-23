@@ -20,7 +20,7 @@ public static class PlayerExtensions
         if (!channel.TryGet<IMinecraftPacketMessageStream>(out var stream))
             return false;
 
-        if (stream.RegistryHolder is not { } registry)
+        if (stream.SystemRegistryHolder is not { } registry)
             return false;
 
         return registry.Contains<ChatMessagePacket>();
@@ -33,7 +33,7 @@ public static class PlayerExtensions
         if (!channel.TryGet<IMinecraftPacketMessageStream>(out var stream))
             return false;
 
-        if (stream.RegistryHolder is not { } registry)
+        if (stream.SystemRegistryHolder is not { } registry)
             return false;
 
         // if registry contains one of Login state packet

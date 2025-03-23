@@ -4,6 +4,8 @@ namespace Void.Proxy.API.Plugins.Services;
 
 public interface IPluginService
 {
+    public IReadOnlyList<IPlugin> All { get; }
+
     public ValueTask LoadEmbeddedPluginsAsync(CancellationToken cancellationToken = default);
     public ValueTask LoadPluginsAsync(string path = "plugins", CancellationToken cancellationToken = default);
     public ValueTask LoadPluginsAsync(string assemblyName, Stream assemblyStream, CancellationToken cancellationToken = default);

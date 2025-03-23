@@ -2,9 +2,9 @@
 using Void.Proxy.API.Network.IO.Messages.Packets;
 using Void.Proxy.API.Plugins;
 
-namespace Void.Proxy.API.Network.IO.Streams.Packet;
+namespace Void.Proxy.API.Network.IO.Streams.Packet.Registries;
 
-public interface IMinecraftPacketRegistryHolder
+public interface IMinecraftPacketRegistrySystem
 {
     public bool IsEmpty { get; }
     public ProtocolVersion? ProtocolVersion { get; set; }

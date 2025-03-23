@@ -1,8 +1,9 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Void.Proxy.API.Mojang.Minecraft.Network;
+using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.IO.Messages.Packets;
 
-namespace Void.Proxy.API.Network.IO.Streams.Packet;
+namespace Void.Proxy.API.Network.IO.Streams.Packet.Registries;
 
 public interface IMinecraftPacketRegistry
 {
@@ -10,7 +11,7 @@ public interface IMinecraftPacketRegistry
     public bool IsEmpty { get; }
 
     public bool Contains<T>() where T : IMinecraftPacket;
-    public bool Contains(object packet);
+    public bool Contains(IMinecraftMessage message);
     public bool Contains(Type type);
     public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out MinecraftPacketDecoder<IMinecraftPacket> packet);
     public bool TryGetPacketId(IMinecraftPacket packet, [MaybeNullWhen(false)] out int id);

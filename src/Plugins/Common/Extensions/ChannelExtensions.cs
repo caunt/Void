@@ -16,10 +16,10 @@ public static class ChannelExtensions
         {
             var stream = channel.Get<IMinecraftPacketMessageStream>();
 
-            if (stream.RegistryHolder is null)
+            if (stream.SystemRegistryHolder is null)
                 throw new InvalidOperationException($"{nameof(IMinecraftChannel)}.{nameof(IMinecraftPacketMessageStream)} does not have packet registry");
 
-            if (!stream.RegistryHolder.Contains<T>())
+            if (!stream.SystemRegistryHolder.Contains<T>())
                 throw new InvalidOperationException($"{nameof(IMinecraftChannel)}.{nameof(IMinecraftPacketMessageStream)} registry does not have {typeof(T)} packet");
         }
 

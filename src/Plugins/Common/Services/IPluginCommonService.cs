@@ -2,4 +2,4 @@
 
 namespace Void.Proxy.Plugins.Common.Services;
 
-public interface IPluginService : IEventListener;
+public interface IPluginCommonService : IEventListener;

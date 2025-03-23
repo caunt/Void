@@ -2,11 +2,12 @@
 using Void.Proxy.API.Network;
 using Void.Proxy.API.Network.IO.Messages.Packets;
 using Void.Proxy.API.Network.IO.Streams.Packet;
+using Void.Proxy.API.Network.IO.Streams.Packet.Registries;
 using Void.Proxy.API.Plugins;
 
-namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
+namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Registries;
 
-public class MinecraftPacketRegistryHolder : IMinecraftPacketRegistryHolder
+public class MinecraftPacketRegistrySystem : IMinecraftPacketRegistrySystem
 {
     public bool IsEmpty => this is { Read.IsEmpty: true, Write.IsEmpty: true, ManagedBy: null };
     public ProtocolVersion? ProtocolVersion { get; set; }

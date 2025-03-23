@@ -1,12 +1,10 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Void.Proxy.API.Events;
 using Void.Proxy.API.Events.Minecraft;
 using Void.Proxy.API.Events.Network;
 using Void.Proxy.API.Events.Player;
 using Void.Proxy.API.Events.Plugins;
 using Void.Proxy.API.Events.Services;
-using Void.Proxy.API.Extensions;
 using Void.Proxy.API.Links;
 using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Network.IO.Buffers;
@@ -14,24 +12,17 @@ using Void.Proxy.API.Network.IO.Channels.Extensions;
 using Void.Proxy.API.Network.IO.Messages.Binary;
 using Void.Proxy.API.Network.IO.Messages.Packets;
 using Void.Proxy.API.Network.IO.Streams.Packet;
+using Void.Proxy.API.Network.IO.Streams.Packet.Registries;
 using Void.Proxy.API.Network.IO.Streams.Recyclable;
 using Void.Proxy.API.Players;
 using Void.Proxy.API.Players.Extensions;
 using Void.Proxy.API.Plugins;
 using Void.Proxy.Plugins.Common.Extensions;
-using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
 
 namespace Void.Proxy.Plugins.Common.Services.Registries;
 
-public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> logger, IPlugin plugin, IPlayerService players, IEventService events) : IPluginService
+public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> logger, IPlugin plugin, IPlayerService players, IEventService events) : IPluginCommonService
 {
-    [Subscribe]
-    public static void OnPlayerConnecting(PlayerConnectingEvent @event)
-    {
-        if (!@event.Services.HasService<IMinecraftPacketRegistry>())
-            @event.Services.AddSingleton<IMinecraftPacketRegistry, MinecraftPacketRegistry>();
-    }
-
     [Subscribe]
     public void OnPlayerDisconnected(PlayerDisconnectedEvent @event)
     {
@@ -47,9 +38,13 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
     }
 
     [Subscribe(PostOrder.First)]
-    public static void OnPhaseChanged(PhaseChangedEvent @event)
+    public static async ValueTask OnPhaseChanged(PhaseChangedEvent @event, CancellationToken cancellationToken)
     {
-        @event.Player.ClearPacketRegistry();
+        // At handshake phase IPlayer channel is still being built, causing stack overflow here
+        if (@event.Phase is Phase.Handshake)
+            return;
+
+        await @event.Player.ClearPluginsPacketRegistryAsync(cancellationToken);
     }
 
     [Subscribe(PostOrder.Last)]
@@ -58,27 +53,28 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(@event.Link.Player.ProtocolVersion))
             return;
 
-        var registry = @event.Link.Player.GetPacketRegistry();
+        var registries = await @event.Link.Player.GetPluginsPacketRegistriesAsync(cancellationToken);
 
-        if (registry.IsEmpty)
+        if (registries.IsEmpty)
             return;
 
-        if (registry.Contains(@event.Message))
+        if (registries.Contains(@event.Message))
             return;
 
         try
         {
-            var packet = @event.Message switch
+            var packets = @event.Message switch
             {
-                IBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registry, binaryMessage),
-                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, registry, minecraftPacket),
+                IBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registries, binaryMessage),
+                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, registries, minecraftPacket),
                 _ => null
             };
 
-            if (packet is null)
+            if (packets is null)
                 return;
 
-            @event.Result = await events.ThrowWithResultAsync(new MessageReceivedEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link), cancellationToken);
+            foreach (var packet in packets)
+                @event.Result = await events.ThrowWithResultAsync(new MessageReceivedEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link), cancellationToken);
         }
         catch (Exception exception)
         {
@@ -92,27 +88,28 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(@event.Link.Player.ProtocolVersion))
             return;
 
-        var registry = @event.Link.Player.GetPacketRegistry();
+        var registries = await @event.Link.Player.GetPluginsPacketRegistriesAsync(cancellationToken);
 
-        if (registry.IsEmpty)
+        if (registries.IsEmpty)
             return;
 
-        if (registry.Contains(@event.Message))
+        if (registries.Contains(@event.Message))
             return;
 
         try
         {
-            var packet = @event.Message switch
+            var packets = @event.Message switch
             {
-                IBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registry, binaryMessage),
-                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, registry, minecraftPacket),
+                IBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registries, binaryMessage),
+                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, registries, minecraftPacket),
                 _ => null
             };
 
-            if (packet is null)
+            if (packets is null)
                 return;
 
-            await events.ThrowAsync(new MessageSentEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link), cancellationToken);
+            foreach (var packet in packets)
+                await events.ThrowAsync(new MessageSentEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link), cancellationToken);
         }
         catch (Exception exception)
         {
@@ -139,22 +136,25 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IMinecraftPacket? DecodeBinaryMessage(ILink link, IMinecraftPacketRegistry registry, IBinaryMessage binaryMessage)
+    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, IMinecraftPacketRegistryPlugins registries, IBinaryMessage binaryMessage)
     {
-        if (!registry.TryCreateDecoder(binaryMessage.Id, out var decoder))
-            return null;
+        foreach (var registry in registries.All)
+        {
+            if (!registry.TryCreateDecoder(binaryMessage.Id, out var decoder))
+                continue;
 
-        var position = binaryMessage.Stream.Position;
+            var position = binaryMessage.Stream.Position;
 
-        var buffer = new MinecraftBuffer(binaryMessage.Stream);
-        var packet = decoder(ref buffer, link.Player.ProtocolVersion);
+            var buffer = new MinecraftBuffer(binaryMessage.Stream);
+            var packet = decoder(ref buffer, link.Player.ProtocolVersion);
 
-        binaryMessage.Stream.Position = position;
+            binaryMessage.Stream.Position = position;
 
-        return packet;
+            yield return packet;
+        }
     }
 
-    protected static IMinecraftPacket? DecodeMinecraftPacket(ILink link, IMinecraftPacketRegistry registry, IMinecraftPacket minecraftPacket)
+    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, IMinecraftPacketRegistryPlugins registries, IMinecraftPacket minecraftPacket)
     {
         var playerPacketRegistryHolder = link.PlayerChannel.GetPacketRegistryHolder();
         var serverPacketRegistryHolder = link.ServerChannel.GetPacketRegistryHolder();
@@ -163,18 +163,21 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             !playerPacketRegistryHolder.Write.TryGetPacketId(minecraftPacket, out id) &&
             !serverPacketRegistryHolder.Read.TryGetPacketId(minecraftPacket, out id) &&
             !serverPacketRegistryHolder.Write.TryGetPacketId(minecraftPacket, out id))
-            return null;
+            yield break;
 
-        if (!registry.TryCreateDecoder(id, out var decoder))
-            return null;
+        foreach (var registry in registries.All)
+        {
+            if (!registry.TryCreateDecoder(id, out var decoder))
+                continue;
 
-        using var stream = MinecraftRecyclableStream.RecyclableMemoryStreamManager.GetStream();
-        var buffer = new MinecraftBuffer(stream);
+            using var stream = MinecraftRecyclableStream.RecyclableMemoryStreamManager.GetStream();
+            var buffer = new MinecraftBuffer(stream);
 
-        minecraftPacket.Encode(ref buffer, link.Player.ProtocolVersion);
-        buffer.Reset();
+            minecraftPacket.Encode(ref buffer, link.Player.ProtocolVersion);
+            buffer.Reset();
 
-        return decoder(ref buffer, link.Player.ProtocolVersion);
+            yield return decoder(ref buffer, link.Player.ProtocolVersion);
+        }
     }
 
     protected abstract bool IsSupportedVersion(ProtocolVersion version);

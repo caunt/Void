@@ -1,9 +1,11 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Void.Proxy.API.Mojang.Minecraft.Network;
+using Void.Proxy.API.Network.IO.Messages;
 using Void.Proxy.API.Network.IO.Messages.Packets;
 using Void.Proxy.API.Network.IO.Streams.Packet;
+using Void.Proxy.API.Network.IO.Streams.Packet.Registries;
 
-namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
+namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Registries;
 
 public class MinecraftPacketRegistry : IMinecraftPacketRegistry
 {
@@ -18,9 +20,9 @@ public class MinecraftPacketRegistry : IMinecraftPacketRegistry
         return Contains(typeof(T));
     }
 
-    public bool Contains(object packet)
+    public bool Contains(IMinecraftMessage message)
     {
-        return Contains(packet.GetType());
+        return Contains(message.GetType());
     }
 
     public bool Contains(Type type)

@@ -8,7 +8,7 @@ using Void.Proxy.Plugins.Common.Network.IO.Bundles;
 
 namespace Void.Proxy.Plugins.Common.Services.Bundles;
 
-public abstract class AbstractBundleService : IPluginService
+public abstract class AbstractBundleService : IPluginCommonService
 {
     [Subscribe]
     public static void OnPlayerConnecting(PlayerConnectingEvent @event)

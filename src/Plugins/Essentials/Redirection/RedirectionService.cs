@@ -9,7 +9,7 @@ using Void.Proxy.Plugins.Common.Services;
 
 namespace Void.Proxy.Plugins.Essentials.Redirection;
 
-public class RedirectionService(IServerService servers, ILogger<RedirectionService> logger) : IPluginService
+public class RedirectionService(IServerService servers, ILogger<RedirectionService> logger) : IPluginCommonService
 {
     private readonly ConcurrentDictionary<IPlayer, IServer> _connecting = [];
 

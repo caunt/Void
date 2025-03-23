@@ -1,10 +1,12 @@
 ﻿using Void.Proxy.API.Network.IO.Messages.Packets;
+using Void.Proxy.API.Network.IO.Streams.Packet.Registries;
 
 namespace Void.Proxy.API.Network.IO.Streams.Packet;
 
 public interface IMinecraftPacketMessageStream : IMinecraftStream
 {
-    public IMinecraftPacketRegistryHolder? RegistryHolder { get; set; }
+    public IMinecraftPacketRegistrySystem? SystemRegistryHolder { get; set; }
+    public IMinecraftPacketRegistryPlugins? PluginsRegistryHolder { get; set; }
 
     public IMinecraftPacket ReadPacket();
     public ValueTask<IMinecraftPacket> ReadPacketAsync(CancellationToken cancellationToken = default);

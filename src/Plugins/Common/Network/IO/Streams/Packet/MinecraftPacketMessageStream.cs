@@ -7,6 +7,7 @@ using Void.Proxy.API.Network.IO.Streams.Extensions;
 using Void.Proxy.API.Network.IO.Streams.Manual;
 using Void.Proxy.API.Network.IO.Streams.Manual.Binary;
 using Void.Proxy.API.Network.IO.Streams.Packet;
+using Void.Proxy.API.Network.IO.Streams.Packet.Registries;
 using Void.Proxy.API.Network.IO.Streams.Recyclable;
 using Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
 
@@ -14,12 +15,13 @@ namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
 
 public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraftPacketMessageStream
 {
-    public ProtocolVersion ProtocolVersion => RegistryHolder?.ProtocolVersion ?? ProtocolVersion.Oldest;
+    public ProtocolVersion ProtocolVersion => SystemRegistryHolder?.ProtocolVersion ?? ProtocolVersion.Oldest;
     public IMinecraftStreamBase? BaseStream { get; set; }
     public bool CanRead => BaseStream?.CanRead ?? false;
     public bool CanWrite => BaseStream?.CanWrite ?? false;
     public bool IsAlive => BaseStream?.IsAlive ?? false;
-    public IMinecraftPacketRegistryHolder? RegistryHolder { get; set; }
+    public IMinecraftPacketRegistrySystem? SystemRegistryHolder { get; set; }
+    public IMinecraftPacketRegistryPlugins? PluginsRegistryHolder { get; set; }
 
     public IMinecraftPacket ReadPacket()
     {
@@ -173,7 +175,7 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
         // Set packet data position for further usage. Stream property Length is preserved.
         stream.Position = buffer.Position;
 
-        if (RegistryHolder?.Read is not { } registry || !registry.TryCreateDecoder(id, out var decoder))
+        if (SystemRegistryHolder?.Read is not { } registry || !registry.TryCreateDecoder(id, out var decoder))
             return new MinecraftBinaryPacket(id, stream);
 
         var packet = decoder(ref buffer, ProtocolVersion);
@@ -210,8 +212,26 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
         }
         else
         {
-            if (RegistryHolder?.Write is not { } registry || !registry.TryGetPacketId(packet, out var id))
-                throw new InvalidOperationException($"Cannot find id for packet {packet} [in {string.Join(", ", RegistryHolder?.Write?.PacketTypes.Select(type => type.Name) ?? [])}]");
+            var id = -1;
+
+            if (SystemRegistryHolder?.Write is { } systemRegistry)
+            {
+                systemRegistry.TryGetPacketId(packet, out id);
+            }
+
+            if (PluginsRegistryHolder is { } pluginsRegistries)
+            {
+                foreach (var registry in pluginsRegistries.All)
+                {
+                    if (registry.TryGetPacketId(packet, out id))
+                        break;
+                }
+            }
+
+            if (id == -1)
+                throw new InvalidOperationException($"{packet} is not registered:\n" +
+                    $"{nameof(SystemRegistryHolder)} [{string.Join(", ", SystemRegistryHolder?.Write?.PacketTypes.Select(type => type.Name) ?? [])}]\n" +
+                    $"{nameof(PluginsRegistryHolder)} [{string.Join(", ", PluginsRegistryHolder?.All.SelectMany(registry => registry.PacketTypes).Select(type => type.Name) ?? [])}]");
 
             EncodeVarInt(stream, id);
 

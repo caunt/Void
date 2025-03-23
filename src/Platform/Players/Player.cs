@@ -2,13 +2,14 @@
 using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Mojang.Profiles;
 using Void.Proxy.API.Players;
+using Void.Proxy.Players.Contexts;
 
 namespace Void.Proxy.Players;
 
-public class Player(TcpClient client, IPlayerContext context) : IPlayer
+public class Player(TcpClient client) : IPlayer
 {
     public IdentifiedKey? IdentifiedKey { get; set; } // used in 1.19 - 1.19.2
-    public IPlayerContext Context => context;
+    public IPlayerContext Context { get; internal set; } = new EmptyPlayerContext();
     public TcpClient Client => client;
     public string RemoteEndPoint { get; } = client.Client.RemoteEndPoint?.ToString() ?? "Unknown?";
 
@@ -25,7 +26,7 @@ public class Player(TcpClient client, IPlayerContext context) : IPlayer
 
     public async ValueTask DisposeAsync()
     {
-        await context.DisposeAsync();
+        await Context.DisposeAsync();
         GC.SuppressFinalize(this);
     }
 

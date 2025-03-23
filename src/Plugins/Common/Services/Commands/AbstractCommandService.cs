@@ -5,7 +5,7 @@ using Void.Proxy.Plugins.Common.Services;
 
 namespace Void.Proxy.Plugins.Common.Services.Commands;
 
-public abstract class AbstractCommandService(IEventService events) : IPluginService
+public abstract class AbstractCommandService(IEventService events) : IPluginCommonService
 {
     public async ValueTask<bool> HandleCommandAsync(ILink link, string command, bool isSigned, CancellationToken cancellationToken)
     {

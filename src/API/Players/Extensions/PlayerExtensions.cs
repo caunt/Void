@@ -5,6 +5,9 @@ using Void.Proxy.API.Network.IO.Channels.Services;
 using Void.Proxy.API.Network.IO.Messages.Packets;
 using Void.Proxy.API.Network.IO.Streams.Packet;
 using Void.Proxy.API.Network.IO.Streams.Packet.Extensions;
+using Void.Proxy.API.Network.IO.Streams.Packet.Registries;
+using Void.Proxy.API.Plugins;
+using Void.Proxy.API.Plugins.Services;
 using Void.Proxy.API.Servers;
 
 namespace Void.Proxy.API.Players.Extensions;
@@ -17,19 +20,37 @@ public static class PlayerExtensions
         await channel.SendPacketAsync(packet, cancellationToken);
     }
 
-    public static void RegisterPacket<T>(this IPlayer player, params MinecraftPacketMapping[] mappings) where T : IMinecraftPacket
+    public static async ValueTask RegisterPacketAsync<T>(this IPlayer player, CancellationToken cancellationToken = default, params MinecraftPacketMapping[] mappings) where T : IMinecraftPacket
     {
-        player.GetPacketRegistry().RegisterPacket<T>(player.ProtocolVersion, mappings);
+        var packetType = typeof(T);
+        var plugins = player.Context.Services.GetRequiredService<IPluginService>();
+        var plugin = plugins.All.FirstOrDefault(plugin => plugin.GetType().Assembly == packetType.Assembly)
+            ?? throw new InvalidOperationException($"Plugin for packet {packetType.Name} not found.");
+
+        var registry = await player.GetPluginPacketRegistryAsync(plugin, cancellationToken);
+        registry.RegisterPacket<T>(player.ProtocolVersion, mappings);
     }
 
-    public static void ClearPacketRegistry(this IPlayer player)
+    public static async ValueTask ClearPluginsPacketRegistryAsync(this IPlayer player, CancellationToken cancellationToken = default)
     {
-        player.GetPacketRegistry().Clear();
+        var registries = await player.GetPluginsPacketRegistriesAsync(cancellationToken);
+
+        foreach (var registry in registries.All)
+            registry.Clear();
     }
 
-    public static IMinecraftPacketRegistry GetPacketRegistry(this IPlayer player)
+    public static async ValueTask<IMinecraftPacketRegistry> GetPluginPacketRegistryAsync(this IPlayer player, IPlugin plugin, CancellationToken cancellationToken = default)
     {
-        return player.Context.Services.GetRequiredService<IMinecraftPacketRegistry>();
+        var registries = await player.GetPluginsPacketRegistriesAsync(cancellationToken);
+        return registries.Get(plugin);
+    }
+
+    public static async ValueTask<IMinecraftPacketRegistryPlugins> GetPluginsPacketRegistriesAsync(this IPlayer player, CancellationToken cancellationToken = default)
+    {
+        var channel = await player.GetChannelAsync(cancellationToken);
+        var stream = channel.Get<IMinecraftPacketMessageStream>();
+
+        return stream.PluginsRegistryHolder ?? throw new Exception("Plugins registry holder is not set yet");
     }
 
     public static async ValueTask<bool> IsProtocolSupportedAsync(this IPlayer player, CancellationToken cancellationToken = default)

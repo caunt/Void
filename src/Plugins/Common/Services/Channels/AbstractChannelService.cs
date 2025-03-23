@@ -15,10 +15,11 @@ using Void.Proxy.Plugins.Common.Network.IO.Channels;
 using Void.Proxy.Plugins.Common.Network.IO.Channels.Services;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Network;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
+using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Registries;
 
 namespace Void.Proxy.Plugins.Common.Services.Channels;
 
-public abstract class AbstractChannelService(IEventService events) : IPluginService
+public abstract class AbstractChannelService(IEventService events) : IPluginCommonService
 {
     [Subscribe]
     public static void OnPlayerConnecting(PlayerConnectingEvent @event)
@@ -47,7 +48,8 @@ public abstract class AbstractChannelService(IEventService events) : IPluginServ
         channel.Add<MinecraftPacketMessageStream>();
 
         var packetStream = channel.Get<MinecraftPacketMessageStream>();
-        packetStream.RegistryHolder = new MinecraftPacketRegistryHolder();
+        packetStream.SystemRegistryHolder = new MinecraftPacketRegistrySystem();
+        packetStream.PluginsRegistryHolder = new MinecraftPacketRegistryPlugins();
 
         await events.ThrowAsync(new ChannelCreatedEvent(player, side, channel), cancellationToken);
 

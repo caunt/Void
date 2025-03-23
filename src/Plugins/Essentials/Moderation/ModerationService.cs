@@ -5,7 +5,7 @@ using Void.Proxy.Plugins.Common.Services;
 
 namespace Void.Proxy.Plugins.Essentials.Moderation;
 
-public class ModerationService(IPlayerService players) : IPluginService
+public class ModerationService(IPlayerService players) : IPluginCommonService
 {
     [Subscribe]
     public async ValueTask OnChatCommand(ChatCommandEvent @event, CancellationToken cancellationToken)
