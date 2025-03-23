@@ -1,6 +1,5 @@
 ﻿using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.API.Network.IO.Messages;
 
 namespace Void.Proxy.API.Network.IO.Messages.Packets;
 

@@ -5,7 +5,6 @@ using Void.Proxy.API.Links;
 using Void.Proxy.API.Mojang.Minecraft.Network;
 using Void.Proxy.API.Players;
 using Void.Proxy.Plugins.Common.Events;
-using Void.Proxy.Plugins.Common.Services;
 
 namespace Void.Proxy.Plugins.Common.Services.Lifecycle;
 
@@ -31,7 +30,7 @@ public abstract class AbstractLifecycleService : IPluginService
             }
         }
 
-        await KickPlayerAsync(@event.Player, reason, cancellationToken);
+        @event.Result = await KickPlayerAsync(@event.Player, reason, cancellationToken);
     }
 
     [Subscribe]
@@ -44,6 +43,6 @@ public abstract class AbstractLifecycleService : IPluginService
     }
 
     protected abstract ValueTask EnableCompressionAsync(ILink link, CancellationToken cancellationToken);
-    protected abstract ValueTask KickPlayerAsync(IPlayer player, string reason, CancellationToken cancellationToken);
+    protected abstract ValueTask<bool> KickPlayerAsync(IPlayer player, string reason, CancellationToken cancellationToken);
     protected abstract bool IsSupportedVersion(ProtocolVersion version);
 }

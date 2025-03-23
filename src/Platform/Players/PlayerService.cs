@@ -84,9 +84,9 @@ public class PlayerService : IPlayerService, IEventListener
             link.ServerChannel.TryPause();
         }
 
-        await _events.ThrowAsync(new PlayerKickEvent(player, reason), cancellationToken);
+        var kicked = await _events.ThrowWithResultAsync(new PlayerKickEvent(player, reason), cancellationToken);
 
-        if (await player.IsProtocolSupportedAsync(cancellationToken))
+        if (kicked)
         {
             var timestamp = Stopwatch.GetTimestamp();
 

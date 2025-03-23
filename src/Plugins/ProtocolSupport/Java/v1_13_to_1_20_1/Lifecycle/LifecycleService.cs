@@ -21,7 +21,7 @@ public class LifecycleService : AbstractLifecycleService
         return Plugin.SupportedVersions.Contains(protocolVersion);
     }
 
-    protected override async ValueTask KickPlayerAsync(IPlayer player, string reason, CancellationToken cancellationToken)
+    protected override async ValueTask<bool> KickPlayerAsync(IPlayer player, string reason, CancellationToken cancellationToken)
     {
         var channel = await player.GetChannelAsync(cancellationToken);
 
@@ -33,5 +33,11 @@ public class LifecycleService : AbstractLifecycleService
         {
             await channel.SendPacketAsync(new LoginDisconnectPacket { Reason = reason }, cancellationToken);
         }
+        else
+        {
+            return false;
+        }
+
+        return true;
     }
 }
