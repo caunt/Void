@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Void.Proxy.API.Events.Minecraft;
-using Void.Proxy.API.Events.Services;
-using Void.Proxy.API.Mojang.Minecraft.Network;
-using Void.Proxy.API.Network;
-using Void.Proxy.API.Network.IO.Channels;
-using Void.Proxy.API.Players;
+using Void.Proxy.Api.Events.Minecraft;
+using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Mojang.Minecraft.Network;
+using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.IO.Channels;
+using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Plugins.Common.Extensions;
 

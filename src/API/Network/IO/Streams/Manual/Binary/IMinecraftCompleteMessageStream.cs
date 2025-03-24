@@ -1,6 +1,6 @@
-﻿using Void.Proxy.API.Network.IO.Messages.Binary;
+﻿using Void.Proxy.Api.Network.IO.Messages.Binary;
 
-namespace Void.Proxy.API.Network.IO.Streams.Manual.Binary;
+namespace Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
 
 public interface IMinecraftCompleteMessageStream : IMinecraftStream
 {

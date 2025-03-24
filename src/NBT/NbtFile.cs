@@ -13,19 +13,19 @@ namespace Void.NBT
             Root = new NbtCompound(rootName);
         }
 
-        public static NbtFile Parse(Stream stream)
+        public static NbtFile Parse(Stream stream, bool readName = true)
         {
-            return Parse(new NbtReader(stream));
+            return Parse(new NbtReader(stream), readName);
         }
 
-        public static NbtFile Parse(byte[] data)
+        public static NbtFile Parse(byte[] data, bool readName = true)
         {
-            return Parse(new NbtReader(data));
+            return Parse(new NbtReader(data), readName);
         }
 
-        public static NbtFile Parse(NbtReader reader)
+        public static NbtFile Parse(NbtReader reader, bool readName = true)
         {
-            return new NbtFile { Root = (NbtCompound)reader.ReadTag() };
+            return new NbtFile { Root = (NbtCompound)reader.ReadTag(readName: readName) };
         }
 
         public Stream Serialize()

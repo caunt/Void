@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
-using Void.Proxy.API.Events;
-using Void.Proxy.API.Events.Services;
+using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Services;
 
 namespace Void.Proxy.Events;
 

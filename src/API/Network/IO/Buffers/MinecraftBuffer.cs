@@ -1,9 +1,9 @@
 ﻿using System.Buffers;
 using System.Numerics;
-using Void.Proxy.API.Mojang;
-using Void.Proxy.API.Mojang.Profiles;
+using Void.Proxy.Api.Mojang;
+using Void.Proxy.Api.Mojang.Profiles;
 
-namespace Void.Proxy.API.Network.IO.Buffers;
+namespace Void.Proxy.Api.Network.IO.Buffers;
 
 public ref struct MinecraftBuffer
 {

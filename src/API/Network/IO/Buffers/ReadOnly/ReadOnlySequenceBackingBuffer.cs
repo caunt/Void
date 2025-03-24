@@ -2,7 +2,7 @@
 using System.Buffers;
 using System.Buffers.Binary;
 
-namespace Void.Proxy.API.Network.IO.Buffers.ReadOnly;
+namespace Void.Proxy.Api.Network.IO.Buffers.ReadOnly;
 
 internal ref struct ReadOnlySequenceBackingBuffer
 {

@@ -1,4 +1,4 @@
-﻿namespace Void.Proxy.API.Network.IO.Streams;
+﻿namespace Void.Proxy.Api.Network.IO.Streams;
 
 public interface IMinecraftStreamBase : IDisposable, IAsyncDisposable
 {

@@ -1,4 +1,4 @@
-﻿namespace Void.Proxy.API.Mojang.Minecraft.Network;
+﻿namespace Void.Proxy.Api.Mojang.Minecraft.Network;
 
 public enum Phase
 {

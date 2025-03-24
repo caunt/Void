@@ -1,6 +1,6 @@
 ﻿using System.Net.Sockets;
 
-namespace Void.Proxy.API.Network.IO.Streams.Manual.Network;
+namespace Void.Proxy.Api.Network.IO.Streams.Manual.Network;
 
 public interface IMinecraftNetworkStream : IMinecraftManualStream, IMinecraftStreamBase
 {

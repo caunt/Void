@@ -1,8 +1,8 @@
-﻿using Void.Proxy.API.Links;
-using Void.Proxy.API.Network;
-using Void.Proxy.API.Network.IO.Messages;
+﻿using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.IO.Messages;
 
-namespace Void.Proxy.API.Events.Network;
+namespace Void.Proxy.Api.Events.Network;
 
 public record MessageReceivedEvent(Side Origin, Side From, Side To, Direction Direction, IMinecraftMessage Message, ILink Link) : IEventWithResult<bool>
 {

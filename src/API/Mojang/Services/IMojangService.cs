@@ -1,7 +1,7 @@
-﻿using Void.Proxy.API.Mojang.Profiles;
-using Void.Proxy.API.Players;
+﻿using Void.Proxy.Api.Mojang.Profiles;
+using Void.Proxy.Api.Players;
 
-namespace Void.Proxy.API.Mojang.Services;
+namespace Void.Proxy.Api.Mojang.Services;
 
 public interface IMojangService
 {

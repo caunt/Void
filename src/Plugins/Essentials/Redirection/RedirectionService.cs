@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
-using Void.Proxy.API.Events;
-using Void.Proxy.API.Events.Commands;
-using Void.Proxy.API.Events.Player;
-using Void.Proxy.API.Players;
-using Void.Proxy.API.Servers;
+using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Commands;
+using Void.Proxy.Api.Events.Player;
+using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Servers;
 using Void.Proxy.Plugins.Common.Services;
 
 namespace Void.Proxy.Plugins.Essentials.Redirection;

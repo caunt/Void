@@ -1,7 +1,7 @@
-﻿using Void.Proxy.API.Network.IO.Channels.Services;
-using Void.Proxy.API.Players;
+﻿using Void.Proxy.Api.Network.IO.Channels.Services;
+using Void.Proxy.Api.Players;
 
-namespace Void.Proxy.API.Events.Channels;
+namespace Void.Proxy.Api.Events.Channels;
 
 public record SearchChannelBuilderEvent(IPlayer Player, Memory<byte> Buffer) : IEventWithResult<ChannelBuilder>
 {

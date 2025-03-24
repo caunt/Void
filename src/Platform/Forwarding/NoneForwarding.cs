@@ -1,4 +1,4 @@
-﻿using Void.Proxy.API.Forwarding;
+﻿using Void.Proxy.Api.Forwarding;
 
 namespace Void.Proxy.Forwarding;
 

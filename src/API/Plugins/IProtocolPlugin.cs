@@ -1,6 +1,6 @@
-﻿using Void.Proxy.API.Mojang.Minecraft.Network;
+﻿using Void.Proxy.Api.Mojang.Minecraft.Network;
 
-namespace Void.Proxy.API.Plugins;
+namespace Void.Proxy.Api.Plugins;
 
 public interface IProtocolPlugin : IPlugin
 {

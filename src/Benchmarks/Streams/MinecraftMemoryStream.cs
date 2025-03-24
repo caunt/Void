@@ -1,5 +1,5 @@
 ﻿using System.Net.Sockets;
-using Void.Proxy.API.Network.IO.Streams.Manual.Network;
+using Void.Proxy.Api.Network.IO.Streams.Manual.Network;
 
 namespace Void.Benchmarks.Streams;
 

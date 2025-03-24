@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
-using Void.Proxy.API.Events;
-using Void.Proxy.API.Events.Network;
-using Void.Proxy.API.Network.IO.Messages;
+using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Network;
+using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Compression;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
 

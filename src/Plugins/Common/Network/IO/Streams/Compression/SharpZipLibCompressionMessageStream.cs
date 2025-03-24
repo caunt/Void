@@ -1,14 +1,14 @@
 ﻿using ICSharpCode.SharpZipLib.Zip.Compression;
 using Microsoft.IO;
 using System.Buffers;
-using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.API.Network.IO.Messages.Binary;
-using Void.Proxy.API.Network.IO.Streams;
-using Void.Proxy.API.Network.IO.Streams.Compression;
-using Void.Proxy.API.Network.IO.Streams.Extensions;
-using Void.Proxy.API.Network.IO.Streams.Manual;
-using Void.Proxy.API.Network.IO.Streams.Manual.Binary;
-using Void.Proxy.API.Network.IO.Streams.Recyclable;
+using Void.Proxy.Api.Network.IO.Buffers;
+using Void.Proxy.Api.Network.IO.Messages.Binary;
+using Void.Proxy.Api.Network.IO.Streams;
+using Void.Proxy.Api.Network.IO.Streams.Compression;
+using Void.Proxy.Api.Network.IO.Streams.Extensions;
+using Void.Proxy.Api.Network.IO.Streams.Manual;
+using Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
+using Void.Proxy.Api.Network.IO.Streams.Recyclable;
 using Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Compression;

@@ -1,7 +1,7 @@
 ﻿using System.Net.Sockets;
-using Void.Proxy.API.Mojang.Minecraft.Network;
-using Void.Proxy.API.Mojang.Profiles;
-using Void.Proxy.API.Players;
+using Void.Proxy.Api.Mojang.Minecraft.Network;
+using Void.Proxy.Api.Mojang.Profiles;
+using Void.Proxy.Api.Players;
 using Void.Proxy.Players.Contexts;
 
 namespace Void.Proxy.Players;
@@ -20,12 +20,6 @@ public class Player(TcpClient client) : IPlayer
 
     // we do not know Player protocol version yet, use the oldest possible
     public ProtocolVersion ProtocolVersion { get; set; } = ProtocolVersion.Oldest;
-
-    public async ValueTask KickAsync(string? reason = null, CancellationToken cancellationToken = default)
-    {
-        var players = Context.Services.GetRequiredService<IPlayerService>();
-        await players.KickPlayerAsync(this, reason, cancellationToken);
-    }
 
     public async ValueTask DisposeAsync()
     {

@@ -1,4 +1,4 @@
-﻿namespace Void.Proxy.API.Links;
+﻿namespace Void.Proxy.Api.Links;
 
 public enum ConnectionResult
 {

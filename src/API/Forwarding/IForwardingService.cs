@@ -1,4 +1,4 @@
-﻿namespace Void.Proxy.API.Forwarding;
+﻿namespace Void.Proxy.Api.Forwarding;
 
 public interface IForwardingService
 {

@@ -1,6 +1,6 @@
 ﻿using System.Buffers.Binary;
 
-namespace Void.Proxy.API.Network.IO.Buffers.ReadWrite;
+namespace Void.Proxy.Api.Network.IO.Buffers.ReadWrite;
 
 internal ref struct SpanBackingBuffer(Span<byte> span)
 {

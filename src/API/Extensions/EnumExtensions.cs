@@ -1,7 +1,7 @@
-﻿using Void.Proxy.API.Links;
-using Void.Proxy.API.Network;
+﻿using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network;
 
-namespace Void.Proxy.API.Extensions;
+namespace Void.Proxy.Api.Extensions;
 
 public static class EnumExtensions
 {

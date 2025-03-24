@@ -10,7 +10,7 @@ using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using System.Reflection;
 using System.Runtime.Versioning;
-using Void.Proxy.API.Plugins.Services;
+using Void.Proxy.Api.Plugins.Services;
 
 namespace Void.Proxy.Plugins;
 
@@ -31,7 +31,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
             return null;
         }
 
-        var assemblyPath = ResolveAssemblyFromNuGetAsync(assemblyName).GetAwaiter().GetResult();
+        var assemblyPath = ResolveAssemblyFromNuGetAsync(assemblyName).AsTask().GetAwaiter().GetResult();
         return assemblyPath;
     }
 

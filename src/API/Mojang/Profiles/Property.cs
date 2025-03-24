@@ -1,4 +1,4 @@
-﻿namespace Void.Proxy.API.Mojang.Profiles;
+﻿namespace Void.Proxy.Api.Mojang.Profiles;
 
 public record Property
 {

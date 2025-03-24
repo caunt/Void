@@ -1,12 +1,12 @@
 ﻿using System.Buffers;
 using System.Data;
 using System.Text;
-using Void.Proxy.API.Mojang;
-using Void.Proxy.API.Mojang.Profiles;
-using Void.Proxy.API.Network.IO.Buffers.ReadOnly;
-using Void.Proxy.API.Network.IO.Buffers.ReadWrite;
+using Void.Proxy.Api.Mojang;
+using Void.Proxy.Api.Mojang.Profiles;
+using Void.Proxy.Api.Network.IO.Buffers.ReadOnly;
+using Void.Proxy.Api.Network.IO.Buffers.ReadWrite;
 
-namespace Void.Proxy.API.Network.IO.Buffers;
+namespace Void.Proxy.Api.Network.IO.Buffers;
 
 internal ref struct MinecraftBackingBuffer
 {

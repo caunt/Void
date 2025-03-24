@@ -1,9 +1,9 @@
-﻿using Void.Proxy.API.Links;
-using Void.Proxy.API.Network.IO.Channels;
-using Void.Proxy.API.Players;
-using Void.Proxy.API.Servers;
+﻿using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network.IO.Channels;
+using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Servers;
 
-namespace Void.Proxy.API.Events.Links;
+namespace Void.Proxy.Api.Events.Links;
 
 public record CreateLinkEvent(IPlayer Player, IServer Server, IMinecraftChannel PlayerChannel, IMinecraftChannel ServerChannel) : IEventWithResult<ILink>
 {

@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Void.Proxy.API.Events.Network;
-using Void.Proxy.API.Events.Services;
-using Void.Proxy.API.Links;
-using Void.Proxy.API.Links.Extensions;
-using Void.Proxy.API.Network;
-using Void.Proxy.API.Network.IO.Messages.Packets;
+using Void.Proxy.Api.Events.Network;
+using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Links.Extensions;
+using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.IO.Messages.Packets;
 using Void.Proxy.Plugins.Common.Network.IO.Bundles;
 
 namespace Void.Proxy.Plugins.Common.Extensions;

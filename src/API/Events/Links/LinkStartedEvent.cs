@@ -1,5 +1,5 @@
-﻿using Void.Proxy.API.Links;
+﻿using Void.Proxy.Api.Links;
 
-namespace Void.Proxy.API.Events.Links;
+namespace Void.Proxy.Api.Events.Links;
 
 public record LinkStartedEvent(ILink Link) : IEvent;

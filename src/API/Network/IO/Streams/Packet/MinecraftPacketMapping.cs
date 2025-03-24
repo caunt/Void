@@ -1,5 +1,5 @@
-﻿using Void.Proxy.API.Mojang.Minecraft.Network;
+﻿using Void.Proxy.Api.Mojang.Minecraft.Network;
 
-namespace Void.Proxy.API.Network.IO.Streams.Packet;
+namespace Void.Proxy.Api.Network.IO.Streams.Packet;
 
 public record MinecraftPacketMapping(int Id, ProtocolVersion ProtocolVersion, ProtocolVersion? LastValidProtocolVersion = null);

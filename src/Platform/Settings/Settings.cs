@@ -2,9 +2,9 @@
 using IniParser.Model;
 using System.Net;
 using System.Text.RegularExpressions;
-using Void.Proxy.API.Forwarding;
-using Void.Proxy.API.Servers;
-using Void.Proxy.API.Settings;
+using Void.Proxy.Api.Forwarding;
+using Void.Proxy.Api.Servers;
+using Void.Proxy.Api.Settings;
 using Void.Proxy.Forwarding;
 using Void.Proxy.Properties;
 using Void.Proxy.Servers;

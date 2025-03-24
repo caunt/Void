@@ -1,5 +1,5 @@
-﻿using Void.Proxy.API.Players;
+﻿using Void.Proxy.Api.Players;
 
-namespace Void.Proxy.API.Events.Player;
+namespace Void.Proxy.Api.Events.Player;
 
 public record PlayerDisconnectedEvent(IPlayer Player) : IEvent;

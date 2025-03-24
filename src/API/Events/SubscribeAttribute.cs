@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace Void.Proxy.API.Events;
+namespace Void.Proxy.Api.Events;
 
 [AttributeUsage(AttributeTargets.Method)]
 public class SubscribeAttribute(PostOrder order = PostOrder.Normal) : Attribute

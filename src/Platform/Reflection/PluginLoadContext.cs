@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.Loader;
-using Void.Proxy.API.Plugins.Services;
+using Void.Proxy.Api.Plugins.Services;
 
 namespace Void.Proxy.Reflection;
 

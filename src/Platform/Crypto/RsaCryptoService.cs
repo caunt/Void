@@ -1,5 +1,5 @@
 ﻿using System.Security.Cryptography;
-using Void.Proxy.API.Crypto;
+using Void.Proxy.Api.Crypto;
 
 namespace Void.Proxy.Crypto;
 

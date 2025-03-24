@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Net;
-using Void.Proxy.API.Forwarding;
-using Void.Proxy.API.Servers;
+using Void.Proxy.Api.Forwarding;
+using Void.Proxy.Api.Servers;
 
-namespace Void.Proxy.API.Settings;
+namespace Void.Proxy.Api.Settings;
 
 public interface ISettings
 {

@@ -1,6 +1,6 @@
 ﻿using System.Net.Sockets;
 
-namespace Void.Proxy.API.Players;
+namespace Void.Proxy.Api.Players;
 
 public interface IPlayerService
 {

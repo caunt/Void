@@ -1,7 +1,7 @@
 ﻿using System.Buffers;
 using System.Buffers.Binary;
 
-namespace Void.Proxy.API.Network.IO.Buffers.ReadWrite;
+namespace Void.Proxy.Api.Network.IO.Buffers.ReadWrite;
 
 internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
 {

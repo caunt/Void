@@ -1,6 +1,6 @@
-﻿using Void.Proxy.API.Servers;
+﻿using Void.Proxy.Api.Servers;
 
-namespace Void.Proxy.API.Events.Encryption;
+namespace Void.Proxy.Api.Events.Encryption;
 
 public record SearchServerPrivateKey(IServer Server) : IEventWithResult<byte[]>
 {

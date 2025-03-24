@@ -1,7 +1,7 @@
-﻿using Void.Proxy.API.Players;
-using Void.Proxy.API.Servers;
+﻿using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Servers;
 
-namespace Void.Proxy.API.Network.IO.Channels.Services;
+namespace Void.Proxy.Api.Network.IO.Channels.Services;
 
 public interface IChannelBuilderService
 {

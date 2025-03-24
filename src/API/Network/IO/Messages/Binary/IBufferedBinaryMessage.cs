@@ -1,6 +1,6 @@
 ﻿using Microsoft.IO;
 
-namespace Void.Proxy.API.Network.IO.Messages.Binary;
+namespace Void.Proxy.Api.Network.IO.Messages.Binary;
 
 public interface IBufferedBinaryMessage : IMinecraftMessage
 {

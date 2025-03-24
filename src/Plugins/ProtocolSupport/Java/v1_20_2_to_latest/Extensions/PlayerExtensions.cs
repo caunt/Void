@@ -1,6 +1,6 @@
-﻿using Void.Proxy.API.Network.IO.Streams.Packet;
-using Void.Proxy.API.Players;
-using Void.Proxy.API.Players.Extensions;
+﻿using Void.Proxy.Api.Network.IO.Streams.Packet;
+using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 

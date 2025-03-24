@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Void.Proxy.API.Mojang;
+namespace Void.Proxy.Api.Mojang;
 
 public struct Uuid(Guid guid)
 {

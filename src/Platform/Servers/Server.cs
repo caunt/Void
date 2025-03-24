@@ -1,4 +1,4 @@
-﻿using Void.Proxy.API.Servers;
+﻿using Void.Proxy.Api.Servers;
 
 namespace Void.Proxy.Servers;
 

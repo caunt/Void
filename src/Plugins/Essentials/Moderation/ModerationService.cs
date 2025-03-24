@@ -1,6 +1,7 @@
-﻿using Void.Proxy.API.Events;
-using Void.Proxy.API.Events.Commands;
-using Void.Proxy.API.Players;
+﻿using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Commands;
+using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Services;
 
 namespace Void.Proxy.Plugins.Essentials.Moderation;

@@ -67,8 +67,8 @@ public class Compression
         sharpZipLibMemoryStream.Reset(0);
         ionicZlibMemoryStream.Reset(0);
 
-        SharpZipLib_Write().GetAwaiter().GetResult();
-        IonicZlib_Write().GetAwaiter().GetResult();
+        SharpZipLib_Write().AsTask().GetAwaiter().GetResult();
+        IonicZlib_Write().AsTask().GetAwaiter().GetResult();
 
         sharpZipLibMemoryStream.Reset();
         ionicZlibMemoryStream.Reset();
@@ -95,7 +95,7 @@ public class Compression
 
         for (var i = 0; i < 1000; i++)
         {
-            var message = await _sharpZipLibStream.ReadMessageAsync();
+            _ = await _sharpZipLibStream.ReadMessageAsync();
         }
     }
 

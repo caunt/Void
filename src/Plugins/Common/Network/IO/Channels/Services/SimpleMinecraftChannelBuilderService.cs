@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Net.Sockets;
-using Void.Proxy.API.Events.Channels;
-using Void.Proxy.API.Events.Services;
-using Void.Proxy.API.Network;
-using Void.Proxy.API.Network.IO.Channels;
-using Void.Proxy.API.Network.IO.Channels.Services;
-using Void.Proxy.API.Players;
-using Void.Proxy.API.Servers;
+using Void.Proxy.Api.Events.Channels;
+using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.IO.Channels;
+using Void.Proxy.Api.Network.IO.Channels.Services;
+using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Servers;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Network;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Transparent;
 

@@ -1,5 +1,5 @@
-﻿using Void.Proxy.API.Events;
-using Void.Proxy.API.Links;
+﻿using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Links;
 
 namespace Void.Proxy.Plugins.Common.Events;
 

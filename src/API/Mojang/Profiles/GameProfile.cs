@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Void.Proxy.API.Mojang.Profiles;
+namespace Void.Proxy.Api.Mojang.Profiles;
 
 public record GameProfile(
     [property: JsonConverter(typeof(Uuid.JsonConverter))]

@@ -1,14 +1,14 @@
-﻿using Void.Proxy.API.Events.Links;
-using Void.Proxy.API.Events.Network;
-using Void.Proxy.API.Events.Services;
-using Void.Proxy.API.Extensions;
-using Void.Proxy.API.Links;
-using Void.Proxy.API.Network;
-using Void.Proxy.API.Network.IO.Channels;
-using Void.Proxy.API.Network.IO.Messages;
-using Void.Proxy.API.Players;
-using Void.Proxy.API.Players.Extensions;
-using Void.Proxy.API.Servers;
+﻿using Void.Proxy.Api.Events.Links;
+using Void.Proxy.Api.Events.Network;
+using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Extensions;
+using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.IO.Channels;
+using Void.Proxy.Api.Network.IO.Messages;
+using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Players.Extensions;
+using Void.Proxy.Api.Servers;
 
 namespace Void.Proxy.Links;
 

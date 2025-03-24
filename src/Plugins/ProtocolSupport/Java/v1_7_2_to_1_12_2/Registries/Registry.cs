@@ -1,5 +1,5 @@
-﻿using Void.Proxy.API.Mojang.Minecraft.Network;
-using Void.Proxy.API.Network.IO.Streams.Packet;
+﻿using Void.Proxy.Api.Mojang.Minecraft.Network;
+using Void.Proxy.Api.Network.IO.Streams.Packet;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Serverbound;
 

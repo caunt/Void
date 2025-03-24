@@ -1,4 +1,4 @@
-﻿namespace Void.Proxy.API.Events.Authentication;
+﻿namespace Void.Proxy.Api.Events.Authentication;
 
 public enum AuthenticationResult
 {

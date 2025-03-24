@@ -1,11 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Void.Proxy.API.Events.Network;
-using Void.Proxy.API.Events.Services;
-using Void.Proxy.API.Network;
-using Void.Proxy.API.Network.IO.Channels.Extensions;
-using Void.Proxy.API.Network.IO.Messages.Packets;
+using Void.Proxy.Api.Events.Network;
+using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.IO.Channels.Extensions;
+using Void.Proxy.Api.Network.IO.Messages.Packets;
 
-namespace Void.Proxy.API.Links.Extensions;
+namespace Void.Proxy.Api.Links.Extensions;
 
 public static class MinecraftLinkExtensions
 {

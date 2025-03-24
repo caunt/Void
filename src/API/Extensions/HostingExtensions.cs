@@ -3,7 +3,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Void.Proxy.API.Extensions;
+namespace Void.Proxy.Api.Extensions;
 
 public static class HostingExtensions
 {

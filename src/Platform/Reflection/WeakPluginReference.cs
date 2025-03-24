@@ -1,4 +1,4 @@
-﻿using Void.Proxy.API.Plugins;
+﻿using Void.Proxy.Api.Plugins;
 
 namespace Void.Proxy.Reflection;
 

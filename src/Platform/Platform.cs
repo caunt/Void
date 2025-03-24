@@ -2,14 +2,15 @@
 using Serilog.Events;
 using System.Diagnostics;
 using System.Net.Sockets;
-using Void.Proxy.API;
-using Void.Proxy.API.Events.Proxy;
-using Void.Proxy.API.Events.Services;
-using Void.Proxy.API.Forwarding;
-using Void.Proxy.API.Players;
-using Void.Proxy.API.Plugins.Services;
-using Void.Proxy.API.Servers;
-using Void.Proxy.API.Settings;
+using Void.Proxy.Api;
+using Void.Proxy.Api.Events.Proxy;
+using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Forwarding;
+using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Players.Extensions;
+using Void.Proxy.Api.Plugins.Services;
+using Void.Proxy.Api.Servers;
+using Void.Proxy.Api.Settings;
 
 namespace Void.Proxy;
 
@@ -78,7 +79,7 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
         await events.ThrowAsync<ProxyStoppingEvent>(cancellationToken);
 
         for (var i = players.All.Count - 1; i >= 0; i--)
-            await players.KickPlayerAsync(players.All[i], "Proxy is shutting down", cancellationToken);
+            await players.All[i].KickAsync("Proxy is shutting down", cancellationToken);
 
         logger.LogInformation("Awaiting completion of connection listener");
         if (_backgroundTask is not null)

@@ -1,13 +1,13 @@
 ﻿using Nito.AsyncEx;
 using System.Diagnostics.CodeAnalysis;
-using Void.Proxy.API.Network;
-using Void.Proxy.API.Network.IO.Channels;
-using Void.Proxy.API.Network.IO.Messages;
-using Void.Proxy.API.Network.IO.Messages.Packets;
-using Void.Proxy.API.Network.IO.Streams;
-using Void.Proxy.API.Network.IO.Streams.Manual.Binary;
-using Void.Proxy.API.Network.IO.Streams.Manual.Network;
-using Void.Proxy.API.Network.IO.Streams.Packet;
+using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.IO.Channels;
+using Void.Proxy.Api.Network.IO.Messages;
+using Void.Proxy.Api.Network.IO.Messages.Packets;
+using Void.Proxy.Api.Network.IO.Streams;
+using Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
+using Void.Proxy.Api.Network.IO.Streams.Manual.Network;
+using Void.Proxy.Api.Network.IO.Streams.Packet;
 using Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Channels;

@@ -1,6 +1,6 @@
-﻿using Void.Proxy.API.Players;
+﻿using Void.Proxy.Api.Players;
 
-namespace Void.Proxy.API.Chat.Commands;
+namespace Void.Proxy.Api.Chat.Commands;
 
 public interface IPlayerCommandSource
 {

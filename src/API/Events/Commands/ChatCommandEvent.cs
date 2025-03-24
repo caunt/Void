@@ -1,6 +1,6 @@
-﻿using Void.Proxy.API.Links;
+﻿using Void.Proxy.Api.Links;
 
-namespace Void.Proxy.API.Events.Commands;
+namespace Void.Proxy.Api.Events.Commands;
 
 public record ChatCommandEvent(ILink Link, string Command, bool IsSigned) : IEventWithResult<bool>
 {

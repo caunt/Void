@@ -1,8 +1,8 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Void.Proxy.API.Network.IO.Messages;
-using Void.Proxy.API.Network.IO.Streams;
+using Void.Proxy.Api.Network.IO.Messages;
+using Void.Proxy.Api.Network.IO.Streams;
 
-namespace Void.Proxy.API.Network.IO.Channels;
+namespace Void.Proxy.Api.Network.IO.Channels;
 
 public interface IMinecraftChannel : IDisposable, IAsyncDisposable
 {

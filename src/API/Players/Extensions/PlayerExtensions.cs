@@ -1,20 +1,34 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Void.Proxy.API.Network.IO.Channels;
-using Void.Proxy.API.Network.IO.Channels.Extensions;
-using Void.Proxy.API.Network.IO.Channels.Services;
-using Void.Proxy.API.Network.IO.Messages.Packets;
-using Void.Proxy.API.Network.IO.Streams.Packet;
-using Void.Proxy.API.Network.IO.Streams.Packet.Extensions;
-using Void.Proxy.API.Network.IO.Streams.Packet.Registries;
-using Void.Proxy.API.Plugins;
-using Void.Proxy.API.Plugins.Services;
-using Void.Proxy.API.Servers;
+using Void.Proxy.Api.Events.Chat;
+using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Network.IO.Channels;
+using Void.Proxy.Api.Network.IO.Channels.Extensions;
+using Void.Proxy.Api.Network.IO.Channels.Services;
+using Void.Proxy.Api.Network.IO.Messages.Packets;
+using Void.Proxy.Api.Network.IO.Streams.Packet;
+using Void.Proxy.Api.Network.IO.Streams.Packet.Extensions;
+using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
+using Void.Proxy.Api.Plugins;
+using Void.Proxy.Api.Plugins.Services;
+using Void.Proxy.Api.Servers;
 
-namespace Void.Proxy.API.Players.Extensions;
+namespace Void.Proxy.Api.Players.Extensions;
 
 public static class PlayerExtensions
 {
-    public static async ValueTask SendPacketAsync<T>(this IPlayer player, T packet, CancellationToken cancellationToken) where T : IMinecraftPacket
+    public static async ValueTask<ChatMessageSendResult> SendChatMessageAsync(this IPlayer player, string text, CancellationToken cancellationToken = default)
+    {
+        var events = player.Context.Services.GetRequiredService<IEventService>();
+        return await events.ThrowWithResultAsync(new ChatMessageSendEvent(player, text), cancellationToken);
+    }
+
+    public static async ValueTask KickAsync(this IPlayer player, string? reason = null, CancellationToken cancellationToken = default)
+    {
+        var players = player.Context.Services.GetRequiredService<IPlayerService>();
+        await players.KickPlayerAsync(player, reason, cancellationToken);
+    }
+
+    public static async ValueTask SendPacketAsync<T>(this IPlayer player, T packet, CancellationToken cancellationToken = default) where T : IMinecraftPacket
     {
         var channel = await player.GetChannelAsync(cancellationToken);
         await channel.SendPacketAsync(packet, cancellationToken);

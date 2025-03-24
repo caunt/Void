@@ -1,4 +1,4 @@
-﻿namespace Void.Proxy.API.Servers;
+﻿namespace Void.Proxy.Api.Servers;
 
 public interface IServerService
 {

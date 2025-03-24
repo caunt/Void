@@ -1,3 +1,3 @@
-﻿namespace Void.Proxy.API.Network.IO.Messages;
+﻿namespace Void.Proxy.Api.Network.IO.Messages;
 
 public interface IMinecraftMessage : IDisposable;

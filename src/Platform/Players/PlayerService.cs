@@ -1,15 +1,15 @@
 ﻿using Nito.AsyncEx;
 using System.Diagnostics;
 using System.Net.Sockets;
-using Void.Proxy.API.Events;
-using Void.Proxy.API.Events.Links;
-using Void.Proxy.API.Events.Player;
-using Void.Proxy.API.Events.Services;
-using Void.Proxy.API.Extensions;
-using Void.Proxy.API.Links;
-using Void.Proxy.API.Players;
-using Void.Proxy.API.Players.Extensions;
-using Void.Proxy.API.Settings;
+using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Links;
+using Void.Proxy.Api.Events.Player;
+using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Extensions;
+using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Players.Extensions;
+using Void.Proxy.Api.Settings;
 using Void.Proxy.Players.Contexts;
 
 namespace Void.Proxy.Players;

@@ -1,6 +1,6 @@
-﻿using Void.Proxy.API.Links;
+﻿using Void.Proxy.Api.Links;
 
-namespace Void.Proxy.API.Events.Authentication;
+namespace Void.Proxy.Api.Events.Authentication;
 
 public record AuthenticationStartingEvent(ILink Link) : IEventWithResult<AuthenticationSide>
 {

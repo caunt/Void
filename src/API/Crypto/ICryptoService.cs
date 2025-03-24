@@ -1,6 +1,6 @@
 ﻿using System.Security.Cryptography;
 
-namespace Void.Proxy.API.Crypto;
+namespace Void.Proxy.Api.Crypto;
 
 public interface ICryptoService
 {

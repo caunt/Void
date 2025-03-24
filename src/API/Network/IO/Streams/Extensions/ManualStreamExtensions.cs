@@ -1,7 +1,7 @@
 ﻿using System.Buffers;
-using Void.Proxy.API.Network.IO.Streams.Manual;
+using Void.Proxy.Api.Network.IO.Streams.Manual;
 
-namespace Void.Proxy.API.Network.IO.Streams.Extensions;
+namespace Void.Proxy.Api.Network.IO.Streams.Extensions;
 
 public static class ManualStreamExtensions
 {

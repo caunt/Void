@@ -1,9 +1,9 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
-using Void.Proxy.API.Mojang.Minecraft.Network;
-using Void.Proxy.API.Network.IO.Buffers;
+using Void.Proxy.Api.Mojang.Minecraft.Network;
+using Void.Proxy.Api.Network.IO.Buffers;
 
-namespace Void.Proxy.API.Mojang.Profiles;
+namespace Void.Proxy.Api.Mojang.Profiles;
 
 public record IdentifiedKey(IdentifiedKeyRevision Revision, long ExpiresAt, byte[] PublicKey, byte[] Signature)
 {

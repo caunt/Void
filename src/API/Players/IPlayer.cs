@@ -1,8 +1,8 @@
 ﻿using System.Net.Sockets;
-using Void.Proxy.API.Mojang.Minecraft.Network;
-using Void.Proxy.API.Mojang.Profiles;
+using Void.Proxy.Api.Mojang.Minecraft.Network;
+using Void.Proxy.Api.Mojang.Profiles;
 
-namespace Void.Proxy.API.Players;
+namespace Void.Proxy.Api.Players;
 
 public interface IPlayer : IAsyncDisposable
 {
@@ -16,6 +16,4 @@ public interface IPlayer : IAsyncDisposable
     public GameProfile? Profile { get; set; }
     public IdentifiedKey? IdentifiedKey { get; set; }
     public Phase Phase { get; set; }
-
-    public ValueTask KickAsync(string? reason = null, CancellationToken cancellationToken = default);
 }

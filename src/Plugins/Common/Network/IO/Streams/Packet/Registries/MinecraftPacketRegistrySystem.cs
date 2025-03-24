@@ -1,9 +1,9 @@
-﻿using Void.Proxy.API.Mojang.Minecraft.Network;
-using Void.Proxy.API.Network;
-using Void.Proxy.API.Network.IO.Messages.Packets;
-using Void.Proxy.API.Network.IO.Streams.Packet;
-using Void.Proxy.API.Network.IO.Streams.Packet.Registries;
-using Void.Proxy.API.Plugins;
+﻿using Void.Proxy.Api.Mojang.Minecraft.Network;
+using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.IO.Messages.Packets;
+using Void.Proxy.Api.Network.IO.Streams.Packet;
+using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
+using Void.Proxy.Api.Plugins;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Registries;
 

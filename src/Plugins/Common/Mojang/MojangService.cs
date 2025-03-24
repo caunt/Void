@@ -1,10 +1,10 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
-using Void.Proxy.API.Crypto;
-using Void.Proxy.API.Mojang.Profiles;
-using Void.Proxy.API.Mojang.Services;
-using Void.Proxy.API.Players;
+using Void.Proxy.Api.Crypto;
+using Void.Proxy.Api.Mojang.Profiles;
+using Void.Proxy.Api.Mojang.Services;
+using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Plugins.Common.Mojang;
 

@@ -1,11 +1,11 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
-using Void.Proxy.API.Events;
-using Void.Proxy.API.Events.Plugins;
-using Void.Proxy.API.Links;
-using Void.Proxy.API.Mojang.Minecraft.Network;
-using Void.Proxy.API.Network.IO.Buffers;
-using Void.Proxy.API.Plugins;
+using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Plugins;
+using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Mojang.Minecraft.Network;
+using Void.Proxy.Api.Network.IO.Buffers;
+using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Common.Events;
 
 namespace Void.Proxy.Plugins.ForwardingSupport.Velocity;

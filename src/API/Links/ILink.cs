@@ -1,9 +1,9 @@
-﻿using Void.Proxy.API.Events;
-using Void.Proxy.API.Network.IO.Channels;
-using Void.Proxy.API.Players;
-using Void.Proxy.API.Servers;
+﻿using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Network.IO.Channels;
+using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Servers;
 
-namespace Void.Proxy.API.Links;
+namespace Void.Proxy.Api.Links;
 
 public interface ILink : IEventListener, IAsyncDisposable
 {
