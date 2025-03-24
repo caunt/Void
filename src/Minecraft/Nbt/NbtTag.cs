@@ -1,4 +1,4 @@
-namespace Void.Nbt
+namespace Void.Minecraft.Nbt
 {
     public abstract class NbtTag
     {

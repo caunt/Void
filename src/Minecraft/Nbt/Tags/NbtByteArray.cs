@@ -1,4 +1,4 @@
-namespace Void.Nbt.Tags
+namespace Void.Minecraft.Nbt.Tags
 {
     public class NbtByteArray : NbtTag
     {

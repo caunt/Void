@@ -1,4 +1,4 @@
-﻿using Void.Nbt;
+﻿using Void.Minecraft.Nbt;
 using Void.Proxy.Api.Mojang.Minecraft.Network;
 using Void.Proxy.Api.Network.IO.Buffers;
 using Void.Proxy.Api.Network.IO.Messages.Packets;

@@ -1,26 +1,26 @@
-namespace Void.Nbt.Tags
+namespace Void.Minecraft.Nbt.Tags
 {
-    public class NbtByte : NbtTag
+    public class NbtString : NbtTag
     {
-        public byte Value;
+        public string Value;
 
-        public NbtByte(byte value)
+        public NbtString(string value)
         {
             Value = value;
         }
 
-        public NbtByte(string? name, byte value)
+        public NbtString(string? name, string value)
         {
             Name = name;
             Value = value;
         }
 
-        public static NbtByte FromReader(NbtReader reader, bool readName = true)
+        public static NbtString FromReader(NbtReader reader, bool readName = true)
         {
             var name = readName ? reader.ReadString() : null;
-            var value = reader.ReadByte();
+            var value = reader.ReadString();
 
-            return new NbtByte(name, value);
+            return new NbtString(name, value);
         }
 
         internal override void SerializeValue(ref NbtWriter writer)
@@ -30,7 +30,7 @@ namespace Void.Nbt.Tags
 
         public override NbtTagType GetType()
         {
-            return NbtTagType.Byte;
+            return NbtTagType.String;
         }
     }
 }

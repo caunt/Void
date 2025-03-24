@@ -1,4 +1,4 @@
-namespace Void.Nbt
+namespace Void.Minecraft.Nbt
 {
     public enum NbtTagType : byte
     {

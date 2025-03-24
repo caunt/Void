@@ -2,7 +2,8 @@
   <Project Path="src\Debug\Void.Proxy.Debug.csproj" />
   <Project Path="src\Api\Void.Proxy.Api.csproj" />
   <Project Path="src\Benchmarks\Void.Benchmarks.csproj" />
-  <Project Path="src\Nbt\Void.Nbt.csproj" />
+  <Project Path="src\Minecraft\Components\Void.Minecraft.Components.csproj" />
+  <Project Path="src\Minecraft\Nbt\Void.Minecraft.Nbt.csproj" />
   <Project Path="src\Platform-Deprecated\Void.Proxy-Deprecated.csproj" />
   <Project Path="src\Platform\Void.Proxy.csproj" />
   <Project Path="src\Plugins\Common\Void.Proxy.Plugins.Common.csproj" />

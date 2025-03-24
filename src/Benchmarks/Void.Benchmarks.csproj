@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\API\Void.Proxy.API.csproj" />
+    <ProjectReference Include="..\Api\Void.Proxy.Api.csproj" />
     <ProjectReference Include="..\Plugins\Common\Void.Proxy.Plugins.Common.csproj" />
     <ProjectReference Include="..\Platform\Void.Proxy.csproj" />
   </ItemGroup>

@@ -1,31 +1,31 @@
-namespace Void.Nbt.Tags
+namespace Void.Minecraft.Nbt.Tags
 {
-    public class NbtIntArray : NbtTag
+    public class NbtLongArray : NbtTag
     {
-        public int[] Data;
+        public long[] Data;
 
-        public NbtIntArray(int[] data)
+        public NbtLongArray(long[] data)
         {
             Data = data;
         }
 
-        public NbtIntArray(string? name, int[] data)
+        public NbtLongArray(string? name, long[] data)
         {
             Name = name;
             Data = data;
         }
 
-        public static NbtIntArray FromReader(NbtReader reader, bool readName = true)
+        public static NbtLongArray FromReader(NbtReader reader, bool readName = true)
         {
             var name = readName ? reader.ReadString() : null;
             var length = reader.ReadInt();
 
-            var data = new int[length];
+            var data = new long[length];
 
             for (var i = 0; i < length; i++)
-                data[i] = reader.ReadInt();
+                data[i] = reader.ReadLong();
 
-            return new NbtIntArray(name, data);
+            return new NbtLongArray(name, data);
         }
 
         internal override void SerializeValue(ref NbtWriter writer)
@@ -38,7 +38,7 @@ namespace Void.Nbt.Tags
 
         public override NbtTagType GetType()
         {
-            return NbtTagType.IntArray;
+            return NbtTagType.LongArray;
         }
     }
 }

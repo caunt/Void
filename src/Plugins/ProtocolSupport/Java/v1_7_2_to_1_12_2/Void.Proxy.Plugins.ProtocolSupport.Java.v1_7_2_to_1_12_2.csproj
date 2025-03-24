@@ -8,11 +8,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\..\..\API\Void.Proxy.API.csproj">
+		<ProjectReference Include="..\..\..\..\Api\Void.Proxy.Api.csproj">
 			<Private>false</Private>
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</ProjectReference>
-		<ProjectReference Include="..\..\..\..\NBT\Void.NBT.csproj" />
+		<ProjectReference Include="..\..\..\..\Minecraft\Nbt\Void.Minecraft.Nbt.csproj" />
 		<ProjectReference Include="..\..\..\Common\Void.Proxy.Plugins.Common.csproj" />
 	</ItemGroup>
 

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Void.Nbt.Tags
+namespace Void.Minecraft.Nbt.Tags
 {
     public class NbtList : NbtTag
     {

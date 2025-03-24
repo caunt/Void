@@ -41,7 +41,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\NBT\Void.NBT.csproj" />
+		<ProjectReference Include="..\Minecraft\Nbt\Void.Minecraft.Nbt.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 using System.IO;
 using System.Text;
 
-namespace Void.Nbt
+namespace Void.Minecraft.Nbt
 {
     public class NbtWriter
     {

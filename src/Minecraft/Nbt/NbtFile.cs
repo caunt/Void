@@ -1,7 +1,7 @@
 using System.IO;
-using Void.Nbt.Tags;
+using Void.Minecraft.Nbt.Tags;
 
-namespace Void.Nbt
+namespace Void.Minecraft.Nbt
 {
     public class NbtFile
     {
