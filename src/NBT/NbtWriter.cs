@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 using System.IO;
 using System.Text;
 
-namespace Void.NBT
+namespace Void.Nbt
 {
     public class NbtWriter
     {

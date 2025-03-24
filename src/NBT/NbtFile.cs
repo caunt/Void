@@ -1,7 +1,7 @@
 using System.IO;
-using Void.NBT.Tags;
+using Void.Nbt.Tags;
 
-namespace Void.NBT
+namespace Void.Nbt
 {
     public class NbtFile
     {

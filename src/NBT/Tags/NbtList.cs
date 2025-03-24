@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Void.NBT.Tags
+namespace Void.Nbt.Tags
 {
     public class NbtList : NbtTag
     {

@@ -1,5 +1,5 @@
 ﻿using System.Text;
-using Void.NBT;
+using Void.Nbt;
 using Void.Proxy.Models.Minecraft.Game;
 using Void.Proxy.Network.IO;
 using Void.Proxy.Network.Protocol.States.Common;

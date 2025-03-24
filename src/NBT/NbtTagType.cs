@@ -1,4 +1,4 @@
-namespace Void.NBT
+namespace Void.Nbt
 {
     public enum NbtTagType : byte
     {

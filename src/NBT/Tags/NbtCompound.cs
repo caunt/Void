@@ -1,10 +1,13 @@
 using System.Collections.Generic;
+using System.Linq;
 
-namespace Void.NBT.Tags
+namespace Void.Nbt.Tags
 {
     public class NbtCompound : NbtTag
     {
         public List<NbtTag> Children = new List<NbtTag>();
+
+        public NbtTag this[string name] => Children.First(tag => tag.Name == name);
 
         public NbtCompound(string? name)
         {

@@ -2,9 +2,9 @@ using System;
 using System.Buffers.Binary;
 using System.IO;
 using System.Text;
-using Void.NBT.Tags;
+using Void.Nbt.Tags;
 
-namespace Void.NBT
+namespace Void.Nbt
 {
     public class NbtReader
     {
