@@ -15,7 +15,7 @@ using Void.Proxy.Plugins.ExamplePlugin.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.ExamplePlugin.Services;
 
-public class InventoryService(ILogger<InventoryService> logger, IPlayerService players) : IEventListener
+public class InventoryService(ILogger<InventoryService> logger) : IEventListener
 {
     [Subscribe]
     public void OnMessageReceived(MessageReceivedEvent @event)
