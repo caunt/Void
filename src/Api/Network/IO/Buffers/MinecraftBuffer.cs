@@ -1,6 +1,6 @@
 ﻿using System.Buffers;
 using System.Numerics;
-using Void.Proxy.Api.Mojang;
+using Void.Minecraft;
 using Void.Proxy.Api.Mojang.Profiles;
 
 namespace Void.Proxy.Api.Network.IO.Buffers;

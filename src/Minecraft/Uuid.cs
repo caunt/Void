@@ -1,11 +1,12 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Void.Proxy.Api.Mojang;
+namespace Void.Minecraft;
 
 public struct Uuid(Guid guid)
 {
@@ -30,8 +31,8 @@ public struct Uuid(Guid guid)
         var i128 = new Int128();
         MD5.TryHashData(Encoding.UTF8.GetBytes(text), i128.AsSpan(), out _);
 
-        i128.version = (byte)((i128.version & 0x0f) | 0x30);
-        i128.variant = (byte)((i128.variant & 0x3f) | 0x80);
+        i128.version = (byte)(i128.version & 0x0f | 0x30);
+        i128.variant = (byte)(i128.variant & 0x3f | 0x80);
 
         return new Uuid(Unsafe.As<Int128, Guid>(ref i128));
     }

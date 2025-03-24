@@ -1,7 +1,7 @@
 ﻿using System.Buffers;
 using System.Data;
 using System.Text;
-using Void.Proxy.Api.Mojang;
+using Void.Minecraft;
 using Void.Proxy.Api.Mojang.Profiles;
 using Void.Proxy.Api.Network.IO.Buffers.ReadOnly;
 using Void.Proxy.Api.Network.IO.Buffers.ReadWrite;

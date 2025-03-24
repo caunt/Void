@@ -1,43 +1,42 @@
 using System.Collections.Generic;
 
-namespace Void.Minecraft.Nbt.Tags
+namespace Void.Minecraft.Nbt.Tags;
+
+public class NbtList : NbtTag
 {
-    public class NbtList : NbtTag
+    public List<NbtTag> Data = [];
+    public NbtTagType Type;
+
+    public NbtList(string? name, NbtTagType type)
     {
-        public List<NbtTag> Data = new List<NbtTag>();
-        public NbtTagType Type;
+        (Name, Type) = (name, type);
+    }
 
-        public NbtList(string? name, NbtTagType type)
-        {
-            (Name, Type) = (name, type);
-        }
+    public static NbtList FromReader(NbtReader reader, bool readName = true)
+    {
+        var name = readName ? reader.ReadString() : null;
+        var type = reader.ReadTagType();
+        var count = reader.ReadInt();
 
-        public static NbtList FromReader(NbtReader reader, bool readName = true)
-        {
-            var name = readName ? reader.ReadString() : null;
-            var type = reader.ReadTagType();
-            var count = reader.ReadInt();
+        var list = new NbtList(name, type);
 
-            var list = new NbtList(name, type);
+        for (var i = 0; i < count; i++)
+            list.Data.Add(reader.ReadTag(type, false));
 
-            for (var i = 0; i < count; i++)
-                list.Data.Add(reader.ReadTag(type, false));
+        return list;
+    }
 
-            return list;
-        }
+    internal override void SerializeValue(ref NbtWriter writer)
+    {
+        writer.Write(Type);
+        writer.Write(Data.Count);
 
-        internal override void SerializeValue(ref NbtWriter writer)
-        {
-            writer.Write(Type);
-            writer.Write(Data.Count);
+        foreach (var tag in Data)
+            tag.SerializeValue(ref writer);
+    }
 
-            foreach (var tag in Data)
-                tag.SerializeValue(ref writer);
-        }
-
-        public override NbtTagType GetType()
-        {
-            return NbtTagType.List;
-        }
+    public override NbtTagType GetType()
+    {
+        return NbtTagType.List;
     }
 }

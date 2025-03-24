@@ -12,7 +12,6 @@
 			<Private>false</Private>
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</ProjectReference>
-		<ProjectReference Include="..\..\..\..\Minecraft\Nbt\Void.Minecraft.Nbt.csproj" />
 		<ProjectReference Include="..\..\..\Common\Void.Proxy.Plugins.Common.csproj" />
 	</ItemGroup>
 

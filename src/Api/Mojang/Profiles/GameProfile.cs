@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using Void.Minecraft;
 
 namespace Void.Proxy.Api.Mojang.Profiles;
 

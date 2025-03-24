@@ -21,10 +21,10 @@ It redirects players between servers, supporting versions from Classic 0.0.15a, 
 **Builds:**  
 Releases coming soon. [Download](https://github.com/caunt/Void/releases) testing builds.
 
-## NBT
+## Void.Minecraft
 
 **Description:**  
-NBT is an additional component enhancing Void's functionality within the ecosystem.
+Void.Minecraft is a set of common Minecraft structures converted to C#
 
 ## Support This Project
 

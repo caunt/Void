@@ -23,7 +23,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Minecraft\Nbt\Void.Minecraft.Nbt.csproj" />
+		<ProjectReference Include="..\Minecraft\Void.Minecraft.csproj" />
 		<ProjectReference Include="..\Api\Void.Proxy.Api.csproj" />
 		
 		<ProjectReference Include="..\Plugins\Common\Void.Proxy.Plugins.Common.csproj">
@@ -61,8 +61,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="..\Minecraft\Nbt\bin\$(Configuration)\netstandard2.1\Void.Minecraft.Nbt.dll">
-			<Link>Embedded\Void.Minecraft.Nbt.dll</Link>
+		<EmbeddedResource Include="..\Minecraft\bin\$(Configuration)\$(TargetFramework)\Void.Minecraft.dll">
+			<Link>Embedded\Void.Minecraft.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
 		

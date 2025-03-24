@@ -1,51 +1,50 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Void.Minecraft.Nbt.Tags
+namespace Void.Minecraft.Nbt.Tags;
+
+public class NbtCompound : NbtTag
 {
-    public class NbtCompound : NbtTag
+    public List<NbtTag> Children = [];
+
+    public NbtTag this[string name] => Children.First(tag => tag.Name == name);
+
+    public NbtCompound(string? name)
     {
-        public List<NbtTag> Children = new List<NbtTag>();
+        Name = name;
+    }
 
-        public NbtTag this[string name] => Children.First(tag => tag.Name == name);
+    public void Add(NbtTag tag)
+    {
+        Children.Add(tag);
+    }
 
-        public NbtCompound(string? name)
+    public static NbtCompound FromReader(NbtReader reader, bool readName = true)
+    {
+        var name = readName ? reader.ReadString() : null;
+
+        var compound = new NbtCompound(name);
+        var tag = reader.ReadTag();
+
+        while (tag.GetType() != NbtTagType.End)
         {
-            Name = name;
+            compound.Add(tag);
+            tag = reader.ReadTag();
         }
 
-        public void Add(NbtTag tag)
-        {
-            Children.Add(tag);
-        }
+        return compound;
+    }
 
-        public static NbtCompound FromReader(NbtReader reader, bool readName = true)
-        {
-            var name = readName ? reader.ReadString() : null;
+    internal override void SerializeValue(ref NbtWriter writer)
+    {
+        foreach (var child in Children)
+            child.Serialize(ref writer);
 
-            var compound = new NbtCompound(name);
-            var tag = reader.ReadTag();
+        writer.Write(NbtTagType.End);
+    }
 
-            while (tag.GetType() != NbtTagType.End)
-            {
-                compound.Add(tag);
-                tag = reader.ReadTag();
-            }
-
-            return compound;
-        }
-
-        internal override void SerializeValue(ref NbtWriter writer)
-        {
-            foreach (var child in Children)
-                child.Serialize(ref writer);
-
-            writer.Write(NbtTagType.End);
-        }
-
-        public override NbtTagType GetType()
-        {
-            return NbtTagType.Compound;
-        }
+    public override NbtTagType GetType()
+    {
+        return NbtTagType.Compound;
     }
 }

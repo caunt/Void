@@ -18,4 +18,8 @@
     <PackageReference Include="SharpZipLib" Version="1.4.2" />
   </ItemGroup>
 
+
+	<ItemGroup>
+		<ProjectReference Include="..\Minecraft\Void.Minecraft.csproj" />
+	</ItemGroup>
 </Project>
