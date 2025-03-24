@@ -8,15 +8,18 @@ namespace Void.Proxy.Players;
 
 public class Player(TcpClient client) : IPlayer
 {
-    public IdentifiedKey? IdentifiedKey { get; set; } // used in 1.19 - 1.19.2
+    // used in 1.19 - 1.19.2
+    public IdentifiedKey? IdentifiedKey { get; set; }
     public IPlayerContext Context { get; internal set; } = new EmptyPlayerContext();
     public TcpClient Client => client;
     public string RemoteEndPoint { get; } = client.Client.RemoteEndPoint?.ToString() ?? "Unknown?";
 
     public string? Brand { get; set; }
     public GameProfile? Profile { get; set; }
+    public Phase Phase { get; set; }
 
-    public ProtocolVersion ProtocolVersion { get; set; } = ProtocolVersion.Oldest; // we do not know Player protocol version yet, use the oldest possible
+    // we do not know Player protocol version yet, use the oldest possible
+    public ProtocolVersion ProtocolVersion { get; set; } = ProtocolVersion.Oldest;
 
     public async ValueTask KickAsync(string? reason = null, CancellationToken cancellationToken = default)
     {

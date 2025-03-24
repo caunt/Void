@@ -52,6 +52,7 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
             @event.Channel.SetWritingPacketsMappings(_plugin, Registry.ServerboundHandshakeMappings);
         }
 
+        await @event.Player.SetPhaseAsync(@event.Side, Phase.Handshake, @event.Channel, cancellationToken);
         await _events.ThrowAsync(new PhaseChangedEvent(@event.Player, @event.Side, @event.Channel, Phase.Handshake), cancellationToken);
     }
 
@@ -67,20 +68,20 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
                 {
                     @event.Link.PlayerChannel.SetReadingPacketsMappings(_plugin, Registry.ServerboundStatusMappings);
                     @event.Link.PlayerChannel.SetWritingPacketsMappings(_plugin, Registry.ClientboundStatusMappings);
-                    await _events.ThrowAsync(new PhaseChangedEvent(@event.Link.Player, Side.Client, @event.Link.PlayerChannel, Phase.Status), cancellationToken);
+                    await @event.Link.Player.SetPhaseAsync(Side.Client, Phase.Status, @event.Link.PlayerChannel, cancellationToken);
                 }
                 else if (handshake.NextState is 2 or 3)
                 {
                     @event.Link.PlayerChannel.SetReadingPacketsMappings(_plugin, Registry.ServerboundLoginMappings);
                     @event.Link.PlayerChannel.SetWritingPacketsMappings(_plugin, Registry.ClientboundLoginMappings);
-                    await _events.ThrowAsync(new PhaseChangedEvent(@event.Link.Player, Side.Client, @event.Link.PlayerChannel, Phase.Login), cancellationToken);
+                    await @event.Link.Player.SetPhaseAsync(Side.Client, Phase.Login, @event.Link.PlayerChannel, cancellationToken);
                 }
 
                 break;
             case LoginSuccessPacket:
                 @event.Link.ServerChannel.SetReadingPacketsMappings(_plugin, Registry.ClientboundPlayMappings);
                 @event.Link.ServerChannel.SetWritingPacketsMappings(_plugin, Registry.ServerboundPlayMappings);
-                await _events.ThrowAsync(new PhaseChangedEvent(@event.Link.Player, Side.Server, @event.Link.ServerChannel, Phase.Play), cancellationToken);
+                await @event.Link.Player.SetPhaseAsync(Side.Server, Phase.Play, @event.Link.ServerChannel, cancellationToken);
                 break;
         }
     }
@@ -95,13 +96,13 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
                 {
                     @event.Link.ServerChannel.SetReadingPacketsMappings(_plugin, Registry.ClientboundStatusMappings);
                     @event.Link.ServerChannel.SetWritingPacketsMappings(_plugin, Registry.ServerboundStatusMappings);
-                    await _events.ThrowAsync(new PhaseChangedEvent(@event.Link.Player, Side.Server, @event.Link.ServerChannel, Phase.Status), cancellationToken);
+                    await @event.Link.Player.SetPhaseAsync(Side.Server, Phase.Status, @event.Link.ServerChannel, cancellationToken);
                 }
                 else if (handshake.NextState is 2 or 3)
                 {
                     @event.Link.ServerChannel.SetReadingPacketsMappings(_plugin, Registry.ClientboundLoginMappings);
                     @event.Link.ServerChannel.SetWritingPacketsMappings(_plugin, Registry.ServerboundLoginMappings);
-                    await _events.ThrowAsync(new PhaseChangedEvent(@event.Link.Player, Side.Server, @event.Link.ServerChannel, Phase.Login), cancellationToken);
+                    await @event.Link.Player.SetPhaseAsync(Side.Server, Phase.Login, @event.Link.ServerChannel, cancellationToken);
                 }
                 else
                 {
@@ -113,7 +114,7 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
             case LoginSuccessPacket:
                 @event.Link.PlayerChannel.SetReadingPacketsMappings(_plugin, Registry.ServerboundPlayMappings);
                 @event.Link.PlayerChannel.SetWritingPacketsMappings(_plugin, Registry.ClientboundPlayMappings);
-                await _events.ThrowAsync(new PhaseChangedEvent(@event.Link.Player, Side.Client, @event.Link.PlayerChannel, Phase.Play), cancellationToken);
+                await @event.Link.Player.SetPhaseAsync(Side.Client, Phase.Play, @event.Link.PlayerChannel, cancellationToken);
                 break;
         }
     }

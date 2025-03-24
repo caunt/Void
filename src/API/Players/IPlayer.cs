@@ -15,6 +15,7 @@ public interface IPlayer : IAsyncDisposable
     public ProtocolVersion ProtocolVersion { get; set; }
     public GameProfile? Profile { get; set; }
     public IdentifiedKey? IdentifiedKey { get; set; }
+    public Phase Phase { get; set; }
 
     public ValueTask KickAsync(string? reason = null, CancellationToken cancellationToken = default);
 }
