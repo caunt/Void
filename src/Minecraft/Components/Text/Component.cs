@@ -8,13 +8,13 @@ public record Component(IContent Content, Children Children, Formatting Formatti
 {
     public static Component Default { get; } = new(new TextContent(string.Empty), Children.Default, Formatting.Default, Interactivity.Default);
 
-    public static Component DeserializeLegacy(string source)
+    public static Component DeserializeLegacy(string source, char prefix = '&')
     {
-        return LegacyComponentSerializer.Deserialize(source);
+        return LegacyComponentSerializer.Deserialize(source, prefix);
     }
 
-    public string SerializeLegacy()
+    public string SerializeLegacy(char prefix = '&')
     {
-        return LegacyComponentSerializer.Serialize(this);
+        return LegacyComponentSerializer.Serialize(this, prefix);
     }
 }

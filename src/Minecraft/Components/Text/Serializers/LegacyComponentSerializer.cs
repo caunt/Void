@@ -19,7 +19,7 @@ public static class LegacyComponentSerializer
                                                      "Ij5)Kl(&rMn6)Op?&6Qr7_Rs-&7Tu8*Vw&&8Xy9@Za!&9Bc0#De$&a" +
                                                      "Fg1%Hi^&bJk2&Lm*&cNo3(Pq)&dRs4_St+&eUv5=Wx-&fYz6!Ab@";
 
-    public static string Serialize(Component component)
+    public static string Serialize(Component component, char prefix = '&')
     {
         var builder = new StringBuilder();
         var formatting = Formatting.Default;
@@ -54,7 +54,8 @@ public static class LegacyComponentSerializer
             if (removedColor || removedIsBold || removedIsItalic || removedIsUnderlined || removedIsStrikethrough || removedIsObfuscated)
             {
                 formatting = Formatting.Default;
-                builder.Append("&r");
+                builder.Append(prefix);
+                builder.Append('r');
             }
 
             if (component.Formatting.Color is { } color && component.Formatting.Color != formatting.Color)
@@ -63,16 +64,17 @@ public static class LegacyComponentSerializer
 
                 if (LegacyTextFormat.TryFromName(name, out var legacyTextColor))
                 {
-                    builder.Append('&');
+                    builder.Append(prefix);
                     builder.Append(legacyTextColor.Code);
                 }
                 else if (name[0] is '#' && name.Length is 7)
                 {
-                    builder.Append("&x");
+                    builder.Append(prefix);
+                    builder.Append('x');
 
                     foreach (var digit in name[1..])
                     {
-                        builder.Append('&');
+                        builder.Append(prefix);
                         builder.Append(digit);
                     }
                 }
@@ -83,26 +85,41 @@ public static class LegacyComponentSerializer
             }
 
             if (component.Formatting.IsBold is true && component.Formatting.IsBold != formatting.IsBold)
-                builder.Append("&l");
+            {
+                builder.Append(prefix);
+                builder.Append('l');
+            }
 
             if (component.Formatting.IsItalic is true && component.Formatting.IsItalic != formatting.IsItalic)
-                builder.Append("&o");
+            {
+                builder.Append(prefix);
+                builder.Append('o');
+            }
 
             if (component.Formatting.IsUnderlined is true && component.Formatting.IsUnderlined != formatting.IsUnderlined)
-                builder.Append("&n");
+            {
+                builder.Append(prefix);
+                builder.Append('n');
+            }
 
             if (component.Formatting.IsStrikethrough is true && component.Formatting.IsStrikethrough != formatting.IsStrikethrough)
-                builder.Append("&m");
+            {
+                builder.Append(prefix);
+                builder.Append('m');
+            }
 
             if (component.Formatting.IsObfuscated is true && component.Formatting.IsObfuscated != formatting.IsObfuscated)
-                builder.Append("&k");
+            {
+                builder.Append(prefix);
+                builder.Append('k');
+            }
 
             formatting = component.Formatting;
             builder.Append(text);
         }
     }
 
-    public static Component Deserialize(string source)
+    public static Component Deserialize(string source, char prefix = '&')
     {
         var span = source.AsSpan();
         var segments = new List<Component>();
@@ -112,8 +129,7 @@ public static class LegacyComponentSerializer
 
         for (var i = 0; i < span.Length; i++)
         {
-            var prefix = span[i];
-            if (prefix != '&' || i + 1 >= span.Length)
+            if (span[i] != prefix || i + 1 >= span.Length)
             {
                 text.Append(span[i]);
                 continue;
@@ -127,10 +143,15 @@ public static class LegacyComponentSerializer
 
             if (code is 'x')
             {
-                if (TryParseHexSequence(span, ref i, out var hex))
+                if (TryParseHexSequence(prefix, span, ref i, out var hex))
+                {
                     formatting = formatting with { Color = "#" + hex };
+                }
                 else
-                    text.Append("&x");
+                {
+                    text.Append(prefix);
+                    text.Append('x');
+                }
 
                 continue;
             }
@@ -145,7 +166,8 @@ public static class LegacyComponentSerializer
             }
             else
             {
-                text.Append("&" + code);
+                text.Append(prefix);
+                text.Append(code);
             }
         }
 
@@ -167,9 +189,9 @@ public static class LegacyComponentSerializer
         }
     }
 
-    private static bool TryParseHexSequence(ReadOnlySpan<char> source, ref int sourceIndex, [MaybeNullWhen(false)] out string result)
+    private static bool TryParseHexSequence(char prefix, ReadOnlySpan<char> source, ref int sourceIndex, [MaybeNullWhen(false)] out string result)
     {
-        var length = 6 * 2; // & before each digit
+        var length = 6 * 2; // prefix before each digit
         result = null;
 
         if (sourceIndex + length - 1 >= source.Length)
@@ -181,7 +203,7 @@ public static class LegacyComponentSerializer
         {
             var digit = source[index + 1];
 
-            if (source[index] == '&' && IsHexDigit(digit))
+            if (source[index] == prefix && IsHexDigit(digit))
             {
                 index++;
                 builder.Append(digit);
