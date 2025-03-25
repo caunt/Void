@@ -58,7 +58,7 @@ public static class LegacyComponentSerializer
                 builder.Append('r');
             }
 
-            if (component.Formatting.Color is { } color && component.Formatting.Color != formatting.Color)
+            if (component.Formatting.Color is { } color && color != formatting.Color)
             {
                 var name = color.Name.AsSpan();
 
@@ -152,13 +152,10 @@ public static class LegacyComponentSerializer
                     text.Append(prefix);
                     text.Append('x');
                 }
-
-                continue;
             }
             else if (code is 'r')
             {
                 formatting = Formatting.Default;
-                continue;
             }
             else if (LegacyTextFormat.TryFromCode(code, out var format))
             {
@@ -167,7 +164,7 @@ public static class LegacyComponentSerializer
             else
             {
                 text.Append(prefix);
-                text.Append(code);
+                i--; // move back, this is not code
             }
         }
 
