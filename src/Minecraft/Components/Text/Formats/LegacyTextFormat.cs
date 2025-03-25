@@ -19,7 +19,7 @@ public record LegacyTextFormat
         Name = name;
         Transform = code switch
         {
-            > '0' and < '9' or > 'a' and < 'f' => formatting => formatting with { Color = name },
+            >= '0' and <= '9' or >= 'a' and <= 'f' => formatting => formatting with { Color = name },
             'k' => formatting => formatting with { IsObfuscated = true },
             'l' => formatting => formatting with { IsBold = true },
             'm' => formatting => formatting with { IsStrikethrough = true },
@@ -60,5 +60,20 @@ public record LegacyTextFormat
     {
         result = _set.Find(format => format.Code == code);
         return result is not null;
+    }
+
+    public static bool TryFromName(ReadOnlySpan<char> name, [MaybeNullWhen(false)] out LegacyTextFormat result)
+    {
+        foreach (var format in _set)
+        {
+            if (format.Name.AsSpan().SequenceEqual(name))
+            {
+                result = format;
+                return true;
+            }
+        }
+
+        result = null;
+        return false;
     }
 }
