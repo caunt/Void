@@ -4,13 +4,15 @@ using System.Reflection;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Extensions;
+using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Services;
 using Void.Proxy.Reflection;
 
 namespace Void.Proxy.Plugins;
 
-public class PluginService(ILogger<PluginService> logger, IEventService events, IServiceProvider services, IPluginDependencyService dependencies) : IPluginService
+public class PluginService(ILogger<PluginService> logger, IPlayerService players, IEventService events, IServiceProvider services, IPluginDependencyService dependencies) : IPluginService
 {
     private readonly TimeSpan _gcRate = TimeSpan.FromMilliseconds(500);
     private readonly List<IPlugin> _plugins = [];
@@ -107,6 +109,9 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
         {
             if (!reference.IsAlive)
                 throw new Exception("Plugin context already unloaded");
+
+            foreach (var player in players.All)
+                player.Context.Services.RemoveServicesByAssembly(reference.Context.PluginAssembly);
 
             var name = reference.Context.Name;
             var count = reference.Plugins.Length;
