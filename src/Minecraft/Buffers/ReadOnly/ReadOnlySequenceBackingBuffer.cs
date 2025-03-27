@@ -44,6 +44,11 @@ internal ref struct ReadOnlySequenceBackingBuffer
         return BinaryPrimitives.ReadInt32BigEndian(Read(4));
     }
 
+    public float ReadFloat()
+    {
+        return BinaryPrimitives.ReadSingleBigEndian(Read(4));
+    }
+
     public long ReadLong()
     {
         return BinaryPrimitives.ReadInt64BigEndian(Read(8));

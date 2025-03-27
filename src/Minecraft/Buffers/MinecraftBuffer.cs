@@ -122,6 +122,16 @@ public ref struct MinecraftBuffer
         _backingBuffer.WriteInt(value);
     }
 
+    public float ReadFloat()
+    {
+        return _backingBuffer.ReadFloat();
+    }
+
+    public void WriteFloat(float value)
+    {
+        _backingBuffer.WriteFloat(value);
+    }
+
     public long ReadLong()
     {
         return _backingBuffer.ReadLong();

@@ -3,7 +3,7 @@ using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Players.Contexts;
 
-public class EmptyPlayerContext : IPlayerContext
+public record EmptyPlayerContext : IPlayerContext
 {
     public static readonly EmptyPlayerContext Instance = new();
 

@@ -24,33 +24,28 @@ public static class HostingExtensions
 
     public static ServiceDescriptor[] GetAllServices(this IServiceProvider provider)
     {
-        var root = provider;
-        var rootType = root.GetType();
+        var (instance, field) = provider.GetDescriptorsField();
 
-        if (rootType.Name is "ServiceProviderEngineScope")
-        {
-            if (rootType.GetProperty("RootProvider", BindingFlags.Instance | BindingFlags.NonPublic) is not { } rootProviderProperty)
-                return [];
-
-            if (rootProviderProperty.GetValue(provider) is not { } rootProviderValue)
-                return [];
-
-            root = (IServiceProvider)rootProviderValue;
-        }
-
-        if (typeof(ServiceProvider).GetProperty("CallSiteFactory", BindingFlags.Instance | BindingFlags.NonPublic) is not { } callSiteFactoryProperty)
+        if (instance is null)
             return [];
 
-        if (callSiteFactoryProperty.GetValue(root) is not { } callSiteFactoryValue)
-            return [];
-
-        if (callSiteFactoryValue.GetType().GetField("_descriptors", BindingFlags.Instance | BindingFlags.NonPublic) is not { } descriptorsProperty)
-            return [];
-
-        if (descriptorsProperty.GetValue(callSiteFactoryValue) is not { } descriptorsValue)
+        if (field.GetValue(instance) is not { } descriptorsValue)
             return [];
 
         return descriptorsValue as ServiceDescriptor[] ?? [];
+    }
+
+    public static void RemoveServicesByAssembly(this IServiceProvider provider, Assembly assembly)
+    {
+        var (instance, field) = provider.GetDescriptorsField();
+
+        if (instance is null)
+            return;
+
+        if (field.GetValue(instance) is not ServiceDescriptor[] { } descriptorsValue)
+            return;
+
+        field.SetValue(instance, descriptorsValue.Where(serviceDescriptor => serviceDescriptor.ServiceType.Assembly != assembly).ToArray());
     }
 
     public static void ForwardServices(this IServiceProvider provider, IServiceCollection collection)
@@ -89,5 +84,33 @@ public static class HostingExtensions
                     throw new NotSupportedException($"Unsupported service lifetime: {descriptor.Lifetime}");
             }
         }
+    }
+
+    private static (object instance, FieldInfo) GetDescriptorsField(this IServiceProvider provider)
+    {
+        var root = provider;
+        var rootType = root.GetType();
+
+        if (rootType.Name is "ServiceProviderEngineScope")
+        {
+            if (rootType.GetProperty("RootProvider", BindingFlags.Instance | BindingFlags.NonPublic) is not { } rootProviderProperty)
+                return default;
+
+            if (rootProviderProperty.GetValue(provider) is not { } rootProviderValue)
+                return default;
+
+            root = (IServiceProvider)rootProviderValue;
+        }
+
+        if (typeof(ServiceProvider).GetProperty("CallSiteFactory", BindingFlags.Instance | BindingFlags.NonPublic) is not { } callSiteFactoryProperty)
+            return default;
+
+        if (callSiteFactoryProperty.GetValue(root) is not { } callSiteFactoryValue)
+            return default;
+
+        if (callSiteFactoryValue.GetType().GetField("_descriptors", BindingFlags.Instance | BindingFlags.NonPublic) is not { } descriptorsProperty)
+            return default;
+
+        return (callSiteFactoryValue, descriptorsProperty);
     }
 }

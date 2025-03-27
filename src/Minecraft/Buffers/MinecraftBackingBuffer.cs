@@ -232,6 +232,36 @@ internal ref struct MinecraftBackingBuffer
         }
     }
 
+    public float ReadFloat()
+    {
+        return _bufferType switch
+        {
+            BufferType.Span => _spanBackingBuffer.ReadFloat(),
+            BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.ReadFloat(),
+            BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.ReadFloat(),
+            BufferType.MemoryStream => _memoryStreamBackingBuffer.ReadFloat(),
+            _ => throw new NotSupportedException(_bufferType.ToString())
+        };
+    }
+
+    public void WriteFloat(float value)
+    {
+        switch (_bufferType)
+        {
+            case BufferType.Span:
+                _spanBackingBuffer.WriteFloat(value);
+                break;
+            case BufferType.ReadOnlySpan:
+            case BufferType.ReadOnlySequence:
+                throw new ReadOnlyException();
+            case BufferType.MemoryStream:
+                _memoryStreamBackingBuffer.WriteFloat(value);
+                break;
+            default:
+                throw new NotSupportedException(_bufferType.ToString());
+        }
+    }
+
     public long ReadLong()
     {
         return _bufferType switch

@@ -3,10 +3,8 @@ using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Players.Contexts;
 
-public class PlayerContext(IServiceProvider services) : IPlayerContext
+public record PlayerContext(IServiceProvider Services) : IPlayerContext
 {
-    public IServiceProvider Services => services;
-
     public IMinecraftChannel? Channel { get; set; }
 
     public async ValueTask DisposeAsync()

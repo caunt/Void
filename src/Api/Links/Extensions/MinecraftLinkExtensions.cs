@@ -22,7 +22,7 @@ public static class MinecraftLinkExtensions
     public static async ValueTask SendPacketAsync<T>(this ILink link, Side side, T packet, CancellationToken cancellationToken) where T : IMinecraftPacket
     {
         if (side is Side.Proxy)
-            throw new InvalidOperationException("Wdym send packet to proxy side?");
+            throw new InvalidOperationException("What do you mean by sending packet to proxy side?");
 
         var channel = side is Side.Client ? link.PlayerChannel : link.ServerChannel;
         await channel.SendPacketAsync(packet, cancellationToken);
