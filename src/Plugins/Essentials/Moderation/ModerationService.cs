@@ -1,4 +1,5 @@
-﻿using Void.Proxy.Api.Events;
+﻿using Void.Minecraft.Components.Text;
+using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Commands;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
@@ -24,7 +25,7 @@ public class ModerationService(IPlayerService players) : IPluginCommonService
                 if (parts.Length is 1)
                     break;
 
-                var reason = string.Join(' ', parts[2..]);
+                var reason = parts.Length > 2 ? (Component?)string.Join(' ', parts[2..]) : null;
                 var player = GetPlayerByUsername(parts[1]);
 
                 if (player is null)
