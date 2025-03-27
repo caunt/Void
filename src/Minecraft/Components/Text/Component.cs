@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Nodes;
+﻿using System;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Components.Text.Properties;
 using Void.Minecraft.Components.Text.Properties.Content;
@@ -17,9 +19,22 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     public static Component ReadFrom(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         if (protocolVersion <= ProtocolVersion.MINECRAFT_1_20_2)
-            return DeserializeJson(buffer.ReadString(), protocolVersion);
+        {
+            var value = buffer.ReadString();
+
+            try
+            {
+                return DeserializeJson(JsonNode.Parse(value)!, protocolVersion);
+            }
+            catch (Exception exception) when (exception is JsonException)
+            {
+                return DeserializeLegacy(value);
+            }
+        }
         else
+        {
             return DeserializeNbt(buffer.ReadTag(), protocolVersion);
+        }
     }
 
     public void WriteTo(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
@@ -35,7 +50,7 @@ public record Component(IContent Content, Children Children, Formatting Formatti
         return LegacyComponentSerializer.Deserialize(source, prefix);
     }
 
-    public static Component DeserializeJson(string source, ProtocolVersion protocolVersion)
+    public static Component DeserializeJson(JsonNode source, ProtocolVersion protocolVersion)
     {
         return JsonComponentSerializer.Deserialize(source, protocolVersion);
     }
