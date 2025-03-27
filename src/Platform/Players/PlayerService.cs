@@ -1,6 +1,7 @@
 ﻿using Nito.AsyncEx;
 using System.Diagnostics;
 using System.Net.Sockets;
+using Void.Minecraft.Components.Text;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Api.Events.Player;
@@ -73,7 +74,7 @@ public class PlayerService : IPlayerService, IEventListener
         }
     }
 
-    public async ValueTask KickPlayerAsync(IPlayer player, string? reason = null, CancellationToken cancellationToken = default)
+    public async ValueTask KickPlayerAsync(IPlayer player, Component? reason = null, CancellationToken cancellationToken = default)
     {
         _logger.LogTrace("Kicking player {Player}", player);
 

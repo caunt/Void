@@ -1,5 +1,4 @@
 ﻿using Void.Minecraft.Components.Text;
-using Void.Minecraft.Components.Text.Properties.Content;
 using Void.Minecraft.Network;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Links.Extensions;
@@ -24,18 +23,18 @@ public class LifecycleService : AbstractLifecycleService
         return Plugin.SupportedVersions.Contains(protocolVersion);
     }
 
-    protected override async ValueTask<bool> SendChatMessageAsync(IPlayer player, string text, CancellationToken cancellationToken)
+    protected override async ValueTask<bool> SendChatMessageAsync(IPlayer player, Component text, CancellationToken cancellationToken)
     {
         if (!await player.IsPlayingAsync(cancellationToken))
             return false;
 
         var channel = await player.GetChannelAsync(cancellationToken);
-        await channel.SendPacketAsync(new SystemChatMessagePacket { Message = Component.Default with { Content = new TextContent(text) }, Overlay = false }, cancellationToken);
+        await channel.SendPacketAsync(new SystemChatMessagePacket { Message = text, Overlay = false }, cancellationToken);
 
         return true;
     }
 
-    protected override async ValueTask<bool> KickPlayerAsync(IPlayer player, string reason, CancellationToken cancellationToken)
+    protected override async ValueTask<bool> KickPlayerAsync(IPlayer player, Component reason, CancellationToken cancellationToken)
     {
         var channel = await player.GetChannelAsync(cancellationToken);
 

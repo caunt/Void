@@ -15,10 +15,7 @@ public class SetCompressionPacket : IMinecraftClientboundPacket<SetCompressionPa
 
     public static SetCompressionPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        return new SetCompressionPacket
-        {
-            Threshold = buffer.ReadVarInt()
-        };
+        return new SetCompressionPacket { Threshold = buffer.ReadVarInt() };
     }
 
     public void Dispose()

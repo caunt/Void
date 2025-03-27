@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Void.Minecraft.Components.Text;
 using Void.Proxy.Api.Events.Chat;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Network.IO.Channels;
@@ -22,7 +23,7 @@ public static class PlayerExtensions
         return await events.ThrowWithResultAsync(new ChatMessageSendEvent(player, text), cancellationToken);
     }
 
-    public static async ValueTask KickAsync(this IPlayer player, string? reason = null, CancellationToken cancellationToken = default)
+    public static async ValueTask KickAsync(this IPlayer player, Component? reason = null, CancellationToken cancellationToken = default)
     {
         var players = player.Context.Services.GetRequiredService<IPlayerService>();
         await players.KickPlayerAsync(player, reason, cancellationToken);

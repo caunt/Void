@@ -11,6 +11,8 @@ public record Component(IContent Content, Children Children, Formatting Formatti
 {
     public static Component Default { get; } = new(new TextContent(string.Empty), Children.Default, Formatting.Default, Interactivity.Default);
 
+    public static implicit operator Component?(string text) => string.IsNullOrWhiteSpace(text) ? null : DeserializeLegacy(text);
+
     public static Component ReadFrom(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         if (protocolVersion <= ProtocolVersion.MINECRAFT_1_20_2)

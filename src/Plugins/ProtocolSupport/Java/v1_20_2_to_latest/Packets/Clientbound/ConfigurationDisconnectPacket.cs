@@ -1,6 +1,5 @@
-﻿using System.Text;
-using Void.Minecraft.Buffers;
-using Void.Minecraft.Nbt;
+﻿using Void.Minecraft.Buffers;
+using Void.Minecraft.Components.Text;
 using Void.Minecraft.Network;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
 
@@ -8,33 +7,16 @@ namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clie
 
 public class ConfigurationDisconnectPacket : IMinecraftClientboundPacket<ConfigurationDisconnectPacket>
 {
-    private NbtTag? _nbt;
-
-    public required string Reason { get; set; }
+    public required Component Reason { get; set; }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        if (_nbt is null)
-        {
-            var data = Encoding.UTF8.GetBytes(Reason);
-
-            // NbtTagType.String
-            buffer.WriteUnsignedByte(0x08);
-            buffer.WriteUnsignedShort((ushort)data.Length);
-            buffer.Write(data);
-        }
-        else
-        {
-            buffer.Write(_nbt.AsStream());
-        }
+        buffer.WriteComponent(Reason, protocolVersion);
     }
 
     public static ConfigurationDisconnectPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        var data = buffer.ReadToEnd().ToArray();
-        NbtTag.Parse(data, out var nbt);
-
-        return new ConfigurationDisconnectPacket { Reason = string.Empty, _nbt = nbt };
+        return new ConfigurationDisconnectPacket { Reason = buffer.ReadComponent(protocolVersion) };
     }
 
     public void Dispose()

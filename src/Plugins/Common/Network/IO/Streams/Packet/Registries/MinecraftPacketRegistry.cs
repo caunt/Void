@@ -32,8 +32,18 @@ public class MinecraftPacketRegistry : IMinecraftPacketRegistry
 
     public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out MinecraftPacketDecoder<IMinecraftPacket> packet)
     {
-        packet = _mappings.TryGetValue(id, out var type) ? type.GetMethod(nameof(IMinecraftPacket<IMinecraftPacket>.Decode))!.CreateDelegate<MinecraftPacketDecoder<IMinecraftPacket>>() : null;
-        return packet != null;
+        packet = null;
+
+        if (!_mappings.TryGetValue(id, out var type))
+            return false;
+
+        var decodeMethod = type.GetMethod(nameof(IMinecraftPacket<IMinecraftPacket>.Decode));
+
+        if (decodeMethod is null)
+            return false;
+
+        packet = decodeMethod.CreateDelegate<MinecraftPacketDecoder<IMinecraftPacket>>();
+        return true;
     }
 
     public bool TryGetPacketId(IMinecraftPacket packet, [MaybeNullWhen(false)] out int id)

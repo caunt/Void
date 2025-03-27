@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Nodes;
+﻿using Void.Minecraft.Components.Text;
 using Void.Minecraft.Network;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Chat;
@@ -26,20 +26,7 @@ public abstract class AbstractLifecycleService : IPluginCommonService
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
-        var reason = string.IsNullOrWhiteSpace(@event.Reason) ? "You were kicked from proxy" : @event.Reason;
-
-        if (@event.Player.ProtocolVersion < ProtocolVersion.MINECRAFT_1_20_3)
-        {
-            try
-            {
-                JsonNode.Parse(reason);
-            }
-            catch
-            {
-                reason = $"{{\"text\":\"{reason}\"}}";
-            }
-        }
-
+        var reason = @event.Reason is null ? "You were kicked from proxy" : @event.Reason;
         @event.Result = await KickPlayerAsync(@event.Player, reason, cancellationToken);
     }
 
@@ -53,7 +40,7 @@ public abstract class AbstractLifecycleService : IPluginCommonService
     }
 
     protected abstract ValueTask EnableCompressionAsync(ILink link, CancellationToken cancellationToken);
-    protected abstract ValueTask<bool> KickPlayerAsync(IPlayer player, string reason, CancellationToken cancellationToken);
-    protected abstract ValueTask<bool> SendChatMessageAsync(IPlayer player, string text, CancellationToken cancellationToken);
+    protected abstract ValueTask<bool> KickPlayerAsync(IPlayer player, Component reason, CancellationToken cancellationToken);
+    protected abstract ValueTask<bool> SendChatMessageAsync(IPlayer player, Component text, CancellationToken cancellationToken);
     protected abstract bool IsSupportedVersion(ProtocolVersion version);
 }

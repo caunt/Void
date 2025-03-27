@@ -15,10 +15,7 @@ public class KeepAliveResponsePacket : IMinecraftServerboundPacket<KeepAliveResp
 
     public static KeepAliveResponsePacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        return new KeepAliveResponsePacket
-        {
-            Id = buffer.ReadLong()
-        };
+        return new KeepAliveResponsePacket { Id = buffer.ReadLong() };
     }
 
     public void Dispose()

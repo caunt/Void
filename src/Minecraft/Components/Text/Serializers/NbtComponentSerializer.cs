@@ -237,7 +237,7 @@ public static class NbtComponentSerializer
             {
                 { Type: NbtTagType.Compound or NbtTagType.String } value => Deserialize(value, protocolVersion),
                 _ => null
-            }).Where(tag => tag is not null);
+            }).Where(component => component is not null).Cast<Component>();
 
             if (extraComponents is not null)
                 component = component with { Children = component.Children with { Extra = extraComponents } };
