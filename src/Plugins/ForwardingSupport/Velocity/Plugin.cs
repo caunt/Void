@@ -1,10 +1,10 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+using Void.Minecraft.Buffers;
+using Void.Minecraft.Network;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Links;
-using Void.Proxy.Api.Mojang.Minecraft.Network;
-using Void.Proxy.Api.Network.IO.Buffers;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Common.Events;
 

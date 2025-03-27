@@ -1,6 +1,6 @@
-﻿using Void.Proxy.Api.Links;
+﻿using Void.Minecraft.Network;
+using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Links.Extensions;
-using Void.Proxy.Api.Mojang.Minecraft.Network;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;

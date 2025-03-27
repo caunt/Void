@@ -1,10 +1,10 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using Void.Minecraft.Buffers;
+using Void.Minecraft.Network;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Mojang.Minecraft.Network;
 using Void.Proxy.Api.Network;
-using Void.Proxy.Api.Network.IO.Buffers;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
 using Void.Proxy.Plugins.Common.Services.Channels;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clientbound;

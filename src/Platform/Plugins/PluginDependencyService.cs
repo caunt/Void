@@ -27,7 +27,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
 
         if (assemblyName.FullName.StartsWith(nameof(Void) + '.'))
         {
-            logger.LogCritical("Void packages shouldn't be searched in NuGet");
+            logger.LogCritical("Void package {AssemblyName} shouldn't be searched in NuGet", assemblyName.Name);
             return null;
         }
 

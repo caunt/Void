@@ -1,9 +1,9 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
+using Void.Minecraft.Profiles;
 using Void.Proxy.Api.Crypto;
-using Void.Proxy.Api.Mojang.Profiles;
-using Void.Proxy.Api.Mojang.Services;
+using Void.Proxy.Api.Mojang;
 using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Plugins.Common.Mojang;

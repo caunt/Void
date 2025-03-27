@@ -1,7 +1,6 @@
 ﻿using System.Text.Json.Serialization;
-using Void.Minecraft;
 
-namespace Void.Proxy.Api.Mojang.Profiles;
+namespace Void.Minecraft.Profiles;
 
 public record GameProfile(
     [property: JsonConverter(typeof(Uuid.JsonConverter))]

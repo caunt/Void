@@ -1,4 +1,4 @@
-﻿using Void.Proxy.Api.Mojang.Minecraft.Network;
+﻿using Void.Minecraft.Network;
 
 namespace Void.Proxy.Api.Plugins;
 

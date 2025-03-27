@@ -1,6 +1,8 @@
-﻿using Void.Proxy.Api.Links;
+﻿using Void.Minecraft.Components.Text;
+using Void.Minecraft.Components.Text.Properties.Content;
+using Void.Minecraft.Network;
+using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Links.Extensions;
-using Void.Proxy.Api.Mojang.Minecraft.Network;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
@@ -28,7 +30,7 @@ public class LifecycleService : AbstractLifecycleService
             return false;
 
         var channel = await player.GetChannelAsync(cancellationToken);
-        await channel.SendPacketAsync(new SystemChatMessagePacket { Message = text, Overlay = false }, cancellationToken);
+        await channel.SendPacketAsync(new SystemChatMessagePacket { Message = Component.Default with { Content = new TextContent(text) }, Overlay = false }, cancellationToken);
 
         return true;
     }

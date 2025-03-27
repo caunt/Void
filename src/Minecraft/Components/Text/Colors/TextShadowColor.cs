@@ -14,7 +14,9 @@ public record TextShadowColor(byte Alpha, byte Red, byte Green, byte Blue)
     public static implicit operator Color(TextShadowColor color) => Color.FromArgb(color.Alpha, color.Red, color.Green, color.Blue);
     public static implicit operator string(TextShadowColor color) => color.Name;
     public static implicit operator int(TextShadowColor color) => (color.Alpha << 24) + (color.Red << 16) + (color.Green << 8) + color.Blue;
+    public static implicit operator TextShadowColor(int value) => new((byte)(value >> 24), (byte)((value >> 16) & 0xFF), (byte)((value >> 8) & 0xFF), (byte)(value & 0xFF));
     public static implicit operator float[](TextShadowColor color) => [(color.Alpha >> 24 & 0xFF) / 255f, (color.Red >> 16 & 0xFF) / 255f, (color.Green >> 8 & 0xFF) / 255f, (color.Blue & 0xFF) / 255];
+    public static implicit operator TextShadowColor(float[] components) => new((byte)(components[0] * 255), (byte)(components[1] * 255), (byte)(components[2] * 255), (byte)(components[3] * 255));
 
     public static TextShadowColor FromString(string value)
     {
@@ -33,4 +35,6 @@ public record TextShadowColor(byte Alpha, byte Red, byte Green, byte Blue)
 
         throw new ArgumentException($"Invalid color string: {span}");
     }
+
+    public override string ToString() => Name;
 }

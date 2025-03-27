@@ -1,6 +1,6 @@
 ﻿using System.Net.Sockets;
-using Void.Proxy.Api.Mojang.Minecraft.Network;
-using Void.Proxy.Api.Mojang.Profiles;
+using Void.Minecraft.Network;
+using Void.Minecraft.Profiles;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Players.Contexts;
 

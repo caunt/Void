@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
+using Void.Minecraft.Network;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Commands;
 using Void.Proxy.Api.Events.Minecraft;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Links.Extensions;
-using Void.Proxy.Api.Mojang.Minecraft.Network;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
 using Void.Proxy.Api.Network.IO.Streams.Packet;

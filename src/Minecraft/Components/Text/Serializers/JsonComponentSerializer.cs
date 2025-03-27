@@ -1,0 +1,17 @@
+﻿using System.Text.Json.Nodes;
+using Void.Minecraft.Network;
+
+namespace Void.Minecraft.Components.Text.Serializers;
+
+public static class JsonComponentSerializer
+{
+    public static JsonNode Serialize(Component component, ProtocolVersion protocolVersion)
+    {
+        return null!;
+    }
+
+    public static Component Deserialize(JsonNode node, ProtocolVersion protocolVersion)
+    {
+        return null!;
+    }
+}

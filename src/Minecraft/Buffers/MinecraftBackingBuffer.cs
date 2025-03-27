@@ -1,12 +1,14 @@
-﻿using System.Buffers;
+﻿using System;
+using System.Buffers;
 using System.Data;
+using System.IO;
 using System.Text;
-using Void.Minecraft;
-using Void.Proxy.Api.Mojang.Profiles;
-using Void.Proxy.Api.Network.IO.Buffers.ReadOnly;
-using Void.Proxy.Api.Network.IO.Buffers.ReadWrite;
+using Void.Minecraft.Buffers.ReadOnly;
+using Void.Minecraft.Buffers.ReadWrite;
+using Void.Minecraft.Nbt;
+using Void.Minecraft.Profiles;
 
-namespace Void.Proxy.Api.Network.IO.Buffers;
+namespace Void.Minecraft.Buffers;
 
 internal ref struct MinecraftBackingBuffer
 {
@@ -152,12 +154,12 @@ internal ref struct MinecraftBackingBuffer
         var high = 0;
 
         if ((low & 0x8000) == 0)
-            return ((high & 0xFF) << 15) | low;
+            return (high & 0xFF) << 15 | low;
 
         low &= 0x7FFF;
         high = ReadUnsignedByte();
 
-        return ((high & 0xFF) << 15) | low;
+        return (high & 0xFF) << 15 | low;
     }
 
     public void WriteVarShort(int value)
@@ -184,7 +186,7 @@ internal ref struct MinecraftBackingBuffer
         {
             buffer = ReadUnsignedByte();
             var value = buffer & 0b01111111;
-            result |= value << (7 * read);
+            result |= value << 7 * read;
 
             read++;
             if (read > 5)
@@ -370,6 +372,23 @@ internal ref struct MinecraftBackingBuffer
 
         foreach (var property in value)
             WriteProperty(property);
+    }
+
+    public NbtTag ReadTag()
+    {
+        var position = GetPosition();
+        var data = ReadToEnd();
+
+        // TODO another one allocation to be removed
+        var length = NbtTag.Parse(data.ToArray(), out var nbt);
+        Seek(position + length, SeekOrigin.Begin);
+
+        return nbt;
+    }
+
+    public void WriteTag(NbtTag value)
+    {
+        Write(value.AsStream());
     }
 
     public void Seek(long offset, SeekOrigin origin)

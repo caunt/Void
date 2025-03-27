@@ -1,8 +1,9 @@
-﻿using Serilog;
+﻿using System;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.IO;
 
-namespace Void.Proxy.Api.Network.IO.Buffers.ReadOnly;
+namespace Void.Minecraft.Buffers.ReadOnly;
 
 internal ref struct ReadOnlySequenceBackingBuffer
 {
@@ -99,7 +100,7 @@ internal ref struct ReadOnlySequenceBackingBuffer
             Position += length;
             Seek(Position, SeekOrigin.Begin);
 
-            Log.ForContext("SourceContext", nameof(ReadOnlySequenceBackingBuffer)).Warning("Allocated {Size:N0} bytes on heap when reading not contiguous blocks of memory", sequence.Length);
+            Console.WriteLine($"Allocated {sequence.Length:N0} bytes on heap when reading not contiguous blocks of memory");
             return sequence.ToArray();
         }
         else

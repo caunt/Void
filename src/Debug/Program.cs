@@ -4,7 +4,7 @@ using MCStatus;
 using Nito.AsyncEx;
 using System.Net.Sockets;
 using System.Reflection;
-using Void.Proxy.Api.Mojang.Minecraft.Network;
+using Void.Minecraft.Network;
 
 var version = ProtocolVersion.Latest;
 var count = 1;

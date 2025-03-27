@@ -1,4 +1,8 @@
-﻿namespace Void.Proxy.Api.Mojang.Minecraft.Network;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Void.Minecraft.Network;
 
 public class ProtocolVersion : IComparable
 {

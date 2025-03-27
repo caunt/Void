@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Void.Proxy.Api.Mojang.Minecraft.Network;
+using Void.Minecraft.Network;
 using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet;

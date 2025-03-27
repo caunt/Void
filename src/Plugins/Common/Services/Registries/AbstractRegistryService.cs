@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
+using Void.Minecraft.Buffers;
+using Void.Minecraft.Network;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Minecraft;
 using Void.Proxy.Api.Events.Network;
@@ -6,8 +8,6 @@ using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
-using Void.Proxy.Api.Mojang.Minecraft.Network;
-using Void.Proxy.Api.Network.IO.Buffers;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
 using Void.Proxy.Api.Network.IO.Messages.Binary;
 using Void.Proxy.Api.Network.IO.Messages.Packets;

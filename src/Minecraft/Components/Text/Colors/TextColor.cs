@@ -60,4 +60,6 @@ public record TextColor(byte Red, byte Green, byte Blue)
 
         throw new ArgumentException($"Invalid color string: {span}");
     }
+
+    public override string ToString() => Name;
 }

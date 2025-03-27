@@ -1,10 +1,11 @@
-﻿using System.Security.Cryptography;
+﻿using System;
+using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Text;
-using Void.Minecraft;
-using Void.Proxy.Api.Mojang.Minecraft.Network;
-using Void.Proxy.Api.Network.IO.Buffers;
+using Void.Minecraft.Buffers;
+using Void.Minecraft.Network;
 
-namespace Void.Proxy.Api.Mojang.Profiles;
+namespace Void.Minecraft.Profiles;
 
 public record IdentifiedKey(IdentifiedKeyRevision Revision, long ExpiresAt, byte[] PublicKey, byte[] Signature)
 {

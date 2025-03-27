@@ -1,6 +1,6 @@
 ﻿using Microsoft.IO;
-using Void.Proxy.Api.Mojang.Minecraft.Network;
-using Void.Proxy.Api.Network.IO.Buffers;
+using Void.Minecraft.Buffers;
+using Void.Minecraft.Network;
 using Void.Proxy.Api.Network.IO.Messages.Binary;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
 

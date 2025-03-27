@@ -1,9 +1,14 @@
-﻿using System.Buffers;
+﻿using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.IO;
 using System.Numerics;
-using Void.Minecraft;
-using Void.Proxy.Api.Mojang.Profiles;
+using Void.Minecraft.Components.Text;
+using Void.Minecraft.Nbt;
+using Void.Minecraft.Network;
+using Void.Minecraft.Profiles;
 
-namespace Void.Proxy.Api.Network.IO.Buffers;
+namespace Void.Minecraft.Buffers;
 
 public ref struct MinecraftBuffer
 {
@@ -37,7 +42,7 @@ public ref struct MinecraftBuffer
 
     public static int GetVarIntSize(int value)
     {
-        return ((BitOperations.LeadingZeroCount((uint)value | 1) - 38) * -1171) >> 13;
+        return (BitOperations.LeadingZeroCount((uint)value | 1) - 38) * -1171 >> 13;
     }
 
     public static IEnumerable<byte> EnumerateVarInt(int value)
@@ -175,6 +180,26 @@ public ref struct MinecraftBuffer
     public void WritePropertyArray(Property[] value)
     {
         _backingBuffer.WritePropertyArray(value);
+    }
+
+    public NbtTag ReadTag()
+    {
+        return _backingBuffer.ReadTag();
+    }
+
+    public void WriteTag(NbtTag value)
+    {
+        _backingBuffer.WriteTag(value);
+    }
+
+    public Component ReadComponent(ProtocolVersion protocolVersion)
+    {
+        return Component.ReadFrom(ref this, protocolVersion);
+    }
+
+    public void WriteComponent(Component value, ProtocolVersion protocolVersion)
+    {
+        value.WriteTo(ref this, protocolVersion);
     }
 
     public void Seek(long offset)

@@ -10,6 +10,7 @@ namespace Void.Minecraft.Nbt;
 public abstract record NbtTag
 {
     public string? Name { get; set; }
+    public NbtTagType Type => (NbtTagType)((Tag)this).Type;
 
     public static implicit operator NbtTag(Tag tag) => tag switch
     {
@@ -31,6 +32,7 @@ public abstract record NbtTag
 
     public static implicit operator Tag(NbtTag tag) => tag switch
     {
+        NbtBoolean value => (ByteTag)value,
         NbtByte value => (ByteTag)value,
         NbtByteArray value => (ByteArrayTag)value,
         NbtCompound value => (CompoundTag)value,
@@ -99,7 +101,7 @@ public abstract record NbtTag
             throw new InvalidCastException($"Tag {tag} cannot be cast to {typeof(T)}");
 
         result = tag;
-        return stream.Position + 1; // idk why
+        return stream.Position;
     }
 }
 

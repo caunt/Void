@@ -1,6 +1,8 @@
-﻿namespace Void.Minecraft.Components.Text.Events.Actions.Hover;
+﻿using Void.Minecraft.Profiles;
 
-public record ShowEntity(Component Name, string Type, Uuid Id) : IHoverEventAction
+namespace Void.Minecraft.Components.Text.Events.Actions.Hover;
+
+public record ShowEntity(string Type, Uuid Id, Component? Name = null) : IHoverEventAction
 {
     public string ActionName => "show_entity";
 }

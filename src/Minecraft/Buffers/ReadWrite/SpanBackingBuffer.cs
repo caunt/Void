@@ -1,6 +1,8 @@
-﻿using System.Buffers.Binary;
+﻿using System;
+using System.Buffers.Binary;
+using System.IO;
 
-namespace Void.Proxy.Api.Network.IO.Buffers.ReadWrite;
+namespace Void.Minecraft.Buffers.ReadWrite;
 
 internal ref struct SpanBackingBuffer(Span<byte> span)
 {

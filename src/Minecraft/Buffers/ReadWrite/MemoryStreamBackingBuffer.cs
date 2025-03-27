@@ -1,7 +1,9 @@
-﻿using System.Buffers;
+﻿using System;
+using System.Buffers;
 using System.Buffers.Binary;
+using System.IO;
 
-namespace Void.Proxy.Api.Network.IO.Buffers.ReadWrite;
+namespace Void.Minecraft.Buffers.ReadWrite;
 
 internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
 {

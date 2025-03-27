@@ -1,3 +1,3 @@
-﻿namespace Void.Proxy.Api.Mojang.Minecraft.World;
+﻿namespace Void.Minecraft.World;
 
 public record DimensionInfo(string RegistryIdentifier, string? LevelName, bool IsFlat, bool IsDebugType);

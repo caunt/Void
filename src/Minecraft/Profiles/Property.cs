@@ -1,4 +1,4 @@
-﻿namespace Void.Proxy.Api.Mojang.Profiles;
+﻿namespace Void.Minecraft.Profiles;
 
 public record Property
 {

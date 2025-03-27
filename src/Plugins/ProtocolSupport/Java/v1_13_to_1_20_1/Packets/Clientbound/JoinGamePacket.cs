@@ -1,8 +1,8 @@
-﻿using Void.Minecraft.Nbt;
+﻿using Void.Minecraft.Buffers;
+using Void.Minecraft.Nbt;
+using Void.Minecraft.Network;
+using Void.Minecraft.World;
 using Void.Proxy.Api.Extensions;
-using Void.Proxy.Api.Mojang.Minecraft.Network;
-using Void.Proxy.Api.Mojang.Minecraft.World;
-using Void.Proxy.Api.Network.IO.Buffers;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientbound;

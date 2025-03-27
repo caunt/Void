@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Void.Minecraft;
+namespace Void.Minecraft.Profiles;
 
 public struct Uuid(Guid guid)
 {
@@ -22,6 +22,14 @@ public struct Uuid(Guid guid)
     public static Uuid Parse(string text)
     {
         return new Uuid(Guid.Parse(text));
+    }
+
+    public static Uuid Parse(params int[] parts)
+    {
+        if (parts.Length is not 4)
+            throw new ArgumentException("Arguments size should be 4", nameof(parts));
+
+        throw new NotImplementedException();
     }
 
     public static Uuid FromStringHash(string text)
