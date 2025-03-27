@@ -177,13 +177,14 @@ public static class NbtComponentSerializer
         {
             var translateNbtString = Get<NbtString>(tagNbtCompound, "translate");
             var fallbackNbtString = TryGet<NbtString>(tagNbtCompound, "fallback");
-            var withNbtList = TryGet<NbtList>(tagNbtCompound, "with") switch
+            var withNbtList = TryGet<NbtList>(tagNbtCompound, "with");
+            var withComponents = withNbtList?.Data.Select(dataTag => dataTag switch
             {
-                { Type: NbtTagType.Compound or NbtTagType.String } value => value.Data.Select(nbt => Deserialize(nbt, protocolVersion)),
+                { Type: NbtTagType.Compound or NbtTagType.String } value => Deserialize(value, protocolVersion),
                 _ => null
-            };
+            }).Where(component => component is not null).Cast<Component>();
 
-            component = component with { Content = new TranslatableContent(translateNbtString.Value, fallbackNbtString?.Value, withNbtList) };
+            component = component with { Content = new TranslatableContent(translateNbtString.Value, fallbackNbtString?.Value, withComponents) };
         }
 
         if (tagNbtCompound["type"] is NbtString { Value: "score" } || tagNbtCompound.ContainsKey("score"))
@@ -316,7 +317,7 @@ public static class NbtComponentSerializer
                     NbtCompound contentsNbtCompoundTag => new ShowEntity(Get<NbtString>(contentsNbtCompoundTag, "type").Value, Get<NbtTag>(contentsNbtCompoundTag, "id") switch
                     {
                         NbtString idNbtString => Uuid.Parse(idNbtString.Value),
-                        NbtList { DataType: NbtTagType.Int } idNbtList => Uuid.Parse([.. idNbtList.Data.Select(dataTag => ((NbtInt)dataTag).Value)]),
+                        NbtIntArray idNbtIntArray => Uuid.Parse([.. idNbtIntArray.Data]),
                         var value => throw new NbtException(value)
                     }),
                     var value => throw new NbtException(value)

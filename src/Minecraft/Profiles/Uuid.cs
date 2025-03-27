@@ -29,7 +29,29 @@ public struct Uuid(Guid guid)
         if (parts.Length is not 4)
             throw new ArgumentException("Arguments size should be 4", nameof(parts));
 
-        throw new NotImplementedException();
+        var m0Bytes = BitConverter.GetBytes(parts[0]); // m0: first 4 bytes (little-endian)
+        var m1Bytes = BitConverter.GetBytes(parts[1]); // m1: next 4 bytes
+        var l0Bytes = BitConverter.GetBytes(parts[2]); // l0: third int
+        var l1Bytes = BitConverter.GetBytes(parts[3]); // l1: fourth int
+
+        var guidBytes = new byte[16];
+
+        Array.Copy(m1Bytes, 0, guidBytes, 0, 4);
+
+        guidBytes[4] = m0Bytes[2];
+        guidBytes[5] = m0Bytes[3];
+        guidBytes[6] = m0Bytes[0];
+        guidBytes[7] = m0Bytes[1];
+        guidBytes[8] = l1Bytes[3];
+        guidBytes[9] = l1Bytes[2];
+        guidBytes[10] = l1Bytes[1];
+        guidBytes[11] = l1Bytes[0];
+        guidBytes[12] = l0Bytes[3];
+        guidBytes[13] = l0Bytes[2];
+        guidBytes[14] = l0Bytes[1];
+        guidBytes[15] = l0Bytes[0];
+
+        return new Uuid(new Guid(guidBytes));
     }
 
     public static Uuid FromStringHash(string text)
