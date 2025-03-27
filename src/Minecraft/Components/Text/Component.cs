@@ -48,4 +48,6 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     {
         return NbtComponentSerializer.Serialize(this, protocolVersion);
     }
+
+    public override string ToString() => SerializeNbt(ProtocolVersion.Latest).ToString();
 }
