@@ -17,7 +17,7 @@ public struct RespawnPacket : IMinecraftPacket<PlayState>
     public byte DataToKeep { get; set; } // 1.16+
     public DimensionInfo DimensionInfo { get; set; } // 1.16-1.16.1
     public short PreviousGamemode { get; set; } // 1.16+
-    public byte[]? CurrentDimensionData { get; set; } // 1.16.2+
+    public NbtTag? CurrentDimensionData { get; set; } // 1.16.2+
     public KeyValuePair<string, long>? LastDeathPosition { get; set; } // 1.19+
     public int PortalCooldown { get; set; } // 1.20+
 
@@ -45,7 +45,7 @@ public struct RespawnPacket : IMinecraftPacket<PlayState>
         {
             if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2 && protocolVersion < ProtocolVersion.MINECRAFT_1_19)
             {
-                buffer.Write(CurrentDimensionData);
+                buffer.Write(CurrentDimensionData.AsStream().ToArray());
                 buffer.WriteString(DimensionInfo.RegistryIdentifier);
             }
             else
@@ -118,7 +118,8 @@ public struct RespawnPacket : IMinecraftPacket<PlayState>
         {
             if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2 && protocolVersion < ProtocolVersion.MINECRAFT_1_19)
             {
-                CurrentDimensionData = ((MemoryStream)NbtFile.Parse(buffer.Span[buffer.Position..].ToArray()).Serialize()).ToArray();
+                NbtTag.Parse(buffer.Span[(int)buffer.Position..].ToArray(), out var currentDimensionData);
+                CurrentDimensionData = currentDimensionData;
                 dimensionIdentifier = buffer.ReadString();
             }
             else
@@ -178,7 +179,7 @@ public struct RespawnPacket : IMinecraftPacket<PlayState>
                  + Encoding.UTF8.GetByteCount(DimensionInfo.LevelName) + 5 + Encoding.UTF8.GetByteCount(DimensionInfo.RegistryIdentifier) + 5 + 1 // DimensionInfo.IsDebugType
                  + 1 // DimensionInfo.IsFlat
                  + 2 // PreviousGamemode 
-                 + (CurrentDimensionData?.Length ?? 0) + (LastDeathPosition.HasValue ? Encoding.UTF8.GetByteCount(LastDeathPosition.Value.Key) : 0) + 5 + (LastDeathPosition.HasValue ? 8 : 0) + 4;
+                 + (CurrentDimensionData?.AsStream().ToArray().Length ?? 0) + (LastDeathPosition.HasValue ? Encoding.UTF8.GetByteCount(LastDeathPosition.Value.Key) : 0) + 5 + (LastDeathPosition.HasValue ? 8 : 0) + 4;
         // PortalCooldown
     }
 }

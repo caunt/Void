@@ -17,7 +17,7 @@ public class RespawnPacket : IMinecraftClientboundPacket<RespawnPacket>
     public required byte DataToKeep { get; set; } // 1.16+
     public required DimensionInfo? DimensionInfo { get; set; } // 1.16-1.16.1
     public required short PreviousGamemode { get; set; } // 1.16+
-    public required byte[] CurrentDimensionData { get; set; } // 1.16.2+
+    public required NbtTag? CurrentDimensionData { get; set; } // 1.16.2+
     public required KeyValuePair<string, long> LastDeathPosition { get; set; } // 1.19+
     public required int PortalCooldown { get; set; } // 1.20+
 
@@ -48,7 +48,9 @@ public class RespawnPacket : IMinecraftClientboundPacket<RespawnPacket>
 
             if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2 && protocolVersion < ProtocolVersion.MINECRAFT_1_19)
             {
-                buffer.Write(CurrentDimensionData);
+                if (CurrentDimensionData is not null)
+                    buffer.Write(CurrentDimensionData.AsStream());
+
                 buffer.WriteString(DimensionInfo.RegistryIdentifier);
             }
             else
@@ -113,7 +115,7 @@ public class RespawnPacket : IMinecraftClientboundPacket<RespawnPacket>
         var dimensionIdentifier = string.Empty;
         var levelName = string.Empty;
 
-        var currentDimensionData = Array.Empty<byte>();
+        var currentDimensionData = (NbtTag?)null;
         var dimension = default(int);
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16)
         {
@@ -123,7 +125,7 @@ public class RespawnPacket : IMinecraftClientboundPacket<RespawnPacket>
                 var data = buffer.ReadToEnd().ToArray(); // TODO remove the allocation
                 buffer.Seek(bufferPosition);
 
-                currentDimensionData = ((MemoryStream)NbtFile.Parse(data).Serialize()).ToArray(); // TODO remove the allocation
+                NbtTag.Parse(data, out currentDimensionData);
                 dimensionIdentifier = buffer.ReadString();
             }
             else

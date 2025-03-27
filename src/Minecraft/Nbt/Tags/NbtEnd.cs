@@ -1,19 +1,14 @@
-namespace Void.Minecraft.Nbt.Tags
+using SharpNBT;
+
+namespace Void.Minecraft.Nbt.Tags;
+
+public record NbtEnd : NbtTag
 {
-    public class NbtEnd : NbtTag
-    {
-        internal override void SerializeValue(ref NbtWriter writer)
-        {
-        }
+    private static readonly NbtEnd _nbtEnd = new();
+    private static readonly EndTag _endTag = new();
 
-        public static NbtEnd FromReader()
-        {
-            return new NbtEnd();
-        }
+    public static implicit operator NbtEnd(EndTag _) => _nbtEnd;
+    public static implicit operator EndTag(NbtEnd _) => _endTag;
 
-        public override NbtTagType GetType()
-        {
-            return NbtTagType.End;
-        }
-    }
+    public override string ToString() => ToSnbt();
 }

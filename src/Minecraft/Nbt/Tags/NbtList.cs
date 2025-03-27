@@ -1,42 +1,13 @@
+using SharpNBT;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Void.Minecraft.Nbt.Tags;
 
-public class NbtList : NbtTag
+public record NbtList(IEnumerable<NbtTag> Data, NbtTagType DataType) : NbtTag
 {
-    public List<NbtTag> Data = [];
-    public NbtTagType Type;
+    public static implicit operator NbtList(ListTag tag) => new(tag.Select(tag => (NbtTag)tag), (NbtTagType)tag.ChildType) { Name = tag.Name };
+    public static implicit operator ListTag(NbtList tag) => new(tag.Name, (TagType)tag.DataType, tag.Data.Select(tag => (Tag)tag));
 
-    public NbtList(string? name, NbtTagType type)
-    {
-        (Name, Type) = (name, type);
-    }
-
-    public static NbtList FromReader(NbtReader reader, bool readName = true)
-    {
-        var name = readName ? reader.ReadString() : null;
-        var type = reader.ReadTagType();
-        var count = reader.ReadInt();
-
-        var list = new NbtList(name, type);
-
-        for (var i = 0; i < count; i++)
-            list.Data.Add(reader.ReadTag(type, false));
-
-        return list;
-    }
-
-    internal override void SerializeValue(ref NbtWriter writer)
-    {
-        writer.Write(Type);
-        writer.Write(Data.Count);
-
-        foreach (var tag in Data)
-            tag.SerializeValue(ref writer);
-    }
-
-    public override NbtTagType GetType()
-    {
-        return NbtTagType.List;
-    }
+    public override string ToString() => ToSnbt();
 }

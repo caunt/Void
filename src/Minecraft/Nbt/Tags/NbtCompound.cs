@@ -1,50 +1,31 @@
+using SharpNBT;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Void.Minecraft.Nbt.Tags;
 
-public class NbtCompound : NbtTag
+public record NbtCompound(Dictionary<string, NbtTag> Values) : NbtTag
 {
-    public List<NbtTag> Children = [];
-
-    public NbtTag this[string name] => Children.First(tag => tag.Name == name);
-
-    public NbtCompound(string? name)
+    public NbtCompound() : this([])
     {
-        Name = name;
+
     }
 
-    public void Add(NbtTag tag)
+    public NbtTag this[string name]
     {
-        Children.Add(tag);
-    }
-
-    public static NbtCompound FromReader(NbtReader reader, bool readName = true)
-    {
-        var name = readName ? reader.ReadString() : null;
-
-        var compound = new NbtCompound(name);
-        var tag = reader.ReadTag();
-
-        while (tag.GetType() != NbtTagType.End)
+        get
         {
-            compound.Add(tag);
-            tag = reader.ReadTag();
+            return Values[name];
         }
-
-        return compound;
+        set
+        {
+            value.Name = name;
+            Values[name] = value;
+        }
     }
 
-    internal override void SerializeValue(ref NbtWriter writer)
-    {
-        foreach (var child in Children)
-            child.Serialize(ref writer);
+    public static implicit operator NbtCompound(CompoundTag tag) => new(tag.Values.ToDictionary(pair => pair.Name ?? string.Empty, pair => (NbtTag)pair)) { Name = tag.Name };
+    public static implicit operator CompoundTag(NbtCompound tag) => new(tag.Name, tag.Values?.Select(pair => (Tag)pair.Value) ?? []);
 
-        writer.Write(NbtTagType.End);
-    }
-
-    public override NbtTagType GetType()
-    {
-        return NbtTagType.Compound;
-    }
+    public override string ToString() => ToSnbt();
 }

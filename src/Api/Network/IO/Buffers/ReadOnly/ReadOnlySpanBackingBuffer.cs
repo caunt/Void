@@ -6,12 +6,12 @@ internal ref struct ReadOnlySpanBackingBuffer(ReadOnlySpan<byte> span)
 {
     private readonly ReadOnlySpan<byte> _block = span;
 
-    public int Position = 0;
-    public int Length { get; } = span.Length;
+    public long Position = 0;
+    public long Length { get; } = span.Length;
 
     public byte ReadUnsignedByte()
     {
-        return _block[Position++];
+        return _block[(int)Position++];
     }
 
     public ushort ReadUnsignedShort()
@@ -29,7 +29,7 @@ internal ref struct ReadOnlySpanBackingBuffer(ReadOnlySpan<byte> span)
         return BinaryPrimitives.ReadInt64BigEndian(Read(8));
     }
 
-    public void Seek(int offset, SeekOrigin origin)
+    public void Seek(long offset, SeekOrigin origin)
     {
         switch (origin)
         {
@@ -55,17 +55,17 @@ internal ref struct ReadOnlySpanBackingBuffer(ReadOnlySpan<byte> span)
         Position = 0;
     }
 
-    public ReadOnlySpan<byte> Slice(int length)
+    public ReadOnlySpan<byte> Slice(long length)
     {
         if (_block.Length < Position + length)
             throw new InternalBufferOverflowException($"Buffer length with max {_block.Length} at position {Position} attempted to slice {length} bytes");
 
-        var span = _block.Slice(Position, length);
+        var span = _block.Slice((int)Position, (int)length);
         Position += length;
         return span;
     }
 
-    public ReadOnlySpan<byte> Read(int length)
+    public ReadOnlySpan<byte> Read(long length)
     {
         return Slice(length);
     }

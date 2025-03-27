@@ -10,7 +10,7 @@ public ref struct MinecraftBuffer
     private MinecraftBackingBuffer _backingBuffer;
 
     public readonly bool HasData => _backingBuffer.HasData();
-    public readonly int Position => _backingBuffer.GetPosition();
+    public readonly long Position => _backingBuffer.GetPosition();
     public readonly long Length => _backingBuffer.GetLength();
 
     public MinecraftBuffer() => throw new NotSupportedException("Parameterless constructor not supported");
@@ -177,17 +177,17 @@ public ref struct MinecraftBuffer
         _backingBuffer.WritePropertyArray(value);
     }
 
-    public void Seek(int offset)
+    public void Seek(long offset)
     {
         Seek(offset, SeekOrigin.Begin);
     }
 
-    public void Seek(int offset, SeekOrigin origin)
+    public void Seek(long offset, SeekOrigin origin)
     {
         _backingBuffer.Seek(offset, origin);
     }
 
-    public ReadOnlySpan<byte> Read(int length)
+    public ReadOnlySpan<byte> Read(long length)
     {
         return _backingBuffer.Read(length);
     }

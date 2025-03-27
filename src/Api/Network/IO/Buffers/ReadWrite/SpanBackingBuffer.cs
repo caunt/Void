@@ -6,17 +6,17 @@ internal ref struct SpanBackingBuffer(Span<byte> span)
 {
     private readonly Span<byte> _block = span;
 
-    public int Position = 0;
-    public int Length { get; } = span.Length;
+    public long Position = 0;
+    public long Length { get; } = span.Length;
 
     public byte ReadUnsignedByte()
     {
-        return _block[Position++];
+        return _block[(int)Position++];
     }
 
     public void WriteUnsignedByte(byte value)
     {
-        _block[Position++] = value;
+        _block[(int)Position++] = value;
     }
 
     public ushort ReadUnsignedShort()
@@ -49,7 +49,7 @@ internal ref struct SpanBackingBuffer(Span<byte> span)
         BinaryPrimitives.WriteInt64BigEndian(Slice(8), value);
     }
 
-    public void Seek(int offset, SeekOrigin origin)
+    public void Seek(long offset, SeekOrigin origin)
     {
         switch (origin)
         {
@@ -75,17 +75,17 @@ internal ref struct SpanBackingBuffer(Span<byte> span)
         Position = 0;
     }
 
-    public Span<byte> Slice(int length)
+    public Span<byte> Slice(long length)
     {
         if (_block.Length < Position + length)
             throw new InternalBufferOverflowException($"Buffer length with max {_block.Length} at position {Position} attempted to slice {length} bytes");
 
-        var span = _block.Slice(Position, length);
+        var span = _block.Slice((int)Position, (int)length);
         Position += length;
         return span;
     }
 
-    public ReadOnlySpan<byte> Read(int length)
+    public ReadOnlySpan<byte> Read(long length)
     {
         return Slice(length);
     }
@@ -95,7 +95,7 @@ internal ref struct SpanBackingBuffer(Span<byte> span)
         if (_block.Length < Position + data.Length)
             throw new InternalBufferOverflowException($"Buffer length with max {_block.Length} at position {Position} attempted to write {data.Length} bytes");
 
-        var span = _block.Slice(Position, data.Length);
+        var span = _block.Slice((int)Position, data.Length);
         Position += data.Length;
         data.CopyTo(span);
     }
@@ -106,7 +106,7 @@ internal ref struct SpanBackingBuffer(Span<byte> span)
         if (_block.Length < Position + length)
             throw new InternalBufferOverflowException($"Buffer length with max {_block.Length} at position {Position} attempted to write {stream.Length} bytes");
 
-        var span = _block.Slice(Position, length);
+        var span = _block.Slice((int)Position, length);
         Position += length;
 
         stream.ReadExactly(span);

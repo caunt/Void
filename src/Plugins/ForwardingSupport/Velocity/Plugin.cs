@@ -59,7 +59,7 @@ public class Plugin : IProtocolPlugin
                 buffer.WriteBoolean(false);
         }
 
-        var forwardingData = array[..buffer.Position];
+        var forwardingData = array[..(int)buffer.Position];
         var signature = HMACSHA256.HashData(Encoding.UTF8.GetBytes("aaa"), forwardingData);
 
         @event.Result = [.. signature, .. forwardingData];

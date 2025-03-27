@@ -5,8 +5,8 @@ namespace Void.Proxy.Api.Network.IO.Buffers.ReadWrite;
 
 internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
 {
-    public readonly int Position => (int)memoryStream.Position;
-    public int Length { get; } = (int)memoryStream.Length;
+    public readonly long Position => memoryStream.Position;
+    public long Length { get; } = memoryStream.Length;
 
     public readonly byte ReadUnsignedByte()
     {
@@ -89,7 +89,7 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
         }
     }
 
-    public readonly void Seek(int offset, SeekOrigin origin)
+    public readonly void Seek(long offset, SeekOrigin origin)
     {
         memoryStream.Seek(offset, origin);
     }
@@ -99,7 +99,7 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
         memoryStream.Position = 0;
     }
 
-    public readonly ReadOnlySpan<byte> Read(int length)
+    public readonly ReadOnlySpan<byte> Read(long length)
     {
         // TODO is there way to get ReadOnlySequence from MemoryStream? do not allocate please
         var block = new byte[length];

@@ -84,7 +84,7 @@ public record IdentifiedKey(IdentifiedKeyRevision Revision, long ExpiresAt, byte
             using var rsa = RSA.Create();
             rsa.ImportSubjectPublicKeyInfo(YggdrasilSessionPublicKey, out _);
 
-            return rsa.VerifyData(verify[..buffer.Position], Signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+            return rsa.VerifyData(verify[..(int)buffer.Position], Signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
         }
     }
 }

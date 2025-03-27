@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using Void.Minecraft.Nbt;
 using Void.Minecraft.Nbt;
+using Void.Minecraft.Nbt.Tags;
 using Void.Proxy.Models.Minecraft.Game;
 using Void.Proxy.Network.IO;
 using Void.Proxy.Network.Protocol.States.Common;
@@ -22,9 +23,9 @@ public struct JoinGamePacket : IMinecraftPacket<PlayState>
     public bool ShowRespawnScreen { get; set; }
     public bool DoLimitedCrafting { get; set; } // 1.20.2+
     public string[] levelNames { get; set; } // 1.16+
-    public byte[]? Registry { get; set; } // 1.16+
+    public NbtTag? Registry { get; set; } // 1.16+
     public DimensionInfo DimensionInfo { get; set; } // 1.16+
-    public byte[]? CurrentDimensionData { get; set; } // 1.16.2+
+    public NbtTag? CurrentDimensionData { get; set; } // 1.16.2+
     public short PreviousGamemode { get; set; } // 1.16+
     public int SimulationDistance { get; set; } // 1.18+
     public KeyValuePair<string, long>? LastDeathPosition { get; set; } // 1.19+
@@ -68,9 +69,9 @@ public struct JoinGamePacket : IMinecraftPacket<PlayState>
                  + 1 // ReducedDebugInfo
                  + 1 // ShowRespawnScreen
                  + 1 // DoLimitedCrafting
-                 + levelNames.Sum(levelName => Encoding.UTF8.GetByteCount(levelName) + 5) + (Registry?.Length ?? 0) + Encoding.UTF8.GetByteCount(DimensionInfo.LevelName) + 5 + Encoding.UTF8.GetByteCount(DimensionInfo.RegistryIdentifier) + 5 + 1 // DimensionInfo.IsDebugType
+                 + levelNames.Sum(levelName => Encoding.UTF8.GetByteCount(levelName) + 5) + (Registry?.AsStream().ToArray().Length ?? 0) + Encoding.UTF8.GetByteCount(DimensionInfo.LevelName) + 5 + Encoding.UTF8.GetByteCount(DimensionInfo.RegistryIdentifier) + 5 + 1 // DimensionInfo.IsDebugType
                  + 1 // DimensionInfo.IsFlat
-                 + (CurrentDimensionData?.Length ?? 0) + 2 // PreviousGamemode
+                 + (CurrentDimensionData?.AsStream().ToArray().Length ?? 0) + 2 // PreviousGamemode
                  + 4 // SimulationDistance
                  + (LastDeathPosition.HasValue ? Encoding.UTF8.GetByteCount(LastDeathPosition.Value.Key) : 0) + 5 + (LastDeathPosition.HasValue ? 8 : 0) + 4;
         // PortalCooldown*/
@@ -129,18 +130,18 @@ public struct JoinGamePacket : IMinecraftPacket<PlayState>
         for (var i = 0; i < levelNames.Length; i++)
             levelNames[i] = buffer.ReadString();
 
-        var reader = new NbtReader(buffer.Span[buffer.Position..].ToArray());
-        Registry = ((MemoryStream)NbtFile.Parse(reader).Serialize()).ToArray();
-        buffer.Seek(reader.Position);
+        var registryLength = NbtTag.Parse(buffer.Span[(int)buffer.Position..].ToArray(), out var registry);
+        Registry = registry;
+        buffer.Seek(registryLength);
 
         var dimensionIdentifier = string.Empty;
         var levelName = string.Empty;
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2 && protocolVersion < ProtocolVersion.MINECRAFT_1_19)
         {
-            reader = new NbtReader(buffer.Span[buffer.Position..].ToArray());
-            CurrentDimensionData = ((MemoryStream)NbtFile.Parse(reader).Serialize()).ToArray();
-            buffer.Seek(reader.Position);
+            var currentDimensionDataLength = NbtTag.Parse(buffer.Span[(int)buffer.Position..].ToArray(), out var currentDimensionData);
+            CurrentDimensionData = currentDimensionData;
+            buffer.Seek(currentDimensionDataLength);
 
             dimensionIdentifier = buffer.ReadString();
         }
@@ -275,11 +276,11 @@ public struct JoinGamePacket : IMinecraftPacket<PlayState>
         foreach (var levelName in levelNames)
             buffer.WriteString(levelName);
 
-        buffer.Write(Registry);
+        buffer.Write(Registry.AsStream().ToArray());
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2 && protocolVersion < ProtocolVersion.MINECRAFT_1_19)
         {
-            buffer.Write(CurrentDimensionData);
+            buffer.Write(CurrentDimensionData.AsStream().ToArray());
             buffer.WriteString(DimensionInfo.RegistryIdentifier);
         }
         else

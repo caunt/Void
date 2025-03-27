@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Nbt;
+﻿using System.Text;
+using Void.Minecraft.Nbt;
 using Void.Proxy.Api.Mojang.Minecraft.Network;
 using Void.Proxy.Api.Network.IO.Buffers;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
@@ -7,7 +8,7 @@ namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Client
 
 public class SystemChatMessagePacket : IMinecraftClientboundPacket<SystemChatMessagePacket>
 {
-    private NbtFile? _nbt;
+    private NbtTag? _nbt;
 
     public required string Message { get; set; }
     public required bool Overlay { get; set; }
@@ -18,16 +19,16 @@ public class SystemChatMessagePacket : IMinecraftClientboundPacket<SystemChatMes
         {
             if (_nbt is null)
             {
-                var nbt = new NbtWriter();
+                var data = Encoding.UTF8.GetBytes(Message);
 
-                nbt.Write(NbtTagType.String);
-                nbt.Write(Message);
-
-                buffer.Write(nbt.GetStream());
+                // NbtTagType.String
+                buffer.WriteUnsignedByte(0x08);
+                buffer.WriteUnsignedShort((ushort)data.Length);
+                buffer.Write(data);
             }
             else
             {
-                buffer.Write(_nbt.Serialize());
+                buffer.Write(_nbt.AsStream());
             }
         }
         else
@@ -41,14 +42,14 @@ public class SystemChatMessagePacket : IMinecraftClientboundPacket<SystemChatMes
 
     public static SystemChatMessagePacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        var nbt = (NbtFile?)null;
+        var nbt = (NbtTag?)null;
         var message = string.Empty;
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_20_2)
         {
             var data = buffer.ReadToEnd().ToArray();
-            nbt = NbtFile.Parse(data, false);
+            var length = NbtTag.Parse(data, out nbt);
 
-            buffer.Seek((int)nbt.Serialize().Length + 1);
+            buffer.Seek(length);
         }
         else
         {

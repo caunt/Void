@@ -52,7 +52,7 @@ internal ref struct MinecraftBackingBuffer
         };
     }
 
-    public readonly int GetPosition()
+    public readonly long GetPosition()
     {
         return _bufferType switch
         {
@@ -64,7 +64,7 @@ internal ref struct MinecraftBackingBuffer
         };
     }
 
-    public readonly int GetLength()
+    public readonly long GetLength()
     {
         return _bufferType switch
         {
@@ -372,7 +372,7 @@ internal ref struct MinecraftBackingBuffer
             WriteProperty(property);
     }
 
-    public void Seek(int offset, SeekOrigin origin)
+    public void Seek(long offset, SeekOrigin origin)
     {
         switch (_bufferType)
         {
@@ -393,7 +393,7 @@ internal ref struct MinecraftBackingBuffer
         }
     }
 
-    public ReadOnlySpan<byte> Read(int length)
+    public ReadOnlySpan<byte> Read(long length)
     {
         return _bufferType switch
         {

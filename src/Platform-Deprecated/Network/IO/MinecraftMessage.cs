@@ -49,6 +49,6 @@ public readonly struct MinecraftMessage(int packetId, Memory<byte> memory, IMemo
         Proxy.Logger.Verbose($"Encoding {direction} 0x{packetId:X2} packet {JsonSerializer.Serialize(packet as object, Proxy.JsonSerializerOptions)}");
         packet.Encode(ref buffer, protocolVersion);
 
-        return new MinecraftMessage(packetId, memoryOwner.Memory[..buffer.Position], memoryOwner);
+        return new MinecraftMessage(packetId, memoryOwner.Memory[..(int)buffer.Position], memoryOwner);
     }
 }

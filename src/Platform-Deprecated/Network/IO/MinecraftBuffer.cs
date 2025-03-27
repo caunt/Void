@@ -15,7 +15,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
 {
     public long Length => Span.Length;
     public bool HasData => Position < Length;
-    public int Position { get; private set; }
+    public long Position { get; private set; }
     public Span<byte> Span { get; init; } = memory.Span;
 
     public MinecraftBuffer(int size) : this(MemoryPool<byte>.Shared.Rent(size).Memory)
@@ -26,12 +26,12 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
     {
     }
 
-    public void Seek(int offset)
+    public void Seek(long offset)
     {
         Seek(offset, SeekOrigin.Current);
     }
 
-    public void Seek(int offset, SeekOrigin origin)
+    public void Seek(long offset, SeekOrigin origin)
     {
         if (origin == SeekOrigin.Begin)
             Position = offset;
@@ -98,24 +98,24 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
 
     public byte ReadUnsignedByte()
     {
-        return Span[Position++];
+        return Span[(int)Position++];
     }
 
     public void WriteUnsignedByte(byte value)
     {
-        Span[Position++] = value;
+        Span[(int)Position++] = value;
     }
 
     public ushort ReadUnsignedShort()
     {
-        var span = Span.Slice(Position, 2);
+        var span = Span.Slice((int)Position, 2);
         Position += 2;
         return BinaryPrimitives.ReadUInt16BigEndian(span);
     }
 
     public void WriteUnsignedShort(ushort value)
     {
-        var span = Span.Slice(Position, 2);
+        var span = Span.Slice((int)Position, 2);
         Position += 2;
         BinaryPrimitives.WriteUInt16BigEndian(span, value);
     }
@@ -151,7 +151,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
     public string ReadString(int maxLength = 32767)
     {
         var length = ReadVarInt();
-        var span = Span.Slice(Position, length);
+        var span = Span.Slice((int)Position, length);
         Position += length;
 
         var value = Encoding.UTF8.GetString(span);
@@ -167,7 +167,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         var length = Encoding.UTF8.GetByteCount(value);
         WriteVarInt(length);
 
-        var span = Span.Slice(Position, length);
+        var span = Span.Slice((int)Position, length);
         Position += length;
 
         Encoding.UTF8.GetBytes(value, span);
@@ -228,14 +228,14 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
 
     public int ReadInt()
     {
-        var span = Span.Slice(Position, 4);
+        var span = Span.Slice((int)Position, 4);
         Position += 4;
         return BitConverter.ToInt32(span);
     }
 
     public void WriteInt(int value)
     {
-        var span = Span.Slice(Position, 4);
+        var span = Span.Slice((int)Position, 4);
         Position += 4;
         BitConverter.GetBytes(value).CopyTo(span);
     }
@@ -284,7 +284,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
 
     public void WriteLong(long value)
     {
-        var span = Span.Slice(Position, 8);
+        var span = Span.Slice((int)Position, 8);
         Position += 8;
         BinaryPrimitives.WriteInt64BigEndian(span, value);
     }
@@ -342,7 +342,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
 
     public Span<byte> ReadToEnd()
     {
-        return Read((int)Length - Position);
+        return Read((int)Length - (int)Position);
     }
 
     public Span<byte> Read(int length)
@@ -350,7 +350,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         if (Length < Position + length)
             throw new InternalBufferOverflowException($"Buffer length with max {Length} at position {Position} attempted to read {length} bytes");
 
-        var span = Span.Slice(Position, length);
+        var span = Span.Slice((int)Position, length);
         Position += length;
         return span;
     }
@@ -360,7 +360,7 @@ public ref struct MinecraftBuffer(Memory<byte> memory)
         if (Length < Position + data.Length)
             throw new InternalBufferOverflowException($"Buffer length with max {Length} at position {Position} attempted to write {data.Length} bytes");
 
-        var span = Span.Slice(Position, data.Length);
+        var span = Span.Slice((int)Position, data.Length);
         Position += data.Length;
         data.CopyTo(span);
     }

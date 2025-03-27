@@ -44,7 +44,7 @@ public class ModernForwarding(string secret) : IForwarding
                 buffer.WriteBoolean(false);
         }
 
-        var forwardingData = buffer.Span[..buffer.Position];
+        var forwardingData = buffer.Span[..(int)buffer.Position];
         var signature = HMACSHA256.HashData(Encoding.UTF8.GetBytes(Secret), forwardingData);
 
         return [.. signature, .. forwardingData];

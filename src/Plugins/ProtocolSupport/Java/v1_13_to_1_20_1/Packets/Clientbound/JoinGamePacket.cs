@@ -22,9 +22,9 @@ public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
     public required bool ShowRespawnScreen { get; set; }
     public required bool DoLimitedCrafting { get; set; } // 1.20.2+
     public required string[] LevelNames { get; set; } // 1.16+
-    public required byte[] Registry { get; set; } // 1.16+
+    public required NbtTag? Registry { get; set; } // 1.16+
     public required DimensionInfo? DimensionInfo { get; set; } // 1.16+
-    public required byte[] CurrentDimensionData { get; set; } // 1.16.2+
+    public required NbtTag? CurrentDimensionData { get; set; } // 1.16.2+
     public required short PreviousGamemode { get; set; } // 1.16+
     public required int SimulationDistance { get; set; } // 1.18+
     public required KeyValuePair<string, long> LastDeathPosition { get; set; } // 1.19+
@@ -93,9 +93,9 @@ public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
             // fields not present in legacy
             DoLimitedCrafting = false,
             LevelNames = [],
-            Registry = [],
+            Registry = null,
             DimensionInfo = null,
-            CurrentDimensionData = [],
+            CurrentDimensionData = null,
             PreviousGamemode = 0,
             SimulationDistance = 0,
             LastDeathPosition = default,
@@ -128,18 +128,16 @@ public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
             levelNames[i] = buffer.ReadString();
 
         var bufferPosition = buffer.Position;
-        var reader = new NbtReader(buffer.ReadToEnd().ToArray()); // TODO remove the allocation
-        var registry = ((MemoryStream)NbtFile.Parse(reader).Serialize()).ToArray();
-        buffer.Seek(bufferPosition + reader.Position);
+        var registryLength = NbtTag.Parse(buffer.ReadToEnd().ToArray(), out var registry);
+        buffer.Seek(bufferPosition + registryLength);
         var levelName = string.Empty;
 
         string? dimensionIdentifier;
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2 && protocolVersion < ProtocolVersion.MINECRAFT_1_19)
         {
             bufferPosition = buffer.Position;
-            reader = new NbtReader(buffer.ReadToEnd().ToArray());// TODO remove the allocation
-            _ = ((MemoryStream)NbtFile.Parse(reader).Serialize()).ToArray();
-            buffer.Seek(bufferPosition + reader.Position);
+            var length = NbtTag.Parse(buffer.ReadToEnd().ToArray(), out _);
+            buffer.Seek(bufferPosition + length);
 
             dimensionIdentifier = buffer.ReadString();
         }
@@ -202,7 +200,7 @@ public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
             LevelType = null,
             Difficulty = 0,
             DoLimitedCrafting = false,
-            CurrentDimensionData = []
+            CurrentDimensionData = null
         };
     }
 
@@ -271,11 +269,14 @@ public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
         foreach (var levelName in LevelNames)
             buffer.WriteString(levelName);
 
-        buffer.Write(Registry);
+        if (Registry is not null)
+            buffer.Write(Registry.AsStream());
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2 && protocolVersion < ProtocolVersion.MINECRAFT_1_19)
         {
-            buffer.Write(CurrentDimensionData);
+            if (CurrentDimensionData is not null)
+                buffer.Write(CurrentDimensionData.AsStream());
+
             buffer.WriteString(DimensionInfo.RegistryIdentifier);
         }
         else

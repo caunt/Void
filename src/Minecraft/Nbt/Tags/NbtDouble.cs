@@ -1,36 +1,11 @@
-namespace Void.Minecraft.Nbt.Tags
+using SharpNBT;
+
+namespace Void.Minecraft.Nbt.Tags;
+
+public record NbtDouble(double Value) : NbtTag
 {
-    public class NbtDouble : NbtTag
-    {
-        public double Value;
+    public static implicit operator NbtDouble(DoubleTag tag) => new(tag.Value) { Name = tag.Name };
+    public static implicit operator DoubleTag(NbtDouble tag) => new(tag.Name, tag.Value);
 
-        public NbtDouble(double value)
-        {
-            Value = value;
-        }
-
-        public NbtDouble(string? name, double value)
-        {
-            Name = name;
-            Value = value;
-        }
-
-        public static NbtDouble FromReader(NbtReader reader, bool readName = true)
-        {
-            var name = readName ? reader.ReadString() : null;
-            var value = reader.ReadDouble();
-
-            return new NbtDouble(name, value);
-        }
-
-        internal override void SerializeValue(ref NbtWriter writer)
-        {
-            writer.Write(Value);
-        }
-
-        public override NbtTagType GetType()
-        {
-            return NbtTagType.Double;
-        }
-    }
+    public override string ToString() => ToSnbt();
 }
