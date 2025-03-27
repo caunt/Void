@@ -128,7 +128,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
                 // handled by compression service
                 break;
             case LoginDisconnectPacket loginDisconnectPacket:
-                logger.LogInformation("Player {Player} cannot authenticate on {Server}: {Reason}", link.Player, link.Server, loginDisconnectPacket.Reason);
+                logger.LogInformation("Player {Player} cannot authenticate on {Server}: {Reason}", link.Player, link.Server, loginDisconnectPacket.Reason.SerializeLegacy());
 
                 // since IPlayer client is already completed login state, it cannot be kicked with login disconnect packet
                 await link.Player.KickAsync(loginDisconnectPacket.Reason, cancellationToken);

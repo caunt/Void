@@ -7,11 +7,13 @@ public static class JsonComponentSerializer
 {
     public static JsonNode Serialize(Component component, ProtocolVersion protocolVersion)
     {
-        return null!;
+        // TODO
+        return LegacyComponentSerializer.Serialize(component);
     }
 
     public static Component Deserialize(JsonNode node, ProtocolVersion protocolVersion)
     {
-        return null!;
+        // TODO
+        return LegacyComponentSerializer.Deserialize(node.GetValue<string>());
     }
 }

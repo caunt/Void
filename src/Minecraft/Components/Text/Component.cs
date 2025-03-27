@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Buffers;
+﻿using System.Text.Json.Nodes;
+using Void.Minecraft.Buffers;
 using Void.Minecraft.Components.Text.Properties;
 using Void.Minecraft.Components.Text.Properties.Content;
 using Void.Minecraft.Components.Text.Serializers;
@@ -16,7 +17,7 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     public static Component ReadFrom(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         if (protocolVersion <= ProtocolVersion.MINECRAFT_1_20_2)
-            return DeserializeLegacy(buffer.ReadString());
+            return DeserializeJson(buffer.ReadString(), protocolVersion);
         else
             return DeserializeNbt(buffer.ReadTag(), protocolVersion);
     }
@@ -24,7 +25,7 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     public void WriteTo(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         if (protocolVersion <= ProtocolVersion.MINECRAFT_1_20_2)
-            buffer.WriteString(SerializeLegacy());
+            buffer.WriteString(SerializeJson(protocolVersion).ToString());
         else
             buffer.WriteTag(SerializeNbt(protocolVersion));
     }
@@ -32,6 +33,11 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     public static Component DeserializeLegacy(string source, char prefix = '&')
     {
         return LegacyComponentSerializer.Deserialize(source, prefix);
+    }
+
+    public static Component DeserializeJson(string source, ProtocolVersion protocolVersion)
+    {
+        return JsonComponentSerializer.Deserialize(source, protocolVersion);
     }
 
     public static Component DeserializeNbt(NbtTag tag, ProtocolVersion protocolVersion)
@@ -42,6 +48,11 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     public string SerializeLegacy(char prefix = '&')
     {
         return LegacyComponentSerializer.Serialize(this, prefix);
+    }
+
+    public JsonNode SerializeJson(ProtocolVersion protocolVersion)
+    {
+        return JsonComponentSerializer.Serialize(this, protocolVersion);
     }
 
     public NbtTag SerializeNbt(ProtocolVersion protocolVersion)
