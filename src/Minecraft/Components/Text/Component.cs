@@ -21,15 +21,21 @@ public record Component(IContent Content, Children Children, Formatting Formatti
         if (protocolVersion <= ProtocolVersion.MINECRAFT_1_20_2)
         {
             var value = buffer.ReadString();
+            var node = (JsonNode?)null;
 
             try
             {
-                return DeserializeJson(JsonNode.Parse(value)!, protocolVersion);
+                node = JsonNode.Parse(value);
             }
             catch (Exception exception) when (exception is JsonException)
             {
-                return DeserializeLegacy(value);
+                // ignore, not a json
             }
+
+            if (node is null)
+                return DeserializeLegacy(value);
+            else
+                return DeserializeJson(node, protocolVersion);
         }
         else
         {

@@ -7,9 +7,9 @@ public record EmptyPlayerContext : IPlayerContext
 {
     public static readonly EmptyPlayerContext Instance = new();
 
-    public IServiceProvider Services => throw new NotImplementedException();
+    public IServiceProvider Services => throw new NotSupportedException();
 
-    public IMinecraftChannel? Channel { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public IMinecraftChannel? Channel { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
     public ValueTask DisposeAsync()
     {

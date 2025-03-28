@@ -3,6 +3,8 @@ using SharpNBT.SNBT;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.Json.Nodes;
+using Void.Minecraft.Nbt.Serializers.Json;
 using Void.Minecraft.Nbt.Tags;
 
 namespace Void.Minecraft.Nbt;
@@ -63,6 +65,11 @@ public abstract record NbtTag
         memoryStream.Position = 0;
 
         return memoryStream;
+    }
+
+    public JsonNode AsJsonNode()
+    {
+        return JsonNbtSerializer.Serialize(this);
     }
 
     public override string ToString() => ToSnbt();
