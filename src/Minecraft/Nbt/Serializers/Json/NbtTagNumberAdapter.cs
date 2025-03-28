@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using Void.Minecraft.Nbt.Tags;
 
@@ -16,6 +17,29 @@ public class NbtTagNumberAdapter
         [5] = NbtTagType.Float,
         [6] = NbtTagType.Double,
     };
+
+    public static NbtTag DeserializeNumber(ref Utf8JsonReader reader)
+    {
+        if (reader.TryGetByte(out var byteValue))
+            return new NbtByte(byteValue);
+
+        if (reader.TryGetInt16(out var shortValue))
+            return new NbtShort(shortValue);
+
+        if (reader.TryGetInt32(out var intValue))
+            return new NbtInt(intValue);
+
+        if (reader.TryGetInt64(out var longValue))
+            return new NbtLong(longValue);
+
+        if (reader.TryGetSingle(out var floatValue) && floatValue is not float.PositiveInfinity and not float.NegativeInfinity)
+            return new NbtFloat(floatValue);
+
+        if (reader.TryGetDouble(out var doubleValue))
+            return new NbtDouble(doubleValue);
+
+        throw new JsonException($"\"{Encoding.UTF8.GetString(reader.ValueSpan)}\" is not a valid NBT number.");
+    }
 
     public static NbtTagType GetTagsType(List<NbtTag> tags)
     {
