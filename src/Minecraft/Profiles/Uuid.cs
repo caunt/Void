@@ -3,8 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Void.Minecraft.Profiles;
 
@@ -34,24 +32,24 @@ public struct Uuid(Guid guid)
         var l0Bytes = BitConverter.GetBytes(parts[2]); // l0: third int
         var l1Bytes = BitConverter.GetBytes(parts[3]); // l1: fourth int
 
-        var guidBytes = new byte[16];
-
-        Array.Copy(m1Bytes, 0, guidBytes, 0, 4);
-
-        guidBytes[4] = m0Bytes[2];
-        guidBytes[5] = m0Bytes[3];
-        guidBytes[6] = m0Bytes[0];
-        guidBytes[7] = m0Bytes[1];
-        guidBytes[8] = l1Bytes[3];
-        guidBytes[9] = l1Bytes[2];
-        guidBytes[10] = l1Bytes[1];
-        guidBytes[11] = l1Bytes[0];
-        guidBytes[12] = l0Bytes[3];
-        guidBytes[13] = l0Bytes[2];
-        guidBytes[14] = l0Bytes[1];
-        guidBytes[15] = l0Bytes[0];
-
-        return new Uuid(new Guid(guidBytes));
+        return new Uuid(new Guid([
+            m0Bytes[0],
+            m0Bytes[1],
+            m0Bytes[2],
+            m0Bytes[3],
+            m1Bytes[2],
+            m1Bytes[3],
+            m1Bytes[0],
+            m1Bytes[1],
+            l0Bytes[3],
+            l0Bytes[2],
+            l0Bytes[1],
+            l0Bytes[0],
+            l1Bytes[3],
+            l1Bytes[2],
+            l1Bytes[1],
+            l1Bytes[0]
+        ]));
     }
 
     public static Uuid FromStringHash(string text)
@@ -72,8 +70,7 @@ public struct Uuid(Guid guid)
         var mostSigBytes = BitConverter.GetBytes(mostSig);
         var leastSigBytes = BitConverter.GetBytes(leastSig);
 
-        Span<byte> guidBytes =
-        [
+        return new Uuid(new Guid([
             mostSigBytes[4],
             mostSigBytes[5],
             mostSigBytes[6],
@@ -90,9 +87,7 @@ public struct Uuid(Guid guid)
             leastSigBytes[2],
             leastSigBytes[1],
             leastSigBytes[0]
-        ];
-
-        return new Uuid(new Guid(guidBytes));
+        ]));
     }
 
     public int GetVersion()
@@ -131,19 +126,6 @@ public struct Uuid(Guid guid)
         public Span<byte> AsSpan()
         {
             return MemoryMarshal.CreateSpan(ref start, 16);
-        }
-    }
-
-    public class JsonConverter : JsonConverter<Uuid>
-    {
-        public override Uuid Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            return Parse(reader.GetString() ?? string.Empty);
-        }
-
-        public override void Write(Utf8JsonWriter writer, Uuid value, JsonSerializerOptions options)
-        {
-            writer.WriteStringValue(value.ToString());
         }
     }
 }

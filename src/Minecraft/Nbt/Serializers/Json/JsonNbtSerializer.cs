@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using Void.Minecraft.Nbt.Serializers.Json.Tags;
+using Void.Minecraft.Profiles.Serializers;
 
 namespace Void.Minecraft.Nbt.Serializers.Json;
 
@@ -27,6 +28,8 @@ public static class JsonNbtSerializer
         Options.Converters.Add(new NbtLongArrayJsonConverter());
         Options.Converters.Add(new NbtShortJsonConverter());
         Options.Converters.Add(new NbtStringJsonConverter());
+
+        Options.Converters.Add(new UuidJsonConverter());
     }
 
     public static JsonNode Serialize(NbtTag tag)

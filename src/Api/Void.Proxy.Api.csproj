@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Brigadier.NET" Version="1.2.13" />
     <PackageReference Include="Ionic.Zlib.Core" Version="1.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0-preview.6.24327.7" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0-preview.6.24327.7" />
