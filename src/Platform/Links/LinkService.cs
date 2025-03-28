@@ -101,7 +101,7 @@ public class LinkService : ILinkService, IEventListener
 
         if (result is AuthenticationResult.NotAuthenticatedPlayer or AuthenticationResult.NotAuthenticatedServer)
         {
-            await player.KickAsync("{\"text\":\"You are not authorized to play\"}", cancellationToken);
+            await player.KickAsync("You are not authorized to play", cancellationToken);
             return ConnectionResult.NotConnected;
         }
         else

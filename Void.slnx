@@ -3,7 +3,6 @@
   <Project Path="src\Api\Void.Proxy.Api.csproj" />
   <Project Path="src\Benchmarks\Void.Benchmarks.csproj" />
   <Project Path="src\Minecraft\Void.Minecraft.csproj" />
-  <Project Path="src\Platform-Deprecated\Void.Proxy-Deprecated.csproj" />
   <Project Path="src\Platform\Void.Proxy.csproj" />
   <Project Path="src\Plugins\Common\Void.Proxy.Plugins.Common.csproj" />
   <Project Path="src\Plugins\ExamplePlugin\Void.Proxy.Plugins.ExamplePlugin.csproj" />
