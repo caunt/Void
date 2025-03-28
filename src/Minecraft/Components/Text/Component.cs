@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpNBT.SNBT;
+using System;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Void.Minecraft.Buffers;
@@ -66,6 +67,11 @@ public record Component(IContent Content, Children Children, Formatting Formatti
         return NbtComponentSerializer.Deserialize(tag, protocolVersion);
     }
 
+    public static Component DeserializeSnbt(string source, ProtocolVersion protocolVersion)
+    {
+        return DeserializeNbt(StringNbt.Parse(source), protocolVersion);
+    }
+
     public string SerializeLegacy(char prefix = '&')
     {
         return LegacyComponentSerializer.Serialize(this, prefix);
@@ -79,6 +85,11 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     public NbtTag SerializeNbt(ProtocolVersion protocolVersion)
     {
         return NbtComponentSerializer.Serialize(this, protocolVersion);
+    }
+
+    public string SerializeSnbt(ProtocolVersion protocolVersion)
+    {
+        return SerializeNbt(protocolVersion).ToString();
     }
 
     public override string ToString() => SerializeNbt(ProtocolVersion.Latest).ToString();
