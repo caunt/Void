@@ -70,17 +70,19 @@ public class PromptReader : IDisposable
                 }
             }
 
+            var length = Buffer.Length + Prompt.Length;
+
             if (info.Key is ConsoleKey.Backspace)
             {
                 if (Buffer.Length > 0)
                     Buffer.Remove(Buffer.Length - 1, 1);
 
-                _writer.UpdateBuffer();
+                _writer.UpdateBuffer(length);
             }
             else
             {
                 Buffer.Append(info.KeyChar);
-                _writer.UpdateBuffer();
+                _writer.UpdateBuffer(length);
             }
         }
         while (!cancellationToken.IsCancellationRequested);

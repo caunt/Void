@@ -63,9 +63,13 @@ public class PromptWriter(PromptReader reader, StreamWriter writer) : TextWriter
         ClearCursorLine();
     }
 
-    public void UpdateBuffer()
+    public void UpdateBuffer(int lengthBefore)
     {
-        ClearCursorLine();
+        if (lengthBefore > reader.Buffer.Length + reader.Prompt.Length)
+            ClearCursorLine();
+        else
+            SetCursorLeft();
+
         WriteBufferLines();
     }
 
