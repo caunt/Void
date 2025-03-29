@@ -11,14 +11,11 @@
 	<ItemGroup>
 		<PackageReference Include="ini-parser-netstandard" Version="2.5.2" />
 		<PackageReference Include="NuGet.PackageManagement" Version="6.13.2" />
-		<PackageReference Include="ReadLine.Ext" Version="0.0.9" />
 		<PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
 		<PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-		<PackageReference Include="Serilog.Sinks.Spectre" Version="0.5.0" />
 		
 		<!-- This is neccessary to include, so plugins using Void.Minecraft can resolve it at runtime -->
 		<PackageReference Include="SharpNBT" Version="1.3.1" />
-		<PackageReference Include="Spectre.Console" Version="0.49.1" />
 	</ItemGroup>
 
 	<ItemGroup>
