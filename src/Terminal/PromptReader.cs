@@ -29,35 +29,63 @@ public class PromptReader : IDisposable
         Prompt = prompt;
     }
 
-    public async ValueTask<string> ReadLineAsync()
+    public void HideCursor()
+    {
+        _writer.HideCursor();
+    }
+
+    public void ShowCursor()
+    {
+        _writer.ShowCursor();
+    }
+
+    public void ResetStyle()
+    {
+        _writer.ResetStyle();
+    }
+
+    public async ValueTask<string> ReadLineAsync(CancellationToken cancellationToken = default)
     {
         await Task.Yield();
 
         do
         {
+            if (!Console.KeyAvailable)
+            {
+                await Task.Delay(50, cancellationToken);
+                continue;
+            }
+
             var info = Console.ReadKey(true);
 
             if (info.Key is ConsoleKey.Enter)
-                break;
-
-            var length = Buffer.Length + Prompt.Length;
+            {
+                try
+                {
+                    return Buffer.ToString();
+                }
+                finally
+                {
+                    Buffer.Clear();
+                }
+            }
 
             if (info.Key is ConsoleKey.Backspace)
             {
                 if (Buffer.Length > 0)
                     Buffer.Remove(Buffer.Length - 1, 1);
 
-                _writer.UpdateBuffer(length);
+                _writer.UpdateBuffer();
             }
             else
             {
                 Buffer.Append(info.KeyChar);
-                _writer.UpdateBuffer(length);
+                _writer.UpdateBuffer();
             }
         }
-        while (true);
+        while (!cancellationToken.IsCancellationRequested);
 
-        return Buffer.ToString();
+        throw new OperationCanceledException();
     }
 
     public void Dispose()

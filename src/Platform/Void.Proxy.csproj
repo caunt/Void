@@ -63,6 +63,7 @@
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 			<CopyToOutputDirectory>false</CopyToOutputDirectory>
 		</ProjectReference>
+		<ProjectReference Include="..\Terminal\Void.Terminal.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

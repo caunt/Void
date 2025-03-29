@@ -21,10 +21,17 @@ public class PromptWriter(PromptReader reader, StreamWriter writer) : TextWriter
 
     public override void Write(string? value)
     {
-        if (value is null)
-            return;
+        WriteSpan(value);
+    }
 
-        Write(value.ToUpper());
+    public override void Write(ReadOnlySpan<char> value)
+    {
+        WriteSpan(value);
+    }
+
+    public override void WriteLine()
+    {
+        WriteSpanLine();
     }
 
     public override void WriteLine(string? value)
@@ -32,47 +39,45 @@ public class PromptWriter(PromptReader reader, StreamWriter writer) : TextWriter
         if (value is null)
             return;
 
-        Write(value, true);
+        WriteSpanLine(value);
     }
 
-    public void Write(string value, bool line = false)
+    public void WriteSpanLine()
     {
-        var lines = GetBufferLines();
+        writer.WriteLine();
+        WriteBufferLines();
+    }
 
-        Thread.Sleep(2000);
-        SetCursorLeft();
-        for (var i = 0; i < lines - 1; i++)
-        {
-            ClearCursorLine();
-            SetCursorUp();
-        }
+    public void WriteSpanLine(ReadOnlySpan<char> value)
+    {
+        WriteSpan(value);
+        WriteSpanLine();
+    }
+
+    public void WriteSpan(ReadOnlySpan<char> value)
+    {
+        if (value.Length is 0)
+            return;
 
         writer.Write(value);
         ClearCursorLine();
-
-        if (line)
-        {
-            writer.WriteLine();
-            writer.Write(reader.Prompt);
-            writer.Write(reader.Buffer);
-        }
     }
 
-    public void UpdateBuffer(int length = 0)
+    public void UpdateBuffer()
     {
-        var lines = GetBufferLines(length);
+        ClearCursorLine();
+        WriteBufferLines();
+    }
 
-        SetCursorLeft();
-
-        for (var i = 0; i < lines - 1; i++)
-        {
-            ClearCursorLine();
-            SetCursorUp();
-        }
-
+    private void WriteBufferLines()
+    {
         writer.Write(reader.Prompt);
         writer.Write(reader.Buffer);
-        ClearCursorLine();
+
+        SetCursorLeft();
+        var lines = GetBufferLines();
+        for (var i = 0; i < lines - 1; i++)
+            SetCursorUp();
     }
 
     private int GetBufferLines(int length = 0)
@@ -85,10 +90,7 @@ public class PromptWriter(PromptReader reader, StreamWriter writer) : TextWriter
 
         if (width == length)
         {
-            if (!OperatingSystem.IsWindows())
-                return 1;
-
-            if (Console.CursorLeft is 0)
+            if (OperatingSystem.IsWindows() && Console.CursorLeft is 0)
                 return 2;
         }
 
@@ -96,36 +98,43 @@ public class PromptWriter(PromptReader reader, StreamWriter writer) : TextWriter
         return lines;
     }
 
-    private void SetCursorUp(byte value = 0)
+    public void HideCursor()
+    {
+        WriteAnsiCommand('l', "?25");
+    }
+
+    public void ShowCursor()
+    {
+        WriteAnsiCommand('h', "?25");
+    }
+
+    public void ResetStyle()
+    {
+        WriteAnsiCommand('m', '0');
+    }
+
+    private void SetCursorUp(char value = '0')
     {
         WriteAnsiCommand('A', value);
     }
 
-    private void SetCursorLeft(byte value = 0)
+    private void SetCursorLeft(char value = '0')
     {
         WriteAnsiCommand('G', value);
     }
 
-    private void ClearCursorLine(byte value = 0)
+    private void ClearCursorLine(char value = '0')
     {
         WriteAnsiCommand('J', value);
     }
 
-    private void WriteAnsiCommand(char command, params ReadOnlySpan<byte> parameters)
+    private void WriteAnsiCommand(char command, params ReadOnlySpan<char> parameters)
     {
         writer.Write('\x1B');
         writer.Write('[');
 
-        if (parameters.Length > 0)
-        {
-            foreach (var parameter in parameters[..^1])
-            {
-                writer.Write(parameter);
-                writer.Write(';');
-            }
-
-            writer.Write(parameters[^1]);
-        }
+        foreach (var parameter in parameters)
+            writer.Write(parameter);
 
         writer.Write(command);
     }

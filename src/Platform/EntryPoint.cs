@@ -1,4 +1,5 @@
 ﻿using Serilog;
+using Serilog.Events;
 using Void.Proxy;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Console;
@@ -20,6 +21,14 @@ using Void.Proxy.Players;
 using Void.Proxy.Plugins;
 using Void.Proxy.Servers;
 using Void.Proxy.Settings;
+
+var configuration = new LoggerConfiguration();
+configuration.Enrich.FromLogContext();
+configuration.MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch);
+configuration.MinimumLevel.Override("Microsoft", LogEventLevel.Warning);
+configuration.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}");
+
+Log.Logger = configuration.CreateLogger();
 
 try
 {
@@ -45,13 +54,13 @@ try
 
     var console = host.Services.GetRequiredService<IConsoleService>();
     var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
-    var stoppedToken = lifetime.ApplicationStopped;
+    var token = lifetime.ApplicationStopping;
 
     console.Setup();
     var app = host.RunAsync();
 
-    while (!stoppedToken.IsCancellationRequested)
-        console.Render();
+    while (!token.IsCancellationRequested)
+        await console.HandleCommandsAsync(token);
 
     await app;
 }

@@ -2,7 +2,6 @@
 
 public interface IConsoleService
 {
-    public void PrepareRender();
-    public void Render(bool newLine = false);
     public void Setup();
+    public ValueTask HandleCommandsAsync(CancellationToken cancellationToken = default);
 }

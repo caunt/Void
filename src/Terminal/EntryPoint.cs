@@ -3,6 +3,11 @@
 var reader = new PromptReader();
 Console.SetOut(reader.TextWriter);
 
+reader.ResetStyle();
+reader.ShowCursor();
+reader.Buffer.Append(new string('L', 150));
+
+var i = 0;
 await Task.WhenAny(AskAsync(), FloodAsync()).Unwrap();
 
 async Task AskAsync()
@@ -20,7 +25,7 @@ async Task FloodAsync()
 {
     while (true)
     {
-        await Task.Delay(20);
-        Console.WriteLine(new string('a', 70));
+        await Task.Delay(2000);
+        Console.WriteLine(i++ + new string('a', 200));
     }
 }
