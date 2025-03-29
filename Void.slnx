@@ -1,7 +1,7 @@
 <Solution>
-  <Project Path="src\Debug\Void.Proxy.Debug.csproj" />
   <Project Path="src\Api\Void.Proxy.Api.csproj" />
   <Project Path="src\Benchmarks\Void.Benchmarks.csproj" />
+  <Project Path="src\Debug\Void.Proxy.Debug.csproj" />
   <Project Path="src\Minecraft\Void.Minecraft.csproj" />
   <Project Path="src\Platform\Void.Proxy.csproj" />
   <Project Path="src\Plugins\Common\Void.Proxy.Plugins.Common.csproj" />
@@ -12,4 +12,5 @@
   <Project Path="src\Plugins\ProtocolSupport\Java\v1_7_2_to_1_12_2\Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.csproj" />
   <Project Path="src\Plugins\ForwardingSupport\Velocity\Void.Proxy.Plugins.ForwardingSupport.Velocity.csproj" />
   <Project Path="src\Plugins\Essentials\Void.Proxy.Plugins.Essentials.csproj" />
+  <Project Path="src\Terminal\Void.Terminal.csproj" />
 </Solution>

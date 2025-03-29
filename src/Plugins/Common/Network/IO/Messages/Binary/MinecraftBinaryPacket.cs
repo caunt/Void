@@ -9,7 +9,7 @@ namespace Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
 public class MinecraftBinaryPacket(int id, RecyclableMemoryStream stream) : IBinaryMessage, IMinecraftServerboundPacket, IMinecraftClientboundPacket, IMinecraftPacket
 {
     public int Id => id;
-    public RecyclableMemoryStream Stream => stream;
+    public MemoryStream Stream => stream;
 
     public void Dispose()
     {

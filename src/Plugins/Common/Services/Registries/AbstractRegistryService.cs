@@ -147,6 +147,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
                 continue;
 
             var position = binaryMessage.Stream.Position;
+            binaryMessage.Stream.Position = 0;
 
             var buffer = new MinecraftBuffer(binaryMessage.Stream);
             var packet = decoder(ref buffer, link.Player.ProtocolVersion);

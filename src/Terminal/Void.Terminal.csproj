@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>preview</LangVersion>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Minecraft\Void.Minecraft.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Ansi\Sequences\Csi\" />
+	  <Folder Include="Ansi\Sequences\Esc\" />
+	  <Folder Include="Ansi\Sequences\Dcs\" />
+	  <Folder Include="Ansi\Sequences\Osc\" />
+	</ItemGroup>
+</Project>
