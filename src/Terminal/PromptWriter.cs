@@ -63,23 +63,23 @@ public class PromptWriter(PromptReader reader, StreamWriter writer) : TextWriter
         ClearCursorLine();
     }
 
-    public void UpdateBuffer(int lengthBefore)
+    public void UpdateBuffer(int lengthBefore = 0)
     {
         if (lengthBefore > reader.Buffer.Length + reader.Prompt.Length)
             ClearCursorLine();
         else
             SetCursorLeft();
 
-        WriteBufferLines();
+        WriteBufferLines(lengthBefore);
     }
 
-    private void WriteBufferLines()
+    private void WriteBufferLines(int lengthBefore = 0)
     {
         writer.Write(reader.Prompt);
         writer.Write(reader.Buffer);
 
         SetCursorLeft();
-        var lines = GetBufferLines();
+        var lines = GetBufferLines(lengthBefore);
         for (var i = 0; i < lines - 1; i++)
             SetCursorUp();
     }
@@ -96,6 +96,8 @@ public class PromptWriter(PromptReader reader, StreamWriter writer) : TextWriter
         {
             if (OperatingSystem.IsWindows() && Console.CursorLeft is 0)
                 return 2;
+
+            return 1;
         }
 
         var lines = Math.Max(1, (length + width - 1) / width);
