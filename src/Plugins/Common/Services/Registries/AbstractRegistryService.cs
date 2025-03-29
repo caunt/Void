@@ -65,7 +65,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         {
             var packets = @event.Message switch
             {
-                IBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registries, binaryMessage),
+                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registries, binaryMessage),
                 IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, registries, minecraftPacket),
                 _ => null
             };
@@ -100,7 +100,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         {
             var packets = @event.Message switch
             {
-                IBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registries, binaryMessage),
+                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registries, binaryMessage),
                 IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, registries, minecraftPacket),
                 _ => null
             };
@@ -139,7 +139,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, IMinecraftPacketRegistryPlugins registries, IBinaryMessage binaryMessage)
+    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, IMinecraftPacketRegistryPlugins registries, IMinecraftBinaryMessage binaryMessage)
     {
         foreach (var registry in registries.All)
         {
