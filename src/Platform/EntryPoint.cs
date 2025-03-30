@@ -59,8 +59,15 @@ try
     console.Setup();
     var app = host.RunAsync();
 
-    while (!token.IsCancellationRequested)
-        await console.HandleCommandsAsync(token);
+    try
+    {
+        while (!token.IsCancellationRequested)
+            await console.HandleCommandsAsync(token);
+    }
+    catch (Exception exception) when (exception is TaskCanceledException or OperationCanceledException)
+    {
+        // Ignore
+    }
 
     await app;
 }
