@@ -5,4 +5,10 @@ using Void.Minecraft.Commands.Brigadier.Tree;
 
 namespace Void.Minecraft.Commands.Brigadier;
 
-public record ParseResults(CommandContextBuilder Context, IImmutableStringReader? Reader = null, Dictionary<CommandNode, CommandSyntaxException>? Exceptions = null);
+public record ParseResults(CommandContextBuilder Context, IImmutableStringReader Reader, Dictionary<CommandNode, CommandSyntaxException> Exceptions)
+{
+    public ParseResults(CommandContextBuilder context) : this(context, new StringReader(string.Empty), [])
+    {
+        // Empty
+    }
+}

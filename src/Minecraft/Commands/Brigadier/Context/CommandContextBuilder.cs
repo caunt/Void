@@ -39,7 +39,7 @@ public class CommandContextBuilder
         return this;
     }
 
-    public CommandContextBuilder WithExecutor(CommandExecutor command)
+    public CommandContextBuilder WithExecutor(CommandExecutor? command)
     {
         Command = command;
         return this;

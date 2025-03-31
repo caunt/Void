@@ -12,16 +12,15 @@ using Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 
 namespace Void.Minecraft.Commands.Brigadier;
 
-public class CommandDispatcher(RootCommandNode root)
+public record CommandDispatcher(RootCommandNode Root)
 {
-    public const string ArgumentSeparator = " ";
-    public const char ArgumentSeparatorChar = ' ';
+    public const char ArgumentSeparator = ' ';
 
-    private const string UsageOptionalOpen = "[";
-    private const string UsageOptionalClose = "]";
-    private const string UsageRequiredOpen = "(";
-    private const string UsageRequiredClose = ")";
-    private const string UsageOr = "|";
+    private const char UsageOptionalOpen = '[';
+    private const char UsageOptionalClose = ']';
+    private const char UsageRequiredOpen = '(';
+    private const char UsageRequiredClose = ')';
+    private const char UsageOr = '|';
 
     public ResultConsumer Consumer { get; set; } = (context, success, result) => { };
 
@@ -33,14 +32,14 @@ public class CommandDispatcher(RootCommandNode root)
     public LiteralCommandNode Register(LiteralArgumentBuilder command)
     {
         var build = command.Build();
-        root.AddChild(build);
+        Root.AddChild(build);
         return build;
     }
 
     public LiteralCommandNode Register(Func<IArgumentContext, LiteralArgumentBuilder> command)
     {
         var build = command(default(ArgumentContext)).Build();
-        root.AddChild(build);
+        Root.AddChild(build);
         return build;
     }
 
@@ -57,20 +56,14 @@ public class CommandDispatcher(RootCommandNode root)
 
     public async ValueTask<int> Execute(ParseResults parse)
     {
-        if (parse.Reader is { CanRead: true })
+        if (parse.Reader.CanRead)
         {
-            if (parse.Exceptions is { Count: 1 })
-            {
+            if (parse.Exceptions.Count is 1)
                 throw parse.Exceptions.Values.First();
-            }
             else if (parse.Context.Range.IsEmpty)
-            {
                 throw CommandSyntaxException.BuiltInExceptions.DispatcherUnknownCommand.CreateWithContext(parse.Reader);
-            }
             else
-            {
                 throw CommandSyntaxException.BuiltInExceptions.DispatcherUnknownArgument.CreateWithContext(parse.Reader);
-            }
         }
 
         var command = parse.Reader.Source;
@@ -93,8 +86,8 @@ public class CommandDispatcher(RootCommandNode root)
 
     public async ValueTask<ParseResults> Parse(StringReader command, ICommandSource source)
     {
-        var context = new CommandContextBuilder(this, source, root, command.Cursor);
-        return await ParseNodes(root, command, context);
+        var context = new CommandContextBuilder(this, source, Root, command.Cursor);
+        return await ParseNodes(Root, command, context);
     }
 
     private async ValueTask<ParseResults> ParseNodes(CommandNode node, StringReader originalReader, CommandContextBuilder contextSoFar)
@@ -124,10 +117,8 @@ public class CommandDispatcher(RootCommandNode root)
                 }
                 if (reader.CanRead)
                 {
-                    if (reader.Peek != ArgumentSeparatorChar)
-                    {
+                    if (reader.Peek != ArgumentSeparator)
                         throw CommandSyntaxException.BuiltInExceptions.DispatcherExpectedArgumentSeparator.CreateWithContext(reader);
-                    }
                 }
             }
             catch (CommandSyntaxException exception)
@@ -138,14 +129,18 @@ public class CommandDispatcher(RootCommandNode root)
             }
 
             context.WithExecutor(child.Executor);
-            if (reader.CanReadLength(child.RedirectTarget == null ? 2 : 1))
+
+            if (reader.CanReadLength(child.RedirectTarget is null ? 2 : 1))
             {
                 reader.Skip();
-                if (child.RedirectTarget != null)
+
+                if (child.RedirectTarget is not null)
                 {
                     var childContext = new CommandContextBuilder(this, source, child.RedirectTarget, reader.Cursor);
                     var parse = await ParseNodes(child.RedirectTarget, reader, childContext);
+
                     context.WithChild(parse.Context);
+
                     return new ParseResults(context, parse.Reader, parse.Exceptions);
                 }
                 else
@@ -156,11 +151,11 @@ public class CommandDispatcher(RootCommandNode root)
             }
             else
             {
-                potentials.Add(new ParseResults(context, reader));
+                potentials.Add(new ParseResults(context, reader, []));
             }
         }
 
-        if (potentials != null)
+        if (potentials is not null)
         {
             if (potentials.Count > 1)
             {
@@ -203,35 +198,34 @@ public class CommandDispatcher(RootCommandNode root)
         if (restricted && !await node.CanUseAsync(source))
             return;
 
-        if (node.Executor != null)
+        if (node.Executor is not null)
             result.Add(prefix);
 
-        if (node.RedirectTarget != null)
+        if (node.RedirectTarget is not null)
         {
-            var redirect = node.RedirectTarget == root ? "..." : "=> " + node.RedirectTarget.UsageText;
-            result.Add(prefix.Length == 0 ? node.UsageText + ArgumentSeparator + redirect : prefix + ArgumentSeparator + redirect);
+            var redirect = node.RedirectTarget == Root ? "..." : "=> " + node.RedirectTarget.UsageText;
+            result.Add(prefix.Length is 0 ? node.UsageText + ArgumentSeparator + redirect : prefix + ArgumentSeparator + redirect);
         }
         else if (node.Children.Any())
         {
             foreach (var child in node.Children)
-            {
-                await GetAllUsage(child, source, result, prefix.Length == 0 ? child.UsageText : prefix + ArgumentSeparator + child.UsageText, restricted);
-            }
+                await GetAllUsage(child, source, result, prefix.Length is 0 ? child.UsageText : prefix + ArgumentSeparator + child.UsageText, restricted);
         }
     }
 
     public async ValueTask<Dictionary<CommandNode, string>> GetSmartUsage(CommandNode node, ICommandSource source)
     {
         var result = new Dictionary<CommandNode, string>();
+        var optional = node.Executor is not null;
 
-        var optional = node.Executor != null;
         foreach (var child in node.Children)
         {
             var usage = await GetSmartUsage(child, source, optional, false);
 
-            if (usage != null)
+            if (usage is not null)
                 result[child] = usage;
         }
+
         return result;
     }
 
@@ -240,58 +234,60 @@ public class CommandDispatcher(RootCommandNode root)
         if (!await node.CanUseAsync(source))
             return null;
 
-        string self = optional ? UsageOptionalOpen + node.UsageText + UsageOptionalClose : node.UsageText;
-        bool childOptional = node.Executor != null;
-        string open = childOptional ? UsageOptionalOpen : UsageRequiredOpen;
-        string close = childOptional ? UsageOptionalClose : UsageRequiredClose;
+        var self = optional ? UsageOptionalOpen + node.UsageText + UsageOptionalClose : node.UsageText;
+        var childOptional = node.Executor is not null;
+        var open = childOptional ? UsageOptionalOpen : UsageRequiredOpen;
+        var close = childOptional ? UsageOptionalClose : UsageRequiredClose;
 
         if (!deep)
         {
-            if (node.RedirectTarget != null)
+            if (node.RedirectTarget is not null)
             {
-                string redirect = node.RedirectTarget == root ? "..." : "=> " + node.RedirectTarget.UsageText;
+                var redirect = node.RedirectTarget == Root ? "..." : "=> " + node.RedirectTarget.UsageText;
                 return self + ArgumentSeparator + redirect;
             }
             else
             {
-                var children = node.Children.Where(c => c.CanUseAsync(source).Result);
+                var childsUsable = await Task.WhenAll(node.Children.Select(async child => (child, await child.CanUseAsync(source))));
+                var children = childsUsable.Where(pair => pair.Item2).Select(pair => pair.child);
+
                 if (children.Count() == 1)
                 {
                     var usage = await GetSmartUsage(children.First(), source, childOptional, childOptional);
-                    if (usage != null)
-                    {
+
+                    if (usage is not null)
                         return self + ArgumentSeparator + usage;
-                    }
                 }
                 else if (children.Count() > 1)
                 {
                     var childUsage = new List<string>();
+
                     foreach (var child in children)
                     {
                         var usage = await GetSmartUsage(child, source, childOptional, true);
-                        if (usage != null)
-                        {
+
+                        if (usage is not null)
                             childUsage.Add(usage);
-                        }
                     }
                     if (childUsage.Count == 1)
                     {
-                        string usage = childUsage.First();
+                        var usage = childUsage.First();
                         return self + ArgumentSeparator + (childOptional ? UsageOptionalOpen + usage + UsageOptionalClose : usage);
                     }
                     else if (childUsage.Count > 1)
                     {
                         var builder = new StringBuilder(open);
-                        int count = 0;
-                        foreach (CommandNode child in children)
+                        var count = 0;
+
+                        foreach (var child in children)
                         {
                             if (count > 0)
-                            {
                                 builder.Append(UsageOr);
-                            }
+
                             builder.Append(child.UsageText);
                             count++;
                         }
+
                         if (count > 0)
                         {
                             builder.Append(close);
@@ -305,49 +301,44 @@ public class CommandDispatcher(RootCommandNode root)
         return self;
     }
 
-    public async ValueTask<Suggestions> GetCompletionSuggestions(ParseResults parse)
+    public static async ValueTask<Suggestions> GetCompletionSuggestions(ParseResults parse)
     {
         return await GetCompletionSuggestions(parse, parse.Reader.TotalLength);
     }
 
-    public async ValueTask<Suggestions> GetCompletionSuggestions(ParseResults parse, int cursor)
+    public static async ValueTask<Suggestions> GetCompletionSuggestions(ParseResults parse, int cursor)
     {
-        CommandContextBuilder context = parse.Context;
+        var context = parse.Context;
 
-        SuggestionContext nodeBeforeCursor = context.BuildSuggestions(cursor);
-        CommandNode parent = nodeBeforeCursor.Parent;
-        int start = Math.Min(nodeBeforeCursor.Start, cursor);
+        var nodeBeforeCursor = context.BuildSuggestions(cursor);
+        var parent = nodeBeforeCursor.Parent;
+        var start = Math.Min(nodeBeforeCursor.Start, cursor);
 
-        string fullInput = parse.Reader.Source;
-        string truncatedInput = fullInput.Substring(0, cursor);
-        string truncatedInputLowerCase = truncatedInput.ToLower();
+        var fullInput = parse.Reader.Source;
+        var truncatedInput = fullInput[..cursor];
+        var truncatedInputLowerCase = truncatedInput.ToLower();
         var suggestions = await Task.WhenAll(parent.Children.Select(async node => await node.ListSuggestionsAsync(context.Build(truncatedInput), new SuggestionsBuilder(truncatedInput, start))));
 
         return Suggestions.Merge(fullInput, suggestions);
     }
 
-    public RootCommandNode GetRoot()
-    {
-        return root;
-    }
-
     public List<string> GetPath(CommandNode target)
     {
         var nodes = new List<List<CommandNode>>();
-        AddPaths(root, nodes, new List<CommandNode>());
+        AddPaths(Root, nodes, []);
 
-        foreach (List<CommandNode> list in nodes)
+        foreach (var list in nodes)
         {
             if (list[^1] == target)
             {
                 var result = new List<string>();
-                foreach (CommandNode node in list)
+
+                foreach (var node in list)
                 {
-                    if (node != root)
-                    {
+                    if (node != Root)
                         result.Add(node.Name);
-                    }
                 }
+
                 return result;
             }
         }
@@ -357,36 +348,33 @@ public class CommandDispatcher(RootCommandNode root)
 
     public CommandNode? FindNode(List<string> path)
     {
-        CommandNode node = root;
-        foreach (string name in path)
+        var node = Root as CommandNode;
+
+        foreach (var name in path)
         {
             node = node.GetChild(name);
-            if (node == null)
-            {
+
+            if (node is null)
                 return null;
-            }
         }
+
         return node;
     }
 
-    public void FindAmbiguities(AmbiguousConsumer consumer)
+    private static void AddPaths(CommandNode node, List<List<CommandNode>> result, List<CommandNode> current)
     {
-        root.FindAmbiguities(consumer);
-    }
+        current.Add(node);
+        result.Add([.. current]);
 
-    private void AddPaths(CommandNode node, List<List<CommandNode>> result, List<CommandNode> parents)
-    {
-        var current = new List<CommandNode>(parents) { node };
-        result.Add(current);
-
-        foreach (CommandNode child in node.Children)
-        {
+        foreach (var child in node.Children)
             AddPaths(child, result, current);
-        }
+
+        current.RemoveAt(current.Count - 1);
     }
+
 
     private bool HasCommand(CommandNode node)
     {
-        return node != null && (node.Executor != null || node.Children.Any(HasCommand));
+        return node is { Executor: not null } || node.Children.Any(HasCommand);
     }
 }
