@@ -1,4 +1,5 @@
 ﻿using Void.Minecraft.Network;
+using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
 using Void.Proxy.Api.Plugins;
 
@@ -13,6 +14,8 @@ public interface IMinecraftPacketRegistrySystem
     public IMinecraftPacketRegistry Write { get; set; }
 
     public bool Contains<T>() where T : IMinecraftPacket;
+    public bool Contains(Type type);
+    public bool Contains(IMinecraftMessage packet);
     public void ReplacePackets(Operation operation, IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings);
     public void AddPackets(Operation operation, IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings);
     public void Reset();

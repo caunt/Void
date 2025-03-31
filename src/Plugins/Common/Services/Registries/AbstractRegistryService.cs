@@ -143,7 +143,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
     {
         foreach (var registry in registries.All)
         {
-            if (!registry.TryCreateDecoder(binaryMessage.Id, out var decoder))
+            if (!registry.Read.TryCreateDecoder(binaryMessage.Id, out var decoder))
                 continue;
 
             var position = binaryMessage.Stream.Position;
@@ -162,15 +162,13 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         var playerPacketRegistryHolder = link.PlayerChannel.GetSystemPacketRegistryHolder();
         var serverPacketRegistryHolder = link.ServerChannel.GetSystemPacketRegistryHolder();
 
-        if (!playerPacketRegistryHolder.Read.TryGetPacketId(minecraftPacket, out var id) &&
-            !playerPacketRegistryHolder.Write.TryGetPacketId(minecraftPacket, out id) &&
-            !serverPacketRegistryHolder.Read.TryGetPacketId(minecraftPacket, out id) &&
+        if (!playerPacketRegistryHolder.Write.TryGetPacketId(minecraftPacket, out var id) &&
             !serverPacketRegistryHolder.Write.TryGetPacketId(minecraftPacket, out id))
             yield break;
 
         foreach (var registry in registries.All)
         {
-            if (!registry.TryCreateDecoder(id, out var decoder))
+            if (!registry.Read.TryCreateDecoder(id, out var decoder))
                 continue;
 
             using var stream = MinecraftRecyclableStream.RecyclableMemoryStreamManager.GetStream();

@@ -1,5 +1,6 @@
 ﻿using Void.Minecraft.Network;
 using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
@@ -17,7 +18,17 @@ public class MinecraftPacketRegistrySystem : IMinecraftPacketRegistrySystem
 
     public bool Contains<T>() where T : IMinecraftPacket
     {
-        return Read.Contains<T>() || Write.Contains<T>();
+        return Contains(typeof(T));
+    }
+
+    public bool Contains(IMinecraftMessage packet)
+    {
+        return Contains(packet.GetType());
+    }
+
+    public bool Contains(Type type)
+    {
+        return Read.Contains(type) || Write.Contains(type);
     }
 
     public void ReplacePackets(Operation operation, IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings)
@@ -38,7 +49,7 @@ public class MinecraftPacketRegistrySystem : IMinecraftPacketRegistrySystem
                 Write.ReplacePackets(mappings, ProtocolVersion);
                 break;
             default:
-                throw new ArgumentException("Invalid operation", nameof(operation));
+                throw new ArgumentException($"Invalid operation {operation}", nameof(operation));
         }
     }
 
@@ -60,7 +71,7 @@ public class MinecraftPacketRegistrySystem : IMinecraftPacketRegistrySystem
                 Write.AddPackets(mappings, ProtocolVersion);
                 break;
             default:
-                throw new ArgumentException("Invalid operation", nameof(operation));
+                throw new ArgumentException($"Invalid operation {operation}", nameof(operation));
         }
     }
 

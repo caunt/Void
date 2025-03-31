@@ -2,6 +2,7 @@
 using Void.Minecraft.Components.Text;
 using Void.Proxy.Api.Events.Chat;
 using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
 using Void.Proxy.Api.Network.IO.Channels.Services;
@@ -42,8 +43,11 @@ public static class PlayerExtensions
         var plugin = plugins.All.FirstOrDefault(plugin => plugin.GetType().Assembly == packetType.Assembly)
             ?? throw new InvalidOperationException($"Plugin for packet {packetType.Name} not found.");
 
-        var registry = await player.GetPluginPacketRegistryAsync(plugin, cancellationToken);
-        registry.RegisterPacket<T>(player.ProtocolVersion, mappings);
+        var readRegistry = await player.GetPluginPacketRegistryAsync(plugin, Operation.Read, cancellationToken);
+        var writeRegistry = await player.GetPluginPacketRegistryAsync(plugin, Operation.Write, cancellationToken);
+
+        readRegistry.RegisterPacket<T>(player.ProtocolVersion, mappings);
+        writeRegistry.RegisterPacket<T>(player.ProtocolVersion, mappings);
     }
 
     public static async ValueTask RemovePluginPacketRegistryAsync(this IPlayer player, IPlugin plugin, CancellationToken cancellationToken = default)
@@ -58,10 +62,10 @@ public static class PlayerExtensions
         registries.Clear();
     }
 
-    public static async ValueTask<IMinecraftPacketRegistry> GetPluginPacketRegistryAsync(this IPlayer player, IPlugin plugin, CancellationToken cancellationToken = default)
+    public static async ValueTask<IMinecraftPacketRegistry> GetPluginPacketRegistryAsync(this IPlayer player, IPlugin plugin, Operation operation, CancellationToken cancellationToken = default)
     {
         var registries = await player.GetPluginsPacketRegistriesAsync(cancellationToken);
-        return registries.Get(plugin);
+        return registries.Get(plugin, operation);
     }
 
     public static async ValueTask<IMinecraftPacketRegistryPlugins> GetPluginsPacketRegistriesAsync(this IPlayer player, CancellationToken cancellationToken = default)
