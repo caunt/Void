@@ -21,6 +21,6 @@ public class ConsoleService(ILogger<ConsoleService> logger, ICommandService comm
     {
         var command = await _reader.ReadLineAsync(cancellationToken);
         logger.LogInformation("Proxy issued command: {command}", command);
-        await commands.ExecuteAsync(this, command);
+        await commands.ExecuteAsync(this, command, cancellationToken);
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
@@ -43,18 +44,18 @@ public record CommandDispatcher(RootCommandNode Root)
         return build;
     }
 
-    public async ValueTask<int> Execute(string input, ICommandSource source)
+    public async ValueTask<int> Execute(string input, ICommandSource source, CancellationToken cancellationToken)
     {
-        return await Execute(new StringReader(input), source);
+        return await Execute(new StringReader(input), source, cancellationToken);
     }
 
-    public async ValueTask<int> Execute(StringReader input, ICommandSource source)
+    public async ValueTask<int> Execute(StringReader input, ICommandSource source, CancellationToken cancellationToken)
     {
         var parse = await Parse(input, source);
-        return await Execute(parse);
+        return await Execute(parse, cancellationToken);
     }
 
-    public async ValueTask<int> Execute(ParseResults parse)
+    public async ValueTask<int> Execute(ParseResults parse, CancellationToken cancellationToken)
     {
         if (parse.Reader.CanRead)
         {
@@ -76,7 +77,7 @@ public record CommandDispatcher(RootCommandNode Root)
             throw CommandSyntaxException.BuiltInExceptions.DispatcherUnknownCommand.CreateWithContext(parse.Reader);
         }
 
-        return await flatContext.ExecuteAllAsync(original.Source, Consumer);
+        return await flatContext.ExecuteAllAsync(original.Source, Consumer, cancellationToken);
     }
 
     public async ValueTask<ParseResults> Parse(string command, ICommandSource source)

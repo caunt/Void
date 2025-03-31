@@ -8,8 +8,8 @@ public class CommandService : ICommandService
 {
     private readonly CommandDispatcher _dispatcher = new();
 
-    public async ValueTask ExecuteAsync(ICommandSource source, string command)
+    public async ValueTask ExecuteAsync(ICommandSource source, string command, CancellationToken cancellationToken = default)
     {
-        var result = await _dispatcher.Execute(command, source);
+        var result = await _dispatcher.Execute(command, source, cancellationToken);
     }
 }

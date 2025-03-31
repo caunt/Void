@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Commands.Brigadier.Exceptions;
 
@@ -70,7 +71,7 @@ public record ContextChain(List<CommandContext> Modifiers, CommandContext Execut
         }
     }
 
-    public static async ValueTask<int> RunExecutableAsync(CommandContext context, ICommandSource source, ResultConsumer resultConsumer, bool forkedMode)
+    public static async ValueTask<int> RunExecutableAsync(CommandContext context, ICommandSource source, ResultConsumer resultConsumer, bool forkedMode, CancellationToken cancellationToken)
     {
         var contextToUse = context.CopyFor(source);
         try
@@ -78,7 +79,7 @@ public record ContextChain(List<CommandContext> Modifiers, CommandContext Execut
             if (context.Executor is null)
                 throw new InvalidOperationException("Last command in chain must be executable");
 
-            var result = await context.Executor(contextToUse);
+            var result = await context.Executor(contextToUse, cancellationToken);
             resultConsumer(contextToUse, true, result);
             return forkedMode ? 1 : result;
         }
@@ -93,12 +94,12 @@ public record ContextChain(List<CommandContext> Modifiers, CommandContext Execut
         }
     }
 
-    public async ValueTask<int> ExecuteAllAsync(ICommandSource source, ResultConsumer resultConsumer)
+    public async ValueTask<int> ExecuteAllAsync(ICommandSource source, ResultConsumer resultConsumer, CancellationToken cancellationToken)
     {
         if (Modifiers.Count == 0)
         {
             // Fast path - just a single stage
-            return await RunExecutableAsync(Executable, source, resultConsumer, false);
+            return await RunExecutableAsync(Executable, source, resultConsumer, false, cancellationToken);
         }
 
         var forkedMode = false;
@@ -123,7 +124,7 @@ public record ContextChain(List<CommandContext> Modifiers, CommandContext Execut
         var result = 0;
 
         foreach (var executionSource in currentSources)
-            result += await RunExecutableAsync(Executable, executionSource, resultConsumer, forkedMode);
+            result += await RunExecutableAsync(Executable, executionSource, resultConsumer, forkedMode, cancellationToken);
 
         return result;
     }
