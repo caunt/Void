@@ -71,6 +71,7 @@ public record CommandDispatcher(RootCommandNode Root)
         var original = parse.Context.Build(command);
 
         var flatContext = ContextChain.TryFlatten(original);
+
         if (flatContext is null)
         {
             Consumer(original, false, 0);
