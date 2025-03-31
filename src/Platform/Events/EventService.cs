@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Plugins;
 
 namespace Void.Proxy.Events;
 
@@ -30,19 +29,6 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
     public async ValueTask ThrowAsync<T>(T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
         var entries = _entries.OrderBy(entry => entry.Order);
-        await ThrowAsync(entries, @event, cancellationToken);
-    }
-
-    internal async ValueTask ThrowToPluginAsync<T>(IPlugin plugin, CancellationToken cancellationToken = default) where T : IEvent, new()
-    {
-        await ThrowAsync(new T(), cancellationToken);
-    }
-
-    internal async ValueTask ThrowToPluginAsync<T>(IPlugin plugin, T @event, CancellationToken cancellationToken = default) where T : IEvent
-    {
-        var entries = _entries
-            .Where(entry => entry.Listener.GetType().Assembly == plugin.GetType().Assembly)
-            .OrderBy(entry => entry.Order);
         await ThrowAsync(entries, @event, cancellationToken);
     }
 

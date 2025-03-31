@@ -7,7 +7,7 @@ namespace Void.Minecraft.Nbt.Serializers.Json.Tags;
 
 public class NbtIntJsonConverter : JsonConverter<NbtInt>
 {
-    public override NbtInt Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => new NbtInt(reader.GetInt32());
+    public override NbtInt Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => new(reader.GetInt32());
 
     public override void Write(Utf8JsonWriter writer, NbtInt tag, JsonSerializerOptions options) => writer.WriteNumberValue(tag.Value);
 }

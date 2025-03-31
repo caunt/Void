@@ -10,7 +10,7 @@ public class PromptReader : IDisposable
     public StringBuilder Buffer { get; set; }
 
     public TextWriter TextWriter => TextWriter.Synchronized(_writer);
-    public int Width => Console.WindowWidth;
+    public int Width { get; } = Console.WindowWidth;
 
     public PromptReader(string prompt = "> ", StringBuilder? buffer = null, Stream? input = null, Stream? output = null)
     {
