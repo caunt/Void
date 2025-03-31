@@ -44,7 +44,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (@event.Phase is Phase.Handshake)
             return;
 
-        await @event.Player.ClearPluginsPacketRegistryAsync(cancellationToken);
+        @event.Player.ClearPluginsPacketRegistry();
     }
 
     [Subscribe(PostOrder.Last)]
@@ -53,7 +53,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(@event.Link.Player.ProtocolVersion))
             return;
 
-        var registries = await @event.Link.Player.GetPluginsPacketRegistriesAsync(cancellationToken);
+        var registries = @event.Link.Player.GetPluginsPacketRegistries(@event.Link, @event.Direction);
 
         if (registries.IsEmpty)
             return;
@@ -88,7 +88,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(@event.Link.Player.ProtocolVersion))
             return;
 
-        var registries = await @event.Link.Player.GetPluginsPacketRegistriesAsync(cancellationToken);
+        var registries = @event.Link.Player.GetPluginsPacketRegistries(@event.Link, @event.Direction);
 
         if (registries.IsEmpty)
             return;
@@ -143,7 +143,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
     {
         foreach (var registry in registries.All)
         {
-            if (!registry.Read.TryCreateDecoder(binaryMessage.Id, out var decoder))
+            if (!registry.TryCreateDecoder(binaryMessage.Id, out var decoder))
                 continue;
 
             var position = binaryMessage.Stream.Position;
@@ -168,7 +168,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
         foreach (var registry in registries.All)
         {
-            if (!registry.Read.TryCreateDecoder(id, out var decoder))
+            if (!registry.TryCreateDecoder(id, out var decoder))
                 continue;
 
             using var stream = MinecraftRecyclableStream.RecyclableMemoryStreamManager.GetStream();

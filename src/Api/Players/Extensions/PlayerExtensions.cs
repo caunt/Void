@@ -2,6 +2,7 @@
 using Void.Minecraft.Components.Text;
 using Void.Proxy.Api.Events.Chat;
 using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
@@ -36,44 +37,55 @@ public static class PlayerExtensions
         await channel.SendPacketAsync(packet, cancellationToken);
     }
 
-    public static async ValueTask RegisterPacketAsync<T>(this IPlayer player, CancellationToken cancellationToken = default, params MinecraftPacketMapping[] mappings) where T : IMinecraftPacket
+    public static void RegisterPacket<T>(this IPlayer player, params MinecraftPacketMapping[] mappings) where T : IMinecraftPacket
     {
         var packetType = typeof(T);
         var plugins = player.Context.Services.GetRequiredService<IPluginService>();
         var plugin = plugins.All.FirstOrDefault(plugin => plugin.GetType().Assembly == packetType.Assembly)
             ?? throw new InvalidOperationException($"Plugin for packet {packetType.Name} not found.");
 
-        var readRegistry = await player.GetPluginPacketRegistryAsync(plugin, Operation.Read, cancellationToken);
-        var writeRegistry = await player.GetPluginPacketRegistryAsync(plugin, Operation.Write, cancellationToken);
+        var link = player.GetLink();
+        var direction = typeof(T).IsAssignableTo(typeof(IMinecraftClientboundPacket)) ? Direction.Clientbound : Direction.Serverbound;
+        var registries = player.GetPluginsPacketRegistries(link, direction);
+        var registry = registries.Get(plugin);
 
-        readRegistry.RegisterPacket<T>(player.ProtocolVersion, mappings);
-        writeRegistry.RegisterPacket<T>(player.ProtocolVersion, mappings);
+        registry.RegisterPacket<T>(player.ProtocolVersion, mappings);
     }
 
-    public static async ValueTask RemovePluginPacketRegistryAsync(this IPlayer player, IPlugin plugin, CancellationToken cancellationToken = default)
+    public static void RemovePluginPacketRegistry(this IPlayer player, IPlugin plugin)
     {
-        var registries = await player.GetPluginsPacketRegistriesAsync(cancellationToken);
-        registries.Remove(plugin);
+        var link = player.GetLink();
+        player.GetPluginsPacketRegistries(link, Direction.Clientbound).Remove(plugin);
+        player.GetPluginsPacketRegistries(link, Direction.Serverbound).Remove(plugin);
     }
 
-    public static async ValueTask ClearPluginsPacketRegistryAsync(this IPlayer player, CancellationToken cancellationToken = default)
+    public static void ClearPluginsPacketRegistry(this IPlayer player)
     {
-        var registries = await player.GetPluginsPacketRegistriesAsync(cancellationToken);
-        registries.Clear();
+        var link = player.GetLink();
+        player.GetPluginsPacketRegistries(link, Direction.Clientbound).Clear();
+        player.GetPluginsPacketRegistries(link, Direction.Serverbound).Clear();
     }
 
-    public static async ValueTask<IMinecraftPacketRegistry> GetPluginPacketRegistryAsync(this IPlayer player, IPlugin plugin, Operation operation, CancellationToken cancellationToken = default)
+    public static IMinecraftPacketRegistryPlugins GetPluginsPacketRegistries(this IPlayer player, ILink link, Direction direction)
     {
-        var registries = await player.GetPluginsPacketRegistriesAsync(cancellationToken);
-        return registries.Get(plugin, operation);
-    }
+        var channel = direction switch
+        {
+            Direction.Clientbound => link.PlayerChannel,
+            _ => link.ServerChannel
+        };
 
-    public static async ValueTask<IMinecraftPacketRegistryPlugins> GetPluginsPacketRegistriesAsync(this IPlayer player, CancellationToken cancellationToken = default)
-    {
-        var channel = await player.GetChannelAsync(cancellationToken);
         var stream = channel.Get<IMinecraftPacketMessageStream>();
-
         return stream.PluginsRegistryHolder ?? throw new Exception("Plugins registry holder is not set yet");
+    }
+
+    public static ILink GetLink(this IPlayer player)
+    {
+        var links = player.Context.Services.GetRequiredService<ILinkService>();
+
+        if (!links.TryGetLink(player, out var link))
+            throw new InvalidOperationException("Player is not linked to any server");
+
+        return link;
     }
 
     public static async ValueTask<bool> IsProtocolSupportedAsync(this IPlayer player, CancellationToken cancellationToken = default)

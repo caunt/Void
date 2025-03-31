@@ -29,12 +29,12 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
     }
 
     [Subscribe]
-    public async ValueTask OnPhaseChanged(PhaseChangedEvent @event, CancellationToken cancellationToken)
+    public void OnPhaseChanged(PhaseChangedEvent @event)
     {
         switch (@event)
         {
             case { Phase: Phase.Play }:
-                await RegisterPlayMappingsAsync(@event.Player, @event.Side, cancellationToken);
+                RegisterPlayMappings(@event.Player, @event.Side);
                 break;
         }
     }
@@ -64,15 +64,15 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
         }
     }
 
-    private async ValueTask RegisterPlayMappingsAsync(IPlayer player, Side side, CancellationToken cancellationToken)
+    private void RegisterPlayMappings(IPlayer player, Side side)
     {
-        await player.RegisterPacketAsync<SetHeldItemServerboundPacket>(cancellationToken, [
+        player.RegisterPacket<SetHeldItemServerboundPacket>([
             new MinecraftPacketMapping(0x2B, ProtocolVersion.MINECRAFT_1_20_2),
             new MinecraftPacketMapping(0x2C, ProtocolVersion.MINECRAFT_1_20_3),
             new MinecraftPacketMapping(0x2F, ProtocolVersion.MINECRAFT_1_20_5),
             new MinecraftPacketMapping(0x33, ProtocolVersion.MINECRAFT_1_21_4)
         ]);
-        await player.RegisterPacketAsync<SetHeldItemClientboundPacket>(cancellationToken, [
+        player.RegisterPacket<SetHeldItemClientboundPacket>([
             new MinecraftPacketMapping(0x4F, ProtocolVersion.MINECRAFT_1_20_2),
             new MinecraftPacketMapping(0x51, ProtocolVersion.MINECRAFT_1_20_3),
             new MinecraftPacketMapping(0x53, ProtocolVersion.MINECRAFT_1_20_5),

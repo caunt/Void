@@ -223,7 +223,7 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
             {
                 foreach (var registry in pluginsRegistries.All)
                 {
-                    if (registry.Write.TryGetPacketId(packet, out var pluginPacketId))
+                    if (registry.TryGetPacketId(packet, out var pluginPacketId))
                     {
                         id = pluginPacketId;
                         break;
@@ -234,7 +234,7 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
             if (id == -1)
                 throw new InvalidOperationException($"{packet} is not registered:\n" +
                     $"{nameof(SystemRegistryHolder)} [{string.Join(", ", SystemRegistryHolder?.Write?.PacketTypes.Select(type => type.Name) ?? [])}]\n" +
-                    $"{nameof(PluginsRegistryHolder)} [{string.Join(", ", PluginsRegistryHolder?.All.SelectMany(registry => registry.Write.PacketTypes).Select(type => type.Name) ?? [])}]");
+                    $"{nameof(PluginsRegistryHolder)} [{string.Join(", ", PluginsRegistryHolder?.All.SelectMany(registry => registry.PacketTypes).Select(type => type.Name) ?? [])}]");
 
             EncodeVarInt(stream, id);
 
