@@ -2,7 +2,7 @@
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Exceptions;
 
-namespace Void.Minecraft.Commands.Brigadier.Arguments;
+namespace Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 
 public record LongArgumentType : IArgumentType<long>
 {

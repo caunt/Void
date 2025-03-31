@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Void.Minecraft.Commands.Brigadier.Arguments;
+namespace Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 
 public record StringArgumentType : IArgumentType<string>
 {

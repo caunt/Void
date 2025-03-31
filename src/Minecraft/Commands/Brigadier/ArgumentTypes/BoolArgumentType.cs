@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Suggestion;
 
-namespace Void.Minecraft.Commands.Brigadier.Arguments;
+namespace Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 
 public record BoolArgumentType : IArgumentType<bool>
 {

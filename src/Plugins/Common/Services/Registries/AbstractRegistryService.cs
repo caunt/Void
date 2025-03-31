@@ -38,7 +38,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
     }
 
     [Subscribe(PostOrder.First)]
-    public static async ValueTask OnPhaseChanged(PhaseChangedEvent @event, CancellationToken cancellationToken)
+    public static void OnPhaseChanged(PhaseChangedEvent @event)
     {
         // At handshake phase IPlayer channel is still being built, causing stack overflow here
         if (@event.Phase is Phase.Handshake)

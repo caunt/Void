@@ -1,4 +1,4 @@
-﻿using Void.Minecraft.Commands.Brigadier.Arguments;
+﻿using Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 using Void.Minecraft.Commands.Brigadier.Suggestion;
 using Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Void.Minecraft.Commands.Brigadier.Arguments;
+using Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Exceptions;
