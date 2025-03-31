@@ -1,5 +1,3 @@
-﻿using System;
+﻿namespace Void.Minecraft.Commands;
 
-namespace Void.Minecraft.Commands;
-
-public interface ICommandSource : IEquatable<ICommandSource>;
+public interface ICommandSource;

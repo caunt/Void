@@ -4,6 +4,14 @@ using Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 
 namespace Void.Minecraft.Commands.Brigadier.Builder;
 
+public static class RequiredArgumentBuilderExtensions
+{
+    public static RequiredArgumentBuilder<TType> Argument<TType>(this IArgumentContext _, string name, IArgumentType<TType> type)
+    {
+        return RequiredArgumentBuilder<TType>.Create(name, type);
+    }
+}
+
 public class RequiredArgumentBuilder<TType>(string Name, IArgumentType<TType> Type) : ArgumentBuilder<RequiredArgumentBuilder<TType>, ArgumentCommandNode<TType>>
 {
     public ISuggestionProvider? SuggestionProvider { get; private set; }

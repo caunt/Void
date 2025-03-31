@@ -4,16 +4,28 @@ using Void.Minecraft.Commands.Brigadier.Tree;
 
 namespace Void.Minecraft.Commands.Brigadier.Context;
 
-public record CommandContextBuilder(CommandDispatcher Dispatcher, CommandNode RootNode, int Start)
+public class CommandContextBuilder
 {
-    public ICommandSource? Source { get; set; }
+    public ICommandSource Source { get; set; }
+    public CommandDispatcher Dispatcher { get; set; }
+    public CommandNode RootNode { get; set; }
+    public int Start { get; set; }
     public CommandExecutor? Command { get; set; }
     public RedirectModifier? RedirectModifier { get; set; }
     public CommandContextBuilder? Child { get; set; }
     public bool IsFork { get; set; }
     public List<ParsedCommandNode> Nodes { get; } = [];
     public Dictionary<string, IParsedArgument> Arguments { get; } = [];
-    public StringRange Range { get; set; } = StringRange.At(Start);
+    public StringRange Range { get; set; }
+
+    public CommandContextBuilder(CommandDispatcher dispatcher, ICommandSource source, CommandNode rootNode, int start)
+    {
+        Dispatcher = dispatcher;
+        Source = source;
+        RootNode = rootNode;
+        Start = start;
+        Range = StringRange.At(Start);
+    }
 
     public CommandContextBuilder WithSource(ICommandSource source)
     {
@@ -27,7 +39,7 @@ public record CommandContextBuilder(CommandDispatcher Dispatcher, CommandNode Ro
         return this;
     }
 
-    public CommandContextBuilder WithCommand(CommandExecutor command)
+    public CommandContextBuilder WithExecutor(CommandExecutor command)
     {
         Command = command;
         return this;
@@ -51,7 +63,7 @@ public record CommandContextBuilder(CommandDispatcher Dispatcher, CommandNode Ro
 
     public CommandContextBuilder Copy()
     {
-        var copy = new CommandContextBuilder(Dispatcher, RootNode, Start)
+        var copy = new CommandContextBuilder(Dispatcher, Source, RootNode, Start)
         {
             Source = Source,
             Command = Command,

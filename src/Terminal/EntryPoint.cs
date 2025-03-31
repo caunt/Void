@@ -4,10 +4,8 @@ var reader = new PromptReader();
 Console.SetOut(reader.TextWriter);
 
 reader.ResetStyle();
-reader.ShowCursor();
-reader.Buffer.Append(new string('L', 150));
+reader.HideCursor();
 
-var i = 0;
 await Task.WhenAny(AskAsync(), FloodAsync()).Unwrap();
 
 async Task AskAsync()
@@ -26,6 +24,6 @@ async Task FloodAsync()
     while (true)
     {
         await Task.Delay(2000);
-        Console.WriteLine(i++ + new string('a', 200));
+        Console.WriteLine(new string('a', 200));
     }
 }

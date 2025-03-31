@@ -18,6 +18,11 @@ public class StringReader(string source, int cursor = 0) : IImmutableStringReade
     public bool CanRead => CanReadLength(1);
     public char Peek => PeekAt(0);
 
+    public StringReader(StringReader reader) : this(reader.Source, reader.Cursor)
+    {
+        // Empty
+    }
+
     public bool CanReadLength(int length)
     {
         return Cursor + length <= TotalLength;

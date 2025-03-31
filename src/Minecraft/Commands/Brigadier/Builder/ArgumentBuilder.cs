@@ -41,6 +41,15 @@ public abstract class ArgumentBuilder<TBuilder, TNode> : IArgumentBuilder<TNode>
         return GetThis();
     }
 
+    public TBuilder Then<TChildNode>(Func<IArgumentContext, IArgumentBuilder<TChildNode>> argument) where TChildNode : CommandNode
+    {
+        if (RedirectTarget != null)
+            throw new InvalidOperationException("Cannot add children to a redirected node");
+
+        _arguments.AddChild(argument(default(ArgumentContext)).Build());
+        return GetThis();
+    }
+
     public TBuilder Executes(CommandExecutor? command)
     {
         Executor = command;

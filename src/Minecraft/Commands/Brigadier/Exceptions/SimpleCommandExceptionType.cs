@@ -7,7 +7,7 @@ public class SimpleCommandExceptionType(IMessage message) : ICommandExceptionTyp
         return new CommandSyntaxException(this, message);
     }
 
-    public CommandSyntaxException CreateWithContext(StringReader reader)
+    public CommandSyntaxException CreateWithContext(IImmutableStringReader reader)
     {
         return new CommandSyntaxException(this, message, reader.Source, reader.Cursor);
     }

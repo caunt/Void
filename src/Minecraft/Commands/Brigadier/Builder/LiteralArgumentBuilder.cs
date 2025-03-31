@@ -2,6 +2,14 @@
 
 namespace Void.Minecraft.Commands.Brigadier.Builder;
 
+public static class LiteralArgumentBuilderExtensions
+{
+    public static LiteralArgumentBuilder Literal(this IArgumentContext _, string name)
+    {
+        return new LiteralArgumentBuilder(name);
+    }
+}
+
 public class LiteralArgumentBuilder(string Literal) : ArgumentBuilder<LiteralArgumentBuilder, LiteralCommandNode>
 {
     public static LiteralArgumentBuilder Create(string value)
