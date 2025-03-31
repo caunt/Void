@@ -1,4 +1,5 @@
-﻿using Void.Proxy.Api.Commands;
+﻿using Void.Minecraft.Commands.Brigadier.Exceptions;
+using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Console;
 using Void.Terminal;
 using SystemConsole = System.Console;
@@ -23,6 +24,15 @@ public class ConsoleService(ILogger<ConsoleService> logger, ICommandService comm
         logger.LogInformation("Proxy issued command: {command}", command);
 
         if (!string.IsNullOrWhiteSpace(command))
-            await commands.ExecuteAsync(this, command, cancellationToken);
+        {
+            try
+            {
+                await commands.ExecuteAsync(this, command, cancellationToken);
+            }
+            catch (CommandSyntaxException exception)
+            {
+                logger.LogError("{Message}", exception.Message);
+            }
+        }
     }
 }

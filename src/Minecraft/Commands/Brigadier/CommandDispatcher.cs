@@ -97,7 +97,7 @@ public record CommandDispatcher(RootCommandNode Root)
         var source = contextSoFar.Source;
         var errors = new Dictionary<CommandNode, CommandSyntaxException>();
         var potentials = new List<ParseResults>();
-        int cursor = originalReader.Cursor;
+        var cursor = originalReader.Cursor;
 
         foreach (var child in node.GetRelevantNodes(originalReader))
         {
@@ -157,7 +157,7 @@ public record CommandDispatcher(RootCommandNode Root)
             }
         }
 
-        if (potentials is not null)
+        if (potentials.Count > 0)
         {
             if (potentials.Count > 1)
             {
@@ -182,6 +182,7 @@ public record CommandDispatcher(RootCommandNode Root)
                     return 0;
                 });
             }
+
             return potentials[0];
         }
 
