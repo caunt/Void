@@ -2,6 +2,7 @@
 using Serilog.Events;
 using Void.Proxy;
 using Void.Proxy.Api;
+using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Crypto;
 using Void.Proxy.Api.Events.Services;
@@ -12,6 +13,7 @@ using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins.Services;
 using Void.Proxy.Api.Servers;
 using Void.Proxy.Api.Settings;
+using Void.Proxy.Commands;
 using Void.Proxy.Console;
 using Void.Proxy.Crypto;
 using Void.Proxy.Events;
@@ -47,6 +49,7 @@ try
     builder.Services.AddSingleton<ILinkService, LinkService>();
     builder.Services.AddSingleton<IForwardingService, ForwardingService>();
     builder.Services.AddSingleton<IConsoleService, ConsoleService>();
+    builder.Services.AddSingleton<ICommandService, CommandService>();
     builder.Services.AddSingleton<IProxy, Platform>();
     builder.Services.AddHostedService<Platform>();
 

@@ -1,10 +1,11 @@
-﻿using Void.Proxy.Api.Console;
+﻿using Void.Proxy.Api.Commands;
+using Void.Proxy.Api.Console;
 using Void.Terminal;
 using SystemConsole = System.Console;
 
 namespace Void.Proxy.Console;
 
-public class ConsoleService(ILogger<ConsoleService> logger) : IConsoleService
+public class ConsoleService(ILogger<ConsoleService> logger, ICommandService commands) : IConsoleService
 {
     private readonly PromptReader _reader = new();
 
@@ -18,6 +19,8 @@ public class ConsoleService(ILogger<ConsoleService> logger) : IConsoleService
 
     public async ValueTask HandleCommandsAsync(CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("Command: {command}", await _reader.ReadLineAsync(cancellationToken));
+        var command = await _reader.ReadLineAsync(cancellationToken);
+        logger.LogInformation("Proxy issued command: {command}", command);
+        await commands.ExecuteAsync(this, command);
     }
 }
