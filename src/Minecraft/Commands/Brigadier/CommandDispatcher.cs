@@ -44,18 +44,18 @@ public record CommandDispatcher(RootCommandNode Root)
         return build;
     }
 
-    public async ValueTask<int> Execute(string input, ICommandSource source, CancellationToken cancellationToken)
+    public async ValueTask<int> ExecuteAsync(string input, ICommandSource source, CancellationToken cancellationToken)
     {
-        return await Execute(new StringReader(input), source, cancellationToken);
+        return await ExecuteAsync(new StringReader(input), source, cancellationToken);
     }
 
-    public async ValueTask<int> Execute(StringReader input, ICommandSource source, CancellationToken cancellationToken)
+    public async ValueTask<int> ExecuteAsync(StringReader input, ICommandSource source, CancellationToken cancellationToken)
     {
-        var parse = await Parse(input, source);
-        return await Execute(parse, cancellationToken);
+        var parse = await ParseAsync(input, source, cancellationToken);
+        return await ExecuteAsync(parse, cancellationToken);
     }
 
-    public async ValueTask<int> Execute(ParseResults parse, CancellationToken cancellationToken)
+    public async ValueTask<int> ExecuteAsync(ParseResults parse, CancellationToken cancellationToken)
     {
         if (parse.Reader.CanRead)
         {
@@ -81,18 +81,18 @@ public record CommandDispatcher(RootCommandNode Root)
         return await flatContext.ExecuteAllAsync(original.Source, Consumer, cancellationToken);
     }
 
-    public async ValueTask<ParseResults> Parse(string command, ICommandSource source)
+    public async ValueTask<ParseResults> Parse(string command, ICommandSource source, CancellationToken cancellationToken)
     {
-        return await Parse(new StringReader(command), source);
+        return await ParseAsync(new StringReader(command), source, cancellationToken);
     }
 
-    public async ValueTask<ParseResults> Parse(StringReader command, ICommandSource source)
+    public async ValueTask<ParseResults> ParseAsync(StringReader command, ICommandSource source, CancellationToken cancellationToken)
     {
         var context = new CommandContextBuilder(this, source, Root, command.Cursor);
-        return await ParseNodes(Root, command, context);
+        return await ParseNodesAsync(Root, command, context, cancellationToken);
     }
 
-    private async ValueTask<ParseResults> ParseNodes(CommandNode node, StringReader originalReader, CommandContextBuilder contextSoFar)
+    private async ValueTask<ParseResults> ParseNodesAsync(CommandNode node, StringReader originalReader, CommandContextBuilder contextSoFar, CancellationToken cancellationToken)
     {
         var source = contextSoFar.Source;
         var errors = new Dictionary<CommandNode, CommandSyntaxException>();
@@ -101,7 +101,7 @@ public record CommandDispatcher(RootCommandNode Root)
 
         foreach (var child in node.GetRelevantNodes(originalReader))
         {
-            if (!await child.CanUseAsync(source))
+            if (!await child.CanUseAsync(source, cancellationToken))
                 continue;
 
             var context = contextSoFar.Copy();
@@ -139,7 +139,7 @@ public record CommandDispatcher(RootCommandNode Root)
                 if (child.RedirectTarget is not null)
                 {
                     var childContext = new CommandContextBuilder(this, source, child.RedirectTarget, reader.Cursor);
-                    var parse = await ParseNodes(child.RedirectTarget, reader, childContext);
+                    var parse = await ParseNodesAsync(child.RedirectTarget, reader, childContext, cancellationToken);
 
                     context.WithChild(parse.Context);
 
@@ -147,7 +147,7 @@ public record CommandDispatcher(RootCommandNode Root)
                 }
                 else
                 {
-                    var parse = await ParseNodes(child, reader, context);
+                    var parse = await ParseNodesAsync(child, reader, context, cancellationToken);
                     potentials.Add(parse);
                 }
             }
@@ -188,16 +188,16 @@ public record CommandDispatcher(RootCommandNode Root)
         return new ParseResults(contextSoFar, originalReader, errors);
     }
 
-    public async ValueTask<string[]> GetAllUsage(CommandNode node, ICommandSource source, bool restricted)
+    public async ValueTask<string[]> GetAllUsageAsync(CommandNode node, ICommandSource source, bool restricted, CancellationToken cancellationToken)
     {
         var result = new List<string>();
-        await GetAllUsage(node, source, result, "", restricted);
+        await GetAllUsageAsync(node, source, result, "", restricted, cancellationToken);
         return [.. result];
     }
 
-    private async ValueTask GetAllUsage(CommandNode node, ICommandSource source, List<string> result, string prefix, bool restricted)
+    private async ValueTask GetAllUsageAsync(CommandNode node, ICommandSource source, List<string> result, string prefix, bool restricted, CancellationToken cancellationToken)
     {
-        if (restricted && !await node.CanUseAsync(source))
+        if (restricted && !await node.CanUseAsync(source, cancellationToken))
             return;
 
         if (node.Executor is not null)
@@ -211,18 +211,18 @@ public record CommandDispatcher(RootCommandNode Root)
         else if (node.Children.Any())
         {
             foreach (var child in node.Children)
-                await GetAllUsage(child, source, result, prefix.Length is 0 ? child.UsageText : prefix + ArgumentSeparator + child.UsageText, restricted);
+                await GetAllUsageAsync(child, source, result, prefix.Length is 0 ? child.UsageText : prefix + ArgumentSeparator + child.UsageText, restricted, cancellationToken);
         }
     }
 
-    public async ValueTask<Dictionary<CommandNode, string>> GetSmartUsage(CommandNode node, ICommandSource source)
+    public async ValueTask<Dictionary<CommandNode, string>> GetSmartUsageAsync(CommandNode node, ICommandSource source, CancellationToken cancellationToken)
     {
         var result = new Dictionary<CommandNode, string>();
         var optional = node.Executor is not null;
 
         foreach (var child in node.Children)
         {
-            var usage = await GetSmartUsage(child, source, optional, false);
+            var usage = await GetSmartUsageAsync(child, source, optional, false, cancellationToken);
 
             if (usage is not null)
                 result[child] = usage;
@@ -231,9 +231,9 @@ public record CommandDispatcher(RootCommandNode Root)
         return result;
     }
 
-    private async ValueTask<string?> GetSmartUsage(CommandNode node, ICommandSource source, bool optional, bool deep)
+    private async ValueTask<string?> GetSmartUsageAsync(CommandNode node, ICommandSource source, bool optional, bool deep, CancellationToken cancellationToken)
     {
-        if (!await node.CanUseAsync(source))
+        if (!await node.CanUseAsync(source, cancellationToken))
             return null;
 
         var self = optional ? UsageOptionalOpen + node.UsageText + UsageOptionalClose : node.UsageText;
@@ -250,12 +250,12 @@ public record CommandDispatcher(RootCommandNode Root)
             }
             else
             {
-                var childsUsable = await Task.WhenAll(node.Children.Select(async child => (child, await child.CanUseAsync(source))));
+                var childsUsable = await Task.WhenAll(node.Children.Select(async child => (child, await child.CanUseAsync(source, cancellationToken))));
                 var children = childsUsable.Where(pair => pair.Item2).Select(pair => pair.child);
 
                 if (children.Count() == 1)
                 {
-                    var usage = await GetSmartUsage(children.First(), source, childOptional, childOptional);
+                    var usage = await GetSmartUsageAsync(children.First(), source, childOptional, childOptional, cancellationToken);
 
                     if (usage is not null)
                         return self + ArgumentSeparator + usage;
@@ -266,7 +266,7 @@ public record CommandDispatcher(RootCommandNode Root)
 
                     foreach (var child in children)
                     {
-                        var usage = await GetSmartUsage(child, source, childOptional, true);
+                        var usage = await GetSmartUsageAsync(child, source, childOptional, true, cancellationToken);
 
                         if (usage is not null)
                             childUsage.Add(usage);
@@ -303,12 +303,12 @@ public record CommandDispatcher(RootCommandNode Root)
         return self;
     }
 
-    public static async ValueTask<Suggestions> GetCompletionSuggestions(ParseResults parse)
+    public static async ValueTask<Suggestions> GetCompletionSuggestions(ParseResults parse, CancellationToken cancellationToken)
     {
-        return await GetCompletionSuggestions(parse, parse.Reader.TotalLength);
+        return await GetCompletionSuggestions(parse, parse.Reader.TotalLength, cancellationToken);
     }
 
-    public static async ValueTask<Suggestions> GetCompletionSuggestions(ParseResults parse, int cursor)
+    public static async ValueTask<Suggestions> GetCompletionSuggestions(ParseResults parse, int cursor, CancellationToken cancellationToken)
     {
         var context = parse.Context;
 
@@ -319,7 +319,7 @@ public record CommandDispatcher(RootCommandNode Root)
         var fullInput = parse.Reader.Source;
         var truncatedInput = fullInput[..cursor];
         var truncatedInputLowerCase = truncatedInput.ToLower();
-        var suggestions = await Task.WhenAll(parent.Children.Select(async node => await node.ListSuggestionsAsync(context.Build(truncatedInput), new SuggestionsBuilder(truncatedInput, start))));
+        var suggestions = await Task.WhenAll(parent.Children.Select(async node => await node.ListSuggestionsAsync(context.Build(truncatedInput), new SuggestionsBuilder(truncatedInput, start), cancellationToken)));
 
         return Suggestions.Merge(fullInput, suggestions);
     }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Commands.Brigadier.Context;
 
@@ -17,7 +18,7 @@ public class SuggestionsBuilder(string Input, int Start)
         return Suggestions.Create(Input, _result);
     }
 
-    public ValueTask<Suggestions> BuildAsync()
+    public ValueTask<Suggestions> BuildAsync(CancellationToken _)
     {
         return ValueTask.FromResult(Build());
     }

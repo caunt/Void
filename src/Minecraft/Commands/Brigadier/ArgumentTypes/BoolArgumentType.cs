@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Suggestion;
@@ -28,7 +29,7 @@ public record BoolArgumentType : IArgumentType<bool>
         return reader.ReadBoolean();
     }
 
-    public virtual async ValueTask<Suggestions> ListSuggestionsAsync(CommandContext context, SuggestionsBuilder builder)
+    public virtual async ValueTask<Suggestions> ListSuggestionsAsync(CommandContext context, SuggestionsBuilder builder, CancellationToken cancellationToken)
     {
         foreach (var example in Examples)
         {
@@ -36,6 +37,6 @@ public record BoolArgumentType : IArgumentType<bool>
                 builder.Suggest(example);
         }
 
-        return await builder.BuildAsync();
+        return await builder.BuildAsync(cancellationToken);
     }
 }

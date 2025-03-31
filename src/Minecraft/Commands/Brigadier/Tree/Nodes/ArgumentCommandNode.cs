@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 using Void.Minecraft.Commands.Brigadier.Builder;
@@ -46,12 +47,12 @@ public class ArgumentCommandNode<TType>(string name, IArgumentType<TType> type, 
         }
     }
 
-    public override async ValueTask<Suggestions> ListSuggestionsAsync(CommandContext context, SuggestionsBuilder builder)
+    public override async ValueTask<Suggestions> ListSuggestionsAsync(CommandContext context, SuggestionsBuilder builder, CancellationToken cancellationToken)
     {
         if (CustomSuggestions is null)
-            return await Type.ListSuggestionsAsync(context, builder);
+            return await Type.ListSuggestionsAsync(context, builder, cancellationToken);
         else
-            return await CustomSuggestions.ListSuggestionsAsync(context, builder);
+            return await CustomSuggestions.ListSuggestionsAsync(context, builder, cancellationToken);
     }
 
     public override void Parse(StringReader reader, CommandContextBuilder contextBuilder)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
@@ -25,7 +26,7 @@ public class RootCommandNode() : CommandNode(requirement: EmptyRequirement, redi
         return false;
     }
 
-    public override ValueTask<Suggestions> ListSuggestionsAsync(CommandContext context, SuggestionsBuilder builder)
+    public override ValueTask<Suggestions> ListSuggestionsAsync(CommandContext context, SuggestionsBuilder builder, CancellationToken cancellationToken)
     {
         return ValueTask.FromResult(Suggestions.Empty);
     }
@@ -35,7 +36,7 @@ public class RootCommandNode() : CommandNode(requirement: EmptyRequirement, redi
         // Empty
     }
 
-    private static ValueTask<bool> EmptyRequirement(ICommandSource source)
+    private static ValueTask<bool> EmptyRequirement(ICommandSource source, CancellationToken cancellationToken)
     {
         return ValueTask.FromResult(true);
     }

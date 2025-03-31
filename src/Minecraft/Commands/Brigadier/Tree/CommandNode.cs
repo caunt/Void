@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
@@ -49,12 +50,12 @@ public abstract class CommandNode(CommandExecutor? executor = null, CommandRequi
         }
     }
 
-    public async ValueTask<bool> CanUseAsync(ICommandSource source)
+    public async ValueTask<bool> CanUseAsync(ICommandSource source, CancellationToken cancellationToken)
     {
         if (Requirement is null)
             return true;
 
-        return await Requirement(source);
+        return await Requirement(source, cancellationToken);
     }
 
     public void FindAmbiguities(AmbiguousConsumer consumer)
@@ -115,6 +116,6 @@ public abstract class CommandNode(CommandExecutor? executor = null, CommandRequi
 
     public abstract IArgumentBuilder<CommandNode> CreateBuilder();
     public abstract bool IsValidInput(string input);
-    public abstract ValueTask<Suggestions> ListSuggestionsAsync(CommandContext context, SuggestionsBuilder builder);
+    public abstract ValueTask<Suggestions> ListSuggestionsAsync(CommandContext context, SuggestionsBuilder builder, CancellationToken cancellationToken);
     public abstract void Parse(StringReader reader, CommandContextBuilder context);
 }

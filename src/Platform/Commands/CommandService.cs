@@ -10,6 +10,6 @@ public class CommandService : ICommandService
 
     public async ValueTask ExecuteAsync(ICommandSource source, string command, CancellationToken cancellationToken = default)
     {
-        var result = await _dispatcher.Execute(command, source, cancellationToken);
+        var result = await _dispatcher.ExecuteAsync(command, source, cancellationToken);
     }
 }

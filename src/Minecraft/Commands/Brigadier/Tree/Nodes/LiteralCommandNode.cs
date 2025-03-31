@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
@@ -30,10 +31,10 @@ public class LiteralCommandNode(string literal, CommandExecutor? executor, Comma
         return Parse(new StringReader(input)) > -1;
     }
 
-    public override async ValueTask<Suggestions> ListSuggestionsAsync(CommandContext context, SuggestionsBuilder builder)
+    public override async ValueTask<Suggestions> ListSuggestionsAsync(CommandContext context, SuggestionsBuilder builder, CancellationToken cancellationToken)
     {
         if (_literalLowerCase.StartsWith(builder.RemainingLowerCase))
-            return await builder.Suggest(Literal).BuildAsync();
+            return await builder.Suggest(Literal).BuildAsync(cancellationToken);
         else
             return Suggestions.Empty;
     }

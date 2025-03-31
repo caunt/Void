@@ -35,7 +35,7 @@ public record DoubleArgumentType : IArgumentType<double>
         };
     }
 
-    public static double GetDoubl(CommandContext context, string name)
+    public static double GetDouble(CommandContext context, string name)
     {
         return context.GetArgument<double>(name);
     }

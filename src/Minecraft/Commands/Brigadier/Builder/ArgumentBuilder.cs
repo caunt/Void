@@ -20,7 +20,7 @@ public abstract class ArgumentBuilder<TBuilder, TNode> : IArgumentBuilder<TNode>
     public RedirectModifier? RedirectModifier { get; set; }
     public CommandNode? RedirectTarget { get; set; }
     public bool IsForks { get; set; }
-    public CommandRequirement? Requirement { get; set; } = _ => ValueTask.FromResult(true);
+    public CommandRequirement? Requirement { get; set; } = (_, _) => ValueTask.FromResult(true);
     public IEnumerable<CommandNode> Arguments => _arguments.Children;
 
     public TBuilder Then<TChildNode>(IArgumentBuilder<TChildNode> argument) where TChildNode : CommandNode
