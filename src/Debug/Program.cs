@@ -114,7 +114,7 @@ async ValueTask StartDockerEnvironmentAsync(int count = 3, CancellationToken can
                 "TYPE=PAPER",
                 "MODE=CREATIVE",
                 "ONLINE_MODE=FALSE",
-                "OPS=caunt",
+                "OPS=caunt,Shonz1",
                 "PATCH_DEFINITIONS=/tmp/patch.json",
                 "VERSION=" + version switch
                 {

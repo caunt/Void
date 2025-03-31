@@ -101,7 +101,7 @@ public abstract record NbtTag
             throw new Exception("Cannot get array segment from memory");
 
         var stream = new MemoryStream(segment.Array);
-        var reader = new TagReader(stream, (FormatOptions)formatOptions);
+        var reader = new NbtReader(stream, (FormatOptions)formatOptions);
         var tag = (T)reader.ReadTag(readName);
 
         if (tag is null)
