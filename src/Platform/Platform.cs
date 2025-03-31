@@ -3,6 +3,7 @@ using Serilog.Events;
 using System.Diagnostics;
 using System.Net.Sockets;
 using Void.Proxy.Api;
+using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Forwarding;
@@ -14,7 +15,16 @@ using Void.Proxy.Api.Settings;
 
 namespace Void.Proxy;
 
-public class Platform(ILogger<Platform> logger, ISettings settings, IPluginService plugins, IEventService events, IPlayerService players, IServerService servers, IForwardingService forwardings, IHostApplicationLifetime hostApplicationLifetime) : IProxy
+public class Platform(
+    ILogger<Platform> logger,
+    ISettings settings,
+    IPluginService plugins,
+    IEventService events,
+    IPlayerService players,
+    IServerService servers,
+    IForwardingService forwardings,
+    ICommandService commands,
+    IHostApplicationLifetime hostApplicationLifetime) : IProxy
 {
     public static readonly LoggingLevelSwitch LoggingLevelSwitch = new();
 
@@ -38,6 +48,7 @@ public class Platform(ILogger<Platform> logger, ISettings settings, IPluginServi
         await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
 
         forwardings.RegisterDefault();
+        commands.RegisterDefault();
 
         logger.LogInformation("Loading settings file");
         await settings.LoadAsync(cancellationToken: cancellationToken);

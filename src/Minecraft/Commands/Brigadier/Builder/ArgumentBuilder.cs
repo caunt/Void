@@ -56,6 +56,14 @@ public abstract class ArgumentBuilder<TBuilder, TNode> : IArgumentBuilder<TNode>
         return GetThis();
     }
 
+    public TBuilder Executes(CommandExecutorSync? command)
+    {
+        if (command is not null)
+            Executor = (context, _) => ValueTask.FromResult(command(context));
+
+        return GetThis();
+    }
+
     public TBuilder Requires(CommandRequirement? requirement)
     {
         Requirement = requirement;

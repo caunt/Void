@@ -1,5 +1,6 @@
 ﻿using Nito.AsyncEx;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using Void.Minecraft.Components.Text;
 using Void.Proxy.Api.Events;
@@ -155,5 +156,11 @@ public class PlayerService : IPlayerService, IEventListener
         _logger.LogInformation("Player {Player} disconnected", @event.Player);
 
         await @event.Player.DisposeAsync();
+    }
+
+    public bool TryGetByName(string name, [NotNullWhen(true)] out IPlayer? player)
+    {
+        player = _players.FirstOrDefault(p => p.Profile?.Username.Equals(name, StringComparison.InvariantCultureIgnoreCase) ?? false);
+        return player is not null;
     }
 }

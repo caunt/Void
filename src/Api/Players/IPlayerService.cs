@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Net.Sockets;
 using Void.Minecraft.Components.Text;
 
 namespace Void.Proxy.Api.Players;
@@ -9,4 +10,5 @@ public interface IPlayerService
 
     public ValueTask AcceptPlayerAsync(TcpClient client, CancellationToken cancellationToken = default);
     public ValueTask KickPlayerAsync(IPlayer player, Component? reason = null, CancellationToken cancellationToken = default);
+    public bool TryGetByName(string name, [NotNullWhen(true)] out IPlayer? player);
 }
