@@ -133,7 +133,7 @@ public static class NbtComponentSerializer
                         contents["count"] = new NbtInt(showItem.Count.Value);
 
                     if (showItem.ItemComponents is not null)
-                        contents["components"] = new NbtCompound(); // TODO implement item components
+                        contents["components"] = showItem.ItemComponents;
                 }
 
                 if (hoverEvent.Content is ShowEntity { } showEntity)
@@ -309,7 +309,7 @@ public static class NbtComponentSerializer
                 } as IHoverEventAction,
                 "show_item" => contentsNbtTag switch
                 {
-                    NbtCompound contentsNbtCompoundTag => new ShowItem(Get<NbtString>(contentsNbtCompoundTag, "id").Value, TryGet<NbtInt>(contentsNbtCompoundTag, "type")?.Value, null),
+                    NbtCompound contentsNbtCompoundTag => new ShowItem(Get<NbtString>(contentsNbtCompoundTag, "id").Value, TryGet<NbtInt>(contentsNbtCompoundTag, "type")?.Value, Get<NbtCompound>(contentsNbtCompoundTag, "components")),
                     var value => throw new NbtException(value)
                 },
                 "show_entity" => contentsNbtTag switch

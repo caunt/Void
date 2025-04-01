@@ -1,6 +1,8 @@
-﻿namespace Void.Minecraft.Components.Text.Events.Actions.Hover;
+﻿using Void.Minecraft.Nbt.Tags;
 
-public record ShowItem(string Id, int? Count = 0, byte[]? ItemComponents = null) : IHoverEventAction
+namespace Void.Minecraft.Components.Text.Events.Actions.Hover;
+
+public record ShowItem(string Id, int? Count = 0, NbtCompound? ItemComponents = null) : IHoverEventAction
 {
     public string ActionName => "show_item";
 }
