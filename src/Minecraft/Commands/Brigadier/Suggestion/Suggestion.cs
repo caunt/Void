@@ -4,7 +4,7 @@ using Void.Minecraft.Commands.Brigadier.Context;
 
 namespace Void.Minecraft.Commands.Brigadier.Suggestion;
 
-public record Suggestion(StringRange Range, string Text, IMessage? Tooltip = null)
+public record Suggestion(StringRange Range, string Text, IMessage? Tooltip = null) : IComparable<Suggestion>
 {
     public string Apply(string source)
     {
@@ -23,6 +23,11 @@ public record Suggestion(StringRange Range, string Text, IMessage? Tooltip = nul
             builder.Append(span[Range.End..]);
 
         return builder.ToString();
+    }
+
+    public int CompareTo(Suggestion? other)
+    {
+        return string.Compare(Text, other?.Text, StringComparison.Ordinal);
     }
 
     public Suggestion Expand(string source, StringRange range)

@@ -44,9 +44,11 @@ public class PromptReader : IDisposable
         _writer.ResetStyle();
     }
 
-    public async ValueTask<string> ReadLineAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<string> ReadLineAsync(Autocompletion? autocompletion = null, CancellationToken cancellationToken = default)
     {
         await Task.Yield();
+
+        var suggestionsPrefix = string.Empty;
 
         do
         {
@@ -76,6 +78,34 @@ public class PromptReader : IDisposable
             {
                 if (Buffer.Length > 0)
                     Buffer.Remove(Buffer.Length - 1, 1);
+
+                _writer.UpdateBuffer(length);
+            }
+            else if (info.Key is ConsoleKey.Tab)
+            {
+                if (autocompletion is null)
+                    continue;
+
+                var input = Buffer.ToString();
+                var words = input.Split(' ');
+                var currentWord = words[^1];
+
+                if (!input.StartsWith(suggestionsPrefix) || input.EndsWith(' '))
+                    suggestionsPrefix = input;
+
+                var suggestions = await autocompletion(suggestionsPrefix, cancellationToken);
+                var matches = suggestions.ToArray();
+
+                if (matches.Length is 0)
+                {
+                    suggestionsPrefix = string.Empty;
+                    continue;
+                }
+
+                var nextSuggestion = matches[(matches.IndexOf(currentWord) + 1) % matches.Length];
+
+                Buffer.Remove(Buffer.Length - currentWord.Length, currentWord.Length);
+                Buffer.Append(nextSuggestion);
 
                 _writer.UpdateBuffer(length);
             }

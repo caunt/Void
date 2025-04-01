@@ -20,19 +20,28 @@ public class ConsoleService(ILogger<ConsoleService> logger, ICommandService comm
 
     public async ValueTask HandleCommandsAsync(CancellationToken cancellationToken = default)
     {
-        var command = await _reader.ReadLineAsync(cancellationToken);
+        var command = await _reader.ReadLineAsync(SuggestAsync, cancellationToken);
         logger.LogInformation("Proxy issued command: {command}", command);
 
-        if (!string.IsNullOrWhiteSpace(command))
+        if (string.IsNullOrWhiteSpace(command))
+            return;
+
+        try
         {
-            try
-            {
-                await commands.ExecuteAsync(this, command, cancellationToken);
-            }
-            catch (CommandSyntaxException exception)
-            {
-                logger.LogError("{Message}", exception.Message);
-            }
+            await commands.ExecuteAsync(this, command, cancellationToken);
         }
+        catch (CommandSyntaxException exception)
+        {
+            logger.LogError("{Message}", exception.Message);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError("{Exception}", exception);
+        }
+    }
+
+    private async ValueTask<string[]> SuggestAsync(string input, CancellationToken cancellationToken = default)
+    {
+        return await commands.CompleteAsync(input, this, cancellationToken);
     }
 }

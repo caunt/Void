@@ -11,14 +11,14 @@ namespace Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 
 public abstract class ArgumentCommandNode(CommandExecutor? executor, CommandRequirement? requirement, CommandNode? redirectTarget, RedirectModifier? redirectModifier, bool isForks) : CommandNode(executor, requirement, redirectTarget, redirectModifier, isForks);
 
-public class ArgumentCommandNode<TType>(string name, IArgumentType<TType> type, CommandExecutor? executor, CommandRequirement? requirement, CommandNode? redirectTarget, RedirectModifier? redirectModifier, bool isForks, ISuggestionProvider? customSuggestions
+public class ArgumentCommandNode<TType>(string name, IArgumentType<TType> type, CommandExecutor? executor, CommandRequirement? requirement, CommandNode? redirectTarget, RedirectModifier? redirectModifier, bool isForks, SuggestionProvider? customSuggestions
     ) : ArgumentCommandNode(executor, requirement, redirectTarget, redirectModifier, isForks)
 {
     private const string UsageArgumentOpen = "<";
     private const string UsageArgumentClose = ">";
 
     public IArgumentType<TType> Type { get; } = type;
-    public ISuggestionProvider? CustomSuggestions { get; } = customSuggestions;
+    public SuggestionProvider? CustomSuggestions { get; } = customSuggestions;
     public override string Name => name;
     public override string UsageText => $"{UsageArgumentOpen}{Name}{UsageArgumentClose}";
     public override IEnumerable<string> Examples => Type.Examples;
@@ -52,7 +52,7 @@ public class ArgumentCommandNode<TType>(string name, IArgumentType<TType> type, 
         if (CustomSuggestions is null)
             return await Type.ListSuggestionsAsync(context, builder, cancellationToken);
         else
-            return await CustomSuggestions.ListSuggestionsAsync(context, builder, cancellationToken);
+            return await CustomSuggestions(context, builder, cancellationToken);
     }
 
     public override void Parse(StringReader reader, CommandContextBuilder contextBuilder)

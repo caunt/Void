@@ -44,6 +44,17 @@ public record CommandDispatcher(RootCommandNode Root)
         return build;
     }
 
+    public async ValueTask<Suggestions> SuggestAsync(string input, ICommandSource source, CancellationToken cancellationToken)
+    {
+        return await SuggestAsync(new StringReader(input), source, cancellationToken);
+    }
+
+    public async ValueTask<Suggestions> SuggestAsync(StringReader input, ICommandSource source, CancellationToken cancellationToken)
+    {
+        var parse = await ParseAsync(input, source, cancellationToken);
+        return await GetCompletionSuggestions(parse, cancellationToken);
+    }
+
     public async ValueTask<int> ExecuteAsync(string input, ICommandSource source, CancellationToken cancellationToken)
     {
         return await ExecuteAsync(new StringReader(input), source, cancellationToken);

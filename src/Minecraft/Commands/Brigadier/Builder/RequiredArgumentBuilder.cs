@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Commands.Brigadier.ArgumentTypes;
+﻿using System.Threading.Tasks;
+using Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 using Void.Minecraft.Commands.Brigadier.Suggestion;
 using Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 
@@ -14,7 +15,7 @@ public static class RequiredArgumentBuilderExtensions
 
 public class RequiredArgumentBuilder<TType>(string Name, IArgumentType<TType> Type) : ArgumentBuilder<RequiredArgumentBuilder<TType>, ArgumentCommandNode<TType>>
 {
-    public ISuggestionProvider? SuggestionProvider { get; private set; }
+    public SuggestionProvider? SuggestionProvider { get; private set; }
 
     public static RequiredArgumentBuilder<TType> Create(string name, IArgumentType<TType> type)
     {
@@ -31,9 +32,17 @@ public class RequiredArgumentBuilder<TType>(string Name, IArgumentType<TType> Ty
         return result;
     }
 
-    public RequiredArgumentBuilder<TType> Suggests(ISuggestionProvider? provider)
+    public RequiredArgumentBuilder<TType> Suggests(SuggestionProvider? provider)
     {
         SuggestionProvider = provider;
+        return this;
+    }
+
+    public RequiredArgumentBuilder<TType> Suggests(SuggestionProviderSync? provider)
+    {
+        if (provider is not null)
+            SuggestionProvider = (context, builder, _) => ValueTask.FromResult(provider(context, builder));
+
         return this;
     }
 }
