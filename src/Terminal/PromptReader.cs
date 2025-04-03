@@ -8,6 +8,7 @@ public class PromptReader : IDisposable
 
     public string Prompt { get; set; }
     public StringBuilder Buffer { get; set; }
+    public bool IsActive { get; private set; }
 
     public TextWriter TextWriter => TextWriter.Synchronized(_writer);
     public int Width { get; } = Console.WindowWidth;
@@ -47,75 +48,83 @@ public class PromptReader : IDisposable
     public async ValueTask<string> ReadLineAsync(Autocompletion? autocompletion = null, CancellationToken cancellationToken = default)
     {
         await Task.Yield();
+        IsActive = true;
 
         var suggestionsPrefix = string.Empty;
 
-        do
+        try
         {
-            if (!Console.KeyAvailable)
+            do
             {
-                await Task.Delay(50, cancellationToken);
-                continue;
-            }
-
-            var info = Console.ReadKey(true);
-
-            if (info.Key is ConsoleKey.Enter)
-            {
-                try
+                if (!Console.KeyAvailable)
                 {
-                    return Buffer.ToString();
-                }
-                finally
-                {
-                    Buffer.Clear();
-                }
-            }
-
-            var length = Buffer.Length + Prompt.Length;
-
-            if (info.Key is ConsoleKey.Backspace)
-            {
-                if (Buffer.Length > 0)
-                    Buffer.Remove(Buffer.Length - 1, 1);
-
-                _writer.UpdateBuffer(length);
-            }
-            else if (info.Key is ConsoleKey.Tab)
-            {
-                if (autocompletion is null)
-                    continue;
-
-                var input = Buffer.ToString();
-                var words = input.Split(' ');
-                var currentWord = words[^1];
-
-                if (!input.StartsWith(suggestionsPrefix) || input.EndsWith(' '))
-                    suggestionsPrefix = input;
-
-                var suggestions = await autocompletion(suggestionsPrefix, cancellationToken);
-                var matches = suggestions.ToArray();
-
-                if (matches.Length is 0)
-                {
-                    suggestionsPrefix = string.Empty;
+                    await Task.Delay(50, cancellationToken);
                     continue;
                 }
 
-                var nextSuggestion = matches[(matches.IndexOf(currentWord) + 1) % matches.Length];
+                var info = Console.ReadKey(true);
 
-                Buffer.Remove(Buffer.Length - currentWord.Length, currentWord.Length);
-                Buffer.Append(nextSuggestion);
+                if (info.Key is ConsoleKey.Enter)
+                {
+                    try
+                    {
+                        return Buffer.ToString();
+                    }
+                    finally
+                    {
+                        Buffer.Clear();
+                    }
+                }
 
-                _writer.UpdateBuffer(length);
+                var length = Buffer.Length + Prompt.Length;
+
+                if (info.Key is ConsoleKey.Backspace)
+                {
+                    if (Buffer.Length > 0)
+                        Buffer.Remove(Buffer.Length - 1, 1);
+
+                    _writer.UpdateBuffer(length);
+                }
+                else if (info.Key is ConsoleKey.Tab)
+                {
+                    if (autocompletion is null)
+                        continue;
+
+                    var input = Buffer.ToString();
+                    var words = input.Split(' ');
+                    var currentWord = words[^1];
+
+                    if (!input.StartsWith(suggestionsPrefix) || input.EndsWith(' '))
+                        suggestionsPrefix = input;
+
+                    var suggestions = await autocompletion(suggestionsPrefix, cancellationToken);
+                    var matches = suggestions.ToArray();
+
+                    if (matches.Length is 0)
+                    {
+                        suggestionsPrefix = string.Empty;
+                        continue;
+                    }
+
+                    var nextSuggestion = matches[(matches.IndexOf(currentWord) + 1) % matches.Length];
+
+                    Buffer.Remove(Buffer.Length - currentWord.Length, currentWord.Length);
+                    Buffer.Append(nextSuggestion);
+
+                    _writer.UpdateBuffer(length);
+                }
+                else
+                {
+                    Buffer.Append(info.KeyChar);
+                    _writer.UpdateBuffer(length);
+                }
             }
-            else
-            {
-                Buffer.Append(info.KeyChar);
-                _writer.UpdateBuffer(length);
-            }
+            while (!cancellationToken.IsCancellationRequested);
         }
-        while (!cancellationToken.IsCancellationRequested);
+        finally
+        {
+            IsActive = false;
+        }
 
         throw new OperationCanceledException();
     }

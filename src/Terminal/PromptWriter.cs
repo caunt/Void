@@ -75,6 +75,9 @@ public class PromptWriter(PromptReader reader, StreamWriter writer) : TextWriter
 
     private void WriteBufferLines(int lengthBefore = 0)
     {
+        if (!reader.IsActive)
+            return;
+
         writer.Write(reader.Prompt);
         writer.Write(reader.Buffer);
 
