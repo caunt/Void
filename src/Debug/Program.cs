@@ -8,7 +8,12 @@ using Void.Minecraft.Network;
 
 var version = ProtocolVersion.Latest;
 var count = 1;
-await StartDockerEnvironmentAsync(count: args.Length is 1 && int.TryParse(args[0], out count) ? count : count);
+
+if (args.Length is 1 && int.TryParse(args[0], out var value))
+    count = value;
+
+Console.WriteLine(@$"Starting {count} paper containers");
+await StartDockerPaperEnvironmentAsync(version, count);
 
 return;
 
@@ -25,10 +30,22 @@ async ValueTask RunEntryPointAsync()
     await task;
 }
 
-async ValueTask StartDockerEnvironmentAsync(int count = 3, CancellationToken cancellationToken = default)
+async ValueTask StartDockerPaperEnvironmentAsync(ProtocolVersion version, int count = 3, CancellationToken cancellationToken = default)
 {
     var imageName = "itzg/minecraft-server";
     var imageTag = version > ProtocolVersion.MINECRAFT_1_13 ? "java21-jdk" : "java8-jdk";
+    var timeout = TimeSpan.FromSeconds(600);
+    var variables = new List<string>
+    {
+        "EULA=TRUE",
+        "TYPE=PAPER",
+        "MODE=CREATIVE",
+        "ONLINE_MODE=FALSE",
+        "OPS=caunt,Shonz1",
+        "PATCH_DEFINITIONS=/tmp/patch.json",
+        "VERSION=" + VersionStringName(version)
+    };
+
     const string patches =
         """
         {
@@ -67,7 +84,6 @@ async ValueTask StartDockerEnvironmentAsync(int count = 3, CancellationToken can
 
     using var docker = new DockerClientConfiguration().CreateClient();
 
-    Console.WriteLine(@$"Starting {count} paper containers");
     var papers = await Enumerable.Range(1, count).Select(async index =>
     {
         var images = await docker.Images.ListImagesAsync(new ImagesListParameters { All = true }, cancellationToken);
@@ -94,6 +110,23 @@ async ValueTask StartDockerEnvironmentAsync(int count = 3, CancellationToken can
             switch (found.State)
             {
                 case "running":
+                    var inspect = await docker.Containers.InspectContainerAsync(found.ID, cancellationToken);
+
+                    if (variables.All(inspect.Config.Env.Contains))
+                    {
+                        var exec = await docker.Exec.ExecCreateContainerAsync(found.ID, new ContainerExecCreateParameters
+                        {
+                            AttachStdin = true,
+                            AttachStdout = true,
+                            AttachStderr = true,
+                            Tty = true,
+                            Cmd = ["/bin/bash", "-c", $"echo {(int)timeout.TotalSeconds} > /tmp/timeout"]
+                        }, cancellationToken);
+
+                        await docker.Exec.StartContainerExecAsync(exec.ID, cancellationToken);
+                        return found.ID;
+                    }
+
                     await docker.Containers.StopContainerAsync(found.ID, new ContainerStopParameters(), cancellationToken);
                     break;
                 case "stopped":
@@ -108,21 +141,7 @@ async ValueTask StartDockerEnvironmentAsync(int count = 3, CancellationToken can
         {
             Image = imageName + ":" + imageTag,
             Name = name,
-            Env =
-            [
-                "EULA=TRUE",
-                "TYPE=PAPER",
-                "MODE=CREATIVE",
-                "ONLINE_MODE=FALSE",
-                "OPS=caunt,Shonz1",
-                "PATCH_DEFINITIONS=/tmp/patch.json",
-                "VERSION=" + version switch
-                {
-                    var value when value == ProtocolVersion.MINECRAFT_1_21_2 => value.Names[1], // paper skipped 1.21.2
-                    var value when value == ProtocolVersion.MINECRAFT_1_8 => value.Names[8], // paper first release is 1.8.8
-                    var value => value.Names[0]
-                }
-            ],
+            Env = variables,
             OpenStdin = true,
             AttachStdin = true,
             Tty = true,
@@ -138,7 +157,7 @@ async ValueTask StartDockerEnvironmentAsync(int count = 3, CancellationToken can
                     { "25565/tcp", [new PortBinding { HostPort = port.ToString() }] }
                 }
             },
-            Entrypoint = ["/bin/bash", "-c", $"echo '{patches}' > /tmp/patch.json && timeout 300 /start"]
+            Entrypoint = ["/bin/bash", "-c", $"echo '{patches}' > /tmp/patch.json && echo {(int)timeout.TotalSeconds} > /tmp/timeout && /start & proc=$!; while kill -0 $proc 2>/dev/null; do sleep 5; timeleft=$(cat /tmp/timeout 2>/dev/null || echo 0); newtime=$((timeleft-5)); echo $newtime > /tmp/timeout; if [ $newtime -le 0 ]; then kill $proc; break; fi; done; wait $proc"]
         };
 
         var created = await docker.Containers.CreateContainerAsync(createContainerParameters, cancellationToken);
@@ -173,7 +192,6 @@ async ValueTask StartDockerEnvironmentAsync(int count = 3, CancellationToken can
             }
         }
 
-        Console.WriteLine(status);
         return created.ID;
     }).WhenAll();
 
@@ -190,5 +208,15 @@ async ValueTask StartDockerEnvironmentAsync(int count = 3, CancellationToken can
     {
         var containers = await docker.Containers.ListContainersAsync(new ContainersListParameters { All = true }, cancellationToken);
         return containers.FirstOrDefault(container => container.Names.Any(containerName => containerName.EndsWith("/" + name)));
+    }
+
+    string VersionStringName(ProtocolVersion version)
+    {
+        return version switch
+        {
+            var value when value == ProtocolVersion.MINECRAFT_1_21_2 => value.Names[1], // paper skipped 1.21.2
+            var value when value == ProtocolVersion.MINECRAFT_1_8 => value.Names[8], // paper first release is 1.8.8
+            var value => value.Names[0]
+        };
     }
 }
