@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using Void.Minecraft.Network;
 
-var version = ProtocolVersion.Latest;
+var version = ProtocolVersion.MINECRAFT_1_20_2;
 var count = 1;
 
 if (args.Length is 1 && int.TryParse(args[0], out var value))
@@ -201,7 +201,7 @@ async ValueTask StartDockerPaperEnvironmentAsync(ProtocolVersion version, int co
     }
     finally
     {
-        await papers.Select(async id => await docker.Containers.StopContainerAsync(id, new ContainerStopParameters())).WhenAll();
+        // await papers.Select(async id => await docker.Containers.StopContainerAsync(id, new ContainerStopParameters())).WhenAll();
     }
 
     async ValueTask<ContainerListResponse?> GetContainerAsync(string name, CancellationToken cancellationToken)
