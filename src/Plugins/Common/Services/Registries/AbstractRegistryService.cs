@@ -9,6 +9,7 @@ using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Links.Extensions;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
 using Void.Proxy.Api.Network.IO.Messages.Binary;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
@@ -48,11 +49,13 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (@event.Phase is Phase.Handshake)
             return;
 
-        var playerChannel = await @event.Player.GetChannelAsync(cancellationToken);
-        playerChannel.ClearPluginsHolders(plugin);
+        var link = @event.Player.GetLink();
 
-        if (links.TryGetLink(@event.Player, out var link))
-            link.ServerChannel.ClearPluginsHolders(plugin);
+        link.GetPacketPluginsRegistries(Direction.Serverbound).Clear();
+        link.GetPacketPluginsRegistries(Direction.Clientbound).Clear();
+
+        link.GetPacketPluginsTransformations(Direction.Serverbound).Clear();
+        link.GetPacketPluginsTransformations(Direction.Clientbound).Clear();
     }
 
     [Subscribe(PostOrder.Last)]

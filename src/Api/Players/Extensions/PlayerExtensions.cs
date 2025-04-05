@@ -57,20 +57,6 @@ public static class PlayerExtensions
         transformations.RegisterTransformations<T>(player.ProtocolVersion, mappings);
     }
 
-    // public static void RemovePluginPacketRegistry(this IPlayer player, IPlugin plugin)
-    // {
-    //     var link = player.GetLink();
-    //     link.GetPacketPluginsRegistries(Direction.Clientbound).Remove(plugin);
-    //     link.GetPacketPluginsRegistries(Direction.Serverbound).Remove(plugin);
-    // }
-    // 
-    // public static void ClearPluginsPacketRegistry(this IPlayer player)
-    // {
-    //     var link = player.GetLink();
-    //     link.GetPacketPluginsRegistries(Direction.Clientbound).Clear();
-    //     link.GetPacketPluginsRegistries(Direction.Serverbound).Clear();
-    // }
-
     public static ILink GetLink(this IPlayer player)
     {
         var links = player.Context.Services.GetRequiredService<ILinkService>();
