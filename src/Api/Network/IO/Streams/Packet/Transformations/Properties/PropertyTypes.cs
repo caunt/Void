@@ -15,4 +15,5 @@ public static class PropertyTypes
     public static VarLongType VarLong { get; } = new();
     public static UuidType Uuid { get; } = new();
     public static NbtType Nbt { get; } = new();
+    public static StringType String { get; } = new();
 }
