@@ -17,8 +17,6 @@ public interface IMinecraftPacketPluginsRegistry
     public bool Contains<T>() where T : IMinecraftPacket;
     public bool Contains(IMinecraftMessage message);
     public bool Contains(Type type);
-    public void ReplacePackets(IPlugin plugin, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings);
-    public void AddPackets(IPlugin plugin, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings);
     public void Clear();
     public void Reset();
 }

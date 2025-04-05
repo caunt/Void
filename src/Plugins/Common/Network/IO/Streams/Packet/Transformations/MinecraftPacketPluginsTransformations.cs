@@ -1,7 +1,6 @@
 ﻿using Void.Minecraft.Network;
 using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
-using Void.Proxy.Api.Network.IO.Streams.Packet;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 using Void.Proxy.Api.Plugins;
 
@@ -18,6 +17,9 @@ public class MinecraftPacketPluginsTransformations : IMinecraftPacketPluginsTran
 
     public IMinecraftPacketTransformations Get(IPlugin plugin)
     {
+        if (ProtocolVersion is null)
+            throw new InvalidOperationException("Protocol version is not set yet");
+
         if (!_map.TryGetValue(plugin, out var registry))
             _map[plugin] = registry = new MinecraftPacketTransformations();
 
@@ -42,22 +44,6 @@ public class MinecraftPacketPluginsTransformations : IMinecraftPacketPluginsTran
     public bool Contains(Type type)
     {
         return All.Any(registry => registry.Contains(type));
-    }
-
-    public void ReplacePackets(IPlugin plugin, IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> mappings)
-    {
-        if (ProtocolVersion is null)
-            throw new InvalidOperationException("Protocol version is not set yet");
-
-        _map[plugin].ReplaceTransformations(mappings, ProtocolVersion);
-    }
-
-    public void AddPackets(IPlugin plugin, IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> mappings)
-    {
-        if (ProtocolVersion is null)
-            throw new InvalidOperationException("Protocol version is not set yet");
-
-        _map[plugin].AddTransformations(mappings, ProtocolVersion);
     }
 
     public void Clear()
