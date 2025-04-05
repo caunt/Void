@@ -45,8 +45,6 @@ public class MinecraftPacketTransformations : IMinecraftPacketTransformations
 
     public IMinecraftPacketTransformations AddTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> transformationMappings, ProtocolVersion protocolVersion)
     {
-        // Dictionary<Type, MinecraftPacketTransformation[]> _reverseMappings
-
         foreach (var (mappings, type) in transformationMappings)
         {
             var mappingsToUpgrade = new List<MinecraftPacketTransformationMapping>();
@@ -69,10 +67,10 @@ public class MinecraftPacketTransformations : IMinecraftPacketTransformations
             var upgrateTransformers = mappingsToUpgrade.Select(i => i.Transformation);
             var downgradeTransformers = mappingsToDowngrate.Select(i => i.Transformation);
 
-            if (!_upgradeMappings.TryAdd(type, upgrateTransformers.ToArray()))
+            if (!_upgradeMappings.TryAdd(type, [.. upgrateTransformers]))
                 throw new ArgumentException($"{type} cannot be registered with packet upgrade transformations, because it is already registered");
 
-            if (!_downgradeMappings.TryAdd(type, downgradeTransformers.ToArray()))
+            if (!_downgradeMappings.TryAdd(type, [.. downgradeTransformers]))
                 throw new ArgumentException($"{type} cannot be registered with packet downgrade transformations, because it is already registered");
         }
 
