@@ -30,24 +30,24 @@ public class MinecraftPacketIdRegistry : IMinecraftPacketIdRegistry
         return _reverseMappings.Keys.Any(type.IsAssignableFrom);
     }
 
-    public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out MinecraftPacketDecoder<IMinecraftPacket> packet)
+    public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out MinecraftPacketDecoder<IMinecraftPacket> decoder)
     {
-        packet = null;
+        decoder = null;
 
         if (!TryGetType(id, out var type))
             return false;
 
-        return TryCreateDecoder(type, out packet);
+        return TryCreateDecoder(type, out decoder);
     }
 
-    public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out Type packetType, [MaybeNullWhen(false)] out MinecraftPacketDecoder<IMinecraftPacket> decoder)
+    public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out Type type, [MaybeNullWhen(false)] out MinecraftPacketDecoder<IMinecraftPacket> decoder)
     {
         decoder = null;
 
-        if (!TryGetType(id, out packetType))
+        if (!TryGetType(id, out type))
             return false;
 
-        return TryCreateDecoder(packetType, out decoder);
+        return TryCreateDecoder(type, out decoder);
     }
 
     public bool TryGetType(int id, [MaybeNullWhen(false)] out Type packetType)
