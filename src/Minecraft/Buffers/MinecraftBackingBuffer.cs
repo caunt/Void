@@ -202,6 +202,42 @@ internal ref struct MinecraftBackingBuffer
             WriteUnsignedByte(temp);
     }
 
+    public long ReadVarLong()
+    {
+        var result = 0;
+        byte read = 0;
+
+        byte buffer;
+        do
+        {
+            buffer = ReadUnsignedByte();
+            var value = buffer & 0b01111111;
+            result |= value << 7 * read;
+
+            read++;
+            if (read > 10)
+                throw new InvalidOperationException("VarLong is too big");
+        } while ((buffer & 0b10000000) != 0);
+
+        return result;
+    }
+
+    public void WriteVarLong(long value)
+    {
+        while (true)
+        {
+            if ((value & ~(long) 0x7F) == 0)
+            {
+                WriteUnsignedByte((byte) value);
+                return;
+            }
+
+            WriteUnsignedByte((byte)((value & 0x7F) | 0x80));
+
+            value >>>= 7;
+        }
+    }
+
     public int ReadInt()
     {
         return _bufferType switch
@@ -256,6 +292,36 @@ internal ref struct MinecraftBackingBuffer
                 throw new ReadOnlyException();
             case BufferType.MemoryStream:
                 _memoryStreamBackingBuffer.WriteFloat(value);
+                break;
+            default:
+                throw new NotSupportedException(_bufferType.ToString());
+        }
+    }
+
+    public double ReadDouble()
+    {
+        return _bufferType switch
+        {
+            BufferType.Span => _spanBackingBuffer.ReadDouble(),
+            BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.ReadDouble(),
+            BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.ReadDouble(),
+            BufferType.MemoryStream => _memoryStreamBackingBuffer.ReadDouble(),
+            _ => throw new NotSupportedException(_bufferType.ToString())
+        };
+    }
+
+    public void WriteDouble(double value)
+    {
+        switch (_bufferType)
+        {
+            case BufferType.Span:
+                _spanBackingBuffer.WriteDouble(value);
+                break;
+            case BufferType.ReadOnlySpan:
+            case BufferType.ReadOnlySequence:
+                throw new ReadOnlyException();
+            case BufferType.MemoryStream:
+                _memoryStreamBackingBuffer.WriteDouble(value);
                 break;
             default:
                 throw new NotSupportedException(_bufferType.ToString());

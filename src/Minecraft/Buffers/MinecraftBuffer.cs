@@ -112,6 +112,16 @@ public ref struct MinecraftBuffer
         _backingBuffer.WriteVarInt(value);
     }
 
+    public long ReadVarLong()
+    {
+        return _backingBuffer.ReadVarLong();
+    }
+
+    public void WriteVarLong(long value)
+    {
+        _backingBuffer.WriteVarLong(value);
+    }
+
     public int ReadInt()
     {
         return _backingBuffer.ReadInt();
@@ -130,6 +140,16 @@ public ref struct MinecraftBuffer
     public void WriteFloat(float value)
     {
         _backingBuffer.WriteFloat(value);
+    }
+
+    public double ReadDouble()
+    {
+        return _backingBuffer.ReadDouble();
+    }
+
+    public void WriteDouble(double value)
+    {
+        _backingBuffer.WriteDouble(value);
     }
 
     public long ReadLong()
