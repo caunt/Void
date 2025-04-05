@@ -48,7 +48,7 @@ public class MinecraftPacketTransformations : IMinecraftPacketTransformations
         foreach (var (mappings, type) in transformationMappings)
         {
             var mappingsToUpgrade = new List<MinecraftPacketTransformationMapping>();
-            var mappingsToDowngrate = new List<MinecraftPacketTransformationMapping>();
+            var mappingsToDowngrade = new List<MinecraftPacketTransformationMapping>();
 
             foreach (var mapping in mappings)
             {
@@ -58,14 +58,14 @@ public class MinecraftPacketTransformations : IMinecraftPacketTransformations
                 if (mapping.From > mapping.To)
                     mappingsToUpgrade.Add(mapping);
                 else
-                    mappingsToDowngrate.Add(mapping);
+                    mappingsToDowngrade.Add(mapping);
             }
 
             mappingsToUpgrade.Sort((a, b) => a.From > b.From ? 1 : -1);
-            mappingsToDowngrate.Sort((a, b) => a.From > b.From ? -1 : 1);
+            mappingsToDowngrade.Sort((a, b) => a.From > b.From ? -1 : 1);
 
             var upgradeTransformers = mappingsToUpgrade.Select(i => i.Transformation);
-            var downgradeTransformers = mappingsToDowngrate.Select(i => i.Transformation);
+            var downgradeTransformers = mappingsToDowngrade.Select(i => i.Transformation);
 
             if (!_upgradeMappings.TryAdd(type, [.. upgradeTransformers]))
                 throw new ArgumentException($"{type} cannot be registered with packet upgrade transformations, because it is already registered");
