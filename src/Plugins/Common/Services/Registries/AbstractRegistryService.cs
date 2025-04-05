@@ -205,16 +205,14 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             var binaryMessage = new MinecraftBinaryPacket(id, stream);
             var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
+            var plugin = registries.GetPlugin(type);
 
-            if (registries.ManagedBy is not null)
+            if (transformationsMappings.Get(plugin).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
             {
-                if (transformationsMappings.Get(registries.ManagedBy).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
+                foreach (var transformation in transformations)
                 {
-                    foreach (var transformation in transformations)
-                    {
-                        transformation(wrapper);
-                        buffer.Reset();
-                    }
+                    transformation(wrapper);
+                    buffer.Reset();
                 }
             }
 
