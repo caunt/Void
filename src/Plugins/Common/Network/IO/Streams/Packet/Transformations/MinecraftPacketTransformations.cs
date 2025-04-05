@@ -64,10 +64,10 @@ public class MinecraftPacketTransformations : IMinecraftPacketTransformations
             mappingsToUpgrade.Sort((a, b) => a.From > b.From ? 1 : -1);
             mappingsToDowngrate.Sort((a, b) => a.From > b.From ? -1 : 1);
 
-            var upgrateTransformers = mappingsToUpgrade.Select(i => i.Transformation);
+            var upgradeTransformers = mappingsToUpgrade.Select(i => i.Transformation);
             var downgradeTransformers = mappingsToDowngrate.Select(i => i.Transformation);
 
-            if (!_upgradeMappings.TryAdd(type, [.. upgrateTransformers]))
+            if (!_upgradeMappings.TryAdd(type, [.. upgradeTransformers]))
                 throw new ArgumentException($"{type} cannot be registered with packet upgrade transformations, because it is already registered");
 
             if (!_downgradeMappings.TryAdd(type, [.. downgradeTransformers]))

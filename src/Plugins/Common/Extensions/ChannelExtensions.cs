@@ -51,19 +51,19 @@ public static class ChannelExtensions
         registry.ReplacePackets(Operation.Write, mappings);
     }
 
-    public static void ClearPluginsHolders(this IMinecraftChannel channel, IPlugin plugin)
+    public static void ClearPluginsHolders(this IMinecraftChannel channel, IPlugin managedBy)
     {
         var systemRegistry = channel.GetPacketSystemRegistryHolder();
         var pluginsRegistry = channel.GetPacketPluginsRegistryHolder();
         var transformations = channel.GetPacketTransformationsHolder();
 
-        if (systemRegistry.ManagedBy == plugin)
+        if (systemRegistry.ManagedBy == managedBy)
             systemRegistry.Reset();
 
-        if (pluginsRegistry.ManagedBy == plugin)
+        if (pluginsRegistry.ManagedBy == managedBy)
             pluginsRegistry.Reset();
 
-        if (transformations.ManagedBy == plugin)
+        if (transformations.ManagedBy == managedBy)
             transformations.Reset();
     }
 }

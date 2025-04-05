@@ -42,13 +42,17 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
     }
 
     [Subscribe(PostOrder.First)]
-    public static void OnPhaseChanged(PhaseChangedEvent @event)
+    public async ValueTask OnPhaseChanged(PhaseChangedEvent @event, CancellationToken cancellationToken)
     {
         // At handshake phase IPlayer channel is still being built, causing stack overflow here
         if (@event.Phase is Phase.Handshake)
             return;
 
-        @event.Player.ClearPluginsPacketRegistry();
+        var playerChannel = await @event.Player.GetChannelAsync(cancellationToken);
+        playerChannel.ClearPluginsHolders(plugin);
+
+        if (links.TryGetLink(@event.Player, out var link))
+            link.ServerChannel.ClearPluginsHolders(plugin);
     }
 
     [Subscribe(PostOrder.Last)]
