@@ -241,10 +241,11 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
 
             EncodeVarInt(stream, id);
 
+            var position = stream.Position;
             var buffer = new MinecraftBuffer(stream);
+
             packet.Encode(ref buffer, ProtocolVersion);
 
-            var position = stream.Position;
             var binaryMessage = new MinecraftBinaryPacket(id, stream);
             var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
 
@@ -256,8 +257,8 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
                     {
                         foreach (var transformation in transformations)
                         {
-                            transformation(wrapper);
                             binaryMessage.Stream.Position = position;
+                            transformation(wrapper);
                         }
                     }
                 }

@@ -56,9 +56,9 @@ public class MinecraftPacketTransformations : IMinecraftPacketTransformations
                     continue;
 
                 if (mapping.From > mapping.To)
-                    mappingsToUpgrade.Add(mapping);
-                else
                     mappingsToDowngrade.Add(mapping);
+                else
+                    mappingsToUpgrade.Add(mapping);
             }
 
             mappingsToUpgrade.Sort((a, b) => a.From > b.From ? 1 : -1);
