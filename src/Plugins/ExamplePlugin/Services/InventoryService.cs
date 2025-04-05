@@ -84,10 +84,10 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
 
         // IMinecraftPacketTransformation
 
-        player.RegisterTransformation<SetHeldItemClientboundPacket>([
-            new(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.MINECRAFT_1_20_3, callback),
-            new(ProtocolVersion.MINECRAFT_1_20_3, ProtocolVersion.MINECRAFT_1_20_2, callback)
-        ]);
+        // player.RegisterTransformation<SetHeldItemClientboundPacket>([
+        //     new(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.MINECRAFT_1_20_3, callback),
+        //     new(ProtocolVersion.MINECRAFT_1_20_3, ProtocolVersion.MINECRAFT_1_20_2, callback)
+        // ]);
 
 
 
