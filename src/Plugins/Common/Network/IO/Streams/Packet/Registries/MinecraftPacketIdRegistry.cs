@@ -40,14 +40,14 @@ public class MinecraftPacketIdRegistry : IMinecraftPacketIdRegistry
         return TryCreateDecoder(type, out packet);
     }
 
-    public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out Type packetType, [MaybeNullWhen(false)] out MinecraftPacketDecoder<IMinecraftPacket> packet)
+    public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out Type packetType, [MaybeNullWhen(false)] out MinecraftPacketDecoder<IMinecraftPacket> decoder)
     {
-        packet = null;
+        decoder = null;
 
         if (!TryGetType(id, out packetType))
             return false;
 
-        return TryCreateDecoder(packetType, out var decoder);
+        return TryCreateDecoder(packetType, out decoder);
     }
 
     public bool TryGetType(int id, [MaybeNullWhen(false)] out Type packetType)
