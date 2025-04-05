@@ -38,7 +38,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!channel.TryGet<IMinecraftPacketMessageStream>(out _))
             return;
 
-        channel.ClearPacketsMappings(plugin);
+        channel.ClearPluginsHolders(plugin);
     }
 
     [Subscribe(PostOrder.First)]
@@ -141,9 +141,9 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
                 continue;
 
             if (links.TryGetLink(player, out var link))
-                link.ServerChannel.ClearPacketsMappings(plugin);
+                link.ServerChannel.ClearPluginsHolders(plugin);
 
-            channel.ClearPacketsMappings(plugin);
+            channel.ClearPluginsHolders(plugin);
         }
     }
 
@@ -180,8 +180,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
     protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, IMinecraftPacketPluginsRegistry registries, IMinecraftPacketPluginsTransformations transformationsMappings, IMinecraftPacket minecraftPacket)
     {
-        var playerPacketRegistryHolder = link.PlayerChannel.GetSystemPacketRegistryHolder();
-        var serverPacketRegistryHolder = link.ServerChannel.GetSystemPacketRegistryHolder();
+        var playerPacketRegistryHolder = link.PlayerChannel.GetPacketSystemRegistryHolder();
+        var serverPacketRegistryHolder = link.ServerChannel.GetPacketSystemRegistryHolder();
 
         if (!playerPacketRegistryHolder.Write.TryGetPacketId(minecraftPacket, out var id) &&
             !serverPacketRegistryHolder.Write.TryGetPacketId(minecraftPacket, out id))

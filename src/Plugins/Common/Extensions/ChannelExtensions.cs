@@ -33,7 +33,7 @@ public static class ChannelExtensions
 
     public static void SetReadingPacketsMappings(this IMinecraftChannel channel, IPlugin plugin, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings)
     {
-        var registry = channel.GetSystemPacketRegistryHolder();
+        var registry = channel.GetPacketSystemRegistryHolder();
 
         if (registry.ManagedBy != plugin)
             return;
@@ -43,7 +43,7 @@ public static class ChannelExtensions
 
     public static void SetWritingPacketsMappings(this IMinecraftChannel channel, IPlugin plugin, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings)
     {
-        var registry = channel.GetSystemPacketRegistryHolder();
+        var registry = channel.GetPacketSystemRegistryHolder();
 
         if (registry.ManagedBy != plugin)
             return;
@@ -51,15 +51,19 @@ public static class ChannelExtensions
         registry.ReplacePackets(Operation.Write, mappings);
     }
 
-    public static void ClearPacketsMappings(this IMinecraftChannel channel, IPlugin plugin)
+    public static void ClearPluginsHolders(this IMinecraftChannel channel, IPlugin plugin)
     {
-        var systemRegistry = channel.GetSystemPacketRegistryHolder();
-        var pluginsRegistry = channel.GetPluginsPacketRegistryHolder();
+        var systemRegistry = channel.GetPacketSystemRegistryHolder();
+        var pluginsRegistry = channel.GetPacketPluginsRegistryHolder();
+        var transformations = channel.GetPacketTransformationsHolder();
 
         if (systemRegistry.ManagedBy == plugin)
             systemRegistry.Reset();
 
         if (pluginsRegistry.ManagedBy == plugin)
             pluginsRegistry.Reset();
+
+        if (transformations.ManagedBy == plugin)
+            transformations.Reset();
     }
 }

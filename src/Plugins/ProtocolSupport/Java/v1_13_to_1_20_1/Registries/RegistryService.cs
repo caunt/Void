@@ -28,8 +28,9 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
         if (!Plugin.SupportedVersions.Contains(@event.Player.ProtocolVersion))
             return;
 
-        var systemRegistry = @event.Channel.GetSystemPacketRegistryHolder();
-        var pluginsRegistry = @event.Channel.GetPluginsPacketRegistryHolder();
+        var systemRegistry = @event.Channel.GetPacketSystemRegistryHolder();
+        var pluginsRegistry = @event.Channel.GetPacketPluginsRegistryHolder();
+        var transformations = @event.Channel.GetPacketTransformationsHolder();
 
         if (!systemRegistry.IsEmpty || !pluginsRegistry.IsEmpty)
             return;
@@ -39,6 +40,9 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
 
         pluginsRegistry.ManagedBy = _plugin;
         pluginsRegistry.ProtocolVersion = @event.Player.ProtocolVersion;
+
+        transformations.ManagedBy = _plugin;
+        transformations.ProtocolVersion = @event.Player.ProtocolVersion;
 
         if (@event.Side is Side.Client)
         {
@@ -104,8 +108,8 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
                 }
                 else
                 {
-                    @event.Link.PlayerChannel.ClearPacketsMappings(_plugin);
-                    @event.Link.ServerChannel.ClearPacketsMappings(_plugin);
+                    @event.Link.PlayerChannel.ClearPluginsHolders(_plugin);
+                    @event.Link.ServerChannel.ClearPluginsHolders(_plugin);
                 }
 
                 break;

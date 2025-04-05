@@ -5,7 +5,6 @@ using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
-using Void.Proxy.Api.Network.IO.Streams.Packet;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 
@@ -39,15 +38,13 @@ public static class MinecraftLinkExtensions
     public static IMinecraftPacketPluginsRegistry GetPacketPluginsRegistries(this ILink link, Direction direction)
     {
         var channel = link.GetChannel(direction);
-        var stream = channel.Get<IMinecraftPacketMessageStream>();
-        return stream.PluginsRegistryHolder ?? throw new Exception("Plugins registry holder is not set yet");
+        return channel.GetPacketPluginsRegistryHolder();
     }
 
     public static IMinecraftPacketPluginsTransformations GetPacketPluginsTransformations(this ILink link, Direction direction)
     {
         var channel = link.GetChannel(direction);
-        var stream = channel.Get<IMinecraftPacketMessageStream>();
-        return stream.TransformationsHolder ?? throw new Exception("Plugins transformations holder is not set yet");
+        return channel.GetPacketTransformationsHolder();
     }
 
     public static IMinecraftChannel GetChannel(this ILink link, Direction direction)
