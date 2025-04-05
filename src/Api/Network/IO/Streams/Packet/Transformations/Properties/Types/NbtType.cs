@@ -7,11 +7,11 @@ public record NbtType : IPropertyType<NbtValue>
 {
     public NbtValue Read(ref MinecraftBuffer buffer)
     {
-        return NbtValue.FromPrimitive(buffer.ReadTag());
+        return NbtValue.FromNbtTag(buffer.ReadTag());
     }
 
     public void Write(ref MinecraftBuffer buffer, NbtValue value)
     {
-        buffer.WriteTag(value.AsPrimitive);
+        buffer.WriteTag(value.AsNbtTag);
     }
 }

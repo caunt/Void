@@ -5,9 +5,9 @@ namespace Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties.Va
 
 public record NbtValue(ReadOnlyMemory<byte> Value) : IPropertyValue
 {
-    public NbtTag AsPrimitive => new MinecraftBuffer(Value.Span).ReadTag();
+    public NbtTag AsNbtTag => new MinecraftBuffer(Value.Span).ReadTag();
 
-    public static NbtValue FromPrimitive(NbtTag value)
+    public static NbtValue FromNbtTag(NbtTag value)
     {
         using var stream = new MemoryStream();
         var buffer = new MinecraftBuffer(stream);
