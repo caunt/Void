@@ -14,9 +14,9 @@ public interface IMinecraftPacketPluginsTransformations
 
     public IMinecraftPacketTransformations Get(IPlugin plugin);
     public void Remove(IPlugin plugin);
-    public bool Contains<T>() where T : IMinecraftPacket;
-    public bool Contains(IMinecraftMessage message);
-    public bool Contains(Type type);
+    public bool Contains<T>(TransformationType type) where T : IMinecraftPacket;
+    public bool Contains(IMinecraftMessage message, TransformationType type);
+    public bool Contains(Type packetType, TransformationType transformationType);
     public void Clear();
     public void Reset();
 }

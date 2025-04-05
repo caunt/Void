@@ -31,19 +31,19 @@ public class MinecraftPacketPluginsTransformations : IMinecraftPacketPluginsTran
         _map.Remove(plugin);
     }
 
-    public bool Contains<T>() where T : IMinecraftPacket
+    public bool Contains<T>(TransformationType type) where T : IMinecraftPacket
     {
-        return All.Any(registry => registry.Contains<T>());
+        return All.Any(registry => registry.Contains<T>(type));
     }
 
-    public bool Contains(IMinecraftMessage message)
+    public bool Contains(IMinecraftMessage message, TransformationType type)
     {
-        return All.Any(registry => registry.Contains(message));
+        return All.Any(registry => registry.Contains(message, type));
     }
 
-    public bool Contains(Type type)
+    public bool Contains(Type packetType, TransformationType transformationType)
     {
-        return All.Any(registry => registry.Contains(type));
+        return All.Any(registry => registry.Contains(packetType, transformationType));
     }
 
     public void Clear()
