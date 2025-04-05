@@ -244,13 +244,14 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
             var buffer = new MinecraftBuffer(stream);
             packet.Encode(ref buffer, ProtocolVersion);
 
+            var position = stream.Position;
             var binaryMessage = new MinecraftBinaryPacket(id, stream);
             var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
-            var position = binaryMessage.Stream.Position;
+            var plugin = PluginsRegistryHolder?.GetPlugin(packet);
 
-            if (PluginsRegistryHolder?.ManagedBy is not null && TransformationsHolder is not null)
+            if (TransformationsHolder is not null && plugin is not null)
             {
-                if (TransformationsHolder.Get(PluginsRegistryHolder.ManagedBy).TryGetTransformation(packet.GetType(), TransformationType.Downgrade, out var transformations))
+                if (TransformationsHolder.Get(plugin).TryGetTransformation(packet.GetType(), TransformationType.Downgrade, out var transformations))
                 {
                     foreach (var transformation in transformations)
                     {

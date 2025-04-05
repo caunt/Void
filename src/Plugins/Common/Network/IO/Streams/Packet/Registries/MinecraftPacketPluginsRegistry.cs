@@ -26,6 +26,28 @@ public class MinecraftPacketPluginsRegistry : IMinecraftPacketPluginsRegistry
         return registry;
     }
 
+    public IPlugin GetPlugin<T>() where T : IMinecraftPacket
+    {
+        return GetPlugin(typeof(T));
+    }
+
+    public IPlugin GetPlugin(IMinecraftMessage message)
+    {
+        return GetPlugin(message.GetType());
+    }
+
+    public IPlugin GetPlugin(Type type)
+    {
+        foreach (var (plugin, registry) in _map)
+        {
+            if (registry.Contains(type))
+                return plugin;
+
+        }
+
+        throw new InvalidOperationException("No plugin found for the given message");
+    }
+
     public void Remove(IPlugin plugin)
     {
         _map.Remove(plugin);
