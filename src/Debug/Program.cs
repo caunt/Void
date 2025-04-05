@@ -34,7 +34,7 @@ async ValueTask StartDockerPaperEnvironmentAsync(ProtocolVersion version, int co
 {
     var imageName = "itzg/minecraft-server";
     var imageTag = version > ProtocolVersion.MINECRAFT_1_13 ? "java21-jdk" : "java8-jdk";
-    var timeout = TimeSpan.FromSeconds(600);
+    var timeout = TimeSpan.FromSeconds(900);
     var variables = new List<string>
     {
         "EULA=TRUE",

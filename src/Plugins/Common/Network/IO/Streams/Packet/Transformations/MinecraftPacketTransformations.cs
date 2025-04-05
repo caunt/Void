@@ -74,7 +74,6 @@ public class MinecraftPacketTransformations : IMinecraftPacketTransformations
                 throw new ArgumentException($"{type} cannot be registered with packet downgrade transformations, because it is already registered");
         }
 
-
         return this;
     }
 
