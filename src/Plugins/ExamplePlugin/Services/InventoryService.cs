@@ -72,6 +72,7 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
             new(0x2B, ProtocolVersion.MINECRAFT_1_20_2),
             new(0x2C, ProtocolVersion.MINECRAFT_1_20_3),
             new(0x2F, ProtocolVersion.MINECRAFT_1_20_5),
+            new(0x31, ProtocolVersion.MINECRAFT_1_21_2),
             new(0x33, ProtocolVersion.MINECRAFT_1_21_4)
         ]);
 
@@ -79,7 +80,7 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
             new(0x4F, ProtocolVersion.MINECRAFT_1_20_2),
             new(0x51, ProtocolVersion.MINECRAFT_1_20_3),
             new(0x53, ProtocolVersion.MINECRAFT_1_20_5),
-            new(0x63, ProtocolVersion.MINECRAFT_1_21_4)
+            new(0x63, ProtocolVersion.MINECRAFT_1_21_2)
         ]);
 
         player.RegisterTransformations<SetHeldItemClientboundPacket>([
