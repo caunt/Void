@@ -13,8 +13,8 @@ public class MinecraftPacketSystemRegistry : IMinecraftPacketSystemRegistry
     public bool IsEmpty => this is { Read.IsEmpty: true, Write.IsEmpty: true, ManagedBy: null };
     public ProtocolVersion? ProtocolVersion { get; set; }
     public IPlugin? ManagedBy { get; set; }
-    public IMinecraftPacketRegistry Read { get; set; } = new MinecraftPacketRegistry();
-    public IMinecraftPacketRegistry Write { get; set; } = new MinecraftPacketRegistry();
+    public IMinecraftPacketIdRegistry Read { get; set; } = new MinecraftPacketIdRegistry();
+    public IMinecraftPacketIdRegistry Write { get; set; } = new MinecraftPacketIdRegistry();
 
     public bool Contains<T>() where T : IMinecraftPacket
     {

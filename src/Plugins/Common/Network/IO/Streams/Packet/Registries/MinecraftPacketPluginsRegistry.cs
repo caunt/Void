@@ -9,20 +9,20 @@ namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Registries;
 
 public class MinecraftPacketPluginsRegistry : IMinecraftPacketPluginsRegistry
 {
-    private Dictionary<IPlugin, IMinecraftPacketRegistry> _map = [];
+    private Dictionary<IPlugin, IMinecraftPacketIdRegistry> _map = [];
 
     public bool IsEmpty => All.All(registry => registry.IsEmpty);
     public ProtocolVersion? ProtocolVersion { get; set; }
     public IPlugin? ManagedBy { get; set; }
-    public IReadOnlyCollection<IMinecraftPacketRegistry> All => _map.Values;
+    public IReadOnlyCollection<IMinecraftPacketIdRegistry> All => _map.Values;
 
-    public IMinecraftPacketRegistry Get(IPlugin plugin)
+    public IMinecraftPacketIdRegistry Get(IPlugin plugin)
     {
         if (ProtocolVersion is null)
             throw new InvalidOperationException("Protocol version is not set yet");
 
         if (!_map.TryGetValue(plugin, out var registry))
-            _map[plugin] = registry = new MinecraftPacketRegistry();
+            _map[plugin] = registry = new MinecraftPacketIdRegistry();
 
         return registry;
     }

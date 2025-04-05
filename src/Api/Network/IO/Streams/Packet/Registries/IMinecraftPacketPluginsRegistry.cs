@@ -11,9 +11,9 @@ public interface IMinecraftPacketPluginsRegistry
     public bool IsEmpty { get; }
     public ProtocolVersion? ProtocolVersion { get; set; }
     public IPlugin? ManagedBy { get; set; }
-    public IReadOnlyCollection<IMinecraftPacketRegistry> All { get; }
+    public IReadOnlyCollection<IMinecraftPacketIdRegistry> All { get; }
 
-    public IMinecraftPacketRegistry Get(IPlugin plugin);
+    public IMinecraftPacketIdRegistry Get(IPlugin plugin);
     public bool TryGetPlugin<T>([MaybeNullWhen(false)] out IPlugin plugin) where T : IMinecraftPacket;
     public bool TryGetPlugin(IMinecraftMessage message, [MaybeNullWhen(false)] out IPlugin plugin);
     public bool TryGetPlugin(Type type, [MaybeNullWhen(false)] out IPlugin plugin);

@@ -7,7 +7,7 @@ using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Registries;
 
-public class MinecraftPacketRegistry : IMinecraftPacketRegistry
+public class MinecraftPacketIdRegistry : IMinecraftPacketIdRegistry
 {
     private readonly Dictionary<int, Type> _mappings = [];
     private readonly Dictionary<Type, int> _reverseMappings = [];
@@ -60,7 +60,7 @@ public class MinecraftPacketRegistry : IMinecraftPacketRegistry
         return _reverseMappings.TryGetValue(packet.GetType(), out id);
     }
 
-    public IMinecraftPacketRegistry ReplacePackets(IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> registry, ProtocolVersion protocolVersion)
+    public IMinecraftPacketIdRegistry ReplacePackets(IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> registry, ProtocolVersion protocolVersion)
     {
         Clear();
         AddPackets(registry, protocolVersion);
@@ -68,7 +68,7 @@ public class MinecraftPacketRegistry : IMinecraftPacketRegistry
         return this;
     }
 
-    public IMinecraftPacketRegistry AddPackets(IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> registry, ProtocolVersion protocolVersion)
+    public IMinecraftPacketIdRegistry AddPackets(IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> registry, ProtocolVersion protocolVersion)
     {
         foreach (var (mappings, type) in registry)
         {

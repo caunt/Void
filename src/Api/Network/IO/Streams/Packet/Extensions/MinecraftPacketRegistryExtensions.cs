@@ -6,7 +6,7 @@ namespace Void.Proxy.Api.Network.IO.Streams.Packet.Extensions;
 
 public static class MinecraftPacketRegistryExtensions
 {
-    public static void RegisterPacket<T>(this IMinecraftPacketRegistry registry, ProtocolVersion protocolVersion, params MinecraftPacketIdMapping[] mappings) where T : IMinecraftPacket
+    public static void RegisterPacket<T>(this IMinecraftPacketIdRegistry registry, ProtocolVersion protocolVersion, params MinecraftPacketIdMapping[] mappings) where T : IMinecraftPacket
     {
         registry.AddPackets(new Dictionary<MinecraftPacketIdMapping[], Type>()
         {
