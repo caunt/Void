@@ -13,7 +13,7 @@ public interface IMinecraftPacketTransformations
     public bool Contains<T>() where T : IMinecraftPacket;
     public bool Contains(IMinecraftMessage message);
     public bool Contains(Type type);
-    public bool TryGetTransformation(IMinecraftPacket packet, [MaybeNullWhen(false)] out MinecraftPacketTransformation transformation);
+    public bool TryGetTransformation(IMinecraftPacket packet, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformations);
     public IMinecraftPacketTransformations ReplaceTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> mappings, ProtocolVersion protocolVersion);
     public IMinecraftPacketTransformations AddTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> mappings, ProtocolVersion protocolVersion);
     public void Clear();

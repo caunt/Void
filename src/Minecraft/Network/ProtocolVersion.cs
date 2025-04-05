@@ -94,6 +94,16 @@ public class ProtocolVersion : IComparable
         return Mapping.Where(pair => pair.Key >= start.Version && pair.Key <= end.Version).Select(pair => pair.Value).Order();
     }
 
+    public static ProtocolVersion Min(ProtocolVersion version1, ProtocolVersion version2)
+    {
+        return version1 < version2 ? version1 : version2;
+    }
+
+    public static ProtocolVersion Max(ProtocolVersion version1, ProtocolVersion version2)
+    {
+        return version1 > version2 ? version1 : version2;
+    }
+
     public string GetVersionIntroducedIn()
     {
         return Names[0];

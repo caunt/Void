@@ -9,8 +9,8 @@ namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Transformations;
 
 public class MinecraftPacketTransformations : IMinecraftPacketTransformations
 {
-    private readonly Dictionary<MinecraftPacketTransformation, Type> _mappings = [];
-    private readonly Dictionary<Type, MinecraftPacketTransformation> _reverseMappings = [];
+    private readonly Dictionary<MinecraftPacketTransformation[], Type> _mappings = [];
+    private readonly Dictionary<Type, MinecraftPacketTransformation[]> _reverseMappings = [];
 
     public IEnumerable<Type> PacketTypes => _mappings.Values;
     public bool IsEmpty => this is { _mappings.Count: 0, _reverseMappings.Count: 0 };
@@ -30,7 +30,7 @@ public class MinecraftPacketTransformations : IMinecraftPacketTransformations
         return _reverseMappings.Keys.Any(type.IsAssignableFrom);
     }
 
-    public bool TryGetTransformation(IMinecraftPacket packet, [MaybeNullWhen(false)] out MinecraftPacketTransformation transformation)
+    public bool TryGetTransformation(IMinecraftPacket packet, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformation)
     {
         return _reverseMappings.TryGetValue(packet.GetType(), out transformation);
     }
@@ -45,15 +45,17 @@ public class MinecraftPacketTransformations : IMinecraftPacketTransformations
 
     public IMinecraftPacketTransformations AddTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> transformations, ProtocolVersion protocolVersion)
     {
+        // Dictionary<Type, MinecraftPacketTransformation[]> _reverseMappings
+
         foreach (var (mappings, type) in transformations)
         {
             foreach (var mapping in mappings)
             {
-                if (!ProtocolVersion.Range(mapping.From, mapping.To).Contains(protocolVersion))
-                    continue;
-
-                if (!_mappings.TryAdd(mapping.Transformation, type) || !_reverseMappings.TryAdd(type, mapping.Transformation))
-                    throw new ArgumentException($"{type} cannot be registered with packet Transformation {mapping.Transformation}, because there is already {_mappings[mapping.Transformation].FullName}");
+                // if (!ProtocolVersion.Range(mapping.From, mapping.To).Contains(protocolVersion))
+                //     continue;
+                // 
+                // if (!_mappings.TryAdd(mapping.Transformation, type) || !_reverseMappings.TryAdd(type, mapping.Transformation))
+                //     throw new ArgumentException($"{type} cannot be registered with packet Transformation {mapping.Transformation}, because there is already {_mappings[mapping.Transformation].FullName}");
             }
         }
 
