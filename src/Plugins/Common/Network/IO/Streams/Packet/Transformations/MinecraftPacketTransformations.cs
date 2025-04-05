@@ -9,30 +9,30 @@ namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Transformations;
 
 public class MinecraftPacketTransformations : IMinecraftPacketTransformations
 {
-    private readonly Dictionary<MinecraftPacketTransformation[], Type> _mappings = [];
-    private readonly Dictionary<Type, MinecraftPacketTransformation[]> _reverseMappings = [];
+    private readonly Dictionary<Type, MinecraftPacketTransformation[]> _upgradeMappings = [];
+    private readonly Dictionary<Type, MinecraftPacketTransformation[]> _downgradeMappings = [];
 
-    public IEnumerable<Type> PacketTypes => _mappings.Values;
-    public bool IsEmpty => this is { _mappings.Count: 0, _reverseMappings.Count: 0 };
+    public IEnumerable<Type> PacketTypes => _upgradeMappings.Keys;
+    public bool IsEmpty => this is { _upgradeMappings.Count: 0, _downgradeMappings.Count: 0 };
 
-    public bool Contains<T>() where T : IMinecraftPacket
+    public bool Contains<T>(TransformationType type) where T : IMinecraftPacket
     {
-        return Contains(typeof(T));
+        return Contains(typeof(T), type);
     }
 
-    public bool Contains(IMinecraftMessage message)
+    public bool Contains(IMinecraftMessage message, TransformationType type)
     {
-        return Contains(message.GetType());
+        return Contains(message.GetType(), type);
     }
 
-    public bool Contains(Type type)
+    public bool Contains(Type packetType, TransformationType transformationType)
     {
-        return _reverseMappings.Keys.Any(type.IsAssignableFrom);
+        return GetMappings(transformationType).Keys.Any(packetType.IsAssignableFrom);
     }
 
-    public bool TryGetTransformation(IMinecraftPacket packet, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformation)
+    public bool TryGetTransformation(Type packetType, TransformationType type, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformation)
     {
-        return _reverseMappings.TryGetValue(packet.GetType(), out transformation);
+        return GetMappings(type).TryGetValue(packetType, out transformation);
     }
 
     public IMinecraftPacketTransformations ReplaceTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> transformations, ProtocolVersion protocolVersion)
@@ -43,28 +43,51 @@ public class MinecraftPacketTransformations : IMinecraftPacketTransformations
         return this;
     }
 
-    public IMinecraftPacketTransformations AddTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> transformations, ProtocolVersion protocolVersion)
+    public IMinecraftPacketTransformations AddTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> transformationMappings, ProtocolVersion protocolVersion)
     {
-        // Dictionary<Type, MinecraftPacketTransformation[]> _reverseMappings
-
-        foreach (var (mappings, type) in transformations)
+        foreach (var (mappings, type) in transformationMappings)
         {
+            var mappingsToUpgrade = new List<MinecraftPacketTransformationMapping>();
+            var mappingsToDowngrate = new List<MinecraftPacketTransformationMapping>();
+
             foreach (var mapping in mappings)
             {
-                // if (!ProtocolVersion.Range(mapping.From, mapping.To).Contains(protocolVersion))
-                //     continue;
-                // 
-                // if (!_mappings.TryAdd(mapping.Transformation, type) || !_reverseMappings.TryAdd(type, mapping.Transformation))
-                //     throw new ArgumentException($"{type} cannot be registered with packet Transformation {mapping.Transformation}, because there is already {_mappings[mapping.Transformation].FullName}");
+                if (mapping.From < protocolVersion || mapping.To < protocolVersion)
+                    continue;
+
+                if (mapping.From > mapping.To)
+                    mappingsToUpgrade.Add(mapping);
+                else
+                    mappingsToDowngrate.Add(mapping);
             }
+
+            mappingsToUpgrade.Sort((a, b) => a.From > b.From ? 1 : -1);
+            mappingsToDowngrate.Sort((a, b) => a.From > b.From ? -1 : 1);
+
+            var upgrateTransformers = mappingsToUpgrade.Select(i => i.Transformation);
+            var downgradeTransformers = mappingsToDowngrate.Select(i => i.Transformation);
+
+            if (!_upgradeMappings.TryAdd(type, [.. upgrateTransformers]))
+                throw new ArgumentException($"{type} cannot be registered with packet upgrade transformations, because it is already registered");
+
+            if (!_downgradeMappings.TryAdd(type, [.. downgradeTransformers]))
+                throw new ArgumentException($"{type} cannot be registered with packet downgrade transformations, because it is already registered");
         }
+
 
         return this;
     }
 
     public void Clear()
     {
-        _mappings.Clear();
-        _reverseMappings.Clear();
+        _upgradeMappings.Clear();
+        _downgradeMappings.Clear();
     }
+
+    private Dictionary<Type, MinecraftPacketTransformation[]> GetMappings(TransformationType type) => type switch
+    {
+        TransformationType.Upgrade => _upgradeMappings,
+        TransformationType.Downgrade => _downgradeMappings,
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, string.Empty)
+    };
 }

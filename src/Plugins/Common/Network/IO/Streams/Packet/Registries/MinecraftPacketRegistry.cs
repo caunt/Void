@@ -34,16 +34,25 @@ public class MinecraftPacketRegistry : IMinecraftPacketRegistry
     {
         packet = null;
 
-        if (!_mappings.TryGetValue(id, out var type))
+        if (!TryGetType(id, out var type))
             return false;
 
-        var decodeMethod = type.GetMethod(nameof(IMinecraftPacket<IMinecraftPacket>.Decode));
+        return TryCreateDecoder(type, out packet);
+    }
 
-        if (decodeMethod is null)
+    public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out Type packetType, [MaybeNullWhen(false)] out MinecraftPacketDecoder<IMinecraftPacket> packet)
+    {
+        packet = null;
+
+        if (!TryGetType(id, out packetType))
             return false;
 
-        packet = decodeMethod.CreateDelegate<MinecraftPacketDecoder<IMinecraftPacket>>();
-        return true;
+        return TryCreateDecoder(packetType, out var decoder);
+    }
+
+    public bool TryGetType(int id, [MaybeNullWhen(false)] out Type packetType)
+    {
+        return _mappings.TryGetValue(id, out packetType);
     }
 
     public bool TryGetPacketId(IMinecraftPacket packet, [MaybeNullWhen(false)] out int id)
@@ -92,5 +101,18 @@ public class MinecraftPacketRegistry : IMinecraftPacketRegistry
     {
         _mappings.Clear();
         _reverseMappings.Clear();
+    }
+
+    private static bool TryCreateDecoder(Type type, [MaybeNullWhen(false)] out MinecraftPacketDecoder<IMinecraftPacket> packet)
+    {
+        packet = null;
+
+        var decodeMethod = type.GetMethod(nameof(IMinecraftPacket<IMinecraftPacket>.Decode));
+
+        if (decodeMethod is null)
+            return false;
+
+        packet = decodeMethod.CreateDelegate<MinecraftPacketDecoder<IMinecraftPacket>>();
+        return true;
     }
 }

@@ -11,6 +11,7 @@ using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 using Void.Proxy.Api.Network.IO.Streams.Recyclable;
 using Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
+using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Transformations;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
 
@@ -243,7 +244,21 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
             var buffer = new MinecraftBuffer(stream);
             packet.Encode(ref buffer, ProtocolVersion);
 
+            var binaryMessage = new MinecraftBinaryPacket(id, stream);
+            var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
+            var position = binaryMessage.Stream.Position;
 
+            if (PluginsRegistryHolder?.ManagedBy is not null && TransformationsHolder is not null)
+            {
+                if (TransformationsHolder.Get(PluginsRegistryHolder.ManagedBy).TryGetTransformation(packet.GetType(), TransformationType.Downgrade, out var transformations))
+                {
+                    foreach (var transformation in transformations)
+                    {
+                        transformation(wrapper);
+                        binaryMessage.Stream.Position = position;
+                    }
+                }
+            }
         }
 
         return stream;
