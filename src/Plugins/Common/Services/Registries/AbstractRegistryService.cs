@@ -163,14 +163,16 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             var position = binaryMessage.Stream.Position;
             var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
-            var plugin = registries.GetPlugin(type);
 
-            if (transformationsMappings.Get(plugin).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
+            if (registries.TryGetPlugin(type, out var plugin))
             {
-                foreach (var transformation in transformations)
+                if (transformationsMappings.Get(plugin).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
                 {
-                    transformation(wrapper);
-                    binaryMessage.Stream.Position = position;
+                    foreach (var transformation in transformations)
+                    {
+                        transformation(wrapper);
+                        binaryMessage.Stream.Position = position;
+                    }
                 }
             }
 
@@ -205,14 +207,16 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             var binaryMessage = new MinecraftBinaryPacket(id, stream);
             var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
-            var plugin = registries.GetPlugin(type);
 
-            if (transformationsMappings.Get(plugin).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
+            if (registries.TryGetPlugin(type, out var plugin))
             {
-                foreach (var transformation in transformations)
+                if (transformationsMappings.Get(plugin).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
                 {
-                    transformation(wrapper);
-                    buffer.Reset();
+                    foreach (var transformation in transformations)
+                    {
+                        transformation(wrapper);
+                        buffer.Reset();
+                    }
                 }
             }
 

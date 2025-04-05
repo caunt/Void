@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Network;
+﻿using System.Diagnostics.CodeAnalysis;
+using Void.Minecraft.Network;
 using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
@@ -26,26 +27,30 @@ public class MinecraftPacketPluginsRegistry : IMinecraftPacketPluginsRegistry
         return registry;
     }
 
-    public IPlugin GetPlugin<T>() where T : IMinecraftPacket
+    public bool TryGetPlugin<T>([MaybeNullWhen(false)] out IPlugin plugin) where T : IMinecraftPacket
     {
-        return GetPlugin(typeof(T));
+        return TryGetPlugin(typeof(T), out plugin);
     }
 
-    public IPlugin GetPlugin(IMinecraftMessage message)
+    public bool TryGetPlugin(IMinecraftMessage message, [MaybeNullWhen(false)] out IPlugin plugin)
     {
-        return GetPlugin(message.GetType());
+        return TryGetPlugin(message.GetType(), out plugin);
     }
 
-    public IPlugin GetPlugin(Type type)
+    public bool TryGetPlugin(Type type, [MaybeNullWhen(false)] out IPlugin plugin)
     {
-        foreach (var (plugin, registry) in _map)
+        plugin = null;
+
+        foreach (var (candidate, registry) in _map)
         {
             if (registry.Contains(type))
-                return plugin;
-
+            {
+                plugin = candidate;
+                return true;
+            }
         }
 
-        throw new InvalidOperationException("No plugin found for the given message");
+        return false;
     }
 
     public void Remove(IPlugin plugin)

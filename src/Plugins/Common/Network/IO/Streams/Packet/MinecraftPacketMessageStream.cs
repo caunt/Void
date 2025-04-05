@@ -247,16 +247,18 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
             var position = stream.Position;
             var binaryMessage = new MinecraftBinaryPacket(id, stream);
             var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
-            var plugin = PluginsRegistryHolder?.GetPlugin(packet);
 
-            if (TransformationsHolder is not null && plugin is not null)
+            if (PluginsRegistryHolder is not null && PluginsRegistryHolder.TryGetPlugin(packet, out var plugin))
             {
-                if (TransformationsHolder.Get(plugin).TryGetTransformation(packet.GetType(), TransformationType.Downgrade, out var transformations))
+                if (TransformationsHolder is not null)
                 {
-                    foreach (var transformation in transformations)
+                    if (TransformationsHolder.Get(plugin).TryGetTransformation(packet.GetType(), TransformationType.Downgrade, out var transformations))
                     {
-                        transformation(wrapper);
-                        binaryMessage.Stream.Position = position;
+                        foreach (var transformation in transformations)
+                        {
+                            transformation(wrapper);
+                            binaryMessage.Stream.Position = position;
+                        }
                     }
                 }
             }

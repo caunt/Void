@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Network;
+﻿using System.Diagnostics.CodeAnalysis;
+using Void.Minecraft.Network;
 using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
 using Void.Proxy.Api.Plugins;
@@ -13,9 +14,9 @@ public interface IMinecraftPacketPluginsRegistry
     public IReadOnlyCollection<IMinecraftPacketRegistry> All { get; }
 
     public IMinecraftPacketRegistry Get(IPlugin plugin);
-    public IPlugin GetPlugin<T>() where T : IMinecraftPacket;
-    public IPlugin GetPlugin(IMinecraftMessage message);
-    public IPlugin GetPlugin(Type type);
+    public bool TryGetPlugin<T>([MaybeNullWhen(false)] out IPlugin plugin) where T : IMinecraftPacket;
+    public bool TryGetPlugin(IMinecraftMessage message, [MaybeNullWhen(false)] out IPlugin plugin);
+    public bool TryGetPlugin(Type type, [MaybeNullWhen(false)] out IPlugin plugin);
     public void Remove(IPlugin plugin);
     public bool Contains<T>() where T : IMinecraftPacket;
     public bool Contains(IMinecraftMessage message);
