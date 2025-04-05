@@ -8,6 +8,7 @@ using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Links.Extensions;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
 using Void.Proxy.Api.Network.IO.Messages.Binary;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
@@ -53,7 +54,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(@event.Link.Player.ProtocolVersion))
             return;
 
-        var registries = @event.Link.Player.GetPluginsPacketRegistries(@event.Link, @event.Direction);
+        var registries = @event.Link.GetPluginsPacketRegistries(@event.Direction);
 
         if (registries.IsEmpty)
             return;
@@ -88,7 +89,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(@event.Link.Player.ProtocolVersion))
             return;
 
-        var registries = @event.Link.Player.GetPluginsPacketRegistries(@event.Link, @event.Direction);
+        var registries = @event.Link.GetPluginsPacketRegistries(@event.Direction);
 
         if (registries.IsEmpty)
             return;

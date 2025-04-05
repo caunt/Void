@@ -240,6 +240,8 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
 
             var buffer = new MinecraftBuffer(stream);
             packet.Encode(ref buffer, ProtocolVersion);
+
+
         }
 
         return stream;

@@ -4,6 +4,8 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
+using Void.Proxy.Api.Network.IO.Streams.Packet;
+using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
 
 namespace Void.Proxy.Api.Links.Extensions;
 
@@ -30,5 +32,17 @@ public static class MinecraftLinkExtensions
         var events = link.Player.Context.Services.GetRequiredService<IEventService>();
         var direction = side is Side.Client ? Direction.Clientbound : Direction.Serverbound;
         await events.ThrowAsync(new MessageSentEvent(Side.Proxy, Side.Proxy, side, direction, packet, link), cancellationToken);
+    }
+
+    public static IMinecraftPacketRegistryPlugins GetPluginsPacketRegistries(this ILink link, Direction direction)
+    {
+        var channel = direction switch
+        {
+            Direction.Clientbound => link.PlayerChannel,
+            _ => link.ServerChannel
+        };
+
+        var stream = channel.Get<IMinecraftPacketMessageStream>();
+        return stream.PluginsRegistryHolder ?? throw new Exception("Plugins registry holder is not set yet");
     }
 }

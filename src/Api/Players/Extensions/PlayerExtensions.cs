@@ -3,6 +3,7 @@ using Void.Minecraft.Components.Text;
 using Void.Proxy.Api.Events.Chat;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Links.Extensions;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
@@ -10,7 +11,6 @@ using Void.Proxy.Api.Network.IO.Channels.Services;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Extensions;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Services;
 using Void.Proxy.Api.Servers;
@@ -19,10 +19,10 @@ namespace Void.Proxy.Api.Players.Extensions;
 
 public static class PlayerExtensions
 {
-    public static async ValueTask<ChatMessageSendResult> SendChatMessageAsync(this IPlayer player, string text, CancellationToken cancellationToken = default)
+    public static async ValueTask<ChatMessageSendResult> SendChatMessageAsync(this IPlayer player, Component message, CancellationToken cancellationToken = default)
     {
         var events = player.Context.Services.GetRequiredService<IEventService>();
-        return await events.ThrowWithResultAsync(new ChatMessageSendEvent(player, text), cancellationToken);
+        return await events.ThrowWithResultAsync(new ChatMessageSendEvent(player, message), cancellationToken);
     }
 
     public static async ValueTask KickAsync(this IPlayer player, Component? reason = null, CancellationToken cancellationToken = default)
@@ -46,7 +46,7 @@ public static class PlayerExtensions
 
         var link = player.GetLink();
         var direction = typeof(T).IsAssignableTo(typeof(IMinecraftClientboundPacket)) ? Direction.Clientbound : Direction.Serverbound;
-        var registries = player.GetPluginsPacketRegistries(link, direction);
+        var registries = link.GetPluginsPacketRegistries(direction);
         var registry = registries.Get(plugin);
 
         registry.RegisterPacket<T>(player.ProtocolVersion, mappings);
@@ -55,27 +55,15 @@ public static class PlayerExtensions
     public static void RemovePluginPacketRegistry(this IPlayer player, IPlugin plugin)
     {
         var link = player.GetLink();
-        player.GetPluginsPacketRegistries(link, Direction.Clientbound).Remove(plugin);
-        player.GetPluginsPacketRegistries(link, Direction.Serverbound).Remove(plugin);
+        link.GetPluginsPacketRegistries(Direction.Clientbound).Remove(plugin);
+        link.GetPluginsPacketRegistries(Direction.Serverbound).Remove(plugin);
     }
 
     public static void ClearPluginsPacketRegistry(this IPlayer player)
     {
         var link = player.GetLink();
-        player.GetPluginsPacketRegistries(link, Direction.Clientbound).Clear();
-        player.GetPluginsPacketRegistries(link, Direction.Serverbound).Clear();
-    }
-
-    public static IMinecraftPacketRegistryPlugins GetPluginsPacketRegistries(this IPlayer player, ILink link, Direction direction)
-    {
-        var channel = direction switch
-        {
-            Direction.Clientbound => link.PlayerChannel,
-            _ => link.ServerChannel
-        };
-
-        var stream = channel.Get<IMinecraftPacketMessageStream>();
-        return stream.PluginsRegistryHolder ?? throw new Exception("Plugins registry holder is not set yet");
+        link.GetPluginsPacketRegistries(Direction.Clientbound).Clear();
+        link.GetPluginsPacketRegistries(Direction.Serverbound).Clear();
     }
 
     public static ILink GetLink(this IPlayer player)

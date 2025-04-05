@@ -160,24 +160,51 @@ public static class NbtComponentSerializer
     {
         var component = Component.Default;
 
-        if (tag is NbtString tagNbtString)
-            return component with { Content = new TextContent(tagNbtString.Value) };
+        if (tag is NbtString nbtString)
+            return component with { Content = new TextContent(nbtString.Value) };
 
-        if (tag is not NbtCompound tagNbtCompound)
+        DeserializeContent(ref component, tag, protocolVersion);
+        DeserializeChildren(ref component, tag, protocolVersion);
+        DeserializeFormatting(ref component, tag, protocolVersion);
+        DeserializeInteractivity(ref component, tag, protocolVersion);
+
+        return component;
+    }
+
+    private static NbtCompound AsCompound(this NbtTag tag)
+    {
+        if (tag is not NbtCompound nbtCompound)
             throw new NbtException($"Nbt tag {tag.Type} deserialization is not supported");
 
-        if (tagNbtCompound["type"] is NbtString { Value: "text" } || tagNbtCompound.ContainsKey("text"))
+        return nbtCompound;
+    }
+
+    private static T Get<T>(this NbtCompound tag, string key) where T : NbtTag
+    {
+        return TryGet<T>(tag, key) ?? throw new NbtException(tag[key]?.Type.ToString() ?? key);
+    }
+
+    private static T? TryGet<T>(this NbtCompound tag, string key) where T : NbtTag
+    {
+        return tag[key] as T;
+    }
+
+    private static void DeserializeContent(ref Component component, NbtTag tag, ProtocolVersion protocolVersion)
+    {
+        var compound = tag.AsCompound();
+
+        if (compound["type"] is NbtString { Value: "text" } || compound.ContainsKey("text"))
         {
-            var textNbtString = Get<NbtString>(tagNbtCompound, "text");
+            var textNbtString = Get<NbtString>(compound, "text");
 
             component = component with { Content = new TextContent(textNbtString.Value) };
         }
 
-        if (tagNbtCompound["type"] is NbtString { Value: "translatable" } || tagNbtCompound.ContainsKey("translate"))
+        if (compound["type"] is NbtString { Value: "translatable" } || compound.ContainsKey("translate"))
         {
-            var translateNbtString = Get<NbtString>(tagNbtCompound, "translate");
-            var fallbackNbtString = TryGet<NbtString>(tagNbtCompound, "fallback");
-            var withNbtList = TryGet<NbtList>(tagNbtCompound, "with");
+            var translateNbtString = Get<NbtString>(compound, "translate");
+            var fallbackNbtString = TryGet<NbtString>(compound, "fallback");
+            var withNbtList = TryGet<NbtList>(compound, "with");
             var withComponents = withNbtList?.Data.Select(dataTag => dataTag switch
             {
                 { Type: NbtTagType.Compound or NbtTagType.String } value => Deserialize(value, protocolVersion),
@@ -187,19 +214,19 @@ public static class NbtComponentSerializer
             component = component with { Content = new TranslatableContent(translateNbtString.Value, fallbackNbtString?.Value, withComponents) };
         }
 
-        if (tagNbtCompound["type"] is NbtString { Value: "score" } || tagNbtCompound.ContainsKey("score"))
+        if (compound["type"] is NbtString { Value: "score" } || compound.ContainsKey("score"))
         {
-            var scoreNbtCompound = Get<NbtCompound>(tagNbtCompound, "score");
+            var scoreNbtCompound = Get<NbtCompound>(compound, "score");
             var scoreNameNbtString = Get<NbtString>(scoreNbtCompound, "name");
             var scoreObjectiveNbtString = Get<NbtString>(scoreNbtCompound, "objective");
 
             component = component with { Content = new ScoreContent(scoreNameNbtString.Value, scoreObjectiveNbtString.Value) };
         }
 
-        if (tagNbtCompound["type"] is NbtString { Value: "selector" } || tagNbtCompound.ContainsKey("selector"))
+        if (compound["type"] is NbtString { Value: "selector" } || compound.ContainsKey("selector"))
         {
-            var selectorNbtString = Get<NbtString>(tagNbtCompound, "selector");
-            var separatorComponent = TryGet<NbtTag>(tagNbtCompound, "separator") switch
+            var selectorNbtString = Get<NbtString>(compound, "selector");
+            var separatorComponent = TryGet<NbtTag>(compound, "separator") switch
             {
                 { Type: NbtTagType.Compound or NbtTagType.String } value => Deserialize(value, protocolVersion),
                 _ => null
@@ -208,31 +235,36 @@ public static class NbtComponentSerializer
             component = component with { Content = new SelectorContent(selectorNbtString.Value, separatorComponent) };
         }
 
-        if (tagNbtCompound["type"] is NbtString { Value: "keybind" } || tagNbtCompound.ContainsKey("keybind"))
+        if (compound["type"] is NbtString { Value: "keybind" } || compound.ContainsKey("keybind"))
         {
-            var keybindNbtString = Get<NbtString>(tagNbtCompound, "keybind");
+            var keybindNbtString = Get<NbtString>(compound, "keybind");
 
             component = component with { Content = new KeybindContent(keybindNbtString.Value) };
         }
 
-        if (tagNbtCompound["type"] is NbtString { Value: "nbt" } || tagNbtCompound.ContainsKey("nbt"))
+        if (compound["type"] is NbtString { Value: "nbt" } || compound.ContainsKey("nbt"))
         {
-            var sourceNbtString = TryGet<NbtString>(tagNbtCompound, "source");
-            var pathNbtString = Get<NbtString>(tagNbtCompound, "nbt");
-            var interpretNbtString = TryGet<NbtBoolean>(tagNbtCompound, "interpret");
-            var separatorComponent = TryGet<NbtTag>(tagNbtCompound, "separator") switch
+            var sourceNbtString = TryGet<NbtString>(compound, "source");
+            var pathNbtString = Get<NbtString>(compound, "nbt");
+            var interpretNbtString = TryGet<NbtBoolean>(compound, "interpret");
+            var separatorComponent = TryGet<NbtTag>(compound, "separator") switch
             {
                 { Type: NbtTagType.Compound or NbtTagType.String } value => Deserialize(value, protocolVersion),
                 _ => null
             };
-            var blockNbtString = TryGet<NbtString>(tagNbtCompound, "block");
-            var entityNbtString = TryGet<NbtString>(tagNbtCompound, "entity");
-            var storageNbtString = TryGet<NbtString>(tagNbtCompound, "storage");
+            var blockNbtString = TryGet<NbtString>(compound, "block");
+            var entityNbtString = TryGet<NbtString>(compound, "entity");
+            var storageNbtString = TryGet<NbtString>(compound, "storage");
 
             component = component with { Content = new NbtContent(pathNbtString.Value, sourceNbtString?.Value, interpretNbtString?.Value, separatorComponent, blockNbtString?.Value, entityNbtString?.Value, storageNbtString?.Value) };
         }
+    }
 
-        if (TryGet<NbtList>(tagNbtCompound, "extra") is { } extraNbtList)
+    private static void DeserializeChildren(ref Component component, NbtTag tag, ProtocolVersion protocolVersion)
+    {
+        var compound = tag.AsCompound();
+
+        if (TryGet<NbtList>(compound, "extra") is { } extraNbtList)
         {
             var extraComponents = extraNbtList.Data.Select(dataTag => dataTag switch
             {
@@ -243,40 +275,50 @@ public static class NbtComponentSerializer
             if (extraComponents is not null)
                 component = component with { Children = component.Children with { Extra = extraComponents } };
         }
+    }
 
-        if (TryGet<NbtString>(tagNbtCompound, "color") is { } colorNbtString)
+    private static void DeserializeFormatting(ref Component component, NbtTag tag, ProtocolVersion protocolVersion)
+    {
+        var compound = tag.AsCompound();
+
+        if (TryGet<NbtString>(compound, "color") is { } colorNbtString)
             component = component with { Formatting = component.Formatting with { Color = TextColor.FromString(colorNbtString.Value) } };
 
-        if (TryGet<NbtString>(tagNbtCompound, "font") is { } fontNbtString)
+        if (TryGet<NbtString>(compound, "font") is { } fontNbtString)
             component = component with { Formatting = component.Formatting with { Font = fontNbtString.Value } };
 
-        if (TryGet<NbtBoolean>(tagNbtCompound, "bold") is { } boldNbtBoolean)
+        if (TryGet<NbtBoolean>(compound, "bold") is { } boldNbtBoolean)
             component = component with { Formatting = component.Formatting with { IsBold = boldNbtBoolean.Value } };
 
-        if (TryGet<NbtBoolean>(tagNbtCompound, "italic") is { } italicNbtBoolean)
+        if (TryGet<NbtBoolean>(compound, "italic") is { } italicNbtBoolean)
             component = component with { Formatting = component.Formatting with { IsItalic = italicNbtBoolean.Value } };
 
-        if (TryGet<NbtBoolean>(tagNbtCompound, "underlined") is { } underlinedNbtBoolean)
+        if (TryGet<NbtBoolean>(compound, "underlined") is { } underlinedNbtBoolean)
             component = component with { Formatting = component.Formatting with { IsUnderlined = underlinedNbtBoolean.Value } };
 
-        if (TryGet<NbtBoolean>(tagNbtCompound, "strikethrough") is { } strikethroughNbtBoolean)
+        if (TryGet<NbtBoolean>(compound, "strikethrough") is { } strikethroughNbtBoolean)
             component = component with { Formatting = component.Formatting with { IsStrikethrough = strikethroughNbtBoolean.Value } };
 
-        if (TryGet<NbtBoolean>(tagNbtCompound, "obfuscated") is { } obfuscatedNbtBoolean)
+        if (TryGet<NbtBoolean>(compound, "obfuscated") is { } obfuscatedNbtBoolean)
             component = component with { Formatting = component.Formatting with { IsObfuscated = obfuscatedNbtBoolean.Value } };
 
-        if (TryGet<NbtTag>(tagNbtCompound, "shadow_color") is { } shadowColorNbtTag)
+        if (TryGet<NbtTag>(compound, "shadow_color") is { } shadowColorNbtTag)
         {
             if (shadowColorNbtTag is NbtList { DataType: NbtTagType.Float } shadowColorNbtList)
                 component = component with { Formatting = component.Formatting with { ShadowColor = shadowColorNbtList.Data.Select(dataTag => ((NbtFloat)dataTag).Value).ToArray() } };
             else if (shadowColorNbtTag is NbtInt shadowColorNbtInt)
                 component = component with { Formatting = component.Formatting with { ShadowColor = shadowColorNbtInt.Value } };
         }
+    }
 
-        if (TryGet<NbtString>(tagNbtCompound, "insertion") is { } insertionNbtString)
+    private static void DeserializeInteractivity(ref Component component, NbtTag tag, ProtocolVersion protocolVersion)
+    {
+        var compound = tag.AsCompound();
+
+        if (TryGet<NbtString>(compound, "insertion") is { } insertionNbtString)
             component = component with { Interactivity = component.Interactivity with { Insertion = insertionNbtString.Value } };
 
-        if (TryGet<NbtCompound>(tagNbtCompound, "clickEvent") is { } clickEventNbtCompound)
+        if (TryGet<NbtCompound>(compound, "clickEvent") is { } clickEventNbtCompound)
         {
             var actionNbtString = Get<NbtString>(clickEventNbtCompound, "action");
             var valueNbtString = Get<NbtString>(clickEventNbtCompound, "value");
@@ -295,7 +337,7 @@ public static class NbtComponentSerializer
             component = component with { Interactivity = component.Interactivity with { ClickEvent = new ClickEvent(action, valueNbtString.Value) } };
         }
 
-        if (TryGet<NbtCompound>(tagNbtCompound, "hoverEvent") is { } hoverEventNbtCompound)
+        if (TryGet<NbtCompound>(compound, "hoverEvent") is { } hoverEventNbtCompound)
         {
             var actionNbtString = Get<NbtString>(hoverEventNbtCompound, "action");
             var contentsNbtTag = Get<NbtTag>(hoverEventNbtCompound, "contents");
@@ -326,18 +368,6 @@ public static class NbtComponentSerializer
             };
 
             component = component with { Interactivity = component.Interactivity with { HoverEvent = new HoverEvent(content) } };
-        }
-
-        return component;
-
-        static T Get<T>(NbtCompound tag, string key) where T : NbtTag
-        {
-            return TryGet<T>(tag, key) ?? throw new NbtException(tag[key]?.Type.ToString() ?? key);
-        }
-
-        static T? TryGet<T>(NbtCompound tag, string key) where T : NbtTag
-        {
-            return tag[key] as T;
         }
     }
 }
