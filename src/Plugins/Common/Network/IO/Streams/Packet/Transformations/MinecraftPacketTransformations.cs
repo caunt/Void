@@ -30,9 +30,9 @@ public class MinecraftPacketTransformations : IMinecraftPacketTransformations
         return GetMappings(transformationType).Keys.Any(packetType.IsAssignableFrom);
     }
 
-    public bool TryGetTransformation(IMinecraftPacket packet, TransformationType type, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformation)
+    public bool TryGetTransformation(Type packetType, TransformationType type, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformation)
     {
-        return GetMappings(type).TryGetValue(packet.GetType(), out transformation);
+        return GetMappings(type).TryGetValue(packetType, out transformation);
     }
 
     public IMinecraftPacketTransformations ReplaceTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> transformations, ProtocolVersion protocolVersion)

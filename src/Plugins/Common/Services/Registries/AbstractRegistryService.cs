@@ -14,11 +14,14 @@ using Void.Proxy.Api.Network.IO.Messages.Binary;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
+using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 using Void.Proxy.Api.Network.IO.Streams.Recyclable;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Common.Extensions;
+using Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
+using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Transformations;
 
 namespace Void.Proxy.Plugins.Common.Services.Registries;
 
@@ -62,12 +65,14 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (registries.Contains(@event.Message))
             return;
 
+        var transformations = @event.Link.GetPacketPluginsTransformations(@event.Direction);
+
         try
         {
             var packets = @event.Message switch
             {
-                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registries, binaryMessage),
-                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, registries, minecraftPacket),
+                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registries, transformations, binaryMessage),
+                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, registries, transformations, minecraftPacket),
                 _ => null
             };
 
@@ -97,12 +102,14 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (registries.Contains(@event.Message))
             return;
 
+        var transformations = @event.Link.GetPacketPluginsTransformations(@event.Direction);
+
         try
         {
             var packets = @event.Message switch
             {
-                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registries, binaryMessage),
-                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, registries, minecraftPacket),
+                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registries, transformations, binaryMessage),
+                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, registries, transformations, minecraftPacket),
                 _ => null
             };
 
@@ -140,14 +147,27 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, IMinecraftPacketPluginsRegistry registries, IMinecraftBinaryMessage binaryMessage)
+    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, IMinecraftPacketPluginsRegistry registries, IMinecraftPacketPluginsTransformations transformationsMappings, IMinecraftBinaryMessage binaryMessage)
     {
         foreach (var registry in registries.All)
         {
-            if (!registry.TryCreateDecoder(binaryMessage.Id, out var decoder))
+            if (!registry.TryCreateDecoder(binaryMessage.Id, out var type, out var decoder))
                 continue;
 
             var position = binaryMessage.Stream.Position;
+            var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
+
+            if (registries.ManagedBy is not null)
+            {
+                if (transformationsMappings.Get(registries.ManagedBy).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
+                {
+                    foreach (var transformation in transformations)
+                    {
+                        transformation(wrapper);
+                        binaryMessage.Stream.Position = position;
+                    }
+                }
+            }
 
             var buffer = new MinecraftBuffer(binaryMessage.Stream);
             var packet = decoder(ref buffer, link.Player.ProtocolVersion);
@@ -158,7 +178,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, IMinecraftPacketPluginsRegistry registries, IMinecraftPacket minecraftPacket)
+    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, IMinecraftPacketPluginsRegistry registries, IMinecraftPacketPluginsTransformations transformationsMappings, IMinecraftPacket minecraftPacket)
     {
         var playerPacketRegistryHolder = link.PlayerChannel.GetSystemPacketRegistryHolder();
         var serverPacketRegistryHolder = link.ServerChannel.GetSystemPacketRegistryHolder();
@@ -169,7 +189,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
         foreach (var registry in registries.All)
         {
-            if (!registry.TryCreateDecoder(id, out var decoder))
+            if (!registry.TryCreateDecoder(id, out var type, out var decoder))
                 continue;
 
             using var stream = MinecraftRecyclableStream.RecyclableMemoryStreamManager.GetStream();
@@ -177,6 +197,21 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             minecraftPacket.Encode(ref buffer, link.Player.ProtocolVersion);
             buffer.Reset();
+
+            var binaryMessage = new MinecraftBinaryPacket(id, stream);
+            var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
+
+            if (registries.ManagedBy is not null)
+            {
+                if (transformationsMappings.Get(registries.ManagedBy).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
+                {
+                    foreach (var transformation in transformations)
+                    {
+                        transformation(wrapper);
+                        buffer.Reset();
+                    }
+                }
+            }
 
             yield return decoder(ref buffer, link.Player.ProtocolVersion);
         }
