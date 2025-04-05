@@ -2,24 +2,24 @@
 using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
+using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 using Void.Proxy.Api.Plugins;
 
-namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Registries;
+namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Transformations;
 
-public class MinecraftPacketRegistryPlugins : IMinecraftPacketRegistryPlugins
+public class MinecraftPacketPluginsTransformations : IMinecraftPacketPluginsTransformations
 {
-    private Dictionary<IPlugin, IMinecraftPacketRegistry> _map = [];
+    private Dictionary<IPlugin, IMinecraftPacketTransformations> _map = [];
 
     public bool IsEmpty => All.All(registry => registry.IsEmpty);
     public ProtocolVersion? ProtocolVersion { get; set; }
     public IPlugin? ManagedBy { get; set; }
-    public IReadOnlyCollection<IMinecraftPacketRegistry> All => _map.Values;
+    public IReadOnlyCollection<IMinecraftPacketTransformations> All => _map.Values;
 
-    public IMinecraftPacketRegistry Get(IPlugin plugin)
+    public IMinecraftPacketTransformations Get(IPlugin plugin)
     {
         if (!_map.TryGetValue(plugin, out var registry))
-            _map[plugin] = registry = new MinecraftPacketRegistry();
+            _map[plugin] = registry = new MinecraftPacketTransformations();
 
         return registry;
     }
@@ -44,20 +44,20 @@ public class MinecraftPacketRegistryPlugins : IMinecraftPacketRegistryPlugins
         return All.Any(registry => registry.Contains(type));
     }
 
-    public void ReplacePackets(IPlugin plugin, IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings)
+    public void ReplacePackets(IPlugin plugin, IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> mappings)
     {
         if (ProtocolVersion is null)
             throw new InvalidOperationException("Protocol version is not set yet");
 
-        _map[plugin].ReplacePackets(mappings, ProtocolVersion);
+        _map[plugin].ReplaceTransformations(mappings, ProtocolVersion);
     }
 
-    public void AddPackets(IPlugin plugin, IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings)
+    public void AddPackets(IPlugin plugin, IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> mappings)
     {
         if (ProtocolVersion is null)
             throw new InvalidOperationException("Protocol version is not set yet");
 
-        _map[plugin].AddPackets(mappings, ProtocolVersion);
+        _map[plugin].AddTransformations(mappings, ProtocolVersion);
     }
 
     public void Clear()

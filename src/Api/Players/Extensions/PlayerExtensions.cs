@@ -37,33 +37,38 @@ public static class PlayerExtensions
         await channel.SendPacketAsync(packet, cancellationToken);
     }
 
-    public static void RegisterPacket<T>(this IPlayer player, params MinecraftPacketMapping[] mappings) where T : IMinecraftPacket
+    public static void RegisterPacket<T>(this IPlayer player, params MinecraftPacketIdMapping[] mappings) where T : IMinecraftPacket
     {
-        var packetType = typeof(T);
-        var plugins = player.Context.Services.GetRequiredService<IPluginService>();
-        var plugin = plugins.All.FirstOrDefault(plugin => plugin.GetType().Assembly == packetType.Assembly)
-            ?? throw new InvalidOperationException($"Plugin for packet {packetType.Name} not found.");
-
+        var plugin = GetPacketPlugin<T>(player.Context.Services);
         var link = player.GetLink();
         var direction = typeof(T).IsAssignableTo(typeof(IMinecraftClientboundPacket)) ? Direction.Clientbound : Direction.Serverbound;
-        var registries = link.GetPluginsPacketRegistries(direction);
-        var registry = registries.Get(plugin);
+        var registry = link.GetPacketPluginsRegistries(direction).Get(plugin);
 
         registry.RegisterPacket<T>(player.ProtocolVersion, mappings);
+    }
+
+    public static void RegisterTransformations<T>(this IPlayer player, params MinecraftPacketTransformationMapping[] mappings) where T : IMinecraftPacket
+    {
+        var plugin = GetPacketPlugin<T>(player.Context.Services);
+        var link = player.GetLink();
+        var direction = typeof(T).IsAssignableTo(typeof(IMinecraftClientboundPacket)) ? Direction.Clientbound : Direction.Serverbound;
+        var transformations = link.GetPacketPluginsTransformations(direction).Get(plugin);
+
+        transformations.RegisterTransformations<T>(player.ProtocolVersion, mappings);
     }
 
     public static void RemovePluginPacketRegistry(this IPlayer player, IPlugin plugin)
     {
         var link = player.GetLink();
-        link.GetPluginsPacketRegistries(Direction.Clientbound).Remove(plugin);
-        link.GetPluginsPacketRegistries(Direction.Serverbound).Remove(plugin);
+        link.GetPacketPluginsRegistries(Direction.Clientbound).Remove(plugin);
+        link.GetPacketPluginsRegistries(Direction.Serverbound).Remove(plugin);
     }
 
     public static void ClearPluginsPacketRegistry(this IPlayer player)
     {
         var link = player.GetLink();
-        link.GetPluginsPacketRegistries(Direction.Clientbound).Clear();
-        link.GetPluginsPacketRegistries(Direction.Serverbound).Clear();
+        link.GetPacketPluginsRegistries(Direction.Clientbound).Clear();
+        link.GetPacketPluginsRegistries(Direction.Serverbound).Clear();
     }
 
     public static ILink GetLink(this IPlayer player)
@@ -105,5 +110,15 @@ public static class PlayerExtensions
         await channelBuilder.SearchChannelBuilderAsync(player, cancellationToken);
 
         return channelBuilder;
+    }
+
+    private static IPlugin GetPacketPlugin<T>(IServiceProvider services) where T : IMinecraftPacket
+    {
+        var packetType = typeof(T);
+        var plugins = services.GetRequiredService<IPluginService>();
+        var plugin = plugins.All.FirstOrDefault(plugin => plugin.GetType().Assembly == packetType.Assembly)
+            ?? throw new InvalidOperationException($"Plugin for packet {packetType.Name} not found.");
+
+        return plugin;
     }
 }

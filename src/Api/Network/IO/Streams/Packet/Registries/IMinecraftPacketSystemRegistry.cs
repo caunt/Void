@@ -5,7 +5,7 @@ using Void.Proxy.Api.Plugins;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
 
-public interface IMinecraftPacketRegistrySystem
+public interface IMinecraftPacketSystemRegistry
 {
     public bool IsEmpty { get; }
     public ProtocolVersion? ProtocolVersion { get; set; }
@@ -16,7 +16,7 @@ public interface IMinecraftPacketRegistrySystem
     public bool Contains<T>() where T : IMinecraftPacket;
     public bool Contains(Type type);
     public bool Contains(IMinecraftMessage packet);
-    public void ReplacePackets(Operation operation, IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings);
-    public void AddPackets(Operation operation, IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings);
+    public void ReplacePackets(Operation operation, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings);
+    public void AddPackets(Operation operation, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings);
     public void Reset();
 }

@@ -54,7 +54,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(@event.Link.Player.ProtocolVersion))
             return;
 
-        var registries = @event.Link.GetPluginsPacketRegistries(@event.Direction);
+        var registries = @event.Link.GetPacketPluginsRegistries(@event.Direction);
 
         if (registries.IsEmpty)
             return;
@@ -89,7 +89,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(@event.Link.Player.ProtocolVersion))
             return;
 
-        var registries = @event.Link.GetPluginsPacketRegistries(@event.Direction);
+        var registries = @event.Link.GetPacketPluginsRegistries(@event.Direction);
 
         if (registries.IsEmpty)
             return;
@@ -140,7 +140,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, IMinecraftPacketRegistryPlugins registries, IMinecraftBinaryMessage binaryMessage)
+    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, IMinecraftPacketPluginsRegistry registries, IMinecraftBinaryMessage binaryMessage)
     {
         foreach (var registry in registries.All)
         {
@@ -158,7 +158,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, IMinecraftPacketRegistryPlugins registries, IMinecraftPacket minecraftPacket)
+    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, IMinecraftPacketPluginsRegistry registries, IMinecraftPacket minecraftPacket)
     {
         var playerPacketRegistryHolder = link.PlayerChannel.GetSystemPacketRegistryHolder();
         var serverPacketRegistryHolder = link.ServerChannel.GetSystemPacketRegistryHolder();

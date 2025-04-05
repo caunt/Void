@@ -31,7 +31,7 @@ public static class ChannelExtensions
         return packet;
     }
 
-    public static void SetReadingPacketsMappings(this IMinecraftChannel channel, IPlugin plugin, IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings)
+    public static void SetReadingPacketsMappings(this IMinecraftChannel channel, IPlugin plugin, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings)
     {
         var registry = channel.GetSystemPacketRegistryHolder();
 
@@ -41,7 +41,7 @@ public static class ChannelExtensions
         registry.ReplacePackets(Operation.Read, mappings);
     }
 
-    public static void SetWritingPacketsMappings(this IMinecraftChannel channel, IPlugin plugin, IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings)
+    public static void SetWritingPacketsMappings(this IMinecraftChannel channel, IPlugin plugin, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings)
     {
         var registry = channel.GetSystemPacketRegistryHolder();
 

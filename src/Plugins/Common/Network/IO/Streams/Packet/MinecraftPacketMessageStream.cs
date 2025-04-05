@@ -8,6 +8,7 @@ using Void.Proxy.Api.Network.IO.Streams.Manual;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Packet;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
+using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 using Void.Proxy.Api.Network.IO.Streams.Recyclable;
 using Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
 
@@ -20,8 +21,9 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
     public bool CanRead => BaseStream?.CanRead ?? false;
     public bool CanWrite => BaseStream?.CanWrite ?? false;
     public bool IsAlive => BaseStream?.IsAlive ?? false;
-    public IMinecraftPacketRegistrySystem? SystemRegistryHolder { get; set; }
-    public IMinecraftPacketRegistryPlugins? PluginsRegistryHolder { get; set; }
+    public IMinecraftPacketSystemRegistry? SystemRegistryHolder { get; set; }
+    public IMinecraftPacketPluginsRegistry? PluginsRegistryHolder { get; set; }
+    public IMinecraftPacketPluginsTransformations? TransformationsHolder { get; set; }
 
     public IMinecraftPacket ReadPacket()
     {

@@ -8,7 +8,7 @@ using Void.Proxy.Api.Plugins;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Registries;
 
-public class MinecraftPacketRegistrySystem : IMinecraftPacketRegistrySystem
+public class MinecraftPacketSystemRegistry : IMinecraftPacketSystemRegistry
 {
     public bool IsEmpty => this is { Read.IsEmpty: true, Write.IsEmpty: true, ManagedBy: null };
     public ProtocolVersion? ProtocolVersion { get; set; }
@@ -31,7 +31,7 @@ public class MinecraftPacketRegistrySystem : IMinecraftPacketRegistrySystem
         return Read.Contains(type) || Write.Contains(type);
     }
 
-    public void ReplacePackets(Operation operation, IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings)
+    public void ReplacePackets(Operation operation, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings)
     {
         if (ProtocolVersion is null)
             throw new InvalidOperationException("Protocol version is not set yet");
@@ -53,7 +53,7 @@ public class MinecraftPacketRegistrySystem : IMinecraftPacketRegistrySystem
         }
     }
 
-    public void AddPackets(Operation operation, IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings)
+    public void AddPackets(Operation operation, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings)
     {
         if (ProtocolVersion is null)
             throw new InvalidOperationException("Protocol version is not set yet");

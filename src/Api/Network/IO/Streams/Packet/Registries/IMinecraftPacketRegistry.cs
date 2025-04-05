@@ -15,7 +15,7 @@ public interface IMinecraftPacketRegistry
     public bool Contains(Type type);
     public bool TryCreateDecoder(int id, [MaybeNullWhen(false)] out MinecraftPacketDecoder<IMinecraftPacket> packet);
     public bool TryGetPacketId(IMinecraftPacket packet, [MaybeNullWhen(false)] out int id);
-    public IMinecraftPacketRegistry ReplacePackets(IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings, ProtocolVersion protocolVersion);
-    public IMinecraftPacketRegistry AddPackets(IReadOnlyDictionary<MinecraftPacketMapping[], Type> mappings, ProtocolVersion protocolVersion);
+    public IMinecraftPacketRegistry ReplacePackets(IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings, ProtocolVersion protocolVersion);
+    public IMinecraftPacketRegistry AddPackets(IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings, ProtocolVersion protocolVersion);
     public void Clear();
 }

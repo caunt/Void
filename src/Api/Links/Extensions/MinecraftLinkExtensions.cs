@@ -2,10 +2,12 @@
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
+using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 
 namespace Void.Proxy.Api.Links.Extensions;
 
@@ -34,15 +36,27 @@ public static class MinecraftLinkExtensions
         await events.ThrowAsync(new MessageSentEvent(Side.Proxy, Side.Proxy, side, direction, packet, link), cancellationToken);
     }
 
-    public static IMinecraftPacketRegistryPlugins GetPluginsPacketRegistries(this ILink link, Direction direction)
+    public static IMinecraftPacketPluginsRegistry GetPacketPluginsRegistries(this ILink link, Direction direction)
     {
-        var channel = direction switch
-        {
-            Direction.Clientbound => link.PlayerChannel,
-            _ => link.ServerChannel
-        };
-
+        var channel = link.GetChannel(direction);
         var stream = channel.Get<IMinecraftPacketMessageStream>();
         return stream.PluginsRegistryHolder ?? throw new Exception("Plugins registry holder is not set yet");
+    }
+
+    public static IMinecraftPacketPluginsTransformations GetPacketPluginsTransformations(this ILink link, Direction direction)
+    {
+        var channel = link.GetChannel(direction);
+        var stream = channel.Get<IMinecraftPacketMessageStream>();
+        return stream.TransformationsHolder ?? throw new Exception("Plugins transformations holder is not set yet");
+    }
+
+    public static IMinecraftChannel GetChannel(this ILink link, Direction direction)
+    {
+        return direction switch
+        {
+            Direction.Clientbound => link.PlayerChannel,
+            Direction.Serverbound => link.ServerChannel,
+            _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+        };
     }
 }

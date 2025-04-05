@@ -11,19 +11,19 @@ public static class MinecraftChannelExtensions
         await channel.WriteMessageAsync(packet, cancellationToken);
     }
 
-    public static IMinecraftPacketRegistrySystem GetSystemPacketRegistryHolder(this IMinecraftChannel channel)
+    public static IMinecraftPacketSystemRegistry GetSystemPacketRegistryHolder(this IMinecraftChannel channel)
     {
         if (channel.TryGet<IMinecraftPacketMessageStream>(out var stream) && stream.SystemRegistryHolder is { } registry)
             return registry;
 
-        throw new InvalidOperationException($"{nameof(IMinecraftPacketRegistrySystem)} is not set yet on this channel");
+        throw new InvalidOperationException($"{nameof(IMinecraftPacketSystemRegistry)} is not set yet on this channel");
     }
 
-    public static IMinecraftPacketRegistryPlugins GetPluginsPacketRegistryHolder(this IMinecraftChannel channel)
+    public static IMinecraftPacketPluginsRegistry GetPluginsPacketRegistryHolder(this IMinecraftChannel channel)
     {
         if (channel.TryGet<IMinecraftPacketMessageStream>(out var stream) && stream.PluginsRegistryHolder is { } registry)
             return registry;
 
-        throw new InvalidOperationException($"{nameof(IMinecraftPacketRegistryPlugins)} is not set yet on this channel");
+        throw new InvalidOperationException($"{nameof(IMinecraftPacketPluginsRegistry)} is not set yet on this channel");
     }
 }
