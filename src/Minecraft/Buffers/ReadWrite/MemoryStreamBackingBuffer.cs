@@ -8,7 +8,7 @@ namespace Void.Minecraft.Buffers.ReadWrite;
 internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
 {
     public readonly long Position => memoryStream.Position;
-    public long Length { get; } = memoryStream.Length;
+    public readonly long Length => memoryStream.Length;
 
     public readonly byte ReadUnsignedByte()
     {
