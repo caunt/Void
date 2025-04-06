@@ -11,7 +11,34 @@ on:
 
 jobs:
   Build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            runtime: linux-arm
+          - os: ubuntu-latest
+            runtime: linux-arm64
+          - os: ubuntu-latest
+            runtime: linux-bionic-arm64
+          - os: ubuntu-latest
+            runtime: linux-musl-arm
+          - os: ubuntu-latest
+            runtime: linux-musl-arm64
+          - os: ubuntu-latest
+            runtime: linux-musl-x64
+          - os: ubuntu-latest
+            runtime: linux-x64
+          - os: macos-latest
+            runtime: osx-arm64
+          - os: macos-latest
+            runtime: osx-x64
+          - os: windows-latest
+            runtime: win-arm64
+          - os: windows-latest
+            runtime: win-x64
+          - os: windows-latest
+            runtime: win-x86
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
@@ -22,19 +49,19 @@ jobs:
         dotnet-version: '9'
     
     - name: Restore dependencies
-      run: dotnet restore --runtime linux-x64
+      run: dotnet restore --runtime ${{ matrix.runtime }}
     
     - name: Build
       run: dotnet build --configuration Release --no-restore
     
     - name: Build Platform
-      run: dotnet build src/Platform --runtime linux-x64 --self-contained --configuration Release --no-restore
+      run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release --no-restore
     
     - name: Test
-      run: dotnet test --runtime linux-x64 --no-build --verbosity normal
+      run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal
     
     - name: Publish
-      run: dotnet publish --runtime linux-x64 --self-contained -p:PublishSingleFile=true src/Platform --output artifacts --configuration Release --no-build
+      run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained -p:PublishSingleFile=true src/Platform --output artifacts/${{ matrix.runtime }} --configuration Release --no-build
 
 #     - name: Setup tmate session
 #       uses: mxschmitt/action-tmate@v3
@@ -42,5 +69,5 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.6.2
       with:
-        name: app
-        path: artifacts
+        name: app-${{ matrix.runtime }}
+        path: artifacts/${{ matrix.runtime }}
