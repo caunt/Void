@@ -9,7 +9,7 @@ public record ListProperty<TPacketProperty>(List<TPacketProperty> Values) : IPac
         return Read(ref buffer, buffer.ReadVarInt());
     }
 
-    public static ListProperty<TPacketProperty> Read(ref MinecraftBuffer buffer, int size = int.MinValue)
+    public static ListProperty<TPacketProperty> Read(ref MinecraftBuffer buffer, int size)
     {
         if (size == 0)
             return new([]);
