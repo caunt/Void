@@ -55,7 +55,7 @@ jobs:
       run: dotnet build --configuration Release --no-restore
     
     - name: Build Platform
-      run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release --no-restore
+      run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained -p:PublishSingleFile=true -p:DebugType=embedded --configuration Release --no-restore
     
     - name: Test
       run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal
