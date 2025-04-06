@@ -14,6 +14,7 @@ using Void.Proxy.Api.Network.IO.Channels.Extensions;
 using Void.Proxy.Api.Network.IO.Messages.Binary;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet;
+using Void.Proxy.Api.Network.IO.Streams.Packet.Extensions;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 using Void.Proxy.Api.Players;
@@ -160,50 +161,52 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             if (!registry.TryCreateDecoder(binaryMessage.Id, out var type, out var decoder))
                 continue;
 
-            // var position = binaryMessage.Stream.Position;
-            // var buffer = new MinecraftBuffer(binaryMessage.Stream);
-            // var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
-            // 
-            // if (registries.TryGetTransformations(transformationsMappings, type, out var transformations))
-            // {
-            //     foreach (var transformation in transformations)
-            //     {
-            //         binaryMessage.Stream.Position = position;
-            //         transformation(wrapper);
-            //         wrapper.Reset();
-            //     }
-            // }
-
-
-            var tempStream = new MemoryStream();
-            var tempBuffer = new MinecraftBuffer(tempStream);
-
             var position = binaryMessage.Stream.Position;
-            tempBuffer.Write(binaryMessage.Stream);
+            var buffer = new MinecraftBuffer(binaryMessage.Stream);
+            var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
 
-            var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(binaryMessage.Id, tempStream));
-
-            if (registries.TryGetPlugin(type, out var plugin))
+            if (registries.TryGetTransformations(transformationsMappings, type, out var transformations))
             {
-                if (transformationsMappings.Get(plugin).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
+                foreach (var transformation in transformations)
                 {
-                    foreach (var transformation in transformations)
-                    {
-                        tempStream.Position = 0;
-                        transformation(wrapper);
-                        wrapper.Reset();
-                    }
+                    transformation(wrapper);
+                    wrapper.Reset();
+                    binaryMessage.Stream.Position = position;
                 }
             }
 
-            var buffer = new MinecraftBuffer(tempStream);
-            buffer.Reset();
-            wrapper.WriteProcessedValues(ref buffer);
-            buffer.Reset();
-
             var packet = decoder(ref buffer, link.Player.ProtocolVersion);
-
             binaryMessage.Stream.Position = position;
+
+            // var tempStream = new MemoryStream();
+            // var tempBuffer = new MinecraftBuffer(tempStream);
+            // 
+            // var position = binaryMessage.Stream.Position;
+            // tempBuffer.Write(binaryMessage.Stream);
+            // 
+            // var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(binaryMessage.Id, tempStream));
+            // 
+            // if (registries.TryGetPlugin(type, out var plugin))
+            // {
+            //     if (transformationsMappings.Get(plugin).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
+            //     {
+            //         foreach (var transformation in transformations)
+            //         {
+            //             tempStream.Position = 0;
+            //             transformation(wrapper);
+            //             wrapper.Reset();
+            //         }
+            //     }
+            // }
+            // 
+            // var buffer = new MinecraftBuffer(tempStream);
+            // buffer.Reset();
+            // wrapper.WriteProcessedValues(ref buffer);
+            // buffer.Reset();
+            // 
+            // var packet = decoder(ref buffer, link.Player.ProtocolVersion);
+            // 
+            // binaryMessage.Stream.Position = position;
 
             yield return packet;
         }
