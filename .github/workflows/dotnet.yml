@@ -63,8 +63,8 @@ jobs:
     - name: Publish
       run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained -p:PublishSingleFile=true -p:DebugType=embedded src/Platform --output artifacts/${{ matrix.runtime }} --configuration Release --no-build
 
-#     - name: Setup tmate session
-#       uses: mxschmitt/action-tmate@v3
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
 
     - name: Rename artifact file (Linux/macOS)
       if: runner.os != 'Windows'
