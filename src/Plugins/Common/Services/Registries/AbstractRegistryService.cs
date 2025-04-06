@@ -175,16 +175,15 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
                 {
                     foreach (var transformation in transformations)
                     {
+                        tempStream.Position = 0;
                         transformation(wrapper);
                         wrapper.ResetReader();
-                        tempStream.Position = 0;
                     }
                 }
             }
 
             var buffer = new MinecraftBuffer(tempStream);
             wrapper.WriteProcessedValues(buffer);
-            buffer.Reset();
 
             var packet = decoder(ref buffer, link.Player.ProtocolVersion);
 
