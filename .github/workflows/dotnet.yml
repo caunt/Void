@@ -70,4 +70,4 @@ jobs:
       uses: actions/upload-artifact@v4.6.2
       with:
         name: void-${{ matrix.runtime }}
-        path: artifacts/${{ matrix.runtime }}/Void
+        path: artifacts/Void
