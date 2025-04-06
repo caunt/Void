@@ -34,7 +34,7 @@ jobs:
       run: dotnet publish --configuration Release --no-build
 
     - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3.19
+      uses: mxschmitt/action-tmate@v3
 
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.6.2
