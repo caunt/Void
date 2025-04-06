@@ -79,6 +79,7 @@ jobs:
     
     - name: Upload a Build Artifact (non-Windows)
       if: runner.os != 'Windows'
+      id: upload_nonwindows
       uses: actions/upload-artifact@v4.6.2
       with:
         name: void-${{ matrix.runtime }}
@@ -86,11 +87,20 @@ jobs:
         compression-level: 9
         if-no-files-found: error
 
+    - name: Echo Download URL (non-Windows)
+      if: runner.os != 'Windows'
+      run: echo "Download URL: ${{ steps.upload_nonwindows.outputs.artifact-url }}"
+
     - name: Upload a Build Artifact (Windows)
       if: runner.os == 'Windows'
+      id: upload_windows
       uses: actions/upload-artifact@v4.6.2
       with:
         name: void-${{ matrix.runtime }}
         path: artifacts/${{ matrix.runtime }}/void.exe
         compression-level: 9
         if-no-files-found: error
+
+    - name: Echo Download URL (Windows)
+      if: runner.os == 'Windows'
+      run: echo "Download URL: ${{ steps.upload_windows.outputs.artifact-url }}"
