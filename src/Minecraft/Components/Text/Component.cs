@@ -1,5 +1,4 @@
 ﻿using SharpNBT.SNBT;
-using System;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Void.Minecraft.Buffers;
@@ -28,7 +27,7 @@ public record Component(IContent Content, Children Children, Formatting Formatti
             {
                 node = JsonNode.Parse(value);
             }
-            catch (Exception exception) when (exception is JsonException)
+            catch (JsonException)
             {
                 // ignore, not a json
             }

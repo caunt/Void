@@ -77,7 +77,7 @@ public class NbtReader(Stream stream, FormatOptions options, bool leaveOpen = fa
             TagType.Compound => ReadCompound(named),
             TagType.IntArray => ReadIntArray(named),
             TagType.LongArray => ReadLongArray(named),
-            _ => throw new ArgumentOutOfRangeException("type", type, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null),
         };
 
         OnTagRead(tag2);
@@ -86,14 +86,12 @@ public class NbtReader(Stream stream, FormatOptions options, bool leaveOpen = fa
 
     private TagType ReadType()
     {
-        try
-        {
-            return (TagType)BaseStream.ReadByte();
-        }
-        catch (EndOfStreamException)
-        {
+        var value = BaseStream.ReadByte();
+
+        if (value is -1)
             return TagType.End;
-        }
+
+        return (TagType)value;
     }
 
     private int ReadCount()

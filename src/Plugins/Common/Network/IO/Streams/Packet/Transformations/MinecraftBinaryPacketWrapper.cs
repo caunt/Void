@@ -89,7 +89,7 @@ public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message) : IMi
         _write.Clear();
     }
 
-    public void WriteProcessedValues(MinecraftBuffer buffer)
+    public void WriteProcessedValues(ref MinecraftBuffer buffer)
     {
         if (_read.Count == 0)
         {

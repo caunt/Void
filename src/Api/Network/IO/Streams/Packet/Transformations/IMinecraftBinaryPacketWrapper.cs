@@ -13,6 +13,6 @@ public interface IMinecraftBinaryPacketWrapper
     public TPropertyValue Read<TPropertyValue>() where TPropertyValue : class, IPacketProperty<TPropertyValue>;
     public void Write<TPropertyValue>(TPropertyValue value) where TPropertyValue : class, IPacketProperty<TPropertyValue>;
     public TPropertyValue Passthrough<TPropertyValue>() where TPropertyValue : class, IPacketProperty<TPropertyValue>;
-    public void WriteProcessedValues(MinecraftBuffer buffer);
+    public void WriteProcessedValues(ref MinecraftBuffer buffer);
     public void ResetReader();
 }

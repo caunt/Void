@@ -184,7 +184,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             var buffer = new MinecraftBuffer(tempStream);
             buffer.Reset();
-            wrapper.WriteProcessedValues(buffer);
+            wrapper.WriteProcessedValues(ref buffer);
             buffer.Reset();
 
             var packet = decoder(ref buffer, link.Player.ProtocolVersion);
@@ -233,7 +233,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             using var tempStream = MinecraftRecyclableStream.RecyclableMemoryStreamManager.GetStream();
             var tempBuffer = new MinecraftBuffer(tempStream);
-            wrapper.WriteProcessedValues(tempBuffer);
+            wrapper.WriteProcessedValues(ref tempBuffer);
             tempBuffer.Reset();
 
             yield return decoder(ref tempBuffer, link.Player.ProtocolVersion);

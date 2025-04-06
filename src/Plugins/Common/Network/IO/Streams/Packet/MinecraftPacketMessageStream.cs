@@ -268,7 +268,7 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
                 }
             }
 
-            wrapper.WriteProcessedValues(buffer);
+            wrapper.WriteProcessedValues(ref buffer);
         }
 
         return stream;
