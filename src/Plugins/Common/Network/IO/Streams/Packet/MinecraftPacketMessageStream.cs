@@ -287,8 +287,8 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
 
         if (SystemRegistryHolder?.Write is { } systemRegistry)
         {
-            systemRegistry.TryGetPacketId(packet, out id);
-            return true;
+            if (systemRegistry.TryGetPacketId(packet, out id))
+                return true;
         }
 
         if (PluginsRegistryHolder is { } pluginsRegistries)
