@@ -176,6 +176,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             }
 
             var packet = decoder(ref buffer, link.Player.ProtocolVersion);
+
+            binaryMessage.Stream.SetLength(binaryMessage.Stream.Position);
             binaryMessage.Stream.Position = position;
 
             // var tempStream = new MemoryStream();
