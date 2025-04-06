@@ -218,19 +218,25 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             var binaryMessage = new MinecraftBinaryPacket(id, stream);
             var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
 
-            // if (registries.TryGetPlugin(type, out var plugin))
-            // {
-            //     if (transformationsMappings.Get(plugin).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
-            //     {
-            //         foreach (var transformation in transformations)
-            //         {
-            //             transformation(wrapper);
-            //             buffer.Reset();
-            //         }
-            //     }
-            // }
+            if (registries.TryGetPlugin(type, out var plugin))
+            {
+                if (transformationsMappings.Get(plugin).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
+                {
+                    foreach (var transformation in transformations)
+                    {
+                        buffer.Reset();
+                        transformation(wrapper);
+                        wrapper.ResetReader();
+                    }
+                }
+            }
 
-            yield return decoder(ref buffer, link.Player.ProtocolVersion);
+            using var tempStream = MinecraftRecyclableStream.RecyclableMemoryStreamManager.GetStream();
+            var tempBuffer = new MinecraftBuffer(tempStream);
+            wrapper.WriteProcessedValues(tempBuffer);
+            tempBuffer.Reset();
+
+            yield return decoder(ref tempBuffer, link.Player.ProtocolVersion);
         }
     }
 
