@@ -177,7 +177,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
                     {
                         transformation(wrapper);
                         wrapper.ResetReader();
-                        binaryMessage.Stream.Position = position;
+                        tempStream.Position = 0;
                     }
                 }
             }
