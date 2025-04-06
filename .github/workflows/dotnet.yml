@@ -69,5 +69,5 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4.6.2
       with:
-        name: app-${{ matrix.runtime }}
-        path: artifacts/${{ matrix.runtime }}
+        name: void-${{ matrix.runtime }}
+        path: artifacts/${{ matrix.runtime }}/Void
