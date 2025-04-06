@@ -31,7 +31,7 @@ jobs:
       run: dotnet test --no-build --verbosity normal
     
     - name: Publish
-      run: dotnet publish src/Platform --output artifacts --configuration Release --no-build
+      run: dotnet publish src/Platform --output artifacts --configuration Release --no-build --self-contained true
 
 #     - name: Setup tmate session
 #       uses: mxschmitt/action-tmate@v3
