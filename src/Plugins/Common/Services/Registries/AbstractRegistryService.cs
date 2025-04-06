@@ -160,6 +160,21 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             if (!registry.TryCreateDecoder(binaryMessage.Id, out var type, out var decoder))
                 continue;
 
+            // var position = binaryMessage.Stream.Position;
+            // var buffer = new MinecraftBuffer(binaryMessage.Stream);
+            // var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
+            // 
+            // if (registries.TryGetTransformations(transformationsMappings, type, out var transformations))
+            // {
+            //     foreach (var transformation in transformations)
+            //     {
+            //         binaryMessage.Stream.Position = position;
+            //         transformation(wrapper);
+            //         wrapper.Reset();
+            //     }
+            // }
+
+
             var tempStream = new MemoryStream();
             var tempBuffer = new MinecraftBuffer(tempStream);
 

@@ -8,6 +8,7 @@ using Void.Proxy.Api.Network.IO.Streams.Extensions;
 using Void.Proxy.Api.Network.IO.Streams.Manual;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Packet;
+using Void.Proxy.Api.Network.IO.Streams.Packet.Extensions;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 using Void.Proxy.Api.Network.IO.Streams.Recyclable;
@@ -280,18 +281,12 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
     {
         transformations = null;
 
-        if (PluginsRegistryHolder is not { } pluginsRegistryHolder)
+        if (PluginsRegistryHolder is null)
             return false;
 
-        if (!pluginsRegistryHolder.TryGetPlugin(packet, out var plugin))
+        if (TransformationsHolder is null)
             return false;
 
-        if (TransformationsHolder is not { } transformationsHolder)
-            return false;
-
-        if (!transformationsHolder.Get(plugin).TryGetTransformation(packet.GetType(), TransformationType.Downgrade, out transformations))
-            return false;
-
-        return true;
+        return PluginsRegistryHolder.TryGetTransformations(TransformationsHolder, packet, out transformations);
     }
 }
