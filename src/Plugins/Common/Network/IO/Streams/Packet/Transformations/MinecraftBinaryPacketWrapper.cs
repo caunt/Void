@@ -3,36 +3,34 @@ using System.Diagnostics.CodeAnalysis;
 using Void.Minecraft.Buffers;
 using Void.Proxy.Api.Network.IO.Messages.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties.Types;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties.Values;
-using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Transformations.Properties;
+using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Transformations;
 
 public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message) : IMinecraftBinaryPacketWrapper
 {
-    private readonly Deque<PacketProperty> _read = [];
-    private readonly List<PacketProperty> _write = [];
+    private readonly Deque<IPacketProperty> _read = [];
+    private readonly List<IPacketProperty> _write = [];
 
-    public TPropertyValue Get<TPropertyValue>(IPropertyType<TPropertyValue> type, int index) where TPropertyValue : class, IPropertyValue
+    public TPropertyValue Get<TPropertyValue>(int index) where TPropertyValue : class, IPacketProperty<TPropertyValue>
     {
-        if (!TryGet(type, index, out var value))
-            throw new InvalidOperationException($"Property value of type {type} at index {index} not found in packet.");
+        if (!TryGet<TPropertyValue>(index, out var value))
+            throw new InvalidOperationException($"Property value of type {typeof(TPropertyValue)} at index {index} not found in packet.");
 
         return value;
     }
 
-    public bool TryGet<TPropertyValue>(IPropertyType<TPropertyValue> type, int index, [MaybeNullWhen(false)] out TPropertyValue value) where TPropertyValue : class, IPropertyValue
+    public bool TryGet<TPropertyValue>(int index, [MaybeNullWhen(false)] out TPropertyValue value) where TPropertyValue : class, IPacketProperty<TPropertyValue>
     {
         foreach (var property in _write)
         {
-            if (property.Type != type)
+            if (property is not TPropertyValue)
                 continue;
 
             if (--index > 0)
                 continue;
 
-            value = property.Value.As<TPropertyValue>();
+            value = property.As<TPropertyValue>();
             return true;
         }
 
@@ -40,59 +38,57 @@ public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message) : IMi
         return false;
     }
 
-    public void Set<TPropertyValue>(IPropertyType<TPropertyValue> type, int index, TPropertyValue value) where TPropertyValue : class, IPropertyValue
+    public void Set<TPropertyValue>(int index, TPropertyValue value) where TPropertyValue : class, IPacketProperty<TPropertyValue>
     {
-        if (!TrySet(type, index, value))
-            throw new InvalidOperationException($"Property value of type {type} at index {index} not found in packet.");
+        if (!TrySet(index, value))
+            throw new InvalidOperationException($"Property value of type {typeof(TPropertyValue)} at index {index} not found in packet.");
     }
 
-    public bool TrySet<TPropertyValue>(IPropertyType<TPropertyValue> type, int index, TPropertyValue value) where TPropertyValue : class, IPropertyValue
+    public bool TrySet<TPropertyValue>(int index, TPropertyValue value) where TPropertyValue : class, IPacketProperty<TPropertyValue>
     {
         for (var i = 0; i < _write.Count; i++)
         {
             var property = _write[i];
 
-            if (property.Type != type)
+            if (property is not TPropertyValue)
                 continue;
 
             if (--index > 0)
                 continue;
 
-            _write[i] = new PacketProperty(type, value);
+            _write[i] = value;
             return true;
         }
 
         return false;
     }
 
-    public TPropertyValue Passthrough<TPropertyValue>(IPropertyType<TPropertyValue> type) where TPropertyValue : class, IPropertyValue
+    public TPropertyValue Passthrough<TPropertyValue>() where TPropertyValue : class, IPacketProperty<TPropertyValue>
     {
-        var property = ReadProperty(type);
+        var property = ReadProperty<TPropertyValue>();
         _write.Add(property);
 
-        return property.Value.As<TPropertyValue>();
+        return property.As<TPropertyValue>();
     }
 
-    public TPropertyValue Read<TPropertyValue>(IPropertyType<TPropertyValue> type) where TPropertyValue : IPropertyValue
+    public TPropertyValue Read<TPropertyValue>() where TPropertyValue : class, IPacketProperty<TPropertyValue>
     {
-        return ReadProperty(type).Value.As<TPropertyValue>();
+        return ReadProperty<TPropertyValue>().As<TPropertyValue>();
     }
 
-    public void Write<TPropertyValue>(IPropertyType<TPropertyValue> type, TPropertyValue value) where TPropertyValue : IPropertyValue
+    public void Write<TPropertyValue>(TPropertyValue value) where TPropertyValue : class, IPacketProperty<TPropertyValue>
     {
-        _write.Add(new PacketProperty(type, value));
+        _write.Add(value);
     }
 
     public void ResetReader()
     {
         for (var i = _write.Count - 1; i >= 0; i--)
-        {
             _read.AddToFront(_write[i]);
-        }
-        
+
         _write.Clear();
     }
-    
+
     public void WriteProcessedValues(MinecraftBuffer buffer)
     {
         if (_read.Count == 0)
@@ -103,29 +99,25 @@ public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message) : IMi
         }
 
         foreach (var item in _read)
-        {
-            var a = (IPropertyType<IPropertyValue>) item.Type;
-            Console.WriteLine($"Writing {a} with value {item.Value}");
-            a?.Write(ref buffer, item.Value);
-        }
+            item.Write(ref buffer);
     }
-    
-    private PacketProperty ReadProperty<TPropertyValue>(IPropertyType<TPropertyValue> type) where TPropertyValue : IPropertyValue
+
+    private TPropertyValue ReadProperty<TPropertyValue>() where TPropertyValue : class, IPacketProperty<TPropertyValue>
     {
         return _read.Count switch
         {
-            0 => new PacketProperty(type, ReadFromBuffer(type)),
-            _ => TakeFromRead()
+            0 => ReadFromBuffer<TPropertyValue>(),
+            _ => TakeFromRead() as TPropertyValue ?? throw new InvalidOperationException($"Property value of type {typeof(TPropertyValue)} not found in packet.")
         };
     }
 
-    private TPropertyValue ReadFromBuffer<TPropertyValue>(IPropertyType<TPropertyValue> type) where TPropertyValue : IPropertyValue
+    private TPropertyValue ReadFromBuffer<TPropertyValue>() where TPropertyValue : IPacketProperty<TPropertyValue>
     {
         var buffer = GetBuffer();
-        return type.Read(ref buffer);
+        return TPropertyValue.Read(ref buffer);
     }
 
-    private PacketProperty TakeFromRead()
+    private IPacketProperty TakeFromRead()
     {
         return _read.RemoveFromFront();
     }

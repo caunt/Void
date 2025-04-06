@@ -7,6 +7,8 @@ using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Links.Extensions;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
+using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
+using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.ExamplePlugin.Packets.Clientbound;
@@ -80,20 +82,20 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
             new(0x63, ProtocolVersion.MINECRAFT_1_21_2)
         ]);
 
-        // player.RegisterTransformations<SetHeldItemClientboundPacket>([
-        //     new(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.MINECRAFT_1_20_3, Upgrade),
-        //     new(ProtocolVersion.MINECRAFT_1_20_3, ProtocolVersion.MINECRAFT_1_20_2, Downgrade)
-        // ]);
-        // 
-        // void Upgrade(IMinecraftBinaryPacketWrapper wrapper) => Downgrade(wrapper);
-        // void Downgrade(IMinecraftBinaryPacketWrapper wrapper)
-        // {
-        //     var value = wrapper.Read(PropertyTypes.VarInt);
-        //     wrapper.Write(PropertyTypes.VarInt, value);
-        // 
-        //     wrapper.Passthrough(PropertyTypes.VarInt);
-        //     wrapper.TrySet(PropertyTypes.VarInt, 0, VarIntValue.FromPrimitive(69));
-        // }
+        player.RegisterTransformations<SetHeldItemClientboundPacket>([
+            new(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.MINECRAFT_1_20_3, Upgrade),
+            new(ProtocolVersion.MINECRAFT_1_20_3, ProtocolVersion.MINECRAFT_1_20_2, Downgrade)
+        ]);
+
+        void Upgrade(IMinecraftBinaryPacketWrapper wrapper) => Downgrade(wrapper);
+        void Downgrade(IMinecraftBinaryPacketWrapper wrapper)
+        {
+            var value = wrapper.Read<ByteProperty>();
+            wrapper.Write(value);
+
+            wrapper.Passthrough<ByteProperty>();
+            wrapper.TrySet(0, ByteProperty.FromPrimitive(69));
+        }
 
         logger.LogInformation("Registered play mappings for inventory service for {Side} side", side);
     }

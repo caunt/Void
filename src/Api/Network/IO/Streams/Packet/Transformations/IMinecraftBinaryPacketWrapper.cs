@@ -1,14 +1,18 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties.Types;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties.Values;
+using Void.Minecraft.Buffers;
+using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 
 public interface IMinecraftBinaryPacketWrapper
 {
-    public TPropertyValue Passthrough<TPropertyValue>(IPropertyType<TPropertyValue> type) where TPropertyValue : class, IPropertyValue;
-    public TPropertyValue Read<TPropertyValue>(IPropertyType<TPropertyValue> type) where TPropertyValue : IPropertyValue;
-    public bool TryGet<TPropertyValue>(IPropertyType<TPropertyValue> type, int index, [MaybeNullWhen(false)] out TPropertyValue value) where TPropertyValue : class, IPropertyValue;
-    public bool TrySet<TPropertyValue>(IPropertyType<TPropertyValue> type, int index, TPropertyValue value) where TPropertyValue : class, IPropertyValue;
-    public void Write<TPropertyValue>(IPropertyType<TPropertyValue> type, TPropertyValue value) where TPropertyValue : IPropertyValue;
+    public bool TryGet<TPropertyValue>(int index, [MaybeNullWhen(false)] out TPropertyValue value) where TPropertyValue : class, IPacketProperty<TPropertyValue>;
+    public TPropertyValue Get<TPropertyValue>(int index) where TPropertyValue : class, IPacketProperty<TPropertyValue>;
+    public bool TrySet<TPropertyValue>(int index, TPropertyValue value) where TPropertyValue : class, IPacketProperty<TPropertyValue>;
+    public void Set<TPropertyValue>(int index, TPropertyValue value) where TPropertyValue : class, IPacketProperty<TPropertyValue>;
+    public TPropertyValue Read<TPropertyValue>() where TPropertyValue : class, IPacketProperty<TPropertyValue>;
+    public void Write<TPropertyValue>(TPropertyValue value) where TPropertyValue : class, IPacketProperty<TPropertyValue>;
+    public TPropertyValue Passthrough<TPropertyValue>() where TPropertyValue : class, IPacketProperty<TPropertyValue>;
+    public void WriteProcessedValues(MinecraftBuffer buffer);
+    public void ResetReader();
 }
