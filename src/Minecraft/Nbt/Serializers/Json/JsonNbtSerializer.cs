@@ -39,19 +39,21 @@ public static class JsonNbtSerializer
 
     public static NbtTag Deserialize(string value)
     {
+        var node = (JsonNode?)null;
+
         try
         {
-            var node = JsonNode.Parse(value);
-
-            if (node is null)
-                return Deserialize(node: value);
-
-            return Deserialize(node);
+            node = JsonNode.Parse(value);
         }
         catch (JsonException)
         {
-            return Deserialize(node: value);
+            // ignore, not a json
         }
+
+        if (node is null)
+            return Deserialize(node: value);
+        else
+            return Deserialize(node);
     }
 
     public static NbtTag Deserialize(JsonNode node)
