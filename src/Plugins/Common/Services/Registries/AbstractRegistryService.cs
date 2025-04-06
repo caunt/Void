@@ -227,35 +227,6 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             stream.Position = 0;
             yield return packet;
-
-            // using var stream = new MemoryStream();
-            // var buffer = new MinecraftBuffer(stream);
-            // 
-            // minecraftPacket.Encode(ref buffer, link.Player.ProtocolVersion);
-            // buffer.Reset();
-            // 
-            // var binaryMessage = new MinecraftBinaryPacket(id, stream);
-            // var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
-            // 
-            // if (registries.TryGetPlugin(type, out var plugin))
-            // {
-            //     if (transformationsMappings.Get(plugin).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
-            //     {
-            //         foreach (var transformation in transformations)
-            //         {
-            //             buffer.Reset();
-            //             transformation(wrapper);
-            //             wrapper.Reset();
-            //         }
-            //     }
-            // }
-            // 
-            // using var tempStream = new MemoryStream();
-            // var tempBuffer = new MinecraftBuffer(tempStream);
-            // wrapper.WriteProcessedValues(ref tempBuffer);
-            // tempBuffer.Reset();
-            // 
-            // yield return decoder(ref tempBuffer, link.Player.ProtocolVersion);
         }
     }
 
