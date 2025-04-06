@@ -209,7 +209,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             if (!registry.TryCreateDecoder(id, out var type, out var decoder))
                 continue;
 
-            using var stream = MinecraftRecyclableStream.RecyclableMemoryStreamManager.GetStream();
+            using var stream = new MemoryStream();
             var buffer = new MinecraftBuffer(stream);
 
             minecraftPacket.Encode(ref buffer, link.Player.ProtocolVersion);
