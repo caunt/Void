@@ -61,7 +61,7 @@ jobs:
       run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal
     
     - name: Publish
-      run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained -p:PublishSingleFile=true src/Platform --output artifacts/${{ matrix.runtime }} --configuration Release --no-build
+      run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained -p:PublishSingleFile=true -p:DebugType=embedded src/Platform --output artifacts/${{ matrix.runtime }} --configuration Release --no-build
 
 #     - name: Setup tmate session
 #       uses: mxschmitt/action-tmate@v3
