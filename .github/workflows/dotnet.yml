@@ -25,7 +25,10 @@ jobs:
       run: dotnet restore --runtime linux-x64
     
     - name: Build
-      run: dotnet build --runtime linux-x64 --self-contained --configuration Release --no-restore
+      run: dotnet build --self-contained --configuration Release --no-restore
+    
+    - name: Build Platform
+      run: dotnet build src/Platform --runtime linux-x64 --self-contained --configuration Release --no-restore
     
     - name: Test
       run: dotnet test --runtime linux-x64 --no-build --verbosity normal
