@@ -89,7 +89,7 @@ jobs:
 
     - name: Echo Download URL (non-Windows)
       if: runner.os != 'Windows'
-      run: echo "Download URL: ${{ steps.upload_nonwindows.outputs.artifact-url }}"
+      run: "echo Download URL: ${{ steps.upload_nonwindows.outputs.artifact-url }}"
 
     - name: Upload a Build Artifact (Windows)
       if: runner.os == 'Windows'
@@ -103,4 +103,4 @@ jobs:
 
     - name: Echo Download URL (Windows)
       if: runner.os == 'Windows'
-      run: echo "Download URL: ${{ steps.upload_windows.outputs.artifact-url }}"
+      run: "echo Download URL: ${{ steps.upload_windows.outputs.artifact-url }}"
