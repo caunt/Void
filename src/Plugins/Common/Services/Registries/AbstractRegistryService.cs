@@ -161,8 +161,13 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             if (!registry.TryCreateDecoder(binaryMessage.Id, out var type, out var decoder))
                 continue;
 
+            var tempStream = new MemoryStream();
+            var tempBuffer = new MinecraftBuffer(tempStream);
+
+            binaryMessage.Stream.CopyTo(tempStream);
+
             var position = binaryMessage.Stream.Position;
-            var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
+            var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(binaryMessage.Id, tempStream));
 
             if (registries.TryGetPlugin(type, out var plugin))
             {
@@ -177,12 +182,10 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
                 }
             }
 
-            var tempStream = new MemoryStream();
-            var tempBuffer = new MinecraftBuffer(tempStream);
-            wrapper.WriteProcessedValues(tempBuffer);
-            tempStream.Position = 0;
-
             var buffer = new MinecraftBuffer(tempStream);
+            wrapper.WriteProcessedValues(buffer);
+            buffer.Seek(position, SeekOrigin.Begin);
+
             var packet = decoder(ref buffer, link.Player.ProtocolVersion);
 
             binaryMessage.Stream.Position = position;
