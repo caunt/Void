@@ -83,6 +83,33 @@ public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message) : IMi
         _write.Add(new PacketProperty(type, value));
     }
 
+    public void ResetReader()
+    {
+        for (var i = _write.Count - 1; i >= 0; i--)
+        {
+            _read.AddToFront(_write[i]);
+        }
+        
+        _write.Clear();
+    }
+    
+    public void WriteProcessedValues(MinecraftBuffer buffer)
+    {
+        if (_read.Count == 0)
+        {
+            message.Stream.Position = 0;
+            buffer.Write(message.Stream);
+            return;
+        }
+
+        foreach (var item in _read)
+        {
+            var a = (IPropertyType<IPropertyValue>) item.Type;
+            Console.WriteLine($"Writing {a} with value {item.Value}");
+            a?.Write(ref buffer, item.Value);
+        }
+    }
+    
     private PacketProperty ReadProperty<TPropertyValue>(IPropertyType<TPropertyValue> type) where TPropertyValue : IPropertyValue
     {
         return _read.Count switch

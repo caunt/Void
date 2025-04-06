@@ -243,10 +243,13 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
 
             var position = stream.Position;
             var buffer = new MinecraftBuffer(stream);
+            
+            var tempStream = new MemoryStream();
+            var tempBuffer = new MinecraftBuffer(tempStream);
 
-            packet.Encode(ref buffer, ProtocolVersion);
+            packet.Encode(ref tempBuffer, ProtocolVersion);
 
-            var binaryMessage = new MinecraftBinaryPacket(id, stream);
+            var binaryMessage = new MinecraftBinaryPacket(id, tempStream);
             var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
 
             if (PluginsRegistryHolder is not null && PluginsRegistryHolder.TryGetPlugin(packet, out var plugin))
@@ -257,12 +260,15 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
                     {
                         foreach (var transformation in transformations)
                         {
-                            binaryMessage.Stream.Position = position;
+                            binaryMessage.Stream.Position = 0;
                             transformation(wrapper);
+                            wrapper.ResetReader();
                         }
                     }
                 }
             }
+
+            wrapper.WriteProcessedValues(buffer);
         }
 
         return stream;

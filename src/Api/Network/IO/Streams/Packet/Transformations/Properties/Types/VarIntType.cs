@@ -12,6 +12,7 @@ public record VarIntType : IPropertyType<VarIntValue>
 
     public void Write(ref MinecraftBuffer buffer, VarIntValue value)
     {
+        System.Console.WriteLine($"Write VarInt: {value.AsPrimitive}");
         buffer.WriteVarInt(value.AsPrimitive);
     }
 }
