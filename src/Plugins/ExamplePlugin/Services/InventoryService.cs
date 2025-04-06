@@ -8,7 +8,6 @@ using Void.Proxy.Api.Links.Extensions;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.ExamplePlugin.Packets.Clientbound;
@@ -90,11 +89,11 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
         void Upgrade(IMinecraftBinaryPacketWrapper wrapper) => Downgrade(wrapper);
         void Downgrade(IMinecraftBinaryPacketWrapper wrapper)
         {
-            var value = wrapper.Read<ByteProperty>();
-            wrapper.Write(value);
-
-            wrapper.Passthrough<ByteProperty>();
-            wrapper.TrySet(0, ByteProperty.FromPrimitive(69));
+            // var value = wrapper.Read<ByteProperty>();
+            // wrapper.Write(value);
+            // 
+            // wrapper.Passthrough<ByteProperty>();
+            // wrapper.TrySet(0, ByteProperty.FromPrimitive(69));
         }
 
         logger.LogInformation("Registered play mappings for inventory service for {Side} side", side);
