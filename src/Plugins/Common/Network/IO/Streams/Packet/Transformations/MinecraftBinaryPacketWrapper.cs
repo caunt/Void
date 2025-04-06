@@ -81,7 +81,7 @@ public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message) : IMi
         _write.Add(value);
     }
 
-    public void ResetReader()
+    public void Reset()
     {
         for (var i = _write.Count - 1; i >= 0; i--)
             _read.AddToFront(_write[i]);
@@ -92,14 +92,10 @@ public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message) : IMi
     public void WriteProcessedValues(ref MinecraftBuffer buffer)
     {
         if (_read.Count == 0)
-        {
-            message.Stream.Position = 0;
             buffer.Write(message.Stream);
-            return;
-        }
 
-        foreach (var item in _read)
-            item.Write(ref buffer);
+        foreach (var property in _read)
+            property.Write(ref buffer);
     }
 
     private TPropertyValue ReadProperty<TPropertyValue>() where TPropertyValue : class, IPacketProperty<TPropertyValue>

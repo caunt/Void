@@ -176,7 +176,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
                     {
                         tempStream.Position = 0;
                         transformation(wrapper);
-                        wrapper.ResetReader();
+                        wrapper.Reset();
                     }
                 }
             }
@@ -224,7 +224,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
                     {
                         buffer.Reset();
                         transformation(wrapper);
-                        wrapper.ResetReader();
+                        wrapper.Reset();
                     }
                 }
             }

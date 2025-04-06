@@ -1,4 +1,5 @@
 ﻿using Microsoft.IO;
+using System.Diagnostics.CodeAnalysis;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
 using Void.Proxy.Api.Network.IO.Messages.Packets;
@@ -215,60 +216,60 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
         }
         else
         {
-            var id = -1;
-
-            if (SystemRegistryHolder?.Write is { } systemRegistry)
-            {
-                systemRegistry.TryGetPacketId(packet, out id);
-            }
-
-            if (PluginsRegistryHolder is { } pluginsRegistries)
-            {
-                foreach (var registry in pluginsRegistries.All)
-                {
-                    if (registry.TryGetPacketId(packet, out var pluginPacketId))
-                    {
-                        id = pluginPacketId;
-                        break;
-                    }
-                }
-            }
-
-            if (id == -1)
+            if (!TryGetPacketId(packet, out var id))
                 throw new InvalidOperationException($"{packet} is not registered:\n" +
                     $"{nameof(SystemRegistryHolder)} [{string.Join(", ", SystemRegistryHolder?.Write?.PacketTypes.Select(type => type.Name) ?? [])}]\n" +
                     $"{nameof(PluginsRegistryHolder)} [{string.Join(", ", PluginsRegistryHolder?.All.SelectMany(registry => registry.PacketTypes).Select(type => type.Name) ?? [])}]");
 
             EncodeVarInt(stream, id);
 
-            var position = stream.Position;
             var buffer = new MinecraftBuffer(stream);
+            var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(id, stream));
 
-            var tempStream = new MemoryStream();
-            var tempBuffer = new MinecraftBuffer(tempStream);
+            var position = stream.Position;
+            packet.Encode(ref buffer, ProtocolVersion);
 
-            packet.Encode(ref tempBuffer, ProtocolVersion);
-
-            var binaryMessage = new MinecraftBinaryPacket(id, tempStream);
-            var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
-
-            if (PluginsRegistryHolder is not null && PluginsRegistryHolder.TryGetPlugin(packet, out var plugin))
+            if (TryGetTransformations(packet, out var transformations))
             {
-                if (TransformationsHolder is not null)
+                foreach (var transformation in transformations)
                 {
-                    if (TransformationsHolder.Get(plugin).TryGetTransformation(packet.GetType(), TransformationType.Downgrade, out var transformations))
-                    {
-                        foreach (var transformation in transformations)
-                        {
-                            binaryMessage.Stream.Position = 0;
-                            transformation(wrapper);
-                            wrapper.ResetReader();
-                        }
-                    }
+                    stream.Position = position;
+                    transformation(wrapper);
+                    wrapper.Reset();
                 }
             }
 
+            stream.Position = position;
             wrapper.WriteProcessedValues(ref buffer);
+
+            // var position = stream.Position;
+            // var buffer = new MinecraftBuffer(stream);
+            // 
+            // var tempStream = new MemoryStream();
+            // var tempBuffer = new MinecraftBuffer(tempStream);
+            // 
+            // packet.Encode(ref tempBuffer, ProtocolVersion);
+            // 
+            // var binaryMessage = new MinecraftBinaryPacket(id, tempStream);
+            // var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
+            // 
+            // if (PluginsRegistryHolder is not null && PluginsRegistryHolder.TryGetPlugin(packet, out var plugin))
+            // {
+            //     if (TransformationsHolder is not null)
+            //     {
+            //         if (TransformationsHolder.Get(plugin).TryGetTransformation(packet.GetType(), TransformationType.Downgrade, out var transformations))
+            //         {
+            //             foreach (var transformation in transformations)
+            //             {
+            //                 binaryMessage.Stream.Position = 0;
+            //                 transformation(wrapper);
+            //                 wrapper.ResetReader();
+            //             }
+            //         }
+            //     }
+            // }
+            // 
+            // wrapper.WriteProcessedValues(ref buffer);
         }
 
         return stream;
@@ -278,5 +279,46 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
     {
         foreach (var @byte in MinecraftBuffer.EnumerateVarInt(id))
             stream.WriteByte(@byte);
+    }
+
+    private bool TryGetPacketId(IMinecraftPacket packet, out int id)
+    {
+        id = 0;
+
+        if (SystemRegistryHolder?.Write is { } systemRegistry)
+        {
+            systemRegistry.TryGetPacketId(packet, out id);
+            return true;
+        }
+
+        if (PluginsRegistryHolder is { } pluginsRegistries)
+        {
+            foreach (var registry in pluginsRegistries.All)
+            {
+                if (registry.TryGetPacketId(packet, out id))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryGetTransformations(IMinecraftPacket packet, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformations)
+    {
+        transformations = null;
+
+        if (PluginsRegistryHolder is not { } pluginsRegistryHolder)
+            return false;
+
+        if (!pluginsRegistryHolder.TryGetPlugin(packet, out var plugin))
+            return false;
+
+        if (TransformationsHolder is not { } transformationsHolder)
+            return false;
+
+        if (!transformationsHolder.Get(plugin).TryGetTransformation(packet.GetType(), TransformationType.Downgrade, out transformations))
+            return false;
+
+        return true;
     }
 }
