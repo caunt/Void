@@ -164,9 +164,9 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             var tempStream = new MemoryStream();
             var tempBuffer = new MinecraftBuffer(tempStream);
 
-            binaryMessage.Stream.CopyTo(tempStream);
-
             var position = binaryMessage.Stream.Position;
+            tempBuffer.Write(binaryMessage.Stream);
+
             var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(binaryMessage.Id, tempStream));
 
             if (registries.TryGetPlugin(type, out var plugin))
