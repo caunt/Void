@@ -22,16 +22,16 @@ jobs:
         dotnet-version: '9'
     
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore --runtime linux-x64
     
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build --runtime linux-x64 --self-contained --configuration Release --no-restore
     
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test --runtime linux-x64 --no-build --verbosity normal
     
     - name: Publish
-      run: dotnet publish src/Platform --output artifacts --configuration Release --no-build --self-contained --runtime linux-x64
+      run: dotnet publish --runtime linux-x64 --self-contained src/Platform --output artifacts --configuration Release --no-build
 
 #     - name: Setup tmate session
 #       uses: mxschmitt/action-tmate@v3
