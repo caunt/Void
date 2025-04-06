@@ -183,6 +183,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             }
 
             var buffer = new MinecraftBuffer(tempStream);
+            buffer.Reset();
             wrapper.WriteProcessedValues(buffer);
 
             var packet = decoder(ref buffer, link.Player.ProtocolVersion);
