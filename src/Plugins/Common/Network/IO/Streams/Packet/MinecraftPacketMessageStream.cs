@@ -239,7 +239,9 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
                 }
             }
 
+            stream.SetLength(stream.Position);
             stream.Position = position;
+
             wrapper.WriteProcessedValues(ref buffer);
         }
 
