@@ -115,8 +115,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         {
             var packets = @event.Message switch
             {
-                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registries, null, binaryMessage),
-                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, registries, null, minecraftPacket),
+                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registries, transformations, binaryMessage),
+                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, registries, transformations, minecraftPacket),
                 _ => null
             };
 
@@ -154,7 +154,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, IMinecraftPacketPluginsRegistry registries, IMinecraftPacketPluginsTransformations? transformationsMappings, IMinecraftBinaryMessage binaryMessage)
+    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, IMinecraftPacketPluginsRegistry registries, IMinecraftPacketPluginsTransformations transformationsMappings, IMinecraftBinaryMessage binaryMessage)
     {
         foreach (var registry in registries.All)
         {
@@ -164,19 +164,25 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             var position = binaryMessage.Stream.Position;
             var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
 
-            if (transformationsMappings is not null && registries.TryGetPlugin(type, out var plugin))
+            if (registries.TryGetPlugin(type, out var plugin))
             {
                 if (transformationsMappings.Get(plugin).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
                 {
                     foreach (var transformation in transformations)
                     {
                         transformation(wrapper);
+                        wrapper.ResetReader();
                         binaryMessage.Stream.Position = position;
                     }
                 }
             }
 
-            var buffer = new MinecraftBuffer(binaryMessage.Stream);
+            var tempStream = new MemoryStream();
+            var tempBuffer = new MinecraftBuffer(tempStream);
+            wrapper.WriteProcessedValues(tempBuffer);
+            tempStream.Position = 0;
+
+            var buffer = new MinecraftBuffer(tempStream);
             var packet = decoder(ref buffer, link.Player.ProtocolVersion);
 
             binaryMessage.Stream.Position = position;
@@ -185,7 +191,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, IMinecraftPacketPluginsRegistry registries, IMinecraftPacketPluginsTransformations? transformationsMappings, IMinecraftPacket minecraftPacket)
+    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, IMinecraftPacketPluginsRegistry registries, IMinecraftPacketPluginsTransformations transformationsMappings, IMinecraftPacket minecraftPacket)
     {
         var playerPacketRegistryHolder = link.PlayerChannel.GetPacketSystemRegistryHolder();
         var serverPacketRegistryHolder = link.ServerChannel.GetPacketSystemRegistryHolder();
@@ -208,7 +214,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             var binaryMessage = new MinecraftBinaryPacket(id, stream);
             var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
 
-            // if (transformationsMappings is not null && registries.TryGetPlugin(type, out var plugin))
+            // if (registries.TryGetPlugin(type, out var plugin))
             // {
             //     if (transformationsMappings.Get(plugin).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
             //     {
