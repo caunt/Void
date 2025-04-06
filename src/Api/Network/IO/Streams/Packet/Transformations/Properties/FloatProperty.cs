@@ -2,7 +2,7 @@ using Void.Minecraft.Buffers;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 
-public record FloatProperty(ReadOnlyMemory<byte> Value) : IPacketProperty
+public record FloatProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<FloatProperty>
 {
     public float AsPrimitive => new MinecraftBuffer(Value.Span).ReadFloat();
 

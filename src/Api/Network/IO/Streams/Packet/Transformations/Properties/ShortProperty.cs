@@ -2,7 +2,7 @@ using Void.Minecraft.Buffers;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 
-public record ShortProperty(ReadOnlyMemory<byte> Value) : IPacketProperty
+public record ShortProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<ShortProperty>
 {
     public ushort AsPrimitive => new MinecraftBuffer(Value.Span).ReadUnsignedShort();
 

@@ -2,7 +2,7 @@ using Void.Minecraft.Buffers;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 
-public record DoubleProperty(ReadOnlyMemory<byte> Value) : IPacketProperty
+public record DoubleProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<DoubleProperty>
 {
     public double AsPrimitive => new MinecraftBuffer(Value.Span).ReadDouble();
 

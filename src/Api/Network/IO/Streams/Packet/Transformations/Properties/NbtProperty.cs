@@ -3,7 +3,7 @@ using Void.Minecraft.Nbt;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 
-public record NbtProperty(ReadOnlyMemory<byte> Value) : IPacketProperty
+public record NbtProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<NbtProperty>
 {
     public NbtTag AsNbtTag => new MinecraftBuffer(Value.Span).ReadTag();
 

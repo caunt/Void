@@ -3,7 +3,7 @@ using Void.Minecraft.Profiles;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 
-public record UuidProperty(ReadOnlyMemory<byte> Value) : IPacketProperty
+public record UuidProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<UuidProperty>
 {
     public Uuid AsUuid => new MinecraftBuffer(Value.Span).ReadUuid();
 

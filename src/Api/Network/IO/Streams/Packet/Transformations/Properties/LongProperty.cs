@@ -2,7 +2,7 @@ using Void.Minecraft.Buffers;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 
-public record LongProperty(ReadOnlyMemory<byte> Value) : IPacketProperty
+public record LongProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<LongProperty>
 {
     public long AsPrimitive => new MinecraftBuffer(Value.Span).ReadLong();
 

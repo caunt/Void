@@ -2,7 +2,7 @@
 
 namespace Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 
-public record VarLongProperty(ReadOnlyMemory<byte> Value) : IPacketProperty
+public record VarLongProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<VarLongProperty>
 {
     public long AsPrimitive => new MinecraftBuffer(Value.Span).ReadVarInt();
 

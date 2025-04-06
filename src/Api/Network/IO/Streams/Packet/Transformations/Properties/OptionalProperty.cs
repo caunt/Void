@@ -2,7 +2,7 @@
 
 namespace Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 
-public record OptionalProperty<TPacketProperty>(TPacketProperty? Value = null) : IPacketProperty where TPacketProperty : class, IPacketProperty<TPacketProperty>
+public record OptionalProperty<TPacketProperty>(TPacketProperty? Value = null) : IPacketProperty<OptionalProperty<TPacketProperty>> where TPacketProperty : class, IPacketProperty<TPacketProperty>
 {
     public static OptionalProperty<TPacketProperty> Read(ref MinecraftBuffer buffer)
     {

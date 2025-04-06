@@ -2,7 +2,7 @@ using Void.Minecraft.Buffers;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 
-public record BoolProperty(ReadOnlyMemory<byte> Value) : IPacketProperty
+public record BoolProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<BoolProperty>
 {
     public bool AsPrimitive => new MinecraftBuffer(Value.Span).ReadBoolean();
 
