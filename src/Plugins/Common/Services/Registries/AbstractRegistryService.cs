@@ -199,8 +199,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         var playerPacketRegistryHolder = link.PlayerChannel.GetPacketSystemRegistryHolder();
         var serverPacketRegistryHolder = link.ServerChannel.GetPacketSystemRegistryHolder();
 
-        if (!playerPacketRegistryHolder.Write.TryGetPacketId(minecraftPacket, out var id) &&
-            !serverPacketRegistryHolder.Write.TryGetPacketId(minecraftPacket, out id))
+        if (!playerPacketRegistryHolder.Write.TryGetPacketId(minecraftPacket, out var id) && !serverPacketRegistryHolder.Write.TryGetPacketId(minecraftPacket, out id))
             yield break;
 
         foreach (var registry in registries.All)

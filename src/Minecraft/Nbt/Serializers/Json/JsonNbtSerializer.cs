@@ -37,6 +37,23 @@ public static class JsonNbtSerializer
         return JsonSerializer.SerializeToNode(tag, Options) ?? throw new JsonException("Nbt cannot be serialized to json.");
     }
 
+    public static NbtTag Deserialize(string value)
+    {
+        try
+        {
+            var node = JsonNode.Parse(value);
+
+            if (node is null)
+                return Deserialize(node: value);
+
+            return Deserialize(node);
+        }
+        catch (JsonException)
+        {
+            return Deserialize(node: value);
+        }
+    }
+
     public static NbtTag Deserialize(JsonNode node)
     {
         return JsonSerializer.Deserialize<NbtTag>(node, Options) ?? throw new JsonException("Nbt cannot be deserialized from json.");
