@@ -184,7 +184,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             var buffer = new MinecraftBuffer(tempStream);
             wrapper.WriteProcessedValues(buffer);
-            buffer.Seek(position, SeekOrigin.Begin);
+            buffer.Reset();
 
             var packet = decoder(ref buffer, link.Player.ProtocolVersion);
 
