@@ -161,8 +161,13 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             if (!registry.TryCreateDecoder(binaryMessage.Id, out var type, out var decoder))
                 continue;
 
+            var tempStream = new MemoryStream();
+            var tempBuffer = new MinecraftBuffer(tempStream);
+
             var position = binaryMessage.Stream.Position;
-            var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
+            tempBuffer.Write(binaryMessage.Stream);
+
+            var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(binaryMessage.Id, tempStream));
 
             if (registries.TryGetPlugin(type, out var plugin))
             {
@@ -170,13 +175,18 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
                 {
                     foreach (var transformation in transformations)
                     {
+                        tempStream.Position = 0;
                         transformation(wrapper);
-                        binaryMessage.Stream.Position = position;
+                        wrapper.ResetReader();
                     }
                 }
             }
 
-            var buffer = new MinecraftBuffer(binaryMessage.Stream);
+            var buffer = new MinecraftBuffer(tempStream);
+            buffer.Reset();
+            wrapper.WriteProcessedValues(buffer);
+            buffer.Reset();
+
             var packet = decoder(ref buffer, link.Player.ProtocolVersion);
 
             binaryMessage.Stream.Position = position;
@@ -208,17 +218,17 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             var binaryMessage = new MinecraftBinaryPacket(id, stream);
             var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
 
-            if (registries.TryGetPlugin(type, out var plugin))
-            {
-                if (transformationsMappings.Get(plugin).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
-                {
-                    foreach (var transformation in transformations)
-                    {
-                        transformation(wrapper);
-                        buffer.Reset();
-                    }
-                }
-            }
+            // if (registries.TryGetPlugin(type, out var plugin))
+            // {
+            //     if (transformationsMappings.Get(plugin).TryGetTransformation(type, TransformationType.Upgrade, out var transformations))
+            //     {
+            //         foreach (var transformation in transformations)
+            //         {
+            //             transformation(wrapper);
+            //             buffer.Reset();
+            //         }
+            //     }
+            // }
 
             yield return decoder(ref buffer, link.Player.ProtocolVersion);
         }

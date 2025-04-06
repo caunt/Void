@@ -1,10 +1,21 @@
-﻿using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties.Types;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties.Values;
+﻿using Void.Minecraft.Buffers;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 
 public interface IPacketProperty
 {
-    public IPropertyType Type { get; }
-    public IPropertyValue Value { get; }
+    public void Write(ref MinecraftBuffer buffer);
+
+    public virtual TCastValue As<TCastValue>() where TCastValue : IPacketProperty
+    {
+        if (this is not TCastValue value)
+            throw new InvalidCastException($"Property value {this} cannot be casted to {typeof(TCastValue)}");
+
+        return value;
+    }
+}
+
+public interface IPacketProperty<TPacketProperty> : IPacketProperty where TPacketProperty : IPacketProperty<TPacketProperty>
+{
+    public static abstract TPacketProperty Read(ref MinecraftBuffer buffer);
 }
