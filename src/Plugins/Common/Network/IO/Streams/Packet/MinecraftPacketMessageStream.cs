@@ -243,7 +243,7 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
 
             var position = stream.Position;
             var buffer = new MinecraftBuffer(stream);
-            
+
             var tempStream = new MemoryStream();
             var tempBuffer = new MinecraftBuffer(tempStream);
 
