@@ -16,7 +16,6 @@ using Void.Proxy.Api.Network.IO.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
-using Void.Proxy.Api.Network.IO.Streams.Recyclable;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins;
@@ -231,7 +230,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
                 }
             }
 
-            using var tempStream = MinecraftRecyclableStream.RecyclableMemoryStreamManager.GetStream();
+            using var tempStream = new MemoryStream();
             var tempBuffer = new MinecraftBuffer(tempStream);
             wrapper.WriteProcessedValues(ref tempBuffer);
             tempBuffer.Reset();
