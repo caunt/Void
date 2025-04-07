@@ -27,4 +27,3 @@ public class CommandService(IEventService events) : AbstractCommandService(event
         }
     }
 }
-

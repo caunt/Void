@@ -226,9 +226,9 @@ internal ref struct MinecraftBackingBuffer
     {
         while (true)
         {
-            if ((value & ~(long) 0x7F) == 0)
+            if ((value & ~(long)0x7F) == 0)
             {
-                WriteUnsignedByte((byte) value);
+                WriteUnsignedByte((byte)value);
                 return;
             }
 
