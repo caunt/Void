@@ -1,3 +1,6 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
 name: .NET
 
 on:
@@ -12,113 +15,94 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            runtimes: '["linux-arm", "linux-arm64", "linux-bionic-arm64", "linux-bionic-x64", "linux-musl-arm", "linux-musl-arm64", "linux-musl-x64", "linux-x64"]'
+            runtime: linux-arm
+          - os: ubuntu-latest
+            runtime: linux-arm64
+          - os: ubuntu-latest
+            runtime: linux-bionic-arm64
+          - os: ubuntu-latest
+            runtime: linux-bionic-x64
+          - os: ubuntu-latest
+            runtime: linux-musl-arm
+          - os: ubuntu-latest
+            runtime: linux-musl-arm64
+          - os: ubuntu-latest
+            runtime: linux-musl-x64
+          - os: ubuntu-latest
+            runtime: linux-x64
           - os: macos-latest
-            runtimes: '["osx-arm64", "osx-x64"]'
+            runtime: osx-arm64
+          - os: macos-latest
+            runtime: osx-x64
           - os: windows-latest
-            runtimes: '["win-arm64", "win-x64", "win-x86"]'
+            runtime: win-arm64
+          - os: windows-latest
+            runtime: win-x64
+          - os: windows-latest
+            runtime: win-x86
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
     
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4.3.1
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9'
     
-    - name: Restore dependencies for all runtimes
-      run: |
-        for runtime in $(echo '${{ matrix.runtimes }}' | jq -r '.[]'); do
-          echo "Restoring dependencies for runtime: $runtime"
-          dotnet restore --runtime "$runtime"
-        done
-      shell: bash
+    - name: Restore dependencies
+      run: dotnet restore --runtime ${{ matrix.runtime }}
     
-    - name: Build solution for all runtimes
-      run: |
-        # Build the solution once without runtime-specific parameters.
-        dotnet build --configuration Release --no-restore
-      shell: bash
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+    
+    - name: Build Platform
+      run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded --configuration Release --no-restore
+    
+    - name: Test
+      run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal
+    
+    - name: Publish
+      run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded src/Platform --output artifacts/${{ matrix.runtime }} --configuration Release --no-build
 
-    - name: Build Platform for all runtimes
-      run: |
-        for runtime in $(echo '${{ matrix.runtimes }}' | jq -r '.[]'); do
-          echo "Building Platform for runtime: $runtime"
-          dotnet build src/Platform \
-            --runtime "$runtime" \
-            --self-contained \
-            -p:GenerateRuntimeConfigurationFiles=false \
-            -p:PublishSingleFile=true \
-            -p:DebugType=embedded \
-            --configuration Release \
-            --no-restore \
-            -p:IntermediateOutputPath=build/$runtime/obj/ \
-            -o build/$runtime/output
-        done
-      shell: bash
-
-    - name: Test for all runtimes
-      run: |
-        for runtime in $(echo '${{ matrix.runtimes }}' | jq -r '.[]'); do
-          echo "Testing for runtime: $runtime"
-          dotnet test --runtime "$runtime" --no-build --verbosity normal
-        done
-      shell: bash
-
-    - name: Publish for all runtimes
-      run: |
-        for runtime in $(echo '${{ matrix.runtimes }}' | jq -r '.[]'); do
-          echo "Publishing for runtime: $runtime"
-          dotnet publish src/Platform \
-            --runtime "$runtime" \
-            --self-contained \
-            -p:GenerateRuntimeConfigurationFiles=false \
-            -p:PublishSingleFile=true \
-            -p:DebugType=embedded \
-            --configuration Release \
-            --no-build \
-            -p:IntermediateOutputPath=build/$runtime/obj/ \
-            -o artifacts/"$runtime"
-        done
-      shell: bash
+#     - name: Setup tmate session
+#       uses: mxschmitt/action-tmate@v3
 
     - name: Rename artifact file (Linux/macOS)
       if: runner.os != 'Windows'
       run: |
-        for runtime in $(echo '${{ matrix.runtimes }}' | jq -r '.[]'); do
-          echo "Renaming artifact for runtime: $runtime"
-          mv artifacts/"$runtime"/Void.Proxy artifacts/"$runtime"/void
-        done
-      shell: bash
+        mv artifacts/${{ matrix.runtime }}/Void.Proxy artifacts/${{ matrix.runtime }}/void
 
     - name: Rename artifact file (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        $runtimes = ConvertFrom-Json '${{ matrix.runtimes }}'
-        foreach ($runtime in $runtimes) {
-          Write-Output "Renaming artifact for runtime: $runtime"
-          Rename-Item -Path "artifacts/$runtime/Void.Proxy.exe" -NewName "void.exe"
-        }
+        Rename-Item -Path "artifacts/${{ matrix.runtime }}/Void.Proxy.exe" -NewName "void.exe"
     
-    - name: Upload Build Artifacts (non-Windows)
+    - name: Upload a Build Artifact (non-Windows)
       if: runner.os != 'Windows'
-      uses: actions/upload-artifact@v4.6.2
+      id: upload_nonwindows
+      uses: actions/upload-artifact@v4
       with:
-        name: void-artifacts
-        path: artifacts
+        name: void-${{ matrix.runtime }}
+        path: artifacts/${{ matrix.runtime }}/void
         compression-level: 9
         if-no-files-found: error
 
-    - name: Upload Build Artifacts (Windows)
+    - name: Echo Download URL (non-Windows)
+      if: runner.os != 'Windows'
+      run: "echo Download URL: ${{ steps.upload_nonwindows.outputs.artifact-url }}"
+
+    - name: Upload a Build Artifact (Windows)
       if: runner.os == 'Windows'
-      uses: actions/upload-artifact@v4.6.2
+      id: upload_windows
+      uses: actions/upload-artifact@v4
       with:
-        name: void-artifacts
-        path: artifacts
+        name: void-${{ matrix.runtime }}
+        path: artifacts/${{ matrix.runtime }}/void.exe
         compression-level: 9
         if-no-files-found: error
 
-    - name: Echo Download URL
-      run: echo "Artifacts uploaded."
+    - name: Echo Download URL (Windows)
+      if: runner.os == 'Windows'
+      run: "echo Download URL: ${{ steps.upload_windows.outputs.artifact-url }}"
