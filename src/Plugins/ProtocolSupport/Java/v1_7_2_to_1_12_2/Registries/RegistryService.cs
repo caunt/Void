@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using Void.Common.Network;
-using Void.Common.Players;
 using Void.Common.Plugins;
 using Void.Minecraft.Events;
 using Void.Minecraft.Network;
@@ -34,21 +33,7 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
         if (!Plugin.SupportedVersions.Contains(player.ProtocolVersion))
             return;
 
-        var systemRegistry = @event.Channel.GetPacketSystemRegistryHolder();
-        var pluginsRegistry = @event.Channel.GetPacketPluginsRegistryHolder();
-        var transformations = @event.Channel.GetPacketTransformationsHolder();
-
-        if (!systemRegistry.IsEmpty || !pluginsRegistry.IsEmpty)
-            return;
-
-        systemRegistry.ManagedBy = _plugin;
-        systemRegistry.ProtocolVersion = player.ProtocolVersion;
-
-        pluginsRegistry.ManagedBy = _plugin;
-        pluginsRegistry.ProtocolVersion = player.ProtocolVersion;
-
-        transformations.ManagedBy = _plugin;
-        transformations.ProtocolVersion = player.ProtocolVersion;
+        @event.Channel.GetRegistries().Setup(_plugin, player.ProtocolVersion);
 
         if (@event.Side is Side.Client)
         {
@@ -121,8 +106,8 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
                 }
                 else
                 {
-                    @event.Link.PlayerChannel.ClearPluginsHolders(_plugin);
-                    @event.Link.ServerChannel.ClearPluginsHolders(_plugin);
+                    @event.Link.PlayerChannel.DisposeRegistries(_plugin);
+                    @event.Link.ServerChannel.DisposeRegistries(_plugin);
                 }
 
                 break;

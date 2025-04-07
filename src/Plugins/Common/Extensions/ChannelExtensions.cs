@@ -17,11 +17,8 @@ public static class ChannelExtensions
         {
             var stream = channel.Get<IMinecraftPacketMessageStream>();
 
-            if (stream.SystemRegistryHolder is null)
-                throw new InvalidOperationException($"{nameof(INetworkChannel)}.{nameof(IMinecraftPacketMessageStream)} does not have packet registry");
-
-            if (!stream.SystemRegistryHolder.Contains<T>())
-                throw new InvalidOperationException($"{nameof(INetworkChannel)}.{nameof(IMinecraftPacketMessageStream)} registry does not have {typeof(T)} packet");
+            if (!stream.Registries.SystemRegistryHolder.Contains<T>())
+                throw new InvalidOperationException($"{nameof(stream.Registries.SystemRegistryHolder)} registry does not have {typeof(T)} packet");
         }
 
         var message = await channel.ReadMessageAsync(cancellationToken);
@@ -32,39 +29,29 @@ public static class ChannelExtensions
         return packet;
     }
 
-    public static void SetReadingPacketsMappings(this INetworkChannel channel, IPlugin plugin, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings)
+    public static void SetReadingPacketsMappings(this INetworkChannel channel, IPlugin managedBy, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings)
     {
-        var registry = channel.GetPacketSystemRegistryHolder();
-
-        if (registry.ManagedBy != plugin)
-            return;
-
-        registry.ReplacePackets(Operation.Read, mappings);
+        channel.GetSystemRegistry(managedBy).ReplacePackets(Operation.Read, mappings);
     }
 
-    public static void SetWritingPacketsMappings(this INetworkChannel channel, IPlugin plugin, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings)
+    public static void SetWritingPacketsMappings(this INetworkChannel channel, IPlugin managedBy, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings)
     {
-        var registry = channel.GetPacketSystemRegistryHolder();
-
-        if (registry.ManagedBy != plugin)
-            return;
-
-        registry.ReplacePackets(Operation.Write, mappings);
+        channel.GetSystemRegistry(managedBy).ReplacePackets(Operation.Write, mappings);
     }
 
-    public static void ClearPluginsHolders(this INetworkChannel channel, IPlugin managedBy)
+    public static void DisposeRegistries(this INetworkChannel channel, IPlugin managedBy)
     {
-        var systemRegistry = channel.GetPacketSystemRegistryHolder();
-        var pluginsRegistry = channel.GetPacketPluginsRegistryHolder();
-        var transformations = channel.GetPacketTransformationsHolder();
+        var registries = channel.GetRegistries();
+        registries.DisposeBy(managedBy);
+    }
 
-        if (systemRegistry.ManagedBy == managedBy)
-            systemRegistry.Reset();
+    private static IMinecraftPacketIdSystemRegistry GetSystemRegistry(this INetworkChannel channel, IPlugin managedBy)
+    {
+        var registry = channel.GetRegistries().SystemRegistryHolder;
 
-        if (pluginsRegistry.ManagedBy == managedBy)
-            pluginsRegistry.Reset();
+        if (registry.ManagedBy != managedBy)
+            throw new InvalidOperationException($"Registry is managed by {registry.ManagedBy}, not {managedBy.Name}");
 
-        if (transformations.ManagedBy == managedBy)
-            transformations.Reset();
+        return registry;
     }
 }

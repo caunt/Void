@@ -7,8 +7,7 @@ using Void.Common.Network.Channels;
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Network.Messages.Packets;
-using Void.Minecraft.Network.Registries.PacketId;
-using Void.Minecraft.Network.Registries.Transformations;
+using Void.Minecraft.Network.Registries;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
@@ -40,16 +39,10 @@ public static class MinecraftLinkExtensions
         await events.ThrowAsync(new MessageSentEvent(Side.Proxy, Side.Proxy, side, direction, packet, link), cancellationToken);
     }
 
-    public static IMinecraftPacketIdPluginsRegistry GetPacketPluginsRegistries(this ILink link, Direction direction)
+    public static IRegistryHolder GetRegistries(this ILink link, Direction direction)
     {
         var channel = link.GetChannel(direction);
-        return channel.GetPacketPluginsRegistryHolder();
-    }
-
-    public static IMinecraftPacketPluginsTransformations GetPacketPluginsTransformations(this ILink link, Direction direction)
-    {
-        var channel = link.GetChannel(direction);
-        return channel.GetPacketTransformationsHolder();
+        return channel.GetRegistries();
     }
 
     public static INetworkChannel GetChannel(this ILink link, Direction direction)

@@ -2,16 +2,13 @@
 using System.Threading.Tasks;
 using Void.Common.Network;
 using Void.Minecraft.Network.Messages.Packets;
-using Void.Minecraft.Network.Registries.PacketId;
-using Void.Minecraft.Network.Registries.Transformations;
+using Void.Minecraft.Network.Registries;
 
 namespace Void.Minecraft.Network.Streams.Packet;
 
 public interface IMinecraftPacketMessageStream : IMinecraftStream
 {
-    public IMinecraftPacketIdSystemRegistry? SystemRegistryHolder { get; set; }
-    public IMinecraftPacketIdPluginsRegistry? PluginsRegistryHolder { get; set; }
-    public IMinecraftPacketPluginsTransformations? TransformationsHolder { get; set; }
+    public IRegistryHolder Registries { get; }
 
     public IMinecraftPacket ReadPacket();
     public ValueTask<IMinecraftPacket> ReadPacketAsync(CancellationToken cancellationToken = default);

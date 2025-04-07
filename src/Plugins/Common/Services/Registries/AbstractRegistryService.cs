@@ -41,7 +41,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!channel.TryGet<IMinecraftPacketMessageStream>(out _))
             return;
 
-        channel.ClearPluginsHolders(plugin);
+        channel.DisposeRegistries(plugin);
     }
 
     [Subscribe(PostOrder.First)]
@@ -53,11 +53,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
         var link = @event.Player.GetLink();
 
-        link.GetPacketPluginsRegistries(Direction.Serverbound).Clear();
-        link.GetPacketPluginsRegistries(Direction.Clientbound).Clear();
-
-        link.GetPacketPluginsTransformations(Direction.Serverbound).Clear();
-        link.GetPacketPluginsTransformations(Direction.Clientbound).Clear();
+        link.GetRegistries(Direction.Clientbound).ClearPlugins();
+        link.GetRegistries(Direction.Serverbound).ClearPlugins();
     }
 
     [Subscribe(PostOrder.Last)]
@@ -69,7 +66,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(player.ProtocolVersion))
             return;
 
-        var registries = @event.Link.GetPacketPluginsRegistries(@event.Direction);
+        var registries = @event.Link.GetRegistries(@event.Direction).PluginsRegistryHolder;
 
         if (registries.IsEmpty)
             return;
@@ -77,7 +74,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (registries.Contains(@event.Message))
             return;
 
-        var transformations = @event.Link.GetPacketPluginsTransformations(@event.Direction);
+        var transformations = @event.Link.GetRegistries(@event.Direction).TransformationsHolder;
 
         try
         {
@@ -109,7 +106,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(player.ProtocolVersion))
             return;
 
-        var registries = @event.Link.GetPacketPluginsRegistries(@event.Direction);
+        var registries = @event.Link.GetRegistries(@event.Direction).PluginsRegistryHolder;
 
         if (registries.IsEmpty)
             return;
@@ -117,7 +114,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (registries.Contains(@event.Message))
             return;
 
-        var transformations = @event.Link.GetPacketPluginsTransformations(@event.Direction);
+        var transformations = @event.Link.GetRegistries(@event.Direction).TransformationsHolder;
 
         try
         {
@@ -156,9 +153,9 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
                 continue;
 
             if (links.TryGetLink(player, out var link))
-                link.ServerChannel.ClearPluginsHolders(plugin);
+                link.ServerChannel.DisposeRegistries(plugin);
 
-            channel.ClearPluginsHolders(plugin);
+            channel.DisposeRegistries(plugin);
         }
     }
 
@@ -203,10 +200,10 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!link.Player.TryGetMinecraftPlayer(out var player))
             yield break;
 
-        var playerPacketRegistryHolder = link.PlayerChannel.GetPacketSystemRegistryHolder();
-        var serverPacketRegistryHolder = link.ServerChannel.GetPacketSystemRegistryHolder();
+        var playerRegistry = link.PlayerChannel.GetRegistries().SystemRegistryHolder;
+        var serverRegistry = link.ServerChannel.GetRegistries().SystemRegistryHolder;
 
-        if (!playerPacketRegistryHolder.Write.TryGetPacketId(minecraftPacket, out var id) && !serverPacketRegistryHolder.Write.TryGetPacketId(minecraftPacket, out id))
+        if (!playerRegistry.Write.TryGetPacketId(minecraftPacket, out var id) && !serverRegistry.Write.TryGetPacketId(minecraftPacket, out id))
             yield break;
 
         foreach (var registry in registries.All)

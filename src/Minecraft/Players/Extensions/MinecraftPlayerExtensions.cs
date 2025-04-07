@@ -46,7 +46,7 @@ public static class MinecraftPlayerExtensions
         var plugin = GetPacketPlugin<T>(player.Context.Services);
         var link = player.GetLink();
         var direction = typeof(T).IsAssignableTo(typeof(IMinecraftClientboundPacket)) ? Direction.Clientbound : Direction.Serverbound;
-        var registry = link.GetPacketPluginsRegistries(direction).Get(plugin);
+        var registry = link.GetRegistries(direction).PluginsRegistryHolder.Get(plugin);
 
         registry.RegisterPacket<T>(player.ProtocolVersion, mappings);
     }
@@ -56,7 +56,7 @@ public static class MinecraftPlayerExtensions
         var plugin = GetPacketPlugin<T>(player.Context.Services);
         var link = player.GetLink();
         var direction = typeof(T).IsAssignableTo(typeof(IMinecraftClientboundPacket)) ? Direction.Clientbound : Direction.Serverbound;
-        var transformations = link.GetPacketPluginsTransformations(direction).Get(plugin);
+        var transformations = link.GetRegistries(direction).TransformationsHolder.Get(plugin);
 
         transformations.RegisterTransformations<T>(player.ProtocolVersion, mappings);
     }

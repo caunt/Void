@@ -3,9 +3,8 @@ using System.Diagnostics.CodeAnalysis;
 using Void.Common.Network;
 using Void.Common.Network.Streams;
 using Void.Minecraft.Buffers;
-using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
-using Void.Minecraft.Network.Registries.PacketId;
+using Void.Minecraft.Network.Registries;
 using Void.Minecraft.Network.Registries.PacketId.Extensions;
 using Void.Minecraft.Network.Registries.Transformations;
 using Void.Minecraft.Network.Streams.Packet;
@@ -13,6 +12,7 @@ using Void.Proxy.Api.Network.Streams.Manual;
 using Void.Proxy.Api.Network.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.Streams.Recyclable;
 using Void.Proxy.Plugins.Common.Network.Messages.Binary;
+using Void.Proxy.Plugins.Common.Network.Registries;
 using Void.Proxy.Plugins.Common.Network.Registries.Transformations;
 using Void.Proxy.Plugins.Common.Network.Streams.Extensions;
 
@@ -20,14 +20,11 @@ namespace Void.Proxy.Plugins.Common.Network.Streams.Packet;
 
 public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMessageStream
 {
-    public ProtocolVersion ProtocolVersion => SystemRegistryHolder?.ProtocolVersion ?? ProtocolVersion.Oldest;
     public IMessageStreamBase? BaseStream { get; set; }
     public bool CanRead => BaseStream?.CanRead ?? false;
     public bool CanWrite => BaseStream?.CanWrite ?? false;
     public bool IsAlive => BaseStream?.IsAlive ?? false;
-    public IMinecraftPacketIdSystemRegistry? SystemRegistryHolder { get; set; }
-    public IMinecraftPacketIdPluginsRegistry? PluginsRegistryHolder { get; set; }
-    public IMinecraftPacketPluginsTransformations? TransformationsHolder { get; set; }
+    public IRegistryHolder Registries { get; } = new RegistryHolder();
 
     public IMinecraftPacket ReadPacket()
     {
@@ -181,10 +178,10 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
         // Set packet data position for further usage. Stream property Length is preserved.
         stream.Position = buffer.Position;
 
-        if (SystemRegistryHolder?.Read is not { } registry || !registry.TryCreateDecoder(id, out var decoder))
+        if (Registries.SystemRegistryHolder?.Read is not { } registry || !registry.TryCreateDecoder(id, out var decoder))
             return new MinecraftBinaryPacket(id, stream);
 
-        var packet = decoder(ref buffer, ProtocolVersion);
+        var packet = decoder(ref buffer, Registries.ProtocolVersion);
         stream.Dispose();
 
         if (buffer.HasData)
@@ -219,9 +216,7 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
         else
         {
             if (!TryGetPacketId(packet, out var id))
-                throw new InvalidOperationException($"{packet} is not registered:\n" +
-                    $"{nameof(SystemRegistryHolder)} [{string.Join(", ", SystemRegistryHolder?.Write?.PacketTypes.Select(type => type.Name) ?? [])}]\n" +
-                    $"{nameof(PluginsRegistryHolder)} [{string.Join(", ", PluginsRegistryHolder?.All.SelectMany(registry => registry.PacketTypes).Select(type => type.Name) ?? [])}]");
+                throw new InvalidOperationException($"{packet} is not registered:\n{Registries.PrintPackets()}");
 
             EncodeVarInt(stream, id);
 
@@ -229,7 +224,7 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
             var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(id, stream), origin);
 
             var position = stream.Position;
-            packet.Encode(ref buffer, ProtocolVersion);
+            packet.Encode(ref buffer, Registries.ProtocolVersion);
 
             if (TryGetTransformations(packet, out var transformations))
             {
@@ -260,13 +255,13 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
     {
         id = 0;
 
-        if (SystemRegistryHolder?.Write is { } systemRegistry)
+        if (Registries.SystemRegistryHolder?.Write is { } systemRegistry)
         {
             if (systemRegistry.TryGetPacketId(packet, out id))
                 return true;
         }
 
-        if (PluginsRegistryHolder is { } pluginsRegistries)
+        if (Registries.PluginsRegistryHolder is { } pluginsRegistries)
         {
             foreach (var registry in pluginsRegistries.All)
             {
@@ -282,12 +277,12 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
     {
         transformations = null;
 
-        if (PluginsRegistryHolder is null)
+        if (Registries.PluginsRegistryHolder is null)
             return false;
 
-        if (TransformationsHolder is null)
+        if (Registries.TransformationsHolder is null)
             return false;
 
-        return PluginsRegistryHolder.TryGetTransformations(TransformationsHolder, packet, TransformationType.Downgrade, out transformations);
+        return Registries.PluginsRegistryHolder.TryGetTransformations(Registries.TransformationsHolder, packet, TransformationType.Downgrade, out transformations);
     }
 }
