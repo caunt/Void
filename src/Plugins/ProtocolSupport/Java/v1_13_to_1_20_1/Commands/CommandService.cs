@@ -14,12 +14,12 @@ public class CommandService(IEventService events) : AbstractCommandService(event
         switch (@event.Message)
         {
             case ChatMessagePacket chatMessagePacket:
-                var legacyMessage = chatMessagePacket.Message.SerializeLegacy();
+                var text = chatMessagePacket.Text;
 
-                if (string.IsNullOrEmpty(legacyMessage) || legacyMessage[0] != '/')
+                if (string.IsNullOrEmpty(text) || text[0] != '/')
                     return;
 
-                await HandleCommandAsync(@event.Link, legacyMessage[1..], false, cancellationToken);
+                await HandleCommandAsync(@event.Link, text[1..], false, cancellationToken);
                 break;
             case IChatCommand chatCommand:
                 await HandleCommandAsync(@event.Link, chatCommand.Command, chatCommand.IsSigned, cancellationToken);

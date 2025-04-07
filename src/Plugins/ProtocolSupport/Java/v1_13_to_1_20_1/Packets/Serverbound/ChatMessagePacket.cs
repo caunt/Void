@@ -1,5 +1,4 @@
 ﻿using Void.Minecraft.Buffers;
-using Void.Minecraft.Components.Text;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
 
@@ -7,16 +6,16 @@ namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Server
 
 public class ChatMessagePacket : IMinecraftServerboundPacket<ChatMessagePacket>
 {
-    public required Component Message { get; set; }
+    public required string Text { get; set; }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        buffer.WriteString(Message.SerializeLegacy());
+        buffer.WriteString(Text);
     }
 
     public static ChatMessagePacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        var a = new ChatMessagePacket { Message = buffer.ReadComponent(protocolVersion) };
+        var a = new ChatMessagePacket { Text = buffer.ReadString() };
         return a;
     }
 
