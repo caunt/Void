@@ -10,10 +10,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Transformations\" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <ProjectReference Include="..\Api\Void.Proxy.Api.csproj" />
 	  <ProjectReference Include="..\Common\Void.Common.csproj" />
 	</ItemGroup>
