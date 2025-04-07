@@ -59,7 +59,13 @@ public abstract record NbtTag
 
         // SharpNBT does not write tag type in case of empty tag name
         if (string.IsNullOrEmpty(Name))
+        {
             memoryStream.WriteByte((byte)tag.Type);
+            
+            // TODO: Handle "UseVarInt" option
+            if (Name is not null)
+                memoryStream.Write([0, 0]);
+        }
 
         writer.WriteTag(tag);
         memoryStream.Position = 0;
@@ -108,6 +114,10 @@ public abstract record NbtTag
             throw new InvalidCastException($"Tag {tag} cannot be cast to {typeof(T)}");
 
         result = tag;
+        
+        if (readName && result.Name is null) 
+            result.Name = "";
+        
         return stream.Position;
     }
 }

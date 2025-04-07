@@ -128,7 +128,7 @@ public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
             levelNames[i] = buffer.ReadString();
 
         var bufferPosition = buffer.Position;
-        var registryLength = NbtTag.Parse(buffer.ReadToEnd().ToArray(), out var registry);
+        var registryLength = NbtTag.Parse(buffer.ReadToEnd().ToArray(), out var registry, true);
         buffer.Seek(bufferPosition + registryLength);
         var levelName = string.Empty;
 
@@ -136,7 +136,7 @@ public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2 && protocolVersion < ProtocolVersion.MINECRAFT_1_19)
         {
             bufferPosition = buffer.Position;
-            var length = NbtTag.Parse(buffer.ReadToEnd().ToArray(), out _);
+            var length = NbtTag.Parse(buffer.ReadToEnd().ToArray(), out _, true);
             buffer.Seek(bufferPosition + length);
 
             dimensionIdentifier = buffer.ReadString();
