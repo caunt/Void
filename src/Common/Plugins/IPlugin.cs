@@ -1,4 +1,6 @@
-﻿namespace Void.Common;
+﻿using Void.Common.Events;
+
+namespace Void.Common.Plugins;
 
 public interface IPlugin : IEventListener
 {

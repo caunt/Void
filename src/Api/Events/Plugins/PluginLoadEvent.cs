@@ -1,4 +1,4 @@
-﻿using Void.Common;
+﻿using Void.Common.Plugins;
 
 namespace Void.Proxy.Api.Events.Plugins;
 

@@ -1,6 +1,6 @@
 ﻿using Nito.AsyncEx;
 using System.Diagnostics.CodeAnalysis;
-using Void.Common;
+using Void.Common.Events;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Authentication;
 using Void.Proxy.Api.Events.Links;

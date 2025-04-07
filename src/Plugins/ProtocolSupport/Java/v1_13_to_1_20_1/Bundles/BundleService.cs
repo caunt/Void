@@ -1,4 +1,4 @@
-﻿using Void.Common;
+﻿using Void.Common.Network.Messages;
 using Void.Proxy.Plugins.Common.Services.Bundles;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientbound;
 

@@ -1,6 +1,8 @@
 ﻿using Nito.AsyncEx;
 using System.Diagnostics.CodeAnalysis;
-using Void.Common;
+using Void.Common.Network;
+using Void.Common.Network.Messages;
+using Void.Common.Network.Streams;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Streams.Packet;
 using Void.Proxy.Api.Network.IO.Channels;

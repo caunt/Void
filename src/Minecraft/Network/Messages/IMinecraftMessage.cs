@@ -1,4 +1,4 @@
-﻿using Void.Common;
+﻿using Void.Common.Network.Messages;
 
 namespace Void.Minecraft.Network.Messages;
 

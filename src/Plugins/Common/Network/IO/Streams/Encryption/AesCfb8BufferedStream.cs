@@ -1,6 +1,6 @@
 ﻿using System.Buffers;
 using System.Security.Cryptography;
-using Void.Common;
+using Void.Common.Network.Streams;
 using Void.Proxy.Api.Network.IO.Messages.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Manual;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Binary;

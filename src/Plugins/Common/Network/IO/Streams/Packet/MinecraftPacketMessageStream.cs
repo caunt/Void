@@ -1,6 +1,7 @@
 ﻿using Microsoft.IO;
 using System.Diagnostics.CodeAnalysis;
-using Void.Common;
+using Void.Common.Network;
+using Void.Common.Network.Streams;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;

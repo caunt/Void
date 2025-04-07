@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using Void.Common;
+using Void.Common.Network.Messages;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Compression;

@@ -1,4 +1,4 @@
-﻿namespace Void.Common;
+﻿namespace Void.Common.Network;
 
 public enum Direction
 {

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Void.Common;
+using Void.Common.Network;
+using Void.Common.Plugins;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Streams.Packet;

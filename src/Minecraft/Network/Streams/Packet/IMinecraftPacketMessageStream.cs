@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Void.Common;
+using Void.Common.Network;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Streams.Packet.Registries;
 using Void.Minecraft.Network.Streams.Packet.Transformations;

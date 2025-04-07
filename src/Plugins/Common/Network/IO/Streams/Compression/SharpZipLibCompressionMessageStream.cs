@@ -1,7 +1,7 @@
 ﻿using ICSharpCode.SharpZipLib.Zip.Compression;
 using Microsoft.IO;
 using System.Buffers;
-using Void.Common;
+using Void.Common.Network.Streams;
 using Void.Minecraft.Buffers;
 using Void.Proxy.Api.Network.IO.Messages.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Compression;

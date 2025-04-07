@@ -1,6 +1,6 @@
 ﻿using Ionic.Zlib;
 using Microsoft.IO;
-using Void.Common;
+using Void.Common.Network.Streams;
 using Void.Minecraft.Buffers;
 using Void.Proxy.Api.Network.IO.Messages.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Compression;

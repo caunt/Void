@@ -1,4 +1,4 @@
-﻿using Void.Common;
+﻿using Void.Common.Network.Streams;
 using Void.Proxy.Api.Network.IO.Messages.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Network;

@@ -1,4 +1,4 @@
-﻿using Void.Common;
+﻿using Void.Common.Network;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Streams.Packet;
 using Void.Minecraft.Network.Streams.Packet.Registries;

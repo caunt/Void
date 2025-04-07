@@ -1,4 +1,4 @@
-﻿using Void.Common;
+﻿using Void.Common.Events;
 
 namespace Void.Proxy.Api.Events.Services;
 

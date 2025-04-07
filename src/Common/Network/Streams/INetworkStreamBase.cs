@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Void.Common;
+namespace Void.Common.Network.Streams;
 
 public interface INetworkStreamBase : IDisposable, IAsyncDisposable
 {

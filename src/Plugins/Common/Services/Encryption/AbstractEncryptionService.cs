@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System.Security.Cryptography;
-using Void.Common;
+using Void.Common.Network;
+using Void.Common.Network.Messages;
 using Void.Minecraft.Network;
 using Void.Proxy.Api.Crypto;
 using Void.Proxy.Api.Events;

@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Void.Common;
+using Void.Common.Network;
 using Void.Minecraft.Network;
 using Void.Proxy.Api.Events.Minecraft;
 using Void.Proxy.Api.Events.Services;

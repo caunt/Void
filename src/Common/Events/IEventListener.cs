@@ -1,3 +1,3 @@
-﻿namespace Void.Common;
+﻿namespace Void.Common.Events;
 
 public interface IEventListener;

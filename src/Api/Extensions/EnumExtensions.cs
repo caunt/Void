@@ -1,4 +1,4 @@
-﻿using Void.Common;
+﻿using Void.Common.Network;
 using Void.Proxy.Api.Links;
 
 namespace Void.Proxy.Api.Extensions;

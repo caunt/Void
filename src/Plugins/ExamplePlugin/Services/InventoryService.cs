@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using Void.Common;
+using Void.Common.Events;
+using Void.Common.Network;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Streams.Packet.Transformations;
 using Void.Proxy.Api.Events;

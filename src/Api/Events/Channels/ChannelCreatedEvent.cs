@@ -1,4 +1,4 @@
-﻿using Void.Common;
+﻿using Void.Common.Network;
 using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Api.Players;
 

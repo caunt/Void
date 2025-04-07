@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using Void.Common;
+using Void.Common.Network.Messages;
+using Void.Common.Plugins;
 using Void.Minecraft.Network.Messages.Packets;
 
 namespace Void.Minecraft.Network.Streams.Packet.Registries;

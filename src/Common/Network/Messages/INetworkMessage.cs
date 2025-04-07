@@ -1,5 +1,5 @@
 ﻿using System;
 
-namespace Void.Common;
+namespace Void.Common.Network.Messages;
 
 public interface INetworkMessage : IDisposable;

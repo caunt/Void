@@ -1,4 +1,4 @@
-﻿using Void.Common;
+﻿using Void.Common.Network.Messages;
 using Void.Minecraft.Network;
 using Void.Proxy.Api.Crypto;
 using Void.Proxy.Api.Events.Services;

@@ -1,4 +1,4 @@
-﻿using Void.Common;
+﻿using Void.Common.Network.Streams;
 
 namespace Void.Minecraft.Network.Streams;
 

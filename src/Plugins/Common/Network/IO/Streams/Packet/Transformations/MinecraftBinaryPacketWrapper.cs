@@ -1,6 +1,6 @@
 ﻿using Nito.Collections;
 using System.Diagnostics.CodeAnalysis;
-using Void.Common;
+using Void.Common.Network;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Network.Streams.Packet.Transformations;

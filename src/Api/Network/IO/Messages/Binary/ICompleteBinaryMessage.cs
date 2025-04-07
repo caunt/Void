@@ -1,5 +1,5 @@
 ﻿using Microsoft.IO;
-using Void.Common;
+using Void.Common.Network.Messages;
 
 namespace Void.Proxy.Api.Network.IO.Messages.Binary;
 
