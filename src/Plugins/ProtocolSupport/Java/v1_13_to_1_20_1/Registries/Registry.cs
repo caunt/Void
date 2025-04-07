@@ -90,6 +90,15 @@ public static class Registry
                 new MinecraftPacketIdMapping(0x64, ProtocolVersion.MINECRAFT_1_19_4)
             ],
             typeof(SystemChatMessagePacket)
+        },
+        {
+            [
+                new MinecraftPacketIdMapping(0x0E, ProtocolVersion.MINECRAFT_1_13),
+                new MinecraftPacketIdMapping(0x0F, ProtocolVersion.MINECRAFT_1_15),
+                new MinecraftPacketIdMapping(0x0E, ProtocolVersion.MINECRAFT_1_16),
+                new MinecraftPacketIdMapping(0x0F, ProtocolVersion.MINECRAFT_1_17, ProtocolVersion.MINECRAFT_1_18_2)
+            ],
+            typeof(ChatMessagePacket)
         }
     };
 
