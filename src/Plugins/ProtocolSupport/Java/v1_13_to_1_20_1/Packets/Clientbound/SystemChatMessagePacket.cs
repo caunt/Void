@@ -14,7 +14,7 @@ public class SystemChatMessagePacket : IMinecraftClientboundPacket<SystemChatMes
     {
         buffer.WriteComponent(Message, protocolVersion);
 
-        if (protocolVersion > ProtocolVersion.MINECRAFT_1_19)
+        if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19)
             buffer.WriteBoolean(Overlay);
     }
 
@@ -23,7 +23,7 @@ public class SystemChatMessagePacket : IMinecraftClientboundPacket<SystemChatMes
         var message = buffer.ReadComponent(protocolVersion);
         var overlay = false;
 
-        if (protocolVersion > ProtocolVersion.MINECRAFT_1_19)
+        if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19)
             overlay = buffer.ReadBoolean();
 
         return new SystemChatMessagePacket
