@@ -1,5 +1,5 @@
-﻿using Void.Minecraft.Network.Streams;
+﻿using Void.Common.Network.Streams;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Compression;
 
-public interface IZlibCompressionStream : IMinecraftStream;
+public interface IZlibCompressionStream : INetworkStream;

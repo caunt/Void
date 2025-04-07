@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
+using Void.Common.Players;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Commands;
 using Void.Proxy.Api.Events.Player;
-using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Servers;
 using Void.Proxy.Plugins.Common.Services;
 

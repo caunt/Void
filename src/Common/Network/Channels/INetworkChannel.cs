@@ -1,11 +1,13 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using Void.Common.Network;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
 using Void.Common.Network.Messages;
 using Void.Common.Network.Streams;
 
-namespace Void.Proxy.Api.Network.IO.Channels;
+namespace Void.Common.Network.Channels;
 
-public interface IMinecraftChannel : IDisposable, IAsyncDisposable
+public interface INetworkChannel : IDisposable, IAsyncDisposable
 {
     public bool CanRead { get; }
     public bool CanWrite { get; }

@@ -1,18 +1,18 @@
 ﻿using Void.Common.Network;
+using Void.Common.Network.Channels;
 using Void.Common.Network.Messages;
+using Void.Common.Players;
 using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
-using Void.Proxy.Api.Network.IO.Channels;
-using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Servers;
 
 namespace Void.Proxy.Links;
 
-public class Link(IPlayer player, IServer server, IMinecraftChannel playerChannel, IMinecraftChannel serverChannel, ILogger logger, IEventService events) : ILink
+public class Link(IPlayer player, IServer server, INetworkChannel playerChannel, INetworkChannel serverChannel, ILogger logger, IEventService events) : ILink
 {
     private readonly CancellationTokenSource _ctsPlayerToServer = new();
     private readonly CancellationTokenSource _ctsPlayerToServerForce = new();
@@ -28,8 +28,8 @@ public class Link(IPlayer player, IServer server, IMinecraftChannel playerChanne
 
     public IPlayer Player { get; init; } = player;
     public IServer Server { get; init; } = server;
-    public IMinecraftChannel PlayerChannel { get; init; } = playerChannel;
-    public IMinecraftChannel ServerChannel { get; init; } = serverChannel;
+    public INetworkChannel PlayerChannel { get; init; } = playerChannel;
+    public INetworkChannel ServerChannel { get; init; } = serverChannel;
 
     public bool IsAlive => this is { _playerToServerTask.IsCompleted: false, _serverToPlayerTask.IsCompleted: false };
 
@@ -126,7 +126,7 @@ public class Link(IPlayer player, IServer server, IMinecraftChannel playerChanne
         }
     }
 
-    protected async Task ExecuteAsync(IMinecraftChannel sourceChannel, IMinecraftChannel destinationChannel, Direction direction, CancellationToken cancellationToken, CancellationToken forceCancellationToken)
+    protected async Task ExecuteAsync(INetworkChannel sourceChannel, INetworkChannel destinationChannel, Direction direction, CancellationToken cancellationToken, CancellationToken forceCancellationToken)
     {
         await Task.Yield();
 

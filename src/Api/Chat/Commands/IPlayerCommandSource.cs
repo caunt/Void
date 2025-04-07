@@ -1,4 +1,4 @@
-﻿using Void.Proxy.Api.Players;
+﻿using Void.Common.Players;
 
 namespace Void.Proxy.Api.Chat.Commands;
 

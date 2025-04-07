@@ -1,19 +1,23 @@
-﻿using Void.Common.Network;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Void.Common.Network;
+using Void.Common.Network.Channels;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Streams.Packet;
 using Void.Minecraft.Network.Streams.Packet.Registries;
 using Void.Minecraft.Network.Streams.Packet.Transformations;
 
-namespace Void.Proxy.Api.Network.IO.Channels.Extensions;
+namespace Void.Minecraft.Network.Channels.Extensions;
 
 public static class MinecraftChannelExtensions
 {
-    public static async ValueTask SendPacketAsync<T>(this IMinecraftChannel channel, T packet, CancellationToken cancellationToken) where T : IMinecraftPacket
+    public static async ValueTask SendPacketAsync<T>(this INetworkChannel channel, T packet, CancellationToken cancellationToken) where T : IMinecraftPacket
     {
         await channel.WriteMessageAsync(packet, Side.Proxy, cancellationToken);
     }
 
-    public static IMinecraftPacketSystemRegistry GetPacketSystemRegistryHolder(this IMinecraftChannel channel)
+    public static IMinecraftPacketSystemRegistry GetPacketSystemRegistryHolder(this INetworkChannel channel)
     {
         if (channel.TryGet<IMinecraftPacketMessageStream>(out var stream) && stream.SystemRegistryHolder is { } registry)
             return registry;
@@ -21,7 +25,7 @@ public static class MinecraftChannelExtensions
         throw new InvalidOperationException($"{nameof(IMinecraftPacketSystemRegistry)} is not set yet on this channel");
     }
 
-    public static IMinecraftPacketPluginsRegistry GetPacketPluginsRegistryHolder(this IMinecraftChannel channel)
+    public static IMinecraftPacketPluginsRegistry GetPacketPluginsRegistryHolder(this INetworkChannel channel)
     {
         if (channel.TryGet<IMinecraftPacketMessageStream>(out var stream) && stream.PluginsRegistryHolder is { } registry)
             return registry;
@@ -29,7 +33,7 @@ public static class MinecraftChannelExtensions
         throw new InvalidOperationException($"{nameof(IMinecraftPacketPluginsRegistry)} is not set yet on this channel");
     }
 
-    public static IMinecraftPacketPluginsTransformations GetPacketTransformationsHolder(this IMinecraftChannel channel)
+    public static IMinecraftPacketPluginsTransformations GetPacketTransformationsHolder(this INetworkChannel channel)
     {
         if (channel.TryGet<IMinecraftPacketMessageStream>(out var stream) && stream.TransformationsHolder is { } transformations)
             return transformations;

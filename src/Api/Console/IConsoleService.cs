@@ -1,4 +1,4 @@
-﻿using Void.Minecraft.Commands;
+﻿using Void.Common.Commands;
 
 namespace Void.Proxy.Api.Console;
 

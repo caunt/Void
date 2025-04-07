@@ -1,10 +1,10 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
+using Void.Minecraft.Mojang;
+using Void.Minecraft.Players;
 using Void.Minecraft.Profiles;
 using Void.Proxy.Api.Crypto;
-using Void.Proxy.Api.Mojang;
-using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Plugins.Common.Mojang;
 
@@ -14,7 +14,7 @@ public class MojangService(ICryptoService crypto) : IMojangService
     private static readonly string SessionServer = Environment.GetEnvironmentVariable("mojang.sessionserver") ?? "https://sessionserver.mojang.com/session/minecraft/hasJoined";
     private static readonly bool PreventProxyConnections = bool.TryParse(Environment.GetEnvironmentVariable("mojang.prevent-proxy-connections"), out var value) && value;
 
-    public async ValueTask<GameProfile?> VerifyAsync(IPlayer player, ReadOnlyMemory<byte> secret, CancellationToken cancellationToken = default)
+    public async ValueTask<GameProfile?> VerifyAsync(IMinecraftPlayer player, ReadOnlyMemory<byte> secret, CancellationToken cancellationToken = default)
     {
         if (player.Profile is null)
             throw new ArgumentNullException(nameof(player), "Player profile should be set in order to verify his session");

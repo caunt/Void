@@ -2,7 +2,7 @@
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Plugins;
+using Void.Proxy.Plugins.Common.Plugins;
 using Void.Proxy.Plugins.Essentials.Moderation;
 using Void.Proxy.Plugins.Essentials.Platform;
 using Void.Proxy.Plugins.Essentials.Redirection;

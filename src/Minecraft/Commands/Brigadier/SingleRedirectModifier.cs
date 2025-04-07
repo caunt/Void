@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Commands.Brigadier.Context;
+﻿using Void.Common.Commands;
+using Void.Minecraft.Commands.Brigadier.Context;
 
 namespace Void.Minecraft.Commands.Brigadier;
 

@@ -1,12 +1,13 @@
 ﻿using System.Net.Sockets;
 using Void.Minecraft.Network;
+using Void.Minecraft.Players;
 using Void.Minecraft.Profiles;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Players.Contexts;
 
 namespace Void.Proxy.Players;
 
-public class Player(TcpClient client) : IPlayer
+public class Player(TcpClient client) : IMinecraftPlayer
 {
     // used in 1.19 - 1.19.2
     public IdentifiedKey? IdentifiedKey { get; set; }

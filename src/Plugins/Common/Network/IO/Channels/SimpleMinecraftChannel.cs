@@ -1,18 +1,18 @@
 ﻿using Nito.AsyncEx;
 using System.Diagnostics.CodeAnalysis;
 using Void.Common.Network;
+using Void.Common.Network.Channels;
 using Void.Common.Network.Messages;
 using Void.Common.Network.Streams;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Streams.Packet;
-using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Network;
 using Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Channels;
 
-public class SimpleMinecraftChannel(INetworkStreamBase head) : IMinecraftChannel
+public class SimpleMinecraftChannel(INetworkStreamBase head) : INetworkChannel
 {
     private readonly AsyncLock _writeLock = new();
     private TaskCompletionSource? _readPause;
@@ -151,7 +151,7 @@ public class SimpleMinecraftChannel(INetworkStreamBase head) : IMinecraftChannel
     public void Pause(Operation operation = Operation.Read)
     {
         if (!TryPause(operation))
-            throw new InvalidOperationException($"{nameof(IMinecraftChannel)} is already paused");
+            throw new InvalidOperationException($"{nameof(INetworkChannel)} is already paused");
     }
 
     public bool TryPause(Operation operation = Operation.Read)
@@ -185,7 +185,7 @@ public class SimpleMinecraftChannel(INetworkStreamBase head) : IMinecraftChannel
     public void Resume(Operation operation = Operation.Read)
     {
         if (!TryResume(operation))
-            throw new InvalidOperationException($"{nameof(IMinecraftChannel)} is not paused");
+            throw new InvalidOperationException($"{nameof(INetworkChannel)} is not paused");
     }
 
     public bool TryResume(Operation operation = Operation.Read)

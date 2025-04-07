@@ -1,4 +1,4 @@
-﻿namespace Void.Proxy.Api.Events;
+﻿namespace Void.Common.Events;
 
 public interface IEvent;
 

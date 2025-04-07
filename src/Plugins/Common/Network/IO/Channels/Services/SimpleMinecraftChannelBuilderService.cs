@@ -1,11 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Net.Sockets;
 using Void.Common.Network;
+using Void.Common.Network.Channels;
+using Void.Common.Players;
 using Void.Proxy.Api.Events.Channels;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Api.Network.IO.Channels.Services;
-using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Servers;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Network;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Transparent;
@@ -51,7 +51,7 @@ public class SimpleMinecraftChannelBuilderService(ILogger<SimpleMinecraftChannel
         _executed = true;
     }
 
-    public async ValueTask<IMinecraftChannel> BuildPlayerChannelAsync(IPlayer player, CancellationToken cancellationToken = default)
+    public async ValueTask<INetworkChannel> BuildPlayerChannelAsync(IPlayer player, CancellationToken cancellationToken = default)
     {
         logger.LogTrace("Building channel for a {Player} player", player);
         var channel = await BuildChannelAsync(player, Side.Client, player.Client.GetStream(), cancellationToken);
@@ -66,7 +66,7 @@ public class SimpleMinecraftChannelBuilderService(ILogger<SimpleMinecraftChannel
         return channel;
     }
 
-    public async ValueTask<IMinecraftChannel> BuildServerChannelAsync(IPlayer player, IServer server, CancellationToken cancellationToken = default)
+    public async ValueTask<INetworkChannel> BuildServerChannelAsync(IPlayer player, IServer server, CancellationToken cancellationToken = default)
     {
         logger.LogTrace("Building channel for a {Server} server", server);
 
@@ -79,7 +79,7 @@ public class SimpleMinecraftChannelBuilderService(ILogger<SimpleMinecraftChannel
         return channel;
     }
 
-    private async ValueTask<IMinecraftChannel> BuildChannelAsync(IPlayer player, Side side, NetworkStream stream, CancellationToken cancellationToken = default)
+    private async ValueTask<INetworkChannel> BuildChannelAsync(IPlayer player, Side side, NetworkStream stream, CancellationToken cancellationToken = default)
     {
         if (_builder is null)
             throw new InvalidOperationException($"{nameof(IChannelBuilderService)} is not found yet. Call {nameof(SearchChannelBuilderAsync)} before channel building.");
@@ -92,8 +92,8 @@ public class SimpleMinecraftChannelBuilderService(ILogger<SimpleMinecraftChannel
         return channel;
     }
 
-    private static ValueTask<IMinecraftChannel> FallbackBuilder(IPlayer player, Side side, NetworkStream networkStream, CancellationToken cancellationToken)
+    private static ValueTask<INetworkChannel> FallbackBuilder(IPlayer player, Side side, NetworkStream networkStream, CancellationToken cancellationToken)
     {
-        return ValueTask.FromResult<IMinecraftChannel>(new SimpleMinecraftChannel(new SimpleNetworkStream(networkStream)));
+        return ValueTask.FromResult<INetworkChannel>(new SimpleMinecraftChannel(new SimpleNetworkStream(networkStream)));
     }
 }

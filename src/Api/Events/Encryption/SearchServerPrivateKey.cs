@@ -1,4 +1,5 @@
-﻿using Void.Proxy.Api.Servers;
+﻿using Void.Common.Events;
+using Void.Proxy.Api.Servers;
 
 namespace Void.Proxy.Api.Events.Encryption;
 

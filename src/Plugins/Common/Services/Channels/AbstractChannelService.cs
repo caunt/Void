@@ -2,15 +2,16 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using Void.Common.Network;
+using Void.Common.Network.Channels;
+using Void.Common.Players;
 using Void.Minecraft.Network;
+using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Channels;
 using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
-using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Api.Network.IO.Channels.Services;
-using Void.Proxy.Api.Players;
 using Void.Proxy.Plugins.Common.Network.IO.Channels;
 using Void.Proxy.Plugins.Common.Network.IO.Channels.Services;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Network;
@@ -32,16 +33,19 @@ public abstract class AbstractChannelService(IEventService events) : IPluginComm
     [Subscribe]
     public void OnSearchChannelBuilder(SearchChannelBuilderEvent @event)
     {
+        if (!@event.Player.TryGetMinecraftPlayer(out var player))
+            return;
+
         if (!IsSupportedHandshake(@event.Buffer, out var protocolVersion))
             return;
 
-        @event.Player.ProtocolVersion = protocolVersion;
+        player.ProtocolVersion = protocolVersion;
         @event.Result = ChannelBuilderAsync;
     }
 
     protected abstract bool IsSupportedHandshake(Memory<byte> memory, [MaybeNullWhen(false)] out ProtocolVersion protocolVersion);
 
-    private async ValueTask<IMinecraftChannel> ChannelBuilderAsync(IPlayer player, Side side, NetworkStream stream, CancellationToken cancellationToken)
+    private async ValueTask<INetworkChannel> ChannelBuilderAsync(IPlayer player, Side side, NetworkStream stream, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 

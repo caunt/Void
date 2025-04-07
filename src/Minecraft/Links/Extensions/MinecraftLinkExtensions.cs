@@ -1,14 +1,19 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Void.Common.Network;
+using Void.Common.Network.Channels;
+using Void.Minecraft.Links.Extensions;
+using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Streams.Packet.Registries;
 using Void.Minecraft.Network.Streams.Packet.Transformations;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Network.IO.Channels;
-using Void.Proxy.Api.Network.IO.Channels.Extensions;
+using Void.Proxy.Api.Links;
 
-namespace Void.Proxy.Api.Links.Extensions;
+namespace Void.Minecraft.Links.Extensions;
 
 public static class MinecraftLinkExtensions
 {
@@ -47,7 +52,7 @@ public static class MinecraftLinkExtensions
         return channel.GetPacketTransformationsHolder();
     }
 
-    public static IMinecraftChannel GetChannel(this ILink link, Direction direction)
+    public static INetworkChannel GetChannel(this ILink link, Direction direction)
     {
         return direction switch
         {

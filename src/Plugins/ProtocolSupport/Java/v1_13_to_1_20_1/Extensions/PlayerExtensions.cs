@@ -1,5 +1,5 @@
-﻿using Void.Minecraft.Network.Streams.Packet;
-using Void.Proxy.Api.Players;
+﻿using Void.Common.Players;
+using Void.Minecraft.Network.Streams.Packet;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Serverbound;

@@ -1,4 +1,5 @@
-﻿using Void.Common.Network;
+﻿using Void.Common.Events;
+using Void.Common.Network;
 using Void.Common.Network.Messages;
 using Void.Proxy.Api.Links;
 

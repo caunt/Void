@@ -1,9 +1,10 @@
-﻿using Void.Proxy.Api.Network.IO.Channels;
+﻿using System;
+using Void.Common.Network.Channels;
 
 namespace Void.Proxy.Api.Players;
 
 public interface IPlayerContext : IAsyncDisposable
 {
     public IServiceProvider Services { get; }
-    public IMinecraftChannel? Channel { get; set; }
+    public INetworkChannel? Channel { get; set; }
 }

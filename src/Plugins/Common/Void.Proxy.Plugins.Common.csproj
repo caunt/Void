@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Api\Void.Proxy.Api.csproj" />
+    <ProjectReference Include="..\..\Minecraft\Void.Minecraft.csproj" />
   </ItemGroup>
 
 </Project>

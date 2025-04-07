@@ -1,9 +1,10 @@
-﻿using Void.Minecraft.Components.Text;
+﻿using Void.Common.Players;
+using Void.Minecraft.Components.Text;
+using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
+using Void.Minecraft.Network.Channels.Extensions;
+using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Links;
-using Void.Proxy.Api.Links.Extensions;
-using Void.Proxy.Api.Network.IO.Channels.Extensions;
-using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Services.Lifecycle;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Extensions;
@@ -26,12 +27,15 @@ public class LifecycleService : AbstractLifecycleService
 
     protected override async ValueTask<bool> SendChatMessageAsync(IPlayer player, Component text, CancellationToken cancellationToken)
     {
+        if (!player.TryGetMinecraftPlayer(out var minecraftPlayer))
+            return false;
+
         if (!await player.IsPlayingAsync(cancellationToken))
             return false;
 
         var channel = await player.GetChannelAsync(cancellationToken);
 
-        if (player.ProtocolVersion < ProtocolVersion.MINECRAFT_1_19)
+        if (minecraftPlayer.ProtocolVersion < ProtocolVersion.MINECRAFT_1_19)
             await channel.SendPacketAsync(new ChatMessagePacket { Message = text }, cancellationToken);
         else
             await channel.SendPacketAsync(new SystemChatMessagePacket { Message = text, Overlay = false }, cancellationToken);

@@ -1,14 +1,15 @@
 ﻿using Nito.AsyncEx;
 using System.Diagnostics.CodeAnalysis;
 using Void.Common.Events;
+using Void.Common.Network.Channels;
+using Void.Common.Players;
+using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Authentication;
 using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
-using Void.Proxy.Api.Network.IO.Channels;
-using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Servers;
 
@@ -59,7 +60,7 @@ public class LinkService : ILinkService, IEventListener
         var firstConnection = player.Context.Channel is null;
         var playerChannel = await player.GetChannelAsync(cancellationToken);
 
-        IMinecraftChannel serverChannel;
+        INetworkChannel serverChannel;
 
         try
         {

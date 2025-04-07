@@ -1,4 +1,4 @@
-﻿namespace Void.Proxy.Api.Events.Chat;
+﻿namespace Void.Minecraft.Events.Chat;
 
 public enum ChatMessageSendResult
 {

@@ -2,7 +2,9 @@
 using System.Security.Cryptography;
 using Void.Common.Network;
 using Void.Common.Network.Messages;
+using Void.Common.Players;
 using Void.Minecraft.Network;
+using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Crypto;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Encryption;
@@ -11,7 +13,6 @@ using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
-using Void.Proxy.Api.Players;
 using Void.Proxy.Plugins.Common.Crypto;
 using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Encryption;
@@ -33,7 +34,10 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
     [Subscribe(PostOrder.First)]
     public async ValueTask OnMessageSent(MessageSentEvent @event, CancellationToken cancellationToken)
     {
-        if (!IsSupportedVersion(@event.Link.Player.ProtocolVersion))
+        if (!@event.Link.Player.TryGetMinecraftPlayer(out var player))
+            return;
+
+        if (!IsSupportedVersion(player.ProtocolVersion))
             return;
 
         if (@event.Origin is Side.Proxy)
@@ -64,7 +68,10 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
     [Subscribe]
     public async ValueTask OnPlayerVerifyingEncryption(PlayerVerifyingEncryptionEvent @event, CancellationToken cancellationToken)
     {
-        if (!IsSupportedVersion(@event.Link.Player.ProtocolVersion))
+        if (!@event.Link.Player.TryGetMinecraftPlayer(out var player))
+            return;
+
+        if (!IsSupportedVersion(player.ProtocolVersion))
             return;
 
         var tokens = @event.Link.Player.Context.Services.GetRequiredService<ITokenHolder>();
@@ -89,14 +96,17 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
 
     protected bool VerifyToken(IPlayer player, ReadOnlySpan<byte> original, ReadOnlySpan<byte> encrypted, long salt = 0)
     {
-        if (player.IdentifiedKey is not null)
+        if (!player.TryGetMinecraftPlayer(out var minecraftPlayer))
+            return false;
+
+        if (minecraftPlayer.IdentifiedKey is not null)
         {
             var saltBytes = BitConverter.GetBytes(salt);
 
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(saltBytes);
 
-            return player.IdentifiedKey.VerifyDataSignature(encrypted, [.. original, .. saltBytes]);
+            return minecraftPlayer.IdentifiedKey.VerifyDataSignature(encrypted, [.. original, .. saltBytes]);
         }
 
         var decrypted = new byte[encrypted.Length];

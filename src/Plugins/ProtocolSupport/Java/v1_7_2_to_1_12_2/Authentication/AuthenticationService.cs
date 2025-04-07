@@ -1,10 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
+using Void.Common.Players;
+using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
+using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events.Authentication;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
-using Void.Proxy.Api.Links.Extensions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Events;
@@ -48,42 +50,51 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
 
     protected override async ValueTask<bool> IdentifyPlayerAsync(ILink link, CancellationToken cancellationToken)
     {
+        if (!link.Player.TryGetMinecraftPlayer(out var player))
+            return false;
+
         var loginStart = await link.ReceivePacketAsync<LoginStartPacket>(cancellationToken);
 
         if (IsAlreadyOnline(loginStart.Profile.Username))
             return false;
 
-        link.Player.Profile = loginStart.Profile;
+        player.Profile = loginStart.Profile;
         return true;
     }
 
     protected override async ValueTask AdmitPlayerAsync(ILink link, CancellationToken cancellationToken)
     {
-        if (link.Player.Profile is null)
+        if (!link.Player.TryGetMinecraftPlayer(out var player))
+            return;
+
+        if (player.Profile is null)
             throw new InvalidOperationException("Player should be identified before admitting");
 
         await link.SendPacketAsync(new LoginSuccessPacket
         {
-            GameProfile = link.Player.Profile
+            GameProfile = player.Profile
         }, cancellationToken);
     }
 
     protected override async ValueTask PrepareServerAuthenticationAsync(ILink link, CancellationToken cancellationToken)
     {
-        if (link.Player.Profile is null)
+        if (!link.Player.TryGetMinecraftPlayer(out var player))
+            return;
+
+        if (player.Profile is null)
             throw new InvalidOperationException("Player should be admitted before preparing server");
 
         await link.SendPacketAsync(new HandshakePacket
         {
             NextState = 2,
-            ProtocolVersion = link.Player.ProtocolVersion.Version,
+            ProtocolVersion = player.ProtocolVersion.Version,
             ServerAddress = link.Server.Host,
             ServerPort = (ushort)link.Server.Port
         }, cancellationToken);
 
         await link.SendPacketAsync(new LoginStartPacket
         {
-            Profile = link.Player.Profile
+            Profile = player.Profile
         }, cancellationToken);
     }
 

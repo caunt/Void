@@ -2,11 +2,12 @@
 using System.Text;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
+using Void.Minecraft.Players;
+using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
-using Void.Proxy.Api.Links;
-using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Common.Events;
+using Void.Proxy.Plugins.Common.Plugins;
 
 namespace Void.Proxy.Plugins.ForwardingSupport.Velocity;
 
@@ -26,30 +27,33 @@ public class Plugin : IProtocolPlugin
     [Subscribe]
     public static void OnLoginPluginRequest(LoginPluginRequestEvent @event)
     {
+        if (!@event.Link.Player.TryGetMinecraftPlayer(out var player))
+            return;
+
         if (@event.Channel is not "velocity:player_info")
             return;
 
         var requestedVersion = @event.Data.Length == 0 ? ForwardingVersion.Default : (ForwardingVersion)@event.Data[0];
-        var actualVersion = FindForwardingVersion(@event.Link, requestedVersion);
+        var actualVersion = FindForwardingVersion(player, requestedVersion);
         var array = new byte[2048];
         var buffer = new MinecraftBuffer(array);
 
         buffer.WriteVarInt((int)actualVersion);
-        buffer.WriteString(@event.Link.Player.RemoteEndPoint.Split(':')[0]);
-        buffer.WriteUuid(@event.Link.Player.Profile!.Id);
-        buffer.WriteString(@event.Link.Player.Profile.Username);
-        buffer.WritePropertyArray(@event.Link.Player.Profile.Properties);
+        buffer.WriteString(player.RemoteEndPoint.Split(':')[0]);
+        buffer.WriteUuid(player.Profile!.Id);
+        buffer.WriteString(player.Profile.Username);
+        buffer.WritePropertyArray(player.Profile.Properties);
 
         if (actualVersion.CompareTo(ForwardingVersion.WithKey) >= 0 && actualVersion.CompareTo(ForwardingVersion.LazySession) < 0)
         {
-            if (@event.Link.Player.IdentifiedKey is null)
+            if (player.IdentifiedKey is null)
                 throw new Exception("Player identified key cannot be forwarded");
 
-            buffer.WriteLong(@event.Link.Player.IdentifiedKey.ExpiresAt);
-            buffer.WriteVarInt(@event.Link.Player.IdentifiedKey.PublicKey.Length);
-            buffer.Write(@event.Link.Player.IdentifiedKey.PublicKey);
-            buffer.WriteVarInt(@event.Link.Player.IdentifiedKey.Signature.Length);
-            buffer.Write(@event.Link.Player.IdentifiedKey.Signature);
+            buffer.WriteLong(player.IdentifiedKey.ExpiresAt);
+            buffer.WriteVarInt(player.IdentifiedKey.PublicKey.Length);
+            buffer.Write(player.IdentifiedKey.PublicKey);
+            buffer.WriteVarInt(player.IdentifiedKey.Signature.Length);
+            buffer.Write(player.IdentifiedKey.Signature);
 
             if (actualVersion.CompareTo(ForwardingVersion.WithKeyV2) >= 0)
                 // if key signature holder is not null (seems to be always null)
@@ -65,7 +69,7 @@ public class Plugin : IProtocolPlugin
         @event.Result = [.. signature, .. forwardingData];
     }
 
-    private static ForwardingVersion FindForwardingVersion(ILink link, ForwardingVersion requested)
+    private static ForwardingVersion FindForwardingVersion(IMinecraftPlayer player, ForwardingVersion requested)
     {
         requested = (ForwardingVersion)Math.Min((int)requested, Enum.GetValues<ForwardingVersion>().Cast<int>().Max());
 
@@ -74,7 +78,7 @@ public class Plugin : IProtocolPlugin
             // if protocol version > 1.19.3
             // return requested.CompareTo(Version.LazySession) >= 0 ? Version.LazySession : Versions.Default
 
-            if (link.Player.IdentifiedKey is not null)
+            if (player.IdentifiedKey is not null)
             {
                 // if key revision is Generic (protocol version 1.19)
                 // return Versions.WithKey

@@ -1,4 +1,4 @@
-﻿using Void.Proxy.Api.Network.IO.Channels;
+﻿using Void.Common.Network.Channels;
 using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Players.Contexts;
@@ -9,7 +9,7 @@ public record EmptyPlayerContext : IPlayerContext
 
     public IServiceProvider Services => throw new NotSupportedException();
 
-    public IMinecraftChannel? Channel { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+    public INetworkChannel? Channel { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
     public ValueTask DisposeAsync()
     {

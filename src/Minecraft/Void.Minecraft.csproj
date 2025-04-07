@@ -14,6 +14,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\Api\Void.Proxy.Api.csproj" />
 	  <ProjectReference Include="..\Common\Void.Common.csproj" />
 	</ItemGroup>
 	

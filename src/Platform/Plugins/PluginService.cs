@@ -158,7 +158,14 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
 
         try
         {
-            var plugins = assembly.GetTypes().Where(pluginInterface.IsAssignableFrom).Select(type => ActivatorUtilities.CreateInstance(services, type)).Cast<IPlugin?>().WhereNotNull().ToArray();
+            var plugins = assembly.GetTypes()
+                .Where(pluginInterface.IsAssignableFrom)
+                .Where(type => !type.IsAbstract)
+                .Select(type => ActivatorUtilities.CreateInstance(services, type))
+                .Cast<IPlugin?>()
+                .WhereNotNull()
+                .ToArray();
+
             return plugins;
         }
         catch (ReflectionTypeLoadException exception)

@@ -1,15 +1,17 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using Void.Common.Network;
+using Void.Common.Players;
 using Void.Common.Plugins;
+using Void.Minecraft.Events;
 using Void.Minecraft.Network;
+using Void.Minecraft.Network.Channels.Extensions;
+using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Channels;
-using Void.Proxy.Api.Events.Minecraft;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
-using Void.Proxy.Api.Network.IO.Channels.Extensions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Services.Registries;
@@ -26,7 +28,10 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
     [Subscribe]
     public async ValueTask OnChannelCreated(ChannelCreatedEvent @event, CancellationToken cancellationToken)
     {
-        if (!Plugin.SupportedVersions.Contains(@event.Player.ProtocolVersion))
+        if (!@event.Player.TryGetMinecraftPlayer(out var player))
+            return;
+
+        if (!Plugin.SupportedVersions.Contains(player.ProtocolVersion))
             return;
 
         var systemRegistry = @event.Channel.GetPacketSystemRegistryHolder();
@@ -37,13 +42,13 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
             return;
 
         systemRegistry.ManagedBy = _plugin;
-        systemRegistry.ProtocolVersion = @event.Player.ProtocolVersion;
+        systemRegistry.ProtocolVersion = player.ProtocolVersion;
 
         pluginsRegistry.ManagedBy = _plugin;
-        pluginsRegistry.ProtocolVersion = @event.Player.ProtocolVersion;
+        pluginsRegistry.ProtocolVersion = player.ProtocolVersion;
 
         transformations.ManagedBy = _plugin;
-        transformations.ProtocolVersion = @event.Player.ProtocolVersion;
+        transformations.ProtocolVersion = player.ProtocolVersion;
 
         if (@event.Side is Side.Client)
         {
@@ -56,13 +61,16 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
             @event.Channel.SetWritingPacketsMappings(_plugin, Registry.ServerboundHandshakeMappings);
         }
 
-        await @event.Player.SetPhaseAsync(@event.Side, Phase.Handshake, @event.Channel, cancellationToken);
-        await _events.ThrowAsync(new PhaseChangedEvent(@event.Player, @event.Side, @event.Channel, Phase.Handshake), cancellationToken);
+        await player.SetPhaseAsync(@event.Side, Phase.Handshake, @event.Channel, cancellationToken);
+        await _events.ThrowAsync(new PhaseChangedEvent(player, @event.Side, @event.Channel, Phase.Handshake), cancellationToken);
     }
 
     [Subscribe]
     public async ValueTask OnMessageReceived(MessageReceivedEvent @event, CancellationToken cancellationToken)
     {
+        if (!@event.Link.Player.TryGetMinecraftPlayer(out var player))
+            return;
+
         switch (@event.Message)
         {
             case HandshakePacket handshake:
@@ -72,20 +80,20 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
                 {
                     @event.Link.PlayerChannel.SetReadingPacketsMappings(_plugin, Registry.ServerboundStatusMappings);
                     @event.Link.PlayerChannel.SetWritingPacketsMappings(_plugin, Registry.ClientboundStatusMappings);
-                    await @event.Link.Player.SetPhaseAsync(Side.Client, Phase.Status, @event.Link.PlayerChannel, cancellationToken);
+                    await player.SetPhaseAsync(Side.Client, Phase.Status, @event.Link.PlayerChannel, cancellationToken);
                 }
                 else if (handshake.NextState is 2 or 3)
                 {
                     @event.Link.PlayerChannel.SetReadingPacketsMappings(_plugin, Registry.ServerboundLoginMappings);
                     @event.Link.PlayerChannel.SetWritingPacketsMappings(_plugin, Registry.ClientboundLoginMappings);
-                    await @event.Link.Player.SetPhaseAsync(Side.Client, Phase.Login, @event.Link.PlayerChannel, cancellationToken);
+                    await player.SetPhaseAsync(Side.Client, Phase.Login, @event.Link.PlayerChannel, cancellationToken);
                 }
 
                 break;
             case LoginSuccessPacket:
                 @event.Link.ServerChannel.SetReadingPacketsMappings(_plugin, Registry.ClientboundPlayMappings);
                 @event.Link.ServerChannel.SetWritingPacketsMappings(_plugin, Registry.ServerboundPlayMappings);
-                await @event.Link.Player.SetPhaseAsync(Side.Server, Phase.Play, @event.Link.ServerChannel, cancellationToken);
+                await player.SetPhaseAsync(Side.Server, Phase.Play, @event.Link.ServerChannel, cancellationToken);
                 break;
         }
     }
@@ -93,6 +101,9 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
     [Subscribe]
     public async ValueTask OnMessageSent(MessageSentEvent @event, CancellationToken cancellationToken)
     {
+        if (!@event.Link.Player.TryGetMinecraftPlayer(out var player))
+            return;
+
         switch (@event.Message)
         {
             case HandshakePacket handshake:
@@ -100,13 +111,13 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
                 {
                     @event.Link.ServerChannel.SetReadingPacketsMappings(_plugin, Registry.ClientboundStatusMappings);
                     @event.Link.ServerChannel.SetWritingPacketsMappings(_plugin, Registry.ServerboundStatusMappings);
-                    await @event.Link.Player.SetPhaseAsync(Side.Server, Phase.Status, @event.Link.ServerChannel, cancellationToken);
+                    await player.SetPhaseAsync(Side.Server, Phase.Status, @event.Link.ServerChannel, cancellationToken);
                 }
                 else if (handshake.NextState is 2 or 3)
                 {
                     @event.Link.ServerChannel.SetReadingPacketsMappings(_plugin, Registry.ClientboundLoginMappings);
                     @event.Link.ServerChannel.SetWritingPacketsMappings(_plugin, Registry.ServerboundLoginMappings);
-                    await @event.Link.Player.SetPhaseAsync(Side.Server, Phase.Login, @event.Link.ServerChannel, cancellationToken);
+                    await player.SetPhaseAsync(Side.Server, Phase.Login, @event.Link.ServerChannel, cancellationToken);
                 }
                 else
                 {
@@ -118,7 +129,7 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
             case LoginSuccessPacket:
                 @event.Link.PlayerChannel.SetReadingPacketsMappings(_plugin, Registry.ServerboundPlayMappings);
                 @event.Link.PlayerChannel.SetWritingPacketsMappings(_plugin, Registry.ClientboundPlayMappings);
-                await @event.Link.Player.SetPhaseAsync(Side.Client, Phase.Play, @event.Link.PlayerChannel, cancellationToken);
+                await player.SetPhaseAsync(Side.Client, Phase.Play, @event.Link.PlayerChannel, cancellationToken);
                 break;
         }
     }

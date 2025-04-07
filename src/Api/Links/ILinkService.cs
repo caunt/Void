@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Void.Proxy.Api.Players;
+using Void.Common.Players;
 using Void.Proxy.Api.Servers;
 
 namespace Void.Proxy.Api.Links;

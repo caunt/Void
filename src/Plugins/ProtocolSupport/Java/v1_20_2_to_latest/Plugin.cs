@@ -2,7 +2,7 @@
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Plugins;
+using Void.Proxy.Plugins.Common.Plugins;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Authentication;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Bundles;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Channels;

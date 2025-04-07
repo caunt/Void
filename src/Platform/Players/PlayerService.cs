@@ -1,9 +1,8 @@
 ﻿using Nito.AsyncEx;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using Void.Common.Events;
-using Void.Minecraft.Components.Text;
+using Void.Common.Players;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Api.Events.Player;
@@ -76,11 +75,37 @@ public class PlayerService : IPlayerService, IEventListener
         }
     }
 
-    public async ValueTask KickPlayerAsync(IPlayer player, Component? reason = null, CancellationToken cancellationToken = default)
+    [Subscribe]
+    public async ValueTask OnLinkStopped(LinkStoppedEvent @event, CancellationToken cancellationToken)
+    {
+        if (@event.Link.PlayerChannel.IsAlive)
+            await _links.ConnectPlayerAnywhereAsync(@event.Link.Player, cancellationToken);
+        else
+            await _events.ThrowAsync(new PlayerDisconnectedEvent(@event.Link.Player), cancellationToken);
+    }
+
+    [Subscribe]
+    public async ValueTask OnPlayerDisconnected(PlayerDisconnectedEvent @event, CancellationToken cancellationToken)
+    {
+        using (var sync = await _lock.LockAsync(cancellationToken))
+            if (!_players.Remove(@event.Player))
+                return;
+
+        _logger.LogInformation("Player {Player} disconnected", @event.Player);
+
+        await @event.Player.DisposeAsync();
+    }
+
+    public async ValueTask KickPlayerAsync(IPlayer player, string? text = null, CancellationToken cancellationToken = default)
+    {
+        await KickPlayerAsync(player, new PlayerKickEvent(player, text), cancellationToken);
+    }
+
+    public async ValueTask KickPlayerAsync(IPlayer player, PlayerKickEvent playerKickEvent, CancellationToken cancellationToken = default)
     {
         _logger.LogTrace("Kicking player {Player}", player);
 
-        if (!_players.Contains(player))
+        if (!All.Contains(player))
             return;
 
         var channel = await player.GetChannelAsync(cancellationToken);
@@ -91,7 +116,7 @@ public class PlayerService : IPlayerService, IEventListener
             link.ServerChannel.TryPause();
         }
 
-        var kicked = await _events.ThrowWithResultAsync(new PlayerKickEvent(player, reason), cancellationToken);
+        var kicked = await _events.ThrowWithResultAsync(playerKickEvent, cancellationToken);
 
         if (kicked)
         {
@@ -136,32 +161,5 @@ public class PlayerService : IPlayerService, IEventListener
             link?.PlayerChannel.TryResume();
             link?.ServerChannel.TryResume();
         }
-    }
-
-    [Subscribe]
-    public async ValueTask OnLinkStopped(LinkStoppedEvent @event, CancellationToken cancellationToken)
-    {
-        if (@event.Link.PlayerChannel.IsAlive)
-            await _links.ConnectPlayerAnywhereAsync(@event.Link.Player, cancellationToken);
-        else
-            await _events.ThrowAsync(new PlayerDisconnectedEvent(@event.Link.Player), cancellationToken);
-    }
-
-    [Subscribe]
-    public async ValueTask OnPlayerDisconnected(PlayerDisconnectedEvent @event, CancellationToken cancellationToken)
-    {
-        using (var sync = await _lock.LockAsync(cancellationToken))
-            if (!_players.Remove(@event.Player))
-                return;
-
-        _logger.LogInformation("Player {Player} disconnected", @event.Player);
-
-        await @event.Player.DisposeAsync();
-    }
-
-    public bool TryGetByName(string name, [NotNullWhen(true)] out IPlayer? player)
-    {
-        player = _players.FirstOrDefault(p => p.Profile?.Username.Equals(name, StringComparison.InvariantCultureIgnoreCase) ?? false);
-        return player is not null;
     }
 }

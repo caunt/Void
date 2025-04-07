@@ -1,8 +1,9 @@
-﻿using Void.Minecraft.Components.Text;
+﻿using Void.Common.Players;
+using Void.Minecraft.Components.Text;
+using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Commands;
 using Void.Proxy.Api.Players;
-using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Services;
 
 namespace Void.Proxy.Plugins.Essentials.Moderation;
@@ -31,7 +32,10 @@ public class ModerationService(IPlayerService players) : IPluginCommonService
                 if (player is null)
                     break;
 
-                await player.KickAsync(reason, cancellationToken);
+                if (!player.TryGetMinecraftPlayer(out var minecraftPlayer))
+                    break;
+
+                await minecraftPlayer.KickAsync(reason, cancellationToken);
                 break;
         }
     }
@@ -40,7 +44,10 @@ public class ModerationService(IPlayerService players) : IPluginCommonService
     {
         return players.All.FirstOrDefault(player =>
         {
-            var profile = player.Profile;
+            if (!player.TryGetMinecraftPlayer(out var minecraftPlayer))
+                return false;
+
+            var profile = minecraftPlayer.Profile;
 
             if (profile is null)
                 return false;

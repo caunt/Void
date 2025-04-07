@@ -1,17 +1,12 @@
-﻿using System.Net.Sockets;
-using Void.Minecraft.Commands;
+﻿using Void.Common.Commands;
+using Void.Common.Players;
 using Void.Minecraft.Network;
 using Void.Minecraft.Profiles;
 
-namespace Void.Proxy.Api.Players;
+namespace Void.Minecraft.Players;
 
-public interface IPlayer : ICommandSource, IAsyncDisposable
+public interface IMinecraftPlayer : IPlayer, ICommandSource
 {
-    public IPlayerContext Context { get; }
-
-    public TcpClient Client { get; }
-    public string RemoteEndPoint { get; }
-
     public string? Brand { get; set; }
     public ProtocolVersion ProtocolVersion { get; set; }
     public GameProfile? Profile { get; set; }

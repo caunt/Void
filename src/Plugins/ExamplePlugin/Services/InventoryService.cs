@@ -1,16 +1,15 @@
 ﻿using Microsoft.Extensions.Logging;
 using Void.Common.Events;
 using Void.Common.Network;
+using Void.Minecraft.Events;
+using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Streams.Packet.Transformations;
+using Void.Minecraft.Players;
+using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Commands;
-using Void.Proxy.Api.Events.Minecraft;
 using Void.Proxy.Api.Events.Network;
-using Void.Proxy.Api.Links.Extensions;
-using Void.Proxy.Api.Network.IO.Channels.Extensions;
-using Void.Proxy.Api.Players;
-using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.ExamplePlugin.Packets.Clientbound;
 using Void.Proxy.Plugins.ExamplePlugin.Packets.Serverbound;
 
@@ -65,7 +64,7 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
         }
     }
 
-    private void RegisterPlayMappings(IPlayer player, Side side)
+    private void RegisterPlayMappings(IMinecraftPlayer player, Side side)
     {
         player.RegisterPacket<SetHeldItemServerboundPacket>([
             new(0x2B, ProtocolVersion.MINECRAFT_1_20_2),

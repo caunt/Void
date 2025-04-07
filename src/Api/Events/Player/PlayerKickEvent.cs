@@ -1,9 +1,9 @@
-﻿using Void.Minecraft.Components.Text;
-using Void.Proxy.Api.Players;
+﻿using Void.Common.Events;
+using Void.Common.Players;
 
 namespace Void.Proxy.Api.Events.Player;
 
-public record PlayerKickEvent(IPlayer Player, Component? Reason = null) : IEventWithResult<bool>
+public record PlayerKickEvent(IPlayer Player, string? Text = null) : IEventWithResult<bool>
 {
     /// <summary>
     ///     <see langword="true" /> if kick was made; otherwise, <see langword="false" />.

@@ -21,6 +21,5 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Common\Void.Common.csproj" />
-		<ProjectReference Include="..\Minecraft\Void.Minecraft.csproj" />
 	</ItemGroup>
 </Project>

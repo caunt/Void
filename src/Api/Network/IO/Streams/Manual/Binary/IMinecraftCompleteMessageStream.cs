@@ -1,9 +1,9 @@
-﻿using Void.Minecraft.Network.Streams;
+﻿using Void.Common.Network.Streams;
 using Void.Proxy.Api.Network.IO.Messages.Binary;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
 
-public interface IMinecraftCompleteMessageStream : IMinecraftStream
+public interface IMinecraftCompleteMessageStream : INetworkStream
 {
     public ICompleteBinaryMessage ReadMessage();
     public ValueTask<ICompleteBinaryMessage> ReadMessageAsync(CancellationToken cancellationToken = default);

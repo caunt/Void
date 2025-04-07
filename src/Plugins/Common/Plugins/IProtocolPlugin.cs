@@ -1,7 +1,7 @@
 ﻿using Void.Common.Plugins;
 using Void.Minecraft.Network;
 
-namespace Void.Proxy.Api.Plugins;
+namespace Void.Proxy.Plugins.Common.Plugins;
 
 public interface IProtocolPlugin : IPlugin
 {

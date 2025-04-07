@@ -1,9 +1,10 @@
 ﻿using Nito.Disposables.Internals;
-using Void.Minecraft.Commands;
+using Void.Common.Commands;
 using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Suggestion;
+using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Players;
 
@@ -16,7 +17,7 @@ public class CommandService(ILogger<CommandService> logger, IPlayerService playe
     public void RegisterDefault()
     {
         _dispatcher.Register(builder => builder.Literal("stop").Executes(StopServer));
-        _dispatcher.Register(builder => builder.Literal("kick").Then(builder.Argument("name", Arguments.String()).Suggests(SuggestPlayer).Executes(KickPlayerAsync)));
+        _dispatcher.Register(builder => builder.Literal("kick").Then(builder.Argument("username", Arguments.String()).Suggests(SuggestPlayer).Executes(KickPlayerAsync)));
     }
 
     public async ValueTask ExecuteAsync(ICommandSource source, string command, CancellationToken cancellationToken = default)
@@ -39,9 +40,12 @@ public class CommandService(ILogger<CommandService> logger, IPlayerService playe
 
     private async ValueTask<int> KickPlayerAsync(CommandContext context, CancellationToken cancellationToken)
     {
-        if (players.TryGetByName(context.GetArgument<string>("name"), out var player))
+        if (players.TryGetByName(context.GetArgument<string>("username"), out var player))
         {
-            await players.KickPlayerAsync(player, "You have been kicked by an operator.", cancellationToken);
+            if (!player.TryGetMinecraftPlayer(out var minecraftPlayer))
+                return 0;
+
+            await players.KickPlayerAsync(minecraftPlayer, "You have been kicked by an operator.", cancellationToken);
             return 1;
         }
 
@@ -52,10 +56,13 @@ public class CommandService(ILogger<CommandService> logger, IPlayerService playe
     {
         return Suggestions.Create(context.Input, players.All.Select(player =>
         {
-            if (player.Profile is null)
+            if (!player.TryGetMinecraftPlayer(out var minecraftPlayer))
                 return null;
 
-            var name = player.Profile.Username;
+            if (minecraftPlayer.Profile is null)
+                return null;
+
+            var name = minecraftPlayer.Profile.Username;
             return new Suggestion(StringRange.Between(0, context.Input.Length), name);
         }).WhereNotNull());
     }

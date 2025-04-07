@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using Void.Common.Events;
 
 namespace Void.Proxy.Api.Events;
 

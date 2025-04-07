@@ -1,13 +1,15 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Void.Common.Players;
+using Void.Minecraft.Mojang;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
+using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Authentication;
 using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
-using Void.Proxy.Api.Mojang;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Events;
@@ -28,7 +30,10 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
     [Subscribe]
     public async ValueTask OnAuthenticationStarting(AuthenticationStartingEvent @event, CancellationToken cancellationToken)
     {
-        if (!IsSupportedVersion(@event.Link.Player.ProtocolVersion))
+        if (!@event.Link.Player.TryGetMinecraftPlayer(out var player))
+            return;
+
+        if (!IsSupportedVersion(player.ProtocolVersion))
             return;
 
         if (!await @event.Link.Player.IsProtocolSupportedAsync(cancellationToken))
@@ -57,13 +62,16 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
     [Subscribe]
     public async ValueTask OnAuthenticationStarted(AuthenticationStartedEvent @event, CancellationToken cancellationToken)
     {
+        if (!@event.Link.Player.TryGetMinecraftPlayer(out var player))
+            return;
+
         if (@event.Side is AuthenticationSide.Server)
         {
             @event.Result = AuthenticationResult.Authenticated;
             return;
         }
 
-        if (!IsSupportedVersion(@event.Link.Player.ProtocolVersion))
+        if (!IsSupportedVersion(player.ProtocolVersion))
             return;
 
         if (!await @event.Link.Player.IsProtocolSupportedAsync(cancellationToken))
@@ -79,7 +87,7 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
 
     protected bool IsAlreadyOnline(string username)
     {
-        return players.All.Any(player => player.Profile?.Username == username);
+        return players.All.Select(player => player.TryGetMinecraftPlayer(out var minecraftPlayer) ? minecraftPlayer : null).Any(player => player?.Profile?.Username == username);
     }
 
     protected async ValueTask<AuthenticationResult> AuthenticatePlayerAsync(ILink link, CancellationToken cancellationToken)
@@ -101,11 +109,14 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
 
     protected async ValueTask<AuthenticationResult> AuthenticateServerAsync(ILink link, AuthenticationResult authenticationResult, CancellationToken cancellationToken)
     {
+        if (!link.Player.TryGetMinecraftPlayer(out var player))
+            return AuthenticationResult.Authenticated;
+
         // server channel might be closed very early, skip authentication, ILink should stop itself as soon as its executes
         if (!link.ServerChannel.IsAlive)
             return AuthenticationResult.Authenticated;
 
-        if (link.Player.Profile is null)
+        if (player.Profile is null)
             throw new InvalidOperationException("Player should be authenticated before Server");
 
         await PrepareServerAuthenticationAsync(link, cancellationToken);
@@ -141,12 +152,15 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
 
     protected static async ValueTask VerifyMojangProfile(IPlayer player, ReadOnlyMemory<byte> sharedSecret, CancellationToken cancellationToken)
     {
+        if (!player.TryGetMinecraftPlayer(out var minecraftPlayer))
+            return;
+
         var mojang = player.Context.Services.GetRequiredService<IMojangService>();
 
-        if (await mojang.VerifyAsync(player, sharedSecret, cancellationToken) is not { } onlineProfile)
+        if (await mojang.VerifyAsync(minecraftPlayer, sharedSecret, cancellationToken) is not { } onlineProfile)
             throw new NotSupportedException("Playing in offline-mode is not supported yet. Cannot verify profile.");
 
-        player.Profile = onlineProfile;
+        minecraftPlayer.Profile = onlineProfile;
     }
 
     protected abstract bool IsSupportedVersion(ProtocolVersion version);
