@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using Void.Common;
 using Void.Minecraft.Buffers;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 
@@ -6,6 +7,8 @@ namespace Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 
 public interface IMinecraftBinaryPacketWrapper
 {
+    public Side Origin { get; }
+
     public bool TryGet<TPropertyValue>(int index, [MaybeNullWhen(false)] out TPropertyValue value) where TPropertyValue : class, IPacketProperty<TPropertyValue>;
     public TPropertyValue Get<TPropertyValue>(int index) where TPropertyValue : class, IPacketProperty<TPropertyValue>;
     public bool TrySet<TPropertyValue>(int index, TPropertyValue value) where TPropertyValue : class, IPacketProperty<TPropertyValue>;
