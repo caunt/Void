@@ -37,17 +37,24 @@ jobs:
     
     - name: Build solution for all runtimes
       run: |
-        for runtime in $(echo '${{ matrix.runtimes }}' | jq -r '.[]'); do
-          echo "Building solution for runtime: $runtime"
-          dotnet build --configuration Release --no-restore
-        done
+        # Build the solution once without runtime-specific parameters.
+        dotnet build --configuration Release --no-restore
       shell: bash
 
     - name: Build Platform for all runtimes
       run: |
         for runtime in $(echo '${{ matrix.runtimes }}' | jq -r '.[]'); do
           echo "Building Platform for runtime: $runtime"
-          dotnet build src/Platform --runtime "$runtime" --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded --configuration Release --no-restore
+          dotnet build src/Platform \
+            --runtime "$runtime" \
+            --self-contained \
+            -p:GenerateRuntimeConfigurationFiles=false \
+            -p:PublishSingleFile=true \
+            -p:DebugType=embedded \
+            --configuration Release \
+            --no-restore \
+            -p:IntermediateOutputPath=build/$runtime/obj/ \
+            -o build/$runtime/output
         done
       shell: bash
 
@@ -63,7 +70,16 @@ jobs:
       run: |
         for runtime in $(echo '${{ matrix.runtimes }}' | jq -r '.[]'); do
           echo "Publishing for runtime: $runtime"
-          dotnet publish --runtime "$runtime" --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded src/Platform --output artifacts/"$runtime" --configuration Release --no-build
+          dotnet publish src/Platform \
+            --runtime "$runtime" \
+            --self-contained \
+            -p:GenerateRuntimeConfigurationFiles=false \
+            -p:PublishSingleFile=true \
+            -p:DebugType=embedded \
+            --configuration Release \
+            --no-build \
+            -p:IntermediateOutputPath=build/$runtime/obj/ \
+            -o artifacts/"$runtime"
         done
       shell: bash
 
@@ -86,7 +102,6 @@ jobs:
           Rename-Item -Path "artifacts/$runtime/Void.Proxy.exe" -NewName "void.exe"
         }
     
-    # Consolidate artifact upload into a single upload per OS.
     - name: Upload Build Artifacts (non-Windows)
       if: runner.os != 'Windows'
       uses: actions/upload-artifact@v4.6.2
