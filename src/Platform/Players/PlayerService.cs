@@ -69,7 +69,7 @@ public class PlayerService : IPlayerService, IEventListener
         }
         catch (Exception exception)
         {
-            if (exception is not EndOfStreamException)
+            if (exception is not EndOfStreamException and not SocketException)
                 _logger.LogError(exception, "Client {RemoteEndPoint} cannot be proxied", player.RemoteEndPoint);
 
             // just in case
