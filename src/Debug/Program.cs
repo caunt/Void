@@ -215,6 +215,7 @@ async ValueTask StartDockerPaperEnvironmentAsync(ProtocolVersion version, int co
         return version switch
         {
             var value when value == ProtocolVersion.MINECRAFT_1_21_2 => value.Names[1], // paper skipped 1.21.2
+            var value when value == ProtocolVersion.MINECRAFT_1_20_5 => value.Names[1], // paper skipped 1.20.5
             var value when value == ProtocolVersion.MINECRAFT_1_8 => value.Names[8], // paper first release is 1.8.8
             var value => value.Names[0]
         };
