@@ -12,72 +12,98 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            runtime: linux-arm
-          - os: ubuntu-latest
-            runtime: linux-arm64
-          - os: ubuntu-latest
-            runtime: linux-bionic-arm64
-          - os: ubuntu-latest
-            runtime: linux-bionic-x64
-          - os: ubuntu-latest
-            runtime: linux-musl-arm
-          - os: ubuntu-latest
-            runtime: linux-musl-arm64
-          - os: ubuntu-latest
-            runtime: linux-musl-x64
-          - os: ubuntu-latest
-            runtime: linux-x64
+            runtimes: '["linux-arm", "linux-arm64", "linux-bionic-arm64", "linux-bionic-x64", "linux-musl-arm", "linux-musl-arm64", "linux-musl-x64", "linux-x64"]'
           - os: macos-latest
-            runtime: osx-arm64
-          - os: macos-latest
-            runtime: osx-x64
+            runtimes: '["osx-arm64", "osx-x64"]'
           - os: windows-latest
-            runtime: win-arm64
-          - os: windows-latest
-            runtime: win-x64
-          - os: windows-latest
-            runtime: win-x86
+            runtimes: '["win-arm64", "win-x64", "win-x86"]'
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
     
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v4.3.1
       with:
         dotnet-version: '9'
     
-    - name: Restore dependencies
-      run: dotnet restore --runtime ${{ matrix.runtime }}
+    - name: Restore dependencies for all runtimes
+      run: |
+        for runtime in $(echo '${{ matrix.runtimes }}' | jq -r '.[]'); do
+          echo "Restoring dependencies for runtime: $runtime"
+          dotnet restore --runtime "$runtime"
+        done
+      shell: bash
     
-    - name: Build solution
-      run: dotnet build --configuration Release --no-restore
+    - name: Build solution for all runtimes
+      run: |
+        for runtime in $(echo '${{ matrix.runtimes }}' | jq -r '.[]'); do
+          echo "Building solution for runtime: $runtime"
+          dotnet build --configuration Release --no-restore
+        done
+      shell: bash
 
-    - name: Build Platform
-      run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded --configuration Release --no-restore
+    - name: Build Platform for all runtimes
+      run: |
+        for runtime in $(echo '${{ matrix.runtimes }}' | jq -r '.[]'); do
+          echo "Building Platform for runtime: $runtime"
+          dotnet build src/Platform --runtime "$runtime" --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded --configuration Release --no-restore
+        done
+      shell: bash
 
-    - name: Run tests
-      run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal
+    - name: Test for all runtimes
+      run: |
+        for runtime in $(echo '${{ matrix.runtimes }}' | jq -r '.[]'); do
+          echo "Testing for runtime: $runtime"
+          dotnet test --runtime "$runtime" --no-build --verbosity normal
+        done
+      shell: bash
 
-    - name: Publish Platform
-      run: dotnet publish src/Platform --runtime ${{ matrix.runtime }} --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded --output artifacts/${{ matrix.runtime }} --configuration Release --no-build
+    - name: Publish for all runtimes
+      run: |
+        for runtime in $(echo '${{ matrix.runtimes }}' | jq -r '.[]'); do
+          echo "Publishing for runtime: $runtime"
+          dotnet publish --runtime "$runtime" --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded src/Platform --output artifacts/"$runtime" --configuration Release --no-build
+        done
+      shell: bash
 
-    - name: Rename artifact file & set artifact path
-      id: artifact
+    - name: Rename artifact file (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: |
+        for runtime in $(echo '${{ matrix.runtimes }}' | jq -r '.[]'); do
+          echo "Renaming artifact for runtime: $runtime"
+          mv artifacts/"$runtime"/Void.Proxy artifacts/"$runtime"/void
+        done
+      shell: bash
+
+    - name: Rename artifact file (Windows)
+      if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        $ext = if ($env:RUNNER_OS -eq 'Windows') { ".exe" } else { "" }
-        Rename-Item -Path "artifacts/${{ matrix.runtime }}/Void.Proxy$ext" -NewName "void$ext"
-        echo "artifact=artifacts/${{ matrix.runtime }}/void$ext" >> $GITHUB_OUTPUT
-
-    - name: Upload Build Artifact
-      id: upload_artifact
-      uses: actions/upload-artifact@v4
+        $runtimes = ConvertFrom-Json '${{ matrix.runtimes }}'
+        foreach ($runtime in $runtimes) {
+          Write-Output "Renaming artifact for runtime: $runtime"
+          Rename-Item -Path "artifacts/$runtime/Void.Proxy.exe" -NewName "void.exe"
+        }
+    
+    # Consolidate artifact upload into a single upload per OS.
+    - name: Upload Build Artifacts (non-Windows)
+      if: runner.os != 'Windows'
+      uses: actions/upload-artifact@v4.6.2
       with:
-        name: void-${{ matrix.runtime }}
-        path: ${{ steps.artifact.outputs.artifact }}
+        name: void-artifacts
+        path: artifacts
+        compression-level: 9
+        if-no-files-found: error
+
+    - name: Upload Build Artifacts (Windows)
+      if: runner.os == 'Windows'
+      uses: actions/upload-artifact@v4.6.2
+      with:
+        name: void-artifacts
+        path: artifacts
         compression-level: 9
         if-no-files-found: error
 
     - name: Echo Download URL
-      run: "echo Download URL: ${{ steps.upload_artifact.outputs.artifact-url }}"
+      run: echo "Artifacts uploaded."
