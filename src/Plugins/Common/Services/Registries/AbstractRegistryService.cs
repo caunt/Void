@@ -8,10 +8,10 @@ using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Network.Messages.Packets;
+using Void.Minecraft.Network.Registries.PacketId;
+using Void.Minecraft.Network.Registries.PacketId.Extensions;
+using Void.Minecraft.Network.Registries.Transformations;
 using Void.Minecraft.Network.Streams.Packet;
-using Void.Minecraft.Network.Streams.Packet.Extensions;
-using Void.Minecraft.Network.Streams.Packet.Registries;
-using Void.Minecraft.Network.Streams.Packet.Transformations;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
@@ -24,7 +24,7 @@ using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Network.Messages.Binary;
-using Void.Proxy.Plugins.Common.Network.Streams.Packet.Transformations;
+using Void.Proxy.Plugins.Common.Network.Registries.Transformations;
 
 namespace Void.Proxy.Plugins.Common.Services.Registries;
 
@@ -162,7 +162,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, Side origin, IMinecraftPacketPluginsRegistry registries, IMinecraftPacketPluginsTransformations transformationsMappings, IMinecraftBinaryMessage binaryMessage)
+    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, Side origin, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketPluginsTransformations transformationsMappings, IMinecraftBinaryMessage binaryMessage)
     {
         if (!link.Player.TryGetMinecraftPlayer(out var player))
             yield break;
@@ -198,7 +198,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, Side origin, IMinecraftPacketPluginsRegistry registries, IMinecraftPacketPluginsTransformations transformationsMappings, IMinecraftPacket minecraftPacket)
+    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, Side origin, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketPluginsTransformations transformationsMappings, IMinecraftPacket minecraftPacket)
     {
         if (!link.Player.TryGetMinecraftPlayer(out var player))
             yield break;

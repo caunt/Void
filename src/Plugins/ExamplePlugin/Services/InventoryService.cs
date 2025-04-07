@@ -4,7 +4,7 @@ using Void.Common.Network;
 using Void.Minecraft.Events;
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
-using Void.Minecraft.Network.Streams.Packet.Transformations;
+using Void.Minecraft.Network.Registries.Transformations;
 using Void.Minecraft.Players;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;

@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 using Void.Common.Network;
 using Void.Common.Network.Channels;
 using Void.Minecraft.Network.Messages.Packets;
+using Void.Minecraft.Network.Registries.PacketId;
+using Void.Minecraft.Network.Registries.Transformations;
 using Void.Minecraft.Network.Streams.Packet;
-using Void.Minecraft.Network.Streams.Packet.Registries;
-using Void.Minecraft.Network.Streams.Packet.Transformations;
 
 namespace Void.Minecraft.Network.Channels.Extensions;
 
@@ -17,20 +17,20 @@ public static class MinecraftChannelExtensions
         await channel.WriteMessageAsync(packet, Side.Proxy, cancellationToken);
     }
 
-    public static IMinecraftPacketSystemRegistry GetPacketSystemRegistryHolder(this INetworkChannel channel)
+    public static IMinecraftPacketIdSystemRegistry GetPacketSystemRegistryHolder(this INetworkChannel channel)
     {
         if (channel.TryGet<IMinecraftPacketMessageStream>(out var stream) && stream.SystemRegistryHolder is { } registry)
             return registry;
 
-        throw new InvalidOperationException($"{nameof(IMinecraftPacketSystemRegistry)} is not set yet on this channel");
+        throw new InvalidOperationException($"{nameof(IMinecraftPacketIdSystemRegistry)} is not set yet on this channel");
     }
 
-    public static IMinecraftPacketPluginsRegistry GetPacketPluginsRegistryHolder(this INetworkChannel channel)
+    public static IMinecraftPacketIdPluginsRegistry GetPacketPluginsRegistryHolder(this INetworkChannel channel)
     {
         if (channel.TryGet<IMinecraftPacketMessageStream>(out var stream) && stream.PluginsRegistryHolder is { } registry)
             return registry;
 
-        throw new InvalidOperationException($"{nameof(IMinecraftPacketPluginsRegistry)} is not set yet on this channel");
+        throw new InvalidOperationException($"{nameof(IMinecraftPacketIdPluginsRegistry)} is not set yet on this channel");
     }
 
     public static IMinecraftPacketPluginsTransformations GetPacketTransformationsHolder(this INetworkChannel channel)
@@ -38,6 +38,6 @@ public static class MinecraftChannelExtensions
         if (channel.TryGet<IMinecraftPacketMessageStream>(out var stream) && stream.TransformationsHolder is { } transformations)
             return transformations;
 
-        throw new InvalidOperationException($"{nameof(IMinecraftPacketPluginsRegistry)} is not set yet on this channel");
+        throw new InvalidOperationException($"{nameof(IMinecraftPacketIdPluginsRegistry)} is not set yet on this channel");
     }
 }

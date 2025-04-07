@@ -1,5 +1,5 @@
 ﻿using Void.Minecraft.Network;
-using Void.Minecraft.Network.Streams.Packet;
+using Void.Minecraft.Network.Registries.PacketId;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 

@@ -5,16 +5,16 @@ using Void.Common.Network.Streams;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
+using Void.Minecraft.Network.Registries.PacketId;
+using Void.Minecraft.Network.Registries.PacketId.Extensions;
+using Void.Minecraft.Network.Registries.Transformations;
 using Void.Minecraft.Network.Streams.Packet;
-using Void.Minecraft.Network.Streams.Packet.Extensions;
-using Void.Minecraft.Network.Streams.Packet.Registries;
-using Void.Minecraft.Network.Streams.Packet.Transformations;
 using Void.Proxy.Api.Network.Streams.Manual;
 using Void.Proxy.Api.Network.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.Streams.Recyclable;
 using Void.Proxy.Plugins.Common.Network.Messages.Binary;
+using Void.Proxy.Plugins.Common.Network.Registries.Transformations;
 using Void.Proxy.Plugins.Common.Network.Streams.Extensions;
-using Void.Proxy.Plugins.Common.Network.Streams.Packet.Transformations;
 
 namespace Void.Proxy.Plugins.Common.Network.Streams.Packet;
 
@@ -25,8 +25,8 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
     public bool CanRead => BaseStream?.CanRead ?? false;
     public bool CanWrite => BaseStream?.CanWrite ?? false;
     public bool IsAlive => BaseStream?.IsAlive ?? false;
-    public IMinecraftPacketSystemRegistry? SystemRegistryHolder { get; set; }
-    public IMinecraftPacketPluginsRegistry? PluginsRegistryHolder { get; set; }
+    public IMinecraftPacketIdSystemRegistry? SystemRegistryHolder { get; set; }
+    public IMinecraftPacketIdPluginsRegistry? PluginsRegistryHolder { get; set; }
     public IMinecraftPacketPluginsTransformations? TransformationsHolder { get; set; }
 
     public IMinecraftPacket ReadPacket()
