@@ -11,7 +11,7 @@ public class ChatMessagePacket : IMinecraftServerboundPacket<ChatMessagePacket>
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        buffer.WriteComponent(Message, protocolVersion);
+        buffer.WriteString(Message.SerializeLegacy());
     }
 
     public static ChatMessagePacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)

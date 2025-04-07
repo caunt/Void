@@ -5,6 +5,7 @@ using Void.Minecraft.Events.Chat;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Plugins.Common.Events;
 
@@ -25,7 +26,7 @@ public abstract class AbstractLifecycleService : IPluginCommonService
     }
 
     [Subscribe(PostOrder.Last)]
-    public async ValueTask OnMinecraftPlayerKickEvent(MinecraftPlayerKickEvent @event, CancellationToken cancellationToken)
+    public async ValueTask OnPlayerKickEvent(PlayerKickEvent @event, CancellationToken cancellationToken)
     {
         if (!@event.Player.TryGetMinecraftPlayer(out var player))
             return;
@@ -33,7 +34,14 @@ public abstract class AbstractLifecycleService : IPluginCommonService
         if (!IsSupportedVersion(player.ProtocolVersion))
             return;
 
-        var reason = @event.Reason is null ? "You were kicked from proxy" : @event.Reason;
+        var reason = @event is MinecraftPlayerKickEvent minecraftPlayerKick
+            ? minecraftPlayerKick.Reason is null
+                ? "You were kicked from proxy"
+                : minecraftPlayerKick.Reason
+            : @event.Text is null
+                ? "You were kicked from proxy"
+                : @event.Text;
+
         @event.Result = await KickPlayerAsync(@event.Player, reason, cancellationToken);
     }
 

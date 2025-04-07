@@ -16,7 +16,7 @@ public class CommandService(IEventService events) : AbstractCommandService(event
             case ChatMessagePacket chatMessagePacket:
                 var legacyMessage = chatMessagePacket.Message.SerializeLegacy();
 
-                if (legacyMessage[0] != '/')
+                if (string.IsNullOrEmpty(legacyMessage) || legacyMessage[0] != '/')
                     return;
 
                 await HandleCommandAsync(@event.Link, legacyMessage[1..], false, cancellationToken);

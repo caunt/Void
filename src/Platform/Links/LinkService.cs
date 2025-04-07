@@ -109,6 +109,8 @@ public class LinkService : ILinkService, IEventListener
         else
         {
             await link.StartAsync(cancellationToken);
+            _logger.LogInformation("Player {Player} connected to {Server}", player, link.Server);
+
             return ConnectionResult.Connected;
         }
     }

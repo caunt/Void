@@ -62,9 +62,7 @@ public class PlayerService : IPlayerService, IEventListener
             _logger.LogTrace("Player {Player} connecting", player);
             var result = await _links.ConnectPlayerAnywhereAsync(player, cancellationToken);
 
-            if (_links.TryGetLink(player, out var link))
-                _logger.LogInformation("Player {Player} connected to {Server}", player, link.Server);
-            else
+            if (!_links.TryGetLink(player, out var link))
                 _logger.LogWarning("Player {Player} failed to connect", player);
         }
         catch (Exception exception)

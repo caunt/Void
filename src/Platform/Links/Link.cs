@@ -2,6 +2,7 @@
 using Void.Common.Network.Channels;
 using Void.Common.Network.Messages;
 using Void.Common.Players;
+using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
@@ -168,6 +169,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             catch (Exception exception)
             {
                 logger.LogError(exception, "Unhandled read {Direction} exception in {Link} link", direction, this);
+                await Player.KickAsync("Unexpected error occurred in your connection.\n\n\n(TODO: do not kick)", cancellationToken);
                 break;
             }
 
@@ -198,6 +200,8 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             catch (Exception exception)
             {
                 logger.LogError(exception, "Unhandled write {Direction} exception in {Link} link", direction, this);
+                await Player.KickAsync("Unexpected error occurred in your connection.\n\n\n(TODO: do not kick)", cancellationToken);
+                break;
             }
             finally
             {
