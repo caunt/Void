@@ -53,24 +53,24 @@ public abstract record NbtTag
 
     public MemoryStream AsStream(NbtFormatOptions formatOptions = NbtFormatOptions.Java)
     {
-        var memoryStream = new MemoryStream();
-        var writer = new TagWriter(memoryStream, (FormatOptions)formatOptions);
+        var stream = new MemoryStream();
+        var writer = new TagWriter(stream, (FormatOptions)formatOptions);
         var tag = (Tag)this;
 
         // SharpNBT does not write tag type in case of empty tag name
         if (string.IsNullOrEmpty(Name))
         {
-            memoryStream.WriteByte((byte)tag.Type);
-            
+            stream.WriteByte((byte)tag.Type);
+
             // TODO: Handle "UseVarInt" option
             if (Name is not null)
-                memoryStream.Write([0, 0]);
+                stream.Write([0, 0]);
         }
 
         writer.WriteTag(tag);
-        memoryStream.Position = 0;
+        stream.Position = 0;
 
-        return memoryStream;
+        return stream;
     }
 
     public JsonNode AsJsonNode()
@@ -114,10 +114,10 @@ public abstract record NbtTag
             throw new InvalidCastException($"Tag {tag} cannot be cast to {typeof(T)}");
 
         result = tag;
-        
-        if (readName && result.Name is null) 
+
+        if (readName && result.Name is null)
             result.Name = "";
-        
+
         return stream.Position;
     }
 }
