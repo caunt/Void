@@ -21,6 +21,8 @@ jobs:
           - os: ubuntu-latest
             runtime: linux-bionic-arm64
           - os: ubuntu-latest
+            runtime: linux-bionic-x64
+          - os: ubuntu-latest
             runtime: linux-musl-arm
           - os: ubuntu-latest
             runtime: linux-musl-arm64
