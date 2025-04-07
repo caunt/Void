@@ -10,65 +10,65 @@ namespace Void.Proxy.Plugins.Common.Network.Registries;
 
 public class RegistryHolder : IRegistryHolder
 {
-    public ProtocolVersion ProtocolVersion => SystemRegistryHolder.ProtocolVersion ?? ProtocolVersion.Oldest;
+    public ProtocolVersion ProtocolVersion => PacketIdSystem.ProtocolVersion ?? ProtocolVersion.Oldest;
 
-    public IMinecraftPacketIdSystemRegistry SystemRegistryHolder { get; } = new MinecraftPacketIdSystemRegistry();
-    public IMinecraftPacketIdPluginsRegistry PluginsRegistryHolder { get; } = new MinecraftPacketIdPluginsRegistry();
-    public IMinecraftPacketPluginsTransformations TransformationsHolder { get; } = new MinecraftPacketPluginsTransformations();
+    public IMinecraftPacketIdSystemRegistry PacketIdSystem { get; } = new MinecraftPacketIdSystemRegistry();
+    public IMinecraftPacketIdPluginsRegistry PacketIdPlugins { get; } = new MinecraftPacketIdPluginsRegistry();
+    public IMinecraftPacketTransformationsPluginsRegistry PacketTransformationsPlugins { get; } = new MinecraftPacketTransformationsPluginsRegistry();
 
     public void Setup(IPlugin managedBy, ProtocolVersion protocolVersion)
     {
-        if (SystemRegistryHolder.ManagedBy is not null)
-            throw new InvalidOperationException($"System registry is already managed by {SystemRegistryHolder.ManagedBy.Name}");
+        if (PacketIdSystem.ManagedBy is not null)
+            throw new InvalidOperationException($"System registry is already managed by {PacketIdSystem.ManagedBy.Name}");
 
-        if (PluginsRegistryHolder.ManagedBy is not null)
-            throw new InvalidOperationException($"Plugins registry is already managed by {PluginsRegistryHolder.ManagedBy.Name}");
+        if (PacketIdPlugins.ManagedBy is not null)
+            throw new InvalidOperationException($"Plugins registry is already managed by {PacketIdPlugins.ManagedBy.Name}");
 
-        if (TransformationsHolder.ManagedBy is not null)
-            throw new InvalidOperationException($"Transformations holder is already managed by {TransformationsHolder.ManagedBy.Name}");
+        if (PacketTransformationsPlugins.ManagedBy is not null)
+            throw new InvalidOperationException($"Transformations holder is already managed by {PacketTransformationsPlugins.ManagedBy.Name}");
 
-        SystemRegistryHolder.ManagedBy = managedBy;
-        SystemRegistryHolder.ProtocolVersion = protocolVersion;
+        PacketIdSystem.ManagedBy = managedBy;
+        PacketIdSystem.ProtocolVersion = protocolVersion;
 
-        PluginsRegistryHolder.ManagedBy = managedBy;
-        PluginsRegistryHolder.ProtocolVersion = protocolVersion;
+        PacketIdPlugins.ManagedBy = managedBy;
+        PacketIdPlugins.ProtocolVersion = protocolVersion;
 
-        TransformationsHolder.ManagedBy = managedBy;
-        TransformationsHolder.ProtocolVersion = protocolVersion;
+        PacketTransformationsPlugins.ManagedBy = managedBy;
+        PacketTransformationsPlugins.ProtocolVersion = protocolVersion;
     }
 
     public void ClearPlugins()
     {
-        PluginsRegistryHolder.Clear();
-        TransformationsHolder.Clear();
+        PacketIdPlugins.Clear();
+        PacketTransformationsPlugins.Clear();
     }
 
     public string PrintPackets()
     {
-        var system = $"{nameof(SystemRegistryHolder)} [{string.Join(", ", SystemRegistryHolder?.Write?.PacketTypes.Select(type => type.Name) ?? [])}]";
-        var plugins = $"{nameof(PluginsRegistryHolder)} [{string.Join(", ", PluginsRegistryHolder?.All.SelectMany(registry => registry.PacketTypes).Select(type => type.Name) ?? [])}]";
+        var system = $"{nameof(PacketIdSystem)} [{string.Join(", ", PacketIdSystem?.Write?.PacketTypes.Select(type => type.Name) ?? [])}]";
+        var plugins = $"{nameof(PacketIdPlugins)} [{string.Join(", ", PacketIdPlugins?.All.SelectMany(registry => registry.PacketTypes).Select(type => type.Name) ?? [])}]";
 
         return $"{system}\n{plugins}";
     }
 
     public void Dispose()
     {
-        SystemRegistryHolder.Reset();
-        PluginsRegistryHolder.Reset();
-        TransformationsHolder.Reset();
+        PacketIdSystem.Reset();
+        PacketIdPlugins.Reset();
+        PacketTransformationsPlugins.Reset();
 
         GC.SuppressFinalize(this);
     }
 
     public void DisposeBy(IPlugin managedBy)
     {
-        if (SystemRegistryHolder.ManagedBy != managedBy)
+        if (PacketIdSystem.ManagedBy != managedBy)
             return;
 
-        if (PluginsRegistryHolder.ManagedBy != managedBy)
+        if (PacketIdPlugins.ManagedBy != managedBy)
             return;
 
-        if (TransformationsHolder.ManagedBy != managedBy)
+        if (PacketTransformationsPlugins.ManagedBy != managedBy)
             return;
 
         Dispose();

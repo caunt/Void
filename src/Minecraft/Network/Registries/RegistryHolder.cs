@@ -9,9 +9,9 @@ public interface IRegistryHolder : IDisposable
 {
     public ProtocolVersion ProtocolVersion { get; }
 
-    public IMinecraftPacketIdSystemRegistry SystemRegistryHolder { get; }
-    public IMinecraftPacketIdPluginsRegistry PluginsRegistryHolder { get; }
-    public IMinecraftPacketPluginsTransformations TransformationsHolder { get; }
+    public IMinecraftPacketIdSystemRegistry PacketIdSystem { get; }
+    public IMinecraftPacketIdPluginsRegistry PacketIdPlugins { get; }
+    public IMinecraftPacketTransformationsPluginsRegistry PacketTransformationsPlugins { get; }
 
     public void Setup(IPlugin managedBy, ProtocolVersion protocolVersion);
     public void ClearPlugins();

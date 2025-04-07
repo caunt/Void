@@ -17,8 +17,8 @@ public static class ChannelExtensions
         {
             var stream = channel.Get<IMinecraftPacketMessageStream>();
 
-            if (!stream.Registries.SystemRegistryHolder.Contains<T>())
-                throw new InvalidOperationException($"{nameof(stream.Registries.SystemRegistryHolder)} registry does not have {typeof(T)} packet");
+            if (!stream.Registries.PacketIdSystem.Contains<T>())
+                throw new InvalidOperationException($"{nameof(stream.Registries.PacketIdSystem)} registry does not have {typeof(T)} packet");
         }
 
         var message = await channel.ReadMessageAsync(cancellationToken);
@@ -47,7 +47,7 @@ public static class ChannelExtensions
 
     private static IMinecraftPacketIdSystemRegistry GetSystemRegistry(this INetworkChannel channel, IPlugin managedBy)
     {
-        var registry = channel.GetRegistries().SystemRegistryHolder;
+        var registry = channel.GetRegistries().PacketIdSystem;
 
         if (registry.ManagedBy != managedBy)
             throw new InvalidOperationException($"Registry is managed by {registry.ManagedBy}, not {managedBy.Name}");

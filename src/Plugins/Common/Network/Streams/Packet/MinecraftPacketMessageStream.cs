@@ -178,7 +178,7 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
         // Set packet data position for further usage. Stream property Length is preserved.
         stream.Position = buffer.Position;
 
-        if (Registries.SystemRegistryHolder?.Read is not { } registry || !registry.TryCreateDecoder(id, out var decoder))
+        if (Registries.PacketIdSystem?.Read is not { } registry || !registry.TryCreateDecoder(id, out var decoder))
             return new MinecraftBinaryPacket(id, stream);
 
         var packet = decoder(ref buffer, Registries.ProtocolVersion);
@@ -255,13 +255,13 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
     {
         id = 0;
 
-        if (Registries.SystemRegistryHolder?.Write is { } systemRegistry)
+        if (Registries.PacketIdSystem?.Write is { } systemRegistry)
         {
             if (systemRegistry.TryGetPacketId(packet, out id))
                 return true;
         }
 
-        if (Registries.PluginsRegistryHolder is { } pluginsRegistries)
+        if (Registries.PacketIdPlugins is { } pluginsRegistries)
         {
             foreach (var registry in pluginsRegistries.All)
             {
@@ -277,12 +277,12 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
     {
         transformations = null;
 
-        if (Registries.PluginsRegistryHolder is null)
+        if (Registries.PacketIdPlugins is null)
             return false;
 
-        if (Registries.TransformationsHolder is null)
+        if (Registries.PacketTransformationsPlugins is null)
             return false;
 
-        return Registries.PluginsRegistryHolder.TryGetTransformations(Registries.TransformationsHolder, packet, TransformationType.Downgrade, out transformations);
+        return Registries.PacketIdPlugins.TryGetTransformations(Registries.PacketTransformationsPlugins, packet, TransformationType.Downgrade, out transformations);
     }
 }

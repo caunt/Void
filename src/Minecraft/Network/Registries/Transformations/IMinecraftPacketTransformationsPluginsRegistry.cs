@@ -6,7 +6,7 @@ using Void.Minecraft.Network.Messages.Packets;
 
 namespace Void.Minecraft.Network.Registries.Transformations;
 
-public interface IMinecraftPacketPluginsTransformations
+public interface IMinecraftPacketTransformationsPluginsRegistry
 {
     public bool IsEmpty { get; }
     public ProtocolVersion? ProtocolVersion { get; set; }

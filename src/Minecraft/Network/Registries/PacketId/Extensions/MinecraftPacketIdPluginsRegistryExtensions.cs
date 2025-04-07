@@ -7,12 +7,12 @@ namespace Void.Minecraft.Network.Registries.PacketId.Extensions;
 
 public static class MinecraftPacketIdPluginsRegistryExtensions
 {
-    public static bool TryGetTransformations(this IMinecraftPacketIdPluginsRegistry registriesHolder, IMinecraftPacketPluginsTransformations transformationsHolder, IMinecraftPacket packet, TransformationType transformationType, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformations)
+    public static bool TryGetTransformations(this IMinecraftPacketIdPluginsRegistry registriesHolder, IMinecraftPacketTransformationsPluginsRegistry transformationsHolder, IMinecraftPacket packet, TransformationType transformationType, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformations)
     {
         return registriesHolder.TryGetTransformations(transformationsHolder, packet.GetType(), transformationType, out transformations);
     }
 
-    public static bool TryGetTransformations(this IMinecraftPacketIdPluginsRegistry registriesHolder, IMinecraftPacketPluginsTransformations transformationsHolder, Type packetType, TransformationType transformationType, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformations)
+    public static bool TryGetTransformations(this IMinecraftPacketIdPluginsRegistry registriesHolder, IMinecraftPacketTransformationsPluginsRegistry transformationsHolder, Type packetType, TransformationType transformationType, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformations)
     {
         transformations = null;
 

@@ -66,7 +66,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(player.ProtocolVersion))
             return;
 
-        var registries = @event.Link.GetRegistries(@event.Direction).PluginsRegistryHolder;
+        var registries = @event.Link.GetRegistries(@event.Direction).PacketIdPlugins;
 
         if (registries.IsEmpty)
             return;
@@ -74,7 +74,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (registries.Contains(@event.Message))
             return;
 
-        var transformations = @event.Link.GetRegistries(@event.Direction).TransformationsHolder;
+        var transformations = @event.Link.GetRegistries(@event.Direction).PacketTransformationsPlugins;
 
         try
         {
@@ -106,7 +106,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(player.ProtocolVersion))
             return;
 
-        var registries = @event.Link.GetRegistries(@event.Direction).PluginsRegistryHolder;
+        var registries = @event.Link.GetRegistries(@event.Direction).PacketIdPlugins;
 
         if (registries.IsEmpty)
             return;
@@ -114,7 +114,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (registries.Contains(@event.Message))
             return;
 
-        var transformations = @event.Link.GetRegistries(@event.Direction).TransformationsHolder;
+        var transformations = @event.Link.GetRegistries(@event.Direction).PacketTransformationsPlugins;
 
         try
         {
@@ -159,7 +159,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, Side origin, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketPluginsTransformations transformationsMappings, IMinecraftBinaryMessage binaryMessage)
+    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, Side origin, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketTransformationsPluginsRegistry transformationsMappings, IMinecraftBinaryMessage binaryMessage)
     {
         if (!link.Player.TryGetMinecraftPlayer(out var player))
             yield break;
@@ -195,13 +195,13 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, Side origin, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketPluginsTransformations transformationsMappings, IMinecraftPacket minecraftPacket)
+    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, Side origin, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketTransformationsPluginsRegistry transformationsMappings, IMinecraftPacket minecraftPacket)
     {
         if (!link.Player.TryGetMinecraftPlayer(out var player))
             yield break;
 
-        var playerRegistry = link.PlayerChannel.GetRegistries().SystemRegistryHolder;
-        var serverRegistry = link.ServerChannel.GetRegistries().SystemRegistryHolder;
+        var playerRegistry = link.PlayerChannel.GetRegistries().PacketIdSystem;
+        var serverRegistry = link.ServerChannel.GetRegistries().PacketIdSystem;
 
         if (!playerRegistry.Write.TryGetPacketId(minecraftPacket, out var id) && !serverRegistry.Write.TryGetPacketId(minecraftPacket, out id))
             yield break;

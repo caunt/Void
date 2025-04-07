@@ -6,7 +6,7 @@ using Void.Minecraft.Network.Registries.Transformations;
 
 namespace Void.Proxy.Plugins.Common.Network.Registries.Transformations;
 
-public class MinecraftPacketPluginsTransformations : IMinecraftPacketPluginsTransformations
+public class MinecraftPacketTransformationsPluginsRegistry : IMinecraftPacketTransformationsPluginsRegistry
 {
     private Dictionary<IPlugin, IMinecraftPacketTransformations> _map = [];
 
