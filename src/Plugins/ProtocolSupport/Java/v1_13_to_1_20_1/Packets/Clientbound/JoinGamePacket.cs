@@ -133,10 +133,11 @@ public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
         var levelName = string.Empty;
 
         string? dimensionIdentifier;
+        NbtTag? currentDimensionData = null;
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2 && protocolVersion < ProtocolVersion.MINECRAFT_1_19)
         {
             bufferPosition = buffer.Position;
-            var length = NbtTag.Parse(buffer.ReadToEnd().ToArray(), out _, true);
+            var length = NbtTag.Parse(buffer.ReadToEnd().ToArray(), out currentDimensionData, true);
             buffer.Seek(bufferPosition + length);
 
             dimensionIdentifier = buffer.ReadString();
@@ -194,13 +195,13 @@ public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
             DimensionInfo = dimensionInfo,
             LastDeathPosition = lastDeathPosition,
             PortalCooldown = portalCooldown,
+            CurrentDimensionData = currentDimensionData,
 
             // fields not present in 1.16+
             Dimension = 0,
             LevelType = null,
             Difficulty = 0,
-            DoLimitedCrafting = false,
-            CurrentDimensionData = null
+            DoLimitedCrafting = false
         };
     }
 
