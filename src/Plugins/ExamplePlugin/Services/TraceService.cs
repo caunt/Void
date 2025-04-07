@@ -5,7 +5,7 @@ using Void.Minecraft.Network.Messages.Packets;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Extensions;
-using Void.Proxy.Api.Network.IO.Messages;
+using Void.Proxy.Api.Network.Messages;
 
 namespace Void.Proxy.Plugins.ExamplePlugin.Services;
 

@@ -4,7 +4,7 @@ using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Extensions;
-using Void.Proxy.Plugins.Common.Network.IO.Bundles;
+using Void.Proxy.Plugins.Common.Network.Bundles;
 
 namespace Void.Proxy.Plugins.Common.Services.Bundles;
 

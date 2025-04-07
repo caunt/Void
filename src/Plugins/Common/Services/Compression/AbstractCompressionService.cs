@@ -2,8 +2,8 @@
 using Void.Common.Network.Messages;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
-using Void.Proxy.Plugins.Common.Network.IO.Streams.Compression;
-using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
+using Void.Proxy.Plugins.Common.Network.Streams.Compression;
+using Void.Proxy.Plugins.Common.Network.Streams.Packet;
 
 namespace Void.Proxy.Plugins.Common.Services.Compression;
 

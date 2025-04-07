@@ -5,7 +5,7 @@ using Void.Minecraft.Network;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
+using Void.Proxy.Plugins.Common.Network.Streams.Packet;
 using Void.Proxy.Plugins.Common.Services.Channels;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;

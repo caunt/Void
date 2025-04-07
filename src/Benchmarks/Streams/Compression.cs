@@ -1,7 +1,7 @@
 ﻿using BenchmarkDotNet.Attributes;
 using Microsoft.IO;
 using Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
-using Void.Proxy.Plugins.Common.Network.IO.Streams.Compression;
+using Void.Proxy.Plugins.Common.Network.Streams.Compression;
 
 namespace Void.Benchmarks.Streams;
 

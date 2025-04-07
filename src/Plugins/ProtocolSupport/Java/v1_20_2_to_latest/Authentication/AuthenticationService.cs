@@ -12,7 +12,7 @@ using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Extensions;
-using Void.Proxy.Plugins.Common.Network.IO.Bundles;
+using Void.Proxy.Plugins.Common.Network.Bundles;
 using Void.Proxy.Plugins.Common.Services.Authentication;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Extensions;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;

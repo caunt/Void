@@ -15,9 +15,9 @@ using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Plugins.Common.Crypto;
 using Void.Proxy.Plugins.Common.Events;
-using Void.Proxy.Plugins.Common.Network.IO.Streams.Encryption;
-using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
-using Void.Proxy.Plugins.Common.Network.IO.Streams.Transparent;
+using Void.Proxy.Plugins.Common.Network.Streams.Encryption;
+using Void.Proxy.Plugins.Common.Network.Streams.Packet;
+using Void.Proxy.Plugins.Common.Network.Streams.Transparent;
 
 namespace Void.Proxy.Plugins.Common.Services.Encryption;
 
