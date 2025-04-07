@@ -77,4 +77,4 @@ jobs:
         if-no-files-found: error
 
     - name: Echo Download URL
-      run: echo Download URL: ${{ steps.upload_artifact.outputs.artifact-url }}
+      run: "echo Download URL: ${{ steps.upload_artifact.outputs.artifact-url }}"
