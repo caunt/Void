@@ -46,7 +46,7 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
         {
             var parameters = entry.Method.GetParameters();
 
-            if (parameters[0].ParameterType != eventType)
+            if (!eventType.IsAssignableTo(parameters[0].ParameterType))
                 continue;
 
             await Task.Yield();
