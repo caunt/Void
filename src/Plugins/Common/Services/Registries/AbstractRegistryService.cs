@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
+using Void.Minecraft.Network.Messages.Binary;
+using Void.Minecraft.Network.Messages.Packets;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Minecraft;
 using Void.Proxy.Api.Events.Network;
@@ -11,8 +13,6 @@ using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Links.Extensions;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
-using Void.Proxy.Api.Network.IO.Messages.Binary;
-using Void.Proxy.Api.Network.IO.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Extensions;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
@@ -166,7 +166,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             var buffer = new MinecraftBuffer(binaryMessage.Stream);
             var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
 
-            if (registries.TryGetTransformations(transformationsMappings, type, out var transformations))
+            if (registries.TryGetTransformations(transformationsMappings, type, TransformationType.Upgrade, out var transformations))
             {
                 foreach (var transformation in transformations)
                 {
@@ -208,7 +208,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             minecraftPacket.Encode(ref buffer, link.Player.ProtocolVersion);
             stream.Position = 0;
 
-            if (registries.TryGetTransformations(transformationsMappings, type, out var transformations))
+            if (registries.TryGetTransformations(transformationsMappings, type, TransformationType.Upgrade, out var transformations))
             {
                 foreach (var transformation in transformations)
                 {

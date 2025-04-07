@@ -1,11 +1,11 @@
-﻿using Void.Proxy.Api.Events.Links;
+﻿using Void.Common;
+using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels;
-using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Servers;
@@ -135,7 +135,7 @@ public class Link(IPlayer player, IServer server, IMinecraftChannel playerChanne
             if (cancellationToken.IsCancellationRequested || forceCancellationToken.IsCancellationRequested)
                 break;
 
-            IMinecraftMessage message;
+            INetworkMessage message;
 
             var sourceSide = direction is Direction.Serverbound ? Side.Client : Side.Server;
             var destinationSide = direction is Direction.Serverbound ? Side.Server : Side.Client;

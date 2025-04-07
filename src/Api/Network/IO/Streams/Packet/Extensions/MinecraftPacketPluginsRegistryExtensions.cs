@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Void.Proxy.Api.Network.IO.Messages.Packets;
+using Void.Minecraft.Network.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 
@@ -7,12 +7,12 @@ namespace Void.Proxy.Api.Network.IO.Streams.Packet.Extensions;
 
 public static class MinecraftPacketPluginsRegistryExtensions
 {
-    public static bool TryGetTransformations(this IMinecraftPacketPluginsRegistry registriesHolder, IMinecraftPacketPluginsTransformations transformationsHolder, IMinecraftPacket packet, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformations)
+    public static bool TryGetTransformations(this IMinecraftPacketPluginsRegistry registriesHolder, IMinecraftPacketPluginsTransformations transformationsHolder, IMinecraftPacket packet, TransformationType transformationType, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformations)
     {
-        return TryGetTransformations(registriesHolder, transformationsHolder, packet.GetType(), out transformations);
+        return TryGetTransformations(registriesHolder, transformationsHolder, packet.GetType(), transformationType, out transformations);
     }
 
-    public static bool TryGetTransformations(this IMinecraftPacketPluginsRegistry registriesHolder, IMinecraftPacketPluginsTransformations transformationsHolder, Type packetType, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformations)
+    public static bool TryGetTransformations(this IMinecraftPacketPluginsRegistry registriesHolder, IMinecraftPacketPluginsTransformations transformationsHolder, Type packetType, TransformationType transformationType, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformations)
     {
         transformations = null;
 
@@ -25,7 +25,7 @@ public static class MinecraftPacketPluginsRegistryExtensions
         if (transformationsHolder is null)
             return false;
 
-        if (!transformationsHolder.Get(plugin).TryGetTransformation(packetType, TransformationType.Downgrade, out transformations))
+        if (!transformationsHolder.Get(plugin).TryGetTransformation(packetType, transformationType, out transformations))
             return false;
 
         return true;

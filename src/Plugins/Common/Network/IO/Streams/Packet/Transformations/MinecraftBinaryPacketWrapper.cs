@@ -1,7 +1,7 @@
 ﻿using Nito.Collections;
 using System.Diagnostics.CodeAnalysis;
 using Void.Minecraft.Buffers;
-using Void.Proxy.Api.Network.IO.Messages.Binary;
+using Void.Minecraft.Network.Messages.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 

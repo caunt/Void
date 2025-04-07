@@ -2,7 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
-using Void.Proxy.Api.Network.IO.Messages.Packets;
+using Void.Minecraft.Network.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams;
 using Void.Proxy.Api.Network.IO.Streams.Extensions;
 using Void.Proxy.Api.Network.IO.Streams.Manual;
@@ -287,6 +287,6 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
         if (TransformationsHolder is null)
             return false;
 
-        return PluginsRegistryHolder.TryGetTransformations(TransformationsHolder, packet, out transformations);
+        return PluginsRegistryHolder.TryGetTransformations(TransformationsHolder, packet, TransformationType.Downgrade, out transformations);
     }
 }

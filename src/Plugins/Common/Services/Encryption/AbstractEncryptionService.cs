@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System.Security.Cryptography;
+using Void.Common;
 using Void.Minecraft.Network;
 using Void.Proxy.Api.Crypto;
 using Void.Proxy.Api.Events;
@@ -10,7 +11,6 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
-using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Plugins.Common.Crypto;
 using Void.Proxy.Plugins.Common.Events;
@@ -124,7 +124,7 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
 
     protected abstract ValueTask<EncryptionResponse> ReceiveEncryptionResponseAsync(ILink link, CancellationToken cancellationToken);
 
-    protected abstract bool IsEncrypionResponsePacket(IMinecraftMessage message, out byte[] sharedSecret);
+    protected abstract bool IsEncrypionResponsePacket(INetworkMessage message, out byte[] sharedSecret);
 
     protected abstract bool IsSupportedVersion(ProtocolVersion version);
 }

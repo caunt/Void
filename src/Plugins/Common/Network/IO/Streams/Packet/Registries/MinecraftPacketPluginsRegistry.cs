@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using Void.Common;
 using Void.Minecraft.Network;
-using Void.Proxy.Api.Network.IO.Messages;
-using Void.Proxy.Api.Network.IO.Messages.Packets;
+using Void.Minecraft.Network.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
 using Void.Proxy.Api.Plugins;
 
@@ -32,7 +32,7 @@ public class MinecraftPacketPluginsRegistry : IMinecraftPacketPluginsRegistry
         return TryGetPlugin(typeof(T), out plugin);
     }
 
-    public bool TryGetPlugin(IMinecraftMessage message, [MaybeNullWhen(false)] out IPlugin plugin)
+    public bool TryGetPlugin(INetworkMessage message, [MaybeNullWhen(false)] out IPlugin plugin)
     {
         return TryGetPlugin(message.GetType(), out plugin);
     }
@@ -63,7 +63,7 @@ public class MinecraftPacketPluginsRegistry : IMinecraftPacketPluginsRegistry
         return All.Any(registry => registry.Contains<T>());
     }
 
-    public bool Contains(IMinecraftMessage message)
+    public bool Contains(INetworkMessage message)
     {
         return All.Any(registry => registry.Contains(message));
     }

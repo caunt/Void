@@ -12,5 +12,9 @@
 	<ItemGroup>
 	  <Folder Include="Transformations\" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Common\Void.Common.csproj" />
+	</ItemGroup>
 	
 </Project>

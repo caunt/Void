@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Void.Proxy.Api.Network.IO.Messages;
+using Void.Common;
 using Void.Proxy.Api.Network.IO.Streams;
 
 namespace Void.Proxy.Api.Network.IO.Channels;
@@ -25,8 +25,8 @@ public interface IMinecraftChannel : IDisposable, IAsyncDisposable
     public bool Has<T>() where T : class, IMinecraftStreamBase;
     public bool TryGet<T>([MaybeNullWhen(false)] out T result) where T : class, IMinecraftStreamBase;
     public void PrependBuffer(Memory<byte> memory);
-    public ValueTask<IMinecraftMessage> ReadMessageAsync(CancellationToken cancellationToken = default);
-    public ValueTask WriteMessageAsync(IMinecraftMessage message, CancellationToken cancellationToken = default);
+    public ValueTask<INetworkMessage> ReadMessageAsync(CancellationToken cancellationToken = default);
+    public ValueTask WriteMessageAsync(INetworkMessage message, CancellationToken cancellationToken = default);
     public void Pause(Operation operation = Operation.Read);
     public bool TryPause(Operation operation = Operation.Read);
     public void Resume(Operation operation = Operation.Read);

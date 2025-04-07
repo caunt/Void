@@ -1,9 +1,9 @@
-﻿using Void.Minecraft.Network;
+﻿using Void.Common;
+using Void.Minecraft.Network;
 using Void.Proxy.Api.Crypto;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Links.Extensions;
-using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Services.Encryption;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
@@ -37,7 +37,7 @@ public class EncryptionService(IEventService events, ICryptoService crypto) : Ab
         return new EncryptionResponse(encryptionResponse.SharedSecret, encryptionResponse.VerifyToken);
     }
 
-    protected override bool IsEncrypionResponsePacket(IMinecraftMessage message, out byte[] sharedSecret)
+    protected override bool IsEncrypionResponsePacket(INetworkMessage message, out byte[] sharedSecret)
     {
         if (message is EncryptionResponsePacket encryptionResponse)
         {

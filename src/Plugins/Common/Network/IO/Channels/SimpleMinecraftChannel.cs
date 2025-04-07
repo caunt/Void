@@ -1,9 +1,9 @@
 ﻿using Nito.AsyncEx;
 using System.Diagnostics.CodeAnalysis;
+using Void.Common;
+using Void.Minecraft.Network.Messages.Packets;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels;
-using Void.Proxy.Api.Network.IO.Messages;
-using Void.Proxy.Api.Network.IO.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Network;
@@ -110,7 +110,7 @@ public class SimpleMinecraftChannel(IMinecraftStreamBase head) : IMinecraftChann
         stream.PrependBuffer(memory);
     }
 
-    public async ValueTask<IMinecraftMessage> ReadMessageAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<INetworkMessage> ReadMessageAsync(CancellationToken cancellationToken = default)
     {
         if (_readPause is not null)
             await _readPause.Task.WaitAsync(cancellationToken);
@@ -124,7 +124,7 @@ public class SimpleMinecraftChannel(IMinecraftStreamBase head) : IMinecraftChann
         };
     }
 
-    public async ValueTask WriteMessageAsync(IMinecraftMessage message, CancellationToken cancellationToken = default)
+    public async ValueTask WriteMessageAsync(INetworkMessage message, CancellationToken cancellationToken = default)
     {
         if (_writePause is not null)
             await _writePause.Task.WaitAsync(cancellationToken);

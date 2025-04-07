@@ -1,4 +1,4 @@
-﻿using Void.Proxy.Api.Network.IO.Messages.Packets;
+﻿using Void.Minecraft.Network.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;

@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
+using Void.Common;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
-using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Compression;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
 
@@ -35,5 +35,5 @@ public abstract class AbstractCompressionService(ILogger<AbstractCompressionServ
         zlibStream.CompressionThreshold = threshold;
     }
 
-    protected abstract bool IsCompressionPacket(IMinecraftMessage message, out int threshold);
+    protected abstract bool IsCompressionPacket(INetworkMessage message, out int threshold);
 }

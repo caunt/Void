@@ -1,4 +1,6 @@
-﻿namespace Void.Proxy.Api.Network.IO.Messages.Binary;
+﻿using System.IO;
+
+namespace Void.Minecraft.Network.Messages.Binary;
 
 public interface IMinecraftBinaryMessage : IMinecraftMessage
 {

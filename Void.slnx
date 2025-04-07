@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="src\Api\Void.Proxy.Api.csproj" />
   <Project Path="src\Benchmarks\Void.Benchmarks.csproj" />
+  <Project Path="src\Common\Void.Common.csproj" />
   <Project Path="src\Debug\Void.Proxy.Debug.csproj" />
   <Project Path="src\Minecraft\Void.Minecraft.csproj" />
   <Project Path="src\Platform\Void.Proxy.csproj" />

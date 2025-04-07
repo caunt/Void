@@ -1,7 +1,7 @@
 ﻿using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
+using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Profiles;
-using Void.Proxy.Api.Network.IO.Messages.Packets;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientbound;
 

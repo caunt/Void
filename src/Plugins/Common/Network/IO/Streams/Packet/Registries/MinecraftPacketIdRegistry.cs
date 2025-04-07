@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using Void.Common;
 using Void.Minecraft.Network;
-using Void.Proxy.Api.Network.IO.Messages;
-using Void.Proxy.Api.Network.IO.Messages.Packets;
+using Void.Minecraft.Network.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
 
@@ -20,7 +20,7 @@ public class MinecraftPacketIdRegistry : IMinecraftPacketIdRegistry
         return Contains(typeof(T));
     }
 
-    public bool Contains(IMinecraftMessage message)
+    public bool Contains(INetworkMessage message)
     {
         return Contains(message.GetType());
     }

@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Void.Common;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Extensions;
-using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Plugins.Common.Network.IO.Bundles;
 
 namespace Void.Proxy.Plugins.Common.Services.Bundles;
@@ -27,5 +27,5 @@ public abstract class AbstractBundleService : IPluginCommonService
         bundles.ToggleBundle();
     }
 
-    protected abstract bool IsBundlePacket(IMinecraftMessage message);
+    protected abstract bool IsBundlePacket(INetworkMessage message);
 }

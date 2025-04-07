@@ -1,6 +1,6 @@
 ﻿using Void.Minecraft.Network;
-using Void.Proxy.Api.Network.IO.Messages;
-using Void.Proxy.Api.Network.IO.Messages.Packets;
+using Void.Minecraft.Network.Messages;
+using Void.Minecraft.Network.Messages.Packets;
 using Void.Proxy.Api.Plugins;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Packet.Registries;

@@ -1,11 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Void.Minecraft.Network;
+using Void.Minecraft.Network.Messages.Packets;
 using Void.Proxy.Api.Events.Authentication;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Links.Extensions;
-using Void.Proxy.Api.Network.IO.Messages.Packets;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Events;
