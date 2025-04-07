@@ -4,12 +4,12 @@ using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Players.Extensions;
+using Void.Minecraft.Profiles;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Services.Lifecycle;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Extensions;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientbound;
-using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Lifecycle;
 
@@ -36,7 +36,7 @@ public class LifecycleService : AbstractLifecycleService
         var channel = await player.GetChannelAsync(cancellationToken);
 
         if (minecraftPlayer.ProtocolVersion < ProtocolVersion.MINECRAFT_1_19)
-            await channel.SendPacketAsync(new ChatMessagePacket { Message = text }, cancellationToken);
+            await channel.SendPacketAsync(new ChatMessagePacket { Message = text, Position = 1, Sender = new Uuid(Guid.Empty) }, cancellationToken);
         else
             await channel.SendPacketAsync(new SystemChatMessagePacket { Message = text, Overlay = false }, cancellationToken);
 

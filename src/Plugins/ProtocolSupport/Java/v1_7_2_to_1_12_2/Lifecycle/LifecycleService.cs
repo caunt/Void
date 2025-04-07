@@ -8,7 +8,6 @@ using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Services.Lifecycle;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Extensions;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clientbound;
-using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Lifecycle;
 
@@ -30,7 +29,7 @@ public class LifecycleService : AbstractLifecycleService
             return false;
 
         var channel = await player.GetChannelAsync(cancellationToken);
-        await channel.SendPacketAsync(new ChatMessagePacket { Message = text }, cancellationToken);
+        await channel.SendPacketAsync(new ChatMessagePacket { Message = text, Position = 1 }, cancellationToken);
         return true;
     }
 

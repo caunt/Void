@@ -58,6 +58,13 @@ public static class Registry
                 new MinecraftPacketIdMapping(0x35, ProtocolVersion.MINECRAFT_1_12_1)
             ],
             typeof(RespawnPacket)
+        },
+        {
+            [
+                new MinecraftPacketIdMapping(0x02, Plugin.SupportedVersions.First()),
+                new MinecraftPacketIdMapping(0x0F, ProtocolVersion.MINECRAFT_1_9)
+            ],
+            typeof(Packets.Clientbound.ChatMessagePacket)
         }
     };
 
@@ -70,7 +77,7 @@ public static class Registry
                 new MinecraftPacketIdMapping(0x03, ProtocolVersion.MINECRAFT_1_12),
                 new MinecraftPacketIdMapping(0x02, ProtocolVersion.MINECRAFT_1_12_1)
             ],
-            typeof(ChatMessagePacket)
+            typeof(Packets.Serverbound.ChatMessagePacket)
         }
     };
 

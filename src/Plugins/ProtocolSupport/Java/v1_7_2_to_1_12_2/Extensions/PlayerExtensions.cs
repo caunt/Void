@@ -2,7 +2,6 @@
 using Void.Minecraft.Network.Streams.Packet;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clientbound;
-using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Extensions;
 
@@ -23,7 +22,7 @@ public static class PlayerExtensions
         if (stream.SystemRegistryHolder is not { } registry)
             return false;
 
-        return registry.Contains<ChatMessagePacket>();
+        return registry.Contains<Packets.Serverbound.ChatMessagePacket>();
     }
 
     public static async ValueTask<bool> IsLoggingInAsync(this IPlayer player, CancellationToken cancellationToken = default)

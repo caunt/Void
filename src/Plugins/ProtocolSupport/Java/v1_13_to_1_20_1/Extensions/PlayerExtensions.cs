@@ -23,7 +23,7 @@ public static class PlayerExtensions
         if (stream.SystemRegistryHolder is not { } registry)
             return false;
 
-        return registry.Contains<SignedChatCommandPacket>() || registry.Contains<KeyedChatCommandPacket>() || registry.Contains<ChatMessagePacket>();
+        return registry.Contains<SignedChatCommandPacket>() || registry.Contains<KeyedChatCommandPacket>() || registry.Contains<Packets.Serverbound.ChatMessagePacket>();
     }
 
     public static async ValueTask<bool> IsLoggingInAsync(this IPlayer player, CancellationToken cancellationToken = default)

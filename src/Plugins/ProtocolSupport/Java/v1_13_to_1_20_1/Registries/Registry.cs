@@ -98,7 +98,7 @@ public static class Registry
                 new MinecraftPacketIdMapping(0x0E, ProtocolVersion.MINECRAFT_1_16),
                 new MinecraftPacketIdMapping(0x0F, ProtocolVersion.MINECRAFT_1_17, ProtocolVersion.MINECRAFT_1_18_2)
             ],
-            typeof(ChatMessagePacket)
+            typeof(Packets.Clientbound.ChatMessagePacket)
         }
     };
 
@@ -109,7 +109,7 @@ public static class Registry
                 new MinecraftPacketIdMapping(0x02, Plugin.SupportedVersions.First()),
                 new MinecraftPacketIdMapping(0x03, ProtocolVersion.MINECRAFT_1_14, ProtocolVersion.MINECRAFT_1_18_2)
             ],
-            typeof(ChatMessagePacket)
+            typeof(Packets.Serverbound.ChatMessagePacket)
         },
         {
             [
