@@ -52,7 +52,10 @@ jobs:
     
     - name: Build solution
       run: dotnet build --configuration Release --no-restore
-    
+
+    - name: Build Platform
+      run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded --configuration Release --no-restore
+
     - name: Run tests
       run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal
 
