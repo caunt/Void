@@ -69,6 +69,7 @@ jobs:
       if: runner.os != 'Windows'
       run: |
         mv artifacts/${{ matrix.runtime }}/Void.Proxy artifacts/${{ matrix.runtime }}/void
+        chmod +x artifacts/${{ matrix.runtime }}/void
 
     - name: Rename artifact file (Windows)
       if: runner.os == 'Windows'
