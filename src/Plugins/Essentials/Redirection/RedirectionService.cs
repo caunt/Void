@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using Void.Common.Players;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Commands;
@@ -9,7 +8,7 @@ using Void.Proxy.Plugins.Common.Services;
 
 namespace Void.Proxy.Plugins.Essentials.Redirection;
 
-public class RedirectionService(IServerService servers, ILogger<RedirectionService> logger) : IPluginCommonService
+public class RedirectionService(IServerService servers) : IPluginCommonService
 {
     private readonly ConcurrentDictionary<IPlayer, IServer> _connecting = [];
 
@@ -49,6 +48,5 @@ public class RedirectionService(IServerService servers, ILogger<RedirectionServi
             return;
 
         @event.Result = server;
-        logger.LogInformation("Player {Player} connected to server {Server}", @event.Player, server);
     }
 }

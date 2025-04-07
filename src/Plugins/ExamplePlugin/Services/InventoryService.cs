@@ -4,7 +4,6 @@ using Void.Common.Network;
 using Void.Minecraft.Events;
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
-using Void.Minecraft.Network.Registries.Transformations;
 using Void.Minecraft.Players;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
@@ -37,6 +36,26 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
                 RegisterPlayMappings(@event.Player, @event.Side);
                 break;
         }
+
+        void RegisterPlayMappings(IMinecraftPlayer player, Side side)
+        {
+            player.RegisterPacket<SetHeldItemServerboundPacket>([
+                new(0x2B, ProtocolVersion.MINECRAFT_1_20_2),
+                new(0x2C, ProtocolVersion.MINECRAFT_1_20_3),
+                new(0x2F, ProtocolVersion.MINECRAFT_1_20_5),
+                new(0x31, ProtocolVersion.MINECRAFT_1_21_2),
+                new(0x33, ProtocolVersion.MINECRAFT_1_21_4)
+            ]);
+
+            player.RegisterPacket<SetHeldItemClientboundPacket>([
+                new(0x4F, ProtocolVersion.MINECRAFT_1_20_2),
+                new(0x51, ProtocolVersion.MINECRAFT_1_20_3),
+                new(0x53, ProtocolVersion.MINECRAFT_1_20_5),
+                new(0x63, ProtocolVersion.MINECRAFT_1_21_2)
+            ]);
+
+            logger.LogTrace("Registered packet mappings for player {Player} at {Side} side", player, side);
+        }
     }
 
     [Subscribe]
@@ -62,40 +81,5 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
                 logger.LogInformation("Changed player {Player} held item slot to {Slot}", @event.Link.Player, slot);
                 break;
         }
-    }
-
-    private void RegisterPlayMappings(IMinecraftPlayer player, Side side)
-    {
-        player.RegisterPacket<SetHeldItemServerboundPacket>([
-            new(0x2B, ProtocolVersion.MINECRAFT_1_20_2),
-            new(0x2C, ProtocolVersion.MINECRAFT_1_20_3),
-            new(0x2F, ProtocolVersion.MINECRAFT_1_20_5),
-            new(0x31, ProtocolVersion.MINECRAFT_1_21_2),
-            new(0x33, ProtocolVersion.MINECRAFT_1_21_4)
-        ]);
-
-        player.RegisterPacket<SetHeldItemClientboundPacket>([
-            new(0x4F, ProtocolVersion.MINECRAFT_1_20_2),
-            new(0x51, ProtocolVersion.MINECRAFT_1_20_3),
-            new(0x53, ProtocolVersion.MINECRAFT_1_20_5),
-            new(0x63, ProtocolVersion.MINECRAFT_1_21_2)
-        ]);
-
-        player.RegisterTransformations<SetHeldItemClientboundPacket>([
-            new(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.MINECRAFT_1_20_3, Upgrade),
-            new(ProtocolVersion.MINECRAFT_1_20_3, ProtocolVersion.MINECRAFT_1_20_2, Downgrade)
-        ]);
-
-        void Upgrade(IMinecraftBinaryPacketWrapper wrapper) => Downgrade(wrapper);
-        void Downgrade(IMinecraftBinaryPacketWrapper wrapper)
-        {
-            // var value = wrapper.Read<ByteProperty>();
-            // wrapper.Write(value);
-            // 
-            // wrapper.Passthrough<ByteProperty>();
-            // wrapper.TrySet(0, ByteProperty.FromPrimitive(69));
-        }
-
-        logger.LogInformation("Registered play mappings for inventory service for {Side} side", side);
     }
 }
