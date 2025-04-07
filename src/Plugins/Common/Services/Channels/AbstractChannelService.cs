@@ -11,7 +11,7 @@ using Void.Proxy.Api.Events.Channels;
 using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
-using Void.Proxy.Api.Network.IO.Channels.Services;
+using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Plugins.Common.Network.IO.Channels;
 using Void.Proxy.Plugins.Common.Network.IO.Channels.Services;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Network;

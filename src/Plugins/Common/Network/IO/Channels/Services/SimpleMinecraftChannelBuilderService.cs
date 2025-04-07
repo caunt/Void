@@ -5,7 +5,7 @@ using Void.Common.Network.Channels;
 using Void.Common.Players;
 using Void.Proxy.Api.Events.Channels;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Network.IO.Channels.Services;
+using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Api.Servers;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Network;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Transparent;
