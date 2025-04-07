@@ -2,6 +2,4 @@
 
 namespace Void.Proxy.Api;
 
-public interface IProxy : IHostedService
-{
-}
+public interface IProxy : IHostedService;

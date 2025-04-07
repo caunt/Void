@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Void.Common.Network.Streams;
 
-public interface INetworkStreamBase : IDisposable, IAsyncDisposable
+public interface IMessageStreamBase : IDisposable, IAsyncDisposable
 {
     public bool CanRead { get; }
     public bool CanWrite { get; }

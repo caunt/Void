@@ -12,11 +12,11 @@ using Void.Proxy.Plugins.Common.Network.Streams.Extensions;
 
 namespace Void.Proxy.Plugins.Common.Network.Streams.Compression;
 
-public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, ICompleteMessageStream, IZlibCompressionStream
+public class IonicZlibCompressionMessageStream : RecyclableStream, ICompleteMessageStream, IZlibCompressionStream
 {
     public int CompressionThreshold { get; set; } = 256;
 
-    public INetworkStreamBase? BaseStream { get; set; }
+    public IMessageStreamBase? BaseStream { get; set; }
     public bool CanRead => BaseStream?.CanRead ?? false;
     public bool CanWrite => BaseStream?.CanWrite ?? false;
     public bool IsAlive => BaseStream?.IsAlive ?? false;

@@ -12,7 +12,7 @@ using Void.Proxy.Plugins.Common.Network.Messages.Binary;
 
 namespace Void.Proxy.Plugins.Common.Network.Channels;
 
-public class SimpleMinecraftChannel(INetworkStreamBase head) : INetworkChannel
+public class SimpleMinecraftChannel(IMessageStreamBase head) : INetworkChannel
 {
     private readonly AsyncLock _writeLock = new();
     private TaskCompletionSource? _readPause;
@@ -21,29 +21,29 @@ public class SimpleMinecraftChannel(INetworkStreamBase head) : INetworkChannel
     public bool CanRead => head.CanRead;
     public bool CanWrite => head.CanWrite;
 
-    public INetworkStreamBase Head => head;
+    public IMessageStreamBase Head => head;
 
     public bool IsAlive => head.IsAlive;
-    public bool IsConfigured => head is INetworkStream;
+    public bool IsConfigured => head is IMessageStream;
     public bool IsPaused => this is { _readPause.Task.IsCompleted: false } or { _writePause.Task.IsCompleted: false };
 
-    public void Add<T>() where T : class, INetworkStream, new()
+    public void Add<T>() where T : class, IMessageStream, new()
     {
         Add(new T());
     }
 
-    public void Add<T>(T stream) where T : class, INetworkStream
+    public void Add<T>(T stream) where T : class, IMessageStream
     {
         stream.BaseStream = head;
         head = stream;
     }
 
-    public void AddBefore<TBefore, TValue>() where TBefore : class, INetworkStream where TValue : class, INetworkStream, new()
+    public void AddBefore<TBefore, TValue>() where TBefore : class, IMessageStream where TValue : class, IMessageStream, new()
     {
         AddBefore<TBefore, TValue>(new TValue());
     }
 
-    public void AddBefore<TBefore, TValue>(TValue stream) where TBefore : class, INetworkStream where TValue : class, INetworkStream
+    public void AddBefore<TBefore, TValue>(TValue stream) where TBefore : class, IMessageStream where TValue : class, IMessageStream
     {
         var before = Get<TBefore>();
         var beforeBaseStream = before.BaseStream;
@@ -52,12 +52,12 @@ public class SimpleMinecraftChannel(INetworkStreamBase head) : INetworkChannel
         before.BaseStream = stream;
     }
 
-    public void Remove<T>() where T : class, INetworkStream, new()
+    public void Remove<T>() where T : class, IMessageStream, new()
     {
         Remove(Get<T>());
     }
 
-    public void Remove<T>(T value) where T : class, INetworkStream
+    public void Remove<T>(T value) where T : class, IMessageStream
     {
         if (head != value)
         {
@@ -66,7 +66,7 @@ public class SimpleMinecraftChannel(INetworkStreamBase head) : INetworkChannel
 
             while (currentStreamBase is not null)
             {
-                if (currentStreamBase is not INetworkStream currentStream || previousStreamBase is not INetworkStream previousStream)
+                if (currentStreamBase is not IMessageStream currentStream || previousStreamBase is not IMessageStream previousStream)
                     break;
 
                 if (currentStream == value)
@@ -86,7 +86,7 @@ public class SimpleMinecraftChannel(INetworkStreamBase head) : INetworkChannel
         }
     }
 
-    public T Get<T>() where T : class, INetworkStreamBase
+    public T Get<T>() where T : class, IMessageStreamBase
     {
         if (TryGet<T>(out var stream))
             return stream;
@@ -94,19 +94,19 @@ public class SimpleMinecraftChannel(INetworkStreamBase head) : INetworkChannel
         throw new InvalidOperationException($"{typeof(T)} not found in channel");
     }
 
-    public bool Has<T>() where T : class, INetworkStreamBase
+    public bool Has<T>() where T : class, IMessageStreamBase
     {
         return TryGet<T>(out _);
     }
 
-    public bool TryGet<T>([MaybeNullWhen(false)] out T result) where T : class, INetworkStreamBase
+    public bool TryGet<T>([MaybeNullWhen(false)] out T result) where T : class, IMessageStreamBase
     {
         return Get(head, out result);
     }
 
     public void PrependBuffer(Memory<byte> memory)
     {
-        var stream = Get<IMinecraftNetworkStream>();
+        var stream = Get<INetworkStream>();
         stream.PrependBuffer(memory);
     }
 
@@ -243,7 +243,7 @@ public class SimpleMinecraftChannel(INetworkStreamBase head) : INetworkChannel
         head.Flush();
     }
 
-    private bool Get<T>(INetworkStreamBase? baseStream, [MaybeNullWhen(false)] out T result) where T : class, INetworkStreamBase
+    private bool Get<T>(IMessageStreamBase? baseStream, [MaybeNullWhen(false)] out T result) where T : class, IMessageStreamBase
     {
         var current = baseStream ?? head;
 
@@ -253,7 +253,7 @@ public class SimpleMinecraftChannel(INetworkStreamBase head) : INetworkChannel
                 case T found:
                     result = found;
                     return true;
-                case INetworkStream stream:
+                case IMessageStream stream:
                     current = stream.BaseStream;
                     break;
                 default:

@@ -18,10 +18,10 @@ using Void.Proxy.Plugins.Common.Network.Streams.Packet.Transformations;
 
 namespace Void.Proxy.Plugins.Common.Network.Streams.Packet;
 
-public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraftPacketMessageStream
+public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMessageStream
 {
     public ProtocolVersion ProtocolVersion => SystemRegistryHolder?.ProtocolVersion ?? ProtocolVersion.Oldest;
-    public INetworkStreamBase? BaseStream { get; set; }
+    public IMessageStreamBase? BaseStream { get; set; }
     public bool CanRead => BaseStream?.CanRead ?? false;
     public bool CanWrite => BaseStream?.CanWrite ?? false;
     public bool IsAlive => BaseStream?.IsAlive ?? false;

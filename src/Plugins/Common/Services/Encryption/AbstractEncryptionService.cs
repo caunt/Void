@@ -53,8 +53,8 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
             @event.Link.ServerChannel.Remove<MinecraftPacketMessageStream>();
             @event.Link.PlayerChannel.Remove<MinecraftPacketMessageStream>();
 
-            @event.Link.ServerChannel.Add<MinecraftTransparentMessageStream>();
-            @event.Link.PlayerChannel.Add<MinecraftTransparentMessageStream>();
+            @event.Link.ServerChannel.Add<TransparentMessageStream>();
+            @event.Link.PlayerChannel.Add<TransparentMessageStream>();
         }
         else
         {

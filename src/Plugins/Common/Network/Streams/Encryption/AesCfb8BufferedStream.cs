@@ -9,7 +9,7 @@ using Void.Proxy.Plugins.Common.Network.Messages.Binary;
 
 namespace Void.Proxy.Plugins.Common.Network.Streams.Encryption;
 
-public class AesCfb8BufferedStream : MinecraftRecyclableStream, IBufferedMessageStream
+public class AesCfb8BufferedStream : RecyclableStream, IBufferedMessageStream
 {
     private const int BlockSize = 16;
 
@@ -29,7 +29,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IBufferedMessage
         Array.Copy(key, _writeStreamIv, _writeStreamIv.Length);
     }
 
-    public INetworkStreamBase? BaseStream { get; set; }
+    public IMessageStreamBase? BaseStream { get; set; }
     public bool CanRead => BaseStream?.CanRead ?? false;
     public bool CanWrite => BaseStream?.CanWrite ?? false;
     public bool IsAlive => BaseStream?.IsAlive ?? false;

@@ -2,7 +2,7 @@
 
 namespace Void.Proxy.Api.Network.Streams.Recyclable;
 
-public abstract class MinecraftRecyclableStream
+public abstract class RecyclableStream
 {
     public static readonly RecyclableMemoryStreamManager RecyclableMemoryStreamManager = new(new RecyclableMemoryStreamManager.Options
     {

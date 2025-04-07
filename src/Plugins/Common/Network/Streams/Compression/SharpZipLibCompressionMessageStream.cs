@@ -13,7 +13,7 @@ using Void.Proxy.Plugins.Common.Network.Streams.Extensions;
 
 namespace Void.Proxy.Plugins.Common.Network.Streams.Compression;
 
-public class SharpZipLibCompressionMessageStream : MinecraftRecyclableStream, ICompleteMessageStream, IZlibCompressionStream
+public class SharpZipLibCompressionMessageStream : RecyclableStream, ICompleteMessageStream, IZlibCompressionStream
 {
     private const int BufferSize = 1024;
 
@@ -21,7 +21,7 @@ public class SharpZipLibCompressionMessageStream : MinecraftRecyclableStream, IC
     private readonly Inflater _decompressor = new();
 
     public int CompressionThreshold { get; set; } = 256;
-    public INetworkStreamBase? BaseStream { get; set; }
+    public IMessageStreamBase? BaseStream { get; set; }
     public bool CanRead => BaseStream?.CanRead ?? false;
     public bool CanWrite => BaseStream?.CanWrite ?? false;
     public bool IsAlive => BaseStream?.IsAlive ?? false;

@@ -3,7 +3,7 @@ using Void.Proxy.Api.Network.Streams.Manual.Network;
 
 namespace Void.Proxy.Plugins.Common.Network.Streams.Network;
 
-public class SimpleNetworkStream(NetworkStream baseStream) : IMinecraftNetworkStream
+public class SimpleNetworkStream(NetworkStream baseStream) : INetworkStream
 {
     private Memory<byte> _nextBuffer = Memory<byte>.Empty;
     private bool _isClosed = false;

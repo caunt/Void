@@ -2,4 +2,4 @@
 
 namespace Void.Minecraft.Network.Streams;
 
-public interface IMinecraftStream : INetworkStream;
+public interface IMinecraftStream : IMessageStream;

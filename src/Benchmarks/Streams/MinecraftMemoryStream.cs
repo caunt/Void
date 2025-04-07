@@ -3,7 +3,7 @@ using Void.Proxy.Api.Network.Streams.Manual.Network;
 
 namespace Void.Benchmarks.Streams;
 
-internal class MinecraftMemoryStream : IMinecraftNetworkStream
+internal class MinecraftMemoryStream : INetworkStream
 {
     private readonly MemoryStream _memoryStream = new();
     public NetworkStream BaseStream => null!;

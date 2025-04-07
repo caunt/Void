@@ -87,7 +87,7 @@ public class SimpleMinecraftChannelBuilderService(ILogger<SimpleMinecraftChannel
         var channel = await _builder(player, side, stream, cancellationToken);
 
         if (!channel.IsConfigured)
-            channel.Add<MinecraftTransparentMessageStream>();
+            channel.Add<TransparentMessageStream>();
 
         return channel;
     }

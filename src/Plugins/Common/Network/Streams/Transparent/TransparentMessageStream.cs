@@ -7,16 +7,16 @@ using Void.Proxy.Plugins.Common.Network.Messages.Binary;
 
 namespace Void.Proxy.Plugins.Common.Network.Streams.Transparent;
 
-public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IBufferedMessageStream
+public class TransparentMessageStream : RecyclableStream, IBufferedMessageStream
 {
-    public INetworkStreamBase? BaseStream { get; set; }
+    public IMessageStreamBase? BaseStream { get; set; }
     public bool CanRead => BaseStream?.CanRead ?? false;
     public bool CanWrite => BaseStream?.CanWrite ?? false;
     public bool IsAlive => BaseStream?.IsAlive ?? false;
 
     public int Read(Span<byte> span)
     {
-        if (BaseStream is not IMinecraftNetworkStream stream)
+        if (BaseStream is not INetworkStream stream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);
 
         return stream.Read(span);
@@ -24,7 +24,7 @@ public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IBuf
 
     public async ValueTask<int> ReadAsync(Memory<byte> memory, CancellationToken cancellationToken = default)
     {
-        if (BaseStream is not IMinecraftNetworkStream stream)
+        if (BaseStream is not INetworkStream stream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);
 
         return await stream.ReadAsync(memory, cancellationToken);
@@ -32,7 +32,7 @@ public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IBuf
 
     public void ReadExactly(Span<byte> span)
     {
-        if (BaseStream is not IMinecraftNetworkStream stream)
+        if (BaseStream is not INetworkStream stream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);
 
         stream.ReadExactly(span);
@@ -40,7 +40,7 @@ public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IBuf
 
     public async ValueTask ReadExactlyAsync(Memory<byte> memory, CancellationToken cancellationToken = default)
     {
-        if (BaseStream is not IMinecraftNetworkStream stream)
+        if (BaseStream is not INetworkStream stream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);
 
         await stream.ReadExactlyAsync(memory, cancellationToken);
@@ -48,7 +48,7 @@ public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IBuf
 
     public void Write(ReadOnlySpan<byte> span)
     {
-        if (BaseStream is not IMinecraftNetworkStream stream)
+        if (BaseStream is not INetworkStream stream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);
 
         stream.Write(span);
@@ -56,7 +56,7 @@ public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IBuf
 
     public async ValueTask WriteAsync(ReadOnlyMemory<byte> memory, CancellationToken cancellationToken = default)
     {
-        if (BaseStream is not IMinecraftNetworkStream stream)
+        if (BaseStream is not INetworkStream stream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);
 
         await stream.WriteAsync(memory, cancellationToken);
@@ -80,7 +80,7 @@ public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IBuf
 
     public IBufferedBinaryMessage ReadAsMessage(int size = 2048)
     {
-        if (BaseStream is not IMinecraftNetworkStream)
+        if (BaseStream is not INetworkStream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);
 
         var stream = RecyclableMemoryStreamManager.GetStream();
@@ -93,7 +93,7 @@ public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IBuf
 
     public async ValueTask<IBufferedBinaryMessage> ReadAsMessageAsync(int size = 2048, CancellationToken cancellationToken = default)
     {
-        if (BaseStream is not IMinecraftNetworkStream)
+        if (BaseStream is not INetworkStream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);
 
         var stream = RecyclableMemoryStreamManager.GetStream();
@@ -106,7 +106,7 @@ public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IBuf
 
     public void WriteAsMessage(IBufferedBinaryMessage message)
     {
-        if (BaseStream is not IMinecraftNetworkStream)
+        if (BaseStream is not INetworkStream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);
 
         foreach (var chunk in message.Stream.GetReadOnlySequence())
@@ -115,7 +115,7 @@ public class MinecraftTransparentMessageStream : MinecraftRecyclableStream, IBuf
 
     public async ValueTask WriteAsMessageAsync(IBufferedBinaryMessage message, CancellationToken cancellationToken = default)
     {
-        if (BaseStream is not IMinecraftNetworkStream)
+        if (BaseStream is not INetworkStream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);
 
         foreach (var chunk in message.Stream.GetReadOnlySequence())

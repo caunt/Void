@@ -2,4 +2,4 @@
 
 namespace Void.Proxy.Api.Network.Streams.Compression;
 
-public interface IZlibCompressionStream : INetworkStream;
+public interface IZlibCompressionStream : IMessageStream;

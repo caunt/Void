@@ -214,7 +214,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             if (!registry.TryCreateDecoder(id, out var type, out var decoder))
                 continue;
 
-            using var stream = MinecraftRecyclableStream.RecyclableMemoryStreamManager.GetStream();
+            using var stream = RecyclableStream.RecyclableMemoryStreamManager.GetStream();
             var buffer = new MinecraftBuffer(stream);
             var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(id, stream), origin);
 
