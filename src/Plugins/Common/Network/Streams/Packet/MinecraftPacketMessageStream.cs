@@ -12,9 +12,9 @@ using Void.Minecraft.Network.Streams.Packet.Transformations;
 using Void.Proxy.Api.Network.Streams.Manual;
 using Void.Proxy.Api.Network.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.Streams.Recyclable;
-using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Transformations;
 using Void.Proxy.Plugins.Common.Network.Messages.Binary;
 using Void.Proxy.Plugins.Common.Network.Streams.Extensions;
+using Void.Proxy.Plugins.Common.Network.Streams.Packet.Transformations;
 
 namespace Void.Proxy.Plugins.Common.Network.Streams.Packet;
 

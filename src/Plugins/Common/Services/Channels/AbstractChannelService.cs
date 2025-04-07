@@ -12,12 +12,12 @@ using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Network.Channels;
+using Void.Proxy.Plugins.Common.Network.Channels;
 using Void.Proxy.Plugins.Common.Network.Channels.Services;
-using Void.Proxy.Plugins.Common.Network.IO.Channels;
-using Void.Proxy.Plugins.Common.Network.IO.Streams.Network;
-using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Registries;
-using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Transformations;
+using Void.Proxy.Plugins.Common.Network.Streams.Network;
 using Void.Proxy.Plugins.Common.Network.Streams.Packet;
+using Void.Proxy.Plugins.Common.Network.Streams.Packet.Registries;
+using Void.Proxy.Plugins.Common.Network.Streams.Packet.Transformations;
 
 namespace Void.Proxy.Plugins.Common.Services.Channels;
 

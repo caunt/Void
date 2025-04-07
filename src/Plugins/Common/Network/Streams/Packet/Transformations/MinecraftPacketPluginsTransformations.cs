@@ -3,7 +3,6 @@ using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Streams.Packet.Transformations;
-using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Transformations;
 
 namespace Void.Proxy.Plugins.Common.Network.Streams.Packet.Transformations;
 

@@ -3,7 +3,7 @@ using Void.Proxy.Api.Network.Messages;
 using Void.Proxy.Api.Network.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.Streams.Manual.Network;
 using Void.Proxy.Api.Network.Streams.Recyclable;
-using Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
+using Void.Proxy.Plugins.Common.Network.Messages.Binary;
 
 namespace Void.Proxy.Plugins.Common.Network.Streams.Transparent;
 
