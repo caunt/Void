@@ -262,6 +262,17 @@ public ref struct MinecraftBuffer
         return _backingBuffer.ReadToEnd();
     }
 
+    public ReadOnlySpan<byte> Dump()
+    {
+        var position = Position;
+        Seek(0, SeekOrigin.Begin);
+
+        var data = ReadToEnd();
+        Seek(position, SeekOrigin.Begin);
+
+        return data;
+    }
+
     public void Reset()
     {
         _backingBuffer.Reset();
