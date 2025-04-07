@@ -1,13 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
 using Void.Common;
 using Void.Minecraft.Network;
+using Void.Minecraft.Network.Streams.Packet.Transformations;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Commands;
 using Void.Proxy.Api.Events.Minecraft;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Links.Extensions;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.ExamplePlugin.Packets.Clientbound;

@@ -1,4 +1,5 @@
-﻿using Void.Proxy.Api.Network.IO.Messages.Binary;
+﻿using Void.Minecraft.Network.Streams;
+using Void.Proxy.Api.Network.IO.Messages.Binary;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
 

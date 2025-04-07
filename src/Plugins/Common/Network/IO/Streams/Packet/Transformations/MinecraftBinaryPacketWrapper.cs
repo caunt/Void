@@ -3,8 +3,8 @@ using System.Diagnostics.CodeAnalysis;
 using Void.Common;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network.Messages.Binary;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
+using Void.Minecraft.Network.Streams.Packet.Transformations;
+using Void.Minecraft.Network.Streams.Packet.Transformations.Properties;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Transformations;
 

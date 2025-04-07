@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
+using Void.Common;
 using Void.Minecraft.Components.Text;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Links;

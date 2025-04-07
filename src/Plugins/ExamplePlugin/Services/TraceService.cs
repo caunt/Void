@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Void.Common;
 using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Proxy.Api.Events;

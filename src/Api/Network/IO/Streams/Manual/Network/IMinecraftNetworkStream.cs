@@ -1,4 +1,5 @@
 ﻿using System.Net.Sockets;
+using Void.Minecraft.Network.Streams;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Manual.Network;
 

@@ -2,6 +2,8 @@
 using Void.Common;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Network.Messages.Packets;
+using Void.Minecraft.Network.Streams.Packet;
+using Void.Minecraft.Network.Streams.Packet.Extensions;
 using Void.Proxy.Api.Events.Chat;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
@@ -9,9 +11,6 @@ using Void.Proxy.Api.Links.Extensions;
 using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
 using Void.Proxy.Api.Network.IO.Channels.Services;
-using Void.Proxy.Api.Network.IO.Streams.Packet;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Extensions;
-using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Services;
 using Void.Proxy.Api.Servers;
 

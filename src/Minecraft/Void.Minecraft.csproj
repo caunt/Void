@@ -10,7 +10,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Network\Streams\Packet\" />
 	  <Folder Include="Transformations\" />
 	</ItemGroup>
 

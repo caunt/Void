@@ -1,8 +1,8 @@
 ﻿using Ionic.Zlib;
 using Microsoft.IO;
+using Void.Common;
 using Void.Minecraft.Buffers;
 using Void.Proxy.Api.Network.IO.Messages.Binary;
-using Void.Proxy.Api.Network.IO.Streams;
 using Void.Proxy.Api.Network.IO.Streams.Compression;
 using Void.Proxy.Api.Network.IO.Streams.Extensions;
 using Void.Proxy.Api.Network.IO.Streams.Manual;
@@ -16,7 +16,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
 {
     public int CompressionThreshold { get; set; } = 256;
 
-    public IMinecraftStreamBase? BaseStream { get; set; }
+    public INetworkStreamBase? BaseStream { get; set; }
     public bool CanRead => BaseStream?.CanRead ?? false;
     public bool CanWrite => BaseStream?.CanWrite ?? false;
     public bool IsAlive => BaseStream?.IsAlive ?? false;

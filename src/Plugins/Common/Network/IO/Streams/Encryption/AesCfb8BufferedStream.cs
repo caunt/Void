@@ -1,7 +1,7 @@
 ﻿using System.Buffers;
 using System.Security.Cryptography;
+using Void.Common;
 using Void.Proxy.Api.Network.IO.Messages.Binary;
-using Void.Proxy.Api.Network.IO.Streams;
 using Void.Proxy.Api.Network.IO.Streams.Manual;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Recyclable;
@@ -29,7 +29,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
         Array.Copy(key, _writeStreamIv, _writeStreamIv.Length);
     }
 
-    public IMinecraftStreamBase? BaseStream { get; set; }
+    public INetworkStreamBase? BaseStream { get; set; }
     public bool CanRead => BaseStream?.CanRead ?? false;
     public bool CanWrite => BaseStream?.CanWrite ?? false;
     public bool IsAlive => BaseStream?.IsAlive ?? false;

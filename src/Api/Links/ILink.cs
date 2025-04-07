@@ -1,4 +1,4 @@
-﻿using Void.Proxy.Api.Events;
+﻿using Void.Common;
 using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Servers;

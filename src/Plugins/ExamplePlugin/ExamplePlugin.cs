@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
+using Void.Common;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.ExamplePlugin.Services;
 
 namespace Void.Proxy.Plugins.ExamplePlugin;

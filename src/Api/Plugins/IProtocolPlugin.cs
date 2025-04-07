@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Network;
+﻿using Void.Common;
+using Void.Minecraft.Network;
 
 namespace Void.Proxy.Api.Plugins;
 

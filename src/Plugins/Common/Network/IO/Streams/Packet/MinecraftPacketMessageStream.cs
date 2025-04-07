@@ -4,14 +4,13 @@ using Void.Common;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
-using Void.Proxy.Api.Network.IO.Streams;
+using Void.Minecraft.Network.Streams.Packet;
+using Void.Minecraft.Network.Streams.Packet.Extensions;
+using Void.Minecraft.Network.Streams.Packet.Registries;
+using Void.Minecraft.Network.Streams.Packet.Transformations;
 using Void.Proxy.Api.Network.IO.Streams.Extensions;
 using Void.Proxy.Api.Network.IO.Streams.Manual;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
-using Void.Proxy.Api.Network.IO.Streams.Packet;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Extensions;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 using Void.Proxy.Api.Network.IO.Streams.Recyclable;
 using Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Transformations;
@@ -21,7 +20,7 @@ namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
 public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraftPacketMessageStream
 {
     public ProtocolVersion ProtocolVersion => SystemRegistryHolder?.ProtocolVersion ?? ProtocolVersion.Oldest;
-    public IMinecraftStreamBase? BaseStream { get; set; }
+    public INetworkStreamBase? BaseStream { get; set; }
     public bool CanRead => BaseStream?.CanRead ?? false;
     public bool CanWrite => BaseStream?.CanWrite ?? false;
     public bool IsAlive => BaseStream?.IsAlive ?? false;

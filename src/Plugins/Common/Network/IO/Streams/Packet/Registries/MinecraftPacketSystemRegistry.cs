@@ -2,9 +2,8 @@
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages;
 using Void.Minecraft.Network.Messages.Packets;
-using Void.Proxy.Api.Network.IO.Streams.Packet;
-using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
-using Void.Proxy.Api.Plugins;
+using Void.Minecraft.Network.Streams.Packet;
+using Void.Minecraft.Network.Streams.Packet.Registries;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Registries;
 
