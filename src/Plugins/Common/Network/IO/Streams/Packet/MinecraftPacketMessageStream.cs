@@ -9,11 +9,11 @@ using Void.Minecraft.Network.Streams.Packet;
 using Void.Minecraft.Network.Streams.Packet.Extensions;
 using Void.Minecraft.Network.Streams.Packet.Registries;
 using Void.Minecraft.Network.Streams.Packet.Transformations;
-using Void.Proxy.Api.Network.IO.Streams.Extensions;
 using Void.Proxy.Api.Network.IO.Streams.Manual;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Recyclable;
 using Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
+using Void.Proxy.Plugins.Common.Network.IO.Streams.Extensions;
 using Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Transformations;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet;
@@ -33,8 +33,8 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
     {
         return BaseStream switch
         {
-            IMinecraftManualStream stream => DecodeManual(stream),
-            IMinecraftCompleteMessageStream stream => DecodeCompleteMessage(stream),
+            IManualStream stream => DecodeManual(stream),
+            ICompleteMessageStream stream => DecodeCompleteMessage(stream),
             _ => throw new NotSupportedException(BaseStream?.GetType().FullName)
         };
     }
@@ -43,8 +43,8 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
     {
         return BaseStream switch
         {
-            IMinecraftManualStream stream => await DecodeManualAsync(stream, cancellationToken),
-            IMinecraftCompleteMessageStream stream => await DecodeCompleteMessageAsync(stream, cancellationToken),
+            IManualStream stream => await DecodeManualAsync(stream, cancellationToken),
+            ICompleteMessageStream stream => await DecodeCompleteMessageAsync(stream, cancellationToken),
             _ => throw new NotSupportedException(BaseStream?.GetType().FullName)
         };
     }
@@ -53,10 +53,10 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
     {
         switch (BaseStream)
         {
-            case IMinecraftManualStream manualStream:
+            case IManualStream manualStream:
                 EncodeManual(manualStream, packet, origin);
                 break;
-            case IMinecraftCompleteMessageStream completeMessageStream:
+            case ICompleteMessageStream completeMessageStream:
                 EncodeCompleteMessage(completeMessageStream, packet, origin);
                 break;
             default:
@@ -68,10 +68,10 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
     {
         switch (BaseStream)
         {
-            case IMinecraftManualStream manualStream:
+            case IManualStream manualStream:
                 await EncodeManualAsync(manualStream, packet, origin, cancellationToken);
                 break;
-            case IMinecraftCompleteMessageStream completeMessageStream:
+            case ICompleteMessageStream completeMessageStream:
                 await EncodeCompleteMessageAsync(completeMessageStream, packet, origin, cancellationToken);
                 break;
             default:
@@ -109,29 +109,29 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
         BaseStream?.Close();
     }
 
-    private IMinecraftPacket DecodeCompleteMessage(IMinecraftCompleteMessageStream stream)
+    private IMinecraftPacket DecodeCompleteMessage(ICompleteMessageStream stream)
     {
         var message = stream.ReadMessage();
         return DecodePacket(message.Stream);
     }
 
-    private async ValueTask<IMinecraftPacket> DecodeCompleteMessageAsync(IMinecraftCompleteMessageStream stream, CancellationToken cancellationToken = default)
+    private async ValueTask<IMinecraftPacket> DecodeCompleteMessageAsync(ICompleteMessageStream stream, CancellationToken cancellationToken = default)
     {
         var message = await stream.ReadMessageAsync(cancellationToken);
         return DecodePacket(message.Stream);
     }
 
-    private void EncodeCompleteMessage(IMinecraftCompleteMessageStream stream, IMinecraftPacket packet, Side origin)
+    private void EncodeCompleteMessage(ICompleteMessageStream stream, IMinecraftPacket packet, Side origin)
     {
         stream.WriteMessage(new CompleteBinaryMessage(EncodePacket(packet, origin)));
     }
 
-    private async ValueTask EncodeCompleteMessageAsync(IMinecraftCompleteMessageStream stream, IMinecraftPacket packet, Side origin, CancellationToken cancellationToken = default)
+    private async ValueTask EncodeCompleteMessageAsync(ICompleteMessageStream stream, IMinecraftPacket packet, Side origin, CancellationToken cancellationToken = default)
     {
         await stream.WriteMessageAsync(new CompleteBinaryMessage(EncodePacket(packet, origin)), cancellationToken);
     }
 
-    private IMinecraftPacket DecodeManual(IMinecraftManualStream manualStream)
+    private IMinecraftPacket DecodeManual(IManualStream manualStream)
     {
         var stream = RecyclableMemoryStreamManager.GetStream();
 
@@ -144,7 +144,7 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
         return DecodePacket(stream);
     }
 
-    private async ValueTask<IMinecraftPacket> DecodeManualAsync(IMinecraftManualStream manualStream, CancellationToken cancellationToken = default)
+    private async ValueTask<IMinecraftPacket> DecodeManualAsync(IManualStream manualStream, CancellationToken cancellationToken = default)
     {
         var stream = RecyclableMemoryStreamManager.GetStream();
 
@@ -157,7 +157,7 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
         return DecodePacket(stream);
     }
 
-    private void EncodeManual(IMinecraftManualStream manualStream, IMinecraftPacket packet, Side origin)
+    private void EncodeManual(IManualStream manualStream, IMinecraftPacket packet, Side origin)
     {
         using var stream = EncodePacketWithLength(packet, origin);
 
@@ -165,7 +165,7 @@ public class MinecraftPacketMessageStream : MinecraftRecyclableStream, IMinecraf
             manualStream.Write(memory.Span);
     }
 
-    private async ValueTask EncodeManualAsync(IMinecraftManualStream manualStream, IMinecraftPacket packet, Side origin, CancellationToken cancellationToken = default)
+    private async ValueTask EncodeManualAsync(IManualStream manualStream, IMinecraftPacket packet, Side origin, CancellationToken cancellationToken = default)
     {
         await using var stream = EncodePacketWithLength(packet, origin);
 

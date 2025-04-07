@@ -2,17 +2,17 @@
 using Microsoft.IO;
 using Void.Common.Network.Streams;
 using Void.Minecraft.Buffers;
-using Void.Proxy.Api.Network.IO.Messages.Binary;
+using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Api.Network.IO.Streams.Compression;
-using Void.Proxy.Api.Network.IO.Streams.Extensions;
 using Void.Proxy.Api.Network.IO.Streams.Manual;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Recyclable;
 using Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
+using Void.Proxy.Plugins.Common.Network.IO.Streams.Extensions;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Compression;
 
-public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMinecraftCompleteMessageStream, IZlibCompressionStream
+public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, ICompleteMessageStream, IZlibCompressionStream
 {
     public int CompressionThreshold { get; set; } = 256;
 
@@ -25,7 +25,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
     {
         return BaseStream switch
         {
-            IMinecraftManualStream manualStream => ReadManual(manualStream),
+            IManualStream manualStream => ReadManual(manualStream),
             // IMinecraftBufferedStream bufferedStream => ReadBufferPacket(bufferedStream),
             _ => throw new NotSupportedException(BaseStream?.GetType().FullName)
         };
@@ -35,7 +35,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
     {
         return BaseStream switch
         {
-            IMinecraftManualStream manualStream => await ReadManualAsync(manualStream, cancellationToken),
+            IManualStream manualStream => await ReadManualAsync(manualStream, cancellationToken),
             // IMinecraftBufferedStream bufferedStream => await ReadBufferPacketAsync(bufferedStream),
             _ => throw new NotSupportedException(BaseStream?.GetType().FullName)
         };
@@ -45,7 +45,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
     {
         switch (BaseStream)
         {
-            case IMinecraftManualStream manualStream:
+            case IManualStream manualStream:
                 WriteManual(manualStream, message);
                 break;
             default:
@@ -57,7 +57,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
     {
         switch (BaseStream)
         {
-            case IMinecraftManualStream manualStream:
+            case IManualStream manualStream:
                 await WriteManualAsync(manualStream, message, cancellationToken);
                 break;
             default:
@@ -95,7 +95,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
         BaseStream?.Close();
     }
 
-    private static CompleteBinaryMessage ReadManual(IMinecraftManualStream manualStream)
+    private static CompleteBinaryMessage ReadManual(IManualStream manualStream)
     {
         var packetLength = manualStream.ReadVarInt();
         var dataLength = manualStream.ReadVarInt();
@@ -131,7 +131,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
         }
     }
 
-    private static async ValueTask<ICompleteBinaryMessage> ReadManualAsync(IMinecraftManualStream manualStream, CancellationToken cancellationToken = default)
+    private static async ValueTask<ICompleteBinaryMessage> ReadManualAsync(IManualStream manualStream, CancellationToken cancellationToken = default)
     {
         var packetLength = await manualStream.ReadVarIntAsync(cancellationToken);
         var dataLength = await manualStream.ReadVarIntAsync(cancellationToken);
@@ -167,7 +167,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
         }
     }
 
-    private void WriteManual(IMinecraftManualStream manualStream, ICompleteBinaryMessage message)
+    private void WriteManual(IManualStream manualStream, ICompleteBinaryMessage message)
     {
         var dataLength = message.Stream.Length < CompressionThreshold ? 0 : (int)message.Stream.Length;
 
@@ -196,7 +196,7 @@ public class IonicZlibCompressionMessageStream : MinecraftRecyclableStream, IMin
         message.Dispose();
     }
 
-    private async ValueTask WriteManualAsync(IMinecraftManualStream manualStream, ICompleteBinaryMessage message, CancellationToken cancellationToken = default)
+    private async ValueTask WriteManualAsync(IManualStream manualStream, ICompleteBinaryMessage message, CancellationToken cancellationToken = default)
     {
         var dataLength = message.Stream.Length < CompressionThreshold ? 0 : (int)message.Stream.Length;
 

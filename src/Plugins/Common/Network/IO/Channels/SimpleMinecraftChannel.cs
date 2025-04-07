@@ -118,8 +118,8 @@ public class SimpleMinecraftChannel(INetworkStreamBase head) : INetworkChannel
         return head switch
         {
             IMinecraftPacketMessageStream stream => await stream.ReadPacketAsync(cancellationToken),
-            IMinecraftCompleteMessageStream stream => await stream.ReadMessageAsync(cancellationToken),
-            IMinecraftBufferedMessageStream stream => await stream.ReadAsMessageAsync(cancellationToken: cancellationToken),
+            ICompleteMessageStream stream => await stream.ReadMessageAsync(cancellationToken),
+            IBufferedMessageStream stream => await stream.ReadAsMessageAsync(cancellationToken: cancellationToken),
             _ => throw new InvalidOperationException($"{head.GetType()} cannot be used to read messages")
         };
     }
@@ -137,10 +137,10 @@ public class SimpleMinecraftChannel(INetworkStreamBase head) : INetworkChannel
             case IMinecraftPacketMessageStream stream:
                 await stream.WritePacketAsync(message as IMinecraftPacket ?? throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(IMinecraftPacket)}."), origin, cancellationToken);
                 break;
-            case IMinecraftCompleteMessageStream stream:
+            case ICompleteMessageStream stream:
                 await stream.WriteMessageAsync(message as CompleteBinaryMessage ?? throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(CompleteBinaryMessage)}."), cancellationToken);
                 break;
-            case IMinecraftBufferedMessageStream stream:
+            case IBufferedMessageStream stream:
                 await stream.WriteAsMessageAsync(message as BufferedBinaryMessage ?? throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(CompleteBinaryMessage)}."), cancellationToken);
                 break;
             default:

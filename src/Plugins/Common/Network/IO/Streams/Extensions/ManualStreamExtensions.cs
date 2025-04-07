@@ -1,11 +1,11 @@
 ﻿using System.Buffers;
 using Void.Proxy.Api.Network.IO.Streams.Manual;
 
-namespace Void.Proxy.Api.Network.IO.Streams.Extensions;
+namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Extensions;
 
 public static class ManualStreamExtensions
 {
-    public static int ReadVarInt(this IMinecraftManualStream stream)
+    public static int ReadVarInt(this IManualStream stream)
     {
         var numRead = 0;
         var result = 0;
@@ -18,7 +18,7 @@ public static class ManualStreamExtensions
 
             read = buffer[0];
             var value = read & 0b01111111;
-            result |= value << (7 * numRead);
+            result |= value << 7 * numRead;
 
             numRead++;
             if (numRead > 5)
@@ -28,7 +28,7 @@ public static class ManualStreamExtensions
         return result;
     }
 
-    public static async ValueTask<int> ReadVarIntAsync(this IMinecraftManualStream stream, CancellationToken cancellationToken = default)
+    public static async ValueTask<int> ReadVarIntAsync(this IManualStream stream, CancellationToken cancellationToken = default)
     {
         var numRead = 0;
         var result = 0;
@@ -41,7 +41,7 @@ public static class ManualStreamExtensions
 
             read = buffer[0];
             var value = read & 0b01111111;
-            result |= value << (7 * numRead);
+            result |= value << 7 * numRead;
 
             numRead++;
             if (numRead > 5)
@@ -51,7 +51,7 @@ public static class ManualStreamExtensions
         return result;
     }
 
-    public static void WriteVarInt(this IMinecraftManualStream stream, int value)
+    public static void WriteVarInt(this IManualStream stream, int value)
     {
         var unsigned = (uint)value;
         var buffer = ArrayPool<byte>.Shared.Rent(5);
@@ -73,7 +73,7 @@ public static class ManualStreamExtensions
         ArrayPool<byte>.Shared.Return(buffer);
     }
 
-    public static async ValueTask WriteVarIntAsync(this IMinecraftManualStream stream, int value, CancellationToken cancellationToken = default)
+    public static async ValueTask WriteVarIntAsync(this IManualStream stream, int value, CancellationToken cancellationToken = default)
     {
         var unsigned = (uint)value;
         var buffer = ArrayPool<byte>.Shared.Rent(5);

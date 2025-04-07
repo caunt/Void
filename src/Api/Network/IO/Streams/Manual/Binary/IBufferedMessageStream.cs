@@ -1,9 +1,9 @@
 ﻿using Void.Common.Network.Streams;
-using Void.Proxy.Api.Network.IO.Messages.Binary;
+using Void.Proxy.Api.Network.IO.Messages;
 
 namespace Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
 
-public interface IMinecraftBufferedMessageStream : IMinecraftManualStream, INetworkStream
+public interface IBufferedMessageStream : IManualStream, INetworkStream
 {
     public IBufferedBinaryMessage ReadAsMessage(int maxSize = 2048);
     public ValueTask<IBufferedBinaryMessage> ReadAsMessageAsync(int maxSize = 2048, CancellationToken cancellationToken = default);

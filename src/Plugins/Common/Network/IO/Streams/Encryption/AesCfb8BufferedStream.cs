@@ -1,7 +1,7 @@
 ﻿using System.Buffers;
 using System.Security.Cryptography;
 using Void.Common.Network.Streams;
-using Void.Proxy.Api.Network.IO.Messages.Binary;
+using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Api.Network.IO.Streams.Manual;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Recyclable;
@@ -9,7 +9,7 @@ using Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Encryption;
 
-public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBufferedMessageStream
+public class AesCfb8BufferedStream : MinecraftRecyclableStream, IBufferedMessageStream
 {
     private const int BlockSize = 16;
 
@@ -38,7 +38,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
     {
         return BaseStream switch
         {
-            IMinecraftManualStream manualStream => DecryptManual(manualStream, output),
+            IManualStream manualStream => DecryptManual(manualStream, output),
             _ => throw new NotSupportedException(BaseStream?.GetType().FullName)
         };
     }
@@ -47,7 +47,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
     {
         return BaseStream switch
         {
-            IMinecraftManualStream manualStream => await DecryptManualAsync(manualStream, output, cancellationToken),
+            IManualStream manualStream => await DecryptManualAsync(manualStream, output, cancellationToken),
             _ => throw new NotSupportedException(BaseStream?.GetType().FullName)
         };
     }
@@ -56,7 +56,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
     {
         switch (BaseStream)
         {
-            case IMinecraftManualStream manualStream:
+            case IManualStream manualStream:
                 DecryptManualExactly(manualStream, output);
                 break;
             default:
@@ -68,7 +68,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
     {
         switch (BaseStream)
         {
-            case IMinecraftManualStream manualStream:
+            case IManualStream manualStream:
                 await DecryptManualExactlyAsync(manualStream, output, cancellationToken);
                 break;
             default:
@@ -78,7 +78,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
 
     public void Write(ReadOnlySpan<byte> data)
     {
-        if (BaseStream is not IMinecraftManualStream manualStream)
+        if (BaseStream is not IManualStream manualStream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);
 
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(data.Length);
@@ -90,7 +90,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
 
     public async ValueTask WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
     {
-        if (BaseStream is not IMinecraftManualStream manualStream)
+        if (BaseStream is not IManualStream manualStream)
             throw new NotSupportedException(BaseStream?.GetType().FullName);
 
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(data.Length);
@@ -106,7 +106,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
 
         switch (BaseStream)
         {
-            case IMinecraftManualStream manualStream:
+            case IManualStream manualStream:
                 DecryptManualExactly(manualStream, stream.GetSpan(size));
                 break;
             default:
@@ -122,7 +122,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
 
         switch (BaseStream)
         {
-            case IMinecraftManualStream manualStream:
+            case IManualStream manualStream:
                 await DecryptManualExactlyAsync(manualStream, stream.GetMemory(size), cancellationToken);
                 break;
             default:
@@ -176,7 +176,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
         GC.SuppressFinalize(this);
     }
 
-    private int DecryptManual(IMinecraftManualStream stream, Span<byte> output)
+    private int DecryptManual(IManualStream stream, Span<byte> output)
     {
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(output.Length);
         var span = memoryOwner.Memory[..output.Length].Span;
@@ -185,7 +185,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
         return length;
     }
 
-    private async Task<int> DecryptManualAsync(IMinecraftManualStream stream, Memory<byte> output, CancellationToken cancellationToken = default)
+    private async Task<int> DecryptManualAsync(IManualStream stream, Memory<byte> output, CancellationToken cancellationToken = default)
     {
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(output.Length);
         var memory = memoryOwner.Memory[..output.Length];
@@ -194,7 +194,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
         return length;
     }
 
-    private void DecryptManualExactly(IMinecraftManualStream stream, Span<byte> output)
+    private void DecryptManualExactly(IManualStream stream, Span<byte> output)
     {
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(output.Length);
         var memory = memoryOwner.Memory[..output.Length];
@@ -202,7 +202,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
         Decrypt(memory.Span, output);
     }
 
-    private async Task DecryptManualExactlyAsync(IMinecraftManualStream stream, Memory<byte> output, CancellationToken cancellationToken = default)
+    private async Task DecryptManualExactlyAsync(IManualStream stream, Memory<byte> output, CancellationToken cancellationToken = default)
     {
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(output.Length);
         var memory = memoryOwner.Memory[..output.Length];
@@ -210,7 +210,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
         Decrypt(memory.Span, output.Span);
     }
 
-    private int EncryptManual(IMinecraftManualStream stream, Span<byte> output)
+    private int EncryptManual(IManualStream stream, Span<byte> output)
     {
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(output.Length);
         var span = memoryOwner.Memory[..output.Length].Span;
@@ -219,7 +219,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
         return length;
     }
 
-    private async Task<int> EncryptManualAsync(IMinecraftManualStream stream, Memory<byte> output, CancellationToken cancellationToken = default)
+    private async Task<int> EncryptManualAsync(IManualStream stream, Memory<byte> output, CancellationToken cancellationToken = default)
     {
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(output.Length);
         var memory = memoryOwner.Memory[..output.Length];
@@ -228,7 +228,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
         return length;
     }
 
-    private void EncryptManualExactly(IMinecraftManualStream stream, Span<byte> output)
+    private void EncryptManualExactly(IManualStream stream, Span<byte> output)
     {
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(output.Length);
         var memory = memoryOwner.Memory[..output.Length];
@@ -236,7 +236,7 @@ public class AesCfb8BufferedStream : MinecraftRecyclableStream, IMinecraftBuffer
         Encrypt(memory.Span, output);
     }
 
-    private async Task EncryptManualExactlyAsync(IMinecraftManualStream stream, Memory<byte> output, CancellationToken cancellationToken = default)
+    private async Task EncryptManualExactlyAsync(IManualStream stream, Memory<byte> output, CancellationToken cancellationToken = default)
     {
         using var memoryOwner = MemoryPool<byte>.Shared.Rent(output.Length);
         var memory = memoryOwner.Memory[..output.Length];

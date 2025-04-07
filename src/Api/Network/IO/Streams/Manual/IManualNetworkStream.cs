@@ -1,6 +1,6 @@
 ﻿namespace Void.Proxy.Api.Network.IO.Streams.Manual;
 
-public interface IMinecraftManualStream
+public interface IManualStream
 {
     public int Read(Span<byte> span);
     public ValueTask<int> ReadAsync(Memory<byte> memory, CancellationToken cancellationToken = default);

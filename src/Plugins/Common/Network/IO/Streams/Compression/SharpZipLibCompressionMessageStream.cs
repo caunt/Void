@@ -3,17 +3,17 @@ using Microsoft.IO;
 using System.Buffers;
 using Void.Common.Network.Streams;
 using Void.Minecraft.Buffers;
-using Void.Proxy.Api.Network.IO.Messages.Binary;
+using Void.Proxy.Api.Network.IO.Messages;
 using Void.Proxy.Api.Network.IO.Streams.Compression;
-using Void.Proxy.Api.Network.IO.Streams.Extensions;
 using Void.Proxy.Api.Network.IO.Streams.Manual;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Recyclable;
 using Void.Proxy.Plugins.Common.Network.IO.Messages.Binary;
+using Void.Proxy.Plugins.Common.Network.IO.Streams.Extensions;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Compression;
 
-public class SharpZipLibCompressionMessageStream : MinecraftRecyclableStream, IMinecraftCompleteMessageStream, IZlibCompressionStream
+public class SharpZipLibCompressionMessageStream : MinecraftRecyclableStream, ICompleteMessageStream, IZlibCompressionStream
 {
     private const int BufferSize = 1024;
 
@@ -30,7 +30,7 @@ public class SharpZipLibCompressionMessageStream : MinecraftRecyclableStream, IM
     {
         return BaseStream switch
         {
-            IMinecraftManualStream manualStream => ReadManual(manualStream),
+            IManualStream manualStream => ReadManual(manualStream),
             // IMinecraftBufferedStream bufferedStream => ReadBufferPacket(bufferedStream),
             _ => throw new NotSupportedException(BaseStream?.GetType().FullName)
         };
@@ -40,7 +40,7 @@ public class SharpZipLibCompressionMessageStream : MinecraftRecyclableStream, IM
     {
         return BaseStream switch
         {
-            IMinecraftManualStream manualStream => await ReadManualAsync(manualStream, cancellationToken),
+            IManualStream manualStream => await ReadManualAsync(manualStream, cancellationToken),
             // IMinecraftBufferedStream bufferedStream => await ReadBufferPacketAsync(bufferedStream),
             _ => throw new NotSupportedException(BaseStream?.GetType().FullName)
         };
@@ -50,7 +50,7 @@ public class SharpZipLibCompressionMessageStream : MinecraftRecyclableStream, IM
     {
         switch (BaseStream)
         {
-            case IMinecraftManualStream manualStream:
+            case IManualStream manualStream:
                 WriteManual(manualStream, message);
                 break;
             default:
@@ -62,7 +62,7 @@ public class SharpZipLibCompressionMessageStream : MinecraftRecyclableStream, IM
     {
         switch (BaseStream)
         {
-            case IMinecraftManualStream manualStream:
+            case IManualStream manualStream:
                 await WriteManualAsync(manualStream, message, cancellationToken);
                 break;
             default:
@@ -100,7 +100,7 @@ public class SharpZipLibCompressionMessageStream : MinecraftRecyclableStream, IM
         BaseStream?.Close();
     }
 
-    private CompleteBinaryMessage ReadManual(IMinecraftManualStream manualStream)
+    private CompleteBinaryMessage ReadManual(IManualStream manualStream)
     {
         var packetLength = manualStream.ReadVarInt();
         var dataLength = manualStream.ReadVarInt();
@@ -136,7 +136,7 @@ public class SharpZipLibCompressionMessageStream : MinecraftRecyclableStream, IM
         }
     }
 
-    private async ValueTask<ICompleteBinaryMessage> ReadManualAsync(IMinecraftManualStream manualStream, CancellationToken cancellationToken = default)
+    private async ValueTask<ICompleteBinaryMessage> ReadManualAsync(IManualStream manualStream, CancellationToken cancellationToken = default)
     {
         var packetLength = await manualStream.ReadVarIntAsync(cancellationToken);
         var dataLength = await manualStream.ReadVarIntAsync(cancellationToken);
@@ -172,7 +172,7 @@ public class SharpZipLibCompressionMessageStream : MinecraftRecyclableStream, IM
         }
     }
 
-    private void WriteManual(IMinecraftManualStream manualStream, ICompleteBinaryMessage message)
+    private void WriteManual(IManualStream manualStream, ICompleteBinaryMessage message)
     {
         var dataLength = message.Stream.Length < CompressionThreshold ? 0 : (int)message.Stream.Length;
 
@@ -201,7 +201,7 @@ public class SharpZipLibCompressionMessageStream : MinecraftRecyclableStream, IM
         message.Dispose();
     }
 
-    private async ValueTask WriteManualAsync(IMinecraftManualStream manualStream, ICompleteBinaryMessage message, CancellationToken cancellationToken = default)
+    private async ValueTask WriteManualAsync(IManualStream manualStream, ICompleteBinaryMessage message, CancellationToken cancellationToken = default)
     {
         var dataLength = message.Stream.Length < CompressionThreshold ? 0 : (int)message.Stream.Length;
 
