@@ -10,7 +10,7 @@ using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Forwarding;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Players;
-using Void.Proxy.Api.Plugins.Services;
+using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Servers;
 using Void.Proxy.Api.Settings;
 using Void.Proxy.Commands;

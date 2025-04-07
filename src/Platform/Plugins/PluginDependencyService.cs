@@ -10,7 +10,7 @@ using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using System.Reflection;
 using System.Runtime.Versioning;
-using Void.Proxy.Api.Plugins.Services;
+using Void.Proxy.Api.Plugins;
 
 namespace Void.Proxy.Plugins;
 

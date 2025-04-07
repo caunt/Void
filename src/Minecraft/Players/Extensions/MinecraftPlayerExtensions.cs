@@ -15,7 +15,7 @@ using Void.Minecraft.Network.Streams.Packet.Extensions;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
-using Void.Proxy.Api.Plugins.Services;
+using Void.Proxy.Api.Plugins;
 
 namespace Void.Minecraft.Players.Extensions;
 

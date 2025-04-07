@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using Void.Common.Plugins;
 
-namespace Void.Proxy.Api.Plugins.Services;
+namespace Void.Proxy.Api.Plugins;
 
 public interface IPluginService
 {

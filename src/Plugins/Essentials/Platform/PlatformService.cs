@@ -1,6 +1,6 @@
 ﻿using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Commands;
-using Void.Proxy.Api.Plugins.Services;
+using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Common.Services;
 
 namespace Void.Proxy.Plugins.Essentials.Platform;
