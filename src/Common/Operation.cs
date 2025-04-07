@@ -1,4 +1,4 @@
-namespace Void.Proxy.Api.Network;
+namespace Void.Common;
 
 public enum Operation
 {

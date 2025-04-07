@@ -1,8 +1,8 @@
-﻿using Void.Minecraft.Network;
+﻿using Void.Common;
+using Void.Minecraft.Network;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Minecraft;
 using Void.Proxy.Api.Links;
-using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players.Extensions;
 
 namespace Void.Proxy.Plugins.ExamplePlugin.Services;

@@ -2,7 +2,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Void.Common;
 using Void.Minecraft.Network.Messages.Packets;
-using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Api.Network.IO.Streams;
 using Void.Proxy.Api.Network.IO.Streams.Manual.Binary;
@@ -124,7 +123,7 @@ public class SimpleMinecraftChannel(IMinecraftStreamBase head) : IMinecraftChann
         };
     }
 
-    public async ValueTask WriteMessageAsync(INetworkMessage message, CancellationToken cancellationToken = default)
+    public async ValueTask WriteMessageAsync(INetworkMessage message, Side origin, CancellationToken cancellationToken = default)
     {
         if (_writePause is not null)
             await _writePause.Task.WaitAsync(cancellationToken);
@@ -135,7 +134,7 @@ public class SimpleMinecraftChannel(IMinecraftStreamBase head) : IMinecraftChann
         switch (head)
         {
             case IMinecraftPacketMessageStream stream:
-                await stream.WritePacketAsync(message as IMinecraftPacket ?? throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(IMinecraftPacket)}."), cancellationToken);
+                await stream.WritePacketAsync(message as IMinecraftPacket ?? throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(IMinecraftPacket)}."), origin, cancellationToken);
                 break;
             case IMinecraftCompleteMessageStream stream:
                 await stream.WriteMessageAsync(message as CompleteBinaryMessage ?? throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(CompleteBinaryMessage)}."), cancellationToken);

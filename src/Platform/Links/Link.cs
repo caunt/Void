@@ -4,7 +4,6 @@ using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
-using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
@@ -175,7 +174,7 @@ public class Link(IPlayer player, IServer server, IMinecraftChannel playerChanne
 
             try
             {
-                await destinationChannel.WriteMessageAsync(message, forceCancellationToken);
+                await destinationChannel.WriteMessageAsync(message, sourceSide, forceCancellationToken);
 
                 await events.ThrowAsync(new MessageSentEvent(sourceSide, Side.Proxy, destinationSide, direction, message, this), cancellationToken);
             }

@@ -1,6 +1,5 @@
 ﻿using Void.Common;
 using Void.Proxy.Api.Links;
-using Void.Proxy.Api.Network;
 
 namespace Void.Proxy.Api.Events.Network;
 

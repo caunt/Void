@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Network.Messages.Packets;
+﻿using Void.Common;
+using Void.Minecraft.Network.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
@@ -9,7 +10,7 @@ public static class MinecraftChannelExtensions
 {
     public static async ValueTask SendPacketAsync<T>(this IMinecraftChannel channel, T packet, CancellationToken cancellationToken) where T : IMinecraftPacket
     {
-        await channel.WriteMessageAsync(packet, cancellationToken);
+        await channel.WriteMessageAsync(packet, Side.Proxy, cancellationToken);
     }
 
     public static IMinecraftPacketSystemRegistry GetPacketSystemRegistryHolder(this IMinecraftChannel channel)

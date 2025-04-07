@@ -26,7 +26,7 @@ public interface IMinecraftChannel : IDisposable, IAsyncDisposable
     public bool TryGet<T>([MaybeNullWhen(false)] out T result) where T : class, IMinecraftStreamBase;
     public void PrependBuffer(Memory<byte> memory);
     public ValueTask<INetworkMessage> ReadMessageAsync(CancellationToken cancellationToken = default);
-    public ValueTask WriteMessageAsync(INetworkMessage message, CancellationToken cancellationToken = default);
+    public ValueTask WriteMessageAsync(INetworkMessage message, Side origin, CancellationToken cancellationToken = default);
     public void Pause(Operation operation = Operation.Read);
     public bool TryPause(Operation operation = Operation.Read);
     public void Resume(Operation operation = Operation.Read);

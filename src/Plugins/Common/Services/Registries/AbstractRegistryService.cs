@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Void.Common;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Binary;
@@ -11,7 +12,6 @@ using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Links.Extensions;
-using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels.Extensions;
 using Void.Proxy.Api.Network.IO.Streams.Packet;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Extensions;
@@ -79,8 +79,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         {
             var packets = @event.Message switch
             {
-                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registries, transformations, binaryMessage),
-                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, registries, transformations, minecraftPacket),
+                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, registries, transformations, binaryMessage),
+                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, registries, transformations, minecraftPacket),
                 _ => null
             };
 
@@ -116,8 +116,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         {
             var packets = @event.Message switch
             {
-                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, registries, transformations, binaryMessage),
-                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, registries, transformations, minecraftPacket),
+                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, registries, transformations, binaryMessage),
+                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, registries, transformations, minecraftPacket),
                 _ => null
             };
 
@@ -155,7 +155,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, IMinecraftPacketPluginsRegistry registries, IMinecraftPacketPluginsTransformations transformationsMappings, IMinecraftBinaryMessage binaryMessage)
+    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, Side origin, IMinecraftPacketPluginsRegistry registries, IMinecraftPacketPluginsTransformations transformationsMappings, IMinecraftBinaryMessage binaryMessage)
     {
         foreach (var registry in registries.All)
         {
@@ -164,7 +164,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             var position = binaryMessage.Stream.Position;
             var buffer = new MinecraftBuffer(binaryMessage.Stream);
-            var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage);
+            var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage, origin);
 
             if (registries.TryGetTransformations(transformationsMappings, type, TransformationType.Upgrade, out var transformations))
             {
@@ -188,7 +188,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, IMinecraftPacketPluginsRegistry registries, IMinecraftPacketPluginsTransformations transformationsMappings, IMinecraftPacket minecraftPacket)
+    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, Side origin, IMinecraftPacketPluginsRegistry registries, IMinecraftPacketPluginsTransformations transformationsMappings, IMinecraftPacket minecraftPacket)
     {
         var playerPacketRegistryHolder = link.PlayerChannel.GetPacketSystemRegistryHolder();
         var serverPacketRegistryHolder = link.ServerChannel.GetPacketSystemRegistryHolder();
@@ -203,7 +203,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             using var stream = MinecraftRecyclableStream.RecyclableMemoryStreamManager.GetStream();
             var buffer = new MinecraftBuffer(stream);
-            var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(id, stream));
+            var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(id, stream), origin);
 
             minecraftPacket.Encode(ref buffer, link.Player.ProtocolVersion);
             stream.Position = 0;

@@ -1,5 +1,6 @@
 ﻿using Nito.Collections;
 using System.Diagnostics.CodeAnalysis;
+using Void.Common;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network.Messages.Binary;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
@@ -7,10 +8,12 @@ using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations.Properties;
 
 namespace Void.Proxy.Plugins.Common.Network.IO.Streams.Packet.Transformations;
 
-public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message) : IMinecraftBinaryPacketWrapper
+public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message, Side origin) : IMinecraftBinaryPacketWrapper
 {
     private readonly Deque<IPacketProperty> _read = [];
     private readonly List<IPacketProperty> _write = [];
+
+    public Side Origin => origin;
 
     public TPropertyValue Get<TPropertyValue>(int index) where TPropertyValue : class, IPacketProperty<TPropertyValue>
     {

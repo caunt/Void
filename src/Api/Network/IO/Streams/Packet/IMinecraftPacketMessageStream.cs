@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Network.Messages.Packets;
+﻿using Void.Common;
+using Void.Minecraft.Network.Messages.Packets;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Registries;
 using Void.Proxy.Api.Network.IO.Streams.Packet.Transformations;
 
@@ -12,6 +13,6 @@ public interface IMinecraftPacketMessageStream : IMinecraftStream
 
     public IMinecraftPacket ReadPacket();
     public ValueTask<IMinecraftPacket> ReadPacketAsync(CancellationToken cancellationToken = default);
-    public void WritePacket(IMinecraftPacket packet);
-    public ValueTask WritePacketAsync(IMinecraftPacket packet, CancellationToken cancellationToken = default);
+    public void WritePacket(IMinecraftPacket packet, Side origin);
+    public ValueTask WritePacketAsync(IMinecraftPacket packet, Side origin, CancellationToken cancellationToken = default);
 }

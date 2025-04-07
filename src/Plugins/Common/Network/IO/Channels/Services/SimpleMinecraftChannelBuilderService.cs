@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Net.Sockets;
+using Void.Common;
 using Void.Proxy.Api.Events.Channels;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.IO.Channels;
 using Void.Proxy.Api.Network.IO.Channels.Services;
 using Void.Proxy.Api.Players;
