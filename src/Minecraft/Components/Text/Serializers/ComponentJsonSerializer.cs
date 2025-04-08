@@ -4,7 +4,7 @@ using Void.Minecraft.Network;
 
 namespace Void.Minecraft.Components.Text.Serializers;
 
-public static class JsonComponentSerializer
+public static class ComponentJsonSerializer
 {
     public static JsonNode Serialize(Component component, ProtocolVersion protocolVersion)
     {

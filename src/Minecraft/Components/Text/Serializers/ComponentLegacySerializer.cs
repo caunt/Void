@@ -8,7 +8,7 @@ using Void.Minecraft.Components.Text.Properties.Content;
 
 namespace Void.Minecraft.Components.Text.Serializers;
 
-public static class LegacyComponentSerializer
+public static class ComponentLegacySerializer
 {
     public const string ExampleLegacyString = "&1Hello, &2this is a &x&F&F&A&A&0&1hex colored " +
                                               "text, &lwith bold, &oitalic, &nunderline, &mstrikethrough, " +

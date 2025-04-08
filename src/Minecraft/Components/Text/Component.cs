@@ -29,7 +29,7 @@ public record Component(IContent Content, Children Children, Formatting Formatti
             }
             catch (JsonException)
             {
-                // ignore, not a json
+                // Ignore, not a json
             }
 
             if (node is null)
@@ -53,12 +53,12 @@ public record Component(IContent Content, Children Children, Formatting Formatti
 
     public static Component DeserializeLegacy(string source, char prefix = '&')
     {
-        return LegacyComponentSerializer.Deserialize(source, prefix);
+        return ComponentLegacySerializer.Deserialize(source, prefix);
     }
 
     public static Component DeserializeJson(JsonNode source, ProtocolVersion protocolVersion)
     {
-        return JsonComponentSerializer.Deserialize(source, protocolVersion);
+        return ComponentJsonSerializer.Deserialize(source, protocolVersion);
     }
 
     public static Component DeserializeNbt(NbtTag tag, ProtocolVersion protocolVersion)
@@ -73,12 +73,12 @@ public record Component(IContent Content, Children Children, Formatting Formatti
 
     public string SerializeLegacy(char prefix = '&')
     {
-        return LegacyComponentSerializer.Serialize(this, prefix);
+        return ComponentLegacySerializer.Serialize(this, prefix);
     }
 
     public JsonNode SerializeJson(ProtocolVersion protocolVersion)
     {
-        return JsonComponentSerializer.Serialize(this, protocolVersion);
+        return ComponentJsonSerializer.Serialize(this, protocolVersion);
     }
 
     public NbtTag SerializeNbt(ProtocolVersion protocolVersion)
