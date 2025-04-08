@@ -6,24 +6,24 @@ namespace Void.Minecraft.Network.Registries.Transformations.Properties;
 
 public record ShortProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<ShortProperty>
 {
-    public ushort AsPrimitive => new MinecraftBuffer(Value.Span).ReadUnsignedShort();
+    public short AsPrimitive => new MinecraftBuffer(Value.Span).ReadShort();
 
-    public static ShortProperty FromPrimitive(ushort value)
+    public static ShortProperty FromPrimitive(short value)
     {
         using var stream = new MemoryStream();
         var buffer = new MinecraftBuffer(stream);
-        buffer.WriteUnsignedShort(value);
+        buffer.WriteShort(value);
 
         return new ShortProperty(stream.ToArray());
     }
 
     public static ShortProperty Read(ref MinecraftBuffer buffer)
     {
-        return FromPrimitive(buffer.ReadUnsignedShort());
+        return FromPrimitive(buffer.ReadShort());
     }
 
     public void Write(ref MinecraftBuffer buffer)
     {
-        buffer.WriteUnsignedShort(AsPrimitive);
+        buffer.WriteShort(AsPrimitive);
     }
 }

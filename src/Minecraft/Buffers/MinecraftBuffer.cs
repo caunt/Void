@@ -92,6 +92,16 @@ public ref struct MinecraftBuffer
         _backingBuffer.WriteUnsignedShort(value);
     }
 
+    public short ReadShort()
+    {
+        return _backingBuffer.ReadShort();
+    }
+
+    public void WriteShort(short value)
+    {
+        _backingBuffer.WriteShort(value);
+    }
+
     public int ReadVarShort()
     {
         return _backingBuffer.ReadVarShort();
