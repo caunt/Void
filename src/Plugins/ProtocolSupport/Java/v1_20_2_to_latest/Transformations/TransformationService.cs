@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Links.Extensions;
+﻿using Void.Minecraft.Components.Text;
+using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
 using Void.Proxy.Api.Events;
@@ -16,7 +17,7 @@ public class TransformationService : AbstractTransformationService
         @event.Link.RegisterTransformations<SystemChatMessagePacket>([
             new(ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_21_2, wrapper =>
             {
-                wrapper.Passthrough<NbtProperty>();
+                wrapper.Passthrough<ComponentProperty>();
                 wrapper.Passthrough<BoolProperty>();
             })
         ]);
