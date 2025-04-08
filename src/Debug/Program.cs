@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using Void.Minecraft.Network;
 
-var version = ProtocolVersion.Latest;
+var version = ProtocolVersion.MINECRAFT_1_17;
 var count = 1;
 
 if (args.Length is 1 && int.TryParse(args[0], out var value))
@@ -36,7 +36,8 @@ async ValueTask StartDockerPaperEnvironmentAsync(ProtocolVersion version, int co
     var imageTag = version switch
     {
         _ when version >= ProtocolVersion.MINECRAFT_1_20_5 => "java21-jdk",
-        _ when version >= ProtocolVersion.MINECRAFT_1_17 => "java17-jdk",
+        _ when version >= ProtocolVersion.MINECRAFT_1_18 => "java17-jdk",
+        _ when version >= ProtocolVersion.MINECRAFT_1_17 => "java16",
         _ => "java8-jdk"
     };
     var timeout = TimeSpan.FromSeconds(900);
@@ -50,6 +51,11 @@ async ValueTask StartDockerPaperEnvironmentAsync(ProtocolVersion version, int co
         "PATCH_DEFINITIONS=/tmp/patch.json",
         "VERSION=" + VersionStringName(version)
     };
+
+    if (version == ProtocolVersion.MINECRAFT_1_17)
+        variables.Add("PAPER_DOWNLOAD_URL=https://api.papermc.io/v2/projects/paper/versions/1.17/builds/79/downloads/paper-1.17-79.jar");
+    else if (version == ProtocolVersion.MINECRAFT_1_17_1)
+        variables.Add("PAPER_DOWNLOAD_URL=https://api.papermc.io/v2/projects/paper/versions/1.17.1/builds/411/downloads/paper-1.17.1-411.jar");
 
     const string patches =
         """
