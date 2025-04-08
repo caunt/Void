@@ -1,4 +1,7 @@
-﻿using System.Text.Json.Nodes;
+﻿using System;
+using System.Text.Json.Nodes;
+using Void.Minecraft.Components.Text.Colors;
+using Void.Minecraft.Components.Text.Serializers;
 using Void.Minecraft.Nbt;
 using Void.Minecraft.Nbt.Tags;
 using Void.Minecraft.Network;
@@ -47,11 +50,104 @@ public static class ComponentNbtTransformers
 
     private static NbtTag Downgrade(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
     {
+        if (from > ProtocolVersion.MINECRAFT_1_20_2 && to <= ProtocolVersion.MINECRAFT_1_20_2)
+            tag = Downgrade_v1_20_3_to_v1_20_2(tag, from, to);
+
+        if (from > ProtocolVersion.MINECRAFT_1_15_2 && to <= ProtocolVersion.MINECRAFT_1_15_2)
+            tag = Downgrade_v1_16_to_v1_15_2(tag, from, to);
+
         return tag;
     }
 
     private static NbtTag Upgrade(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
     {
+        if (from <= ProtocolVersion.MINECRAFT_1_15_2 && to > ProtocolVersion.MINECRAFT_1_15_2)
+            tag = Upgrade_v1_15_2_to_v1_16(tag, from, to);
+
+        if (from <= ProtocolVersion.MINECRAFT_1_20_2 && to > ProtocolVersion.MINECRAFT_1_20_2)
+            tag = Upgrade_v1_20_2_to_v1_20_3(tag, from, to);
+
+        return tag;
+    }
+
+    private static NbtTag Downgrade_v1_20_3_to_v1_20_2(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
+    {
+        Console.WriteLine("Nbt Downgrade_v1_20_3_to_v1_20_2 not supported");
+        return tag;
+    }
+
+    private static NbtTag Downgrade_v1_16_to_v1_15_2(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
+    {
+        if (tag is NbtCompound compound)
+        {
+            if (compound["color"] is NbtString colorTag)
+            {
+                var color = TextColor.FromString(colorTag.Value);
+                var downsampled = color.Downsample();
+
+                compound["color"] = new NbtString(downsampled.Name);
+            }
+
+            if (compound["hoverEvent"] is NbtCompound hoverEvent)
+            {
+                if (hoverEvent["contents"] is NbtCompound contentsCompound)
+                {
+                    hoverEvent.Values.Remove("contents");
+
+                    if (contentsCompound["action"] is NbtString action)
+                    {
+                        if (action.Value is "show_text" or "show_achievement")
+                        {
+                            hoverEvent["value"] = contentsCompound;
+                        }
+                        else if (action.Value is "show_item" or "show_entity")
+                        {
+                            hoverEvent["value"] = new NbtString(contentsCompound.ToString());
+                        }
+                    }
+                }
+            }
+        }
+
+        return tag;
+    }
+
+    private static NbtTag Upgrade_v1_20_2_to_v1_20_3(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
+    {
+        Console.WriteLine("Nbt Upgrade_v1_20_2_to_v1_20_3 not supported");
+        return tag;
+    }
+
+    private static NbtTag Upgrade_v1_15_2_to_v1_16(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
+    {
+        if (tag is NbtCompound compound)
+        {
+            if (compound["hoverEvent"] is NbtCompound hoverEvent)
+            {
+                if (hoverEvent["value"] is NbtString value)
+                {
+                    hoverEvent.Values.Remove("value");
+
+                    if (hoverEvent["action"] is NbtString action)
+                    {
+                        var contents = (NbtTag?)null;
+
+                        if (action.Value is "show_text" or "show_achievement")
+                        {
+                            contents = ComponentJsonSerializer.Deserialize(value.Value, to).SerializeNbt(to);
+                        }
+                        else if (action.Value is "show_item" or "show_entity")
+                        {
+                            // contents = NbtStringSerializer.Deserialize(value.Value);
+                            throw new NotSupportedException("SNBT deserialization is not supported yet");
+                        }
+
+                        hoverEvent["contents"] = contents;
+                    }
+                }
+            }
+        }
+
         return tag;
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
+using System.Linq;
 
 namespace Void.Minecraft.Components.Text.Colors;
 
@@ -35,6 +36,29 @@ public record TextColor(byte Red, byte Green, byte Blue)
     public static implicit operator Color(TextColor color) => Color.FromArgb(color.Red, color.Green, color.Blue);
     public static implicit operator string(TextColor color) => color.Name;
 
+    public TextColor Downsample()
+    {
+        var matchedDistance = float.MaxValue;
+        var match = FromString(_map.Values.First());
+
+        foreach (var ((red, green, blue), name) in _map)
+        {
+            var potential = FromString(name);
+            var distance = Distance(this, potential);
+
+            if (distance < matchedDistance)
+            {
+                match = potential;
+                matchedDistance = distance;
+            }
+
+            if (distance is 0)
+                break;
+        }
+
+        return match;
+    }
+
     public static TextColor FromString(string value)
     {
         var span = value.AsSpan();
@@ -62,4 +86,18 @@ public record TextColor(byte Red, byte Green, byte Blue)
     }
 
     public override string ToString() => Name;
+
+    private static float Distance(Color left, Color right)
+    {
+        var leftHue = left.GetHue() / 360f;
+        var rightHue = right.GetHue() / 360f;
+
+        var hueDiff = Math.Abs(leftHue - rightHue);
+        var weightedHueDiff = 3 * Math.Min(hueDiff, 1f - hueDiff);
+
+        var saturationDiff = left.GetSaturation() - right.GetSaturation();
+        var brightnessDiff = left.GetBrightness() - right.GetBrightness();
+
+        return weightedHueDiff * weightedHueDiff + saturationDiff * saturationDiff + brightnessDiff * brightnessDiff;
+    }
 }

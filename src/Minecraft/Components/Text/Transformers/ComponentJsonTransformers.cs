@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
@@ -49,11 +50,47 @@ public static class ComponentJsonTransformers
 
     private static JsonNode Downgrade(JsonNode node, ProtocolVersion from, ProtocolVersion to)
     {
+        if (from > ProtocolVersion.MINECRAFT_1_20_2 && to <= ProtocolVersion.MINECRAFT_1_20_2)
+            node = Downgrade_v1_20_3_to_v1_20_2(node, from, to);
+
+        if (from > ProtocolVersion.MINECRAFT_1_15_2 && to <= ProtocolVersion.MINECRAFT_1_15_2)
+            node = Downgrade_v1_16_to_v1_15_2(node, from, to);
+
         return node;
     }
 
     private static JsonNode Upgrade(JsonNode node, ProtocolVersion from, ProtocolVersion to)
     {
+        if (from <= ProtocolVersion.MINECRAFT_1_15_2 && to > ProtocolVersion.MINECRAFT_1_15_2)
+            node = Upgrade_v1_15_2_to_v1_16(node, from, to);
+
+        if (from <= ProtocolVersion.MINECRAFT_1_20_2 && to > ProtocolVersion.MINECRAFT_1_20_2)
+            node = Upgrade_v1_20_2_to_v1_20_3(node, from, to);
+
+        return node;
+    }
+
+    private static JsonNode Downgrade_v1_20_3_to_v1_20_2(JsonNode node, ProtocolVersion from, ProtocolVersion to)
+    {
+        Console.WriteLine("Json Downgrade_v1_20_3_to_v1_20_2 not supported");
+        return node;
+    }
+
+    private static JsonNode Downgrade_v1_16_to_v1_15_2(JsonNode node, ProtocolVersion from, ProtocolVersion to)
+    {
+        Console.WriteLine("Json Downgrade_v1_16_to_v1_15_2 not supported");
+        return node;
+    }
+
+    private static JsonNode Upgrade_v1_20_2_to_v1_20_3(JsonNode node, ProtocolVersion from, ProtocolVersion to)
+    {
+        Console.WriteLine("Json Upgrade_v1_20_2_to_v1_20_3 not supported");
+        return node;
+    }
+
+    private static JsonNode Upgrade_v1_15_2_to_v1_16(JsonNode node, ProtocolVersion from, ProtocolVersion to)
+    {
+        Console.WriteLine("Json Upgrade_v1_15_2_to_v1_16 not supported");
         return node;
     }
 }

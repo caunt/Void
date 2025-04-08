@@ -63,7 +63,7 @@ public record Component(IContent Content, Children Children, Formatting Formatti
 
     public static Component DeserializeNbt(NbtTag tag, ProtocolVersion protocolVersion)
     {
-        return NbtComponentSerializer.Deserialize(tag, protocolVersion);
+        return ComponentNbtSerializer.Deserialize(tag, protocolVersion);
     }
 
     public static Component DeserializeSnbt(string source, ProtocolVersion protocolVersion)
@@ -83,7 +83,7 @@ public record Component(IContent Content, Children Children, Formatting Formatti
 
     public NbtTag SerializeNbt(ProtocolVersion protocolVersion)
     {
-        return NbtComponentSerializer.Serialize(this, protocolVersion);
+        return ComponentNbtSerializer.Serialize(this, protocolVersion);
     }
 
     public string SerializeSnbt(ProtocolVersion protocolVersion)

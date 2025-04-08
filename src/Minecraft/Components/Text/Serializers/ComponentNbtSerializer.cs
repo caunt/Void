@@ -15,7 +15,7 @@ using Void.Minecraft.Profiles;
 
 namespace Void.Minecraft.Components.Text.Serializers;
 
-public static class NbtComponentSerializer
+public static class ComponentNbtSerializer
 {
     public static NbtCompound Serialize(Component component, ProtocolVersion protocolVersion)
     {
