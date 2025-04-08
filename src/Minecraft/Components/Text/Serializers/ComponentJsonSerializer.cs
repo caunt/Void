@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
 using Void.Minecraft.Nbt.Serializers.Json;
 using Void.Minecraft.Network;
 
@@ -10,6 +11,25 @@ public static class ComponentJsonSerializer
     {
         var tag = component.SerializeNbt(protocolVersion);
         return JsonNbtSerializer.Serialize(tag);
+    }
+
+    public static Component Deserialize(string value, ProtocolVersion protocolVersion)
+    {
+        var node = (JsonNode?)null;
+
+        try
+        {
+            node = JsonNode.Parse(value);
+        }
+        catch (JsonException)
+        {
+            // ignore, not a json
+        }
+
+        if (node is null)
+            return Deserialize(node: value, protocolVersion);
+        else
+            return Deserialize(node, protocolVersion);
     }
 
     public static Component Deserialize(JsonNode node, ProtocolVersion protocolVersion)
