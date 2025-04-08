@@ -148,6 +148,36 @@ internal ref struct MinecraftBackingBuffer
         }
     }
 
+    public short ReadShort()
+    {
+        return _bufferType switch
+        {
+            BufferType.Span => _spanBackingBuffer.ReadShort(),
+            BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.ReadShort(),
+            BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.ReadShort(),
+            BufferType.MemoryStream => _memoryStreamBackingBuffer.ReadShort(),
+            _ => throw new NotSupportedException(_bufferType.ToString())
+        };
+    }
+
+    public void WriteShort(short value)
+    {
+        switch (_bufferType)
+        {
+            case BufferType.Span:
+                _spanBackingBuffer.WriteShort(value);
+                break;
+            case BufferType.ReadOnlySpan:
+            case BufferType.ReadOnlySequence:
+                throw new ReadOnlyException();
+            case BufferType.MemoryStream:
+                _memoryStreamBackingBuffer.WriteShort(value);
+                break;
+            default:
+                throw new NotSupportedException(_bufferType.ToString());
+        }
+    }
+
     public int ReadVarShort()
     {
         var low = ReadUnsignedShort();

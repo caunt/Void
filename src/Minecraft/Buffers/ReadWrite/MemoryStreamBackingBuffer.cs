@@ -47,6 +47,28 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
         }
     }
 
+    public readonly short ReadShort()
+    {
+        return BinaryPrimitives.ReadInt16BigEndian(Read(2));
+    }
+
+    public readonly void WriteShort(short value)
+    {
+        // TODO may be unsafe stackalloc?
+        var block = ArrayPool<byte>.Shared.Rent(2);
+        var span = block.AsSpan(0, 2);
+
+        try
+        {
+            BinaryPrimitives.WriteInt16BigEndian(span, value);
+            memoryStream.Write(span);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(block);
+        }
+    }
+
     public readonly int ReadInt()
     {
         return BinaryPrimitives.ReadInt32BigEndian(Read(4));

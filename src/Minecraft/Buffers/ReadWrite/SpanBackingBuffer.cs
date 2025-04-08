@@ -31,6 +31,16 @@ internal ref struct SpanBackingBuffer(Span<byte> span)
         BinaryPrimitives.WriteUInt16BigEndian(Slice(2), value);
     }
 
+    public short ReadShort()
+    {
+        return BinaryPrimitives.ReadInt16BigEndian(Slice(2));
+    }
+
+    public void WriteShort(short value)
+    {
+        BinaryPrimitives.WriteInt16BigEndian(Slice(2), value);
+    }
+
     public int ReadInt()
     {
         return BinaryPrimitives.ReadInt32BigEndian(Read(4));

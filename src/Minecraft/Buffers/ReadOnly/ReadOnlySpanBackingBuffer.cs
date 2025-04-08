@@ -21,6 +21,11 @@ internal ref struct ReadOnlySpanBackingBuffer(ReadOnlySpan<byte> span)
         return BinaryPrimitives.ReadUInt16BigEndian(Slice(2));
     }
 
+    public short ReadShort()
+    {
+        return BinaryPrimitives.ReadInt16BigEndian(Slice(2));
+    }
+
     public int ReadInt()
     {
         return BinaryPrimitives.ReadInt32BigEndian(Read(4));
