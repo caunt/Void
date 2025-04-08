@@ -11,6 +11,7 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Compression;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Encryption;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Lifecycle;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Registries;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Transformations;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1;
 
@@ -33,6 +34,7 @@ public class Plugin(IEventService events) : IProtocolPlugin
         events.RegisterListener<CompressionService>();
         events.RegisterListener<EncryptionService>();
         events.RegisterListener<AuthenticationService>();
+        events.RegisterListener<TransformationService>();
 
         events.RegisterListener<CommandService>();
         events.RegisterListener<BundleService>();

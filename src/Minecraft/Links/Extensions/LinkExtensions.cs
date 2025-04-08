@@ -8,13 +8,15 @@ using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries;
+using Void.Minecraft.Network.Registries.Transformations.Extensions;
+using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 
 namespace Void.Minecraft.Links.Extensions;
 
-public static class MinecraftLinkExtensions
+public static class LinkExtensions
 {
     public static async ValueTask SendPacketAsync<T>(this ILink link, CancellationToken cancellationToken) where T : class, IMinecraftPacket, new()
     {
@@ -37,6 +39,15 @@ public static class MinecraftLinkExtensions
         var events = link.Player.Context.Services.GetRequiredService<IEventService>();
         var direction = side is Side.Client ? Direction.Clientbound : Direction.Serverbound;
         await events.ThrowAsync(new MessageSentEvent(Side.Proxy, Side.Proxy, side, direction, packet, link), cancellationToken);
+    }
+
+    public static void RegisterTransformations<T>(this ILink link, params MinecraftPacketTransformationMapping[] mappings) where T : IMinecraftPacket
+    {
+        var direction = typeof(T).IsAssignableTo(typeof(IMinecraftClientboundPacket)) ? Direction.Clientbound : Direction.Serverbound;
+        var registries = link.GetRegistries(direction);
+        var transformations = registries.PacketTransformationsSystem.All;
+
+        transformations.RegisterTransformations<T>(registries.ProtocolVersion, mappings);
     }
 
     public static IRegistryHolder GetRegistries(this ILink link, Direction direction)
