@@ -17,16 +17,10 @@ public static class MinecraftPacketIdPluginsRegistryExtensions
     {
         transformations = null;
 
-        if (registriesHolder is null)
-            return false;
-
         if (!registriesHolder.TryGetPlugin(packetType, out var plugin))
             return false;
 
-        if (transformationsHolder is null)
-            return false;
-
-        if (!transformationsHolder.Get(plugin).TryGetTransformation(packetType, transformationType, out transformations))
+        if (!transformationsHolder.Get(plugin).TryGetTransformations(packetType, transformationType, out transformations))
             return false;
 
         return true;

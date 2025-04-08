@@ -30,7 +30,7 @@ public class MinecraftPacketTransformationsRegistry : IMinecraftPacketTransforma
         return GetMappings(transformationType).Keys.Any(packetType.IsAssignableFrom);
     }
 
-    public bool TryGetTransformation(Type packetType, TransformationType type, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformation)
+    public bool TryGetTransformations(Type packetType, TransformationType type, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformation)
     {
         return GetMappings(type).TryGetValue(packetType, out transformation);
     }

@@ -11,6 +11,7 @@ public interface IRegistryHolder : IDisposable
 
     public IMinecraftPacketIdSystemRegistry PacketIdSystem { get; }
     public IMinecraftPacketIdPluginsRegistry PacketIdPlugins { get; }
+    public IMinecraftPacketTransformationsSystemRegistry PacketTransformationsSystem { get; }
     public IMinecraftPacketTransformationsPluginsRegistry PacketTransformationsPlugins { get; }
 
     public void Setup(IPlugin managedBy, ProtocolVersion protocolVersion);

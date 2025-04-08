@@ -25,7 +25,7 @@ using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Network.Messages.Binary;
-using Void.Proxy.Plugins.Common.Network.Registries.Transformations;
+using Void.Proxy.Plugins.Common.Network.Registries.Transformations.Mappings;
 
 namespace Void.Proxy.Plugins.Common.Services.Registries;
 

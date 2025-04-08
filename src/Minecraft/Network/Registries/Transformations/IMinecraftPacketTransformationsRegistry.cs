@@ -15,7 +15,7 @@ public interface IMinecraftPacketTransformationsRegistry
     public bool Contains<T>(TransformationType type) where T : IMinecraftPacket;
     public bool Contains(IMinecraftMessage message, TransformationType type);
     public bool Contains(Type packetType, TransformationType transformationType);
-    public bool TryGetTransformation(Type packetType, TransformationType type, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformation);
+    public bool TryGetTransformations(Type packetType, TransformationType type, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformation);
     public IMinecraftPacketTransformationsRegistry ReplaceTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> mappings, ProtocolVersion protocolVersion);
     public IMinecraftPacketTransformationsRegistry AddTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> mappings, ProtocolVersion protocolVersion);
     public void Clear();

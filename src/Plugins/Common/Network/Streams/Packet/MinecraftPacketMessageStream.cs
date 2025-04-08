@@ -13,7 +13,7 @@ using Void.Proxy.Api.Network.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.Streams.Recyclable;
 using Void.Proxy.Plugins.Common.Network.Messages.Binary;
 using Void.Proxy.Plugins.Common.Network.Registries;
-using Void.Proxy.Plugins.Common.Network.Registries.Transformations;
+using Void.Proxy.Plugins.Common.Network.Registries.Transformations.Mappings;
 using Void.Proxy.Plugins.Common.Network.Streams.Extensions;
 
 namespace Void.Proxy.Plugins.Common.Network.Streams.Packet;
@@ -275,14 +275,12 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
 
     private bool TryGetTransformations(IMinecraftPacket packet, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformations)
     {
-        transformations = null;
+        if (Registries.PacketTransformationsSystem.All.TryGetTransformations(packet.GetType(), TransformationType.Downgrade, out transformations))
+            return true;
 
-        if (Registries.PacketIdPlugins is null)
-            return false;
+        if (Registries.PacketIdPlugins.TryGetTransformations(Registries.PacketTransformationsPlugins, packet, TransformationType.Downgrade, out transformations))
+            return true;
 
-        if (Registries.PacketTransformationsPlugins is null)
-            return false;
-
-        return Registries.PacketIdPlugins.TryGetTransformations(Registries.PacketTransformationsPlugins, packet, TransformationType.Downgrade, out transformations);
+        return false;
     }
 }
