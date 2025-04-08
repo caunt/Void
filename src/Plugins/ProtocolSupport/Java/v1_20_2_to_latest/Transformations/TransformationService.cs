@@ -17,12 +17,9 @@ public class TransformationService(ILogger<TransformationService> logger) : Abst
         @event.Link.RegisterTransformations<SystemChatMessagePacket>([
             new(ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_21_2, wrapper =>
             {
-                wrapper.Passthrough<NbtProperty>();
+                wrapper.Passthrough<NbtProperty>(); // component
+                wrapper.Passthrough<BoolProperty>(); // overlay
                 logger.LogInformation("1.21.4 => 1.21.2");
-            }),
-            new(ProtocolVersion.MINECRAFT_1_21_2, ProtocolVersion.MINECRAFT_1_21, wrapper =>
-            {
-                logger.LogInformation("1.21.2 => 1.21");
             })
         ]);
     }
