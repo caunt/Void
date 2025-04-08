@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
+using Void.Minecraft.Network.Registries.Transformations.Properties;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Plugins.Common.Services.Transformations;
@@ -16,7 +17,12 @@ public class TransformationService(ILogger<TransformationService> logger) : Abst
         @event.Link.RegisterTransformations<SystemChatMessagePacket>([
             new(ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_21_2, wrapper =>
             {
+                wrapper.Passthrough<NbtProperty>();
                 logger.LogInformation("1.21.4 => 1.21.2");
+            }),
+            new(ProtocolVersion.MINECRAFT_1_21_2, ProtocolVersion.MINECRAFT_1_21, wrapper =>
+            {
+                logger.LogInformation("1.21.2 => 1.21");
             })
         ]);
     }

@@ -183,19 +183,18 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
         if (Registries.PacketIdSystem?.Read is not { } registry || !registry.TryCreateDecoder(id, out var packetType, out var decoder))
             return new MinecraftBinaryPacket(id, stream);
 
-        var position = stream.Position;
-        var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(id, stream), origin);
-
         if (TryGetTransformations(packetType, TransformationType.Upgrade, out var transformations))
         {
+            var position = stream.Position;
+            var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(id, stream), origin);
+
             foreach (var transformation in transformations)
             {
-                stream.Position = position;
                 transformation(wrapper);
                 wrapper.Reset();
+                stream.Position = position;
             }
 
-            stream.Position = position;
             wrapper.WriteProcessedValues(ref buffer);
             stream.SetLength(stream.Position);
             stream.Position = position;
@@ -256,10 +255,9 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
                 }
             }
 
-            stream.SetLength(stream.Position);
             stream.Position = position;
-
             wrapper.WriteProcessedValues(ref buffer);
+            stream.SetLength(stream.Position);
         }
 
         return stream;
