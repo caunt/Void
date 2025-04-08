@@ -12,6 +12,11 @@ namespace Void.Minecraft.Components.Text.Transformers;
 
 public static class ComponentNbtTransformers
 {
+    public static NamedNbtProperty Apply(NamedNbtProperty property, ProtocolVersion from, ProtocolVersion to)
+    {
+        return NamedNbtProperty.FromNbtTag(Apply(property.AsNbtTag, from, to));
+    }
+
     public static NbtProperty Apply(NbtProperty property, ProtocolVersion from, ProtocolVersion to)
     {
         return NbtProperty.FromNbtTag(Apply(property.AsNbtTag, from, to));
@@ -78,17 +83,17 @@ public static class ComponentNbtTransformers
 
     private static NbtTag Downgrade_v1_16_to_v1_15_2(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
     {
-        if (tag is NbtCompound compound)
+        if (tag is NbtCompound root)
         {
-            if (compound["color"] is NbtString colorTag)
+            if (root["color"] is NbtString colorTag)
             {
                 var color = TextColor.FromString(colorTag.Value);
                 var downsampled = color.Downsample();
 
-                compound["color"] = new NbtString(downsampled.Name);
+                root["color"] = new NbtString(downsampled.Name);
             }
 
-            if (compound["hoverEvent"] is NbtCompound hoverEvent)
+            if (root["hoverEvent"] is NbtCompound hoverEvent)
             {
                 if (hoverEvent["contents"] is NbtCompound contentsCompound)
                 {
@@ -120,9 +125,9 @@ public static class ComponentNbtTransformers
 
     private static NbtTag Upgrade_v1_15_2_to_v1_16(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
     {
-        if (tag is NbtCompound compound)
+        if (tag is NbtCompound root)
         {
-            if (compound["hoverEvent"] is NbtCompound hoverEvent)
+            if (root["hoverEvent"] is NbtCompound hoverEvent)
             {
                 if (hoverEvent["value"] is NbtString value)
                 {

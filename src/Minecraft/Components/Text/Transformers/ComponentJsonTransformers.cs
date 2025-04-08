@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Void.Minecraft.Components.Text.Colors;
+using Void.Minecraft.Components.Text.Serializers;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
@@ -78,7 +80,37 @@ public static class ComponentJsonTransformers
 
     private static JsonNode Downgrade_v1_16_to_v1_15_2(JsonNode node, ProtocolVersion from, ProtocolVersion to)
     {
-        Console.WriteLine("Json Downgrade_v1_16_to_v1_15_2 not supported");
+        if (node is JsonObject root)
+        {
+            if (root["color"] is { } colorTag)
+            {
+                var color = TextColor.FromString(colorTag.GetValue<string>());
+                var downsampled = color.Downsample();
+
+                root["color"] = downsampled.Name;
+            }
+
+            if (root["hoverEvent"] is JsonObject hoverEvent)
+            {
+                if (hoverEvent["contents"] is JsonObject contentsCompound)
+                {
+                    hoverEvent.Remove("contents");
+
+                    if (contentsCompound["action"] is { } action)
+                    {
+                        if (action.GetValue<string>() is "show_text" or "show_achievement")
+                        {
+                            hoverEvent["value"] = contentsCompound;
+                        }
+                        else if (action.GetValue<string>() is "show_item" or "show_entity")
+                        {
+                            hoverEvent["value"] = contentsCompound.ToString();
+                        }
+                    }
+                }
+            }
+        }
+
         return node;
     }
 
@@ -90,7 +122,34 @@ public static class ComponentJsonTransformers
 
     private static JsonNode Upgrade_v1_15_2_to_v1_16(JsonNode node, ProtocolVersion from, ProtocolVersion to)
     {
-        Console.WriteLine("Json Upgrade_v1_15_2_to_v1_16 not supported");
+        if (node is JsonObject root)
+        {
+            if (root["hoverEvent"] is JsonObject hoverEvent)
+            {
+                if (hoverEvent["value"] is { } value)
+                {
+                    hoverEvent.Remove("value");
+
+                    if (hoverEvent["action"] is { } action)
+                    {
+                        var contents = (JsonNode?)null;
+
+                        if (action.GetValue<string>() is "show_text" or "show_achievement")
+                        {
+                            contents = ComponentJsonSerializer.Deserialize(value.GetValue<string>(), to).SerializeJson(to);
+                        }
+                        else if (action.GetValue<string>() is "show_item" or "show_entity")
+                        {
+                            // contents = NbtStringSerializer.Deserialize(value.Value);
+                            throw new NotSupportedException("SNBT deserialization is not supported yet");
+                        }
+
+                        hoverEvent["contents"] = contents;
+                    }
+                }
+            }
+        }
+
         return node;
     }
 }

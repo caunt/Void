@@ -181,7 +181,7 @@ public static class ComponentNbtSerializer
 
     private static T Get<T>(this NbtCompound tag, string key) where T : NbtTag
     {
-        return TryGet<T>(tag, key) ?? throw new NbtException(tag[key]?.Type.ToString() ?? key);
+        return TryGet<T>(tag, key) ?? throw new NbtException($"Tag \"{tag[key]?.Type.ToString() ?? key}\" not found");
     }
 
     private static T? TryGet<T>(this NbtCompound tag, string key) where T : NbtTag
