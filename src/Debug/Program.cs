@@ -35,7 +35,8 @@ async ValueTask StartDockerPaperEnvironmentAsync(ProtocolVersion version, int co
     var imageName = "itzg/minecraft-server";
     var imageTag = version switch
     {
-        _ when version >= ProtocolVersion.MINECRAFT_1_18 => "java17-jdk",
+        _ when version >= ProtocolVersion.MINECRAFT_1_20_5 => "java21-jdk",
+        _ when version >= ProtocolVersion.MINECRAFT_1_17 => "java17-jdk",
         _ => "java8-jdk"
     };
     var timeout = TimeSpan.FromSeconds(900);
