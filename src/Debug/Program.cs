@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using Void.Minecraft.Network;
 
-var version = ProtocolVersion.MINECRAFT_1_18;
+var version = ProtocolVersion.Latest;
 var count = 1;
 
 if (args.Length is 1 && int.TryParse(args[0], out var value))
@@ -33,7 +33,11 @@ async ValueTask RunEntryPointAsync()
 async ValueTask StartDockerPaperEnvironmentAsync(ProtocolVersion version, int count = 3, CancellationToken cancellationToken = default)
 {
     var imageName = "itzg/minecraft-server";
-    var imageTag = version > ProtocolVersion.MINECRAFT_1_13 ? "java21-jdk" : "java8-jdk";
+    var imageTag = version switch
+    {
+        _ when version >= ProtocolVersion.MINECRAFT_1_18 => "java17-jdk",
+        _ => "java8-jdk"
+    };
     var timeout = TimeSpan.FromSeconds(900);
     var variables = new List<string>
     {
