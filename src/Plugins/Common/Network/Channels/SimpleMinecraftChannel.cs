@@ -110,14 +110,14 @@ public class SimpleMinecraftChannel(IMessageStreamBase head) : INetworkChannel
         stream.PrependBuffer(memory);
     }
 
-    public async ValueTask<INetworkMessage> ReadMessageAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<INetworkMessage> ReadMessageAsync(Side origin, CancellationToken cancellationToken = default)
     {
         if (_readPause is not null)
             await _readPause.Task.WaitAsync(cancellationToken);
 
         return head switch
         {
-            IMinecraftPacketMessageStream stream => await stream.ReadPacketAsync(cancellationToken),
+            IMinecraftPacketMessageStream stream => await stream.ReadPacketAsync(origin, cancellationToken),
             ICompleteMessageStream stream => await stream.ReadMessageAsync(cancellationToken),
             IBufferedMessageStream stream => await stream.ReadAsMessageAsync(cancellationToken: cancellationToken),
             _ => throw new InvalidOperationException($"{head.GetType()} cannot be used to read messages")

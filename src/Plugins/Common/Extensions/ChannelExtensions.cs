@@ -11,7 +11,7 @@ namespace Void.Proxy.Plugins.Common.Extensions;
 
 public static class ChannelExtensions
 {
-    public static async ValueTask<T> ReceivePacketAsync<T>(this INetworkChannel channel, CancellationToken cancellationToken) where T : IMinecraftPacket
+    public static async ValueTask<T> ReceivePacketAsync<T>(this INetworkChannel channel, Side origin, CancellationToken cancellationToken) where T : IMinecraftPacket
     {
         // just for safety, ensure we do have such IMinecraftPacket implementation in channel registry
         if (!typeof(T).IsInterface)
@@ -22,7 +22,7 @@ public static class ChannelExtensions
                 throw new InvalidOperationException($"{nameof(stream.Registries.PacketIdSystem)} registry does not have {typeof(T)} packet");
         }
 
-        var message = await channel.ReadMessageAsync(cancellationToken);
+        var message = await channel.ReadMessageAsync(origin, cancellationToken);
 
         if (message is not T packet)
             throw new InvalidOperationException($"Received {message} packet is not {typeof(T)} packet");

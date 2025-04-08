@@ -10,8 +10,8 @@ public interface IMinecraftPacketMessageStream : IMinecraftStream
 {
     public IRegistryHolder Registries { get; }
 
-    public IMinecraftPacket ReadPacket();
-    public ValueTask<IMinecraftPacket> ReadPacketAsync(CancellationToken cancellationToken = default);
+    public IMinecraftPacket ReadPacket(Side origin);
+    public ValueTask<IMinecraftPacket> ReadPacketAsync(Side origin, CancellationToken cancellationToken = default);
     public void WritePacket(IMinecraftPacket packet, Side origin);
     public ValueTask WritePacketAsync(IMinecraftPacket packet, Side origin, CancellationToken cancellationToken = default);
 }

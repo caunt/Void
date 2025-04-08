@@ -143,7 +143,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
             try
             {
-                message = await sourceChannel.ReadMessageAsync(forceCancellationToken);
+                message = await sourceChannel.ReadMessageAsync(sourceSide, forceCancellationToken);
 
                 var cancelled = await events.ThrowWithResultAsync(new MessageReceivedEvent(sourceSide, sourceSide, Side.Proxy, direction, message, this), cancellationToken);
 

@@ -28,7 +28,7 @@ public interface INetworkChannel : IDisposable, IAsyncDisposable
     public bool Has<T>() where T : class, IMessageStreamBase;
     public bool TryGet<T>([MaybeNullWhen(false)] out T result) where T : class, IMessageStreamBase;
     public void PrependBuffer(Memory<byte> memory);
-    public ValueTask<INetworkMessage> ReadMessageAsync(CancellationToken cancellationToken = default);
+    public ValueTask<INetworkMessage> ReadMessageAsync(Side origin, CancellationToken cancellationToken = default);
     public ValueTask WriteMessageAsync(INetworkMessage message, Side origin, CancellationToken cancellationToken = default);
     public void Pause(Operation operation = Operation.Read);
     public bool TryPause(Operation operation = Operation.Read);
