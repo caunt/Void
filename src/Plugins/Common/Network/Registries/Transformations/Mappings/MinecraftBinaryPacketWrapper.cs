@@ -97,7 +97,8 @@ public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message, Side 
         foreach (var property in _read)
             property.Write(ref buffer);
 
-        buffer.Write(message.Stream);
+        if (_read.Count is 0)
+            buffer.Write(message.Stream);
     }
 
     private TPropertyValue ReadProperty<TPropertyValue>() where TPropertyValue : class, IPacketProperty<TPropertyValue>

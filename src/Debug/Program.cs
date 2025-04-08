@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using Void.Minecraft.Network;
 
-var version = ProtocolVersion.MINECRAFT_1_17;
+var version = ProtocolVersion.MINECRAFT_1_21;
 var count = 1;
 
 if (args.Length is 1 && int.TryParse(args[0], out var value))
