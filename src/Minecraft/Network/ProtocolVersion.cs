@@ -89,8 +89,11 @@ public class ProtocolVersion : IComparable
         return Range(Oldest, Latest);
     }
 
-    public static IEnumerable<ProtocolVersion> Range(ProtocolVersion start, ProtocolVersion end)
+    public static IEnumerable<ProtocolVersion> Range(ProtocolVersion version1, ProtocolVersion version2)
     {
+        var start = Min(version1, version2);
+        var end = Max(version1, version2);
+
         return Mapping.Where(pair => pair.Key >= start.Version && pair.Key <= end.Version).Select(pair => pair.Value).Order();
     }
 
