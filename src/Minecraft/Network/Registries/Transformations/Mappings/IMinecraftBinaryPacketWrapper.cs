@@ -3,7 +3,7 @@ using Void.Common.Network;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
 
-namespace Void.Minecraft.Network.Registries.Transformations;
+namespace Void.Minecraft.Network.Registries.Transformations.Mappings;
 
 public interface IMinecraftBinaryPacketWrapper
 {

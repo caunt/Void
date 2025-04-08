@@ -4,6 +4,7 @@ using Void.Common.Network;
 using Void.Common.Plugins;
 using Void.Minecraft.Network.Messages;
 using Void.Minecraft.Network.Messages.Packets;
+using Void.Minecraft.Network.Registries.PacketId.Mappings;
 
 namespace Void.Minecraft.Network.Registries.PacketId;
 

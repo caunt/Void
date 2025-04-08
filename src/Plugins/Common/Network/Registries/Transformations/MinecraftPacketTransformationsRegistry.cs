@@ -3,10 +3,11 @@ using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.Transformations;
+using Void.Minecraft.Network.Registries.Transformations.Mappings;
 
 namespace Void.Proxy.Plugins.Common.Network.Registries.Transformations;
 
-public class MinecraftPacketTransformations : IMinecraftPacketTransformations
+public class MinecraftPacketTransformationsRegistry : IMinecraftPacketTransformationsRegistry
 {
     private readonly Dictionary<Type, MinecraftPacketTransformation[]> _upgradeMappings = [];
     private readonly Dictionary<Type, MinecraftPacketTransformation[]> _downgradeMappings = [];
@@ -34,7 +35,7 @@ public class MinecraftPacketTransformations : IMinecraftPacketTransformations
         return GetMappings(type).TryGetValue(packetType, out transformation);
     }
 
-    public IMinecraftPacketTransformations ReplaceTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> transformations, ProtocolVersion protocolVersion)
+    public IMinecraftPacketTransformationsRegistry ReplaceTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> transformations, ProtocolVersion protocolVersion)
     {
         Clear();
         AddTransformations(transformations, protocolVersion);
@@ -42,7 +43,7 @@ public class MinecraftPacketTransformations : IMinecraftPacketTransformations
         return this;
     }
 
-    public IMinecraftPacketTransformations AddTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> transformationMappings, ProtocolVersion protocolVersion)
+    public IMinecraftPacketTransformationsRegistry AddTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> transformationMappings, ProtocolVersion protocolVersion)
     {
         foreach (var (mappings, type) in transformationMappings)
         {

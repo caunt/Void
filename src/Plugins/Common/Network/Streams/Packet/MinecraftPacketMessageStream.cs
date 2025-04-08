@@ -6,7 +6,7 @@ using Void.Minecraft.Buffers;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries;
 using Void.Minecraft.Network.Registries.PacketId.Extensions;
-using Void.Minecraft.Network.Registries.Transformations;
+using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Network.Streams.Packet;
 using Void.Proxy.Api.Network.Streams.Manual;
 using Void.Proxy.Api.Network.Streams.Manual.Binary;

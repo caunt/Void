@@ -4,6 +4,7 @@ using Void.Common.Plugins;
 using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.PacketId;
+using Void.Minecraft.Network.Registries.PacketId.Mappings;
 using Void.Minecraft.Network.Streams.Packet;
 
 namespace Void.Proxy.Plugins.Common.Extensions;

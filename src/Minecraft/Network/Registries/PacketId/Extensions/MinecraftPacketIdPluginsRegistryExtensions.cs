@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.Transformations;
+using Void.Minecraft.Network.Registries.Transformations.Mappings;
 
 namespace Void.Minecraft.Network.Registries.PacketId.Extensions;
 

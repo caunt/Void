@@ -14,6 +14,7 @@ public class RegistryHolder : IRegistryHolder
 
     public IMinecraftPacketIdSystemRegistry PacketIdSystem { get; } = new MinecraftPacketIdSystemRegistry();
     public IMinecraftPacketIdPluginsRegistry PacketIdPlugins { get; } = new MinecraftPacketIdPluginsRegistry();
+    public IMinecraftPacketTransformationsSystemRegistry PacketTransformationsSystem { get; } = new MinecraftPacketTransformationsSystemRegistry();
     public IMinecraftPacketTransformationsPluginsRegistry PacketTransformationsPlugins { get; } = new MinecraftPacketTransformationsPluginsRegistry();
 
     public void Setup(IPlugin managedBy, ProtocolVersion protocolVersion)
@@ -24,6 +25,9 @@ public class RegistryHolder : IRegistryHolder
         if (PacketIdPlugins.ManagedBy is not null)
             throw new InvalidOperationException($"Plugins packet-id registry is already managed by {PacketIdPlugins.ManagedBy.Name}");
 
+        if (PacketTransformationsSystem.ManagedBy is not null)
+            throw new InvalidOperationException($"System packet-transformations registry is already managed by {PacketTransformationsSystem.ManagedBy.Name}");
+
         if (PacketTransformationsPlugins.ManagedBy is not null)
             throw new InvalidOperationException($"Plugins packet-transformations registry is already managed by {PacketTransformationsPlugins.ManagedBy.Name}");
 
@@ -32,6 +36,9 @@ public class RegistryHolder : IRegistryHolder
 
         PacketIdPlugins.ManagedBy = managedBy;
         PacketIdPlugins.ProtocolVersion = protocolVersion;
+
+        PacketTransformationsSystem.ManagedBy = managedBy;
+        PacketTransformationsSystem.ProtocolVersion = protocolVersion;
 
         PacketTransformationsPlugins.ManagedBy = managedBy;
         PacketTransformationsPlugins.ProtocolVersion = protocolVersion;
@@ -45,16 +52,19 @@ public class RegistryHolder : IRegistryHolder
 
     public string PrintPackets()
     {
-        var system = $"{nameof(PacketIdSystem)} [{string.Join(", ", PacketIdSystem?.Write?.PacketTypes.Select(type => type.Name) ?? [])}]";
-        var plugins = $"{nameof(PacketIdPlugins)} [{string.Join(", ", PacketIdPlugins?.All.SelectMany(registry => registry.PacketTypes).Select(type => type.Name) ?? [])}]";
+        var packetIdSystem = $"{nameof(PacketIdSystem)} [{string.Join(", ", PacketIdSystem.Write.PacketTypes.Select(type => type.Name))}]";
+        var packetIdPlugins = $"{nameof(PacketIdPlugins)} [{string.Join(", ", PacketIdPlugins.All.SelectMany(registry => registry.PacketTypes).Select(type => type.Name))}]";
+        var packetTransformationsSystem = $"{nameof(PacketTransformationsSystem)} [{string.Join(", ", PacketTransformationsSystem.All.PacketTypes.Select(type => type.Name))}]";
+        var packetTransformationsPlugins = $"{nameof(PacketTransformationsPlugins)} [{string.Join(", ", PacketTransformationsPlugins.All.SelectMany(registry => registry.PacketTypes).Select(type => type.Name))}]";
 
-        return $"{system}\n{plugins}";
+        return $"{packetIdSystem}\n{packetIdPlugins}\n{packetTransformationsSystem}\n{packetTransformationsPlugins}";
     }
 
     public void Dispose()
     {
         PacketIdSystem.Reset();
         PacketIdPlugins.Reset();
+        PacketTransformationsSystem.Reset();
         PacketTransformationsPlugins.Reset();
 
         GC.SuppressFinalize(this);
@@ -66,6 +76,9 @@ public class RegistryHolder : IRegistryHolder
             return;
 
         if (PacketIdPlugins.ManagedBy != managedBy)
+            return;
+
+        if (PacketTransformationsSystem.ManagedBy != managedBy)
             return;
 
         if (PacketTransformationsPlugins.ManagedBy != managedBy)

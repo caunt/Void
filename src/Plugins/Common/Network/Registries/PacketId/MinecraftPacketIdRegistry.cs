@@ -3,6 +3,7 @@ using Void.Common.Network.Messages;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.PacketId;
+using Void.Minecraft.Network.Registries.PacketId.Mappings;
 
 namespace Void.Proxy.Plugins.Common.Network.Registries.PacketId;
 
