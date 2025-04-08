@@ -172,7 +172,9 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
 
     public IMinecraftPacket DecodePacket(RecyclableMemoryStream stream, Side origin)
     {
-        var buffer = new MinecraftBuffer(stream.GetReadOnlySequence());
+        stream.Position = 0;
+
+        var buffer = new MinecraftBuffer(stream);
         var id = buffer.ReadVarInt();
 
         // Set packet data position for further usage. Stream property Length is preserved.
@@ -181,27 +183,30 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
         if (Registries.PacketIdSystem?.Read is not { } registry || !registry.TryCreateDecoder(id, out var packetType, out var decoder))
             return new MinecraftBinaryPacket(id, stream);
 
+        var position = stream.Position;
         var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(id, stream), origin);
 
         if (TryGetTransformations(packetType, TransformationType.Upgrade, out var transformations))
         {
             foreach (var transformation in transformations)
             {
-                buffer.Seek(stream.Position, SeekOrigin.Begin);
+                stream.Position = position;
                 transformation(wrapper);
                 wrapper.Reset();
             }
+
+            stream.Position = position;
+            wrapper.WriteProcessedValues(ref buffer);
+            stream.SetLength(stream.Position);
+            stream.Position = position;
         }
 
-        buffer.Seek(stream.Position, SeekOrigin.Begin);
-        wrapper.WriteProcessedValues(ref buffer);
-
         var packet = decoder(ref buffer, Registries.ProtocolVersion);
-        stream.Dispose();
 
         if (buffer.HasData)
             throw new IndexOutOfRangeException($"{packet} packet was not fully read. Bytes read: {buffer.Position}, Total length: {buffer.Length}.");
 
+        stream.Dispose();
         return packet;
     }
 
