@@ -6,6 +6,9 @@ using System.Net.Sockets;
 using System.Reflection;
 using Void.Minecraft.Network;
 
+if (OperatingSystem.IsWindows())
+    Console.Clear();
+
 var version = ProtocolVersion.MINECRAFT_1_15_2;
 var count = 1;
 

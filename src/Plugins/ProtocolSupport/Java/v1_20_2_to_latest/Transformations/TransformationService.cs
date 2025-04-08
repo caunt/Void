@@ -9,15 +9,5 @@ public class TransformationService : AbstractTransformationService
     [Subscribe]
     public static void OnLinkStarted(LinkStartedEvent @event)
     {
-        // @event.Link.RegisterTransformations<SystemChatMessagePacket>([
-        //     new(ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_21_2, wrapper =>
-        //     {
-        //         var property = wrapper.Read<NbtProperty>();
-        //         property = ComponentNbtTransformers.Apply(property, ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_21_2);
-        //         wrapper.Write(property);
-        // 
-        //         wrapper.Passthrough<BoolProperty>();
-        //     })
-        // ]);
     }
 }

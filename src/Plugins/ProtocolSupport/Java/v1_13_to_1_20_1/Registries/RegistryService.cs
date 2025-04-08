@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using Void.Common.Network;
+using Void.Common.Network.Channels;
 using Void.Common.Plugins;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
-using Void.Proxy.Api.Events.Channels;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
@@ -22,31 +22,6 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
 {
     private readonly IEventService _events = events;
     private readonly IPlugin _plugin = plugin;
-
-    [Subscribe]
-    public async ValueTask OnChannelCreated(ChannelCreatedEvent @event, CancellationToken cancellationToken)
-    {
-        if (!@event.Player.TryGetMinecraftPlayer(out var player))
-            return;
-
-        if (!Plugin.SupportedVersions.Contains(player.ProtocolVersion))
-            return;
-
-        @event.Channel.GetRegistries().Setup(_plugin, player.ProtocolVersion);
-
-        if (@event.Side is Side.Client)
-        {
-            @event.Channel.SetReadingPacketsMappings(_plugin, Registry.ServerboundHandshakeMappings);
-            @event.Channel.SetWritingPacketsMappings(_plugin, Registry.ClientboundHandshakeMappings);
-        }
-        else
-        {
-            @event.Channel.SetReadingPacketsMappings(_plugin, Registry.ClientboundHandshakeMappings);
-            @event.Channel.SetWritingPacketsMappings(_plugin, Registry.ServerboundHandshakeMappings);
-        }
-
-        await player.SetPhaseAsync(@event.Side, Phase.Handshake, @event.Channel, cancellationToken);
-    }
 
     [Subscribe]
     public async ValueTask OnMessageReceived(MessageReceivedEvent @event, CancellationToken cancellationToken)
@@ -120,5 +95,21 @@ public class RegistryService(ILogger<RegistryService> logger, IPlugin plugin, IP
     protected override bool IsSupportedVersion(ProtocolVersion protocolVersion)
     {
         return Plugin.SupportedVersions.Contains(protocolVersion);
+    }
+
+    protected override void SetupRegistries(INetworkChannel channel, Side side, ProtocolVersion protocolVersion)
+    {
+        channel.GetRegistries().Setup(_plugin, protocolVersion);
+
+        if (side is Side.Client)
+        {
+            channel.SetReadingPacketsMappings(_plugin, Registry.ServerboundHandshakeMappings);
+            channel.SetWritingPacketsMappings(_plugin, Registry.ClientboundHandshakeMappings);
+        }
+        else
+        {
+            channel.SetReadingPacketsMappings(_plugin, Registry.ClientboundHandshakeMappings);
+            channel.SetWritingPacketsMappings(_plugin, Registry.ServerboundHandshakeMappings);
+        }
     }
 }

@@ -68,10 +68,10 @@ public class MinecraftPacketTransformationsRegistry : IMinecraftPacketTransforma
             var downgradeTransformers = mappingsToDowngrade.Select(i => i.Transformation);
 
             if (!_upgradeMappings.TryAdd(type, [.. upgradeTransformers]))
-                throw new ArgumentException($"{type} cannot be registered with packet upgrade transformations, because it is already registered");
+                throw new ArgumentException($"Upgrade transformations for {type} are already registered");
 
             if (!_downgradeMappings.TryAdd(type, [.. downgradeTransformers]))
-                throw new ArgumentException($"{type} cannot be registered with packet downgrade transformations, because it is already registered");
+                throw new ArgumentException($"Downgrade transformations for {type} are already registered");
         }
 
         return this;
