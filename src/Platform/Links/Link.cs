@@ -172,7 +172,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             catch (Exception exception)
             {
                 logger.LogError(exception, "Unhandled read {Direction} exception in {Link} link", direction, this);
-                await Player.KickAsync("Unexpected error occurred in your connection.\n\n\n(TODO: do not kick)", cancellationToken);
+                await Player.KickAsync("Unexpected error occurred in your connection.\n\n\n(TODO: do not kick)", forceCancellationToken);
                 break;
             }
 
@@ -203,7 +203,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             catch (Exception exception)
             {
                 logger.LogError(exception, "Unhandled write {Direction} exception in {Link} link", direction, this);
-                await Player.KickAsync("Unexpected error occurred in your connection.\n\n\n(TODO: do not kick)", cancellationToken);
+                await Player.KickAsync("Unexpected error occurred in your connection.\n\n\n(TODO: do not kick)", forceCancellationToken);
                 break;
             }
             finally
