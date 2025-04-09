@@ -68,6 +68,7 @@ public static class ComponentJsonTransformers
         return node;
     }
 
+    #region Downgrade
     public static void Passthrough_v1_20_3_to_v1_20_2(IMinecraftBinaryPacketWrapper wrapper)
     {
         var property = wrapper.Read<StringProperty>();
@@ -106,7 +107,9 @@ public static class ComponentJsonTransformers
 
         wrapper.Write(property);
     }
+    #endregion
 
+    #region Upgade
     public static void Passthrough_v1_20_2_to_v1_20_3(IMinecraftBinaryPacketWrapper wrapper)
     {
         var property = wrapper.Read<StringProperty>();
@@ -145,6 +148,7 @@ public static class ComponentJsonTransformers
 
         wrapper.Write(property);
     }
+    #endregion
 
     public static JsonNode Downgrade_v1_20_3_to_v1_20_2(JsonNode node)
     {

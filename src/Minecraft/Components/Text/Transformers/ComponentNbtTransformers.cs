@@ -14,6 +14,8 @@ namespace Void.Minecraft.Components.Text.Transformers;
 
 public static class ComponentNbtTransformers
 {
+    private const string ShowAchievementMarker = "!1.11.1=>1.12!";
+
     public static NamedNbtProperty Apply(NamedNbtProperty property, ProtocolVersion from, ProtocolVersion to)
     {
         return NamedNbtProperty.FromNbtTag(Apply(property.AsNbtTag, from, to));
@@ -77,6 +79,7 @@ public static class ComponentNbtTransformers
         return tag;
     }
 
+    #region Downgrade
     public static void Passthrough_v1_20_3_to_v1_20_2(IMinecraftBinaryPacketWrapper wrapper)
     {
         var property = wrapper.Read<NamedNbtProperty>();
@@ -95,6 +98,17 @@ public static class ComponentNbtTransformers
         wrapper.Write(property);
     }
 
+    public static void Passthrough_v1_12_to_v1_11_1(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        var property = wrapper.Read<NamedNbtProperty>();
+        var tag = Downgrade_v1_12_to_v1_11_1(property.AsNbtTag);
+
+        property = NamedNbtProperty.FromNbtTag(tag);
+        wrapper.Write(property);
+    }
+    #endregion
+
+    #region Upgrade
     public static void Passthrough_v1_20_2_to_v1_20_3(IMinecraftBinaryPacketWrapper wrapper)
     {
         var property = wrapper.Read<NamedNbtProperty>();
@@ -112,6 +126,16 @@ public static class ComponentNbtTransformers
         property = NamedNbtProperty.FromNbtTag(tag);
         wrapper.Write(property);
     }
+
+    public static void Passthrough_v1_11_1_to_v1_12(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        var property = wrapper.Read<NamedNbtProperty>();
+        var tag = Upgrade_v1_11_1_to_v1_12(property.AsNbtTag);
+
+        property = NamedNbtProperty.FromNbtTag(tag);
+        wrapper.Write(property);
+    }
+    #endregion
 
     public static NbtTag Downgrade_v1_20_3_to_v1_20_2(NbtTag tag)
     {
@@ -188,6 +212,43 @@ public static class ComponentNbtTransformers
         return tag;
     }
 
+    public static NbtTag Downgrade_v1_12_to_v1_11_1(NbtTag tag)
+    {
+        if (tag is NbtCompound rootCompound)
+        {
+            // Replace the "show_text" action back to "show_achievement"
+            if (rootCompound["hoverEvent"] is NbtCompound hoverEvent)
+            {
+                if (hoverEvent["value"] is { } value)
+                {
+                    if (hoverEvent["action"] is { } action)
+                    {
+                        if (value is NbtString valueString)
+                        {
+                            if (valueString.Value.StartsWith(ShowAchievementMarker))
+                            {
+                                if (action is NbtString { Value: "show_text" })
+                                {
+                                    hoverEvent["action"] = new NbtString("show_achievement");
+                                    hoverEvent["value"] = new NbtCompound { ["text"] = new NbtString(valueString.Value[ShowAchievementMarker.Length..]) };
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Replace recursive text components
+            if (rootCompound["with"] is NbtList with)
+                rootCompound["with"] = new NbtList(with.Data.Select(Downgrade_v1_12_to_v1_11_1), with.DataType);
+
+            if (rootCompound["extra"] is NbtList extra)
+                rootCompound["extra"] = new NbtList(extra.Data.Select(Downgrade_v1_12_to_v1_11_1), extra.DataType);
+        }
+
+        return tag;
+    }
+
     public static NbtTag Upgrade_v1_20_2_to_v1_20_3(NbtTag tag)
     {
         return tag;
@@ -237,6 +298,41 @@ public static class ComponentNbtTransformers
                 if (root["extra"] is NbtList extra)
                     root["extra"] = new NbtList(extra.Data.Select(Upgrade_v1_15_2_to_v1_16), extra.DataType);
             }
+        }
+
+        return tag;
+    }
+
+    public static NbtTag Upgrade_v1_11_1_to_v1_12(NbtTag tag)
+    {
+        if (tag is NbtCompound root)
+        {
+            // Replace the "show_achievement" action with "show_text"
+            if (root["hoverEvent"] is NbtCompound hoverEvent)
+            {
+                if (hoverEvent["value"] is NbtCompound { } value)
+                {
+                    if (hoverEvent["action"] is { } action)
+                    {
+                        if (action is NbtString { Value: "show_achievement" })
+                        {
+                            hoverEvent["action"] = new NbtString("show_text");
+
+                            if (value["text"] is not NbtString { } text)
+                                throw new NotSupportedException($"Text value not found: {value}");
+
+                            hoverEvent["value"] = new NbtString(ShowAchievementMarker + text.Value);
+                        }
+                    }
+                }
+            }
+
+            // Replace recursive text components
+            if (root["with"] is NbtList with)
+                root["with"] = new NbtList(with.Data.Select(Upgrade_v1_11_1_to_v1_12), with.DataType);
+
+            if (root["extra"] is NbtList extra)
+                root["extra"] = new NbtList(extra.Data.Select(Upgrade_v1_11_1_to_v1_12), extra.DataType);
         }
 
         return tag;
