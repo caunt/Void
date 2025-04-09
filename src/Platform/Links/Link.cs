@@ -8,6 +8,7 @@ using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Servers;
 
@@ -150,7 +151,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
                 if (cancelled)
                     continue;
             }
-            catch (Exception exception) when (exception is EndOfStreamException or IOException)
+            catch (StreamClosedException)
             {
                 if (direction is Direction.Serverbound)
                 {
@@ -181,7 +182,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
                 await events.ThrowAsync(new MessageSentEvent(sourceSide, Side.Proxy, destinationSide, direction, message, this), cancellationToken);
             }
-            catch (Exception exception) when (exception is EndOfStreamException or IOException)
+            catch (StreamClosedException)
             {
                 if (direction is Direction.Clientbound)
                 {

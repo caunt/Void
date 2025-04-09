@@ -1,4 +1,5 @@
 ﻿using System.Net.Sockets;
+using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Network.Streams.Manual.Network;
 
 namespace Void.Proxy.Plugins.Common.Network.Streams.Network;
@@ -24,7 +25,7 @@ public class SimpleNetworkStream(NetworkStream baseStream) : INetworkStream
         if (_nextBuffer is not { Length: > 0 })
         {
             var read = baseStream.Read(span);
-            return read > 0 ? read : throw new EndOfStreamException();
+            return read > 0 ? read : throw new StreamClosedException();
         }
 
         var length = Math.Min(_nextBuffer.Length, span.Length);
@@ -38,7 +39,7 @@ public class SimpleNetworkStream(NetworkStream baseStream) : INetworkStream
         if (_nextBuffer is not { Length: > 0 })
         {
             var read = await baseStream.ReadAsync(memory, cancellationToken);
-            return read > 0 ? read : throw new EndOfStreamException();
+            return read > 0 ? read : throw new StreamClosedException();
         }
 
         var length = Math.Min(_nextBuffer.Length, memory.Length);
@@ -56,10 +57,17 @@ public class SimpleNetworkStream(NetworkStream baseStream) : INetworkStream
         }
         else
         {
-            var length = _nextBuffer.Length;
-            _nextBuffer.Span.CopyTo(span[..length]);
-            _nextBuffer = Memory<byte>.Empty;
-            baseStream.ReadExactly(span[length..]);
+            try
+            {
+                var length = _nextBuffer.Length;
+                _nextBuffer.Span.CopyTo(span[..length]);
+                _nextBuffer = Memory<byte>.Empty;
+                baseStream.ReadExactly(span[length..]);
+            }
+            catch (EndOfStreamException)
+            {
+                throw new StreamClosedException();
+            }
         }
     }
 
@@ -72,21 +80,42 @@ public class SimpleNetworkStream(NetworkStream baseStream) : INetworkStream
         }
         else
         {
-            var length = _nextBuffer.Length;
-            _nextBuffer.CopyTo(memory[..length]);
-            _nextBuffer = Memory<byte>.Empty;
-            await baseStream.ReadExactlyAsync(memory[length..], cancellationToken);
+            try
+            {
+                var length = _nextBuffer.Length;
+                _nextBuffer.CopyTo(memory[..length]);
+                _nextBuffer = Memory<byte>.Empty;
+                await baseStream.ReadExactlyAsync(memory[length..], cancellationToken);
+            }
+            catch (EndOfStreamException)
+            {
+                throw new StreamClosedException();
+            }
         }
     }
 
     public void Write(ReadOnlySpan<byte> span)
     {
-        baseStream.Write(span);
+        try
+        {
+            baseStream.Write(span);
+        }
+        catch (IOException)
+        {
+            throw new StreamClosedException();
+        }
     }
 
     public async ValueTask WriteAsync(ReadOnlyMemory<byte> memory, CancellationToken cancellationToken = default)
     {
-        await baseStream.WriteAsync(memory, cancellationToken);
+        try
+        {
+            await baseStream.WriteAsync(memory, cancellationToken);
+        }
+        catch (IOException)
+        {
+            throw new StreamClosedException();
+        }
     }
 
     public void Flush()

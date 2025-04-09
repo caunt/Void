@@ -10,6 +10,7 @@ using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Settings;
@@ -67,7 +68,7 @@ public class PlayerService : IPlayerService, IEventListener
         }
         catch (Exception exception)
         {
-            if (exception is not EndOfStreamException and not SocketException)
+            if (exception is not StreamClosedException)
                 _logger.LogError(exception, "Client {RemoteEndPoint} cannot be proxied", player.RemoteEndPoint);
 
             // just in case

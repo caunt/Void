@@ -47,31 +47,17 @@ public class TransformationService(ILogger<TransformationService> logger) : Abst
         @event.Player.RegisterSystemTransformations<ChatMessagePacket>([
             new(ProtocolVersion.MINECRAFT_1_16, ProtocolVersion.MINECRAFT_1_15_2, wrapper =>
             {
-                try
-                {
-                    logger.LogInformation("Transforming downgrade {PacketType} 3", typeof(ChatMessagePacket));
-                    ComponentJsonTransformers.Passthrough_v1_16_to_v1_15_2(wrapper);
-                    wrapper.Passthrough<ByteProperty>();
-                    _ = wrapper.Read<UuidProperty>();
-                }
-                catch (Exception exception)
-                {
-                    logger.LogError(exception, "");
-                }
+                logger.LogInformation("Transforming downgrade {PacketType}", typeof(ChatMessagePacket));
+                ComponentJsonTransformers.Passthrough_v1_16_to_v1_15_2(wrapper);
+                wrapper.Passthrough<ByteProperty>();
+                _ = wrapper.Read<UuidProperty>();
             }),
             new(ProtocolVersion.MINECRAFT_1_15_2, ProtocolVersion.MINECRAFT_1_16, wrapper =>
             {
-                try
-                {
-                    logger.LogInformation("Transforming upgrade {PacketType} 4", typeof(ChatMessagePacket));
-                    ComponentJsonTransformers.Passthrough_v1_15_2_to_v1_16(wrapper);
-                    wrapper.Passthrough<ByteProperty>();
-                    wrapper.Write(UuidProperty.Empty);
-                }
-                catch (Exception exception)
-                {
-                    logger.LogError(exception, "");
-                }
+                logger.LogInformation("Transforming upgrade {PacketType}", typeof(ChatMessagePacket));
+                ComponentJsonTransformers.Passthrough_v1_15_2_to_v1_16(wrapper);
+                wrapper.Passthrough<ByteProperty>();
+                wrapper.Write(UuidProperty.Empty);
             })
         ]);
     }
