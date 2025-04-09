@@ -15,7 +15,7 @@ var count = 1;
 if (args.Length is 1 && int.TryParse(args[0], out var value))
     count = value;
 
-Console.WriteLine(@$"Starting {count} paper containers");
+Console.WriteLine(@$"Starting {count} minecraft container(s)");
 await StartDockerEnvironmentAsync(version, count, "VANILLA");
 
 return;
@@ -52,6 +52,7 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
         "ONLINE_MODE=FALSE",
         "OPS=caunt,Shonz1",
         "PATCH_DEFINITIONS=/tmp/patch.json",
+        "ENFORCE_SECURE_PROFILE=FALSE", // only for VANILLA server type
         "VERSION=" + VersionStringName(version)
     };
 
