@@ -159,7 +159,7 @@ public static class ComponentNbtTransformers
                             if (text is not NbtString textValue)
                                 throw new NotSupportedException($"Non-string text value found: {text}");
 
-                            contents = NbtUnsafeStringSerializer.Deserialize(textValue.Value);
+                            contents = NbtStringSerializer.Deserialize(textValue.Value);
                         }
 
                         hoverEvent["contents"] = contents;

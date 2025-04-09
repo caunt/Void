@@ -153,7 +153,7 @@ public static class ComponentJsonTransformers
                                 throw new NotSupportedException("SNBT text is not found");
 
                             var stringNbtText = text.GetValue<string>();
-                            var nbtText = NbtUnsafeStringSerializer.Deserialize(stringNbtText);
+                            var nbtText = NbtStringSerializer.Deserialize(stringNbtText);
                             var jsonText = NbtJsonSerializer.Serialize(nbtText);
 
                             contents = jsonText;
