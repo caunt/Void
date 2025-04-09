@@ -1,4 +1,5 @@
-﻿using Void.Common.Network;
+﻿using Nito.AsyncEx;
+using Void.Common.Network;
 using Void.Common.Network.Channels;
 using Void.Common.Network.Messages;
 using Void.Common.Players;
@@ -20,6 +21,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
     private readonly CancellationTokenSource _ctsPlayerToServerForce = new();
     private readonly CancellationTokenSource _ctsServerToPlayer = new();
     private readonly CancellationTokenSource _ctsServerToPlayerForce = new();
+    private readonly AsyncLock _lock = new();
 
     private Task? _playerToServerTask;
     private Task? _serverToPlayerTask;
@@ -213,39 +215,47 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
         // cancellationToken here most likely canceled already
         // use forceCancellationToken for events
 
-        if (!_stopping)
+        try
         {
-            _stopping = true;
-            await events.ThrowAsync(new LinkStoppingEvent(this), forceCancellationToken);
-        }
-
-        if (destinationChannel.CanWrite)
-            await destinationChannel.FlushAsync(forceCancellationToken);
-
-        switch (direction)
-        {
-            case Direction.Clientbound:
-                _serverToPlayerTaskDisposed = true;
-                await DisposeServerboundAsync();
-                break;
-            case Direction.Serverbound:
-                _playerToServerTaskDisposed = true;
-                await DisposeClientboundAsync();
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(direction), direction, null);
-        }
-
-        lock (this)
-        {
-            if (_stopped)
+            using (var _ = await _lock.LockAsync(forceCancellationToken))
             {
-                // do not wait completion as this may start initiating new ILink instance
-                var @event = events.ThrowAsync(new LinkStoppedEvent(this), forceCancellationToken).CatchExceptions(logger, $"{nameof(LinkStoppedEvent)} caused exception(s)");
+                if (!_stopping)
+                {
+                    await events.ThrowAsync(new LinkStoppingEvent(this), forceCancellationToken);
+                    _stopping = true;
+                }
             }
 
-            if (!_stopped)
-                _stopped = true;
+            if (destinationChannel.CanWrite)
+                await destinationChannel.FlushAsync(forceCancellationToken);
+
+            switch (direction)
+            {
+                case Direction.Clientbound:
+                    _serverToPlayerTaskDisposed = true;
+                    await DisposeServerboundAsync();
+                    break;
+                case Direction.Serverbound:
+                    _playerToServerTaskDisposed = true;
+                    await DisposeClientboundAsync();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(direction), direction, null);
+            }
+
+            using (var _ = await _lock.LockAsync(forceCancellationToken))
+            {
+                if (!_stopped)
+                {
+                    // do not wait completion as this may start initiating new ILink instance
+                    var @event = events.ThrowAsync(new LinkStoppedEvent(this), forceCancellationToken).CatchExceptions(logger, $"{nameof(LinkStoppedEvent)} caused exception(s)");
+                    _stopped = true;
+                }
+            }
+        }
+        catch (Exception exception)
+        {
+            logger.LogCritical("Link {Link} cannot be stopped:\n{Exception}", this, exception);
         }
     }
 
