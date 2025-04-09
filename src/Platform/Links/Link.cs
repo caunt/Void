@@ -217,12 +217,12 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
         try
         {
-            using (var _ = await _lock.LockAsync(forceCancellationToken))
+            // using (var sync = await _lock.LockAsync(forceCancellationToken))
             {
                 if (!_stopping)
                 {
-                    await events.ThrowAsync(new LinkStoppingEvent(this), forceCancellationToken);
                     _stopping = true;
+                    await events.ThrowAsync(new LinkStoppingEvent(this), forceCancellationToken);
                 }
             }
 
@@ -243,13 +243,15 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
                     throw new ArgumentOutOfRangeException(nameof(direction), direction, null);
             }
 
-            using (var _ = await _lock.LockAsync(forceCancellationToken))
+            // using (var sync = await _lock.LockAsync(forceCancellationToken))
+            lock (this)
             {
                 if (!_stopped)
                 {
-                    // do not wait completion as this may start initiating new ILink instance
-                    var @event = events.ThrowAsync(new LinkStoppedEvent(this), forceCancellationToken).CatchExceptions(logger, $"{nameof(LinkStoppedEvent)} caused exception(s)");
                     _stopped = true;
+
+                    // do not wait completion as this may start initiating new ILink instance
+                    _ = events.ThrowAsync(new LinkStoppedEvent(this), forceCancellationToken).CatchExceptions(logger, $"{nameof(LinkStoppedEvent)} caused exception(s)");
                 }
             }
         }
