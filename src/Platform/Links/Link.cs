@@ -25,6 +25,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
     private Task? _playerToServerTask;
     private Task? _serverToPlayerTask;
+    private Task<Task>? _onStoppingTask;
     private bool _playerToServerTaskDisposed;
     private bool _serverToPlayerTaskDisposed;
     private bool _stopping;
@@ -48,6 +49,8 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
         _playerToServerTask = ExecuteAsync(PlayerChannel, ServerChannel, Direction.Serverbound, _ctsPlayerToServer.Token, _ctsPlayerToServerForce.Token);
         _serverToPlayerTask = ExecuteAsync(ServerChannel, PlayerChannel, Direction.Clientbound, _ctsServerToPlayer.Token, _ctsServerToPlayerForce.Token);
+
+        _onStoppingTask = Task.WhenAll(_playerToServerTask, _serverToPlayerTask).ContinueWith(task => OnStopped(task, cancellationToken).CatchExceptions(logger, $"{nameof(LinkStoppedEvent)} caused exception(s)"));
 
         logger.LogTrace("Started forwarding {Link} traffic", this);
         await events.ThrowAsync(new LinkStartedEvent(this), cancellationToken);
@@ -217,7 +220,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
         try
         {
-            // using (var sync = await _lock.LockAsync(forceCancellationToken))
+            using (var sync = await _lock.LockAsync(forceCancellationToken))
             {
                 if (!_stopping)
                 {
@@ -242,18 +245,6 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
                 default:
                     throw new ArgumentOutOfRangeException(nameof(direction), direction, null);
             }
-
-            // using (var sync = await _lock.LockAsync(forceCancellationToken))
-            lock (this)
-            {
-                if (!_stopped)
-                {
-                    _stopped = true;
-
-                    // do not wait completion as this may start initiating new ILink instance
-                    _ = events.ThrowAsync(new LinkStoppedEvent(this), forceCancellationToken).CatchExceptions(logger, $"{nameof(LinkStoppedEvent)} caused exception(s)");
-                }
-            }
         }
         catch (Exception exception)
         {
@@ -270,5 +261,13 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
     {
         var timeout = Task.Delay(milliseconds);
         return await Task.WhenAny(timeout, task) == timeout;
+    }
+
+    private async Task OnStopped(Task task, CancellationToken cancellationToken)
+    {
+        await task;
+
+        // do not wait completion as this may start initiating new ILink instance
+        await events.ThrowAsync(new LinkStoppedEvent(this), cancellationToken);
     }
 }
