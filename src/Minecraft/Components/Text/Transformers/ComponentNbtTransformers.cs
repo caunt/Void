@@ -106,6 +106,15 @@ public static class ComponentNbtTransformers
         property = NamedNbtProperty.FromNbtTag(tag);
         wrapper.Write(property);
     }
+
+    public static void Passthrough_v1_9_to_v1_8(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        var property = wrapper.Read<NamedNbtProperty>();
+        var tag = Downgrade_v1_9_to_v1_8(property.AsNbtTag);
+
+        property = NamedNbtProperty.FromNbtTag(tag);
+        wrapper.Write(property);
+    }
     #endregion
 
     #region Upgrade
@@ -135,6 +144,15 @@ public static class ComponentNbtTransformers
         property = NamedNbtProperty.FromNbtTag(tag);
         wrapper.Write(property);
     }
+
+    public static void Passthrough_v1_8_to_v1_9(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        var property = wrapper.Read<NamedNbtProperty>();
+        var tag = Upgrade_v1_8_to_v1_9(property.AsNbtTag);
+
+        property = NamedNbtProperty.FromNbtTag(tag);
+        wrapper.Write(property);
+    }
     #endregion
 
     public static NbtTag Downgrade_v1_20_3_to_v1_20_2(NbtTag tag)
@@ -158,6 +176,13 @@ public static class ComponentNbtTransformers
                     }
                 }
             }
+
+            // Replace recursive text components
+            if (rootCompound["with"] is NbtList with)
+                rootCompound["with"] = new NbtList(with.Data.Select(Downgrade_v1_20_3_to_v1_20_2), with.DataType);
+
+            if (rootCompound["extra"] is NbtList extra)
+                rootCompound["extra"] = new NbtList(extra.Data.Select(Downgrade_v1_20_3_to_v1_20_2), extra.DataType);
         }
 
         return tag;
@@ -249,6 +274,11 @@ public static class ComponentNbtTransformers
         return tag;
     }
 
+    public static NbtTag Downgrade_v1_9_to_v1_8(NbtTag tag)
+    {
+        return tag;
+    }
+
     public static NbtTag Upgrade_v1_20_2_to_v1_20_3(NbtTag tag)
     {
         return tag;
@@ -300,6 +330,10 @@ public static class ComponentNbtTransformers
             }
         }
 
+        // De-compact text component
+        if (tag is NbtString rootString)
+            tag = new NbtCompound { ["text"] = rootString };
+
         return tag;
     }
 
@@ -335,6 +369,11 @@ public static class ComponentNbtTransformers
                 root["extra"] = new NbtList(extra.Data.Select(Upgrade_v1_11_1_to_v1_12), extra.DataType);
         }
 
+        return tag;
+    }
+
+    public static NbtTag Upgrade_v1_8_to_v1_9(NbtTag tag)
+    {
         return tag;
     }
 }

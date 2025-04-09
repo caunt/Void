@@ -107,6 +107,19 @@ public static class ComponentJsonTransformers
 
         wrapper.Write(property);
     }
+
+    public static void Passthrough_v1_9_to_v1_8(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        var property = wrapper.Read<StringProperty>();
+
+        if (TryParse(property.AsPrimitive, out var node))
+        {
+            node = Downgrade_v1_9_to_v1_8(node);
+            property = StringProperty.FromPrimitive(node.ToString());
+        }
+
+        wrapper.Write(property);
+    }
     #endregion
 
     #region Upgade
@@ -148,6 +161,19 @@ public static class ComponentJsonTransformers
 
         wrapper.Write(property);
     }
+
+    public static void Passthrough_v1_8_to_v1_9(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        var property = wrapper.Read<StringProperty>();
+
+        if (TryParse(property.AsPrimitive, out var node))
+        {
+            node = Upgrade_v1_8_to_v1_9(node);
+            property = StringProperty.FromPrimitive(node.ToString());
+        }
+
+        wrapper.Write(property);
+    }
     #endregion
 
     public static JsonNode Downgrade_v1_20_3_to_v1_20_2(JsonNode node)
@@ -171,6 +197,13 @@ public static class ComponentJsonTransformers
                     }
                 }
             }
+
+            // Replace recursive text components
+            if (rootObject["with"] is JsonArray with)
+                rootObject["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_20_3_to_v1_20_2(childNode)))]);
+
+            if (rootObject["extra"] is JsonArray extra)
+                rootObject["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_20_3_to_v1_20_2(childNode)))]);
         }
 
         return node;
@@ -255,10 +288,46 @@ public static class ComponentJsonTransformers
 
             // Replace recursive text components
             if (rootObject["with"] is JsonArray with)
-                rootObject["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_16_to_v1_15_2(childNode)))]);
+                rootObject["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_12_to_v1_11_1(childNode)))]);
 
             if (rootObject["extra"] is JsonArray extra)
-                rootObject["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_16_to_v1_15_2(childNode)))]);
+                rootObject["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_12_to_v1_11_1(childNode)))]);
+        }
+
+        return node;
+    }
+
+    public static JsonNode Downgrade_v1_9_to_v1_8(JsonNode node)
+    {
+        if (node is JsonObject rootObject)
+        {
+            // Replace the "show_text" action back to "show_achievement"
+            if (rootObject["hoverEvent"] is JsonObject hoverEvent)
+            {
+                if (hoverEvent["value"] is { } value)
+                {
+                    if (hoverEvent["action"] is { } action)
+                    {
+                        if (value.GetValueKind() is JsonValueKind.String)
+                        {
+                            if (action.GetValue<string>() is "show_achievement")
+                            {
+                                if (value["text"] is not { } text)
+                                    throw new NotSupportedException($"Text value not found: {value}");
+
+                                value = text;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Replace recursive text components
+            if (rootObject["with"] is JsonArray with)
+                rootObject["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_9_to_v1_8(childNode)))]);
+
+            if (rootObject["extra"] is JsonArray extra)
+                rootObject["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_9_to_v1_8(childNode)))]);
         }
 
         return node;
@@ -313,6 +382,10 @@ public static class ComponentJsonTransformers
                 root["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Upgrade_v1_15_2_to_v1_16(childNode)))]);
         }
 
+        // De-compact text component
+        if (node.GetValueKind() is JsonValueKind.String)
+            node = new JsonObject { ["text"] = JsonSerializer.SerializeToNode(node) };
+
         return node;
     }
 
@@ -346,6 +419,36 @@ public static class ComponentJsonTransformers
 
             if (root["extra"] is JsonArray extra)
                 root["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Upgrade_v1_11_1_to_v1_12(childNode)))]);
+        }
+
+        return node;
+    }
+
+    public static JsonNode Upgrade_v1_8_to_v1_9(JsonNode node)
+    {
+        if (node is JsonObject root)
+        {
+            // Replace the "show_achievement" action with "show_text"
+            if (root["hoverEvent"] is JsonObject hoverEvent)
+            {
+                if (hoverEvent["value"] is { } value)
+                {
+                    if (hoverEvent["action"] is { } action)
+                    {
+                        if (action.GetValue<string>() is "show_achievement" or "show_entity" or "show_item")
+                        {
+                            hoverEvent["value"] = new JsonObject { ["text"] = JsonSerializer.SerializeToNode(value) };
+                        }
+                    }
+                }
+            }
+
+            // Replace recursive text components
+            if (root["with"] is JsonArray with)
+                root["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Upgrade_v1_8_to_v1_9(childNode)))]);
+
+            if (root["extra"] is JsonArray extra)
+                root["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Upgrade_v1_8_to_v1_9(childNode)))]);
         }
 
         return node;
