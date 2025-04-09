@@ -40,7 +40,9 @@ public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
         var maxPlayers = buffer.ReadUnsignedByte();
         var levelType = buffer.ReadString(16);
 
-        var reducedDebugInfo = buffer.ReadBoolean();
+        var reducedDebugInfo = false;
+        if (protocolVersion >= ProtocolVersion.MINECRAFT_1_8)
+            reducedDebugInfo = buffer.ReadBoolean();
 
         return new JoinGamePacket
         {
