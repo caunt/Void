@@ -23,6 +23,19 @@ public class ChatMessagePacket : IMinecraftClientboundPacket<ChatMessagePacket>
             ComponentJsonTransformers.Passthrough_v1_15_2_to_v1_16(wrapper);
             wrapper.Passthrough<ByteProperty>();
             wrapper.Write(UuidProperty.Empty);
+        }),
+
+        new(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.MINECRAFT_1_20_3, wrapper =>
+        {
+            ComponentJsonTransformers.Passthrough_v1_20_2_to_v1_20_3(wrapper);
+            wrapper.Passthrough<ByteProperty>();
+            wrapper.Passthrough<UuidProperty>();
+        }),
+        new(ProtocolVersion.MINECRAFT_1_20_3, ProtocolVersion.MINECRAFT_1_20_2, wrapper =>
+        {
+            ComponentJsonTransformers.Passthrough_v1_20_3_to_v1_20_2(wrapper);
+            wrapper.Passthrough<ByteProperty>();
+            wrapper.Passthrough<UuidProperty>();
         })
     ];
 

@@ -16,29 +16,6 @@ public class TransformationService : AbstractTransformationService
         if (@event is not { Side: Side.Client, Phase: Phase.Play })
             return;
 
-        @event.Player.RegisterSystemTransformations<SystemChatMessagePacket>([
-            // new(ProtocolVersion.MINECRAFT_1_20, ProtocolVersion.MINECRAFT_1_19, wrapper =>
-            // {
-            //     logger.LogInformation("Transforming downgrade {PacketType}", typeof(SystemChatMessagePacket));
-            // 
-            //     var property = wrapper.Read<NbtProperty>();
-            //     property = ComponentNbtTransformers.Apply(property, ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_21_2);
-            //     wrapper.Write(property);
-            // 
-            //     wrapper.Passthrough<BoolProperty>();
-            // }),
-            // new(ProtocolVersion.MINECRAFT_1_19, ProtocolVersion.MINECRAFT_1_20, wrapper =>
-            // {
-            //     logger.LogInformation("Transforming upgrade {PacketType}", typeof(SystemChatMessagePacket));
-            // 
-            //     var property = wrapper.Read<NbtProperty>();
-            //     property = ComponentNbtTransformers.Apply(property, ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_21_2);
-            //     wrapper.Write(property);
-            // 
-            //     wrapper.Passthrough<BoolProperty>();
-            // })
-        ]);
-
         @event.Player.RegisterSystemTransformations<ChatMessagePacket>(ChatMessagePacket.Transformations);
     }
 }
