@@ -1,8 +1,11 @@
-﻿using System;
+﻿using Nito.Disposables.Internals;
+using System;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Void.Minecraft.Components.Text.Colors;
-using Void.Minecraft.Components.Text.Serializers;
+using Void.Minecraft.Nbt.Serializers.Json;
+using Void.Minecraft.Nbt.Serializers.String;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
@@ -109,6 +112,12 @@ public static class ComponentJsonTransformers
                     }
                 }
             }
+
+            if (root["with"] is JsonArray with)
+                root["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_16_to_v1_15_2(childNode, from, to)))]);
+
+            if (root["extra"] is JsonArray extra)
+                root["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_16_to_v1_15_2(childNode, from, to)))]);
         }
 
         return node;
@@ -136,18 +145,30 @@ public static class ComponentJsonTransformers
 
                         if (action.GetValue<string>() is "show_text" or "show_achievement")
                         {
-                            contents = ComponentJsonSerializer.Deserialize(value.GetValue<string>(), to).SerializeJson(to);
+                            contents = value;
                         }
                         else if (action.GetValue<string>() is "show_item" or "show_entity")
                         {
-                            // contents = NbtStringSerializer.Deserialize(value.Value);
-                            throw new NotSupportedException("SNBT deserialization is not supported yet");
+                            if (value["text"] is not { } text)
+                                throw new NotSupportedException("SNBT text is not found");
+
+                            var stringNbtText = text.GetValue<string>();
+                            var nbtText = NbtUnsafeStringSerializer.Deserialize(stringNbtText);
+                            var jsonText = NbtJsonSerializer.Serialize(nbtText);
+
+                            contents = jsonText;
                         }
 
                         hoverEvent["contents"] = contents;
                     }
                 }
             }
+
+            if (root["with"] is JsonArray with)
+                root["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Upgrade_v1_15_2_to_v1_16(childNode, from, to)))]);
+
+            if (root["extra"] is JsonArray extra)
+                root["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Upgrade_v1_15_2_to_v1_16(childNode, from, to)))]);
         }
 
         return node;

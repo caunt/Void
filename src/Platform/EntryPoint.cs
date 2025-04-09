@@ -24,6 +24,8 @@ using Void.Proxy.Plugins;
 using Void.Proxy.Servers;
 using Void.Proxy.Settings;
 
+Console.Title = nameof(Void);
+
 var configuration = new LoggerConfiguration();
 configuration.Enrich.FromLogContext();
 configuration.MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch);

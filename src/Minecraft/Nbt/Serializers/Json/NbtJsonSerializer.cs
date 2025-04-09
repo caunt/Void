@@ -5,11 +5,11 @@ using Void.Minecraft.Profiles.Serializers;
 
 namespace Void.Minecraft.Nbt.Serializers.Json;
 
-public static class JsonNbtSerializer
+public static class NbtJsonSerializer
 {
     public static readonly JsonSerializerOptions Options = new();
 
-    static JsonNbtSerializer()
+    static NbtJsonSerializer()
     {
         Options.Converters.Add(new NbtTagJsonConverter());
         Options.Converters.Add(new NbtTagTypeJsonConverter());

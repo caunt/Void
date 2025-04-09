@@ -75,7 +75,7 @@ public abstract record NbtTag
 
     public JsonNode AsJsonNode()
     {
-        return JsonNbtSerializer.Serialize(this);
+        return NbtJsonSerializer.Serialize(this);
     }
 
     public override string ToString() => ToSnbt();

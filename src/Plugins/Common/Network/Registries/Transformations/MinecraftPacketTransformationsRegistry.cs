@@ -52,12 +52,12 @@ public class MinecraftPacketTransformationsRegistry : IMinecraftPacketTransforma
 
             foreach (var mapping in mappings)
             {
-                if (mapping.From < protocolVersion)
+                if (mapping.From < protocolVersion && mapping.To < protocolVersion)
                     continue;
 
-                if (mapping.From > mapping.To)
+                if (transformationType is TransformationType.Upgrade)
                     mappingsToDowngrade.Add(mapping);
-                else
+                else if (transformationType is TransformationType.Downgrade)
                     mappingsToUpgrade.Add(mapping);
             }
 

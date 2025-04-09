@@ -10,7 +10,7 @@ public static class ComponentJsonSerializer
     public static JsonNode Serialize(Component component, ProtocolVersion protocolVersion)
     {
         var tag = component.SerializeNbt(protocolVersion);
-        return JsonNbtSerializer.Serialize(tag);
+        return NbtJsonSerializer.Serialize(tag);
     }
 
     public static Component Deserialize(string value, ProtocolVersion protocolVersion)
@@ -34,7 +34,7 @@ public static class ComponentJsonSerializer
 
     public static Component Deserialize(JsonNode node, ProtocolVersion protocolVersion)
     {
-        var tag = JsonNbtSerializer.Deserialize(node);
+        var tag = NbtJsonSerializer.Deserialize(node);
         return Component.DeserializeNbt(tag, protocolVersion);
     }
 }

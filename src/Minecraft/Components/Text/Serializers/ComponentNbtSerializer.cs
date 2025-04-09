@@ -361,6 +361,11 @@ public static class ComponentNbtSerializer
                         NbtString idNbtString => Uuid.Parse(idNbtString.Value),
                         NbtIntArray idNbtIntArray => Uuid.Parse([.. idNbtIntArray.Data]),
                         var value => throw new NbtException(value)
+                    },
+                    TryGet<NbtTag>(contentsNbtCompoundTag, "name") switch
+                    {
+                        { } nameTag => Deserialize(nameTag, protocolVersion),
+                        _ => null
                     }),
                     var value => throw new NbtException(value)
                 },

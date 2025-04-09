@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Text.Json.Nodes;
 using Void.Minecraft.Components.Text.Colors;
-using Void.Minecraft.Components.Text.Serializers;
 using Void.Minecraft.Nbt;
+using Void.Minecraft.Nbt.Serializers.String;
 using Void.Minecraft.Nbt.Tags;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
@@ -112,6 +113,12 @@ public static class ComponentNbtTransformers
                     }
                 }
             }
+
+            if (root["with"] is NbtList with)
+                root["with"] = new NbtList(with.Data.Select(childTag => Downgrade_v1_16_to_v1_15_2(childTag, from, to)), with.DataType);
+
+            if (root["extra"] is NbtList extra)
+                root["extra"] = new NbtList(extra.Data.Select(childTag => Downgrade_v1_16_to_v1_15_2(childTag, from, to)), extra.DataType);
         }
 
         return tag;
@@ -129,7 +136,7 @@ public static class ComponentNbtTransformers
         {
             if (root["hoverEvent"] is NbtCompound hoverEvent)
             {
-                if (hoverEvent["value"] is NbtString value)
+                if (hoverEvent["value"] is NbtTag value)
                 {
                     hoverEvent.Values.Remove("value");
 
@@ -139,17 +146,31 @@ public static class ComponentNbtTransformers
 
                         if (action.Value is "show_text" or "show_achievement")
                         {
-                            contents = ComponentJsonSerializer.Deserialize(value.Value, to).SerializeNbt(to);
+                            contents = value;
                         }
                         else if (action.Value is "show_item" or "show_entity")
                         {
-                            // contents = NbtStringSerializer.Deserialize(value.Value);
-                            throw new NotSupportedException("SNBT deserialization is not supported yet");
+                            if (value is not NbtCompound compoundValue)
+                                throw new NotSupportedException($"Non-compound value found: {value}");
+
+                            if (compoundValue["text"] is not { } text)
+                                throw new NotSupportedException("Text in value not found");
+
+                            if (text is not NbtString textValue)
+                                throw new NotSupportedException($"Non-string text value found: {text}");
+
+                            contents = NbtUnsafeStringSerializer.Deserialize(textValue.Value);
                         }
 
                         hoverEvent["contents"] = contents;
                     }
                 }
+
+                if (root["with"] is NbtList with)
+                    root["with"] = new NbtList(with.Data.Select(childTag => Upgrade_v1_15_2_to_v1_16(childTag, from, to)), with.DataType);
+
+                if (root["extra"] is NbtList extra)
+                    root["extra"] = new NbtList(extra.Data.Select(childTag => Upgrade_v1_15_2_to_v1_16(childTag, from, to)), extra.DataType);
             }
         }
 
