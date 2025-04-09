@@ -190,7 +190,6 @@ public static class ComponentNbtTransformers
 
     public static NbtTag Upgrade_v1_20_2_to_v1_20_3(NbtTag tag)
     {
-        Console.WriteLine("Nbt Upgrade_v1_20_2_to_v1_20_3 not supported");
         return tag;
     }
 

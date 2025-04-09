@@ -195,7 +195,6 @@ public static class ComponentJsonTransformers
 
     public static JsonNode Upgrade_v1_20_2_to_v1_20_3(JsonNode node)
     {
-        Console.WriteLine("Json Upgrade_v1_20_2_to_v1_20_3 not supported");
         return node;
     }
 

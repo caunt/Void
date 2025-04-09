@@ -139,7 +139,9 @@ public static class ComponentNbtSerializer
                 if (hoverEvent.Content is ShowEntity { } showEntity)
                 {
                     contents["id"] = new NbtString(showEntity.Id.ToString());
-                    contents["type"] = new NbtString(showEntity.Type);
+
+                    if (showEntity.Type is not null)
+                        contents["type"] = new NbtString(showEntity.Type);
 
                     if (showEntity.Name is not null)
                         contents["name"] = Serialize(showEntity.Name, protocolVersion);
@@ -356,12 +358,13 @@ public static class ComponentNbtSerializer
                 },
                 "show_entity" => contentsNbtTag switch
                 {
-                    NbtCompound contentsNbtCompoundTag => new ShowEntity(Get<NbtString>(contentsNbtCompoundTag, "type").Value, Get<NbtTag>(contentsNbtCompoundTag, "id") switch
+                    NbtCompound contentsNbtCompoundTag => new ShowEntity(Get<NbtTag>(contentsNbtCompoundTag, "id") switch
                     {
                         NbtString idNbtString => Uuid.Parse(idNbtString.Value),
                         NbtIntArray idNbtIntArray => Uuid.Parse([.. idNbtIntArray.Data]),
                         var value => throw new NbtException(value)
                     },
+                    TryGet<NbtString>(contentsNbtCompoundTag, "type")?.Value,
                     TryGet<NbtTag>(contentsNbtCompoundTag, "name") switch
                     {
                         { } nameTag => Deserialize(nameTag, protocolVersion),

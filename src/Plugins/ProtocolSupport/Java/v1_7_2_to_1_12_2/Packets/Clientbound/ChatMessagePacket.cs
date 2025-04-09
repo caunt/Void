@@ -5,6 +5,7 @@ using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
+using Void.Minecraft.Profiles;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clientbound;
 
@@ -51,22 +52,26 @@ public class ChatMessagePacket : IMinecraftClientboundPacket<ChatMessagePacket>
 
     public required Component Message { get; set; }
     public byte Position { get; set; }
+    public Uuid Sender { get; set; }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         buffer.WriteComponent(Message, protocolVersion);
         buffer.WriteUnsignedByte(Position);
+        buffer.WriteUuid(Sender);
     }
 
     public static ChatMessagePacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         var message = buffer.ReadComponent(protocolVersion);
         var position = buffer.ReadUnsignedByte();
+        var sender = buffer.ReadUuid();
 
         return new ChatMessagePacket
         {
             Message = message,
-            Position = position
+            Position = position,
+            Sender = sender
         };
     }
 
