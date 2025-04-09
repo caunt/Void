@@ -29,7 +29,6 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
     private bool _playerToServerTaskDisposed;
     private bool _serverToPlayerTaskDisposed;
     private bool _stopping;
-    private bool _stopped;
 
     public IPlayer Player { get; init; } = player;
     public IServer Server { get; init; } = server;
@@ -37,6 +36,11 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
     public INetworkChannel ServerChannel { get; init; } = serverChannel;
 
     public bool IsAlive => this is { _playerToServerTask.IsCompleted: false, _serverToPlayerTask.IsCompleted: false };
+
+    ~Link()
+    {
+        _onStoppingTask?.GetAwaiter().GetResult();
+    }
 
     public async ValueTask StartAsync(CancellationToken cancellationToken)
     {
@@ -220,7 +224,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
         try
         {
-            using (var sync = await _lock.LockAsync(forceCancellationToken))
+            using (var _ = await _lock.LockAsync(forceCancellationToken))
             {
                 if (!_stopping)
                 {
