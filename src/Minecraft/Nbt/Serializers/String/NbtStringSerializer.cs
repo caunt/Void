@@ -1,4 +1,5 @@
-﻿using SharpNBT.SNBT;
+﻿using SharpNBT;
+using SharpNBT.SNBT;
 
 namespace Void.Minecraft.Nbt.Serializers.String;
 
@@ -6,7 +7,8 @@ public static class NbtStringSerializer
 {
     public static string Serialize(NbtTag tag)
     {
-        return tag.ToString();
+        var sharpNbtTag = (Tag)tag;
+        return sharpNbtTag.Stringify(!string.IsNullOrEmpty(sharpNbtTag.Name));
     }
 
     public static NbtTag Deserialize(string value)

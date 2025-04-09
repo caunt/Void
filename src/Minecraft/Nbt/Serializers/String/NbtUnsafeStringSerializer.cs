@@ -7,7 +7,7 @@ public static partial class NbtUnsafeStringSerializer
 {
     public static string Serialize(NbtTag tag)
     {
-        return tag.ToString();
+        return NbtStringSerializer.Serialize(tag);
     }
 
     public static NbtTag Deserialize(string value)

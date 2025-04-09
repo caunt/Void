@@ -5,6 +5,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 using Void.Minecraft.Nbt.Serializers.Json;
+using Void.Minecraft.Nbt.Serializers.String;
 using Void.Minecraft.Nbt.Tags;
 
 namespace Void.Minecraft.Nbt;
@@ -80,11 +81,7 @@ public abstract record NbtTag
 
     public override string ToString() => ToSnbt();
 
-    protected string ToSnbt()
-    {
-        var tag = (Tag)this;
-        return tag.Stringify(!string.IsNullOrEmpty(tag.Name));
-    }
+    protected string ToSnbt() => NbtStringSerializer.Serialize(this);
 
     public static NbtCompound ParseCompound(string data)
     {
