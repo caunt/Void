@@ -16,6 +16,8 @@ namespace Void.Minecraft.Components.Text.Transformers;
 
 public static class ComponentJsonTransformers
 {
+    private const string ShowAchievementMarker = "!1.11.1=>1.12!";
+
     public static StringProperty Apply(StringProperty property, ProtocolVersion from, ProtocolVersion to)
     {
         return StringProperty.FromPrimitive(Apply(property.AsPrimitive, from, to));
@@ -193,6 +195,45 @@ public static class ComponentJsonTransformers
         return node;
     }
 
+    public static JsonNode Downgrade_v1_12_to_v1_11_1(JsonNode node)
+    {
+        if (node is JsonObject rootObject)
+        {
+            // Replace the "show_text" action back to "show_achievement"
+            if (rootObject["hoverEvent"] is JsonObject hoverEvent)
+            {
+                if (hoverEvent["value"] is { } value)
+                {
+                    if (hoverEvent["action"] is { } action)
+                    {
+                        if (value.GetValueKind() is JsonValueKind.String)
+                        {
+                            var valueString = value.GetValue<string>();
+
+                            if (valueString.StartsWith(ShowAchievementMarker))
+                            {
+                                if (action.GetValue<string>() is "show_text")
+                                {
+                                    hoverEvent["action"] = "show_achievement";
+                                    hoverEvent["value"] = new JsonObject { ["text"] = valueString[ShowAchievementMarker.Length..] };
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Replace recursive text components
+            if (rootObject["with"] is JsonArray with)
+                rootObject["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_16_to_v1_15_2(childNode)))]);
+
+            if (rootObject["extra"] is JsonArray extra)
+                rootObject["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_16_to_v1_15_2(childNode)))]);
+        }
+
+        return node;
+    }
+
     public static JsonNode Upgrade_v1_20_2_to_v1_20_3(JsonNode node)
     {
         return node;
@@ -240,6 +281,41 @@ public static class ComponentJsonTransformers
 
             if (root["extra"] is JsonArray extra)
                 root["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Upgrade_v1_15_2_to_v1_16(childNode)))]);
+        }
+
+        return node;
+    }
+
+    public static JsonNode Upgrade_v1_11_1_to_v1_12(JsonNode node)
+    {
+        if (node is JsonObject root)
+        {
+            // Replace the "show_achievement" action with "show_text"
+            if (root["hoverEvent"] is JsonObject hoverEvent)
+            {
+                if (hoverEvent["value"] is { } value)
+                {
+                    if (hoverEvent["action"] is { } action)
+                    {
+                        if (action.GetValue<string>() is "show_achievement")
+                        {
+                            hoverEvent["action"] = "show_text";
+
+                            if (value["text"] is not { } text)
+                                throw new NotSupportedException($"Text value not found: {value}");
+
+                            hoverEvent["value"] = ShowAchievementMarker + text.GetValue<string>();
+                        }
+                    }
+                }
+            }
+
+            // Replace recursive text components
+            if (root["with"] is JsonArray with)
+                root["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Upgrade_v1_11_1_to_v1_12(childNode)))]);
+
+            if (root["extra"] is JsonArray extra)
+                root["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Upgrade_v1_11_1_to_v1_12(childNode)))]);
         }
 
         return node;

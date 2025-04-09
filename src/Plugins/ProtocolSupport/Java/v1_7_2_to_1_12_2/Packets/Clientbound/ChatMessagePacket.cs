@@ -12,15 +12,15 @@ namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clien
 public class ChatMessagePacket : IMinecraftClientboundPacket<ChatMessagePacket>
 {
     public static MinecraftPacketTransformationMapping[] Transformations { get; } = [
-        new(ProtocolVersion.MINECRAFT_1_7_6, ProtocolVersion.MINECRAFT_1_8, wrapper =>
-        {
-            ComponentJsonTransformers.Passthrough_v1_16_to_v1_15_2(wrapper);
-            wrapper.Write(ByteProperty.FromPrimitive(1));
-        }),
         new(ProtocolVersion.MINECRAFT_1_8, ProtocolVersion.MINECRAFT_1_7_6, wrapper =>
         {
             ComponentJsonTransformers.Passthrough_v1_15_2_to_v1_16(wrapper);
             _ = wrapper.Read<ByteProperty>();
+        }),
+        new(ProtocolVersion.MINECRAFT_1_7_6, ProtocolVersion.MINECRAFT_1_8, wrapper =>
+        {
+            ComponentJsonTransformers.Passthrough_v1_16_to_v1_15_2(wrapper);
+            wrapper.Write(ByteProperty.FromPrimitive(1));
         }),
 
         new(ProtocolVersion.MINECRAFT_1_16, ProtocolVersion.MINECRAFT_1_15_2, wrapper =>
