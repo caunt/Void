@@ -55,9 +55,9 @@ public class MinecraftPacketTransformationsRegistry : IMinecraftPacketTransforma
                 if (mapping.From < protocolVersion && mapping.To < protocolVersion)
                     continue;
 
-                if (transformationType is TransformationType.Upgrade)
+                if (mapping.From > mapping.To)
                     mappingsToDowngrade.Add(mapping);
-                else if (transformationType is TransformationType.Downgrade)
+                else
                     mappingsToUpgrade.Add(mapping);
             }
 
