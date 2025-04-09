@@ -41,13 +41,13 @@ public class ChatMessagePacket : IMinecraftClientboundPacket<ChatMessagePacket>
 
     public required Component Message { get; set; }
     public byte Position { get; set; }
-    public Uuid? Sender { get; set; }
+    public Uuid Sender { get; set; }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         buffer.WriteComponent(Message, protocolVersion);
         buffer.WriteUnsignedByte(Position);
-        buffer.WriteUuid(Sender ?? throw new InvalidOperationException($"{nameof(Sender)} is required for this protocol version"));
+        buffer.WriteUuid(Sender);
     }
 
     public static ChatMessagePacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
