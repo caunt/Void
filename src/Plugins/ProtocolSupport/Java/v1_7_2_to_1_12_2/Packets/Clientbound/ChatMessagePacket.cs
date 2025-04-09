@@ -14,26 +14,37 @@ public class ChatMessagePacket : IMinecraftClientboundPacket<ChatMessagePacket>
     public static MinecraftPacketTransformationMapping[] Transformations { get; } = [
         new(ProtocolVersion.MINECRAFT_1_8, ProtocolVersion.MINECRAFT_1_7_6, wrapper =>
         {
-            ComponentJsonTransformers.Passthrough_v1_15_2_to_v1_16(wrapper);
+            wrapper.Passthrough<StringProperty>();
             _ = wrapper.Read<ByteProperty>();
         }),
         new(ProtocolVersion.MINECRAFT_1_7_6, ProtocolVersion.MINECRAFT_1_8, wrapper =>
         {
-            ComponentJsonTransformers.Passthrough_v1_16_to_v1_15_2(wrapper);
+            wrapper.Passthrough<StringProperty>();
             wrapper.Write(ByteProperty.FromPrimitive(1));
         }),
 
-        new(ProtocolVersion.MINECRAFT_1_16, ProtocolVersion.MINECRAFT_1_15_2, wrapper =>
+        new(ProtocolVersion.MINECRAFT_1_11_1, ProtocolVersion.MINECRAFT_1_12, wrapper =>
         {
-            ComponentJsonTransformers.Passthrough_v1_16_to_v1_15_2(wrapper);
+            ComponentJsonTransformers.Passthrough_v1_11_1_to_v1_12(wrapper);
             wrapper.Passthrough<ByteProperty>();
-            _ = wrapper.Read<UuidProperty>();
         }),
+        new(ProtocolVersion.MINECRAFT_1_12, ProtocolVersion.MINECRAFT_1_11_1, wrapper =>
+        {
+            ComponentJsonTransformers.Passthrough_v1_12_to_v1_11_1(wrapper);
+            wrapper.Passthrough<ByteProperty>();
+        }),
+
         new(ProtocolVersion.MINECRAFT_1_15_2, ProtocolVersion.MINECRAFT_1_16, wrapper =>
         {
             ComponentJsonTransformers.Passthrough_v1_15_2_to_v1_16(wrapper);
             wrapper.Passthrough<ByteProperty>();
             wrapper.Write(UuidProperty.Empty);
+        }),
+        new(ProtocolVersion.MINECRAFT_1_16, ProtocolVersion.MINECRAFT_1_15_2, wrapper =>
+        {
+            ComponentJsonTransformers.Passthrough_v1_16_to_v1_15_2(wrapper);
+            wrapper.Passthrough<ByteProperty>();
+            _ = wrapper.Read<UuidProperty>();
         }),
 
         new(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.MINECRAFT_1_20_3, wrapper =>

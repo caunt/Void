@@ -94,6 +94,19 @@ public static class ComponentJsonTransformers
         wrapper.Write(property);
     }
 
+    public static void Passthrough_v1_12_to_v1_11_1(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        var property = wrapper.Read<StringProperty>();
+
+        if (TryParse(property.AsPrimitive, out var node))
+        {
+            node = Downgrade_v1_12_to_v1_11_1(node);
+            property = StringProperty.FromPrimitive(node.ToString());
+        }
+
+        wrapper.Write(property);
+    }
+
     public static void Passthrough_v1_20_2_to_v1_20_3(IMinecraftBinaryPacketWrapper wrapper)
     {
         var property = wrapper.Read<StringProperty>();
@@ -114,6 +127,19 @@ public static class ComponentJsonTransformers
         if (TryParse(property.AsPrimitive, out var node))
         {
             node = Upgrade_v1_15_2_to_v1_16(node);
+            property = StringProperty.FromPrimitive(node.ToString());
+        }
+
+        wrapper.Write(property);
+    }
+
+    public static void Passthrough_v1_11_1_to_v1_12(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        var property = wrapper.Read<StringProperty>();
+
+        if (TryParse(property.AsPrimitive, out var node))
+        {
+            node = Upgrade_v1_11_1_to_v1_12(node);
             property = StringProperty.FromPrimitive(node.ToString());
         }
 
