@@ -190,7 +190,7 @@ public static class ComponentJsonTransformers
 
         // De-compact text component
         if (node.GetValueKind() is JsonValueKind.String)
-            node = new JsonObject { ["text"] = node };
+            node = new JsonObject { ["text"] = JsonSerializer.SerializeToNode(node) };
 
         return node;
     }

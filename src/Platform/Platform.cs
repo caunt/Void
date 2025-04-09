@@ -33,7 +33,7 @@ public class Platform(
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        LoggingLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
+        LoggingLevelSwitch.MinimumLevel = LogEventLevel.Debug;
 
         logger.LogInformation("Starting Void proxy");
         var startTime = Stopwatch.GetTimestamp();
