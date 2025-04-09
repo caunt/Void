@@ -9,7 +9,7 @@ using Void.Minecraft.Network;
 if (OperatingSystem.IsWindows())
     Console.Clear();
 
-var version = ProtocolVersion.MINECRAFT_1_11_1;
+var version = ProtocolVersion.MINECRAFT_1_15_2;
 var count = 1;
 
 if (args.Length is 1 && int.TryParse(args[0], out var value))

@@ -7,7 +7,7 @@ using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
 using Void.Minecraft.Profiles;
 
-namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clientbound;
+namespace Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
 
 public class ChatMessagePacket : IMinecraftClientboundPacket<ChatMessagePacket>
 {
