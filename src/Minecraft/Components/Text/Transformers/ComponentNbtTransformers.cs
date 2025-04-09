@@ -57,10 +57,10 @@ public static class ComponentNbtTransformers
     private static NbtTag Downgrade(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
     {
         if (from > ProtocolVersion.MINECRAFT_1_20_2 && to <= ProtocolVersion.MINECRAFT_1_20_2)
-            tag = Downgrade_v1_20_3_to_v1_20_2(tag, from, to);
+            tag = Downgrade_v1_20_3_to_v1_20_2(tag);
 
         if (from > ProtocolVersion.MINECRAFT_1_15_2 && to <= ProtocolVersion.MINECRAFT_1_15_2)
-            tag = Downgrade_v1_16_to_v1_15_2(tag, from, to);
+            tag = Downgrade_v1_16_to_v1_15_2(tag);
 
         return tag;
     }
@@ -68,21 +68,21 @@ public static class ComponentNbtTransformers
     private static NbtTag Upgrade(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
     {
         if (from <= ProtocolVersion.MINECRAFT_1_15_2 && to > ProtocolVersion.MINECRAFT_1_15_2)
-            tag = Upgrade_v1_15_2_to_v1_16(tag, from, to);
+            tag = Upgrade_v1_15_2_to_v1_16(tag);
 
         if (from <= ProtocolVersion.MINECRAFT_1_20_2 && to > ProtocolVersion.MINECRAFT_1_20_2)
-            tag = Upgrade_v1_20_2_to_v1_20_3(tag, from, to);
+            tag = Upgrade_v1_20_2_to_v1_20_3(tag);
 
         return tag;
     }
 
-    private static NbtTag Downgrade_v1_20_3_to_v1_20_2(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
+    private static NbtTag Downgrade_v1_20_3_to_v1_20_2(NbtTag tag)
     {
         Console.WriteLine("Nbt Downgrade_v1_20_3_to_v1_20_2 not supported");
         return tag;
     }
 
-    private static NbtTag Downgrade_v1_16_to_v1_15_2(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
+    private static NbtTag Downgrade_v1_16_to_v1_15_2(NbtTag tag)
     {
         if (tag is NbtCompound root)
         {
@@ -115,22 +115,22 @@ public static class ComponentNbtTransformers
             }
 
             if (root["with"] is NbtList with)
-                root["with"] = new NbtList(with.Data.Select(childTag => Downgrade_v1_16_to_v1_15_2(childTag, from, to)), with.DataType);
+                root["with"] = new NbtList(with.Data.Select(Downgrade_v1_16_to_v1_15_2), with.DataType);
 
             if (root["extra"] is NbtList extra)
-                root["extra"] = new NbtList(extra.Data.Select(childTag => Downgrade_v1_16_to_v1_15_2(childTag, from, to)), extra.DataType);
+                root["extra"] = new NbtList(extra.Data.Select(Downgrade_v1_16_to_v1_15_2), extra.DataType);
         }
 
         return tag;
     }
 
-    private static NbtTag Upgrade_v1_20_2_to_v1_20_3(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
+    private static NbtTag Upgrade_v1_20_2_to_v1_20_3(NbtTag tag)
     {
         Console.WriteLine("Nbt Upgrade_v1_20_2_to_v1_20_3 not supported");
         return tag;
     }
 
-    private static NbtTag Upgrade_v1_15_2_to_v1_16(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
+    private static NbtTag Upgrade_v1_15_2_to_v1_16(NbtTag tag)
     {
         if (tag is NbtCompound root)
         {
@@ -167,10 +167,10 @@ public static class ComponentNbtTransformers
                 }
 
                 if (root["with"] is NbtList with)
-                    root["with"] = new NbtList(with.Data.Select(childTag => Upgrade_v1_15_2_to_v1_16(childTag, from, to)), with.DataType);
+                    root["with"] = new NbtList(with.Data.Select(Upgrade_v1_15_2_to_v1_16), with.DataType);
 
                 if (root["extra"] is NbtList extra)
-                    root["extra"] = new NbtList(extra.Data.Select(childTag => Upgrade_v1_15_2_to_v1_16(childTag, from, to)), extra.DataType);
+                    root["extra"] = new NbtList(extra.Data.Select(Upgrade_v1_15_2_to_v1_16), extra.DataType);
             }
         }
 

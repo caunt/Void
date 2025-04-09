@@ -56,10 +56,10 @@ public static class ComponentJsonTransformers
     private static JsonNode Downgrade(JsonNode node, ProtocolVersion from, ProtocolVersion to)
     {
         if (from > ProtocolVersion.MINECRAFT_1_20_2 && to <= ProtocolVersion.MINECRAFT_1_20_2)
-            node = Downgrade_v1_20_3_to_v1_20_2(node, from, to);
+            node = Downgrade_v1_20_3_to_v1_20_2(node);
 
         if (from > ProtocolVersion.MINECRAFT_1_15_2 && to <= ProtocolVersion.MINECRAFT_1_15_2)
-            node = Downgrade_v1_16_to_v1_15_2(node, from, to);
+            node = Downgrade_v1_16_to_v1_15_2(node);
 
         return node;
     }
@@ -67,21 +67,21 @@ public static class ComponentJsonTransformers
     private static JsonNode Upgrade(JsonNode node, ProtocolVersion from, ProtocolVersion to)
     {
         if (from <= ProtocolVersion.MINECRAFT_1_15_2 && to > ProtocolVersion.MINECRAFT_1_15_2)
-            node = Upgrade_v1_15_2_to_v1_16(node, from, to);
+            node = Upgrade_v1_15_2_to_v1_16(node);
 
         if (from <= ProtocolVersion.MINECRAFT_1_20_2 && to > ProtocolVersion.MINECRAFT_1_20_2)
-            node = Upgrade_v1_20_2_to_v1_20_3(node, from, to);
+            node = Upgrade_v1_20_2_to_v1_20_3(node);
 
         return node;
     }
 
-    private static JsonNode Downgrade_v1_20_3_to_v1_20_2(JsonNode node, ProtocolVersion from, ProtocolVersion to)
+    private static JsonNode Downgrade_v1_20_3_to_v1_20_2(JsonNode node)
     {
         Console.WriteLine("Json Downgrade_v1_20_3_to_v1_20_2 not supported");
         return node;
     }
 
-    private static JsonNode Downgrade_v1_16_to_v1_15_2(JsonNode node, ProtocolVersion from, ProtocolVersion to)
+    private static JsonNode Downgrade_v1_16_to_v1_15_2(JsonNode node)
     {
         if (node is JsonObject root)
         {
@@ -114,22 +114,22 @@ public static class ComponentJsonTransformers
             }
 
             if (root["with"] is JsonArray with)
-                root["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_16_to_v1_15_2(childNode, from, to)))]);
+                root["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_16_to_v1_15_2(childNode)))]);
 
             if (root["extra"] is JsonArray extra)
-                root["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_16_to_v1_15_2(childNode, from, to)))]);
+                root["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_16_to_v1_15_2(childNode)))]);
         }
 
         return node;
     }
 
-    private static JsonNode Upgrade_v1_20_2_to_v1_20_3(JsonNode node, ProtocolVersion from, ProtocolVersion to)
+    private static JsonNode Upgrade_v1_20_2_to_v1_20_3(JsonNode node)
     {
         Console.WriteLine("Json Upgrade_v1_20_2_to_v1_20_3 not supported");
         return node;
     }
 
-    private static JsonNode Upgrade_v1_15_2_to_v1_16(JsonNode node, ProtocolVersion from, ProtocolVersion to)
+    private static JsonNode Upgrade_v1_15_2_to_v1_16(JsonNode node)
     {
         if (node is JsonObject root)
         {
@@ -165,10 +165,10 @@ public static class ComponentJsonTransformers
             }
 
             if (root["with"] is JsonArray with)
-                root["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Upgrade_v1_15_2_to_v1_16(childNode, from, to)))]);
+                root["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Upgrade_v1_15_2_to_v1_16(childNode)))]);
 
             if (root["extra"] is JsonArray extra)
-                root["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Upgrade_v1_15_2_to_v1_16(childNode, from, to)))]);
+                root["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Upgrade_v1_15_2_to_v1_16(childNode)))]);
         }
 
         return node;
