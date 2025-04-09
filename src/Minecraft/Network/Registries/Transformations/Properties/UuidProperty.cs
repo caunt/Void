@@ -7,6 +7,8 @@ namespace Void.Minecraft.Network.Registries.Transformations.Properties;
 
 public record UuidProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<UuidProperty>
 {
+    public static UuidProperty Empty { get; } = FromUuid(Uuid.Empty);
+
     public Uuid AsUuid => new MinecraftBuffer(Value.Span).ReadUuid();
 
     public static UuidProperty FromUuid(Uuid value)

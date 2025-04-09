@@ -76,10 +76,37 @@ public static class ComponentNbtTransformers
         return tag;
     }
 
-    public static void Downgrade_v1_20_3_to_v1_20_2(IMinecraftBinaryPacketWrapper wrapper)
+    public static void Passthrough_v1_20_3_to_v1_20_2(IMinecraftBinaryPacketWrapper wrapper)
     {
         var property = wrapper.Read<NamedNbtProperty>();
         var tag = Downgrade_v1_20_3_to_v1_20_2(property.AsNbtTag);
+
+        property = NamedNbtProperty.FromNbtTag(tag);
+        wrapper.Write(property);
+    }
+
+    public static void Passthrough_v1_16_to_v1_15_2(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        var property = wrapper.Read<NamedNbtProperty>();
+        var tag = Downgrade_v1_16_to_v1_15_2(property.AsNbtTag);
+
+        property = NamedNbtProperty.FromNbtTag(tag);
+        wrapper.Write(property);
+    }
+
+    public static void Passthrough_v1_20_2_to_v1_20_3(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        var property = wrapper.Read<NamedNbtProperty>();
+        var tag = Upgrade_v1_20_2_to_v1_20_3(property.AsNbtTag);
+
+        property = NamedNbtProperty.FromNbtTag(tag);
+        wrapper.Write(property);
+    }
+
+    public static void Passthrough_v1_15_2_to_v1_16(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        var property = wrapper.Read<NamedNbtProperty>();
+        var tag = Upgrade_v1_15_2_to_v1_16(property.AsNbtTag);
 
         property = NamedNbtProperty.FromNbtTag(tag);
         wrapper.Write(property);
@@ -89,15 +116,6 @@ public static class ComponentNbtTransformers
     {
         Console.WriteLine("Nbt Downgrade_v1_20_3_to_v1_20_2 not supported");
         return tag;
-    }
-
-    public static void Downgrade_v1_16_to_v1_15_2(IMinecraftBinaryPacketWrapper wrapper)
-    {
-        var property = wrapper.Read<NamedNbtProperty>();
-        var tag = Downgrade_v1_16_to_v1_15_2(property.AsNbtTag);
-
-        property = NamedNbtProperty.FromNbtTag(tag);
-        wrapper.Write(property);
     }
 
     public static NbtTag Downgrade_v1_16_to_v1_15_2(NbtTag tag)
@@ -142,28 +160,10 @@ public static class ComponentNbtTransformers
         return tag;
     }
 
-    public static void Upgrade_v1_20_2_to_v1_20_3(IMinecraftBinaryPacketWrapper wrapper)
-    {
-        var property = wrapper.Read<NamedNbtProperty>();
-        var tag = Upgrade_v1_20_2_to_v1_20_3(property.AsNbtTag);
-
-        property = NamedNbtProperty.FromNbtTag(tag);
-        wrapper.Write(property);
-    }
-
     public static NbtTag Upgrade_v1_20_2_to_v1_20_3(NbtTag tag)
     {
         Console.WriteLine("Nbt Upgrade_v1_20_2_to_v1_20_3 not supported");
         return tag;
-    }
-
-    public static void Upgrade_v1_15_2_to_v1_16(IMinecraftBinaryPacketWrapper wrapper)
-    {
-        var property = wrapper.Read<NamedNbtProperty>();
-        var tag = Upgrade_v1_15_2_to_v1_16(property.AsNbtTag);
-
-        property = NamedNbtProperty.FromNbtTag(tag);
-        wrapper.Write(property);
     }
 
     public static NbtTag Upgrade_v1_15_2_to_v1_16(NbtTag tag)
