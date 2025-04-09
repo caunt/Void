@@ -16,6 +16,7 @@ public class SignedChatCommandPacket : IMinecraftServerboundPacket<SignedChatCom
     public required Dictionary<string, byte[]> ArgumentSignatures { get; set; }
     public required int MessageCount { get; set; }
     public required BitArray Acknowledged { get; set; }
+    public byte Checksum { get; set; }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -35,18 +36,34 @@ public class SignedChatCommandPacket : IMinecraftServerboundPacket<SignedChatCom
         var array = new byte[DivFloor];
         Acknowledged.CopyTo(array, 0);
         buffer.Write(array);
+
+        if (protocolVersion >= ProtocolVersion.MINECRAFT_1_21_5)
+            buffer.WriteUnsignedByte(0); // always 0, not Checksum
     }
 
     public static SignedChatCommandPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
+        var command = buffer.ReadString();
+        var timestamp = DateTimeOffset.FromUnixTimeMilliseconds(buffer.ReadLong());
+        var salt = buffer.ReadLong();
+        var argumentSignatures = DecodeArgumentSignatureArray(ref buffer);
+        var messageCount = buffer.ReadVarInt();
+        var acknowledged = DecodeAcknowledged(ref buffer);
+        var checksum = byte.MinValue;
+
+        if (protocolVersion >= ProtocolVersion.MINECRAFT_1_21_5)
+            checksum = buffer.ReadUnsignedByte();
+
+
         return new SignedChatCommandPacket
         {
-            Command = buffer.ReadString(),
-            Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(buffer.ReadLong()),
-            Salt = buffer.ReadLong(),
-            ArgumentSignatures = DecodeArgumentSignatureArray(ref buffer),
-            MessageCount = buffer.ReadVarInt(),
-            Acknowledged = DecodeAcknowledged(ref buffer)
+            Command = command,
+            Timestamp = timestamp,
+            Salt = salt,
+            ArgumentSignatures = argumentSignatures,
+            MessageCount = messageCount,
+            Acknowledged = acknowledged,
+            Checksum = checksum,
         };
 
         static Dictionary<string, byte[]> DecodeArgumentSignatureArray(ref MinecraftBuffer buffer)
