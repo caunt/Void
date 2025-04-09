@@ -9,14 +9,14 @@ using Void.Minecraft.Network;
 if (OperatingSystem.IsWindows())
     Console.Clear();
 
-var version = ProtocolVersion.MINECRAFT_1_15_2;
+var version = ProtocolVersion.Latest;
 var count = 1;
 
 if (args.Length is 1 && int.TryParse(args[0], out var value))
     count = value;
 
 Console.WriteLine(@$"Starting {count} paper containers");
-await StartDockerPaperEnvironmentAsync(version, count);
+await StartDockerEnvironmentAsync(version, count, "VANILLA");
 
 return;
 
@@ -33,7 +33,7 @@ async ValueTask RunEntryPointAsync()
     await task;
 }
 
-async ValueTask StartDockerPaperEnvironmentAsync(ProtocolVersion version, int count = 3, CancellationToken cancellationToken = default)
+async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count = 3, string type = "PAPER", CancellationToken cancellationToken = default)
 {
     var imageName = "itzg/minecraft-server";
     var imageTag = version switch
@@ -47,7 +47,7 @@ async ValueTask StartDockerPaperEnvironmentAsync(ProtocolVersion version, int co
     var variables = new List<string>
     {
         "EULA=TRUE",
-        "TYPE=PAPER",
+        "TYPE=" + type,
         "MODE=CREATIVE",
         "ONLINE_MODE=FALSE",
         "OPS=caunt,Shonz1",
@@ -111,7 +111,7 @@ async ValueTask StartDockerPaperEnvironmentAsync(ProtocolVersion version, int co
             }, null, new Progress<JSONMessage>(), cancellationToken);
         }
 
-        var name = $"paper-{index}";
+        var name = $"{type}-{index}";
         var port = (ushort)(25565 + index);
 
         while (true)
