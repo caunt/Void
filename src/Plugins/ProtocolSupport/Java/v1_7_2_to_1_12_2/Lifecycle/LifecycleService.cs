@@ -16,6 +16,13 @@ public class LifecycleService : AbstractLifecycleService
 {
     protected override async ValueTask EnableCompressionAsync(ILink link, CancellationToken cancellationToken)
     {
+        if (!link.Player.TryGetMinecraftPlayer(out var player))
+            return;
+
+        // No compression before 1.8
+        if (player.ProtocolVersion < ProtocolVersion.MINECRAFT_1_8)
+            return;
+
         await link.SendPacketAsync(new SetCompressionPacket { Threshold = 256 }, cancellationToken);
     }
 
