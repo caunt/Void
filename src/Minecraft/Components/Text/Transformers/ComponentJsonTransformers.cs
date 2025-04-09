@@ -308,14 +308,14 @@ public static class ComponentJsonTransformers
                 {
                     if (hoverEvent["action"] is { } action)
                     {
-                        if (value.GetValueKind() is JsonValueKind.String)
+                        if (value.GetValueKind() is JsonValueKind.Object)
                         {
-                            if (action.GetValue<string>() is "show_achievement")
+                            if (action.GetValue<string>() is "show_achievement" or "show_entity" or "show_item")
                             {
                                 if (value["text"] is not { } text)
                                     throw new NotSupportedException($"Text value not found: {value}");
 
-                                value = text;
+                                hoverEvent["value"] = text;
                             }
                         }
                     }

@@ -276,6 +276,37 @@ public static class ComponentNbtTransformers
 
     public static NbtTag Downgrade_v1_9_to_v1_8(NbtTag tag)
     {
+        if (tag is NbtCompound rootCompound)
+        {
+            // Replace the "show_text" action back to "show_achievement"
+            if (rootCompound["hoverEvent"] is NbtCompound hoverEvent)
+            {
+                if (hoverEvent["value"] is { } value)
+                {
+                    if (hoverEvent["action"] is NbtString { } action)
+                    {
+                        if (value is NbtCompound valueCompound)
+                        {
+                            if (action.Value is "show_achievement" or "show_entity" or "show_item")
+                            {
+                                if (valueCompound["text"] is not { } text)
+                                    throw new NotSupportedException($"Text value not found: {value}");
+
+                                hoverEvent["value"] = text;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Replace recursive text components
+            if (rootCompound["with"] is NbtList with)
+                rootCompound["with"] = new NbtList(with.Data.Select(Downgrade_v1_9_to_v1_8), with.DataType);
+
+            if (rootCompound["extra"] is NbtList extra)
+                rootCompound["extra"] = new NbtList(extra.Data.Select(Downgrade_v1_9_to_v1_8), extra.DataType);
+        }
+
         return tag;
     }
 
@@ -374,6 +405,31 @@ public static class ComponentNbtTransformers
 
     public static NbtTag Upgrade_v1_8_to_v1_9(NbtTag tag)
     {
+        if (tag is NbtCompound root)
+        {
+            // Replace the "show_achievement" action with "show_text"
+            if (root["hoverEvent"] is NbtCompound hoverEvent)
+            {
+                if (hoverEvent["value"] is { } value)
+                {
+                    if (hoverEvent["action"] is NbtString { } action)
+                    {
+                        if (action.Value is "show_achievement" or "show_entity" or "show_item")
+                        {
+                            hoverEvent["value"] = new NbtCompound { ["text"] = value };
+                        }
+                    }
+                }
+            }
+
+            // Replace recursive text components
+            if (root["with"] is NbtList with)
+                root["with"] = new NbtList(with.Data.Select(Upgrade_v1_8_to_v1_9), with.DataType);
+
+            if (root["extra"] is NbtList extra)
+                root["extra"] = new NbtList(extra.Data.Select(Upgrade_v1_8_to_v1_9), extra.DataType);
+        }
+
         return tag;
     }
 }
