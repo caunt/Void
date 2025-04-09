@@ -1,5 +1,6 @@
 ﻿using Nito.Disposables.Internals;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -21,18 +22,7 @@ public static class ComponentJsonTransformers
 
     public static string Apply(string value, ProtocolVersion from, ProtocolVersion to)
     {
-        var node = (JsonNode?)null;
-
-        try
-        {
-            node = JsonNode.Parse(value);
-        }
-        catch
-        {
-            // Ignore, not a json
-        }
-
-        if (node is null)
+        if (!TryParse(value, out var node))
             return value;
 
         return Apply(node, from, to).ToString();
@@ -75,13 +65,39 @@ public static class ComponentJsonTransformers
         return node;
     }
 
-    private static JsonNode Downgrade_v1_20_3_to_v1_20_2(JsonNode node)
+    public static void Downgrade_v1_20_3_to_v1_20_2(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        var property = wrapper.Read<StringProperty>();
+
+        if (TryParse(property.AsPrimitive, out var node))
+        {
+            node = Downgrade_v1_20_3_to_v1_20_2(node);
+            property = StringProperty.FromPrimitive(node.ToString());
+        }
+
+        wrapper.Write(property);
+    }
+
+    public static JsonNode Downgrade_v1_20_3_to_v1_20_2(JsonNode node)
     {
         Console.WriteLine("Json Downgrade_v1_20_3_to_v1_20_2 not supported");
         return node;
     }
 
-    private static JsonNode Downgrade_v1_16_to_v1_15_2(JsonNode node)
+    public static void Downgrade_v1_16_to_v1_15_2(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        var property = wrapper.Read<StringProperty>();
+
+        if (TryParse(property.AsPrimitive, out var node))
+        {
+            node = Downgrade_v1_16_to_v1_15_2(node);
+            property = StringProperty.FromPrimitive(node.ToString());
+        }
+
+        wrapper.Write(property);
+    }
+
+    public static JsonNode Downgrade_v1_16_to_v1_15_2(JsonNode node)
     {
         if (node is JsonObject root)
         {
@@ -123,13 +139,39 @@ public static class ComponentJsonTransformers
         return node;
     }
 
-    private static JsonNode Upgrade_v1_20_2_to_v1_20_3(JsonNode node)
+    public static void Upgrade_v1_20_2_to_v1_20_3(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        var property = wrapper.Read<StringProperty>();
+
+        if (TryParse(property.AsPrimitive, out var node))
+        {
+            node = Upgrade_v1_20_2_to_v1_20_3(node);
+            property = StringProperty.FromPrimitive(node.ToString());
+        }
+
+        wrapper.Write(property);
+    }
+
+    public static JsonNode Upgrade_v1_20_2_to_v1_20_3(JsonNode node)
     {
         Console.WriteLine("Json Upgrade_v1_20_2_to_v1_20_3 not supported");
         return node;
     }
 
-    private static JsonNode Upgrade_v1_15_2_to_v1_16(JsonNode node)
+    public static void Upgrade_v1_15_2_to_v1_16(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        var property = wrapper.Read<StringProperty>();
+
+        if (TryParse(property.AsPrimitive, out var node))
+        {
+            node = Upgrade_v1_15_2_to_v1_16(node);
+            property = StringProperty.FromPrimitive(node.ToString());
+        }
+
+        wrapper.Write(property);
+    }
+
+    public static JsonNode Upgrade_v1_15_2_to_v1_16(JsonNode node)
     {
         if (node is JsonObject root)
         {
@@ -172,5 +214,21 @@ public static class ComponentJsonTransformers
         }
 
         return node;
+    }
+
+    private static bool TryParse(string value, [MaybeNullWhen(false)] out JsonNode node)
+    {
+        node = null;
+
+        try
+        {
+            node = JsonNode.Parse(value);
+        }
+        catch
+        {
+            // Ignore, not a json
+        }
+
+        return node is not null;
     }
 }

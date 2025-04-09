@@ -68,25 +68,17 @@ public class TransformationService(ILogger<TransformationService> logger) : Abst
 
 
 
-            new(ProtocolVersion.MINECRAFT_1_16, ProtocolVersion.MINECRAFT_1_13, wrapper =>
+            new(ProtocolVersion.MINECRAFT_1_16, ProtocolVersion.MINECRAFT_1_15_2, wrapper =>
             {
                 logger.LogInformation("Transforming downgrade {PacketType} 3", typeof(ChatMessagePacket));
-
-                var property = wrapper.Read<StringProperty>();
-                property = ComponentJsonTransformers.Apply(property, ProtocolVersion.MINECRAFT_1_16, ProtocolVersion.MINECRAFT_1_13);
-                wrapper.Write(property);
-
+                ComponentJsonTransformers.Downgrade_v1_16_to_v1_15_2(wrapper);
                 wrapper.Passthrough<ByteProperty>();
                 // wrapper.Write(UuidProperty.FromUuid(new Uuid(Guid.Empty)));
             }),
-            new(ProtocolVersion.MINECRAFT_1_13, ProtocolVersion.MINECRAFT_1_16, wrapper =>
+            new(ProtocolVersion.MINECRAFT_1_15_2, ProtocolVersion.MINECRAFT_1_16, wrapper =>
             {
                 logger.LogInformation("Transforming upgrade {PacketType} 4", typeof(ChatMessagePacket));
-
-                var property = wrapper.Read<StringProperty>();
-                property = ComponentJsonTransformers.Apply(property, ProtocolVersion.MINECRAFT_1_13, ProtocolVersion.MINECRAFT_1_16);
-                wrapper.Write(property);
-
+                ComponentJsonTransformers.Upgrade_v1_15_2_to_v1_16(wrapper);
                 wrapper.Passthrough<ByteProperty>();
                 // wrapper.Write(UuidProperty.FromUuid(new Uuid(Guid.Empty)));
             })
