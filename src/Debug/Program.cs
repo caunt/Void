@@ -111,7 +111,7 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
             }, null, new Progress<JSONMessage>(), cancellationToken);
         }
 
-        var name = $"{type}-{index}";
+        var name = $"void-{index}";
         var port = (ushort)(25565 + index);
 
         while (true)
