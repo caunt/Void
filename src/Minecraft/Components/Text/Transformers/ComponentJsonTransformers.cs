@@ -10,6 +10,7 @@ using Void.Minecraft.Nbt.Serializers.String;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
+using Void.Minecraft.Profiles;
 
 namespace Void.Minecraft.Components.Text.Transformers;
 
@@ -119,48 +120,75 @@ public static class ComponentJsonTransformers
 
     public static JsonNode Downgrade_v1_20_3_to_v1_20_2(JsonNode node)
     {
-        Console.WriteLine("Json Downgrade_v1_20_3_to_v1_20_2 not supported");
+        // Replace "show_entity" contents "id" int array value to string
+        if (node is JsonObject rootObject)
+        {
+            if (rootObject["hoverEvent"] is JsonObject hoverEvent)
+            {
+                if (hoverEvent["contents"] is JsonObject contentsObject)
+                {
+                    if (contentsObject["action"] is { } action)
+                    {
+                        if (action.GetValue<string>() is "show_entity")
+                        {
+                            if (contentsObject["id"] is JsonArray idIntArray)
+                                contentsObject["id"] = Uuid.Parse([.. idIntArray.Select(node => node?.ToString() ?? throw new JsonException("Null entity id int element found")).Select(int.Parse)]).ToString();
+                            else if (contentsObject["id"]?.GetValueKind() is not JsonValueKind.String)
+                                throw new NotSupportedException($"Non-string id value found: {contentsObject["id"]}");
+                        }
+                    }
+                }
+            }
+        }
+
         return node;
     }
 
     public static JsonNode Downgrade_v1_16_to_v1_15_2(JsonNode node)
     {
-        if (node is JsonObject root)
+        if (node is JsonObject rootObject)
         {
-            if (root["color"] is { } colorTag)
+            // Downsample colors to list of compatible
+            if (rootObject["color"] is { } colorTag)
             {
                 var color = TextColor.FromString(colorTag.GetValue<string>());
                 var downsampled = color.Downsample();
 
-                root["color"] = downsampled.Name;
+                rootObject["color"] = downsampled.Name;
             }
 
-            if (root["hoverEvent"] is JsonObject hoverEvent)
+            // Replace the "contents" field with "value" field
+            if (rootObject["hoverEvent"] is JsonObject hoverEvent)
             {
-                if (hoverEvent["contents"] is JsonObject contentsCompound)
+                if (hoverEvent["contents"] is JsonObject contentsObject)
                 {
                     hoverEvent.Remove("contents");
 
-                    if (contentsCompound["action"] is { } action)
+                    if (contentsObject["action"] is { } action)
                     {
                         if (action.GetValue<string>() is "show_text" or "show_achievement")
                         {
-                            hoverEvent["value"] = contentsCompound;
+                            hoverEvent["value"] = contentsObject;
                         }
                         else if (action.GetValue<string>() is "show_item" or "show_entity")
                         {
-                            hoverEvent["value"] = contentsCompound.ToString();
+                            hoverEvent["value"] = contentsObject.ToString();
                         }
                     }
                 }
             }
 
-            if (root["with"] is JsonArray with)
-                root["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_16_to_v1_15_2(childNode)))]);
+            // Replace recursive text components
+            if (rootObject["with"] is JsonArray with)
+                rootObject["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_16_to_v1_15_2(childNode)))]);
 
-            if (root["extra"] is JsonArray extra)
-                root["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_16_to_v1_15_2(childNode)))]);
+            if (rootObject["extra"] is JsonArray extra)
+                rootObject["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_16_to_v1_15_2(childNode)))]);
         }
+
+        // De-compact text component
+        if (node.GetValueKind() is JsonValueKind.String)
+            node = new JsonObject { ["text"] = node };
 
         return node;
     }
@@ -175,6 +203,7 @@ public static class ComponentJsonTransformers
     {
         if (node is JsonObject root)
         {
+            // Replace the "value" field with "contents" field
             if (root["hoverEvent"] is JsonObject hoverEvent)
             {
                 if (hoverEvent["value"] is { } value)
@@ -206,6 +235,7 @@ public static class ComponentJsonTransformers
                 }
             }
 
+            // Replace recursive text components
             if (root["with"] is JsonArray with)
                 root["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Upgrade_v1_15_2_to_v1_16(childNode)))]);
 

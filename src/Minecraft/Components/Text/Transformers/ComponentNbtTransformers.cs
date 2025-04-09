@@ -8,6 +8,7 @@ using Void.Minecraft.Nbt.Tags;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
+using Void.Minecraft.Profiles;
 
 namespace Void.Minecraft.Components.Text.Transformers;
 
@@ -114,23 +115,45 @@ public static class ComponentNbtTransformers
 
     public static NbtTag Downgrade_v1_20_3_to_v1_20_2(NbtTag tag)
     {
-        Console.WriteLine("Nbt Downgrade_v1_20_3_to_v1_20_2 not supported");
+        // Replace "show_entity" contents "id" int array value to string
+        if (tag is NbtCompound rootCompound)
+        {
+            if (rootCompound["hoverEvent"] is NbtCompound hoverEvent)
+            {
+                if (hoverEvent["contents"] is NbtCompound contentsCompound)
+                {
+                    if (contentsCompound["action"] is NbtString action)
+                    {
+                        if (action.Value is "show_entity")
+                        {
+                            if (contentsCompound["id"] is NbtIntArray idIntArray)
+                                contentsCompound["id"] = new NbtString(Uuid.Parse([.. idIntArray.Data]).ToString());
+                            else if (contentsCompound["id"] is not NbtString)
+                                throw new NotSupportedException($"Non-string id value found: {contentsCompound["id"]}");
+                        }
+                    }
+                }
+            }
+        }
+
         return tag;
     }
 
     public static NbtTag Downgrade_v1_16_to_v1_15_2(NbtTag tag)
     {
-        if (tag is NbtCompound root)
+        if (tag is NbtCompound rootCompound)
         {
-            if (root["color"] is NbtString colorTag)
+            // Downsample colors to list of compatible
+            if (rootCompound["color"] is NbtString colorTag)
             {
                 var color = TextColor.FromString(colorTag.Value);
                 var downsampled = color.Downsample();
 
-                root["color"] = new NbtString(downsampled.Name);
+                rootCompound["color"] = new NbtString(downsampled.Name);
             }
 
-            if (root["hoverEvent"] is NbtCompound hoverEvent)
+            // Replace the "contents" field with "value" field
+            if (rootCompound["hoverEvent"] is NbtCompound hoverEvent)
             {
                 if (hoverEvent["contents"] is NbtCompound contentsCompound)
                 {
@@ -150,12 +173,17 @@ public static class ComponentNbtTransformers
                 }
             }
 
-            if (root["with"] is NbtList with)
-                root["with"] = new NbtList(with.Data.Select(Downgrade_v1_16_to_v1_15_2), with.DataType);
+            // Replace recursive text components
+            if (rootCompound["with"] is NbtList with)
+                rootCompound["with"] = new NbtList(with.Data.Select(Downgrade_v1_16_to_v1_15_2), with.DataType);
 
-            if (root["extra"] is NbtList extra)
-                root["extra"] = new NbtList(extra.Data.Select(Downgrade_v1_16_to_v1_15_2), extra.DataType);
+            if (rootCompound["extra"] is NbtList extra)
+                rootCompound["extra"] = new NbtList(extra.Data.Select(Downgrade_v1_16_to_v1_15_2), extra.DataType);
         }
+
+        // De-compact text component
+        if (tag is NbtString rootString)
+            tag = new NbtCompound { ["text"] = rootString };
 
         return tag;
     }
@@ -170,6 +198,7 @@ public static class ComponentNbtTransformers
     {
         if (tag is NbtCompound root)
         {
+            // Replace the "value" field with "contents" field
             if (root["hoverEvent"] is NbtCompound hoverEvent)
             {
                 if (hoverEvent["value"] is NbtTag value)
@@ -202,6 +231,7 @@ public static class ComponentNbtTransformers
                     }
                 }
 
+                // Replace recursive text components
                 if (root["with"] is NbtList with)
                     root["with"] = new NbtList(with.Data.Select(Upgrade_v1_15_2_to_v1_16), with.DataType);
 

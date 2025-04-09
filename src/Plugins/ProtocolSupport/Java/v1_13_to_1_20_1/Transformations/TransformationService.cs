@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Void.Common.Network;
+﻿using Void.Common.Network;
 using Void.Minecraft.Events;
 using Void.Minecraft.Network;
 using Void.Proxy.Api.Events;
@@ -9,15 +8,13 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientboun
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Transformations;
 
-public class TransformationService(ILogger<TransformationService> logger) : AbstractTransformationService
+public class TransformationService : AbstractTransformationService
 {
     [Subscribe(PostOrder.First)]
-    public void OnPhaseChangedEvent(PhaseChangedEvent @event)
+    public static void OnPhaseChangedEvent(PhaseChangedEvent @event)
     {
         if (@event is not { Side: Side.Client, Phase: Phase.Play })
             return;
-
-        logger.LogInformation("Registering transformations ...");
 
         @event.Player.RegisterSystemTransformations<SystemChatMessagePacket>([
             // new(ProtocolVersion.MINECRAFT_1_20, ProtocolVersion.MINECRAFT_1_19, wrapper =>
