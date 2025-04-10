@@ -35,7 +35,11 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
 
     private async ValueTask ThrowAsync<T>(IEnumerable<Entry> entriesNotSafe, T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
-        var entries = entriesNotSafe.ToArray();
+        Entry[] entries;
+
+        lock (this)
+            entries = [.. entriesNotSafe];
+
         var eventType = @event.GetType();
         logger.LogTrace("Invoking {TypeName} event", eventType.Name);
 
@@ -87,32 +91,35 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
 
     public void RegisterListeners(params IEventListener[] listeners)
     {
-        foreach (var listener in listeners)
+        lock (this)
         {
-            logger.LogTrace("Registering {Type} event listener", listener);
-
-            var type = listener.GetType();
-            while (type != null)
+            foreach (var listener in listeners)
             {
-                var methods = type
-                    .GetMethods(
-                        BindingFlags.Public |
-                        BindingFlags.NonPublic |
-                        BindingFlags.Static |
-                        BindingFlags.Instance |
-                        BindingFlags.DeclaredOnly)
-                    .Where(method => Attribute.IsDefined(method, typeof(SubscribeAttribute)));
+                logger.LogTrace("Registering {Type} event listener", listener);
 
-                foreach (var method in methods)
+                var type = listener.GetType();
+                while (type != null)
                 {
-                    logger.LogTrace("Registering {Type} event listener method {Name}", listener, method.Name);
-                    SubscribeAttribute.SanityChecks(method);
+                    var methods = type
+                        .GetMethods(
+                            BindingFlags.Public |
+                            BindingFlags.NonPublic |
+                            BindingFlags.Static |
+                            BindingFlags.Instance |
+                            BindingFlags.DeclaredOnly)
+                        .Where(method => Attribute.IsDefined(method, typeof(SubscribeAttribute)));
 
-                    var attribute = method.GetCustomAttribute<SubscribeAttribute>()!;
-                    _entries.Add(new Entry(listener, method, attribute.Order));
+                    foreach (var method in methods)
+                    {
+                        logger.LogTrace("Registering {Type} event listener method {Name}", listener, method.Name);
+                        SubscribeAttribute.SanityChecks(method);
+
+                        var attribute = method.GetCustomAttribute<SubscribeAttribute>()!;
+                        _entries.Add(new Entry(listener, method, attribute.Order));
+                    }
+
+                    type = type.BaseType;
                 }
-
-                type = type.BaseType;
             }
         }
     }
@@ -125,21 +132,24 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
 
     public void UnregisterListeners(params IEventListener[] listeners)
     {
-        foreach (var listener in listeners)
+        lock (this)
         {
-            logger.LogTrace("Unregistering {ListenerType} event listener", listener);
-
-            for (var i = _entries.Count - 1; i >= 0; i--)
+            foreach (var listener in listeners)
             {
-                if (_entries.Count <= i)
-                    continue;
+                logger.LogTrace("Unregistering {ListenerType} event listener", listener);
 
-                var entry = _entries[i];
+                for (var i = _entries.Count - 1; i >= 0; i--)
+                {
+                    if (_entries.Count <= i)
+                        continue;
 
-                if (entry.Listener != listener)
-                    continue;
+                    var entry = _entries[i];
 
-                _entries.Remove(entry);
+                    if (entry.Listener != listener)
+                        continue;
+
+                    _entries.Remove(entry);
+                }
             }
         }
     }

@@ -1,4 +1,5 @@
-﻿using Nito.Disposables.Internals;
+﻿using Nito.AsyncEx;
+using Nito.Disposables.Internals;
 using System.Diagnostics;
 using System.Reflection;
 using Void.Common.Events;
@@ -99,8 +100,9 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
     {
         logger.LogInformation("Unloading all plugins");
 
-        for (var index = _references.Count - 1; index >= 0; index--)
-            await UnloadPluginAsync(_references[index].Context.Name!, cancellationToken);
+        await _references.Select(async reference => await UnloadPluginAsync(reference.Context.Name!, cancellationToken)).WhenAll();
+        // for (var index = _references.Count - 1; index >= 0; index--)
+        //     await UnloadPluginAsync(_references[index].Context.Name!, cancellationToken);
     }
 
     public async ValueTask UnloadPluginAsync(string assemblyName, CancellationToken cancellationToken = default)
@@ -185,13 +187,19 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
 
     public void RegisterPlugin(IPlugin plugin)
     {
-        logger.LogTrace("Registering {PluginName} plugin", plugin.Name);
-        _plugins.Add(plugin);
+        lock (this)
+        {
+            logger.LogTrace("Registering {PluginName} plugin", plugin.Name);
+            _plugins.Add(plugin);
+        }
     }
 
     public void UnregisterPlugin(IPlugin plugin)
     {
-        logger.LogTrace("Unregistering {PluginName} plugin", plugin.Name);
-        _plugins.Remove(plugin);
+        lock (this)
+        {
+            logger.LogTrace("Unregistering {PluginName} plugin", plugin.Name);
+            _plugins.Remove(plugin);
+        }
     }
 }
