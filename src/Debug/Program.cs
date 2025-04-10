@@ -39,7 +39,7 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
     var imageTag = version switch
     {
         // _ when version >= ProtocolVersion.MINECRAFT_1_20_5 => "java21-jdk",
-        // _ when version >= ProtocolVersion.MINECRAFT_1_18 => "java17-jdk",
+        // _ when version >= ProtocolVersion.MINECRAFT_1_18 => "java17-jdk", // doesn't support patches
         _ when version >= ProtocolVersion.MINECRAFT_1_18 => "java21-jdk",
         _ when version >= ProtocolVersion.MINECRAFT_1_17 => "java16",
         _ => "java8-jdk"
@@ -53,7 +53,6 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
         "ONLINE_MODE=FALSE",
         "OPS=caunt,Shonz1",
         "PATCH_DEFINITIONS=/tmp/patch.json",
-        // "ENFORCE_SECURE_PROFILE=FALSE", // only for VANILLA server type
         "VERSION=" + VersionStringName(version)
     };
 
