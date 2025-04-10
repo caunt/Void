@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Linq;
 using Void.Minecraft.Buffers;
+using Void.Minecraft.Buffers.Extensions;
 
 namespace Void.Minecraft.Network.Registries.Transformations.Properties;
 
@@ -10,7 +10,7 @@ public record VarLongProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<VarL
 
     public static VarLongProperty FromPrimitive(int value)
     {
-        return new VarLongProperty(MinecraftBuffer.EnumerateVarInt(value).ToArray());
+        return new VarLongProperty(value.AsVarInt());
     }
 
     public static VarLongProperty Read(ref MinecraftBuffer buffer)

@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Linq;
 using Void.Minecraft.Buffers;
+using Void.Minecraft.Buffers.Extensions;
 
 namespace Void.Minecraft.Network.Registries.Transformations.Properties;
 
@@ -10,7 +10,7 @@ public record VarIntProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<VarIn
 
     public static VarIntProperty FromPrimitive(int value)
     {
-        return new VarIntProperty(MinecraftBuffer.EnumerateVarInt(value).ToArray());
+        return new VarIntProperty(value.AsVarInt());
     }
 
     public static VarIntProperty Read(ref MinecraftBuffer buffer)
