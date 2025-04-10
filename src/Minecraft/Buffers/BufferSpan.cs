@@ -5,8 +5,7 @@ using Void.Minecraft.Buffers.Exceptions;
 namespace Void.Minecraft.Buffers;
 
 /// <summary>
-/// Manages a span of bytes, allowing reading and writing operations while tracking the current position. It ensures
-/// operations stay within buffer bounds.
+/// Manages a span of bytes, allowing access and manipulation of its position within the buffer.
 /// </summary>
 public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>
 {
