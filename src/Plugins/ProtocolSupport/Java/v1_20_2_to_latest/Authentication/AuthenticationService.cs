@@ -3,9 +3,12 @@ using Microsoft.Extensions.Logging;
 using Void.Common.Players;
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
+using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Players.Extensions;
+using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Authentication;
+using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Players;
@@ -23,6 +26,30 @@ namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Authenticati
 public class AuthenticationService(ILogger<AuthenticationService> logger, IEventService events, IPlayerService players) : AbstractAuthenticationService(events, players)
 {
     private readonly IEventService _events = events;
+
+    [Subscribe]
+    public void OnMessageReceived(MessageReceivedEvent @event)
+    {
+        switch (@event.Message)
+        {
+            case IMinecraftBinaryMessage binaryMessage:
+                if (!@event.Link.Player.TryGetMinecraftPlayer(out var player))
+                    break;
+
+                if (player.Phase is not Phase.Play)
+                    break;
+
+                if (player.ProtocolVersion != ProtocolVersion.MINECRAFT_1_21_5)
+                    break;
+
+                // TODO is it safe to cancel Player Session (chat_session_update) packet?
+                // helps to join vanilla 1.21.5 server (from 1.19.3?)
+                if (binaryMessage.Id is 0x08)
+                    @event.Result = true;
+
+                break;
+        }
+    }
 
     protected override bool IsSupportedVersion(ProtocolVersion protocolVersion)
     {

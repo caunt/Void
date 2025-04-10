@@ -162,14 +162,6 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             }
             catch (StreamClosedException)
             {
-                if (direction is Direction.Serverbound)
-                {
-                    // PlayerChannel.Close();
-                    // await PlayerChannel.DisposeAsync();
-                }
-
-                // ServerChannel.Close();
-                // await ServerChannel.DisposeAsync();
                 break;
             }
             catch (Exception exception) when (exception is TaskCanceledException or OperationCanceledException or ObjectDisposedException)
@@ -183,8 +175,6 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
                 break;
             }
 
-            // using var sync = await _lock.LockAsync();
-
             try
             {
                 await destinationChannel.WriteMessageAsync(message, sourceSide, forceCancellationToken);
@@ -193,14 +183,6 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             }
             catch (StreamClosedException)
             {
-                if (direction is Direction.Clientbound)
-                {
-                    // PlayerChannel.Close();
-                    // await PlayerChannel.DisposeAsync();
-                }
-
-                // ServerChannel.Close();
-                // await ServerChannel.DisposeAsync();
                 break;
             }
             catch (Exception exception) when (exception is TaskCanceledException or OperationCanceledException or ObjectDisposedException)

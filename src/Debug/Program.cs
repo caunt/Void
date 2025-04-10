@@ -9,7 +9,7 @@ using Void.Minecraft.Network;
 if (OperatingSystem.IsWindows())
     Console.Clear();
 
-var version = ProtocolVersion.MINECRAFT_1_15_2;
+var version = ProtocolVersion.MINECRAFT_1_21_5;
 var count = 1;
 
 if (args.Length is 1 && int.TryParse(args[0], out var value))
@@ -77,6 +77,29 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
                     {
                        "$set":{
                           "path":"$.proxies.velocity.secret",
+                          "value":"aaa"
+                       }
+                    }
+                 ]
+              },
+              {
+                 "file":"/data/config/paper.yml",
+                 "ops":[
+                    {
+                       "$set":{
+                          "path":"$.settings.velocity-support.enabled",
+                          "value":true
+                       }
+                    },
+                    {
+                       "$set":{
+                          "path":"$.proxies.velocity.online-mode",
+                          "value":true
+                       }
+                    },
+                    {
+                       "$set":{
+                          "path":"$.settings.velocity-support.secret",
                           "value":"aaa"
                        }
                     }
