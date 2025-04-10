@@ -7,10 +7,15 @@ public static class IntExtensions
 {
     public static int VarIntSize(this int value) => (BitOperations.LeadingZeroCount((uint)value | 1) - 38) * -1171 >> 13;
 
-    public static Span<byte> AsVarInt(this int value)
+    public static byte[] AsVarInt(this int value)
     {
         Span<byte> buffer = stackalloc byte[5];
+        var length = value.AsVarInt(buffer);
+        return buffer[..length].ToArray();
+    }
 
+    public static int AsVarInt(this int value, Span<byte> buffer)
+    {
         var unsigned = (uint)value;
         var index = 0;
 
@@ -25,6 +30,6 @@ public static class IntExtensions
             buffer[index++] = temp;
         } while (unsigned != 0);
 
-        return buffer[..index].ToArray();
+        return index;
     }
 }
