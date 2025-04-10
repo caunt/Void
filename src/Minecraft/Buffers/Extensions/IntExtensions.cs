@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Numerics;
 
 namespace Void.Minecraft.Buffers.Extensions;
@@ -31,5 +32,23 @@ public static class IntExtensions
         } while (unsigned != 0);
 
         return index;
+    }
+
+    [Obsolete("Use AsVarInt instead.")]
+    public static IEnumerable<byte> EnumerateVarInt(int value)
+    {
+        var unsigned = (uint)value;
+
+        do
+        {
+            var temp = (byte)(unsigned & 127);
+
+            unsigned >>= 7;
+
+            if (unsigned != 0)
+                temp |= 128;
+
+            yield return temp;
+        } while (unsigned != 0);
     }
 }

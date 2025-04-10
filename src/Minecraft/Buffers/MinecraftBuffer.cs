@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using Void.Minecraft.Components.Text;
@@ -43,23 +42,6 @@ public ref struct MinecraftBuffer
     public static int GetVarIntSize(int value)
     {
         return (BitOperations.LeadingZeroCount((uint)value | 1) - 38) * -1171 >> 13;
-    }
-
-    public static IEnumerable<byte> EnumerateVarInt(int value)
-    {
-        var unsigned = (uint)value;
-
-        do
-        {
-            var temp = (byte)(unsigned & 127);
-
-            unsigned >>= 7;
-
-            if (unsigned != 0)
-                temp |= 128;
-
-            yield return temp;
-        } while (unsigned != 0);
     }
 
     public byte ReadUnsignedByte()
