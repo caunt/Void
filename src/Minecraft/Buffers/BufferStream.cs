@@ -1,3 +1,6 @@
 ﻿namespace Void.Minecraft.Buffers;
 
-public struct BufferStream;
+public struct BufferStream //: IMinecraftBuffer
+{
+
+}
