@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using Void.Common.Network;
 using Void.Common.Network.Streams;
 using Void.Minecraft.Buffers;
+using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries;
 using Void.Minecraft.Network.Registries.PacketId.Extensions;
@@ -266,8 +267,9 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
 
     private static void EncodeVarInt(RecyclableMemoryStream stream, int id)
     {
-        foreach (var @byte in MinecraftBuffer.EnumerateVarInt(id))
-            stream.WriteByte(@byte);
+        Span<byte> buffer = stackalloc byte[5];
+        var length = id.AsVarInt(buffer);
+        stream.Write(buffer[..length]);
     }
 
     private bool TryGetPacketId(IMinecraftPacket packet, out int id)

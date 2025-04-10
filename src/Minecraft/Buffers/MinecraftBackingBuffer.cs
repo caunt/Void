@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Data;
 using System.IO;
 using System.Text;
+using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Buffers.ReadOnly;
 using Void.Minecraft.Buffers.ReadWrite;
 using Void.Minecraft.Nbt;
@@ -228,8 +229,9 @@ internal ref struct MinecraftBackingBuffer
 
     public void WriteVarInt(int value)
     {
-        foreach (var temp in MinecraftBuffer.EnumerateVarInt(value))
-            WriteUnsignedByte(temp);
+        Span<byte> buffer = stackalloc byte[5];
+        var length = value.AsVarInt(buffer);
+        Write(buffer[..length].ToArray());
     }
 
     public long ReadVarLong()
