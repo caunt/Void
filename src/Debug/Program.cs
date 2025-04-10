@@ -9,14 +9,14 @@ using Void.Minecraft.Network;
 if (OperatingSystem.IsWindows())
     Console.Clear();
 
-var version = ProtocolVersion.MINECRAFT_1_21_5;
+var version = ProtocolVersion.MINECRAFT_1_20_5;
 var count = 1;
 
 if (args.Length is 1 && int.TryParse(args[0], out var value))
     count = value;
 
 Console.WriteLine(@$"Starting {count} minecraft container(s)");
-await StartDockerEnvironmentAsync(version, count, "VANILLA");
+await StartDockerEnvironmentAsync(version, count, "PAPER");
 
 return;
 
@@ -38,8 +38,9 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
     var imageName = "itzg/minecraft-server";
     var imageTag = version switch
     {
-        _ when version >= ProtocolVersion.MINECRAFT_1_20_5 => "java21-jdk",
-        _ when version >= ProtocolVersion.MINECRAFT_1_18 => "java17-jdk",
+        // _ when version >= ProtocolVersion.MINECRAFT_1_20_5 => "java21-jdk",
+        // _ when version >= ProtocolVersion.MINECRAFT_1_18 => "java17-jdk",
+        _ when version >= ProtocolVersion.MINECRAFT_1_18 => "java21-jdk",
         _ when version >= ProtocolVersion.MINECRAFT_1_17 => "java16",
         _ => "java8-jdk"
     };
@@ -52,7 +53,7 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
         "ONLINE_MODE=FALSE",
         "OPS=caunt,Shonz1",
         "PATCH_DEFINITIONS=/tmp/patch.json",
-        "ENFORCE_SECURE_PROFILE=FALSE", // only for VANILLA server type
+        // "ENFORCE_SECURE_PROFILE=FALSE", // only for VANILLA server type
         "VERSION=" + VersionStringName(version)
     };
 
@@ -254,6 +255,7 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
         {
             var value when value == ProtocolVersion.MINECRAFT_1_21_2 => value.Names[1], // paper skipped 1.21.2
             var value when value == ProtocolVersion.MINECRAFT_1_20_5 => value.Names[1], // paper skipped 1.20.5
+            var value when value == ProtocolVersion.MINECRAFT_1_20_3 => value.Names[1], // paper skipped 1.20.3
             var value when value == ProtocolVersion.MINECRAFT_1_18 => value.Names[1], // paper skipped 1.18
             var value when value == ProtocolVersion.MINECRAFT_1_8 => value.Names[8], // paper first release is 1.8.8
             var value => value.GetVersionIntroducedIn()

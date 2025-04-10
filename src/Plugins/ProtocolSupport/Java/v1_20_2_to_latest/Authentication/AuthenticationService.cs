@@ -28,7 +28,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
     private readonly IEventService _events = events;
 
     [Subscribe]
-    public void OnMessageReceived(MessageReceivedEvent @event)
+    public static void OnMessageReceived(MessageReceivedEvent @event)
     {
         switch (@event.Message)
         {
