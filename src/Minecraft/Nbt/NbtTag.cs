@@ -35,7 +35,6 @@ public abstract record NbtTag
 
     public static implicit operator Tag(NbtTag tag) => tag switch
     {
-        NbtBoolean value => (ByteTag)value,
         NbtByte value => (ByteTag)value,
         NbtByteArray value => (ByteArrayTag)value,
         NbtCompound value => (CompoundTag)value,

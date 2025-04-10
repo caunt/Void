@@ -77,19 +77,19 @@ public static class ComponentNbtSerializer
                 tag["font"] = new NbtString(formatting.Font);
 
             if (formatting.IsBold.HasValue)
-                tag["bold"] = new NbtBoolean(formatting.IsBold.Value);
+                tag["bold"] = new NbtByte(formatting.IsBold.Value);
 
             if (formatting.IsItalic.HasValue)
-                tag["italic"] = new NbtBoolean(formatting.IsItalic.Value);
+                tag["italic"] = new NbtByte(formatting.IsItalic.Value);
 
             if (formatting.IsUnderlined.HasValue)
-                tag["underlined"] = new NbtBoolean(formatting.IsUnderlined.Value);
+                tag["underlined"] = new NbtByte(formatting.IsUnderlined.Value);
 
             if (formatting.IsStrikethrough.HasValue)
-                tag["strikethrough"] = new NbtBoolean(formatting.IsStrikethrough.Value);
+                tag["strikethrough"] = new NbtByte(formatting.IsStrikethrough.Value);
 
             if (formatting.IsObfuscated.HasValue)
-                tag["obfuscated"] = new NbtBoolean(formatting.IsObfuscated.Value);
+                tag["obfuscated"] = new NbtByte(formatting.IsObfuscated.Value);
 
             if (formatting.ShadowColor is not null)
                 tag["shadow_color"] = new NbtList(((float[])formatting.ShadowColor).Select(value => new NbtFloat(value)), NbtTagType.Float);
@@ -248,7 +248,7 @@ public static class ComponentNbtSerializer
         {
             var sourceNbtString = TryGet<NbtString>(compound, "source");
             var pathNbtString = Get<NbtString>(compound, "nbt");
-            var interpretNbtString = TryGet<NbtBoolean>(compound, "interpret");
+            var interpretNbtString = TryGet<NbtByte>(compound, "interpret");
             var separatorComponent = TryGet<NbtTag>(compound, "separator") switch
             {
                 { Type: NbtTagType.Compound or NbtTagType.String } value => Deserialize(value, protocolVersion),
@@ -258,7 +258,7 @@ public static class ComponentNbtSerializer
             var entityNbtString = TryGet<NbtString>(compound, "entity");
             var storageNbtString = TryGet<NbtString>(compound, "storage");
 
-            component = component with { Content = new NbtContent(pathNbtString.Value, sourceNbtString?.Value, interpretNbtString?.Value, separatorComponent, blockNbtString?.Value, entityNbtString?.Value, storageNbtString?.Value) };
+            component = component with { Content = new NbtContent(pathNbtString.Value, sourceNbtString?.Value, interpretNbtString?.IsTrue, separatorComponent, blockNbtString?.Value, entityNbtString?.Value, storageNbtString?.Value) };
         }
     }
 
@@ -289,20 +289,20 @@ public static class ComponentNbtSerializer
         if (TryGet<NbtString>(compound, "font") is { } fontNbtString)
             component = component with { Formatting = component.Formatting with { Font = fontNbtString.Value } };
 
-        if (TryGet<NbtBoolean>(compound, "bold") is { } boldNbtBoolean)
-            component = component with { Formatting = component.Formatting with { IsBold = boldNbtBoolean.Value } };
+        if (TryGet<NbtByte>(compound, "bold") is { } boldNbtBoolean)
+            component = component with { Formatting = component.Formatting with { IsBold = boldNbtBoolean.IsTrue } };
 
-        if (TryGet<NbtBoolean>(compound, "italic") is { } italicNbtBoolean)
-            component = component with { Formatting = component.Formatting with { IsItalic = italicNbtBoolean.Value } };
+        if (TryGet<NbtByte>(compound, "italic") is { } italicNbtBoolean)
+            component = component with { Formatting = component.Formatting with { IsItalic = italicNbtBoolean.IsTrue } };
 
-        if (TryGet<NbtBoolean>(compound, "underlined") is { } underlinedNbtBoolean)
-            component = component with { Formatting = component.Formatting with { IsUnderlined = underlinedNbtBoolean.Value } };
+        if (TryGet<NbtByte>(compound, "underlined") is { } underlinedNbtBoolean)
+            component = component with { Formatting = component.Formatting with { IsUnderlined = underlinedNbtBoolean.IsTrue } };
 
-        if (TryGet<NbtBoolean>(compound, "strikethrough") is { } strikethroughNbtBoolean)
-            component = component with { Formatting = component.Formatting with { IsStrikethrough = strikethroughNbtBoolean.Value } };
+        if (TryGet<NbtByte>(compound, "strikethrough") is { } strikethroughNbtBoolean)
+            component = component with { Formatting = component.Formatting with { IsStrikethrough = strikethroughNbtBoolean.IsTrue } };
 
-        if (TryGet<NbtBoolean>(compound, "obfuscated") is { } obfuscatedNbtBoolean)
-            component = component with { Formatting = component.Formatting with { IsObfuscated = obfuscatedNbtBoolean.Value } };
+        if (TryGet<NbtByte>(compound, "obfuscated") is { } obfuscatedNbtBoolean)
+            component = component with { Formatting = component.Formatting with { IsObfuscated = obfuscatedNbtBoolean.IsTrue } };
 
         if (TryGet<NbtTag>(compound, "shadow_color") is { } shadowColorNbtTag)
         {

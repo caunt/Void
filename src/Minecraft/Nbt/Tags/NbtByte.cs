@@ -5,10 +5,17 @@ namespace Void.Minecraft.Nbt.Tags;
 
 public record NbtByte(byte Value = 0) : NbtTag
 {
+    public bool IsBool => IsTrue || IsFalse;
+    public bool IsTrue => Value is 1;
+    public bool IsFalse => Value is 0;
+
+    public NbtByte(bool value) : this(Convert.ToByte(value))
+    {
+        // Empty
+    }
+
     public static implicit operator NbtByte(ByteTag tag) => new(tag.Value) { Name = tag.Name };
     public static implicit operator ByteTag(NbtByte tag) => new(tag.Name, tag.Value);
-
-    public static implicit operator NbtBoolean(NbtByte tag) => new(Convert.ToBoolean(tag.Value)) { Name = tag.Name };
 
     public override string ToString() => ToSnbt();
 }

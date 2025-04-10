@@ -14,7 +14,6 @@ public static class NbtJsonSerializer
         Options.Converters.Add(new NbtTagJsonConverter());
         Options.Converters.Add(new NbtTagTypeJsonConverter());
 
-        Options.Converters.Add(new NbtBooleanJsonConverter());
         Options.Converters.Add(new NbtByteJsonConverter());
         Options.Converters.Add(new NbtByteArrayJsonConverter());
         Options.Converters.Add(new NbtCompoundJsonConverter());
