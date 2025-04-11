@@ -1,5 +1,5 @@
-﻿using NuGet.Protocol.Plugins;
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
+using Void.Common.Plugins;
 using Void.Proxy.Api.Configurations;
 using IConfiguration = Void.Proxy.Api.Configurations.IConfiguration;
 
@@ -14,13 +14,14 @@ public class ConfigurationService(ILogger<ConfigurationService> logger) : Backgr
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation(AppContext.BaseDirectory);
+        logger.LogInformation("{Directory}", AppContext.BaseDirectory);
+
         var channel = Channel.CreateUnbounded<FileSystemEventArgs>();
         var watcher = new FileSystemWatcher
         {
-            EnableRaisingEvents = true,
             NotifyFilter = NotifyFilters.LastWrite,
-            Path = AppContext.BaseDirectory
+            Path = AppContext.BaseDirectory,
+            EnableRaisingEvents = true
         };
 
         watcher.Created += (_, args) => channel.Writer.TryWrite(args);
