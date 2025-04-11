@@ -308,7 +308,6 @@ public static class ReadMinecraftBufferExtensions
     {
         var length = buffer.ReadVarInt();
         var span = buffer.Read(length);
-
         var value = Encoding.UTF8.GetString(span);
 
         if (maxLength > 0 && value.Length > maxLength)
