@@ -9,7 +9,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ini-parser-netstandard" Version="2.5.2" />
+		<PackageReference Include="ini-parser-netstandard" Version="2.5.3" />
 		<PackageReference Include="NuGet.PackageManagement" Version="6.13.2" />
 		<PackageReference Include="Samboy063.Tomlet" Version="6.0.0" />
 		<PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
