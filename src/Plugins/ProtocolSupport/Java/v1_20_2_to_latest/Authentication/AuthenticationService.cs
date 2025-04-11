@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Void.Common.Network;
 using Void.Common.Players;
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
@@ -33,6 +34,9 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         switch (@event.Message)
         {
             case IMinecraftBinaryMessage binaryMessage:
+                if (@event.Direction is not Direction.Serverbound)
+                    break;
+
                 if (!@event.Link.Player.TryGetMinecraftPlayer(out var player))
                     break;
 
@@ -89,7 +93,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         await link.SendTerminalPacketAsync<StartConfigurationPacket>(cancellationToken);
 
         // IPlayer might be still sending Play state packets, read them all until configuration acknowledged
-        var playPacketsLimit = 128;
+        var playPacketsLimit = 256;
 
         IMinecraftServerboundPacket packet;
         while ((packet = await link.ReceivePacketAsync<IMinecraftServerboundPacket>(cancellationToken)) is not AcknowledgeConfigurationPacket)
