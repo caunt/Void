@@ -4,6 +4,8 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
+using Void.Minecraft.Buffers;
+using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Nbt.Serializers.Json;
 using Void.Minecraft.Nbt.Serializers.String;
 using Void.Minecraft.Nbt.Tags;
@@ -102,7 +104,7 @@ public abstract record NbtTag
         if (!MemoryMarshal.TryGetArray(data, out var segment) || segment.Array is null)
             throw new Exception("Cannot get array segment from memory");
 
-        var stream = new MemoryStream(segment.Array);
+        using var stream = new MemoryStream(segment.Array);
         var reader = new NbtReader(stream, (FormatOptions)formatOptions);
         var tag = (T)reader.ReadTag(readName);
 
@@ -115,6 +117,16 @@ public abstract record NbtTag
             result.Name = "";
 
         return stream.Position;
+    }
+
+    public static NbtTag ReadFrom<TBuffer>(ref TBuffer buffer, bool readName = false) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    {
+        var position = buffer.Position;
+        var data = buffer.ReadToEnd();
+        var length = (int)Parse(data.ToArray(), out var result, readName); // TODO: Allocation, use buffer directly
+
+        buffer.Position = position + length;
+        return result;
     }
 }
 
