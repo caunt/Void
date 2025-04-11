@@ -56,6 +56,7 @@ try
     builder.Services.AddSingleton<ICommandService, CommandService>();
     builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
     builder.Services.AddSingleton<IProxy, Platform>();
+    builder.Services.AddHostedService<ConfigurationService>();
     builder.Services.AddHostedService<Platform>();
 
     var host = builder.Build();
