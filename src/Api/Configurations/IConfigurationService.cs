@@ -1,3 +1,5 @@
-﻿namespace Void.Proxy.Api.Configurations;
+﻿using Microsoft.Extensions.Hosting;
 
-public interface IConfigurationService;
+namespace Void.Proxy.Api.Configurations;
+
+public interface IConfigurationService : IHostedService;
