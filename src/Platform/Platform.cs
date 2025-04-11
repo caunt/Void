@@ -38,8 +38,7 @@ public class Platform(
         logger.LogInformation("Starting Void proxy");
         var startTime = Stopwatch.GetTimestamp();
 
-        logger.LogTrace("Changing working directory to {Path}", AppContext.BaseDirectory);
-        Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+        logger.LogTrace("Working directory is {Path}", Directory.GetCurrentDirectory());
 
         logger.LogInformation("Loading embedded plugins");
         await plugins.LoadEmbeddedPluginsAsync(cancellationToken);

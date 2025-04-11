@@ -27,6 +27,7 @@ using Void.Proxy.Servers;
 using Void.Proxy.Settings;
 
 Console.Title = nameof(Void);
+Directory.SetCurrentDirectory(AppContext.BaseDirectory);
 
 var configuration = new LoggerConfiguration();
 configuration.Enrich.FromLogContext();
