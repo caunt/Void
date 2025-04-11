@@ -212,10 +212,27 @@ public static class ReadMinecraftBufferExtensions
         allows ref struct =>
         Component.ReadFrom(ref buffer, protocolVersion);
 
+    /// <summary>
+    /// Reads all remaining data from a buffer and returns it as a read-only span of bytes.
+    /// </summary>
+    /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface.</typeparam>
+    /// <param name="buffer">This parameter is a reference to the buffer from which data will be read.</param>
+    /// <returns>A read-only span containing the bytes read from the buffer.</returns>
     public static ReadOnlySpan<byte> ReadToEnd<TBuffer>(ref this TBuffer buffer)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>
         buffer.Read(buffer.Remaining);
+
+    /// <summary>
+    /// Debug only. Returns a read-only span of bytes from the specified buffer starting at index 0 up to its length.
+    /// </summary>
+    /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface.</typeparam>
+    /// <param name="buffer">This parameter is a reference to a buffer from which the byte span is accessed.</param>
+    /// <returns>The method returns a read-only span of bytes representing the contents of the buffer.</returns>
+    public static ReadOnlySpan<byte> Dump<TBuffer>(ref this TBuffer buffer)
+        where TBuffer : struct, IMinecraftBuffer<TBuffer>,
+        allows ref struct =>
+        buffer.Access(0, buffer.Length);
 
     /// <summary>
     /// Reads a specified number of bytes from a buffer and returns them as a read-only span.

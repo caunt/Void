@@ -66,6 +66,13 @@ public static class WriteMinecraftBufferExtensions
         allows ref struct =>
         BinaryPrimitives.WriteInt16BigEndian(buffer.AccessWrite(2), value);
 
+    /// <summary>
+    /// Writes a variable-length integer to a specified buffer.
+    /// </summary>
+    /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface for Minecraft data
+    /// handling.</typeparam>
+    /// <param name="buffer">The buffer is the destination where the variable-length integer will be written.</param>
+    /// <param name="value">The integer value to be written to the buffer in a variable-length format.</param>
     public static void WriteVarInt<TBuffer>(ref this TBuffer buffer, int value)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>
