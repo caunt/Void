@@ -15,7 +15,7 @@ public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message, Side 
 
     public Side Origin => origin;
 
-    public TPropertyValue Get<TPropertyValue>(int index) where TPropertyValue : class, IPacketProperty<TPropertyValue>
+    public TPropertyValue Get<TPropertyValue>(int index) where TPropertyValue : IPacketProperty<TPropertyValue>
     {
         if (!TryGet<TPropertyValue>(index, out var value))
             throw new InvalidOperationException($"Property value of type {typeof(TPropertyValue)} at index {index} not found in packet.");
@@ -23,7 +23,7 @@ public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message, Side 
         return value;
     }
 
-    public bool TryGet<TPropertyValue>(int index, [MaybeNullWhen(false)] out TPropertyValue value) where TPropertyValue : class, IPacketProperty<TPropertyValue>
+    public bool TryGet<TPropertyValue>(int index, [MaybeNullWhen(false)] out TPropertyValue value) where TPropertyValue : IPacketProperty<TPropertyValue>
     {
         foreach (var property in _write)
         {
@@ -37,17 +37,17 @@ public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message, Side 
             return true;
         }
 
-        value = null;
+        value = default;
         return false;
     }
 
-    public void Set<TPropertyValue>(int index, TPropertyValue value) where TPropertyValue : class, IPacketProperty<TPropertyValue>
+    public void Set<TPropertyValue>(int index, TPropertyValue value) where TPropertyValue : IPacketProperty<TPropertyValue>
     {
         if (!TrySet(index, value))
             throw new InvalidOperationException($"Property value of type {typeof(TPropertyValue)} at index {index} not found in packet.");
     }
 
-    public bool TrySet<TPropertyValue>(int index, TPropertyValue value) where TPropertyValue : class, IPacketProperty<TPropertyValue>
+    public bool TrySet<TPropertyValue>(int index, TPropertyValue value) where TPropertyValue : IPacketProperty<TPropertyValue>
     {
         for (var i = 0; i < _write.Count; i++)
         {
@@ -66,7 +66,7 @@ public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message, Side 
         return false;
     }
 
-    public TPropertyValue Passthrough<TPropertyValue>() where TPropertyValue : class, IPacketProperty<TPropertyValue>
+    public TPropertyValue Passthrough<TPropertyValue>() where TPropertyValue : IPacketProperty<TPropertyValue>
     {
         var property = ReadProperty<TPropertyValue>();
         _write.Add(property);
@@ -74,12 +74,12 @@ public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message, Side 
         return property.As<TPropertyValue>();
     }
 
-    public TPropertyValue Read<TPropertyValue>() where TPropertyValue : class, IPacketProperty<TPropertyValue>
+    public TPropertyValue Read<TPropertyValue>() where TPropertyValue : IPacketProperty<TPropertyValue>
     {
         return ReadProperty<TPropertyValue>().As<TPropertyValue>();
     }
 
-    public void Write<TPropertyValue>(TPropertyValue value) where TPropertyValue : class, IPacketProperty<TPropertyValue>
+    public void Write<TPropertyValue>(TPropertyValue value) where TPropertyValue : IPacketProperty<TPropertyValue>
     {
         _write.Add(value);
     }
@@ -101,12 +101,12 @@ public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message, Side 
             buffer.Write(message.Stream);
     }
 
-    private TPropertyValue ReadProperty<TPropertyValue>() where TPropertyValue : class, IPacketProperty<TPropertyValue>
+    private TPropertyValue ReadProperty<TPropertyValue>() where TPropertyValue : IPacketProperty<TPropertyValue>
     {
         return _read.Count switch
         {
             0 => ReadFromBuffer<TPropertyValue>(),
-            _ => TakeFromRead() as TPropertyValue ?? throw new InvalidOperationException($"Property value of type {typeof(TPropertyValue)} not found in packet.")
+            _ => (TPropertyValue?)TakeFromRead() ?? throw new InvalidOperationException($"Property value of type {typeof(TPropertyValue)} not found in packet.")
         };
     }
 
