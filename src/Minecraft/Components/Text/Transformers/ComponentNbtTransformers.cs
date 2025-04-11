@@ -16,6 +16,16 @@ public static class ComponentNbtTransformers
 {
     private const string ShowAchievementMarker = "!1.11.1=>1.12!";
 
+    public static void Apply(IMinecraftBinaryPacketWrapper wrapper, ProtocolVersion from, ProtocolVersion to)
+    {
+        wrapper.Write(Apply(wrapper.Read<NbtProperty>(), from, to));
+    }
+
+    public static void ApplyNamed(IMinecraftBinaryPacketWrapper wrapper, ProtocolVersion from, ProtocolVersion to)
+    {
+        wrapper.Write(Apply(wrapper.Read<NamedNbtProperty>(), from, to));
+    }
+
     public static NamedNbtProperty Apply(NamedNbtProperty property, ProtocolVersion from, ProtocolVersion to)
     {
         return NamedNbtProperty.FromNbtTag(Apply(property.AsNbtTag, from, to));
@@ -65,11 +75,23 @@ public static class ComponentNbtTransformers
         if (from > ProtocolVersion.MINECRAFT_1_15_2 && to <= ProtocolVersion.MINECRAFT_1_15_2)
             tag = Downgrade_v1_16_to_v1_15_2(tag);
 
+        if (from > ProtocolVersion.MINECRAFT_1_11_1 && to <= ProtocolVersion.MINECRAFT_1_11_1)
+            tag = Downgrade_v1_12_to_v1_11_1(tag);
+
+        if (from > ProtocolVersion.MINECRAFT_1_8 && to <= ProtocolVersion.MINECRAFT_1_8)
+            tag = Downgrade_v1_9_to_v1_8(tag);
+
         return tag;
     }
 
     private static NbtTag Upgrade(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
     {
+        if (from <= ProtocolVersion.MINECRAFT_1_8 && to > ProtocolVersion.MINECRAFT_1_8)
+            tag = Upgrade_v1_8_to_v1_9(tag);
+
+        if (from <= ProtocolVersion.MINECRAFT_1_11_1 && to > ProtocolVersion.MINECRAFT_1_11_1)
+            tag = Upgrade_v1_11_1_to_v1_12(tag);
+
         if (from <= ProtocolVersion.MINECRAFT_1_15_2 && to > ProtocolVersion.MINECRAFT_1_15_2)
             tag = Upgrade_v1_15_2_to_v1_16(tag);
 

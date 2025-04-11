@@ -18,6 +18,11 @@ public static class ComponentJsonTransformers
 {
     private const string ShowAchievementMarker = "!1.11.1=>1.12!";
 
+    public static void Apply(IMinecraftBinaryPacketWrapper wrapper, ProtocolVersion from, ProtocolVersion to)
+    {
+        wrapper.Write(Apply(wrapper.Read<StringProperty>(), from, to));
+    }
+
     public static StringProperty Apply(StringProperty property, ProtocolVersion from, ProtocolVersion to)
     {
         return StringProperty.FromPrimitive(Apply(property.AsPrimitive, from, to));
@@ -54,11 +59,23 @@ public static class ComponentJsonTransformers
         if (from > ProtocolVersion.MINECRAFT_1_15_2 && to <= ProtocolVersion.MINECRAFT_1_15_2)
             node = Downgrade_v1_16_to_v1_15_2(node);
 
+        if (from > ProtocolVersion.MINECRAFT_1_11_1 && to <= ProtocolVersion.MINECRAFT_1_11_1)
+            node = Downgrade_v1_12_to_v1_11_1(node);
+
+        if (from > ProtocolVersion.MINECRAFT_1_8 && to <= ProtocolVersion.MINECRAFT_1_8)
+            node = Downgrade_v1_9_to_v1_8(node);
+
         return node;
     }
 
     private static JsonNode Upgrade(JsonNode node, ProtocolVersion from, ProtocolVersion to)
     {
+        if (from <= ProtocolVersion.MINECRAFT_1_8 && to > ProtocolVersion.MINECRAFT_1_8)
+            node = Upgrade_v1_8_to_v1_9(node);
+
+        if (from <= ProtocolVersion.MINECRAFT_1_11_1 && to > ProtocolVersion.MINECRAFT_1_11_1)
+            node = Upgrade_v1_11_1_to_v1_12(node);
+
         if (from <= ProtocolVersion.MINECRAFT_1_15_2 && to > ProtocolVersion.MINECRAFT_1_15_2)
             node = Upgrade_v1_15_2_to_v1_16(node);
 
