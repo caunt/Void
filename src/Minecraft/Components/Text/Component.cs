@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using Void.Minecraft.Buffers;
+using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Components.Text.Properties;
 using Void.Minecraft.Components.Text.Properties.Content;
 using Void.Minecraft.Components.Text.Serializers;
@@ -15,6 +16,33 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     public static Component Default { get; } = new(new TextContent(string.Empty), Children.Default, Formatting.Default, Interactivity.Default);
 
     public static implicit operator Component(string text) => DeserializeLegacy(text);
+
+    public static Component ReadFrom<TBuffer>(ref TBuffer buffer, ProtocolVersion protocolVersion) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    {
+        if (protocolVersion <= ProtocolVersion.MINECRAFT_1_20_2)
+        {
+            var value = buffer.ReadString();
+            var node = (JsonNode?)null;
+
+            try
+            {
+                node = JsonNode.Parse(value);
+            }
+            catch (JsonException)
+            {
+                // Ignore, not a json
+            }
+
+            if (node is null)
+                return DeserializeLegacy(value);
+            else
+                return DeserializeJson(node, protocolVersion);
+        }
+        else
+        {
+            return DeserializeNbt(buffer.ReadTag(), protocolVersion);
+        }
+    }
 
     public static Component ReadFrom(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -44,6 +72,14 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     }
 
     public void WriteTo(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
+    {
+        if (protocolVersion <= ProtocolVersion.MINECRAFT_1_20_2)
+            buffer.WriteString(SerializeJson(protocolVersion).ToString());
+        else
+            buffer.WriteTag(SerializeNbt(protocolVersion));
+    }
+
+    public void WriteTo<TBuffer>(ref TBuffer buffer, ProtocolVersion protocolVersion) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
         if (protocolVersion <= ProtocolVersion.MINECRAFT_1_20_2)
             buffer.WriteString(SerializeJson(protocolVersion).ToString());
