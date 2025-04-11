@@ -39,13 +39,13 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
                 if (player.Phase is not Phase.Play)
                     break;
 
-                if (player.ProtocolVersion != ProtocolVersion.MINECRAFT_1_21_5)
-                    break;
-
                 // TODO is it safe to cancel Player Session (chat_session_update) packet?
                 // helps to join vanilla 1.21.5 server (from 1.19.3?)
-                if (binaryMessage.Id is 0x08)
-                    @event.Result = true;
+                if (player.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_21_2)
+                {
+                    if (binaryMessage.Id is 0x08)
+                        @event.Result = true;
+                }
 
                 break;
         }
