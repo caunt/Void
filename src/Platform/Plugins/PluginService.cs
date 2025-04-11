@@ -37,7 +37,7 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
                 continue;
             }
 
-            await LoadPluginsAsync(resourceName, stream, cancellationToken);
+            await LoadPluginsAsync(resourceName, stream, ignoreEmpty: true, cancellationToken);
             stream.Close();
         }
     }
@@ -67,11 +67,11 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
             logger.LogTrace("Found {ResourceName} directory plugin", Path.GetFileName(pluginPath));
 
             await using var stream = File.OpenRead(pluginPath);
-            await LoadPluginsAsync(Path.GetFileName(pluginPath), stream, cancellationToken);
+            await LoadPluginsAsync(Path.GetFileName(pluginPath), stream, cancellationToken: cancellationToken);
         }
     }
 
-    public async ValueTask LoadPluginsAsync(string assemblyName, Stream assemblyStream, CancellationToken cancellationToken = default)
+    public async ValueTask LoadPluginsAsync(string assemblyName, Stream assemblyStream, bool ignoreEmpty = false, CancellationToken cancellationToken = default)
     {
         logger.LogTrace("Loading {AssemblyName} plugins", assemblyName);
 
@@ -83,7 +83,7 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
 
         if (plugins.Length == 0)
         {
-            logger.LogWarning("Plugin {PluginName} has no IPlugin implementations", context.Name);
+            logger.Log(ignoreEmpty ? LogLevel.Trace : LogLevel.Warning, "Plugin {PluginName} has no IPlugin implementations", context.Name);
             return;
         }
 
