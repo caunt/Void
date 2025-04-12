@@ -99,10 +99,7 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
     public async ValueTask UnloadPluginsAsync(CancellationToken cancellationToken = default)
     {
         logger.LogInformation("Unloading all plugins");
-
         await _references.Select(async reference => await UnloadPluginAsync(reference.Context.Name!, cancellationToken)).WhenAll();
-        // for (var index = _references.Count - 1; index >= 0; index--)
-        //     await UnloadPluginAsync(_references[index].Context.Name!, cancellationToken);
     }
 
     public async ValueTask UnloadPluginAsync(string assemblyName, CancellationToken cancellationToken = default)
