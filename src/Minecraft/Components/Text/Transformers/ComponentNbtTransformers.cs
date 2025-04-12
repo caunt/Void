@@ -18,12 +18,30 @@ public static class ComponentNbtTransformers
 
     public static void Apply(IMinecraftBinaryPacketWrapper wrapper, ProtocolVersion from, ProtocolVersion to)
     {
-        wrapper.Write(Apply(wrapper.Read<NbtProperty>(), from, to));
-    }
-
-    public static void ApplyNamed(IMinecraftBinaryPacketWrapper wrapper, ProtocolVersion from, ProtocolVersion to)
-    {
-        wrapper.Write(Apply(wrapper.Read<NamedNbtProperty>(), from, to));
+        if (from <= ProtocolVersion.MINECRAFT_1_20 && to > ProtocolVersion.MINECRAFT_1_20)
+        {
+            var namedNbtProperty = wrapper.Read<NamedNbtProperty>();
+            namedNbtProperty = Apply(namedNbtProperty, from, to);
+            wrapper.Write(NbtProperty.FromNbtTag(namedNbtProperty.AsNbtTag));
+        }
+        else if (from > ProtocolVersion.MINECRAFT_1_20 && to <= ProtocolVersion.MINECRAFT_1_20)
+        {
+            var nbtProperty = wrapper.Read<NbtProperty>();
+            nbtProperty = Apply(nbtProperty, from, to);
+            wrapper.Write(NamedNbtProperty.FromNbtTag(nbtProperty.AsNbtTag));
+        }
+        else if (from > ProtocolVersion.MINECRAFT_1_20 && to > ProtocolVersion.MINECRAFT_1_20)
+        {
+            var nbtProperty = wrapper.Read<NbtProperty>();
+            nbtProperty = Apply(nbtProperty, from, to);
+            wrapper.Write(nbtProperty);
+        }
+        else
+        {
+            var namedNbtProperty = wrapper.Read<NamedNbtProperty>();
+            namedNbtProperty = Apply(namedNbtProperty, from, to);
+            wrapper.Write(namedNbtProperty);
+        }
     }
 
     public static NamedNbtProperty Apply(NamedNbtProperty property, ProtocolVersion from, ProtocolVersion to)
