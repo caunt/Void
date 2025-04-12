@@ -9,14 +9,14 @@ using Void.Minecraft.Network;
 if (OperatingSystem.IsWindows())
     Console.Clear();
 
-var version = ProtocolVersion.MINECRAFT_1_20_5;
+var version = ProtocolVersion.MINECRAFT_1_21_5;
 var count = 1;
 
 if (args.Length is 1 && int.TryParse(args[0], out var value))
     count = value;
 
 Console.WriteLine(@$"Starting {count} minecraft container(s)");
-await StartDockerEnvironmentAsync(version, count, "PAPER");
+await StartDockerEnvironmentAsync(version, count);
 
 return;
 
