@@ -73,6 +73,130 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
         return (TConfiguration)CreateInstanceWithDefaults(typeof(TConfiguration));
     }
 
+    private TomlDocument MapTomlDocument<TConfiguration>(TConfiguration configuration) where TConfiguration : notnull
+    {
+        var configurationType = typeof(TConfiguration);
+
+        var extendedConfigurationType = MapTomlType(configurationType);
+        var extendedConfiguration = CreateInstanceWithDefaults(extendedConfigurationType, configuration);
+
+        var configurationDocument = TomletMain.DocumentFrom(configuration, _options);
+        var extendedConfigurationDocument = TomletMain.DocumentFrom(extendedConfigurationType, extendedConfiguration, _options);
+
+        SwapTomletConfiguration(configurationDocument, extendedConfigurationDocument);
+
+        return configurationDocument;
+    }
+
+    private static Type MapTomlType(Type type, Dictionary<Type, Type>? cache = null)
+    {
+        cache ??= [];
+
+        if (cache.TryGetValue(type, out var extendedType))
+            return extendedType;
+
+        if (type.IsArray)
+        {
+            var elementType = type.GetElementType() ?? throw new InvalidOperationException($"Array type {type} does not have an element type.");
+            var mappedElementType = MapTomlType(elementType, cache);
+
+            return cache[type] = mappedElementType != elementType ? mappedElementType.MakeArrayType() : type;
+        }
+
+        if (type.IsGenericType)
+        {
+            var genericDefinition = type.GetGenericTypeDefinition();
+            var genericArguments = type.GetGenericArguments();
+            var mappedArguments = genericArguments.Select(argument => MapTomlType(type, cache)).ToArray();
+
+            // If any generic argument was mapped to a different type, rebuild the generic type.
+            for (int i = 0; i < genericArguments.Length; i++)
+            {
+                if (genericArguments[i] == mappedArguments[i])
+                    continue;
+
+                return cache[type] = genericDefinition.MakeGenericType(mappedArguments);
+            }
+
+            return cache[type] = type;
+        }
+
+        if (IsSystemType(type))
+            return cache[type] = type;
+
+        var extender = new TypeExtender(type.Name + "TomletMapped");
+
+        foreach (var attribute in type.GetCustomAttributes())
+        {
+            if (attribute is not ConfigurationAttribute configurationAttribute)
+                continue;
+
+            if (!string.IsNullOrWhiteSpace(configurationAttribute.InlineComment))
+                extender.AddAttribute<TomlInlineCommentAttribute>([configurationAttribute.InlineComment]);
+
+            if (!string.IsNullOrWhiteSpace(configurationAttribute.PrecedingComment))
+                extender.AddAttribute<TomlPrecedingCommentAttribute>([configurationAttribute.PrecedingComment]);
+        }
+
+        foreach (var property in type.GetProperties())
+        {
+            var attributesWithValues = Enumerable.Empty<Tuple<Type, object[]>>();
+
+            if (property.GetCustomAttribute<ConfigurationPropertyAttribute>() is { } configurationPropertyAttribute)
+            {
+                if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.InlineComment))
+                    attributesWithValues = attributesWithValues.Append(Tuple.Create<Type, object[]>(typeof(TomlInlineCommentAttribute), [configurationPropertyAttribute.InlineComment]));
+
+                if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.PrecedingComment))
+                    attributesWithValues = attributesWithValues.Append(Tuple.Create<Type, object[]>(typeof(TomlPrecedingCommentAttribute), [configurationPropertyAttribute.PrecedingComment]));
+            }
+
+            extender.AddProperty(property.Name, MapTomlType(property.PropertyType, cache), attributesWithValues);
+        }
+
+        foreach (var field in type.GetFields())
+        {
+            var attributesWithValues = Enumerable.Empty<Tuple<Type, object[]>>();
+
+            if (field.GetCustomAttribute<ConfigurationPropertyAttribute>() is { } configurationPropertyAttribute)
+            {
+                if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.InlineComment))
+                    attributesWithValues = attributesWithValues.Append(Tuple.Create<Type, object[]>(typeof(TomlInlineCommentAttribute), [configurationPropertyAttribute.InlineComment]));
+
+                if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.PrecedingComment))
+                    attributesWithValues = attributesWithValues.Append(Tuple.Create<Type, object[]>(typeof(TomlPrecedingCommentAttribute), [configurationPropertyAttribute.PrecedingComment]));
+            }
+
+            extender.AddField(field.Name, MapTomlType(field.FieldType, cache), attributesWithValues.ToDictionary(x => x.Item1, x => x.Item2.ToList()));
+        }
+
+        return cache[type] = extender.FetchType();
+    }
+
+    private static void SwapTomletConfiguration(TomlTable table1, TomlTable table2)
+    {
+        table1.ForceNoInline = true;
+        table2.ForceNoInline = true;
+
+        foreach (var (key, value1) in table1)
+        {
+            if (!table2.TryGetValue(key, out var value2))
+                throw new InvalidOperationException($"Key {key} not found in the second table.");
+
+            var precedingComment1 = value1.Comments.PrecedingComment;
+            var inlineComment1 = value1.Comments.InlineComment;
+
+            value1.Comments.PrecedingComment = value2.Comments.PrecedingComment;
+            value1.Comments.InlineComment = value2.Comments.InlineComment;
+
+            value2.Comments.PrecedingComment = precedingComment1;
+            value2.Comments.InlineComment = inlineComment1;
+
+            if (value1 is TomlTable childTable1 && value2 is TomlTable childTable2)
+                SwapTomletConfiguration(childTable1, childTable2);
+        }
+    }
+
     private static object CreateInstanceWithDefaults(Type type, object? values = null)
     {
         // Handle arrays
@@ -217,7 +341,7 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
         }
 
         // If the type has an explicit parameterless constructor, use it.
-        var parameterlessConstructor = type.GetConstructors().FirstOrDefault(constructor => constructor.GetParameters().Length == 0);
+        var parameterlessConstructor = type.GetConstructors().FirstOrDefault(constructor => constructor.GetParameters().Length is 0);
 
         var instance = parameterlessConstructor switch
         {
@@ -225,43 +349,7 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
             _ => CreateEmptyInstance(type)
         };
 
-        // Map fields and properties from "object values" to instantiated type if provided
-        var valuesType = values?.GetType();
-
-        foreach (var property in type.GetProperties())
-        {
-            var sourceProperty = valuesType?.GetProperty(property.Name);
-
-            if (sourceProperty is null)
-                continue;
-
-            var value = sourceProperty.GetValue(values);
-            var valueType = value?.GetType();
-            var valueInstance = value;
-
-            if (value is not null && valueType is not null && (!IsSystemType(valueType) || IsDictionary(valueType) || IsList(valueType) || valueType.IsArray))
-                valueInstance = CreateInstanceWithDefaults(property.PropertyType, value);
-
-            property.SetValue(instance, valueInstance);
-        }
-
-        foreach (var field in type.GetFields())
-        {
-            var sourceField = valuesType?.GetField(field.Name);
-
-            if (sourceField is null)
-                continue;
-
-            var value = sourceField.GetValue(values);
-            var valueType = value?.GetType();
-            var valueInstance = value;
-
-            if (value is not null && valueType is not null && (!IsSystemType(valueType) || IsDictionary(valueType) || IsList(valueType) || valueType.IsArray))
-                valueInstance = CreateInstanceWithDefaults(field.FieldType, value);
-
-            field.SetValue(instance, valueInstance);
-        }
-
+        CopyValues(type, instance, values);
         return instance;
 
         static object CreateEmptyInstance(Type type)
@@ -282,140 +370,65 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
             var args = parameters.Select(parameter =>
             {
                 // If a default value is present, use it.
-                if (parameter.HasDefaultValue)
+                if (parameter.HasDefaultValue && parameter.DefaultValue is not null)
                     return parameter.DefaultValue;
 
                 // For non-nullable value types, use their default instance.
                 if (parameter.ParameterType.IsValueType && Nullable.GetUnderlyingType(parameter.ParameterType) is null)
                     return Activator.CreateInstance(parameter.ParameterType);
 
-                // For reference types (or nullable value types), use null.
-                return null;
+                // For system reference types (or nullable value types), use null.
+                if (IsSystemType(parameter.ParameterType))
+                    return null;
+
+                return CreateEmptyInstance(parameter.ParameterType);
             });
 
             return constructor.Invoke([.. args]);
         }
-    }
 
-    private TomlDocument MapTomlDocument<TConfiguration>(TConfiguration configuration) where TConfiguration : notnull
-    {
-        var configurationType = typeof(TConfiguration);
-
-        var extendedConfigurationType = MapTomlType(configurationType);
-        var extendedConfiguration = CreateInstanceWithDefaults(extendedConfigurationType, configuration);
-
-        var configurationDocument = TomletMain.DocumentFrom(configuration, _options);
-        var extendedConfigurationDocument = TomletMain.DocumentFrom(extendedConfigurationType, extendedConfiguration, _options);
-
-        SwapTomletConfiguration(configurationDocument, extendedConfigurationDocument);
-
-        return configurationDocument;
-    }
-
-    private static Type MapTomlType(Type type)
-    {
-        if (type.IsArray)
+        static void CopyValues(Type type, object instance, object? values)
         {
-            var elementType = type.GetElementType() ?? throw new InvalidOperationException($"Array type {type} does not have an element type.");
-            var mappedElementType = MapTomlType(elementType);
+            // Map fields and properties from "object values" to instantiated type if provided
+            var valuesType = values?.GetType();
 
-            return mappedElementType != elementType ? mappedElementType.MakeArrayType() : type;
-        }
-
-        if (type.IsGenericType)
-        {
-            var genericDefinition = type.GetGenericTypeDefinition();
-            var genericArguments = type.GetGenericArguments();
-            var mappedArguments = genericArguments.Select(MapTomlType).ToArray();
-
-            // If any generic argument was mapped to a different type, rebuild the generic type.
-            for (int i = 0; i < genericArguments.Length; i++)
+            foreach (var property in type.GetProperties())
             {
-                if (genericArguments[i] == mappedArguments[i])
+                var sourceProperty = valuesType?.GetProperty(property.Name);
+
+                if (sourceProperty is null)
                     continue;
 
-                return genericDefinition.MakeGenericType(mappedArguments);
+                var value = sourceProperty.GetValue(values);
+                var valueType = value?.GetType();
+                var valueInstance = value;
+
+                if (value is not null && valueType is not null && (!IsSystemType(valueType) || IsDictionary(valueType) || IsList(valueType) || valueType.IsArray))
+                    valueInstance = CreateInstanceWithDefaults(property.PropertyType, value);
+
+                property.SetValue(instance, valueInstance);
             }
 
-            return type;
-        }
-
-        if (IsSystemType(type))
-            return type;
-
-        var extender = new TypeExtender(type.Name + "TomletMapped");
-
-        foreach (var attribute in type.GetCustomAttributes())
-        {
-            if (attribute is not ConfigurationAttribute configurationAttribute)
-                continue;
-
-            if (!string.IsNullOrWhiteSpace(configurationAttribute.InlineComment))
-                extender.AddAttribute<TomlInlineCommentAttribute>([configurationAttribute.InlineComment]);
-
-            if (!string.IsNullOrWhiteSpace(configurationAttribute.PrecedingComment))
-                extender.AddAttribute<TomlPrecedingCommentAttribute>([configurationAttribute.PrecedingComment]);
-        }
-
-        foreach (var property in type.GetProperties())
-        {
-            var attributesWithValues = Enumerable.Empty<Tuple<Type, object[]>>();
-
-            if (property.GetCustomAttribute<ConfigurationPropertyAttribute>() is { } configurationPropertyAttribute)
+            foreach (var field in type.GetFields())
             {
-                if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.InlineComment))
-                    attributesWithValues = attributesWithValues.Append(Tuple.Create<Type, object[]>(typeof(TomlInlineCommentAttribute), [configurationPropertyAttribute.InlineComment]));
+                var sourceField = valuesType?.GetField(field.Name);
 
-                if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.PrecedingComment))
-                    attributesWithValues = attributesWithValues.Append(Tuple.Create<Type, object[]>(typeof(TomlPrecedingCommentAttribute), [configurationPropertyAttribute.PrecedingComment]));
+                if (sourceField is null)
+                    continue;
+
+                var value = sourceField.GetValue(values);
+                var valueType = value?.GetType();
+                var valueInstance = value;
+
+                if (value is not null && valueType is not null && (!IsSystemType(valueType) || IsDictionary(valueType) || IsList(valueType) || valueType.IsArray))
+                    valueInstance = CreateInstanceWithDefaults(field.FieldType, value);
+
+                field.SetValue(instance, valueInstance);
             }
-
-            extender.AddProperty(property.Name, MapTomlType(property.PropertyType), attributesWithValues);
-        }
-
-        foreach (var field in type.GetFields())
-        {
-            var attributesWithValues = Enumerable.Empty<Tuple<Type, object[]>>();
-
-            if (field.GetCustomAttribute<ConfigurationPropertyAttribute>() is { } configurationPropertyAttribute)
-            {
-                if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.InlineComment))
-                    attributesWithValues = attributesWithValues.Append(Tuple.Create<Type, object[]>(typeof(TomlInlineCommentAttribute), [configurationPropertyAttribute.InlineComment]));
-
-                if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.PrecedingComment))
-                    attributesWithValues = attributesWithValues.Append(Tuple.Create<Type, object[]>(typeof(TomlPrecedingCommentAttribute), [configurationPropertyAttribute.PrecedingComment]));
-            }
-
-            extender.AddField(field.Name, MapTomlType(field.FieldType), attributesWithValues.ToDictionary(x => x.Item1, x => x.Item2.ToList()));
-        }
-
-        return extender.FetchType();
-    }
-
-    private static void SwapTomletConfiguration(TomlTable table1, TomlTable table2)
-    {
-        table1.ForceNoInline = true;
-        table2.ForceNoInline = true;
-
-        foreach (var (key, value1) in table1)
-        {
-            if (!table2.TryGetValue(key, out var value2))
-                throw new InvalidOperationException($"Key {key} not found in the second table.");
-
-            var precedingComment1 = value1.Comments.PrecedingComment;
-            var inlineComment1 = value1.Comments.InlineComment;
-
-            value1.Comments.PrecedingComment = value2.Comments.PrecedingComment;
-            value1.Comments.InlineComment = value2.Comments.InlineComment;
-
-            value2.Comments.PrecedingComment = precedingComment1;
-            value2.Comments.InlineComment = inlineComment1;
-
-            if (value1 is TomlTable childTable1 && value2 is TomlTable childTable2)
-                SwapTomletConfiguration(childTable1, childTable2);
         }
     }
 
+    // Updated IsSystemType method to also consider types from dynamic assemblies as system types.
     private static bool IsSystemType(Type type) => type.Namespace?.StartsWith("System") ?? true;
 
     private static bool IsList(Type type)
