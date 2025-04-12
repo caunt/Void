@@ -1,4 +1,5 @@
 ﻿using Extender;
+using System.Collections;
 using System.Reflection;
 using System.Text;
 using System.Threading.Channels;
@@ -24,7 +25,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         // Allows record types constructors
         OverrideConstructorValues = true,
         IgnoreInvalidEnumValues = false,
-        IgnoreNonPublicMembers = false
+        IgnoreNonPublicMembers = true
     };
 
     public async ValueTask<TConfiguration> GetAsync<TConfiguration>(CancellationToken cancellationToken = default) where TConfiguration : notnull
@@ -176,6 +177,147 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
     private static object CreateInstanceWithDefaults(Type type, object? values = null)
     {
+        // Handle arrays
+        if (type.IsArray)
+        {
+            var elementType = type.GetElementType() ??
+                throw new InvalidOperationException("Unable to determine array element type.");
+
+            Array newArray;
+            if (values is Array sourceArray)
+            {
+                newArray = Array.CreateInstance(elementType, sourceArray.Length);
+                for (var i = 0; i < sourceArray.Length; i++)
+                {
+                    var element = sourceArray.GetValue(i);
+                    newArray.SetValue(element switch
+                    {
+                        { } value when !IsSystemType(element.GetType()) => CreateInstanceWithDefaults(elementType, element),
+                        _ => element
+                    }, i);
+                }
+            }
+            else
+            {
+                // No source array provided: create an empty array.
+                newArray = Array.CreateInstance(elementType, 0);
+            }
+
+            return newArray;
+        }
+
+        // Handle generic List<T>
+        if (IsList(type))
+        {
+            // If type is generic, retrieve the generic argument; otherwise use object.
+            var elementType = type.IsGenericType ? type.GetGenericArguments()[0] : typeof(object);
+
+            // If the provided type is an interface or abstract, create a concrete List<T> for the target element type.
+            var concreteType = (type.IsInterface || type.IsAbstract) ? typeof(List<>).MakeGenericType(elementType) : type;
+
+            var listInstance = (IList)(Activator.CreateInstance(concreteType)
+                ?? throw new InvalidOperationException($"Unable to create instance of type {concreteType.FullName}"));
+
+            if (values is IEnumerable sourceEnumerable)
+            {
+                foreach (var item in sourceEnumerable)
+                {
+                    listInstance.Add(item switch
+                    {
+                        { } value when !IsSystemType(item.GetType()) => CreateInstanceWithDefaults(elementType, item),
+                        _ => item
+                    });
+                }
+            }
+
+            return listInstance;
+        }
+
+        // Handle generic Dictionary<K,V>
+        if (IsDictionary(type))
+        {
+            Type keyType, valueType;
+
+            // If the type is generic, extract the generic arguments.
+            if (type.IsGenericType)
+            {
+                var genericArgs = type.GetGenericArguments();
+                keyType = genericArgs[0];
+                valueType = genericArgs[1];
+            }
+            else // Fallback for non-generic IDictionary; use Object for key and value types.
+            {
+                keyType = typeof(object);
+                valueType = typeof(object);
+            }
+
+            // For interfaces or abstract types, fallback to Dictionary<TKey, TValue>.
+            var concreteType = (type.IsInterface || type.IsAbstract) ? typeof(Dictionary<,>).MakeGenericType(keyType, valueType) : type;
+
+            var dictionaryInstance = (IDictionary)(Activator.CreateInstance(concreteType)
+                ?? throw new InvalidOperationException($"Unable to create instance of type {concreteType.FullName}"));
+
+            if (values is IDictionary sourceDictionary)
+            {
+                foreach (DictionaryEntry entry in sourceDictionary)
+                {
+                    var newKey = !IsSystemType(entry.Key.GetType())
+                        ? CreateInstanceWithDefaults(keyType, entry.Key)
+                        : entry.Key;
+
+                    var newValue = entry.Value is not null && !IsSystemType(entry.Value.GetType())
+                        ? CreateInstanceWithDefaults(valueType, entry.Value)
+                        : entry.Value;
+
+                    dictionaryInstance.Add(newKey, newValue);
+                }
+            }
+
+            return dictionaryInstance;
+        }
+
+        // Handle generic IEnumerable<T> types not already covered
+        if (typeof(IEnumerable).IsAssignableFrom(type) && type.IsGenericType)
+        {
+            var genericArgs = type.GetGenericArguments();
+
+            if (genericArgs.Length is 1) // Assuming a single-type enumerable
+            {
+                var elementType = genericArgs[0];
+                object collectionInstance;
+
+                // If type is interface or abstract, fallback to List<T>
+                if (type.IsInterface || type.IsAbstract)
+                {
+                    collectionInstance = Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType))
+                        ?? throw new InvalidOperationException($"Unable to create instance of type {type.FullName}");
+                }
+                else
+                {
+                    // Try using a parameterless constructor first
+                    var ctor = type.GetConstructor(Type.EmptyTypes);
+                    collectionInstance = ctor is not null ? ctor.Invoke(null) : Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType))!;
+                }
+
+                // Find an "Add" method on the concrete type.
+                var addMethod = collectionInstance.GetType().GetMethod("Add", [elementType]);
+
+                if (addMethod is not null && values is IEnumerable sourceEnumerable)
+                {
+                    foreach (var item in sourceEnumerable)
+                    {
+                        var element = item != null && !IsSystemType(item.GetType())
+                            ? CreateInstanceWithDefaults(elementType, item)
+                            : item;
+
+                        addMethod.Invoke(collectionInstance, [element]);
+                    }
+
+                    return collectionInstance;
+                }
+            }
+        }
+
         // If the type has an explicit parameterless constructor, use it.
         var parameterlessConstructor = type.GetConstructors().FirstOrDefault(constructor => constructor.GetParameters().Length == 0);
 
@@ -195,14 +337,11 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
             if (sourceProperty is null)
                 continue;
 
-            if (!sourceProperty.CanRead)
-                throw new InvalidOperationException($"Property {property.Name} is not readable in type {valuesType.FullName}");
-
             var value = sourceProperty.GetValue(values);
             var valueType = value?.GetType();
             var valueInstance = value;
 
-            if (value is not null && valueType is not null && !IsSystemType(valueType))
+            if (value is not null && valueType is not null && (!IsSystemType(valueType) || IsDictionary(valueType) || IsList(valueType) || valueType.IsArray))
                 valueInstance = CreateInstanceWithDefaults(property.PropertyType, value);
 
             property.SetValue(instance, valueInstance);
@@ -219,7 +358,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
             var valueType = value?.GetType();
             var valueInstance = value;
 
-            if (value is not null && valueType is not null && !IsSystemType(valueType))
+            if (value is not null && valueType is not null && (!IsSystemType(valueType) || IsDictionary(valueType) || IsList(valueType) || valueType.IsArray))
                 valueInstance = CreateInstanceWithDefaults(field.FieldType, value);
 
             field.SetValue(instance, valueInstance);
@@ -229,10 +368,16 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
         static object CreateEmptyInstance(Type type)
         {
+            if (type.IsInterface)
+                throw new InvalidOperationException($"Cannot serialize interface {type.Name}");
+
+            if (type.IsAbstract)
+                throw new InvalidOperationException($"Cannot serialize serialize {type.Name}");
+
             // Assume the "primary" constructor is the one with the most parameters.
             // (Records typically have one primary constructor.)
             var constructor = type.GetConstructors().OrderByDescending(constructor => constructor.GetParameters().Length).FirstOrDefault()
-                ?? throw new InvalidOperationException($"No public constructor found for type {type.FullName}");
+                ?? throw new InvalidOperationException($"No public constructor found for type {type.Name}");
 
             // Prepare the arguments array by iterating over the parameters.
             var parameters = constructor.GetParameters();
@@ -273,8 +418,6 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         var configurationDocument = TomletMain.DocumentFrom(configuration, _options);
         var extendedConfigurationDocument = TomletMain.DocumentFrom(extendedConfigurationType, extendedConfiguration, _options);
 
-        System.Console.WriteLine(string.Join(", ", configurationType.GetProperties().Select(x => $"{x.Name} => {x.GetValue(configuration)}")));
-        System.Console.WriteLine(string.Join(", ", extendedConfigurationType.GetProperties().Select(x => $"{x.Name} => {x.GetValue(extendedConfiguration)}")));
         SwapTomletConfiguration(configurationDocument, extendedConfigurationDocument);
 
         return configurationDocument;
@@ -282,6 +425,32 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
     private static Type MapTomlType(Type type)
     {
+        if (type.IsArray)
+        {
+            var elementType = type.GetElementType() ?? throw new InvalidOperationException($"Array type {type} does not have an element type.");
+            var mappedElementType = MapTomlType(elementType);
+
+            return mappedElementType != elementType ? mappedElementType.MakeArrayType() : type;
+        }
+
+        if (type.IsGenericType)
+        {
+            var genericDefinition = type.GetGenericTypeDefinition();
+            var genericArguments = type.GetGenericArguments();
+            var mappedArguments = genericArguments.Select(MapTomlType).ToArray();
+
+            // If any generic argument was mapped to a different type, rebuild the generic type.
+            for (int i = 0; i < genericArguments.Length; i++)
+            {
+                if (genericArguments[i] == mappedArguments[i])
+                    continue;
+
+                return genericDefinition.MakeGenericType(mappedArguments);
+            }
+
+            return type;
+        }
+
         if (IsSystemType(type))
             return type;
 
@@ -359,4 +528,34 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
     }
 
     private static bool IsSystemType(Type type) => type.Namespace?.StartsWith("System") ?? true;
+
+    private static bool IsList(Type type)
+    {
+        // Check if the type is a closed generic that is List<> or IList<>
+        if (type.IsGenericType)
+        {
+            var gen = type.GetGenericTypeDefinition();
+
+            if (gen == typeof(List<>) || gen == typeof(IList<>))
+                return true;
+        }
+
+        // Also check if it implements the non-generic IList or any IList<> interface.
+        return typeof(IList).IsAssignableFrom(type) || type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IList<>));
+    }
+
+    private static bool IsDictionary(Type type)
+    {
+        // Check if the type itself is a closed generic Dictionary<,> or IDictionary<,>
+        if (type.IsGenericType)
+        {
+            var gen = type.GetGenericTypeDefinition();
+
+            if (gen == typeof(Dictionary<,>) || gen == typeof(IDictionary<,>))
+                return true;
+        }
+
+        // Also check if it implements the non-generic IDictionary or any IDictionary<,> interface.
+        return typeof(IDictionary).IsAssignableFrom(type) || type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+    }
 }
