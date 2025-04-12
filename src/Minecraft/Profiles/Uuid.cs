@@ -89,6 +89,19 @@ public struct Uuid(Guid guid)
             leastSigBytes[0]
         ]));
     }
+    
+    public static Uuid Offline(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        var i128 = new Int128();
+        MD5.TryHashData(Encoding.UTF8.GetBytes($"OfflinePlayer:{name}"), i128.AsSpan(), out _);
+
+        i128.version = (byte)(i128.version & 0x0f | 0x30);
+        i128.variant = (byte)(i128.variant & 0x3f | 0x80);
+
+        return new Uuid(Unsafe.As<Int128, Guid>(ref i128));
+    }
 
     public int GetVersion()
     {
