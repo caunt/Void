@@ -11,6 +11,8 @@ public record NamedNbtProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<Nam
 
     public static NamedNbtProperty FromNbtTag(NbtTag value)
     {
+        value.Name ??= string.Empty;
+        
         using var stream = new MemoryStream();
         var buffer = new MinecraftBuffer(stream);
         buffer.WriteTag(value);
