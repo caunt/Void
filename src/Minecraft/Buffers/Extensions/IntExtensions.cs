@@ -12,7 +12,7 @@ public static class IntExtensions
     {
         Span<byte> buffer = stackalloc byte[5];
         var length = value.AsVarInt(buffer);
-        return buffer[..length].ToArray();
+        return [.. buffer[..length]];
     }
 
     public static int AsVarInt(this int value, Span<byte> buffer)
