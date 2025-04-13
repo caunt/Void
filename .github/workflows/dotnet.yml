@@ -102,12 +102,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
 
-      - name: Download All Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: 'void-*'
-
+      - name: Create Release PR
       - uses: googleapis/release-please-action@v4
         id: release
         with:
