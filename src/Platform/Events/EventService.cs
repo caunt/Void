@@ -44,7 +44,7 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
         logger.LogTrace("Invoking {TypeName} event", eventType.Name);
 
         var simpleParameters = (object[])[@event];
-        var cancellableParameters = (object[])[@event, hostApplicationLifetime.ApplicationStopping];
+        var cancellableParameters = (object[])[@event, CancellationTokenSource.CreateLinkedTokenSource(hostApplicationLifetime.ApplicationStopping, cancellationToken).Token];
 
         foreach (var entry in entries)
         {
