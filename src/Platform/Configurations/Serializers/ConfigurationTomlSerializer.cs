@@ -1,6 +1,6 @@
-﻿using Extender;
-using System.Collections;
+﻿using System.Collections;
 using System.Reflection;
+using System.Reflection.Emit;
 using Tomlet;
 using Tomlet.Attributes;
 using Tomlet.Exceptions;
@@ -88,8 +88,17 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
         return configurationDocument;
     }
 
-    private static Type MapTomlType(Type type, Dictionary<Type, Type>? cache = null)
+    private static Type MapTomlType(Type type, ModuleBuilder? moduleBuilder = null, Dictionary<Type, Type>? cache = null)
     {
+        if (moduleBuilder is null)
+        {
+            var name = type.FullName + "TomletMappedByVoidAssembly";
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name), AssemblyBuilderAccess.Run);
+
+            moduleBuilder = assemblyBuilder.DefineDynamicModule(name);
+        }
+
+        var root = cache is null;
         cache ??= [];
 
         if (cache.TryGetValue(type, out var extendedType))
@@ -98,7 +107,7 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
         if (type.IsArray)
         {
             var elementType = type.GetElementType() ?? throw new InvalidOperationException($"Array type {type} does not have an element type.");
-            var mappedElementType = MapTomlType(elementType, cache);
+            var mappedElementType = MapTomlType(elementType, moduleBuilder, cache);
 
             return cache[type] = mappedElementType != elementType ? mappedElementType.MakeArrayType() : type;
         }
@@ -107,7 +116,7 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
         {
             var genericDefinition = type.GetGenericTypeDefinition();
             var genericArguments = type.GetGenericArguments();
-            var mappedArguments = genericArguments.Select(argument => MapTomlType(type, cache)).ToArray();
+            var mappedArguments = genericArguments.Select(argument => MapTomlType(argument, moduleBuilder, cache)).ToArray();
 
             // If any generic argument was mapped to a different type, rebuild the generic type.
             for (int i = 0; i < genericArguments.Length; i++)
@@ -124,53 +133,75 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
         if (IsSystemType(type))
             return cache[type] = type;
 
-        var extender = new TypeExtender(type.Name + "TomletMapped");
+        var typeBuilder = moduleBuilder.DefineType(type.FullName + "TomletMappedByVoidType", TypeAttributes.Public);
 
-        foreach (var attribute in type.GetCustomAttributes())
+        if (root)
         {
-            if (attribute is not ConfigurationAttribute configurationAttribute)
-                continue;
+            foreach (var attribute in type.GetCustomAttributes())
+            {
+                if (attribute is not ConfigurationAttribute configurationAttribute)
+                    continue;
 
-            if (!string.IsNullOrWhiteSpace(configurationAttribute.InlineComment))
-                extender.AddAttribute<TomlInlineCommentAttribute>([configurationAttribute.InlineComment]);
-
-            if (!string.IsNullOrWhiteSpace(configurationAttribute.PrecedingComment))
-                extender.AddAttribute<TomlPrecedingCommentAttribute>([configurationAttribute.PrecedingComment]);
+                // if (!string.IsNullOrWhiteSpace(configurationAttribute.InlineComment))
+                //     extender.AddAttribute<TomlInlineCommentAttribute>([configurationAttribute.InlineComment]);
+                // 
+                // if (!string.IsNullOrWhiteSpace(configurationAttribute.PrecedingComment))
+                //     extender.AddAttribute<TomlPrecedingCommentAttribute>([configurationAttribute.PrecedingComment]);
+            }
         }
 
-        foreach (var property in type.GetProperties())
+        var attributesWithValues = new Dictionary<Type, object[]>(2);
+
+        foreach (var property in type.GetProperties(BindingFlags.Public))
         {
-            var attributesWithValues = Enumerable.Empty<Tuple<Type, object[]>>();
+            attributesWithValues.Clear();
 
             if (property.GetCustomAttribute<ConfigurationPropertyAttribute>() is { } configurationPropertyAttribute)
             {
                 if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.InlineComment))
-                    attributesWithValues = attributesWithValues.Append(Tuple.Create<Type, object[]>(typeof(TomlInlineCommentAttribute), [configurationPropertyAttribute.InlineComment]));
+                    attributesWithValues.Add(typeof(TomlInlineCommentAttribute), [configurationPropertyAttribute.InlineComment]);
 
                 if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.PrecedingComment))
-                    attributesWithValues = attributesWithValues.Append(Tuple.Create<Type, object[]>(typeof(TomlPrecedingCommentAttribute), [configurationPropertyAttribute.PrecedingComment]));
+                    attributesWithValues.Add(typeof(TomlPrecedingCommentAttribute), [configurationPropertyAttribute.PrecedingComment]);
             }
 
-            extender.AddProperty(property.Name, MapTomlType(property.PropertyType, cache), attributesWithValues);
+            var propertyBuilder = CreateBackedPropertyBuilder(typeBuilder, property.Name, MapTomlType(property.PropertyType, moduleBuilder, cache));
+
+            foreach (var (attributeType, attributeValues) in attributesWithValues)
+            {
+                var attributeConstructor = attributeType.GetConstructors().OrderByDescending(constructor => constructor.GetParameters().Length).FirstOrDefault()
+                    ?? throw new InvalidOperationException($"No public constructor found for attribute type {type.Name}");
+
+                propertyBuilder.SetCustomAttribute(new CustomAttributeBuilder(attributeConstructor, attributeValues));
+            }
         }
 
-        foreach (var field in type.GetFields())
+        foreach (var field in type.GetFields(BindingFlags.Public))
         {
-            var attributesWithValues = Enumerable.Empty<Tuple<Type, object[]>>();
+            attributesWithValues.Clear();
 
             if (field.GetCustomAttribute<ConfigurationPropertyAttribute>() is { } configurationPropertyAttribute)
             {
                 if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.InlineComment))
-                    attributesWithValues = attributesWithValues.Append(Tuple.Create<Type, object[]>(typeof(TomlInlineCommentAttribute), [configurationPropertyAttribute.InlineComment]));
+                    attributesWithValues.Add(typeof(TomlInlineCommentAttribute), [configurationPropertyAttribute.InlineComment]);
 
                 if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.PrecedingComment))
-                    attributesWithValues = attributesWithValues.Append(Tuple.Create<Type, object[]>(typeof(TomlPrecedingCommentAttribute), [configurationPropertyAttribute.PrecedingComment]));
+                    attributesWithValues.Add(typeof(TomlPrecedingCommentAttribute), [configurationPropertyAttribute.PrecedingComment]);
             }
 
-            extender.AddField(field.Name, MapTomlType(field.FieldType, cache), attributesWithValues.ToDictionary(x => x.Item1, x => x.Item2.ToList()));
+            var fieldBuilder = typeBuilder.DefineField(field.Name, MapTomlType(field.FieldType, moduleBuilder, cache), FieldAttributes.Public);
+
+            foreach (var (attributeType, attributeValues) in attributesWithValues)
+            {
+                var attributeConstructor = attributeType.GetConstructors().OrderByDescending(constructor => constructor.GetParameters().Length).FirstOrDefault()
+                    ?? throw new InvalidOperationException($"No public constructor found for attribute type {type.Name}");
+
+                fieldBuilder.SetCustomAttribute(new CustomAttributeBuilder(attributeConstructor, attributeValues));
+            }
         }
 
-        return cache[type] = extender.FetchType();
+        extendedType = typeBuilder.CreateType();
+        return cache[type] = extendedType;
     }
 
     private static void SwapTomletConfiguration(TomlTable table1, TomlTable table2)
@@ -426,6 +457,30 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
                 field.SetValue(instance, valueInstance);
             }
         }
+    }
+
+    public static PropertyBuilder CreateBackedPropertyBuilder(TypeBuilder typeBuilder, string propertyName, Type propertyType)
+    {
+        var fieldBuilder = typeBuilder.DefineField($"_{propertyName}", propertyType, FieldAttributes.Private);
+        var propertyBuilder = typeBuilder.DefineProperty(propertyName, PropertyAttributes.HasDefault, propertyType, null);
+
+        var getMethodBuilder = typeBuilder.DefineMethod($"get_{propertyName}", MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, propertyType, Type.EmptyTypes);
+        var getILGenerator = getMethodBuilder.GetILGenerator();
+        getILGenerator.Emit(OpCodes.Ldarg_0);
+        getILGenerator.Emit(OpCodes.Ldfld, fieldBuilder);
+        getILGenerator.Emit(OpCodes.Ret);
+
+        var setMethodBuilder = typeBuilder.DefineMethod($"set_{propertyName}", MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, null, [propertyType]);
+        var setILGenerator = setMethodBuilder.GetILGenerator();
+        setILGenerator.Emit(OpCodes.Ldarg_0);
+        setILGenerator.Emit(OpCodes.Ldarg_1);
+        setILGenerator.Emit(OpCodes.Stfld, fieldBuilder);
+        setILGenerator.Emit(OpCodes.Ret);
+
+        propertyBuilder.SetGetMethod(getMethodBuilder);
+        propertyBuilder.SetSetMethod(setMethodBuilder);
+
+        return propertyBuilder;
     }
 
     // Updated IsSystemType method to also consider types from dynamic assemblies as system types.
