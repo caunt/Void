@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Text;
 using System.Threading.Channels;
+using System.Timers;
 using Void.Proxy.Api.Configurations;
 using Void.Proxy.Api.Configurations.Attributes;
 using Void.Proxy.Api.Configurations.Exceptions;
@@ -9,6 +10,7 @@ using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Configurations.Serializers;
+using Timer = System.Timers.Timer;
 
 namespace Void.Proxy.Configurations;
 
@@ -78,8 +80,14 @@ public class ConfigurationService : BackgroundService, IConfigurationService
     {
         EnsureConfigurationsPathExists();
 
-        var channel = Channel.CreateUnbounded<FileSystemEventArgs>();
-        var watcher = new FileSystemWatcher
+        var channel = Channel.CreateUnbounded<EventArgs>();
+        var configurationWatcher = new Timer
+        {
+            Interval = 1000,
+            AutoReset = true,
+            Enabled = true
+        };
+        var fileSystemWatcher = new FileSystemWatcher
         {
             Filter = "*.*",
             NotifyFilter = NotifyFilters.LastWrite,
@@ -88,27 +96,60 @@ public class ConfigurationService : BackgroundService, IConfigurationService
             EnableRaisingEvents = true
         };
 
-        watcher.Created += (_, args) => channel.Writer.TryWrite(args);
-        watcher.Deleted += (_, args) => channel.Writer.TryWrite(args);
-        watcher.Renamed += (_, args) => channel.Writer.TryWrite(args);
-        watcher.Changed += (_, args) => channel.Writer.TryWrite(args);
+        configurationWatcher.Elapsed += (_, args) => channel.Writer.TryWrite(args);
+        fileSystemWatcher.Created += (_, args) => channel.Writer.TryWrite(args);
+        fileSystemWatcher.Deleted += (_, args) => channel.Writer.TryWrite(args);
+        fileSystemWatcher.Renamed += (_, args) => channel.Writer.TryWrite(args);
+        fileSystemWatcher.Changed += (_, args) => channel.Writer.TryWrite(args);
 
-        await foreach (var change in channel.Reader.ReadAllAsync(stoppingToken))
+        var previousConfigurations = new Dictionary<string, string>();
+
+        await foreach (var args in channel.Reader.ReadAllAsync(stoppingToken))
         {
-            if (change.ChangeType is not WatcherChangeTypes.Changed)
-                continue;
+            switch (args)
+            {
+                case FileSystemEventArgs fileSystemEventArgs:
+                    {
+                        if (fileSystemEventArgs.ChangeType is not WatcherChangeTypes.Changed)
+                            continue;
 
-            // If changed directory, not a file, skip
-            if (!File.Exists(change.FullPath))
-                continue;
+                        // If changed directory, not a file, skip
+                        if (!File.Exists(fileSystemEventArgs.FullPath))
+                            continue;
 
-            if (!_configurations.TryGetValue(change.FullPath, out var configuration))
-                continue;
+                        if (!_configurations.TryGetValue(fileSystemEventArgs.FullPath, out var configuration))
+                            continue;
 
-            await WaitFileLockAsync(change.FullPath, stoppingToken);
+                        _logger.LogInformation("Configuration {ConfigurationName} changed from disk", GetConfigurationName(configuration.GetType()));
 
-            var updatedConfiguration = await ReadAsync(change.FullPath, configuration.GetType(), stoppingToken);
-            SwapConfiguration(configuration, updatedConfiguration);
+                        var updatedConfiguration = await ReadAsync(fileSystemEventArgs.FullPath, configuration.GetType(), stoppingToken);
+                        SwapConfiguration(configuration, updatedConfiguration);
+                        break;
+                    }
+                case ElapsedEventArgs:
+                    {
+                        foreach (var (key, configuration) in _configurations)
+                        {
+                            var serializedValue = _serializer.Serialize(configuration);
+
+                            if (!previousConfigurations.TryGetValue(key, out var previousSerializedValue))
+                            {
+                                previousConfigurations.Add(key, serializedValue);
+                                continue;
+                            }
+
+                            if (serializedValue != previousSerializedValue)
+                            {
+                                _logger.LogTrace("Configuration {ConfigurationName} changed", GetConfigurationName(configuration.GetType()));
+                                previousConfigurations[key] = serializedValue;
+
+                                await WaitFileLockAsync(key, stoppingToken);
+                                await SaveAsync(key, configuration, stoppingToken);
+                            }
+                        }
+                        break;
+                    }
+            }
         }
     }
 
@@ -124,6 +165,7 @@ public class ConfigurationService : BackgroundService, IConfigurationService
         if (!File.Exists(fileName))
             await SaveAsync(fileName, configurationType, cancellationToken);
 
+        await WaitFileLockAsync(fileName, cancellationToken);
         var source = await File.ReadAllTextAsync(fileName, cancellationToken);
         var configuration = _serializer.Deserialize(source, configurationType);
 
@@ -132,20 +174,34 @@ public class ConfigurationService : BackgroundService, IConfigurationService
 
     private async ValueTask SaveAsync(string fileName, Type configurationType, CancellationToken cancellationToken)
     {
+        _logger.LogTrace("Saving default configuration file {FileName}", fileName);
+
         EnsureConfigurationsPathExists();
 
         if (Path.GetDirectoryName(fileName) is { } path && !string.IsNullOrWhiteSpace(path))
             EnsureConfigurationsPathExists(path);
 
         var value = _serializer.Serialize(configurationType);
+        await WaitFileLockAsync(fileName, cancellationToken);
+        await File.WriteAllTextAsync(fileName, value, cancellationToken);
+    }
+
+    private async ValueTask SaveAsync(string fileName, object configuration, CancellationToken cancellationToken)
+    {
+        _logger.LogTrace("Saving configuration file {FileName}", fileName);
+
+        EnsureConfigurationsPathExists();
+
+        if (Path.GetDirectoryName(fileName) is { } path && !string.IsNullOrWhiteSpace(path))
+            EnsureConfigurationsPathExists(path);
+
+        var value = _serializer.Serialize(configuration);
+        await WaitFileLockAsync(fileName, cancellationToken);
         await File.WriteAllTextAsync(fileName, value, cancellationToken);
     }
 
     private string GetFileName<TConfiguration>(string? key) where TConfiguration : notnull
     {
-        var configurationType = typeof(TConfiguration);
-        var configurationNameAttribute = configurationType.GetCustomAttribute<ConfigurationAttribute>();
-
         var pluginName = GetPluginNameFromConfiguration<TConfiguration>();
         var fileNameBuilder = new StringBuilder();
 
@@ -158,11 +214,7 @@ public class ConfigurationService : BackgroundService, IConfigurationService
             fileNameBuilder.Append(Path.DirectorySeparatorChar);
         }
 
-        fileNameBuilder.Append(configurationNameAttribute switch
-        {
-            { Name: { } name } when !string.IsNullOrWhiteSpace(name) => name,
-            _ => GetDefaultFileName()
-        });
+        fileNameBuilder.Append(GetConfigurationName(typeof(TConfiguration)));
 
         if (!string.IsNullOrWhiteSpace(key))
         {
@@ -173,8 +225,15 @@ public class ConfigurationService : BackgroundService, IConfigurationService
         fileNameBuilder.Append(".toml");
 
         return fileNameBuilder.ToString();
+    }
 
-        static string GetDefaultFileName() => typeof(TConfiguration).Name;
+    private static string GetConfigurationName(Type configurationType)
+    {
+        return configurationType.GetCustomAttribute<ConfigurationAttribute>() switch
+        {
+            { Name: { } name } when !string.IsNullOrWhiteSpace(name) => name,
+            _ => configurationType.Name
+        };
     }
 
     private string? GetPluginNameFromConfiguration<TConfiguration>() where TConfiguration : notnull
