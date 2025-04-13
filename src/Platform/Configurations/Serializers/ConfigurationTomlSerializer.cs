@@ -32,6 +32,11 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
         return Serialize(configuration: null, configurationType);
     }
 
+    public string Serialize(object configuration)
+    {
+        return Serialize(configuration, configuration.GetType());
+    }
+
     public string Serialize<TConfiguration>(TConfiguration? configuration) where TConfiguration : notnull
     {
         return Serialize(configuration, typeof(TConfiguration));
@@ -83,14 +88,14 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
         }
     }
 
-    private TomlDocument MapTomlDocument<TConfiguration>(TConfiguration configuration) where TConfiguration : notnull
+    private TomlDocument MapTomlDocument(object configuration)
     {
-        var configurationType = typeof(TConfiguration);
+        var configurationType = configuration.GetType();
 
         var extendedConfigurationType = MapTomlType(configurationType);
         var extendedConfiguration = CreateInstanceWithDefaults(extendedConfigurationType, configuration);
 
-        var configurationDocument = TomletMain.DocumentFrom(configuration, _options);
+        var configurationDocument = TomletMain.DocumentFrom(configurationType, configuration, _options);
         var extendedConfigurationDocument = TomletMain.DocumentFrom(extendedConfigurationType, extendedConfiguration, _options);
 
         SwapTomletConfiguration(configurationDocument, extendedConfigurationDocument);
