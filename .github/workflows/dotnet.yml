@@ -108,7 +108,6 @@ jobs:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
-          release-type: node   # or your chosen type
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Release Artifacts
