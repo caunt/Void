@@ -18,16 +18,24 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
     public async ValueTask<TConfiguration> GetAsync<TConfiguration>(CancellationToken cancellationToken = default) where TConfiguration : notnull
     {
+        return await GetAsync<TConfiguration>(key: null, cancellationToken);
+    }
+
+    public async ValueTask<TConfiguration> GetAsync<TConfiguration>(string? key, CancellationToken cancellationToken = default) where TConfiguration : notnull
+    {
         var configurationType = typeof(TConfiguration);
 
         // Tomlet constraint
         if (configurationType.Attributes.HasFlag(TypeAttributes.Sealed) || (!configurationType.Attributes.HasFlag(TypeAttributes.Public) && !configurationType.Attributes.HasFlag(TypeAttributes.NestedPublic)))
             throw new ArgumentException($"{configurationType} is either sealed or not public");
 
-        var fileName = GetFileName<TConfiguration>();
-        var configuration = await GetAsync<TConfiguration>(fileName, cancellationToken);
+        var fileName = GetFileName<TConfiguration>(key);
 
-        return configuration;
+        if (_configurations.TryGetValue(fileName, out var configuration))
+            return CastConfiguration<TConfiguration>(configuration);
+
+        _configurations.Add(fileName, await ReadAsync<TConfiguration>(fileName, cancellationToken));
+        return await GetAsync<TConfiguration>(key, cancellationToken);
     }
 
     internal static TConfiguration CastConfiguration<TConfiguration>(object configuration) where TConfiguration : notnull
@@ -45,6 +53,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         var channel = Channel.CreateUnbounded<FileSystemEventArgs>();
         var watcher = new FileSystemWatcher
         {
+            Filter = "*.*",
             NotifyFilter = NotifyFilters.LastWrite,
             Path = ConfigurationsPath,
             IncludeSubdirectories = true,
@@ -58,39 +67,52 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
         await foreach (var change in channel.Reader.ReadAllAsync(stoppingToken))
         {
-            // Handle the change event
+            if (change.ChangeType is not WatcherChangeTypes.Changed)
+                continue;
+
+            // If changed directory, not a file, skip
+            if (!File.Exists(change.FullPath))
+                continue;
+
+            if (!_configurations.TryGetValue(change.FullPath, out var configuration))
+                continue;
+
+            await WaitFileLockAsync(change.FullPath, stoppingToken);
+
+            var updatedConfiguration = await ReadAsync(change.FullPath, configuration.GetType(), stoppingToken);
         }
     }
 
-    private async ValueTask<TConfiguration> GetAsync<TConfiguration>(string fileName, CancellationToken cancellationToken) where TConfiguration : notnull
+    private async ValueTask<TConfiguration> ReadAsync<TConfiguration>(string fileName, CancellationToken cancellationToken) where TConfiguration : notnull
     {
-        if (_configurations.TryGetValue(fileName, out var configuration))
-            return CastConfiguration<TConfiguration>(configuration);
+        return CastConfiguration<TConfiguration>(await ReadAsync(fileName, typeof(TConfiguration), cancellationToken));
+    }
 
+    private async ValueTask<object> ReadAsync(string fileName, Type configurationType, CancellationToken cancellationToken)
+    {
         logger.LogTrace("Loading configuration file {FileName}", fileName);
 
         if (!File.Exists(fileName))
-            await SaveAsync<TConfiguration>(fileName, cancellationToken);
+            await SaveAsync(fileName, configurationType, cancellationToken);
 
         var source = await File.ReadAllTextAsync(fileName, cancellationToken);
-        configuration = _serializer.Deserialize<TConfiguration>(source);
+        var configuration = _serializer.Deserialize(source, configurationType);
 
-        _configurations.Add(fileName, configuration);
-        return CastConfiguration<TConfiguration>(configuration);
+        return configuration;
     }
 
-    private async ValueTask SaveAsync<TConfiguration>(string fileName, CancellationToken cancellationToken) where TConfiguration : notnull
+    private async ValueTask SaveAsync(string fileName, Type configurationType, CancellationToken cancellationToken)
     {
         EnsureConfigurationsPathExists();
 
         if (Path.GetDirectoryName(fileName) is { } path && !string.IsNullOrWhiteSpace(path))
             EnsureConfigurationsPathExists(path);
 
-        var value = _serializer.Serialize<TConfiguration>();
+        var value = _serializer.Serialize(configurationType);
         await File.WriteAllTextAsync(fileName, value, cancellationToken);
     }
 
-    private string GetFileName<TConfiguration>() where TConfiguration : notnull
+    private string GetFileName<TConfiguration>(string? key) where TConfiguration : notnull
     {
         var configurationType = typeof(TConfiguration);
         var configurationNameAttribute = configurationType.GetCustomAttribute<ConfigurationAttribute>();
@@ -112,6 +134,12 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
             { Name: { } name } when !string.IsNullOrWhiteSpace(name) => name,
             _ => GetDefaultFileName()
         });
+
+        if (!string.IsNullOrWhiteSpace(key))
+        {
+            fileNameBuilder.Append(Path.DirectorySeparatorChar);
+            fileNameBuilder.Append(key);
+        }
 
         fileNameBuilder.Append(".toml");
 
@@ -136,5 +164,24 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
         logger.LogTrace("Creating {Path} directory", path);
         Directory.CreateDirectory(path);
+    }
+
+    private async ValueTask WaitFileLockAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                using var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                return;
+            }
+            catch (IOException)
+            {
+                if (!File.Exists(filePath))
+                    throw;
+            }
+
+            await Task.Delay(100, cancellationToken);
+        }
     }
 }
