@@ -20,7 +20,7 @@ public class TraceService(ILogger<TraceService> logger) : IEventListener
                 logger.LogTrace("Received buffer length {Length} from {Side} {PlayerOrServer}", bufferedBinaryMessage.Stream.Length, @event.From, @event.From.FromLink(@event.Link));
                 return;
             case IMinecraftBinaryMessage binaryMessage:
-                logger.LogTrace("Received packet id {PacketId:X2}, length {Length} from {Side} {PlayerOrServer}", binaryMessage.Id, binaryMessage.Stream.Length, @event.From, @event.From.FromLink(@event.Link));
+                logger.LogTrace("Received packet id 0x{PacketId:X2}, length {Length} from {Side} {PlayerOrServer}", binaryMessage.Id, binaryMessage.Stream.Length, @event.From, @event.From.FromLink(@event.Link));
                 return;
             case IMinecraftPacket minecraftPacket:
                 logger.LogTrace("Received packet {Packet} from {Side} {PlayerOrServer}", minecraftPacket, @event.From, @event.From.FromLink(@event.Link));
@@ -39,7 +39,7 @@ public class TraceService(ILogger<TraceService> logger) : IEventListener
                 logger.LogTrace("Sent buffer length {Length} to {Direction} {PlayerOrServer}", bufferedBinaryMessage.Stream.Length, @event.To, @event.To.FromLink(@event.Link));
                 return;
             case IMinecraftBinaryMessage binaryMessage:
-                logger.LogTrace("Sent packet id {PacketId:X2}, length {Length} to {Direction} {PlayerOrServer}", binaryMessage.Id, binaryMessage.Stream.Length, @event.To, @event.To.FromLink(@event.Link));
+                logger.LogTrace("Sent packet id 0x{PacketId:X2}, length {Length} to {Direction} {PlayerOrServer}", binaryMessage.Id, binaryMessage.Stream.Length, @event.To, @event.To.FromLink(@event.Link));
                 return;
             case IMinecraftPacket minecraftPacket:
                 logger.LogTrace("Sent packet {Packet} to {Direction} {PlayerOrServer}", minecraftPacket, @event.To, @event.To.FromLink(@event.Link));
