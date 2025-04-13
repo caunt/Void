@@ -24,16 +24,26 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
 
     public string Serialize<TConfiguration>() where TConfiguration : notnull
     {
-        return Serialize<TConfiguration>(default!);
+        return Serialize<TConfiguration>(default);
     }
 
-    public string Serialize<TConfiguration>(TConfiguration configuration) where TConfiguration : notnull
+    public string Serialize(Type configurationType)
+    {
+        return Serialize(configuration: null, configurationType);
+    }
+
+    public string Serialize<TConfiguration>(TConfiguration? configuration) where TConfiguration : notnull
+    {
+        return Serialize(configuration, typeof(TConfiguration));
+    }
+
+    public string Serialize(object? configuration, Type configurationType)
     {
         TomlDocument document;
 
         try
         {
-            configuration ??= CreateInstanceWithDefaults<TConfiguration>();
+            configuration ??= CreateInstanceWithDefaults(configurationType);
             document = MapTomlDocument(configuration);
         }
         catch (TomlException exception)
@@ -45,6 +55,11 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
     }
 
     public TConfiguration Deserialize<TConfiguration>(string source) where TConfiguration : notnull
+    {
+        return ConfigurationService.CastConfiguration<TConfiguration>(Deserialize(source, typeof(TConfiguration)));
+    }
+
+    public object Deserialize(string source, Type configurationType)
     {
         TomlDocument document;
 
@@ -59,18 +74,13 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
 
         try
         {
-            var configuration = TomletMain.To<TConfiguration>(document, _options);
-            return ConfigurationService.CastConfiguration<TConfiguration>(configuration);
+            var configuration = TomletMain.To(configurationType, document, _options);
+            return configuration;
         }
         catch (TomlException exception)
         {
             throw new InvalidConfigurationException($"Failed to deserialize configuration: {exception.Message}");
         }
-    }
-
-    private static TConfiguration CreateInstanceWithDefaults<TConfiguration>() where TConfiguration : notnull
-    {
-        return (TConfiguration)CreateInstanceWithDefaults(typeof(TConfiguration));
     }
 
     private TomlDocument MapTomlDocument<TConfiguration>(TConfiguration configuration) where TConfiguration : notnull
