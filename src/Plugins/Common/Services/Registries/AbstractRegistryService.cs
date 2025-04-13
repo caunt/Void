@@ -193,9 +193,16 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             if (!registry.TryCreateDecoder(binaryMessage.Id, out var type, out var decoder))
                 continue;
 
+            // Do not pass origin binary message to transformers, so plugins cannot modify them
             var position = binaryMessage.Stream.Position;
-            var buffer = new MinecraftBuffer(binaryMessage.Stream);
-            var wrapper = new MinecraftBinaryPacketWrapper(binaryMessage, origin);
+
+            using var stream = RecyclableStream.RecyclableMemoryStreamManager.GetStream();
+            binaryMessage.Stream.CopyTo(stream);
+            binaryMessage.Stream.Position = position;
+
+            stream.Position = 0;
+            var buffer = new MinecraftBuffer(stream);
+            var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(binaryMessage.Id, stream), origin);
 
             if (registries.TryGetTransformations(transformationsMappings, type, TransformationType.Upgrade, out var transformations))
             {
@@ -203,18 +210,17 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
                 {
                     transformation(wrapper);
                     wrapper.Reset();
-                    binaryMessage.Stream.Position = position;
+                    stream.Position = 0;
                 }
             }
 
             wrapper.WriteProcessedValues(ref buffer);
 
-            binaryMessage.Stream.SetLength(binaryMessage.Stream.Position);
-            binaryMessage.Stream.Position = position;
+            stream.SetLength(stream.Position);
+            stream.Position = 0;
 
             var packet = decoder(ref buffer, player.ProtocolVersion);
 
-            binaryMessage.Stream.Position = position;
             yield return packet;
         }
     }
