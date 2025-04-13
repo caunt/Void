@@ -103,6 +103,7 @@ public class ConfigurationService : BackgroundService, IConfigurationService
         fileSystemWatcher.Changed += (_, args) => channel.Writer.TryWrite(args);
 
         var previousConfigurations = new Dictionary<string, string>();
+        var skippedUpdates = new HashSet<string>();
 
         await foreach (var args in channel.Reader.ReadAllAsync(stoppingToken))
         {
@@ -118,6 +119,9 @@ public class ConfigurationService : BackgroundService, IConfigurationService
                             continue;
 
                         if (!_configurations.TryGetValue(fileSystemEventArgs.FullPath, out var configuration))
+                            continue;
+
+                        if (skippedUpdates.Remove(fileSystemEventArgs.FullPath))
                             continue;
 
                         _logger.LogInformation("Configuration {ConfigurationName} changed from disk", GetConfigurationName(configuration.GetType()));
@@ -145,6 +149,8 @@ public class ConfigurationService : BackgroundService, IConfigurationService
 
                                 await WaitFileLockAsync(key, stoppingToken);
                                 await SaveAsync(key, configuration, stoppingToken);
+
+                                skippedUpdates.Add(key);
                             }
                         }
                         break;
