@@ -193,7 +193,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             if (!registry.TryCreateDecoder(binaryMessage.Id, out var type, out var decoder))
                 continue;
 
-            // Do not pass origin binary message to transformers, so plugins cannot modify them
+            // Do not pass origin binary message to transformers, so plugins cannot modify it
             var position = binaryMessage.Stream.Position;
 
             using var stream = RecyclableStream.RecyclableMemoryStreamManager.GetStream();
