@@ -107,54 +107,63 @@ public class ConfigurationService : BackgroundService, IConfigurationService
 
         await foreach (var args in channel.Reader.ReadAllAsync(stoppingToken))
         {
-            switch (args)
+            try
             {
-                case FileSystemEventArgs fileSystemEventArgs:
-                    {
-                        if (fileSystemEventArgs.ChangeType is not WatcherChangeTypes.Changed)
-                            continue;
+                fileSystemWatcher.EnableRaisingEvents = false;
 
-                        // If changed directory, not a file, skip
-                        if (!File.Exists(fileSystemEventArgs.FullPath))
-                            continue;
-
-                        if (!_configurations.TryGetValue(fileSystemEventArgs.FullPath, out var configuration))
-                            continue;
-
-                        if (skippedUpdates.Remove(fileSystemEventArgs.FullPath))
-                            continue;
-
-                        _logger.LogInformation("Configuration {ConfigurationName} changed from disk", GetConfigurationName(configuration.GetType()));
-
-                        var updatedConfiguration = await ReadAsync(fileSystemEventArgs.FullPath, configuration.GetType(), stoppingToken);
-                        SwapConfiguration(configuration, updatedConfiguration);
-                        break;
-                    }
-                case ElapsedEventArgs:
-                    {
-                        foreach (var (key, configuration) in _configurations)
+                switch (args)
+                {
+                    case FileSystemEventArgs fileSystemEventArgs:
                         {
-                            var serializedValue = _serializer.Serialize(configuration);
-
-                            if (!previousConfigurations.TryGetValue(key, out var previousSerializedValue))
-                            {
-                                previousConfigurations.Add(key, serializedValue);
+                            if (fileSystemEventArgs.ChangeType is not WatcherChangeTypes.Changed)
                                 continue;
-                            }
 
-                            if (serializedValue != previousSerializedValue)
-                            {
-                                _logger.LogTrace("Configuration {ConfigurationName} changed", GetConfigurationName(configuration.GetType()));
-                                previousConfigurations[key] = serializedValue;
+                            // If changed directory, not a file, skip
+                            if (!File.Exists(fileSystemEventArgs.FullPath))
+                                continue;
 
-                                await WaitFileLockAsync(key, stoppingToken);
-                                await SaveAsync(key, configuration, stoppingToken);
+                            if (!_configurations.TryGetValue(fileSystemEventArgs.FullPath, out var configuration))
+                                continue;
 
-                                skippedUpdates.Add(key);
-                            }
+                            if (skippedUpdates.Remove(fileSystemEventArgs.FullPath))
+                                continue;
+
+                            _logger.LogInformation("Configuration {ConfigurationName} changed from disk", GetConfigurationName(configuration.GetType()));
+
+                            var updatedConfiguration = await ReadAsync(fileSystemEventArgs.FullPath, configuration.GetType(), stoppingToken);
+                            SwapConfiguration(configuration, updatedConfiguration);
+                            break;
                         }
-                        break;
-                    }
+                    case ElapsedEventArgs:
+                        {
+                            foreach (var (key, configuration) in _configurations)
+                            {
+                                var serializedValue = _serializer.Serialize(configuration);
+
+                                if (!previousConfigurations.TryGetValue(key, out var previousSerializedValue))
+                                {
+                                    previousConfigurations.Add(key, serializedValue);
+                                    continue;
+                                }
+
+                                if (serializedValue != previousSerializedValue)
+                                {
+                                    _logger.LogTrace("Configuration {ConfigurationName} changed", GetConfigurationName(configuration.GetType()));
+                                    previousConfigurations[key] = serializedValue;
+
+                                    await WaitFileLockAsync(key, stoppingToken);
+                                    await SaveAsync(key, configuration, stoppingToken);
+
+                                    // skippedUpdates.Add(key);
+                                }
+                            }
+                            break;
+                        }
+                }
+            }
+            finally
+            {
+                fileSystemWatcher.EnableRaisingEvents = true;
             }
         }
     }
