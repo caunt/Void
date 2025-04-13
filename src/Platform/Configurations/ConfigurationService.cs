@@ -4,17 +4,45 @@ using System.Threading.Channels;
 using Void.Proxy.Api.Configurations;
 using Void.Proxy.Api.Configurations.Attributes;
 using Void.Proxy.Api.Configurations.Exceptions;
+using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Plugins;
+using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Configurations.Serializers;
 
 namespace Void.Proxy.Configurations;
 
-public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginService plugins) : BackgroundService, IConfigurationService
+public class ConfigurationService : BackgroundService, IConfigurationService
 {
     private const string ConfigurationsPath = "configs";
 
     private readonly ConfigurationTomlSerializer _serializer = new();
     private readonly Dictionary<string, object> _configurations = [];
+    private readonly ILogger<ConfigurationService> _logger;
+    private readonly IPluginService _plugins;
+
+    public ConfigurationService(ILogger<ConfigurationService> logger, IPluginService plugins, IEventService events)
+    {
+        _logger = logger;
+        _plugins = plugins;
+
+        events.RegisterListeners(this);
+    }
+
+    [Subscribe(PostOrder.First)]
+    public void OnPluginUnload(PluginUnloadEvent @event)
+    {
+        for (var i = _configurations.Count - 1; i >= 0; i--)
+        {
+            var (key, configuration) = _configurations.ElementAt(i);
+            var configurationType = configuration.GetType();
+
+            if (configurationType.Assembly != @event.Plugin.GetType().Assembly)
+                continue;
+
+            _configurations.Remove(key);
+        }
+    }
 
     public async ValueTask<TConfiguration> GetAsync<TConfiguration>(CancellationToken cancellationToken = default) where TConfiguration : notnull
     {
@@ -80,6 +108,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
             await WaitFileLockAsync(change.FullPath, stoppingToken);
 
             var updatedConfiguration = await ReadAsync(change.FullPath, configuration.GetType(), stoppingToken);
+            SwapConfiguration(configuration, updatedConfiguration);
         }
     }
 
@@ -90,7 +119,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
     private async ValueTask<object> ReadAsync(string fileName, Type configurationType, CancellationToken cancellationToken)
     {
-        logger.LogTrace("Loading configuration file {FileName}", fileName);
+        _logger.LogTrace("Loading configuration file {FileName}", fileName);
 
         if (!File.Exists(fileName))
             await SaveAsync(fileName, configurationType, cancellationToken);
@@ -152,7 +181,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
     {
         var configurationType = typeof(TConfiguration);
         var assembly = configurationType.Assembly;
-        var plugin = plugins.All.FirstOrDefault(plugin => plugin.GetType().Assembly == assembly);
+        var plugin = _plugins.All.FirstOrDefault(plugin => plugin.GetType().Assembly == assembly);
 
         return plugin?.Name;
     }
@@ -162,7 +191,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         if (Directory.Exists(path))
             return;
 
-        logger.LogTrace("Creating {Path} directory", path);
+        _logger.LogTrace("Creating {Path} directory", path);
         Directory.CreateDirectory(path);
     }
 
@@ -183,5 +212,44 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
             await Task.Delay(100, cancellationToken);
         }
+    }
+
+    private static void SwapConfiguration(object configuration1, object configuration2)
+    {
+        var configurationType1 = configuration1.GetType();
+        var configurationType2 = configuration2.GetType();
+
+        var fields1 = configurationType1.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+        var fields2 = configurationType2.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+
+        if (fields1.Length != fields2.Length)
+            throw new InvalidOperationException($"Cannot swap configurations: {configurationType1} and {configurationType2} have different number of fields");
+
+        for (var i = 0; i < fields1.Length; i++)
+        {
+            var field1 = fields1[i];
+            var field2 = fields2[i];
+
+            if (field1.Name != field2.Name)
+                throw new InvalidOperationException($"Cannot swap configurations: {configurationType1} and {configurationType2} have different field names");
+
+            if (field1.FieldType != field2.FieldType)
+                throw new InvalidOperationException($"Cannot swap configurations: {configurationType1} and {configurationType2} have different field types");
+
+            var field1Value = field1.GetValue(configuration1);
+            var field2Value = field2.GetValue(configuration2);
+
+            if (field1Value is null || field2Value is null || IsSystemType(field1Value) || IsSystemType(field2Value))
+            {
+                field1.SetValue(configuration1, field2Value);
+                field2.SetValue(configuration2, field1Value);
+            }
+            else
+            {
+                SwapConfiguration(field1Value, field2Value);
+            }
+        }
+
+        static bool IsSystemType(object value) => value.GetType().FullName?.StartsWith("System") ?? true;
     }
 }

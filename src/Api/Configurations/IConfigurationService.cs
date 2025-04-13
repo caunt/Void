@@ -1,8 +1,9 @@
 ﻿using Microsoft.Extensions.Hosting;
+using Void.Common.Events;
 
 namespace Void.Proxy.Api.Configurations;
 
-public interface IConfigurationService : IHostedService
+public interface IConfigurationService : IHostedService, IEventListener
 {
     /// <summary>
     /// Asynchronously retrieves a configuration of a specified type.
