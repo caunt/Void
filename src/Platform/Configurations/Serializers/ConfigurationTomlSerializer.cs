@@ -134,6 +134,7 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
             return cache[type] = type;
 
         var typeBuilder = moduleBuilder.DefineType(type.FullName + "TomletMappedByVoidType", TypeAttributes.Public);
+        var attributesWithValues = new Dictionary<Type, object[]>(2);
 
         if (root)
         {
@@ -142,17 +143,23 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
                 if (attribute is not ConfigurationAttribute configurationAttribute)
                     continue;
 
-                // if (!string.IsNullOrWhiteSpace(configurationAttribute.InlineComment))
-                //     extender.AddAttribute<TomlInlineCommentAttribute>([configurationAttribute.InlineComment]);
-                // 
-                // if (!string.IsNullOrWhiteSpace(configurationAttribute.PrecedingComment))
-                //     extender.AddAttribute<TomlPrecedingCommentAttribute>([configurationAttribute.PrecedingComment]);
+                if (!string.IsNullOrWhiteSpace(configurationAttribute.InlineComment))
+                    attributesWithValues.Add(typeof(TomlInlineCommentAttribute), [configurationAttribute.InlineComment]);
+
+                if (!string.IsNullOrWhiteSpace(configurationAttribute.PrecedingComment))
+                    attributesWithValues.Add(typeof(TomlPrecedingCommentAttribute), [configurationAttribute.PrecedingComment]);
+            }
+
+            foreach (var (attributeType, attributeValues) in attributesWithValues)
+            {
+                var attributeConstructor = attributeType.GetConstructors().OrderByDescending(constructor => constructor.GetParameters().Length).FirstOrDefault()
+                    ?? throw new InvalidOperationException($"No public constructor found for constructor attribute type {type.Name}");
+
+                typeBuilder.SetCustomAttribute(new CustomAttributeBuilder(attributeConstructor, attributeValues));
             }
         }
 
-        var attributesWithValues = new Dictionary<Type, object[]>(2);
-
-        foreach (var property in type.GetProperties(BindingFlags.Public))
+        foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
         {
             attributesWithValues.Clear();
 
@@ -170,13 +177,13 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
             foreach (var (attributeType, attributeValues) in attributesWithValues)
             {
                 var attributeConstructor = attributeType.GetConstructors().OrderByDescending(constructor => constructor.GetParameters().Length).FirstOrDefault()
-                    ?? throw new InvalidOperationException($"No public constructor found for attribute type {type.Name}");
+                    ?? throw new InvalidOperationException($"No public constructor found for property attribute type {type.Name}");
 
                 propertyBuilder.SetCustomAttribute(new CustomAttributeBuilder(attributeConstructor, attributeValues));
             }
         }
 
-        foreach (var field in type.GetFields(BindingFlags.Public))
+        foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
         {
             attributesWithValues.Clear();
 
@@ -194,7 +201,7 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
             foreach (var (attributeType, attributeValues) in attributesWithValues)
             {
                 var attributeConstructor = attributeType.GetConstructors().OrderByDescending(constructor => constructor.GetParameters().Length).FirstOrDefault()
-                    ?? throw new InvalidOperationException($"No public constructor found for attribute type {type.Name}");
+                    ?? throw new InvalidOperationException($"No public constructor found for field attribute type {type.Name}");
 
                 fieldBuilder.SetCustomAttribute(new CustomAttributeBuilder(attributeConstructor, attributeValues));
             }
