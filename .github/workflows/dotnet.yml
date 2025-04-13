@@ -96,3 +96,29 @@ jobs:
         path: artifacts/${{ matrix.runtime }}/void.exe
         compression-level: 9
         if-no-files-found: error
+
+  Release:
+    needs: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: 'void-*'
+
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          release-type: node   # or your chosen type
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Artifacts
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Assuming all artifacts are downloaded in the current directory.
+          # Modify the command according to your needs.
+          gh release upload ${{ steps.release.outputs.tag_name }} ./artifacts/**/*.zip
