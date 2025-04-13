@@ -6,19 +6,23 @@ namespace Void.Proxy.Api.Configurations;
 public interface IConfigurationService : IHostedService, IEventListener
 {
     /// <summary>
-    /// Asynchronously retrieves a configuration of a specified type.
+    /// Retrieves a configuration instance of type <typeparamref name="TConfiguration"/>.
+    /// The returned instance is fully self-managed: any changes made to the instance are automatically saved to disk, 
+    /// and any changes from disk are automatically loaded into the instance.
     /// </summary>
-    /// <typeparam name="TConfiguration">Represents the type of configuration being retrieved, which must not be null.</typeparam>
-    /// <param name="cancellationToken">Used to signal the cancellation of the asynchronous operation.</param>
-    /// <returns>Returns a value task that resolves to the requested configuration.</returns>
+    /// <typeparam name="TConfiguration">The type of configuration being retrieved. It must not be null.</typeparam>
+    /// <param name="cancellationToken">A token used to signal the cancellation of the asynchronous operation.</param>
+    /// <returns>A <see cref="ValueTask{TConfiguration}"/> that resolves to the requested configuration.</returns>
     public ValueTask<TConfiguration> GetAsync<TConfiguration>(CancellationToken cancellationToken = default) where TConfiguration : notnull;
 
     /// <summary>
-    /// Asynchronously retrieves a configuration value based on a specified key.
+    /// Retrieves a configuration instance of type <typeparamref name="TConfiguration"/>.
+    /// The returned instance is fully self-managed: any changes made to the instance are automatically saved to disk, 
+    /// and any changes from disk are automatically loaded into the instance.
     /// </summary>
-    /// <typeparam name="TConfiguration">Represents the type of the configuration value being retrieved.</typeparam>
+    /// <typeparam name="TConfiguration">The type of configuration being retrieved. It must not be null.</typeparam>
     /// <param name="key">Specifies the identifier for the configuration value to be fetched.</param>
-    /// <param name="cancellationToken">Allows the operation to be canceled if needed.</param>
-    /// <returns>Returns a task that resolves to the requested configuration value.</returns>
+    /// <param name="cancellationToken">A token used to signal the cancellation of the asynchronous operation.</param>
+    /// <returns>A <see cref="ValueTask{TConfiguration}"/> that resolves to the requested configuration.</returns>
     public ValueTask<TConfiguration> GetAsync<TConfiguration>(string key, CancellationToken cancellationToken = default) where TConfiguration : notnull;
 }
