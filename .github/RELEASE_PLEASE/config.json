@@ -1,3 +1,5 @@
 {
-  "release-type": "prerelease"
+  "release-type": "dotnet-yoshi",
+  "release-as": "0.0.2",
+  "always-update": true
 }
