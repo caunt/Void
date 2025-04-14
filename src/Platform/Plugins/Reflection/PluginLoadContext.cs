@@ -25,8 +25,6 @@ public class PluginLoadContext : AssemblyLoadContext
             _localDependencies = new AssemblyDependencyResolver(componentAssemblyPath);
 
         PluginAssembly = LoadFromStream(assemblyStream);
-
-        // test GPG commit
     }
 
     public Assembly PluginAssembly { get; }
