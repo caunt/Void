@@ -58,7 +58,7 @@ It allows to authenticate on the proxy side, while still using online mode.
 <br>
 The only caveat is that you need to install plugin / modification / anything on the server side.
 <br>
-Server will send it's own private key to the proxy, so proxy could authenticate player and provide protocol API.
+Server will send it's own private key to the proxy, so after player is authenticated, proxy can provide protocol API.
 
 
 ### Plugins
