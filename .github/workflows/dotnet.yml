@@ -110,7 +110,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-          merge-multiple: true
+          merge-multiple: true 
 
       - name: Create Release PR
         uses: googleapis/release-please-action@v4
