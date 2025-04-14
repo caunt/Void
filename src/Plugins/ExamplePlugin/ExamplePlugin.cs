@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Void.Common.Plugins;
+using Void.Proxy.Api.Configurations;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Proxy;
@@ -8,9 +9,19 @@ using Void.Proxy.Plugins.ExamplePlugin.Services;
 
 namespace Void.Proxy.Plugins.ExamplePlugin;
 
-public class ExamplePlugin(ILogger<ExamplePlugin> logger, IEventService events) : IPlugin
+public class ExamplePlugin(ILogger<ExamplePlugin> logger, IEventService events, IConfigurationService configs) : IPlugin
 {
     public string Name => nameof(ExamplePlugin);
+
+    [Subscribe]
+    public void OnPluginLoad(PluginLoadEvent @event)
+    {
+        if (@event.Plugin != this)
+            return;
+
+        events.RegisterListener<InventoryService>();
+        events.RegisterListener<ChatService>();
+    }
 
     [Subscribe]
     public void OnProxyStarting(ProxyStartingEvent @event)
@@ -22,16 +33,5 @@ public class ExamplePlugin(ILogger<ExamplePlugin> logger, IEventService events) 
     public void OnProxyStopping(ProxyStoppingEvent @event)
     {
         logger.LogInformation("Received ProxyStopping event");
-    }
-
-    [Subscribe]
-    public void OnPluginLoad(PluginLoadEvent @event)
-    {
-        if (@event.Plugin != this)
-            return;
-
-        events.RegisterListener<TraceService>();
-        events.RegisterListener<InventoryService>();
-        events.RegisterListener<ChatService>();
     }
 }
