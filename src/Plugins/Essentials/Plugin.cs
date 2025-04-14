@@ -6,6 +6,7 @@ using Void.Proxy.Plugins.Common.Plugins;
 using Void.Proxy.Plugins.Essentials.Moderation;
 using Void.Proxy.Plugins.Essentials.Platform;
 using Void.Proxy.Plugins.Essentials.Redirection;
+using Void.Proxy.Plugins.ExamplePlugin.Services;
 
 namespace Void.Proxy.Plugins.Essentials;
 
@@ -24,5 +25,6 @@ public class Plugin(IEventService events) : IProtocolPlugin
         events.RegisterListener<RedirectionService>();
         events.RegisterListener<ModerationService>();
         events.RegisterListener<PlatformService>();
+        events.RegisterListener<TraceService>();
     }
 }
