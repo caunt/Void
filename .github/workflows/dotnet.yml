@@ -14,7 +14,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  Build:
+  build:
     strategy:
       matrix:
         include:
@@ -101,8 +101,8 @@ jobs:
         compression-level: 9
         if-no-files-found: error
 
-  Release:
-    needs: Build
+  release:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
