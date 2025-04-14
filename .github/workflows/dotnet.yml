@@ -71,8 +71,8 @@ jobs:
       run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded src/Platform --output artifacts/${{ matrix.runtime }} --configuration Release --no-build
 
     - name: Save Artifact Name
-    - id: get_filename
-    - run: |
+      id: get_filename
+      run: |
         filename="void-${{ matrix.runtime }}";
         [[ "$OSTYPE" == msys* ]] && filename+=".exe";
         echo "result=$filename" >> "$GITHUB_OUTPUT"
