@@ -116,9 +116,9 @@ jobs:
         uses: googleapis/release-please-action@v4
         id: release
         with:
-          release-type: simple
-          skip-github-pull-request: true
           token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .github/RELEASE_PLEASE/config.json
+          manifest-file: .github/RELEASE_PLEASE/manifest.json
 
       - name: Upload Release Artifacts
         if: ${{ steps.release.outputs.release_created }}
