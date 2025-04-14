@@ -69,13 +69,18 @@ jobs:
     
     - name: Publish
       run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded src/Platform --output artifacts/${{ matrix.runtime }} --configuration Release --no-build
-
+      
     - name: Save Artifact Name
       id: get_filename
+      shell: bash
       run: |
         filename="void-${{ matrix.runtime }}";
         [[ "$OSTYPE" == msys* ]] && filename+=".exe";
         echo "result=$filename" >> "$GITHUB_OUTPUT"
+        
+    - name: Rename Artifact
+      shell: bash
+      run: mv artifacts/${{ matrix.runtime }} artifacts/${{ steps.get_filename.outputs.result }}
 
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4
