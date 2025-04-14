@@ -22,7 +22,7 @@ public class CommandService(ILogger<CommandService> logger, IPlayerService playe
 
     public async ValueTask ExecuteAsync(ICommandSource source, string command, CancellationToken cancellationToken = default)
     {
-        var result = await _dispatcher.ExecuteAsync(command, source, cancellationToken);
+        _ = await _dispatcher.ExecuteAsync(command, source, cancellationToken);
     }
 
     public async ValueTask<string[]> CompleteAsync(string input, ICommandSource source, CancellationToken cancellationToken = default)
