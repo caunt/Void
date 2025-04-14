@@ -44,74 +44,77 @@ public static class ComponentLegacySerializer
                 var content => content.ToString()
             };
 
-            var removedColor = component.Formatting.Color is null && formatting.Color is not null;
-            var removedIsBold = component.Formatting.IsBold is null or false && formatting.IsBold is true;
-            var removedIsItalic = component.Formatting.IsItalic is null or false && formatting.IsItalic is true;
-            var removedIsUnderlined = component.Formatting.IsUnderlined is null or false && formatting.IsUnderlined is true;
-            var removedIsStrikethrough = component.Formatting.IsStrikethrough is null or false && formatting.IsStrikethrough is true;
-            var removedIsObfuscated = component.Formatting.IsObfuscated is null or false && formatting.IsObfuscated is true;
-
-            if (removedColor || removedIsBold || removedIsItalic || removedIsUnderlined || removedIsStrikethrough || removedIsObfuscated)
+            if (prefix is not '\0')
             {
-                formatting = Formatting.Default;
-                builder.Append(prefix);
-                builder.Append('r');
-            }
+                var removedColor = component.Formatting.Color is null && formatting.Color is not null;
+                var removedIsBold = component.Formatting.IsBold is null or false && formatting.IsBold is true;
+                var removedIsItalic = component.Formatting.IsItalic is null or false && formatting.IsItalic is true;
+                var removedIsUnderlined = component.Formatting.IsUnderlined is null or false && formatting.IsUnderlined is true;
+                var removedIsStrikethrough = component.Formatting.IsStrikethrough is null or false && formatting.IsStrikethrough is true;
+                var removedIsObfuscated = component.Formatting.IsObfuscated is null or false && formatting.IsObfuscated is true;
 
-            if (component.Formatting.Color is { } color && color != formatting.Color)
-            {
-                var name = color.Name.AsSpan();
-
-                if (LegacyTextFormat.TryFromName(name, out var legacyTextColor))
+                if (removedColor || removedIsBold || removedIsItalic || removedIsUnderlined || removedIsStrikethrough || removedIsObfuscated)
                 {
+                    formatting = Formatting.Default;
                     builder.Append(prefix);
-                    builder.Append(legacyTextColor.Code);
+                    builder.Append('r');
                 }
-                else if (name[0] is '#' && name.Length is 7)
-                {
-                    builder.Append(prefix);
-                    builder.Append('x');
 
-                    foreach (var digit in name[1..])
+                if (component.Formatting.Color is { } color && color != formatting.Color)
+                {
+                    var name = color.Name.AsSpan();
+
+                    if (LegacyTextFormat.TryFromName(name, out var legacyTextColor))
                     {
                         builder.Append(prefix);
-                        builder.Append(digit);
+                        builder.Append(legacyTextColor.Code);
+                    }
+                    else if (name[0] is '#' && name.Length is 7)
+                    {
+                        builder.Append(prefix);
+                        builder.Append('x');
+
+                        foreach (var digit in name[1..])
+                        {
+                            builder.Append(prefix);
+                            builder.Append(digit);
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception($"Error serializing color: {color}");
                     }
                 }
-                else
+
+                if (component.Formatting.IsBold is true && component.Formatting.IsBold != formatting.IsBold)
                 {
-                    throw new Exception($"Error serializing color: {color}");
+                    builder.Append(prefix);
+                    builder.Append('l');
                 }
-            }
 
-            if (component.Formatting.IsBold is true && component.Formatting.IsBold != formatting.IsBold)
-            {
-                builder.Append(prefix);
-                builder.Append('l');
-            }
+                if (component.Formatting.IsItalic is true && component.Formatting.IsItalic != formatting.IsItalic)
+                {
+                    builder.Append(prefix);
+                    builder.Append('o');
+                }
 
-            if (component.Formatting.IsItalic is true && component.Formatting.IsItalic != formatting.IsItalic)
-            {
-                builder.Append(prefix);
-                builder.Append('o');
-            }
+                if (component.Formatting.IsUnderlined is true && component.Formatting.IsUnderlined != formatting.IsUnderlined)
+                {
+                    builder.Append(prefix);
+                    builder.Append('n');
+                }
 
-            if (component.Formatting.IsUnderlined is true && component.Formatting.IsUnderlined != formatting.IsUnderlined)
-            {
-                builder.Append(prefix);
-                builder.Append('n');
-            }
+                if (component.Formatting.IsStrikethrough is true && component.Formatting.IsStrikethrough != formatting.IsStrikethrough)
+                {
+                    builder.Append(prefix);
+                    builder.Append('m');
+                }
 
-            if (component.Formatting.IsStrikethrough is true && component.Formatting.IsStrikethrough != formatting.IsStrikethrough)
-            {
-                builder.Append(prefix);
-                builder.Append('m');
-            }
-
-            if (component.Formatting.IsObfuscated is true && component.Formatting.IsObfuscated != formatting.IsObfuscated)
-            {
-                builder.Append(prefix);
-                builder.Append('k');
+                if (component.Formatting.IsObfuscated is true && component.Formatting.IsObfuscated != formatting.IsObfuscated)
+                {
+                    builder.Append(prefix);
+                    builder.Append('k');
+                }
             }
 
             formatting = component.Formatting;
