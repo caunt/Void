@@ -19,6 +19,8 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
     [Subscribe]
     public void OnMessageReceived(MessageReceivedEvent @event)
     {
+        // This event is fired when a packet is received from the server or from the client at proxy side
+
         switch (@event.Message)
         {
             case SetHeldItemServerboundPacket setHeldItemPacket:
@@ -32,6 +34,8 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
     {
         switch (@event)
         {
+            // Since wanted packet is in Play phase, we register it only in Play phase
+            // Phase may be changed on any side and any time, so we register packets on each phase change event
             case { Phase: Phase.Play }:
                 RegisterPlayMappings(@event.Player, @event.Side);
                 break;
@@ -39,6 +43,10 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
 
         void RegisterPlayMappings(IMinecraftPlayer player, Side side)
         {
+            // Many packet ids and their properties can be found at
+            // https://minecraft.wiki/w/Java_Edition_protocol
+            // https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Protocol_version_numbers
+
             player.RegisterPacket<SetHeldItemServerboundPacket>([
                 new(0x2B, ProtocolVersion.MINECRAFT_1_20_2),
                 new(0x2C, ProtocolVersion.MINECRAFT_1_20_3),
@@ -61,6 +69,8 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
     [Subscribe]
     public async ValueTask OnChatCommand(ChatCommandEvent @event, CancellationToken cancellationToken)
     {
+        // Chat commands API is subject to change to Brigadier API
+
         var parts = @event.Command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
         if (parts.Length is 0)
