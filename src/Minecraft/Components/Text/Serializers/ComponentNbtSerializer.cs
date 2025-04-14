@@ -10,14 +10,13 @@ using Void.Minecraft.Components.Text.Properties;
 using Void.Minecraft.Components.Text.Properties.Content;
 using Void.Minecraft.Nbt;
 using Void.Minecraft.Nbt.Tags;
-using Void.Minecraft.Network;
 using Void.Minecraft.Profiles;
 
 namespace Void.Minecraft.Components.Text.Serializers;
 
 public static class ComponentNbtSerializer
 {
-    public static NbtCompound Serialize(Component component, ProtocolVersion protocolVersion)
+    public static NbtCompound Serialize(Component component)
     {
         var content = component.Content;
         var tag = new NbtCompound
@@ -37,7 +36,7 @@ public static class ComponentNbtSerializer
                     tag["fallback"] = new NbtString(translatableContent.Fallback);
 
                 if (translatableContent.With is not null)
-                    tag["with"] = new NbtList(translatableContent.With.Select(component => Serialize(component, protocolVersion)), NbtTagType.Compound);
+                    tag["with"] = new NbtList(translatableContent.With.Select(component => Serialize(component)), NbtTagType.Compound);
                 break;
             case ScoreContent scoreContent:
                 tag["score"] = new NbtCompound
@@ -50,7 +49,7 @@ public static class ComponentNbtSerializer
                 tag["selector"] = new NbtString(selectorContent.Value);
 
                 if (selectorContent.Separator is not null)
-                    tag["separator"] = Serialize(selectorContent.Separator, protocolVersion);
+                    tag["separator"] = Serialize(selectorContent.Separator);
                 break;
             case KeybindContent keybindContent:
                 tag["keybind"] = new NbtString(keybindContent.Value);
@@ -64,7 +63,7 @@ public static class ComponentNbtSerializer
         var extra = component.Children.Extra;
 
         if (extra.Any())
-            tag["extra"] = new NbtList(extra.Select(component => Serialize(component, protocolVersion)), NbtTagType.Compound);
+            tag["extra"] = new NbtList(extra.Select(component => Serialize(component)), NbtTagType.Compound);
 
         var formatting = component.Formatting;
 
@@ -122,7 +121,7 @@ public static class ComponentNbtSerializer
 
                 if (hoverEvent.Content is ShowText { } showText)
                 {
-                    contents = Serialize(showText.Value, protocolVersion);
+                    contents = Serialize(showText.Value);
                 }
 
                 if (hoverEvent.Content is ShowItem { } showItem)
@@ -144,7 +143,7 @@ public static class ComponentNbtSerializer
                         contents["type"] = new NbtString(showEntity.Type);
 
                     if (showEntity.Name is not null)
-                        contents["name"] = Serialize(showEntity.Name, protocolVersion);
+                        contents["name"] = Serialize(showEntity.Name);
                 }
 
                 tag["hoverEvent"] = new NbtCompound
@@ -158,17 +157,17 @@ public static class ComponentNbtSerializer
         return tag;
     }
 
-    public static Component Deserialize(NbtTag tag, ProtocolVersion protocolVersion)
+    public static Component Deserialize(NbtTag tag)
     {
         var component = Component.Default;
 
         if (tag is NbtString nbtString)
             return component with { Content = new TextContent(nbtString.Value) };
 
-        DeserializeContent(ref component, tag, protocolVersion);
-        DeserializeChildren(ref component, tag, protocolVersion);
-        DeserializeFormatting(ref component, tag, protocolVersion);
-        DeserializeInteractivity(ref component, tag, protocolVersion);
+        DeserializeContent(ref component, tag);
+        DeserializeChildren(ref component, tag);
+        DeserializeFormatting(ref component, tag);
+        DeserializeInteractivity(ref component, tag);
 
         return component;
     }
@@ -191,7 +190,7 @@ public static class ComponentNbtSerializer
         return tag[key] as T;
     }
 
-    private static void DeserializeContent(ref Component component, NbtTag tag, ProtocolVersion protocolVersion)
+    private static void DeserializeContent(ref Component component, NbtTag tag)
     {
         var compound = tag.AsCompound();
 
@@ -209,7 +208,7 @@ public static class ComponentNbtSerializer
             var withNbtList = TryGet<NbtList>(compound, "with");
             var withComponents = withNbtList?.Data.Select(dataTag => dataTag switch
             {
-                { Type: NbtTagType.Compound or NbtTagType.String } value => Deserialize(value, protocolVersion),
+                { Type: NbtTagType.Compound or NbtTagType.String } value => Deserialize(value),
                 _ => null
             }).Where(component => component is not null).Cast<Component>();
 
@@ -230,7 +229,7 @@ public static class ComponentNbtSerializer
             var selectorNbtString = Get<NbtString>(compound, "selector");
             var separatorComponent = TryGet<NbtTag>(compound, "separator") switch
             {
-                { Type: NbtTagType.Compound or NbtTagType.String } value => Deserialize(value, protocolVersion),
+                { Type: NbtTagType.Compound or NbtTagType.String } value => Deserialize(value),
                 _ => null
             };
 
@@ -251,7 +250,7 @@ public static class ComponentNbtSerializer
             var interpretNbtString = TryGet<NbtByte>(compound, "interpret");
             var separatorComponent = TryGet<NbtTag>(compound, "separator") switch
             {
-                { Type: NbtTagType.Compound or NbtTagType.String } value => Deserialize(value, protocolVersion),
+                { Type: NbtTagType.Compound or NbtTagType.String } value => Deserialize(value),
                 _ => null
             };
             var blockNbtString = TryGet<NbtString>(compound, "block");
@@ -262,7 +261,7 @@ public static class ComponentNbtSerializer
         }
     }
 
-    private static void DeserializeChildren(ref Component component, NbtTag tag, ProtocolVersion protocolVersion)
+    private static void DeserializeChildren(ref Component component, NbtTag tag)
     {
         var compound = tag.AsCompound();
 
@@ -270,7 +269,7 @@ public static class ComponentNbtSerializer
         {
             var extraComponents = extraNbtList.Data.Select(dataTag => dataTag switch
             {
-                { Type: NbtTagType.Compound or NbtTagType.String } value => Deserialize(value, protocolVersion),
+                { Type: NbtTagType.Compound or NbtTagType.String } value => Deserialize(value),
                 _ => null
             }).Where(component => component is not null).Cast<Component>();
 
@@ -279,7 +278,7 @@ public static class ComponentNbtSerializer
         }
     }
 
-    private static void DeserializeFormatting(ref Component component, NbtTag tag, ProtocolVersion protocolVersion)
+    private static void DeserializeFormatting(ref Component component, NbtTag tag)
     {
         var compound = tag.AsCompound();
 
@@ -313,7 +312,7 @@ public static class ComponentNbtSerializer
         }
     }
 
-    private static void DeserializeInteractivity(ref Component component, NbtTag tag, ProtocolVersion protocolVersion)
+    private static void DeserializeInteractivity(ref Component component, NbtTag tag)
     {
         var compound = tag.AsCompound();
 
@@ -348,7 +347,7 @@ public static class ComponentNbtSerializer
             {
                 "show_text" => contentsNbtTag switch
                 {
-                    NbtString or NbtCompound => new ShowText(Deserialize(contentsNbtTag, protocolVersion)),
+                    NbtString or NbtCompound => new ShowText(Deserialize(contentsNbtTag)),
                     var value => throw new NbtException(value)
                 } as IHoverEventAction,
                 "show_item" => contentsNbtTag switch
@@ -367,7 +366,7 @@ public static class ComponentNbtSerializer
                     TryGet<NbtString>(contentsNbtCompoundTag, "type")?.Value,
                     TryGet<NbtTag>(contentsNbtCompoundTag, "name") switch
                     {
-                        { } nameTag => Deserialize(nameTag, protocolVersion),
+                        { } nameTag => Deserialize(nameTag),
                         _ => null
                     }),
                     var value => throw new NbtException(value)
