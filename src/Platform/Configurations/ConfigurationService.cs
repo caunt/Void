@@ -269,14 +269,17 @@ public class ConfigurationService : BackgroundService, IConfigurationService
         Directory.CreateDirectory(path);
     }
 
-    private async ValueTask WaitFileLockAsync(string filePath, CancellationToken cancellationToken = default)
+    private static async ValueTask WaitFileLockAsync(string filePath, CancellationToken cancellationToken = default)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
+                if (!File.Exists(filePath))
+                    break;
+
                 using var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                return;
+                break;
             }
             catch (IOException)
             {
