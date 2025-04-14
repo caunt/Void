@@ -158,7 +158,14 @@ public static class ComponentLegacySerializer
             }
             else if (code is 'r')
             {
-                formatting = Formatting.Default;
+                formatting = new Formatting
+                {
+                    IsBold = false,
+                    IsItalic = false,
+                    IsUnderlined = false,
+                    IsStrikethrough = false,
+                    IsObfuscated = false
+                };
             }
             else if (LegacyTextFormat.TryFromCode(code, out var format))
             {
