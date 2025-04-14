@@ -68,7 +68,7 @@ jobs:
       run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal
     
     - name: Publish
-      run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded src/Platform --output artifacts/${{ matrix.runtime }} --configuration Release --no-build
+      run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded src/Platform --output artifacts --configuration Release --no-build
       
     - name: Save Artifact Suffix
       id: get_suffix
@@ -77,13 +77,13 @@ jobs:
         
     - name: Rename Artifact
       shell: bash
-      run: mv artifacts/Void.Proxy${{ steps.get_filename.get_suffix.result }} artifacts/void-${{ matrix.runtime }}
+      run: mv artifacts/Void.Proxy${{ steps.get_suffix.outputs.result }} artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
 
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: void-${{ matrix.runtime }}
-        path: artifacts/void-${{ matrix.runtime }}
+        name: void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
+        path: artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
         compression-level: 9
         if-no-files-found: error
 
