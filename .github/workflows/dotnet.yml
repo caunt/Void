@@ -86,7 +86,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ${{ steps.get_filename.outputs.result }}
-        path: artifacts/${{ matrix.runtime }}
+        path: artifacts/${{ steps.get_filename.outputs.result }}
         compression-level: 9
         if-no-files-found: error
 
@@ -94,7 +94,7 @@ jobs:
     needs: Build
     runs-on: ubuntu-latest
     steps:
-      - name: Create Release PR
+      - name: Create Release
         uses: googleapis/release-please-action@v4
         id: release
         with:
