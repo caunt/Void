@@ -11,13 +11,15 @@ public class PluginLoadContext : AssemblyLoadContext
     private static readonly string[] SystemDependencies = [nameof(System), "netstandard"];
     private readonly IPluginDependencyService _dependencies;
     private readonly AssemblyDependencyResolver? _localDependencies;
+    private readonly Func<AssemblyName, Assembly?>? _loadDependency;
 
     private readonly ILogger<PluginLoadContext> _logger;
 
-    public PluginLoadContext(ILogger<PluginLoadContext> logger, IPluginDependencyService dependencies, string assemblyName, Stream assemblyStream, string? componentAssemblyPath = null) : base(assemblyName, true)
+    public PluginLoadContext(ILogger<PluginLoadContext> logger, IPluginDependencyService dependencies, string assemblyName, Stream assemblyStream, string? componentAssemblyPath = null, Func<AssemblyName, Assembly?>? loadDependency = null) : base(assemblyName, true)
     {
         _logger = logger;
         _dependencies = dependencies;
+        _loadDependency = loadDependency;
 
         if (!string.IsNullOrWhiteSpace(componentAssemblyPath))
             _localDependencies = new AssemblyDependencyResolver(componentAssemblyPath);
@@ -72,6 +74,12 @@ public class PluginLoadContext : AssemblyLoadContext
 
             if (assemblyPath is not null)
                 assembly = LoadFromAssemblyPath(assemblyPath);
+        }
+
+        if (_loadDependency is not null)
+        {
+            // TODO: this is a temporary workaround
+            assembly = _loadDependency(assemblyName);
         }
 
         // sorry, but where am I supposed to find your dependency?

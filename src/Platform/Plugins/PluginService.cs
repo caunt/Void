@@ -75,7 +75,21 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
     {
         logger.LogTrace("Loading {AssemblyName} plugins", assemblyName);
 
-        var context = new PluginLoadContext(services.GetRequiredService<ILogger<PluginLoadContext>>(), dependencies, assemblyName, assemblyStream);
+        var context = new PluginLoadContext(services.GetRequiredService<ILogger<PluginLoadContext>>(), dependencies, assemblyName, assemblyStream, loadDependency: (assemblyName) =>
+        {
+            foreach (var reference in _references)
+            {
+                var assembly = reference.Context.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.FullName == assemblyName.FullName);
+
+                if (assembly is null)
+                    continue;
+
+                return assembly;
+            }
+
+            return null;
+        });
+
         var plugins = GetPlugins(assemblyName, context.PluginAssembly);
 
         foreach (var plugin in plugins)
