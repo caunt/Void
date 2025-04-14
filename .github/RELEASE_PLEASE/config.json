@@ -3,7 +3,6 @@
     ".": {
       "release-type": "simple",
       "versioning": "prerelease",
-      "prerelease": true,
       "include-v-in-tag": true,
       "pull-request-header": ":robot: Development Build",
       "pull-request-footer": "This PR was generated with Release Please.",
