@@ -1,0 +1,15 @@
+{
+  "packages": {
+    ".": {
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "dotnet-yoshi",
+      "bump-minor-pre-major": false,
+      "bump-patch-for-minor-pre-major": false,
+      "draft": false,
+      "prerelease": true,
+      "pull-request-header": ":robot: Development Build",
+      "pull-request-footer": "This PR was generated with Release Please."
+    }
+  },
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+}
