@@ -17,6 +17,8 @@ public record Component(IContent Content, Children Children, Formatting Formatti
 
     public static implicit operator Component(string text) => DeserializeLegacy(text);
 
+    public string AsText => SerializeLegacy('\0');
+
     public static Component ReadFrom<TBuffer>(ref TBuffer buffer, ProtocolVersion protocolVersion) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
         if (protocolVersion <= ProtocolVersion.MINECRAFT_1_20_2)
