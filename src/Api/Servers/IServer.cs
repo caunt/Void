@@ -9,8 +9,5 @@ public interface IServer
     public int Port { get; set; }
     public string? Brand { get; set; }
 
-    public TcpClient CreateTcpClient()
-    {
-        return new TcpClient(Host, Port);
-    }
+    public TcpClient CreateTcpClient() => new(Host, Port);
 }
