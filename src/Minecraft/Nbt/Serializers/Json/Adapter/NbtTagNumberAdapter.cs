@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.Json;
 using Void.Minecraft.Nbt.Tags;
 
-namespace Void.Minecraft.Nbt.Serializers.Json;
+namespace Void.Minecraft.Nbt.Serializers.Json.Adapter;
 
 public class NbtTagNumberAdapter
 {

@@ -7,7 +7,7 @@ using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Network.Messages;
 
-namespace Void.Proxy.Plugins.ExamplePlugin.Services;
+namespace Void.Proxy.Plugins.Essentials.Debugging;
 
 public class TraceService(ILogger<TraceService> logger) : IEventListener
 {

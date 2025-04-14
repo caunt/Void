@@ -1,7 +1,7 @@
 ﻿using System;
 using Void.Common.Network.Channels;
 
-namespace Void.Proxy.Api.Players;
+namespace Void.Common.Players;
 
 public interface IPlayerContext : IAsyncDisposable
 {

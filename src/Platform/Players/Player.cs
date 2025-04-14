@@ -1,8 +1,8 @@
 ﻿using System.Net.Sockets;
+using Void.Common.Players;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players;
 using Void.Minecraft.Profiles;
-using Void.Proxy.Api.Players;
 using Void.Proxy.Players.Contexts;
 
 namespace Void.Proxy.Players;

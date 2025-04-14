@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net.Sockets;
-using Void.Proxy.Api.Players;
 
 namespace Void.Common.Players;
 
