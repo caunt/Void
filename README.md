@@ -64,7 +64,7 @@ Server will send it's own private key to the proxy, so proxy could authenticate 
 ### Plugins
 See the [Example Plugin](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) on how to create a plugin.
 <br>
-This is still an early version of the API, so it may change dastically in the future.
+This is still an early version of the API, so it may change drastically in the future.
 <br>
 Protocol API, Events, Chat Commands, Text Components, NBT are some of available features.
 <br>
