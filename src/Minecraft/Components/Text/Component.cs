@@ -52,11 +52,11 @@ public record Component(IContent Content, Children Children, Formatting Formatti
             if (node is null)
                 return DeserializeLegacy(value);
             else
-                return DeserializeJson(node, protocolVersion);
+                return DeserializeJson(node);
         }
         else
         {
-            return DeserializeNbt(buffer.ReadTag(), protocolVersion);
+            return DeserializeNbt(buffer.ReadTag());
         }
     }
 
@@ -85,11 +85,11 @@ public record Component(IContent Content, Children Children, Formatting Formatti
             if (node is null)
                 return DeserializeLegacy(value);
             else
-                return DeserializeJson(node, protocolVersion);
+                return DeserializeJson(node);
         }
         else
         {
-            return DeserializeNbt(buffer.ReadTag(), protocolVersion);
+            return DeserializeNbt(buffer.ReadTag());
         }
     }
 
@@ -101,9 +101,9 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     public void WriteTo(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         if (protocolVersion <= ProtocolVersion.MINECRAFT_1_20_2)
-            buffer.WriteString(SerializeJson(protocolVersion).ToString());
+            buffer.WriteString(SerializeJson().ToString());
         else
-            buffer.WriteTag(SerializeNbt(protocolVersion));
+            buffer.WriteTag(SerializeNbt());
     }
 
     /// <summary>
@@ -115,9 +115,9 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     public void WriteTo<TBuffer>(ref TBuffer buffer, ProtocolVersion protocolVersion) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
         if (protocolVersion <= ProtocolVersion.MINECRAFT_1_20_2)
-            buffer.WriteString(SerializeJson(protocolVersion).ToString());
+            buffer.WriteString(SerializeJson().ToString());
         else
-            buffer.WriteTag(SerializeNbt(protocolVersion));
+            buffer.WriteTag(SerializeNbt());
     }
 
     /// <summary>
@@ -137,9 +137,9 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     /// <param name="source">The JSON node containing the data to be deserialized into a Component.</param>
     /// <param name="protocolVersion">Specifies the version of the protocol to be used during deserialization.</param>
     /// <returns>Returns a Component object created from the provided JSON data.</returns>
-    public static Component DeserializeJson(JsonNode source, ProtocolVersion protocolVersion)
+    public static Component DeserializeJson(JsonNode source)
     {
-        return ComponentJsonSerializer.Deserialize(source, protocolVersion);
+        return ComponentJsonSerializer.Deserialize(source);
     }
 
     /// <summary>
@@ -148,9 +148,9 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     /// <param name="tag">The NBT tag that contains the data to be deserialized into a Component.</param>
     /// <param name="protocolVersion">Specifies the version of the protocol to be used during deserialization.</param>
     /// <returns>Returns a Component object created from the provided NBT tag.</returns>
-    public static Component DeserializeNbt(NbtTag tag, ProtocolVersion protocolVersion)
+    public static Component DeserializeNbt(NbtTag tag)
     {
-        return ComponentNbtSerializer.Deserialize(tag, protocolVersion);
+        return ComponentNbtSerializer.Deserialize(tag);
     }
 
     /// <summary>
@@ -159,9 +159,9 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     /// <param name="source">The string representation of SNBT that needs to be converted into a Component.</param>
     /// <param name="protocolVersion">Specifies the version of the protocol to be used during the deserialization process.</param>
     /// <returns>Returns a Component object created from the deserialized SNBT data.</returns>
-    public static Component DeserializeSnbt(string source, ProtocolVersion protocolVersion)
+    public static Component DeserializeSnbt(string source)
     {
-        return DeserializeNbt(NbtStringSerializer.Deserialize(source), protocolVersion);
+        return DeserializeNbt(NbtStringSerializer.Deserialize(source));
     }
 
     /// <summary>
@@ -179,9 +179,9 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     /// </summary>
     /// <param name="protocolVersion">Specifies the version of the protocol to be used during serialization.</param>
     /// <returns>Returns a JsonNode representing the serialized object.</returns>
-    public JsonNode SerializeJson(ProtocolVersion protocolVersion)
+    public JsonNode SerializeJson()
     {
-        return ComponentJsonSerializer.Serialize(this, protocolVersion);
+        return ComponentJsonSerializer.Serialize(this);
     }
 
     /// <summary>
@@ -189,9 +189,9 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     /// </summary>
     /// <param name="protocolVersion">Specifies the version of the protocol to be used during serialization.</param>
     /// <returns>Returns the serialized NBT tag representation of the object.</returns>
-    public NbtTag SerializeNbt(ProtocolVersion protocolVersion)
+    public NbtTag SerializeNbt()
     {
-        return ComponentNbtSerializer.Serialize(this, protocolVersion);
+        return ComponentNbtSerializer.Serialize(this);
     }
 
     /// <summary>
@@ -199,9 +199,9 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     /// </summary>
     /// <param name="protocolVersion">Specifies the version of the protocol to ensure compatibility during serialization.</param>
     /// <returns>Returns the serialized data in SNBT format.</returns>
-    public string SerializeSnbt(ProtocolVersion protocolVersion)
+    public string SerializeSnbt()
     {
-        return NbtStringSerializer.Serialize(SerializeNbt(protocolVersion));
+        return NbtStringSerializer.Serialize(SerializeNbt());
     }
 
     /// <summary>
@@ -209,5 +209,5 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     /// version.
     /// </summary>
     /// <returns>Returns the string representation of the serialized NBT data.</returns>
-    public override string ToString() => SerializeSnbt(ProtocolVersion.Latest);
+    public override string ToString() => SerializeSnbt();
 }
