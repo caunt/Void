@@ -6,7 +6,6 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<NeutralLanguage>en</NeutralLanguage>
-		<InvariantGlobalization>true</InvariantGlobalization>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -66,12 +65,12 @@
 		<ProjectReference Include="..\Terminal\Void.Terminal.csproj" />
 	</ItemGroup>
 
-  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+	<ItemGroup Condition="'$(Configuration)' == 'Debug'">
 		<EmbeddedResource Include="..\Plugins\ExamplePlugin\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ExamplePlugin.dll">
 			<Link>Embedded\Void.Proxy.Plugins.ExamplePlugin.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
-  </ItemGroup>
+	</ItemGroup>
 
 	<ItemGroup>
 		<EmbeddedResource Include="..\Minecraft\bin\$(Configuration)\$(TargetFramework)\Void.Minecraft.dll">
