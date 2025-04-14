@@ -1,19 +1,18 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using Void.Minecraft.Nbt.Serializers.Json;
-using Void.Minecraft.Network;
 
 namespace Void.Minecraft.Components.Text.Serializers;
 
 public static class ComponentJsonSerializer
 {
-    public static JsonNode Serialize(Component component, ProtocolVersion protocolVersion)
+    public static JsonNode Serialize(Component component)
     {
-        var tag = component.SerializeNbt(protocolVersion);
+        var tag = component.SerializeNbt();
         return NbtJsonSerializer.Serialize(tag);
     }
 
-    public static Component Deserialize(string value, ProtocolVersion protocolVersion)
+    public static Component Deserialize(string value)
     {
         var node = (JsonNode?)null;
 
@@ -27,14 +26,14 @@ public static class ComponentJsonSerializer
         }
 
         if (node is null)
-            return Deserialize(node: value, protocolVersion);
+            return Deserialize(value);
         else
-            return Deserialize(node, protocolVersion);
+            return Deserialize(node);
     }
 
-    public static Component Deserialize(JsonNode node, ProtocolVersion protocolVersion)
+    public static Component Deserialize(JsonNode node)
     {
         var tag = NbtJsonSerializer.Deserialize(node);
-        return Component.DeserializeNbt(tag, protocolVersion);
+        return Component.DeserializeNbt(tag);
     }
 }
