@@ -91,6 +91,11 @@ jobs:
     needs: Build
     runs-on: ubuntu-latest
     steps:
+      - name: Download Artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          
       - name: Create Release
         uses: googleapis/release-please-action@v4
         id: release
