@@ -3,6 +3,10 @@
 
 name: .NET
 
+permissions:
+  contents: write
+  pull-requests: write
+
 on:
   push:
     branches: [ "main" ]
@@ -109,4 +113,4 @@ jobs:
         id: release
         with:
           release-type: simple
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
