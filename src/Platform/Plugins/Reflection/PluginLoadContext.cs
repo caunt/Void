@@ -2,7 +2,7 @@
 using System.Runtime.Loader;
 using Void.Proxy.Api.Plugins;
 
-namespace Void.Proxy.Reflection;
+namespace Void.Proxy.Plugins.Reflection;
 
 public class PluginLoadContext : AssemblyLoadContext
 {
@@ -82,9 +82,9 @@ public class PluginLoadContext : AssemblyLoadContext
         return assembly;
     }
 
-    protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
+    protected override nint LoadUnmanagedDll(string unmanagedDllName)
     {
         var libraryPath = _localDependencies?.ResolveUnmanagedDllToPath(unmanagedDllName);
-        return libraryPath is null ? IntPtr.Zero : LoadUnmanagedDllFromPath(libraryPath);
+        return libraryPath is null ? nint.Zero : LoadUnmanagedDllFromPath(libraryPath);
     }
 }

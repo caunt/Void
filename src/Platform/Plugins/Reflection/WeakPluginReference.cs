@@ -1,6 +1,6 @@
 ﻿using Void.Common.Plugins;
 
-namespace Void.Proxy.Reflection;
+namespace Void.Proxy.Plugins.Reflection;
 
 public class WeakPluginReference
 {

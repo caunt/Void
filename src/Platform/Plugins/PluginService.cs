@@ -9,7 +9,7 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins;
-using Void.Proxy.Reflection;
+using Void.Proxy.Plugins.Reflection;
 
 namespace Void.Proxy.Plugins;
 
