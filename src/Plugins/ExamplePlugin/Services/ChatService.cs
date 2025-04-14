@@ -29,5 +29,5 @@ public class ChatService(ILinkService links, IConfigurationService configs) : IE
 
 public class ChatSettings
 {
-    public string WelcomeMessage { get; set; } = "Welcome to the  server!";
+    public string WelcomeMessage { get; set; } = "Welcome to the %SERVER% server!";
 }
