@@ -56,6 +56,9 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
         "VERSION=" + VersionStringName(version)
     };
 
+    if (version >= ProtocolVersion.MINECRAFT_1_21_5)
+        variables.Add("PAPER_CHANNEL=experimental");
+
     if (version == ProtocolVersion.MINECRAFT_1_17)
         variables.Add("PAPER_DOWNLOAD_URL=https://api.papermc.io/v2/projects/paper/versions/1.17/builds/79/downloads/paper-1.17-79.jar");
     else if (version == ProtocolVersion.MINECRAFT_1_17_1)
