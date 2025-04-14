@@ -1,4 +1,5 @@
-﻿using Void.Common.Plugins;
+﻿using System.Diagnostics.CodeAnalysis;
+using Void.Common.Plugins;
 
 namespace Void.Proxy.Plugins.Reflection;
 
@@ -6,7 +7,7 @@ public class WeakPluginReference
 {
     private readonly WeakReference<IPlugin>[] _plugins;
 
-    // Do not use primary constructor because they are saving strict reference to parameters
+    [SuppressMessage("Style", "IDE0290:Use primary constructor", Justification = "They are saving strict reference to parameters")]
     public WeakPluginReference(PluginLoadContext context, IPlugin[] plugins)
     {
         Context = context;
