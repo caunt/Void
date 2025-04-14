@@ -76,7 +76,7 @@ public class PluginLoadContext : AssemblyLoadContext
                 assembly = LoadFromAssemblyPath(assemblyPath);
         }
 
-        if (_loadDependency is not null)
+        if (_loadDependency is not null && assembly is null)
         {
             // TODO: this is a temporary workaround
             assembly = _loadDependency(assemblyName);
