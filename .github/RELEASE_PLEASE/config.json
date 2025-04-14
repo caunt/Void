@@ -3,5 +3,6 @@
   "release-as": "0.0.2",
   "versioning": "prerelease",
   "include-component-in-tag": true,
+  "include-v-in-tag": true,
   "always-update": true
 }
