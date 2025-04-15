@@ -10,7 +10,7 @@ using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Container;
-using Void.Proxy.Plugins.Dependencies;
+using Void.Proxy.Plugins.Context;
 
 namespace Void.Proxy.Plugins;
 

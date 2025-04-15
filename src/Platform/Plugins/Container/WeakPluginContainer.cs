@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Void.Common.Plugins;
-using Void.Proxy.Plugins.Dependencies;
+using Void.Proxy.Plugins.Context;
 
 namespace Void.Proxy.Plugins.Container;
 
