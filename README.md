@@ -54,11 +54,11 @@ Most of the time, you want to authenticate on the proxy side, so you have protoc
 | Online (PK)       | :white_check_mark: | :white_check_mark: |
 
 #### Online (Private Key) is a new type of forwarding being developed.
-It allows to authenticate on the proxy side, while still using online mode.
+It allows to play through proxy on servers that are configured with online mode.
 <br>
 The only caveat is that you need to install plugin / modification / anything on the server side.
 <br>
-Server will send it's own private key to the proxy, so after player is authenticated, proxy can provide protocol API.
+Server will send it's own private key to the proxy, so proxy can provide protocol API to plugins.
 
 
 ### Plugins
