@@ -1,13 +1,10 @@
-<p align="center">
-    <a style="text-decoration:none" href="https://github.com/caunt/Void/actions/workflows/dotnet.yml">
-        <img src="https://github.com/caunt/Void/actions/workflows/dotnet.yml/badge.svg" alt="GitHub Actions" />
-    </a>
-</p>
 <h1 align="center">
-    VOID
+	<img src="https://github.com/caunt/Void/actions/workflows/dotnet.yml/badge.svg" alt="GitHub Actions" />
+	<br>
+	VOID
 </h1>
 
-## Minecraft Proxy made with .NET
+
 **Download:**
 <br>
 [**Stable Development Builds**](https://github.com/caunt/Void/releases)
