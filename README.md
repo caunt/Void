@@ -29,8 +29,6 @@
 >| Pocket Edition       | :x:                | :x:                | :x:                | :x:                |
 >| Pocket Edition Alpha | :x:                | :x:                | :x:                | :x:                |
 
-Some versions are temporarily not supported to proxy because they transfer data over UDP instead of TCP. 
-
 ### Mod Loaders
 NeoForge / Forge are playable since proxy does not manipulate their protocols.
 <br>
