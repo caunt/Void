@@ -35,8 +35,6 @@ NeoForge / Forge / others are playable since proxy does not manipulate their pro
 Redirections definitely won't work with them until full support implemented.
 
 ### Forwarding
-While it's possible to play in online mode with Void, it is not recommended.
-<br>
 The proxy allows plugins to choose side of authentication (Server or Proxy).
 <br>
 Most of the time, you want to authenticate on the proxy side, so you have protocol API working.
@@ -54,6 +52,8 @@ It allows to play through proxy on servers that are configured with online mode.
 The only caveat is that you need to install plugin / modification / anything on the server side.
 <br>
 Server will send it's own private key to the proxy, so proxy can provide protocol API to plugins.
+<br>
+If no key provided, you still can play through proxy, but protocol API will be very limited.
 
 
 ### Plugins
