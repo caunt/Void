@@ -30,7 +30,7 @@
 >| Pocket Edition Alpha | :x:                | :x:                | :x:                | :x:                |
 
 ### Mod Loaders
-NeoForge / Forge are playable since proxy does not manipulate their protocols.
+NeoForge / Forge / others are playable since proxy does not manipulate their protocols.
 <br>
 Redirections definitely won't work with them until full support implemented.
 
