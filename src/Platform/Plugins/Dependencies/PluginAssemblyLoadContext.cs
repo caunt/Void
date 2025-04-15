@@ -1,33 +1,35 @@
 ﻿using System.Reflection;
 using System.Runtime.Loader;
-using Void.Proxy.Api.Plugins;
+using Void.Proxy.Plugins.Dependencies.Embedded;
+using Void.Proxy.Plugins.Dependencies.Remote.NuGetSource;
 
-namespace Void.Proxy.Plugins.Reflection;
+namespace Void.Proxy.Plugins.Dependencies;
 
-public class PluginLoadContext : AssemblyLoadContext
+public class PluginAssemblyLoadContext : AssemblyLoadContext
 {
     private static readonly string[] VoidDependencies = [nameof(Void)];
     private static readonly string[] SharedDependencies = [nameof(Microsoft)];
     private static readonly string[] SystemDependencies = [nameof(System), "netstandard"];
-    private readonly IPluginDependencyService _dependencies;
-    private readonly AssemblyDependencyResolver? _localDependencies;
-    private readonly Func<AssemblyName, Assembly?>? _loadDependency;
 
-    private readonly ILogger<PluginLoadContext> _logger;
+    private readonly ILogger<PluginAssemblyLoadContext> _logger;
+    private readonly NuGetDependencyResolver _nuget;
+    private readonly EmbeddedDependencyResolver _embedded;
+    private readonly AssemblyDependencyResolver _directory;
+    private readonly Func<AssemblyName, Assembly?>? _searchInPlugins;
 
-    public PluginLoadContext(ILogger<PluginLoadContext> logger, IPluginDependencyService dependencies, string assemblyName, Stream assemblyStream, string? componentAssemblyPath = null, Func<AssemblyName, Assembly?>? loadDependency = null) : base(assemblyName, true)
+    public Assembly PluginAssembly { get; }
+
+    public PluginAssemblyLoadContext(ILogger<PluginAssemblyLoadContext> logger, string assemblyName, Stream assemblyStream, Func<AssemblyName, Assembly?>? searchInPlugins = null) : base(assemblyName, true)
     {
         _logger = logger;
-        _dependencies = dependencies;
-        _loadDependency = loadDependency;
+        _searchInPlugins = searchInPlugins;
 
-        if (!string.IsNullOrWhiteSpace(componentAssemblyPath))
-            _localDependencies = new AssemblyDependencyResolver(componentAssemblyPath);
+        _nuget = new NuGetDependencyResolver(logger);
+        _embedded = new EmbeddedDependencyResolver(logger);
+        _directory = new AssemblyDependencyResolver(Directory.GetCurrentDirectory());
 
         PluginAssembly = LoadFromStream(assemblyStream);
     }
-
-    public Assembly PluginAssembly { get; }
 
     protected override Assembly Load(AssemblyName assemblyName)
     {
@@ -42,7 +44,7 @@ public class PluginLoadContext : AssemblyLoadContext
 
             if (assembly is null)
             {
-                using var assemblyStream = _dependencies.ResolveEmbeddedAssemblyStream(assemblyName);
+                using var assemblyStream = _embedded.ResolveEmbeddedAssemblyStream(assemblyName);
 
                 if (assemblyStream is not null)
                     assembly = Default.LoadFromStream(assemblyStream);
@@ -67,19 +69,19 @@ public class PluginLoadContext : AssemblyLoadContext
         if (SystemDependencies.Any(assemblyName.FullName.StartsWith) && assembly is null)
             return Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.GetName().Name == assemblyName.Name) ?? Default.LoadFromAssemblyName(assemblyName);
 
-        // fallback to local folder and NuGet
+        // fallback to local directory and NuGet
         if (assembly is null)
         {
-            var assemblyPath = _localDependencies?.ResolveAssemblyToPath(assemblyName) ?? _dependencies.ResolveAssemblyPath(assemblyName);
+            var assemblyPath = _directory?.ResolveAssemblyToPath(assemblyName) ?? _nuget.ResolveAssemblyPath(assemblyName);
 
             if (assemblyPath is not null)
                 assembly = LoadFromAssemblyPath(assemblyPath);
         }
 
-        if (_loadDependency is not null && assembly is null)
+        if (_searchInPlugins is not null && assembly is null)
         {
             // TODO: this is a temporary workaround
-            assembly = _loadDependency(assemblyName);
+            assembly = _searchInPlugins(assemblyName);
         }
 
         // sorry, but where am I supposed to find your dependency?
@@ -92,7 +94,7 @@ public class PluginLoadContext : AssemblyLoadContext
 
     protected override nint LoadUnmanagedDll(string unmanagedDllName)
     {
-        var libraryPath = _localDependencies?.ResolveUnmanagedDllToPath(unmanagedDllName);
+        var libraryPath = _directory?.ResolveUnmanagedDllToPath(unmanagedDllName);
         return libraryPath is null ? nint.Zero : LoadUnmanagedDllFromPath(libraryPath);
     }
 }

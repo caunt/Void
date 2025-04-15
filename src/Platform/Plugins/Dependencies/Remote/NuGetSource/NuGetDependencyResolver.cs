@@ -1,5 +1,4 @@
 ﻿using Nito.Disposables.Internals;
-using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Frameworks;
 using NuGet.PackageManagement;
@@ -10,16 +9,29 @@ using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using System.Reflection;
 using System.Runtime.Versioning;
-using Void.Proxy.Api.Plugins;
 
-namespace Void.Proxy.Plugins;
+namespace Void.Proxy.Plugins.Dependencies.Remote.NuGetSource;
 
-public class PluginDependencyService(ILogger<PluginDependencyService> logger) : IPluginDependencyService
+public class NuGetDependencyResolver(ILogger logger)
 {
-    private static readonly string FrameworkName = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName ?? throw new InvalidOperationException("Cannot determine the target framework.");
+    private static readonly string FrameworkName = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName
+        ?? throw new InvalidOperationException("Cannot determine the target framework.");
+
     private static readonly SourceRepository NuGetRepository = Repository.Factory.GetCoreV3(new PackageSource("https://api.nuget.org/v3/index.json").Source);
     private static readonly SourceCacheContext NuGetCache = new();
     private static readonly string NuGetPackagesPath = Path.Combine(Directory.GetCurrentDirectory(), SettingsUtility.DefaultGlobalPackagesFolderPath);
+
+    private readonly NuGet.Common.ILogger _nugetLogger = new NuGetLogger(logger);
+
+    private async Task<string?> ResolveAssemblyFromNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)
+    {
+        var assemblyPath = await ResolveAssemblyFromOfflineNuGetAsync(assemblyName, cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(assemblyPath))
+            assemblyPath = await ResolveAssemblyFromOnlineNuGetAsync(assemblyName, cancellationToken);
+
+        return assemblyPath;
+    }
 
     public string? ResolveAssemblyPath(AssemblyName assemblyName)
     {
@@ -31,41 +43,11 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
             return null;
         }
 
-        var assemblyPath = ResolveAssemblyFromNuGetAsync(assemblyName).AsTask().GetAwaiter().GetResult();
+        var assemblyPath = ResolveAssemblyFromNuGetAsync(assemblyName).GetAwaiter().GetResult();
         return assemblyPath;
     }
 
-    public Stream? ResolveEmbeddedAssemblyStream(AssemblyName assemblyName)
-    {
-        logger.LogTrace("Resolving {AssemblyName} embedded dependency", assemblyName.Name);
-
-        if (string.IsNullOrWhiteSpace(assemblyName.Name))
-            return null;
-
-        var assembly = Assembly.GetExecutingAssembly();
-        var resource = assembly.GetManifestResourceNames().FirstOrDefault(name => name.StartsWith(assemblyName.Name));
-
-        if (string.IsNullOrWhiteSpace(resource))
-            return null;
-
-        if (assembly.GetManifestResourceStream(resource) is { } stream)
-            return stream;
-
-        logger.LogWarning("Embedded assembly {ResourceName} couldn't be loaded", resource);
-        return null;
-    }
-
-    private async ValueTask<string?> ResolveAssemblyFromNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)
-    {
-        var assemblyPath = await ResolveAssemblyFromOfflineNuGetAsync(assemblyName, cancellationToken);
-
-        if (string.IsNullOrWhiteSpace(assemblyPath))
-            assemblyPath = await ResolveAssemblyFromOnlineNuGetAsync(assemblyName, cancellationToken);
-
-        return assemblyPath;
-    }
-
-    private async ValueTask<string?> ResolveAssemblyFromOfflineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
+    private async Task<string?> ResolveAssemblyFromOfflineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
     {
         try
         {
@@ -132,7 +114,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
         return null;
     }
 
-    private async ValueTask<string?> ResolveAssemblyFromOnlineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
+    private async Task<string?> ResolveAssemblyFromOnlineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
     {
         try
         {
@@ -179,11 +161,11 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
         return null;
     }
 
-    private async ValueTask TryDownloadNuGetPackageAsync(PackageIdentity identity, CancellationToken cancellationToken)
+    private async Task TryDownloadNuGetPackageAsync(PackageIdentity identity, CancellationToken cancellationToken)
     {
         try
         {
-            using var result = await PackageDownloader.GetDownloadResourceResultAsync(NuGetRepository, identity, new PackageDownloadContext(NuGetCache), NuGetPackagesPath, NullLogger.Instance, cancellationToken);
+            using var result = await PackageDownloader.GetDownloadResourceResultAsync(NuGetRepository, identity, new PackageDownloadContext(NuGetCache), NuGetPackagesPath, _nugetLogger, cancellationToken);
             logger.LogTrace("Downloaded {PackageId} version {PackageVersion} dependency", identity.Id, identity.Version);
         }
         catch (FatalProtocolException exception)
@@ -196,7 +178,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
         }
     }
 
-    private async ValueTask<PackageIdentity?> TryResolveNuGetIdentityAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
+    private async Task<PackageIdentity?> TryResolveNuGetIdentityAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
     {
         logger.LogTrace("Looking for dependency {DependencyName} as Identity in NuGet", assemblyName.Name);
         var identity = await TryResolveNuGetPackageIdAsync(assemblyName, cancellationToken);
@@ -214,7 +196,7 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
         return null;
     }
 
-    private async ValueTask<PackageIdentity?> TryResolveNuGetPackageIdAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
+    private async Task<PackageIdentity?> TryResolveNuGetPackageIdAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(assemblyName.Name))
             return null;
@@ -225,10 +207,10 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
         return best;
     }
 
-    private async ValueTask<PackageIdentity?> TryResolveNuGetPackageSearchAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
+    private async Task<PackageIdentity?> TryResolveNuGetPackageSearchAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
     {
         var packageSearchResource = await NuGetRepository.GetResourceAsync<PackageSearchResource>(cancellationToken);
-        var packageSearchResults = await packageSearchResource.SearchAsync(assemblyName.Name, new SearchFilter(true), 0, 1, NullLogger.Instance, cancellationToken);
+        var packageSearchResults = await packageSearchResource.SearchAsync(assemblyName.Name, new SearchFilter(true), 0, 1, _nugetLogger, cancellationToken);
 
         // actually always 1
         foreach (var packageSearchResult in packageSearchResults)
@@ -273,9 +255,9 @@ public class PluginDependencyService(ILogger<PluginDependencyService> logger) : 
         return result;
     }
 
-    private static async ValueTask<IEnumerable<IPackageSearchMetadata>> GetNuGetPackageVersionAsync(string packageId, CancellationToken cancellationToken)
+    private async Task<IEnumerable<IPackageSearchMetadata>> GetNuGetPackageVersionAsync(string packageId, CancellationToken cancellationToken)
     {
         var packageMetadataResource = await NuGetRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
-        return await packageMetadataResource.GetMetadataAsync(packageId, true, false, NuGetCache, NullLogger.Instance, cancellationToken);
+        return await packageMetadataResource.GetMetadataAsync(packageId, true, false, NuGetCache, _nugetLogger, cancellationToken);
     }
 }

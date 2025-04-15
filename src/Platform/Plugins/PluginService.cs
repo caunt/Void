@@ -9,15 +9,16 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins;
-using Void.Proxy.Plugins.Reflection;
+using Void.Proxy.Plugins.Container;
+using Void.Proxy.Plugins.Dependencies;
 
 namespace Void.Proxy.Plugins;
 
-public class PluginService(ILogger<PluginService> logger, IPlayerService players, IEventService events, IServiceProvider services, IPluginDependencyService dependencies) : IPluginService
+public class PluginService(ILogger<PluginService> logger, IPlayerService players, IEventService events, IServiceProvider services) : IPluginService
 {
     private readonly TimeSpan _gcRate = TimeSpan.FromMilliseconds(500);
     private readonly List<IPlugin> _plugins = [];
-    private readonly List<WeakPluginReference> _references = [];
+    private readonly List<WeakPluginContainer> _references = [];
     private readonly TimeSpan _unloadTimeout = TimeSpan.FromSeconds(10);
 
     public IReadOnlyList<IPlugin> All => _plugins;
@@ -75,7 +76,7 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
     {
         logger.LogTrace("Loading {AssemblyName} plugins", assemblyName);
 
-        var context = new PluginLoadContext(services.GetRequiredService<ILogger<PluginLoadContext>>(), dependencies, assemblyName, assemblyStream, loadDependency: (assemblyName) =>
+        var context = new PluginAssemblyLoadContext(services.GetRequiredService<ILogger<PluginAssemblyLoadContext>>(), assemblyName, assemblyStream, searchInPlugins: (assemblyName) =>
         {
             foreach (var reference in _references)
             {
@@ -92,17 +93,17 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
 
         var plugins = GetPlugins(assemblyName, context.PluginAssembly);
 
-        foreach (var plugin in plugins)
-            RegisterPlugin(plugin);
-
         if (plugins.Length == 0)
         {
             logger.Log(ignoreEmpty ? LogLevel.Trace : LogLevel.Warning, "Plugin {PluginName} has no IPlugin implementations", context.Name);
             return;
         }
 
+        foreach (var plugin in plugins)
+            RegisterPlugin(plugin);
+
         events.RegisterListeners(plugins.Cast<IEventListener>());
-        _references.Add(new WeakPluginReference(context, plugins));
+        _references.Add(new WeakPluginContainer(context, plugins));
 
         foreach (var plugin in plugins)
             await events.ThrowAsync(new PluginLoadEvent(plugin), cancellationToken);
