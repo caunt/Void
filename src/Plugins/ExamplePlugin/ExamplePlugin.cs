@@ -3,12 +3,12 @@ using Void.Common.Plugins;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Proxy;
-using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.ExamplePlugin.Services;
 
 namespace Void.Proxy.Plugins.ExamplePlugin;
 
-public class ExamplePlugin(ILogger<ExamplePlugin> logger, IEventService events) : IPlugin
+public class ExamplePlugin(ILogger<ExamplePlugin> logger, IDependencyService dependencies) : IPlugin
 {
     public string Name => nameof(ExamplePlugin);
 
@@ -18,8 +18,8 @@ public class ExamplePlugin(ILogger<ExamplePlugin> logger, IEventService events) 
         if (@event.Plugin != this)
             return;
 
-        events.RegisterListener<InventoryService>();
-        events.RegisterListener<ChatService>();
+        dependencies.CreateInstance<InventoryService>();
+        dependencies.CreateInstance<ChatService>();
     }
 
     [Subscribe]
