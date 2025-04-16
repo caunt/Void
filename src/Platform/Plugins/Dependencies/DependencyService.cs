@@ -33,30 +33,36 @@ public class DependencyService(IServiceProvider services, IEventService events) 
 
     public TService CreateInstance<TService>(Type serviceType)
     {
-        var service = (TService?)CreateInstance(serviceType) ?? throw new InvalidOperationException($"Unable to cast instance of {serviceType} to {typeof(TService)}");
-
-        if (serviceType.IsAssignableTo(typeof(IEventListener)))
-            events.RegisterListeners((IEventListener)service);
-
-        if (serviceType.IsAssignableTo(typeof(IPlugin)))
-            RegisterPlugin((IPlugin)service);
-
-        return service;
+        return (TService?)CreateInstance(serviceType) ??
+            throw new InvalidOperationException($"Unable to cast instance of {serviceType} to {typeof(TService)}");
     }
 
     public object CreateInstance(Type serviceType)
     {
-        return ActivatorUtilities.CreateInstance(All, serviceType);
+        var instance = All.GetService(serviceType);
+
+        if (instance is not null)
+            return instance;
+
+        instance = ActivatorUtilities.CreateInstance(All, serviceType);
+
+        if (serviceType.IsAssignableTo(typeof(IEventListener)))
+            events.RegisterListeners((IEventListener)instance);
+
+        if (serviceType.IsAssignableTo(typeof(IPlugin)))
+            RegisterPlugin((IPlugin)instance);
+
+        return instance;
     }
 
     public TService GetRequiredService<TService>() where TService : notnull
     {
-        return services.GetRequiredService<TService>();
+        return Get(services => services.GetRequiredService<TService>());
     }
 
-    public TService Get<TService>(Func<IServiceProvider, TService> configure)
+    public TService Get<TService>(Func<IServiceProvider, TService> provider)
     {
-        return configure(All);
+        return provider(All);
     }
 
     public void Register(Action<ServiceCollection> configure)
