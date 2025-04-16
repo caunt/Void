@@ -39,11 +39,6 @@ public class DependencyService(IServiceProvider services, IEventService events) 
 
     public object CreateInstance(Type serviceType)
     {
-        // var instance = All.GetService(serviceType);
-        // 
-        // if (instance is not null)
-        //     return instance;
-
         var instance = ActivatorUtilities.CreateInstance(All, serviceType);
 
         if (serviceType.IsAssignableTo(typeof(IEventListener)))

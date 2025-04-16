@@ -6,6 +6,8 @@ namespace Void.Proxy.Api.Plugins;
 
 public interface IDependencyService : IEventListener
 {
+    public IServiceProvider All { get; }
+
     public TService CreateInstance<TService>();
     public TService CreateInstance<TService>(Type serviceType);
     public object CreateInstance(Type serviceType);
