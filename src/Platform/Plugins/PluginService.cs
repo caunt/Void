@@ -14,7 +14,7 @@ using Void.Proxy.Plugins.Context;
 
 namespace Void.Proxy.Plugins;
 
-public class PluginService(ILogger<PluginService> logger, IPlayerService players, IEventService events, IServiceProvider services) : IPluginService
+public class PluginService(ILogger<PluginService> logger, IPlayerService players, IEventService events, IDependencyService dependencies) : IPluginService
 {
     private readonly TimeSpan _gcRate = TimeSpan.FromMilliseconds(500);
     private readonly List<IPlugin> _plugins = [];
@@ -76,7 +76,7 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
     {
         logger.LogTrace("Loading {AssemblyName} plugins", assemblyName);
 
-        var context = new PluginAssemblyLoadContext(services.GetRequiredService<ILogger<PluginAssemblyLoadContext>>(), assemblyName, assemblyStream, searchInPlugins: (assemblyName) =>
+        var context = new PluginAssemblyLoadContext(dependencies, assemblyName, assemblyStream, searchInPlugins: (assemblyName) =>
         {
             foreach (var reference in _references)
             {
@@ -102,7 +102,6 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
         foreach (var plugin in plugins)
             RegisterPlugin(plugin);
 
-        events.RegisterListeners(plugins.Cast<IEventListener>());
         _references.Add(new WeakPluginContainer(context, plugins));
 
         foreach (var plugin in plugins)
@@ -175,9 +174,7 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
             var plugins = assembly.GetTypes()
                 .Where(pluginInterface.IsAssignableFrom)
                 .Where(type => !type.IsAbstract)
-                .Select(type => ActivatorUtilities.CreateInstance(services, type))
-                .Cast<IPlugin?>()
-                .WhereNotNull()
+                .Select(dependencies.CreateInstance<IPlugin>)
                 .ToArray();
 
             return plugins;
