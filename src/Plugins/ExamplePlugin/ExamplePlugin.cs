@@ -1,9 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Void.Common.Plugins;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Plugins;
+using Void.Proxy.Plugins.ExamplePlugin.Services;
 
 namespace Void.Proxy.Plugins.ExamplePlugin;
 
@@ -17,17 +19,16 @@ public class ExamplePlugin(ILogger<ExamplePlugin> logger, IDependencyService dep
         if (@event.Plugin != this)
             return;
 
-        // dependencies.Register(services =>
-        // {
-        //     services.AddSingleton<InventoryService>();
-        //     services.AddSingleton<ChatService>();
-        // });
-        // 
-        // var test = dependencies.Services;
-        // 
-        // Debugger.Break();
-        // test.GetService<InventoryService>();
-        // ActivatorUtilities.CreateInstance<InventoryService>(test);
+        // TODO: make them hosted?
+
+        dependencies.Register(services =>
+        {
+            services.AddSingleton<InventoryService>();
+            services.AddSingleton<ChatService>();
+        });
+
+        dependencies.CreateInstance<InventoryService>();
+        dependencies.CreateInstance<ChatService>();
     }
 
     [Subscribe]
