@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Common.Network;
@@ -18,6 +17,7 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins;
+using Void.Proxy.Api.Plugins.Extensions;
 
 namespace Void.Minecraft.Players.Extensions;
 
@@ -64,8 +64,9 @@ public static class MinecraftPlayerExtensions
     {
         var packetType = typeof(T);
         var plugins = services.GetRequiredService<IPluginService>();
-        var plugin = plugins.All.FirstOrDefault(plugin => plugin.GetType().Assembly == packetType.Assembly)
-            ?? throw new InvalidOperationException($"Plugin for packet {packetType.Name} not found.");
+
+        if (!plugins.TryGetPlugin(packetType, out var plugin))
+            throw new InvalidOperationException($"Plugin for packet {packetType.Name} not found.");
 
         return plugin;
     }

@@ -9,6 +9,7 @@ using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Plugins;
+using Void.Proxy.Api.Plugins.Extensions;
 using Void.Proxy.Configurations.Serializers;
 using Timer = System.Timers.Timer;
 
@@ -253,10 +254,7 @@ public class ConfigurationService : BackgroundService, IConfigurationService
 
     private string? GetPluginNameFromConfiguration<TConfiguration>() where TConfiguration : notnull
     {
-        var configurationType = typeof(TConfiguration);
-        var assembly = configurationType.Assembly;
-        var plugin = _plugins.All.FirstOrDefault(plugin => plugin.GetType().Assembly == assembly);
-
+        _plugins.TryGetPlugin(typeof(TConfiguration), out var plugin);
         return plugin?.Name;
     }
 
