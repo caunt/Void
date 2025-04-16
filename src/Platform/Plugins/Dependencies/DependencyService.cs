@@ -39,7 +39,7 @@ public class DependencyService(IServiceProvider services, IEventService events) 
 
     public object CreateInstance(Type serviceType)
     {
-        var instance = services.GetService(serviceType);
+        var instance = Services.GetService(serviceType);
 
         if (instance is not null)
             return instance;
