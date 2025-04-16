@@ -23,13 +23,13 @@ public class RegistryHolder : IRegistryHolder
             throw new InvalidOperationException($"System packet-id registry is already managed by {PacketIdSystem.ManagedBy.Name} ({PacketIdSystem.ManagedBy})");
 
         if (PacketIdPlugins.ManagedBy is not null)
-            throw new InvalidOperationException($"Plugins packet-id registry is already managed by {PacketIdPlugins.ManagedBy.Name} ({PacketIdSystem.ManagedBy})");
+            throw new InvalidOperationException($"Plugins packet-id registry is already managed by {PacketIdPlugins.ManagedBy.Name} ({PacketIdPlugins.ManagedBy})");
 
         if (PacketTransformationsSystem.ManagedBy is not null)
-            throw new InvalidOperationException($"System packet-transformations registry is already managed by {PacketTransformationsSystem.ManagedBy.Name} ({PacketIdSystem.ManagedBy})");
+            throw new InvalidOperationException($"System packet-transformations registry is already managed by {PacketTransformationsSystem.ManagedBy.Name} ({PacketTransformationsSystem.ManagedBy})");
 
         if (PacketTransformationsPlugins.ManagedBy is not null)
-            throw new InvalidOperationException($"Plugins packet-transformations registry is already managed by {PacketTransformationsPlugins.ManagedBy.Name} ({PacketIdSystem.ManagedBy})");
+            throw new InvalidOperationException($"Plugins packet-transformations registry is already managed by {PacketTransformationsPlugins.ManagedBy.Name} ({PacketTransformationsPlugins.ManagedBy})");
 
         PacketIdSystem.ManagedBy = managedBy;
         PacketIdSystem.ProtocolVersion = protocolVersion;
