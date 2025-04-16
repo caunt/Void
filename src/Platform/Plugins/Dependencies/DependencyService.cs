@@ -87,7 +87,7 @@ public class DependencyService(IServiceProvider services, IEventService events) 
         if (_pluginServices.Values.Count is 0)
             services.ForwardServices(forwardedServices);
 
-        return forwardedServices.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
+        return forwardedServices.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }
 
     private bool GetByAssembly(Assembly assembly, [MaybeNullWhen(false)] out IPlugin plugin, [MaybeNullWhen(false)] out IServiceProvider services)
