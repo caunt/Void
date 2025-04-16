@@ -4,7 +4,6 @@ using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Plugins;
-using Void.Proxy.Plugins.ExamplePlugin.Services;
 
 namespace Void.Proxy.Plugins.ExamplePlugin;
 
@@ -18,8 +17,17 @@ public class ExamplePlugin(ILogger<ExamplePlugin> logger, IDependencyService dep
         if (@event.Plugin != this)
             return;
 
-        dependencies.CreateInstance<InventoryService>();
-        dependencies.CreateInstance<ChatService>();
+        // dependencies.Register(services =>
+        // {
+        //     services.AddSingleton<InventoryService>();
+        //     services.AddSingleton<ChatService>();
+        // });
+        // 
+        // var test = dependencies.Services;
+        // 
+        // Debugger.Break();
+        // test.GetService<InventoryService>();
+        // ActivatorUtilities.CreateInstance<InventoryService>(test);
     }
 
     [Subscribe]
