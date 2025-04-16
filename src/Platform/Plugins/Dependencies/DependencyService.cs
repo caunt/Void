@@ -1,4 +1,6 @@
-﻿using Void.Common.Events;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using Void.Common.Events;
 using Void.Common.Plugins;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
@@ -10,7 +12,7 @@ namespace Void.Proxy.Plugins.Dependencies;
 
 public class DependencyService(IServiceProvider services, IEventService events) : IDependencyService
 {
-    private readonly Dictionary<IPlugin, IServiceProvider> _pluginServices = new();
+    private readonly Dictionary<IPlugin, IServiceProvider> _pluginServices = [];
 
     public IServiceProvider All => GetAll();
 
@@ -33,15 +35,18 @@ public class DependencyService(IServiceProvider services, IEventService events) 
     {
         var service = (TService?)CreateInstance(serviceType) ?? throw new InvalidOperationException($"Unable to cast instance of {serviceType} to {typeof(TService)}");
 
-        if (service.GetType().IsAssignableTo(typeof(IEventListener)))
+        if (serviceType.IsAssignableTo(typeof(IEventListener)))
             events.RegisterListeners((IEventListener)service);
+
+        if (serviceType.IsAssignableTo(typeof(IPlugin)))
+            RegisterPlugin((IPlugin)service);
 
         return service;
     }
 
     public object CreateInstance(Type serviceType)
     {
-        return ActivatorUtilities.CreateInstance(services, serviceType);
+        return ActivatorUtilities.CreateInstance(All, serviceType);
     }
 
     public TService GetRequiredService<TService>() where TService : notnull
@@ -58,15 +63,50 @@ public class DependencyService(IServiceProvider services, IEventService events) 
     {
         var services = new ServiceCollection();
         configure(services);
+
+        if (!GetByAssembly(services[0].ServiceType.Assembly, out var plugin, out var existingServices))
+            throw new InvalidOperationException("Source service provider is not found");
+
+        existingServices.ForwardServices(services);
+        _pluginServices[plugin] = services.BuildServiceProvider();
     }
 
     private ServiceProvider GetAll()
     {
         var forwardedServices = new ServiceCollection();
+        services.ForwardServices(forwardedServices);
 
         foreach (var services in _pluginServices.Values)
             services.ForwardServices(forwardedServices);
 
         return forwardedServices.BuildServiceProvider();
+    }
+
+    private bool GetByAssembly(Assembly assembly, [MaybeNullWhen(false)] out IPlugin plugin, [MaybeNullWhen(false)] out IServiceProvider services)
+    {
+        foreach (var (_plugin, _services) in _pluginServices)
+        {
+            if (_plugin.GetType().Assembly != assembly)
+                continue;
+
+            plugin = _plugin;
+            services = _services;
+            return true;
+        }
+
+        plugin = null;
+        services = null;
+        return false;
+    }
+
+    private void RegisterPlugin(IPlugin plugin)
+    {
+        if (_pluginServices.ContainsKey(plugin))
+            return;
+
+        var services = new ServiceCollection();
+        services.AddSingleton(plugin.GetType(), plugin);
+
+        _pluginServices[plugin] = services.BuildServiceProvider();
     }
 }
