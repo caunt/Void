@@ -16,7 +16,7 @@ public class DependencyService(IServiceProvider services, IEventService events) 
 
     public IServiceProvider Services => GetAll();
 
-    [Subscribe]
+    [Subscribe(PostOrder.First)]
     public void OnPluginUnload(PluginUnloadEvent @event)
     {
         if (!_pluginServices.TryGetValue(@event.Plugin, out var serviceProvider))
@@ -48,6 +48,11 @@ public class DependencyService(IServiceProvider services, IEventService events) 
             RegisterPlugin((IPlugin)instance);
 
         return instance;
+    }
+
+    public TService? GetService<TService>()
+    {
+        return Get(services => services.GetService<TService>());
     }
 
     public TService GetRequiredService<TService>() where TService : notnull
@@ -82,7 +87,7 @@ public class DependencyService(IServiceProvider services, IEventService events) 
         if (_pluginServices.Values.Count is 0)
             services.ForwardServices(forwardedServices);
 
-        return forwardedServices.BuildServiceProvider();
+        return forwardedServices.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
     }
 
     private bool GetByAssembly(Assembly assembly, [MaybeNullWhen(false)] out IPlugin plugin, [MaybeNullWhen(false)] out IServiceProvider services)
