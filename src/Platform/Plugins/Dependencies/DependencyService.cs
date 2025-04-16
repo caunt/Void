@@ -39,6 +39,11 @@ public class DependencyService(IServiceProvider services, IEventService events) 
 
     public object CreateInstance(Type serviceType)
     {
+        // var instance = services.GetService(serviceType);
+        // 
+        // if (instance is not null)
+        //     return instance;
+        // 
         var instance = ActivatorUtilities.CreateInstance(Services, serviceType);
 
         if (serviceType.IsAssignableTo(typeof(IEventListener)))
@@ -62,22 +67,26 @@ public class DependencyService(IServiceProvider services, IEventService events) 
 
     public void Register(Action<ServiceCollection> configure)
     {
-        var services = new ServiceCollection();
-        configure(services);
+        var pluginServices = new ServiceCollection();
+        configure(pluginServices);
 
-        if (!GetByAssembly(services[0].ServiceType.Assembly, out var plugin, out var existingServices))
+        if (!GetByAssembly(pluginServices[0].ServiceType.Assembly, out var plugin, out var existingServices))
             throw new InvalidOperationException("Source service provider is not found");
 
-        existingServices.ForwardServices(services);
-        _pluginServices[plugin] = services.BuildServiceProvider();
+        existingServices.ForwardServices(pluginServices);
+        services.ForwardServices(pluginServices);
+
+        _pluginServices[plugin] = pluginServices.BuildServiceProvider();
     }
 
     private ServiceProvider GetAll()
     {
         var forwardedServices = new ServiceCollection();
-        services.ForwardServices(forwardedServices);
 
         foreach (var services in _pluginServices.Values)
+            services.ForwardServices(forwardedServices);
+
+        if (_pluginServices.Values.Count is 0)
             services.ForwardServices(forwardedServices);
 
         return forwardedServices.BuildServiceProvider();
