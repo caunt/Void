@@ -74,8 +74,6 @@ public class DependencyService(IServiceProvider services, IEventService events) 
             throw new InvalidOperationException("Source service provider is not found");
 
         existingServices.ForwardServices(pluginServices);
-        services.ForwardServices(pluginServices);
-
         _pluginServices[plugin] = pluginServices.BuildServiceProvider();
     }
 
@@ -114,9 +112,10 @@ public class DependencyService(IServiceProvider services, IEventService events) 
         if (_pluginServices.ContainsKey(plugin))
             return;
 
-        var services = new ServiceCollection();
-        services.AddSingleton(plugin.GetType(), plugin);
+        var pluginServices = new ServiceCollection();
+        pluginServices.AddSingleton(plugin.GetType(), plugin);
+        services.ForwardServices(pluginServices);
 
-        _pluginServices[plugin] = services.BuildServiceProvider();
+        _pluginServices[plugin] = pluginServices.BuildServiceProvider();
     }
 }
