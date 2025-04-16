@@ -52,6 +52,12 @@ public class DependencyResolver(ILogger logger, AssemblyLoadContext context, Fun
         if (SystemDependencies.Any(assemblyName.FullName.StartsWith) && assembly is null)
             return AssemblyLoadContext.Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.GetName().Name == assemblyName.Name) ?? AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName);
 
+        if (_searchInPlugins is not null && assembly is null)
+        {
+            // TODO: this is a temporary workaround
+            assembly = _searchInPlugins(assemblyName);
+        }
+
         // fallback to local directory and NuGet
         if (assembly is null)
         {
@@ -59,12 +65,6 @@ public class DependencyResolver(ILogger logger, AssemblyLoadContext context, Fun
 
             if (assemblyPath is not null)
                 assembly = context.LoadFromAssemblyPath(assemblyPath);
-        }
-
-        if (_searchInPlugins is not null && assembly is null)
-        {
-            // TODO: this is a temporary workaround
-            assembly = _searchInPlugins(assemblyName);
         }
 
         return assembly;
