@@ -53,6 +53,7 @@ public class PlayerService : IPlayerService, IEventListener
         var player = new Player(client);
         collection.AddSingleton<IPlayer>(player);
         collection.AddSingleton<IMinecraftPlayer>(player);
+
         player.Context = new PlayerContext(collection.BuildServiceProvider());
 
         try
