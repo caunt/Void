@@ -76,6 +76,7 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
         logger.LogTrace("Completed invoking {TypeName} event", eventType.Name);
     }
 
+    [Obsolete("Use IDependencyService.CreateInstance<TService>() instead")]
     public T RegisterListener<T>(params object[] parameters) where T : IEventListener
     {
         var instance = ActivatorUtilities.CreateInstance<T>(services, parameters);
@@ -95,6 +96,9 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
         {
             foreach (var listener in listeners)
             {
+                if (_entries.Any(entry => entry.Listener == listener))
+                    continue;
+
                 logger.LogTrace("Registering {Type} event listener", listener);
 
                 var type = listener.GetType();
