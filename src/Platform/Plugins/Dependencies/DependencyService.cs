@@ -14,7 +14,7 @@ public class DependencyService(IServiceProvider services, IEventService events) 
 {
     private readonly Dictionary<IPlugin, IServiceProvider> _pluginServices = [];
 
-    public IServiceProvider All => GetAll();
+    public IServiceProvider Services => GetAll();
 
     [Subscribe]
     public void OnPluginUnload(PluginUnloadEvent @event)
@@ -39,7 +39,7 @@ public class DependencyService(IServiceProvider services, IEventService events) 
 
     public object CreateInstance(Type serviceType)
     {
-        var instance = ActivatorUtilities.CreateInstance(All, serviceType);
+        var instance = ActivatorUtilities.CreateInstance(Services, serviceType);
 
         if (serviceType.IsAssignableTo(typeof(IEventListener)))
             events.RegisterListeners((IEventListener)instance);
@@ -57,7 +57,7 @@ public class DependencyService(IServiceProvider services, IEventService events) 
 
     public TService Get<TService>(Func<IServiceProvider, TService> provider)
     {
-        return provider(All);
+        return provider(Services);
     }
 
     public void Register(Action<ServiceCollection> configure)
