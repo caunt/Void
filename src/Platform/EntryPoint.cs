@@ -23,6 +23,7 @@ using Void.Proxy.Forwarding;
 using Void.Proxy.Links;
 using Void.Proxy.Players;
 using Void.Proxy.Plugins;
+using Void.Proxy.Plugins.Dependencies;
 using Void.Proxy.Servers;
 using Void.Proxy.Settings;
 
@@ -55,6 +56,7 @@ try
     builder.Services.AddSingleton<IConsoleService, ConsoleService>();
     builder.Services.AddSingleton<ICommandService, CommandService>();
     builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
+    builder.Services.AddSingleton<IDependencyService, DependencyService>();
     builder.Services.AddSingleton<IProxy, Platform>();
     builder.Services.AddHostedService(services => services.GetRequiredService<IConfigurationService>());
     builder.Services.AddHostedService(services => services.GetRequiredService<IProxy>());
