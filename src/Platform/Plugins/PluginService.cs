@@ -61,7 +61,7 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
             return;
         }
 
-        var pluginsFiles = pluginsDirectoryInfo.GetFiles("*.dll").Order().Select(fileInfo => fileInfo.FullName);
+        var pluginsFiles = pluginsDirectoryInfo.GetFiles("*.dll").Select(fileInfo => fileInfo.FullName).Order();
 
         foreach (var pluginPath in pluginsFiles)
         {
