@@ -20,16 +20,16 @@ public class RegistryHolder : IRegistryHolder
     public void Setup(IPlugin managedBy, ProtocolVersion protocolVersion)
     {
         if (PacketIdSystem.ManagedBy is not null)
-            throw new InvalidOperationException($"System packet-id registry is already managed by {PacketIdSystem.ManagedBy.Name}");
+            throw new InvalidOperationException($"System packet-id registry is already managed by {PacketIdSystem.ManagedBy.Name} ({PacketIdSystem.ManagedBy})");
 
         if (PacketIdPlugins.ManagedBy is not null)
-            throw new InvalidOperationException($"Plugins packet-id registry is already managed by {PacketIdPlugins.ManagedBy.Name}");
+            throw new InvalidOperationException($"Plugins packet-id registry is already managed by {PacketIdPlugins.ManagedBy.Name} ({PacketIdSystem.ManagedBy})");
 
         if (PacketTransformationsSystem.ManagedBy is not null)
-            throw new InvalidOperationException($"System packet-transformations registry is already managed by {PacketTransformationsSystem.ManagedBy.Name}");
+            throw new InvalidOperationException($"System packet-transformations registry is already managed by {PacketTransformationsSystem.ManagedBy.Name} ({PacketIdSystem.ManagedBy})");
 
         if (PacketTransformationsPlugins.ManagedBy is not null)
-            throw new InvalidOperationException($"Plugins packet-transformations registry is already managed by {PacketTransformationsPlugins.ManagedBy.Name}");
+            throw new InvalidOperationException($"Plugins packet-transformations registry is already managed by {PacketTransformationsPlugins.ManagedBy.Name} ({PacketIdSystem.ManagedBy})");
 
         PacketIdSystem.ManagedBy = managedBy;
         PacketIdSystem.ProtocolVersion = protocolVersion;
