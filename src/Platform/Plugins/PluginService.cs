@@ -16,31 +16,38 @@ namespace Void.Proxy.Plugins;
 
 public class PluginService(ILogger<PluginService> logger, IPlayerService players, IEventService events, IDependencyService dependencies) : IPluginService
 {
-    private readonly List<IPlugin> _plugins = [];
-    private readonly List<WeakPluginContainer> _references = [];
+    private readonly List<WeakPluginContainer> _containers = [];
     private readonly TimeSpan _gcRate = TimeSpan.FromMilliseconds(500);
     private readonly TimeSpan _unloadTimeout = TimeSpan.FromSeconds(10);
 
-    public IReadOnlyList<IPlugin> All => _plugins;
+    public IEnumerable<IPlugin> All => _containers.SelectMany(container => container.Plugins);
 
     public async ValueTask LoadEmbeddedPluginsAsync(CancellationToken cancellationToken = default)
     {
         var assembly = Assembly.GetExecutingAssembly();
-        var pluginsResources = assembly.GetManifestResourceNames().Where(name => name.Contains(nameof(Plugins)));
+        var resources = assembly.GetManifestResourceNames().Where(name => name.Contains(nameof(Plugins)));
 
-        foreach (var resourceName in pluginsResources)
+        var plugins = resources.SelectMany(name =>
         {
-            logger.LogTrace("Found {ResourceName} embedded plugin", resourceName);
+            logger.LogTrace("Found {Name} embedded plugin", name);
 
-            if (assembly.GetManifestResourceStream(resourceName) is not { } stream)
+            if (assembly.GetManifestResourceStream(name) is not { } stream)
             {
-                logger.LogWarning("Embedded plugin {PluginName} couldn't be loaded", resourceName);
-                continue;
+                logger.LogWarning("Embedded plugin {Name} couldn't be loaded", name);
+                return [];
             }
 
-            await LoadPluginsAsync(resourceName, stream, ignoreEmpty: true, cancellationToken);
-            stream.Close();
-        }
+            try
+            {
+                return LoadContainer(name, stream, ignoreEmpty: true);
+            }
+            finally
+            {
+                stream.Close();
+            }
+        });
+
+        await LoadPluginsAsync(plugins, cancellationToken);
     }
 
     public async ValueTask LoadPluginsAsync(string path = "plugins", CancellationToken cancellationToken = default)
@@ -61,24 +68,49 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
             return;
         }
 
-        var pluginsFiles = pluginsDirectoryInfo.GetFiles("*.dll").Select(fileInfo => fileInfo.FullName).Order();
+        var plugins = await pluginsDirectoryInfo.GetFiles("*.dll")
+            .Select(fileInfo => fileInfo.FullName)
+            .Select(async fileName =>
+            {
+                logger.LogTrace("Found {Name} plugin", Path.GetFileName(fileName));
 
-        foreach (var pluginPath in pluginsFiles)
-        {
-            logger.LogTrace("Found {ResourceName} directory plugin", Path.GetFileName(pluginPath));
+                await using var stream = File.OpenRead(fileName);
+                return LoadContainer(Path.GetFileName(fileName), stream);
+            })
+            .WhenAll()
+            .ContinueWith(task => task.Result.SelectMany(plugins => plugins));
 
-            await using var stream = File.OpenRead(pluginPath);
-            await LoadPluginsAsync(Path.GetFileName(pluginPath), stream, cancellationToken: cancellationToken);
-        }
+        await LoadPluginsAsync(plugins, cancellationToken);
     }
 
-    public async ValueTask LoadPluginsAsync(string assemblyName, Stream assemblyStream, bool ignoreEmpty = false, CancellationToken cancellationToken = default)
+    public async ValueTask LoadPluginsAsync(IEnumerable<Type> plugins, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("Loading {AssemblyName} plugins", assemblyName);
+        plugins = plugins.OrderByDescending(plugin => plugin.IsAssignableTo(typeof(IApiPlugin)));
 
-        var context = new PluginAssemblyLoadContext(dependencies, assemblyName, assemblyStream, searchInPlugins: (assemblyName) =>
+        foreach (var plugin in plugins)
+            await LoadPluginAsync(plugin, cancellationToken);
+    }
+
+    public async ValueTask LoadPluginAsync(Type pluginType, CancellationToken cancellationToken = default)
+    {
+        var container = _containers.FirstOrDefault(reference => reference.Context.PluginAssembly == pluginType.Assembly) ??
+            throw new Exception($"No container found for {pluginType.Name} plugin");
+
+        var plugin = dependencies.CreateInstance<IPlugin>(pluginType);
+
+        logger.LogTrace("Loading {Name} plugin", plugin.Name);
+        await events.ThrowAsync(new PluginLoadEvent(plugin), cancellationToken);
+
+        container.Add(plugin);
+        logger.LogInformation("Loaded {Name} plugin from {AssemblyName} ", pluginType.Name, container.Context.PluginAssembly.GetName().Name);
+    }
+
+    public IEnumerable<Type> LoadContainer(string name, Stream stream, bool ignoreEmpty = false)
+    {
+        logger.LogTrace("Loading {Name} plugins", name);
+        var context = new PluginAssemblyLoadContext(dependencies, name, stream, searchInPlugins: (assemblyName) =>
         {
-            foreach (var reference in _references)
+            foreach (var reference in _containers)
             {
                 var assembly = reference.Context.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.FullName == assemblyName.FullName);
 
@@ -91,97 +123,36 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
             return null;
         });
 
-        var plugins = GetPlugins(assemblyName, context.PluginAssembly);
+        var plugins = GetPlugins(context.PluginAssembly);
 
-        if (plugins.Length == 0)
+        if (!plugins.Any())
         {
-            logger.Log(ignoreEmpty ? LogLevel.Trace : LogLevel.Warning, "Plugin {PluginName} has no IPlugin implementations", context.Name);
-            return;
+            logger.Log(ignoreEmpty ? LogLevel.Trace : LogLevel.Warning, "Plugin {ContextName} has no IPlugin implementations", context.Name);
+            return plugins;
         }
 
-        foreach (var plugin in plugins)
-            RegisterPlugin(plugin);
+        _containers.Add(new WeakPluginContainer(context));
 
-        _references.Add(new WeakPluginContainer(context, plugins));
-
-        foreach (var plugin in plugins)
-            await events.ThrowAsync(new PluginLoadEvent(plugin), cancellationToken);
-
-        logger.LogInformation("Loaded {Count} plugin(s) from {AssemblyName} ", plugins.Length, assemblyName);
+        return plugins;
     }
 
-    public async ValueTask UnloadPluginsAsync(CancellationToken cancellationToken = default)
+    public IEnumerable<Type> GetPlugins(Assembly assembly)
     {
-        logger.LogInformation("Unloading all plugins");
-        await _references.Select(async reference => await UnloadPluginAsync(reference.Context.Name!, cancellationToken)).WhenAll();
-    }
+        var assemblyName = assembly.GetName().Name;
 
-    public async ValueTask UnloadPluginAsync(string assemblyName, CancellationToken cancellationToken = default)
-    {
-        foreach (var reference in _references.Where(reference => reference.Context.Name == assemblyName).ToArray())
-        {
-            if (!reference.IsAlive)
-                throw new Exception("Plugin context already unloaded");
-
-            foreach (var player in players.All)
-                player.Context.Services.RemoveServicesByAssembly(reference.Context.PluginAssembly);
-
-            var name = reference.Context.Name;
-            var count = reference.Plugins.Length;
-
-            logger.LogTrace("Unloading {ContextName} {Count} plugin(s)", name, count);
-
-            foreach (var plugin in reference.Plugins)
-            {
-                await events.ThrowAsync(new PluginUnloadEvent(plugin), cancellationToken);
-                UnregisterPlugin(plugin);
-            }
-
-            events.UnregisterListeners(reference.Plugins.Cast<IEventListener>());
-
-            reference.Context.Unload();
-
-            var collectionTime = Stopwatch.GetTimestamp();
-
-            do
-            {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-
-                if (!reference.IsAlive)
-                    break;
-
-                await Task.Delay(_gcRate, cancellationToken);
-            } while (Stopwatch.GetElapsedTime(collectionTime) < _unloadTimeout);
-
-            if (reference.IsAlive)
-                throw new Exception($"Plugins context {name} refuses to unload");
-
-            logger.LogInformation("Unloaded {ContextName} {Count} plugin(s)", name, count);
-        }
-
-        _references.RemoveAll(reference => !reference.IsAlive);
-    }
-
-    public IPlugin[] GetPlugins(string assemblyName, Assembly assembly)
-    {
-        logger.LogTrace("Searching for IPlugin interfaces in {AssemblyName}", assemblyName);
-
-        var pluginInterface = typeof(IPlugin);
+        logger.LogTrace("Looking for IPlugin interfaces in {Name}", assemblyName);
 
         try
         {
             var plugins = assembly.GetTypes()
-                .Where(pluginInterface.IsAssignableFrom)
-                .Where(type => !type.IsAbstract)
-                .Select(dependencies.CreateInstance<IPlugin>)
-                .ToArray();
+                .Where(typeof(IPlugin).IsAssignableFrom)
+                .Where(type => !type.IsAbstract);
 
             return plugins;
         }
         catch (ReflectionTypeLoadException exception)
         {
-            logger.LogError("Assembly {AssemblyName} cannot be loaded:", assemblyName);
+            logger.LogError("Assembly {Name} cannot be loaded:", assemblyName);
 
             var noStackTrace = exception.LoaderExceptions.WhereNotNull().Where(loaderException => string.IsNullOrWhiteSpace(loaderException.StackTrace)).ToArray();
 
@@ -194,21 +165,55 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
         return [];
     }
 
-    public void RegisterPlugin(IPlugin plugin)
+    public async ValueTask UnloadContainersAsync(CancellationToken cancellationToken = default)
     {
-        lock (this)
-        {
-            logger.LogTrace("Registering {PluginName} plugin", plugin.Name);
-            _plugins.Add(plugin);
-        }
+        logger.LogInformation("Unloading all plugins");
+        await _containers.Select(async reference => await UnloadContainerAsync(reference.Context.Name!, cancellationToken)).WhenAll();
     }
 
-    public void UnregisterPlugin(IPlugin plugin)
+    public async ValueTask UnloadContainerAsync(string name, CancellationToken cancellationToken = default)
     {
-        lock (this)
+        var container = _containers.FirstOrDefault(reference => reference.Context.Name == name) ??
+            throw new Exception($"Plugin container {name} not found");
+
+        if (!container.IsAlive)
+            throw new Exception("Plugin context already unloaded");
+
+        foreach (var player in players.All)
+            player.Context.Services.RemoveServicesByAssembly(container.Context.PluginAssembly);
+
+        var count = container.Plugins.Count();
+
+        logger.LogTrace("Unloading {ContextName} {Count} plugin(s)", name, count);
+
+        foreach (var plugin in container.Plugins)
         {
-            logger.LogTrace("Unregistering {PluginName} plugin", plugin.Name);
-            _plugins.Remove(plugin);
+            logger.LogTrace("Unloading {PluginName} plugin", plugin.Name);
+            await events.ThrowAsync(new PluginUnloadEvent(plugin), cancellationToken);
         }
+
+        events.UnregisterListeners(container.Plugins.Cast<IEventListener>());
+
+        container.Context.Unload();
+
+        var collectionTime = Stopwatch.GetTimestamp();
+
+        do
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            if (!container.IsAlive)
+                break;
+
+            await Task.Delay(_gcRate, cancellationToken);
+        } while (Stopwatch.GetElapsedTime(collectionTime) < _unloadTimeout);
+
+        if (container.IsAlive)
+            throw new Exception($"Plugins context {name} refuses to unload");
+
+        logger.LogInformation("Unloaded {ContextName} {Count} plugin(s)", name, count);
+
+        _containers.RemoveAll(reference => !reference.IsAlive);
     }
 }

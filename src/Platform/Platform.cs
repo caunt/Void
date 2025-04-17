@@ -103,7 +103,7 @@ public class Platform(
         await events.ThrowAsync<ProxyStoppedEvent>(cancellationToken);
 
         logger.LogInformation("Unloading plugins");
-        await plugins.UnloadPluginsAsync(cancellationToken);
+        await plugins.UnloadContainersAsync(cancellationToken);
 
         logger.LogInformation("Proxy stopped!");
     }

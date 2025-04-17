@@ -21,7 +21,7 @@ public class PlatformService(IPluginService plugins) : IPluginCommonService
                 if (parts.Length is 1)
                     break;
 
-                await plugins.UnloadPluginAsync(parts[1], cancellationToken);
+                await plugins.UnloadContainerAsync(parts[1], cancellationToken);
                 break;
         }
     }
