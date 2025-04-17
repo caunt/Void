@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -30,7 +31,7 @@ public static class HostingExtensions
         {
             var service = services[i];
 
-            if (!service.ServiceType.IsAssignableTo(typeof(IEventListener)))
+            if (!(service.ImplementationType ?? service.ServiceType).IsAssignableTo(typeof(IEventListener)))
                 continue;
 
             if (service.ImplementationType is { ContainsGenericParameters: true })
@@ -48,12 +49,15 @@ public static class HostingExtensions
             // Add wrapped service under original ServiceType
             services.AddSingleton(service.ServiceType, provider =>
             {
+                var logger = provider.GetRequiredService<ILogger<IProxy>>();
                 var instance = provider.GetRequiredService(service.ImplementationType);
 
                 if (instance is IEventListener listener)
                 {
                     var events = provider.GetRequiredService<IEventService>();
                     events.RegisterListeners(listener);
+
+                    logger.LogTrace("Registered {Type} event listener", listener);
                 }
 
                 return instance;
