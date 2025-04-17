@@ -15,11 +15,11 @@ using Void.Proxy.Api.Servers;
 
 namespace Void.Proxy.Links;
 
-public class Link(IPlayer player, IServer server, INetworkChannel playerChannel, INetworkChannel serverChannel, ILogger logger, IEventService events) : ILink
+public class Link(IPlayer player, IServer server, INetworkChannel playerChannel, INetworkChannel serverChannel, ILogger logger, IEventService events, CancellationToken cancellationToken) : ILink
 {
-    private readonly CancellationTokenSource _ctsPlayerToServer = new();
+    private readonly CancellationTokenSource _ctsPlayerToServer = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
     private readonly CancellationTokenSource _ctsPlayerToServerForce = new();
-    private readonly CancellationTokenSource _ctsServerToPlayer = new();
+    private readonly CancellationTokenSource _ctsServerToPlayer = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
     private readonly CancellationTokenSource _ctsServerToPlayerForce = new();
     private readonly AsyncLock _lock = new();
 

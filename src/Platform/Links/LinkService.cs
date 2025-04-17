@@ -15,31 +15,17 @@ using Void.Proxy.Api.Servers;
 
 namespace Void.Proxy.Links;
 
-public class LinkService : ILinkService, IEventListener
+public class LinkService(ILogger<LinkService> logger, IServerService servers, IEventService events, IHostApplicationLifetime hostApplicationLifetime) : ILinkService, IEventListener
 {
-    private readonly IEventService _events;
-    private readonly IHostApplicationLifetime _hostApplicationLifetime;
     private readonly List<ILink> _links = [];
     private readonly AsyncLock _lock = new();
-    private readonly ILogger<LinkService> _logger;
-    private readonly IServerService _servers;
-
-    public LinkService(ILogger<LinkService> logger, IServerService servers, IEventService events, IHostApplicationLifetime hostApplicationLifetime)
-    {
-        _logger = logger;
-        _servers = servers;
-        _events = events;
-        _hostApplicationLifetime = hostApplicationLifetime;
-
-        events.RegisterListeners(this);
-    }
 
     public async ValueTask<ConnectionResult> ConnectPlayerAnywhereAsync(IPlayer player, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("Looking for a server for {Player} player", player);
+        logger.LogTrace("Looking for a server for {Player} player", player);
 
-        var server = await _events.ThrowWithResultAsync(new PlayerSearchServerEvent(player), cancellationToken)
-                     ?? _servers.RegisteredServers[0];
+        var server = await events.ThrowWithResultAsync(new PlayerSearchServerEvent(player), cancellationToken)
+                     ?? servers.RegisteredServers[0];
 
         return await ConnectAsync(player, server, cancellationToken);
     }
@@ -50,12 +36,13 @@ public class LinkService : ILinkService, IEventListener
 
         // Since cancellationToken might be coming from ILink, it will be cancelled after link is destroyed.
         // All further events should have application lifetime tokens in order to know when they are forced to stop.
-        cancellationToken = _hostApplicationLifetime.ApplicationStopping;
+        // Also stopping token is used for all events triggered by link.
+        cancellationToken = hostApplicationLifetime.ApplicationStopping;
 
         if (TryGetLink(player, out var link))
             await link.StopAsync(cancellationToken);
 
-        _logger.LogTrace("Connecting {Player} player to a {Server} server", player, server);
+        logger.LogTrace("Connecting {Player} player to a {Server} server", player, server);
 
         var firstConnection = player.Context.Channel is null;
         var playerChannel = await player.GetChannelAsync(cancellationToken);
@@ -68,38 +55,38 @@ public class LinkService : ILinkService, IEventListener
         }
         catch (Exception exception)
         {
-            _logger.LogWarning("Player {Player} cannot connect to a {Server} server because it is unavailable: {Message}", player, server, exception.Message);
-            _logger.LogTrace("Player {Player} cannot connect to a {Server} server because it is unavailable:\n{Exception}", player, server, exception);
+            logger.LogWarning("Player {Player} cannot connect to a {Server} server because it is unavailable: {Message}", player, server, exception.Message);
+            logger.LogTrace("Player {Player} cannot connect to a {Server} server because it is unavailable:\n{Exception}", player, server, exception);
 
             await player.KickAsync($"Server {server} is unavailable", cancellationToken);
             return ConnectionResult.NotConnected;
         }
 
         if (firstConnection)
-            await _events.ThrowAsync(new PlayerConnectedEvent(player), cancellationToken);
+            await events.ThrowAsync(new PlayerConnectedEvent(player), cancellationToken);
 
-        link = await _events.ThrowWithResultAsync(new CreateLinkEvent(player, server, playerChannel, serverChannel), cancellationToken)
-                   ?? new Link(player, server, playerChannel, serverChannel, _logger, _events);
+        link = await events.ThrowWithResultAsync(new CreateLinkEvent(player, server, playerChannel, serverChannel), cancellationToken)
+                   ?? new Link(player, server, playerChannel, serverChannel, logger, events, cancellationToken);
 
         using (await _lock.LockAsync(cancellationToken))
             _links.Add(link);
 
-        _events.RegisterListeners(link);
+        events.RegisterListeners(link);
 
-        var side = await _events.ThrowWithResultAsync(new AuthenticationStartingEvent(link), cancellationToken);
+        var side = await events.ThrowWithResultAsync(new AuthenticationStartingEvent(link), cancellationToken);
 
         if (side is AuthenticationSide.Proxy && !await player.IsProtocolSupportedAsync(cancellationToken))
         {
-            _logger.LogWarning("Player {Player} protocol is not supported, forcing authentication to Server side", player);
+            logger.LogWarning("Player {Player} protocol is not supported, forcing authentication to Server side", player);
             side = AuthenticationSide.Server;
         }
 
-        var result = await _events.ThrowWithResultAsync(new AuthenticationStartedEvent(link, side), cancellationToken);
+        var result = await events.ThrowWithResultAsync(new AuthenticationStartedEvent(link, side), cancellationToken);
 
         if (result is AuthenticationResult.NoResult)
             throw new InvalidOperationException($"No {nameof(AuthenticationResult)} provided for {link}");
 
-        await _events.ThrowAsync(new AuthenticationFinishedEvent(link, side, result), cancellationToken);
+        await events.ThrowAsync(new AuthenticationFinishedEvent(link, side, result), cancellationToken);
 
         if (result is AuthenticationResult.NotAuthenticatedPlayer or AuthenticationResult.NotAuthenticatedServer)
         {
@@ -109,7 +96,7 @@ public class LinkService : ILinkService, IEventListener
         else
         {
             await link.StartAsync(cancellationToken);
-            _logger.LogInformation("Player {Player} connected to {Server}", player, link.Server);
+            logger.LogInformation("Player {Player} connected to {Server}", player, link.Server);
 
             return ConnectionResult.Connected;
         }
@@ -135,7 +122,7 @@ public class LinkService : ILinkService, IEventListener
         else if (!await @event.Link.Player.IsProtocolSupportedAsync(cancellationToken))
             @event.Link.PlayerChannel.Close();
 
-        _logger.LogTrace("Stopped forwarding {Link} traffic", @event.Link);
+        logger.LogTrace("Stopped forwarding {Link} traffic", @event.Link);
     }
 
     public bool TryGetLink(IPlayer player, [NotNullWhen(true)] out ILink? link)
