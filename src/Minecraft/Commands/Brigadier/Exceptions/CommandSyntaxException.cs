@@ -36,7 +36,8 @@ public class CommandSyntaxException(ICommandExceptionType type, IMessage message
         if (cursorCorrected > ContextAmount)
             builder.Append("...");
 
-        builder.Append(input.AsSpan(Math.Max(0, cursorCorrected - ContextAmount), cursorCorrected));
+        var start = Math.Max(0, cursorCorrected - ContextAmount);
+        builder.Append(input.AsSpan(start, cursorCorrected - start));
         builder.Append("<--[HERE]");
 
         return builder.ToString();
