@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Void.Common.Commands;
 using Void.Minecraft.Commands.Brigadier.Tree;
 
@@ -40,12 +41,23 @@ public record CommandContext(
 
     public TType GetArgument<TType>(string name)
     {
-        if (!Arguments.TryGetValue(name, out var argument))
+        if (!TryGetArgument<TType>(name, out var type))
             throw new ArgumentException($"No such argument '{name}' exists on this command");
+
+        return type;
+    }
+
+    public bool TryGetArgument<TType>(string name, [MaybeNullWhen(false)] out TType type)
+    {
+        type = default;
+
+        if (!Arguments.TryGetValue(name, out var argument))
+            return false;
 
         if (argument.GenericResult is not TType result)
             throw new ArgumentException($"Argument {name}' is defined as {argument.GenericResult}, not {typeof(TType)}");
 
-        return result;
+        type = result;
+        return true;
     }
 }
