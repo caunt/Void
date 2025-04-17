@@ -6,17 +6,34 @@ namespace Void.Proxy.Plugins.Container;
 
 public class WeakPluginContainer
 {
-    private readonly WeakReference<IPlugin>[] _plugins;
+    private readonly List<WeakReference<IPlugin>> _references;
 
-    public bool IsAlive => _plugins.Any(plugin => plugin.TryGetTarget(out _));
+    public IEnumerable<IPlugin> Plugins => GetReferences();
+    public bool IsAlive => _references.All(plugin => plugin.TryGetTarget(out _));
     public PluginAssemblyLoadContext Context { get; }
 
     [SuppressMessage("Style", "IDE0290:Use primary constructor", Justification = "They are saving strict reference to parameters")]
-    public WeakPluginContainer(PluginAssemblyLoadContext context, IPlugin[] plugins)
+    public WeakPluginContainer(PluginAssemblyLoadContext context, params IPlugin[] plugins)
     {
         Context = context;
-        _plugins = Array.ConvertAll(plugins, plugin => new WeakReference<IPlugin>(plugin, true));
+        _references = [.. plugins.Select(plugin => new WeakReference<IPlugin>(plugin, true))];
     }
 
-    public IPlugin[] Plugins => Array.ConvertAll(_plugins, reference => reference.TryGetTarget(out var plugin) ? plugin : throw new ObjectDisposedException(Context.Name));
+    public void Add(IPlugin plugin)
+    {
+        if (Plugins.Any(plugin => plugin.GetType().Assembly != plugin.GetType().Assembly))
+            throw new InvalidOperationException($"Plugin {plugin.Name} is not from the same assembly as the others");
+
+        _references.Add(new(plugin, true));
+    }
+
+    private IEnumerable<IPlugin> GetReferences()
+    {
+        foreach (var reference in _references)
+        {
+            yield return !reference.TryGetTarget(out var plugin)
+                ? throw new ObjectDisposedException(Context.Name)
+                : plugin;
+        }
+    }
 }
