@@ -2,6 +2,8 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Void.Common.Events;
+using Void.Proxy.Api.Events.Services;
 
 namespace Void.Proxy.Api.Extensions;
 
@@ -20,6 +22,43 @@ public static class HostingExtensions
     public static bool HasService<TInterface>(this IServiceCollection services)
     {
         return services.Any(descriptor => descriptor.ServiceType == typeof(TInterface));
+    }
+
+    public static void RegisterListeners(this IServiceCollection services)
+    {
+        for (var i = services.Count - 1; i >= 0; i--)
+        {
+            var service = services[i];
+
+            if (!service.ServiceType.IsAssignableTo(typeof(IEventListener)))
+                continue;
+
+            if (service.ImplementationType is { ContainsGenericParameters: true })
+                continue;
+
+            if (service.Lifetime is not ServiceLifetime.Singleton)
+                continue;
+
+            if (service.ImplementationType is null)
+                continue;
+
+            // Hide service from ServiceType
+            services[i] = new ServiceDescriptor(service.ImplementationType, service.ImplementationType, service.Lifetime);
+
+            // Add wrapped service under original ServiceType
+            services.AddSingleton(service.ServiceType, provider =>
+            {
+                var instance = provider.GetRequiredService(service.ImplementationType);
+
+                if (instance is IEventListener listener)
+                {
+                    var events = provider.GetRequiredService<IEventService>();
+                    events.RegisterListeners(listener);
+                }
+
+                return instance;
+            });
+        }
     }
 
     public static ServiceDescriptor[] GetAllServices(this IServiceProvider provider)
