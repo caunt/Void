@@ -1,9 +1,10 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Nito.Disposables.Internals;
+using System.Diagnostics.CodeAnalysis;
 using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
+using Void.Minecraft.Commands.Brigadier.Suggestion;
 using Void.Minecraft.Commands.Extensions;
-using Void.Minecraft.Components.Text;
 using Void.Minecraft.Players;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Commands;
@@ -23,6 +24,7 @@ public class ModerationService(IPlayerService players, ICommandService commands)
             .Literal("kick")
             .Then(builder => builder
                 .Argument("name", Arguments.String())
+                .Suggests(SuggestPlayer)
             .Then(builder => builder
                 .Argument("reason", Arguments.GreedyString())))
             .Executes(KickAsync));
@@ -31,12 +33,9 @@ public class ModerationService(IPlayerService players, ICommandService commands)
     private async ValueTask<int> KickAsync(CommandContext context, CancellationToken cancellationToken)
     {
         var name = context.GetArgument<string>("name");
-        var reason = context.TryGetArgument<string>("reason", out var textReason) ? textReason : null as Component;
+        var reason = context.TryGetArgument<string>("reason", out var textReason) ? textReason : "You have been kicked by an operator.";
 
         if (string.IsNullOrWhiteSpace(name))
-            return 1;
-
-        if (context.Source is not IMinecraftPlayer player)
             return 1;
 
         if (!TryGetPlayerByName(name, out var target))
@@ -66,5 +65,20 @@ public class ModerationService(IPlayerService players, ICommandService commands)
         }
 
         return false;
+    }
+
+    private Suggestions SuggestPlayer(CommandContext context, SuggestionsBuilder builder)
+    {
+        return Suggestions.Create(context.Input, players.All.Select(player =>
+        {
+            if (!player.TryGetMinecraftPlayer(out var minecraftPlayer))
+                return null;
+
+            if (minecraftPlayer.Profile is null)
+                return null;
+
+            var name = minecraftPlayer.Profile.Username;
+            return new Suggestion(StringRange.Between(0, context.Input.Length), name);
+        }).WhereNotNull());
     }
 }
