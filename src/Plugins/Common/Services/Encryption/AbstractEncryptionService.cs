@@ -43,7 +43,7 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
         if (@event.Origin is Side.Proxy)
             return;
 
-        if (!IsEncrypionResponsePacket(@event.Message, out var sharedSecret))
+        if (!IsEncryptionResponsePacket(@event.Message, out var sharedSecret))
             return;
 
         var privateKey = await events.ThrowWithResultAsync(new SearchServerPrivateKey(@event.Link.Server), cancellationToken);
@@ -134,7 +134,7 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
 
     protected abstract ValueTask<EncryptionResponse> ReceiveEncryptionResponseAsync(ILink link, CancellationToken cancellationToken);
 
-    protected abstract bool IsEncrypionResponsePacket(INetworkMessage message, out byte[] sharedSecret);
+    protected abstract bool IsEncryptionResponsePacket(INetworkMessage message, out byte[] sharedSecret);
 
     protected abstract bool IsSupportedVersion(ProtocolVersion version);
 }

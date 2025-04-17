@@ -36,7 +36,7 @@ public class EncryptionService(IEventService events, ICryptoService crypto) : Ab
         return new EncryptionResponse(encryptionResponse.SharedSecret, encryptionResponse.VerifyToken, encryptionResponse.Salt);
     }
 
-    protected override bool IsEncrypionResponsePacket(INetworkMessage message, out byte[] sharedSecret)
+    protected override bool IsEncryptionResponsePacket(INetworkMessage message, out byte[] sharedSecret)
     {
         if (message is EncryptionResponsePacket encryptionResponse)
         {
