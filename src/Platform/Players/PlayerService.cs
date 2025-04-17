@@ -18,37 +18,21 @@ using Void.Proxy.Players.Contexts;
 
 namespace Void.Proxy.Players;
 
-public class PlayerService : IPlayerService, IEventListener
+public class PlayerService(ILogger<PlayerService> logger, IServiceProvider services, ILinkService links, IEventService events, ISettings settings) : IPlayerService, IEventListener
 {
-    private readonly IEventService _events;
-    private readonly ILinkService _links;
     private readonly AsyncLock _lock = new();
-    private readonly ILogger<PlayerService> _logger;
     private readonly List<IPlayer> _players = [];
-    private readonly IServiceProvider _services;
-    private readonly ISettings _settings;
-
-    public PlayerService(ILogger<PlayerService> logger, IServiceProvider services, ILinkService links, IEventService events, ISettings settings)
-    {
-        _logger = logger;
-        _services = services;
-        _links = links;
-        _events = events;
-        _settings = settings;
-
-        events.RegisterListeners(this);
-    }
 
     public IReadOnlyList<IPlayer> All => _players;
 
     public async ValueTask AcceptPlayerAsync(TcpClient client, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("Accepted client from {RemoteEndPoint}", client.Client.RemoteEndPoint);
+        logger.LogTrace("Accepted client from {RemoteEndPoint}", client.Client.RemoteEndPoint);
 
         var collection = new ServiceCollection();
-        _services.ForwardServices(collection);
+        services.ForwardServices(collection);
 
-        await _events.ThrowAsync(new PlayerConnectingEvent(client, collection), cancellationToken);
+        await events.ThrowAsync(new PlayerConnectingEvent(client, collection), cancellationToken);
 
         var player = new Player(client);
         collection.AddSingleton<IPlayer>(player);
@@ -61,19 +45,19 @@ public class PlayerService : IPlayerService, IEventListener
             using (var sync = await _lock.LockAsync(cancellationToken))
                 _players.Add(player);
 
-            _logger.LogTrace("Player {Player} connecting", player);
-            var result = await _links.ConnectPlayerAnywhereAsync(player, cancellationToken);
+            logger.LogTrace("Player {Player} connecting", player);
+            var result = await links.ConnectPlayerAnywhereAsync(player, cancellationToken);
 
-            if (!_links.TryGetLink(player, out var link))
-                _logger.LogWarning("Player {Player} failed to connect", player);
+            if (!links.TryGetLink(player, out var link))
+                logger.LogWarning("Player {Player} failed to connect", player);
         }
         catch (Exception exception)
         {
             if (exception is not StreamClosedException)
-                _logger.LogError(exception, "Client {RemoteEndPoint} cannot be proxied", player.RemoteEndPoint);
+                logger.LogError(exception, "Client {RemoteEndPoint} cannot be proxied", player.RemoteEndPoint);
 
             // just in case
-            await _events.ThrowAsync(new PlayerDisconnectedEvent(player), cancellationToken);
+            await events.ThrowAsync(new PlayerDisconnectedEvent(player), cancellationToken);
         }
     }
 
@@ -81,9 +65,9 @@ public class PlayerService : IPlayerService, IEventListener
     public async ValueTask OnLinkStopped(LinkStoppedEvent @event, CancellationToken cancellationToken)
     {
         if (@event.Link.PlayerChannel.IsAlive)
-            await _links.ConnectPlayerAnywhereAsync(@event.Link.Player, cancellationToken);
+            await links.ConnectPlayerAnywhereAsync(@event.Link.Player, cancellationToken);
         else
-            await _events.ThrowAsync(new PlayerDisconnectedEvent(@event.Link.Player), cancellationToken);
+            await events.ThrowAsync(new PlayerDisconnectedEvent(@event.Link.Player), cancellationToken);
     }
 
     [Subscribe]
@@ -93,7 +77,7 @@ public class PlayerService : IPlayerService, IEventListener
             if (!_players.Remove(@event.Player))
                 return;
 
-        _logger.LogInformation("Player {Player} disconnected", @event.Player);
+        logger.LogInformation("Player {Player} disconnected", @event.Player);
 
         await @event.Player.DisposeAsync();
     }
@@ -105,20 +89,20 @@ public class PlayerService : IPlayerService, IEventListener
 
     public async ValueTask KickPlayerAsync(IPlayer player, PlayerKickEvent playerKickEvent, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("Kicking player {Player}", player);
+        logger.LogTrace("Kicking player {Player}", player);
 
         if (!All.Contains(player))
             return;
 
         var channel = await player.GetChannelAsync(cancellationToken);
 
-        if (_links.TryGetLink(player, out var link))
+        if (links.TryGetLink(player, out var link))
         {
             link.PlayerChannel.TryPause();
             link.ServerChannel.TryPause();
         }
 
-        var kicked = await _events.ThrowWithResultAsync(playerKickEvent, cancellationToken);
+        var kicked = await events.ThrowWithResultAsync(playerKickEvent, cancellationToken);
 
         if (kicked)
         {
@@ -126,7 +110,7 @@ public class PlayerService : IPlayerService, IEventListener
 
             while (channel.IsAlive)
             {
-                if (Stopwatch.GetElapsedTime(timestamp).TotalMilliseconds > _settings.KickTimeout)
+                if (Stopwatch.GetElapsedTime(timestamp).TotalMilliseconds > settings.KickTimeout)
                     break;
 
                 if (cancellationToken.IsCancellationRequested)
@@ -136,7 +120,7 @@ public class PlayerService : IPlayerService, IEventListener
             }
 
             if (channel.IsAlive)
-                _logger.LogWarning("Player {Player} didn't handle graceful kick in {Timeout}ms", player, _settings.KickTimeout);
+                logger.LogWarning("Player {Player} didn't handle graceful kick in {Timeout}ms", player, settings.KickTimeout);
         }
 
         if (link is not null)
@@ -156,7 +140,7 @@ public class PlayerService : IPlayerService, IEventListener
         if (link is not { IsAlive: true })
         {
             // since ILink is not running and will not execute link stopped event, trigger player disconnected event here
-            await _events.ThrowAsync(new PlayerDisconnectedEvent(player), cancellationToken);
+            await events.ThrowAsync(new PlayerDisconnectedEvent(player), cancellationToken);
         }
         else
         {
