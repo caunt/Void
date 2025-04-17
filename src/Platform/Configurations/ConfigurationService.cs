@@ -7,7 +7,6 @@ using Void.Proxy.Api.Configurations.Attributes;
 using Void.Proxy.Api.Configurations.Exceptions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
-using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Extensions;
 using Void.Proxy.Configurations.Serializers;
@@ -15,22 +14,12 @@ using Timer = System.Timers.Timer;
 
 namespace Void.Proxy.Configurations;
 
-public class ConfigurationService : BackgroundService, IConfigurationService
+public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginService plugins) : BackgroundService, IConfigurationService
 {
     private const string ConfigurationsPath = "configs";
 
     private readonly ConfigurationTomlSerializer _serializer = new();
     private readonly Dictionary<string, object> _configurations = [];
-    private readonly ILogger<ConfigurationService> _logger;
-    private readonly IPluginService _plugins;
-
-    public ConfigurationService(ILogger<ConfigurationService> logger, IPluginService plugins, IEventService events)
-    {
-        _logger = logger;
-        _plugins = plugins;
-
-        events.RegisterListeners(this);
-    }
 
     [Subscribe(PostOrder.First)]
     public void OnPluginUnload(PluginUnloadEvent @event)
@@ -132,7 +121,7 @@ public class ConfigurationService : BackgroundService, IConfigurationService
                             if (skippedUpdates.Remove(fileSystemEventArgs.FullPath))
                                 continue;
 
-                            _logger.LogInformation("Configuration {ConfigurationName} changed from disk", GetConfigurationName(configuration.GetType()));
+                            logger.LogInformation("Configuration {ConfigurationName} changed from disk", GetConfigurationName(configuration.GetType()));
 
                             var updatedConfiguration = await ReadAsync(fileSystemEventArgs.FullPath, configuration.GetType(), stoppingToken);
                             SwapConfiguration(configuration, updatedConfiguration);
@@ -152,7 +141,7 @@ public class ConfigurationService : BackgroundService, IConfigurationService
 
                                 if (serializedValue != previousSerializedValue)
                                 {
-                                    _logger.LogTrace("Configuration {ConfigurationName} changed", GetConfigurationName(configuration.GetType()));
+                                    logger.LogTrace("Configuration {ConfigurationName} changed", GetConfigurationName(configuration.GetType()));
                                     previousConfigurations[key] = serializedValue;
 
                                     await WaitFileLockAsync(key, stoppingToken);
@@ -179,7 +168,7 @@ public class ConfigurationService : BackgroundService, IConfigurationService
 
     private async ValueTask<object> ReadAsync(string fileName, Type configurationType, CancellationToken cancellationToken)
     {
-        _logger.LogTrace("Loading configuration file {FileName}", fileName);
+        logger.LogTrace("Loading configuration file {FileName}", fileName);
 
         if (!File.Exists(fileName))
             await SaveAsync(fileName, configurationType, cancellationToken);
@@ -193,7 +182,7 @@ public class ConfigurationService : BackgroundService, IConfigurationService
 
     private async ValueTask SaveAsync(string fileName, Type configurationType, CancellationToken cancellationToken)
     {
-        _logger.LogTrace("Saving default configuration file {FileName}", fileName);
+        logger.LogTrace("Saving default configuration file {FileName}", fileName);
 
         EnsureConfigurationsPathExists();
 
@@ -207,7 +196,7 @@ public class ConfigurationService : BackgroundService, IConfigurationService
 
     private async ValueTask SaveAsync(string fileName, object configuration, CancellationToken cancellationToken)
     {
-        _logger.LogTrace("Saving configuration file {FileName}", fileName);
+        logger.LogTrace("Saving configuration file {FileName}", fileName);
 
         EnsureConfigurationsPathExists();
 
@@ -257,7 +246,7 @@ public class ConfigurationService : BackgroundService, IConfigurationService
 
     private string? GetPluginNameFromConfiguration<TConfiguration>() where TConfiguration : notnull
     {
-        _plugins.TryGetPlugin(typeof(TConfiguration), out var plugin);
+        plugins.TryGetPlugin(typeof(TConfiguration), out var plugin);
         return plugin?.Name;
     }
 
@@ -266,7 +255,7 @@ public class ConfigurationService : BackgroundService, IConfigurationService
         if (Directory.Exists(path))
             return;
 
-        _logger.LogTrace("Creating {Path} directory", path);
+        logger.LogTrace("Creating {Path} directory", path);
         Directory.CreateDirectory(path);
     }
 
