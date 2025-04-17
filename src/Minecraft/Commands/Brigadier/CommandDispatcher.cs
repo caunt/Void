@@ -11,10 +11,11 @@ using Void.Minecraft.Commands.Brigadier.Exceptions;
 using Void.Minecraft.Commands.Brigadier.Suggestion;
 using Void.Minecraft.Commands.Brigadier.Tree;
 using Void.Minecraft.Commands.Brigadier.Tree.Nodes;
+using Void.Proxy.Api.Commands;
 
 namespace Void.Minecraft.Commands.Brigadier;
 
-public record CommandDispatcher(RootCommandNode Root)
+public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
 {
     public const char ArgumentSeparator = ' ';
 
@@ -29,6 +30,14 @@ public record CommandDispatcher(RootCommandNode Root)
     public CommandDispatcher() : this(new RootCommandNode())
     {
         // Empty
+    }
+
+    public void Add(ICommandNode node)
+    {
+        if (node is not CommandNode commandNode)
+            throw new ArgumentException($"Node must be a {nameof(CommandNode)}.");
+
+        Root.AddChild(commandNode);
     }
 
     public LiteralCommandNode Register(LiteralArgumentBuilder command)

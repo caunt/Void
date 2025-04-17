@@ -7,10 +7,11 @@ using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Suggestion;
 using Void.Minecraft.Commands.Brigadier.Tree.Nodes;
+using Void.Proxy.Api.Commands;
 
 namespace Void.Minecraft.Commands.Brigadier.Tree;
 
-public abstract class CommandNode(CommandExecutor? executor = null, CommandRequirement? requirement = null, CommandNode? redirectTarget = null, RedirectModifier? redirectModifier = null, bool isForks = false)
+public abstract class CommandNode(CommandExecutor? executor = null, CommandRequirement? requirement = null, CommandNode? redirectTarget = null, RedirectModifier? redirectModifier = null, bool isForks = false) : ICommandNode
 {
     private readonly Dictionary<string, CommandNode> _children = [];
     private readonly Dictionary<string, ArgumentCommandNode> _arguments = [];

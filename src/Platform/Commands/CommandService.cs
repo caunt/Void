@@ -1,7 +1,6 @@
 ﻿using Nito.Disposables.Internals;
 using Void.Common.Commands;
 using Void.Minecraft.Commands.Brigadier;
-using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Suggestion;
 using Void.Minecraft.Players.Extensions;
@@ -14,11 +13,7 @@ public class CommandService(ILogger<CommandService> logger, IPlayerService playe
 {
     private readonly CommandDispatcher _dispatcher = new();
 
-    public void RegisterDefault()
-    {
-        _dispatcher.Register(builder => builder.Literal("stop").Executes(StopServer));
-        _dispatcher.Register(builder => builder.Literal("kick").Then(builder.Argument("username", Arguments.String()).Suggests(SuggestPlayer).Executes(KickPlayerAsync)));
-    }
+    public ICommandDispatcher Dispatcher => _dispatcher;
 
     public async ValueTask ExecuteAsync(ICommandSource source, string command, CancellationToken cancellationToken = default)
     {
