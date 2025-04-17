@@ -19,10 +19,10 @@ public class DependencyService(IServiceProvider services, IEventService events) 
     [Subscribe(PostOrder.First)]
     public void OnPluginUnload(PluginUnloadEvent @event)
     {
-        if (!_pluginServices.TryGetValue(@event.Plugin, out var serviceProvider))
+        if (!_pluginServices.TryGetValue(@event.Plugin, out var services))
             return;
 
-        serviceProvider.RemoveServicesByAssembly(@event.Plugin.GetType().Assembly);
+        services.RemoveServicesByAssembly(@event.Plugin.GetType().Assembly);
         _pluginServices.Remove(@event.Plugin);
     }
 
