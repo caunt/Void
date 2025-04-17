@@ -61,6 +61,8 @@ try
     builder.Services.AddHostedService(services => services.GetRequiredService<IConfigurationService>());
     builder.Services.AddHostedService(services => services.GetRequiredService<IProxy>());
 
+    builder.Services.RegisterListeners();
+
     var host = builder.Build();
 
     var console = host.Services.GetRequiredService<IConsoleService>();
