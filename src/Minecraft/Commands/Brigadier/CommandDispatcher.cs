@@ -138,6 +138,7 @@ public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
                 {
                     throw CommandSyntaxException.BuiltInExceptions.DispatcherParseException.CreateWithContext(reader, exception.Message);
                 }
+
                 if (reader.CanRead)
                 {
                     if (reader.Peek != ArgumentSeparator)
