@@ -1,4 +1,6 @@
-﻿using Void.Proxy.Api.Events;
+﻿using Void.Minecraft.Network;
+using Void.Proxy.Api.Commands;
+using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Plugins.Common.Services.Commands;
@@ -6,8 +8,13 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Serverboun
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Commands;
 
-public class CommandService(IEventService events) : AbstractCommandService(events)
+public class CommandService(IEventService events, ICommandService commands) : AbstractCommandService(events, commands)
 {
+    protected override bool IsSupportedVersion(ProtocolVersion protocolVersion)
+    {
+        return Plugin.SupportedVersions.Contains(protocolVersion);
+    }
+
     [Subscribe]
     public async ValueTask OnMessageReceived(MessageReceivedEvent @event, CancellationToken cancellationToken)
     {
