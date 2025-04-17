@@ -5,7 +5,7 @@ using Void.Proxy.Api.Events.Services;
 
 namespace Void.Proxy.Events;
 
-public class EventService(ILogger<EventService> logger, IServiceProvider services, IHostApplicationLifetime hostApplicationLifetime) : IEventService
+public class EventService(ILogger<EventService> logger, IServiceProvider services) : IEventService
 {
     private readonly List<Entry> _entries = [];
 
@@ -44,7 +44,7 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
         logger.LogTrace("Invoking {TypeName} event", eventType.Name);
 
         var simpleParameters = (object[])[@event];
-        var cancellableParameters = (object[])[@event, CancellationTokenSource.CreateLinkedTokenSource(hostApplicationLifetime.ApplicationStopping, cancellationToken).Token];
+        var cancellableParameters = (object[])[@event, cancellationToken];
 
         foreach (var entry in entries)
         {
