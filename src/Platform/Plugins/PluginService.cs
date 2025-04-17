@@ -16,9 +16,9 @@ namespace Void.Proxy.Plugins;
 
 public class PluginService(ILogger<PluginService> logger, IPlayerService players, IEventService events, IDependencyService dependencies) : IPluginService
 {
-    private readonly TimeSpan _gcRate = TimeSpan.FromMilliseconds(500);
     private readonly List<IPlugin> _plugins = [];
     private readonly List<WeakPluginContainer> _references = [];
+    private readonly TimeSpan _gcRate = TimeSpan.FromMilliseconds(500);
     private readonly TimeSpan _unloadTimeout = TimeSpan.FromSeconds(10);
 
     public IReadOnlyList<IPlugin> All => _plugins;
