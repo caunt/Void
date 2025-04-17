@@ -35,15 +35,18 @@ public class ConfigurationService : BackgroundService, IConfigurationService
     [Subscribe(PostOrder.First)]
     public void OnPluginUnload(PluginUnloadEvent @event)
     {
-        for (var i = _configurations.Count - 1; i >= 0; i--)
+        lock (this)
         {
-            var (key, configuration) = _configurations.ElementAt(i);
-            var configurationType = configuration.GetType();
+            for (var i = _configurations.Count - 1; i >= 0; i--)
+            {
+                var (key, configuration) = _configurations.ElementAt(i);
+                var configurationType = configuration.GetType();
 
-            if (configurationType.Assembly != @event.Plugin.GetType().Assembly)
-                continue;
+                if (configurationType.Assembly != @event.Plugin.GetType().Assembly)
+                    continue;
 
-            _configurations.Remove(key);
+                _configurations.Remove(key);
+            }
         }
     }
 
