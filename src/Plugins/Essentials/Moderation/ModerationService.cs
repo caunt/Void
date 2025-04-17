@@ -25,9 +25,10 @@ public class ModerationService(IPlayerService players, ICommandService commands)
             .Then(builder => builder
                 .Argument("name", Arguments.String())
                 .Suggests(SuggestPlayer)
-            .Then(builder => builder
-                .Argument("reason", Arguments.GreedyString())))
-            .Executes(KickAsync));
+                .Executes(KickAsync)
+                .Then(builder => builder
+                    .Argument("reason", Arguments.GreedyString())
+                    .Executes(KickAsync))));
     }
 
     private async ValueTask<int> KickAsync(CommandContext context, CancellationToken cancellationToken)
