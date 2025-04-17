@@ -61,11 +61,11 @@ public class LiteralCommandNode(string literal, CommandExecutor? executor, Comma
         {
             var end = start + Literal.Length;
 
-            if (reader.Source.Substring(start, end) == Literal)
+            if (reader.Source[start..end] == Literal)
             {
                 reader.Cursor = end;
 
-                if (!reader.CanRead || reader.Peek == ' ')
+                if (!reader.CanRead || reader.Peek is ' ')
                     return end;
                 else
                     reader.Cursor = start;
