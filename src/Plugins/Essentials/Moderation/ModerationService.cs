@@ -1,58 +1,70 @@
-﻿using Void.Common.Players;
+﻿using System.Diagnostics.CodeAnalysis;
+using Void.Minecraft.Commands.Brigadier;
+using Void.Minecraft.Commands.Brigadier.Builder;
+using Void.Minecraft.Commands.Brigadier.Context;
+using Void.Minecraft.Commands.Extensions;
 using Void.Minecraft.Components.Text;
+using Void.Minecraft.Players;
 using Void.Minecraft.Players.Extensions;
+using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
-using Void.Proxy.Api.Events.Commands;
+using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Plugins.Common.Services;
 
 namespace Void.Proxy.Plugins.Essentials.Moderation;
 
-public class ModerationService(IPlayerService players) : IPluginCommonService
+public class ModerationService(IPlayerService players, ICommandService commands) : IPluginCommonService
 {
     [Subscribe]
-    public async ValueTask OnChatCommand(ChatCommandEvent @event, CancellationToken cancellationToken)
+    public void OnProxyStarted(ProxyStartedEvent _)
     {
-        var parts = @event.Command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-        if (parts.Length is 0)
-            return;
-
-        switch (parts[0].ToLower())
-        {
-            case "kick":
-                @event.Result = true;
-
-                if (parts.Length is 1)
-                    break;
-
-                var reason = parts.Length > 2 ? (Component?)string.Join(' ', parts[2..]) : null;
-                var player = GetPlayerByUsername(parts[1]);
-
-                if (player is null)
-                    break;
-
-                if (!player.TryGetMinecraftPlayer(out var minecraftPlayer))
-                    break;
-
-                await minecraftPlayer.KickAsync(reason, cancellationToken);
-                break;
-        }
+        commands.Register(builder => builder
+            .Literal("kick")
+            .Then(builder => builder
+                .Argument("name", Arguments.String())
+            .Then(builder => builder
+                .Argument("reason", Arguments.GreedyString())))
+            .Executes(KickAsync));
     }
 
-    private IPlayer? GetPlayerByUsername(string username)
+    private async ValueTask<int> KickAsync(CommandContext context, CancellationToken cancellationToken)
     {
-        return players.All.FirstOrDefault(player =>
+        var name = context.GetArgument<string>("name");
+        var reason = context.TryGetArgument<string>("reason", out var textReason) ? textReason : null as Component;
+
+        if (string.IsNullOrWhiteSpace(name))
+            return 1;
+
+        if (context.Source is not IMinecraftPlayer player)
+            return 1;
+
+        if (!TryGetPlayerByName(name, out var target))
+            return 1;
+
+        await target.KickAsync(reason, cancellationToken);
+        return 0;
+    }
+
+    private bool TryGetPlayerByName(string name, [MaybeNullWhen(false)] out IMinecraftPlayer player)
+    {
+        player = null;
+
+        foreach (var candidate in players.All)
         {
-            if (!player.TryGetMinecraftPlayer(out var minecraftPlayer))
-                return false;
+            if (!candidate.TryGetMinecraftPlayer(out var candidateMinecraftPlayer))
+                continue;
 
-            var profile = minecraftPlayer.Profile;
+            if (candidateMinecraftPlayer.Profile is null)
+                continue;
 
-            if (profile is null)
-                return false;
+            if (!candidateMinecraftPlayer.Profile.Username.Equals(name, StringComparison.CurrentCultureIgnoreCase))
+                continue;
 
-            return profile.Username.Equals(username, StringComparison.CurrentCultureIgnoreCase);
-        });
+            player = candidateMinecraftPlayer;
+            return true;
+        }
+
+        return false;
     }
 }
