@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics.CodeAnalysis;
 using Void.Common.Network.Channels;
 using Void.Common.Players;
 using Void.Proxy.Api.Links;
@@ -9,11 +10,15 @@ namespace Void.Proxy.Api.Players.Extensions;
 
 public static class PlayerExtensions
 {
-    public static ILink GetLink(this IPlayer player)
+    public static bool TryGetLink(this IPlayer player, [MaybeNullWhen(false)] out ILink link)
     {
         var links = player.Context.Services.GetRequiredService<ILinkService>();
+        return links.TryGetLink(player, out link);
+    }
 
-        if (!links.TryGetLink(player, out var link))
+    public static ILink GetLink(this IPlayer player)
+    {
+        if (!player.TryGetLink(out var link))
             throw new InvalidOperationException("Player is not linked to any server");
 
         return link;
