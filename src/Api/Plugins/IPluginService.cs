@@ -6,6 +6,7 @@ namespace Void.Proxy.Api.Plugins;
 public interface IPluginService
 {
     public IEnumerable<IPlugin> All { get; }
+    public IEnumerable<string> Containers { get; }
 
     public ValueTask LoadEmbeddedPluginsAsync(CancellationToken cancellationToken = default);
     public ValueTask LoadPluginsAsync(string path = "plugins", CancellationToken cancellationToken = default);

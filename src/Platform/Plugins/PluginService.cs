@@ -22,6 +22,8 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
 
     public IEnumerable<IPlugin> All => _containers.SelectMany(container => container.Plugins);
 
+    public IEnumerable<string> Containers => _containers.Select(container => container.Context.Name!);
+
     public async ValueTask LoadEmbeddedPluginsAsync(CancellationToken cancellationToken = default)
     {
         var assembly = Assembly.GetExecutingAssembly();
