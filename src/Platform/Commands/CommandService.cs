@@ -17,6 +17,9 @@ public class CommandService(ILogger<CommandService> logger, IPlayerService playe
 
     public async ValueTask ExecuteAsync(ICommandSource source, string command, CancellationToken cancellationToken = default)
     {
+        if (command.StartsWith('/'))
+            command = command[1..];
+
         _ = await _dispatcher.ExecuteAsync(command, source, cancellationToken);
     }
 
