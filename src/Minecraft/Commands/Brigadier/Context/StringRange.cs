@@ -24,11 +24,11 @@ public record StringRange(int Start, int End)
 
     public string Get(IImmutableStringReader reader)
     {
-        return reader.Source.Substring(Start, End);
+        return reader.Source[Start..End];
     }
 
     public string Get(string value)
     {
-        return value.Substring(Start, End);
+        return value[Start..End];
     }
 }
