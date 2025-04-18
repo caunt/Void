@@ -3,7 +3,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Common.Network;
-using Void.Common.Plugins;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Events.Chat;
 using Void.Minecraft.Links.Extensions;

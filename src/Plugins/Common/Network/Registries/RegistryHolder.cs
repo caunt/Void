@@ -1,8 +1,8 @@
-﻿using Void.Common.Plugins;
-using Void.Minecraft.Network;
+﻿using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries;
 using Void.Minecraft.Network.Registries.PacketId;
 using Void.Minecraft.Network.Registries.Transformations;
+using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Common.Network.Registries.PacketId;
 using Void.Proxy.Plugins.Common.Network.Registries.Transformations;
 

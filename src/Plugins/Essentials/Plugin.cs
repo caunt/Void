@@ -1,7 +1,7 @@
 ﻿using Void.Minecraft.Network;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
-using Void.Proxy.Api.Plugins;
+using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Plugins.Common.Plugins;
 using Void.Proxy.Plugins.Essentials.Debugging;
 using Void.Proxy.Plugins.Essentials.Moderation;

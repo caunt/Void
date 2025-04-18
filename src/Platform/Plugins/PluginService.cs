@@ -3,12 +3,12 @@ using Nito.Disposables.Internals;
 using System.Diagnostics;
 using System.Reflection;
 using Void.Common.Events;
-using Void.Common.Plugins;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins;
+using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Plugins.Container;
 using Void.Proxy.Plugins.Context;
 

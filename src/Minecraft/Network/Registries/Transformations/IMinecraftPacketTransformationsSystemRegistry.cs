@@ -1,8 +1,8 @@
 ﻿using System;
-using Void.Common.Plugins;
 using Void.Minecraft.Network.Messages;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
+using Void.Proxy.Api.Plugins;
 
 namespace Void.Minecraft.Network.Registries.Transformations;
 

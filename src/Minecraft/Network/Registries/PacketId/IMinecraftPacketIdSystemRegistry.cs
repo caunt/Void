@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using Void.Common.Network;
-using Void.Common.Plugins;
 using Void.Minecraft.Network.Messages;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.PacketId.Mappings;
+using Void.Proxy.Api.Plugins;
 
 namespace Void.Minecraft.Network.Registries.PacketId;
 

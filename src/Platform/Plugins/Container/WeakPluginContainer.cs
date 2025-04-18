@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Void.Common.Plugins;
+using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Context;
 
 namespace Void.Proxy.Plugins.Container;

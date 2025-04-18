@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Void.Common.Network;
 using Void.Common.Network.Channels;
-using Void.Common.Plugins;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Events;
 using Void.Minecraft.Links.Extensions;
@@ -25,6 +24,7 @@ using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network.Streams.Recyclable;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
+using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Network.Messages.Binary;
 using Void.Proxy.Plugins.Common.Network.Registries.Transformations.Mappings;

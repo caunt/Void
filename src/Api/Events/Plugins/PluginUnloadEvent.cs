@@ -1,5 +1,5 @@
 ﻿using Void.Common.Events;
-using Void.Common.Plugins;
+using Void.Proxy.Api.Plugins;
 
 namespace Void.Proxy.Api.Events.Plugins;
 

@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Void.Common.Events;
 
-namespace Void.Proxy.Api.Plugins;
+namespace Void.Proxy.Api.Plugins.Dependencies;
 
 public interface IDependencyService : IEventListener
 {
