@@ -22,7 +22,7 @@ namespace Void.Minecraft.Players.Extensions;
 
 public static class MinecraftPlayerExtensions
 {
-    public static async ValueTask<ChatMessageSendResult> SendChatMessageAsync(this IMinecraftPlayer player, Component message, CancellationToken cancellationToken = default)
+    public static async ValueTask<ChatSendResult> SendChatMessageAsync(this IMinecraftPlayer player, Component message, CancellationToken cancellationToken = default)
     {
         var events = player.Context.Services.GetRequiredService<IEventService>();
         return await events.ThrowWithResultAsync(new ChatMessageSendEvent(player, message), cancellationToken);

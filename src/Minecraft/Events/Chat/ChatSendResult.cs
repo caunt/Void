@@ -1,6 +1,6 @@
 ﻿namespace Void.Minecraft.Events.Chat;
 
-public enum ChatMessageSendResult
+public enum ChatSendResult
 {
     NotSupported,
     NotPlaying,

@@ -38,7 +38,7 @@ public class SignedChatCommandPacket : IMinecraftServerboundPacket<SignedChatCom
         buffer.Write(array);
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_21_5)
-            buffer.WriteUnsignedByte(0); // always 0, not Checksum
+            buffer.WriteUnsignedByte(0); // always 0, no Checksum
     }
 
     public static SignedChatCommandPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
