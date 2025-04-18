@@ -22,7 +22,7 @@ namespace Void.Proxy.Plugins.ExamplePlugin.Services;
 public class InventoryService(ILogger<InventoryService> logger, ICommandService commands, ExamplePlugin plugin) : IEventListener
 {
     [Subscribe]
-    public void OnPluginLoad(PluginLoadEvent @event)
+    public void OnPluginLoading(PluginLoadingEvent @event)
     {
         // This event is fired when any plugin is being loaded
 

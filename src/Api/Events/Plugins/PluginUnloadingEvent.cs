@@ -2,4 +2,4 @@
 
 namespace Void.Proxy.Api.Events.Plugins;
 
-public record PluginLoadEvent(IPlugin Plugin) : IEvent;
+public record PluginUnloadingEvent(IPlugin Plugin) : IEvent;

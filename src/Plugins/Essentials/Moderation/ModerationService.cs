@@ -18,7 +18,7 @@ namespace Void.Proxy.Plugins.Essentials.Moderation;
 public class ModerationService(IPlayerService players, ICommandService commands, Plugin plugin) : IPluginCommonService
 {
     [Subscribe]
-    public void OnPluginLoad(PluginLoadEvent @event)
+    public void OnPluginLoading(PluginLoadingEvent @event)
     {
         if (@event.Plugin != plugin)
             return;

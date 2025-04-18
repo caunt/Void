@@ -162,7 +162,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
     }
 
     [Subscribe]
-    public async ValueTask OnPluginUnload(PluginUnloadEvent @event, CancellationToken cancellationToken)
+    public async ValueTask OnPluginUnloading(PluginUnloadingEvent @event, CancellationToken cancellationToken)
     {
         if (@event.Plugin != plugin)
             return;

@@ -101,9 +101,11 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
         var plugin = dependencies.CreateInstance<IPlugin>(pluginType);
 
         logger.LogTrace("Loading {Name} plugin", plugin.Name);
-        await events.ThrowAsync(new PluginLoadEvent(plugin), cancellationToken);
 
+        await events.ThrowAsync(new PluginLoadingEvent(plugin), cancellationToken);
         container.Add(plugin);
+        await events.ThrowAsync(new PluginLoadedEvent(plugin), cancellationToken);
+
         logger.LogInformation("Loaded {Name} plugin from {AssemblyName} ", pluginType.Name, container.Context.PluginAssembly.GetName().Name);
     }
 
@@ -191,7 +193,8 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
         foreach (var plugin in container.Plugins)
         {
             logger.LogTrace("Unloading {PluginName} plugin", plugin.Name);
-            await events.ThrowAsync(new PluginUnloadEvent(plugin), cancellationToken);
+            await events.ThrowAsync(new PluginUnloadingEvent(plugin), cancellationToken);
+            await events.ThrowAsync(new PluginUnloadedEvent(plugin), cancellationToken);
         }
 
         events.UnregisterListeners(container.Plugins.Cast<IEventListener>());

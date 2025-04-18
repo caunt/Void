@@ -17,7 +17,7 @@ namespace Void.Proxy.Plugins.Essentials.Platform;
 public class PlatformService(ILogger<PlatformService> logger, IHostApplicationLifetime hostApplicationLifetime, IPluginService plugins, ICommandService commands, Plugin plugin) : IPluginCommonService
 {
     [Subscribe]
-    public void OnPluginLoad(PluginLoadEvent @event)
+    public void OnPluginLoading(PluginLoadingEvent @event)
     {
         if (@event.Plugin != plugin)
             return;

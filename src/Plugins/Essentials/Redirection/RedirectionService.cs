@@ -21,7 +21,7 @@ public class RedirectionService(ILogger<RedirectionService> logger, Plugin plugi
     private readonly ConcurrentDictionary<IPlayer, IServer> _connecting = [];
 
     [Subscribe]
-    public void OnPluginLoad(PluginLoadEvent @event)
+    public void OnPluginLoading(PluginLoadingEvent @event)
     {
         if (@event.Plugin != plugin)
             return;

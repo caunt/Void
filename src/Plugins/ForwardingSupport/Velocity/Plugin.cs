@@ -18,7 +18,7 @@ public class Plugin : IProtocolPlugin
     public string Name => nameof(Velocity);
 
     [Subscribe]
-    public void OnPluginLoad(PluginLoadEvent @event)
+    public void OnPluginLoading(PluginLoadingEvent @event)
     {
         if (@event.Plugin != this)
             return;

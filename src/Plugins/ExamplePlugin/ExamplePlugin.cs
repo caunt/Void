@@ -17,7 +17,7 @@ public class ExamplePlugin(ILogger<ExamplePlugin> logger, IDependencyService dep
     public string Name => nameof(ExamplePlugin);
 
     [Subscribe]
-    public void OnPluginLoad(PluginLoadEvent @event)
+    public void OnPluginLoading(PluginLoadingEvent @event)
     {
         // This event is fired when any plugin is being loaded
 

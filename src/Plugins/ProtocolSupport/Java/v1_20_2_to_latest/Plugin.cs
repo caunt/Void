@@ -22,7 +22,7 @@ public class Plugin(IDependencyService dependencies) : IProtocolPlugin
     public string Name => nameof(v1_20_2_to_latest);
 
     [Subscribe]
-    public void OnPluginLoad(PluginLoadEvent @event)
+    public void OnPluginLoading(PluginLoadingEvent @event)
     {
         if (@event.Plugin != this)
             return;

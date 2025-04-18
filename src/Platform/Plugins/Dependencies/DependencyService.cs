@@ -16,7 +16,7 @@ public class DependencyService(ILogger<DependencyService> logger, ILoggerFactory
     public IServiceProvider Services => GetAll();
 
     [Subscribe(PostOrder.First)]
-    public void OnPluginUnload(PluginUnloadEvent @event)
+    public void OnPluginUnloading(PluginUnloadingEvent @event)
     {
         if (!_pluginServices.TryGetValue(@event.Plugin, out _))
             return;

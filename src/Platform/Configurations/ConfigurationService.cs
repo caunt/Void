@@ -22,7 +22,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
     private readonly Dictionary<string, object> _configurations = [];
 
     [Subscribe(PostOrder.First)]
-    public void OnPluginUnload(PluginUnloadEvent @event)
+    public void OnPluginUnloading(PluginUnloadingEvent @event)
     {
         lock (this)
         {
