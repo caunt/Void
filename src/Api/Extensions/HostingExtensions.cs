@@ -30,10 +30,6 @@ public static class HostingExtensions
         if (descriptor.ServiceType.IsAssignableTo(typeof(IHostedService)))
             return false;
 
-        // What should I do with scoped services?
-        // if (descriptor.Lifetime is ServiceLifetime.Scoped)
-        //     return false;
-
         return true;
     }
 
