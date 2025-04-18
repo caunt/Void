@@ -19,7 +19,7 @@ using Void.Proxy.Plugins.ExamplePlugin.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.ExamplePlugin.Services;
 
-// Here you can use DI to inject any service API you want to use. Instance of your IPlugin also can be injected.
+// Here you can use DI to inject any service API you want to use. Instance of your ExamplePlugin also can be injected.
 public class InventoryService(ILogger<InventoryService> logger, ICommandService commands, ExamplePlugin plugin) : IEventListener
 {
     [Subscribe]
