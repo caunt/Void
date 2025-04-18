@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using Nito.Disposables.Internals;
+using System.Reflection;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Services;
 
@@ -28,7 +29,7 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
 
     public async ValueTask ThrowAsync<T>(T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
-        var entries = _entries.OrderBy(entry => entry.Order);
+        var entries = _entries.WhereNotNull().OrderBy(entry => entry.Order);
         await ThrowAsync(entries, @event, cancellationToken);
     }
 
