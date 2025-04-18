@@ -33,7 +33,7 @@ public abstract class AbstractCommandService(ILogger logger, IEventService event
         if (!IsSupportedVersion(player.ProtocolVersion))
             return;
 
-        @event.Result = await commands.ExecuteAsync(player, @event.Command, cancellationToken) is CommandExecutionResult.Executed;
+        @event.Result = await commands.ExecuteAsync(player, @event.Command, Side.Client, cancellationToken) is CommandExecutionResult.Executed;
     }
 
     [Subscribe]

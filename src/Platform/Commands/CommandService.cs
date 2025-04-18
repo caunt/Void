@@ -17,6 +17,11 @@ public class CommandService(IEventService events) : ICommandService
 
     public async ValueTask<CommandExecutionResult> ExecuteAsync(ICommandSource source, string command, CancellationToken cancellationToken = default)
     {
+        return await ExecuteAsync(source, command, Side.Proxy, cancellationToken);
+    }
+
+    public async ValueTask<CommandExecutionResult> ExecuteAsync(ICommandSource source, string command, Side origin, CancellationToken cancellationToken = default)
+    {
         if (command.StartsWith('/'))
             command = command[1..];
 
@@ -32,7 +37,7 @@ public class CommandService(IEventService events) : ICommandService
         {
             // Ignore unknown commands
             if (source is IMinecraftPlayer player)
-                await events.ThrowAsync(new ChatCommandSendEvent(player, command, Side.Proxy), cancellationToken);
+                await events.ThrowAsync(new ChatCommandSendEvent(player, command, origin), cancellationToken);
 
             return CommandExecutionResult.Forwarded;
         }
