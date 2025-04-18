@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Forwarding;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
@@ -16,6 +17,7 @@ namespace Void.Proxy;
 
 public class Platform(
     ILogger<Platform> logger,
+    IServiceProvider services,
     ISettings settings,
     IPluginService plugins,
     IEventService events,
@@ -42,7 +44,12 @@ public class Platform(
         await plugins.LoadEmbeddedPluginsAsync(cancellationToken);
         logger.LogInformation("Loading directory plugins");
         await plugins.LoadPluginsAsync(cancellationToken: cancellationToken);
-        await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
+
+        var collection = new ServiceCollection();
+        await events.ThrowAsync(new ProxyStartingEvent(collection), cancellationToken);
+
+        foreach (var service in collection)
+            services.Add(service);
 
         forwardings.RegisterDefault();
 

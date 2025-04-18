@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Players.Extensions;
@@ -28,11 +27,12 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
         if (!@event.Link.Player.TryGetMinecraftPlayer(out var player))
             return;
 
+        if (@event.Message is HandshakePacket packet && !Plugin.SupportedVersions.Contains(ProtocolVersion.Get(packet.ProtocolVersion)))
+            return;
+
         switch (@event.Message)
         {
             case HandshakePacket handshake:
-                Debug.Assert(Plugin.SupportedVersions.Contains(ProtocolVersion.Get(handshake.ProtocolVersion)));
-
                 if (handshake.NextState is 1)
                 {
                     @event.Link.PlayerChannel.SetReadingPacketsMappings(_plugin, Registry.ServerboundStatusMappings);

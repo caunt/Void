@@ -5,7 +5,7 @@ using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Authentication;
-using Void.Proxy.Api.Events.Player;
+using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
@@ -20,7 +20,7 @@ namespace Void.Proxy.Plugins.Common.Services.Authentication;
 public abstract class AbstractAuthenticationService(IEventService events, IPlayerService players) : IPluginCommonService
 {
     [Subscribe]
-    public static void OnPlayerConnecting(PlayerConnectingEvent @event)
+    public static void OnProxyStarting(ProxyStartingEvent @event)
     {
         if (!@event.Services.HasService<IMojangService>())
             @event.Services.AddSingleton<IMojangService, MojangService>();

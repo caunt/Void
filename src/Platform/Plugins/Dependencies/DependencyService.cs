@@ -4,11 +4,10 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
-using Void.Proxy.Extensions;
 
 namespace Void.Proxy.Plugins.Dependencies;
 
-public class DependencyService(ILogger<DependencyService> logger, ILoggerFactory loggerFactory, IServiceProvider services, IEventService events) : IDependencyService
+public class DependencyService(ILogger<DependencyService> logger, IServiceProvider services, IEventService events) : IDependencyService
 {
     private readonly Dictionary<IPlugin, IServiceProvider> _pluginServices = [];
 
@@ -62,27 +61,15 @@ public class DependencyService(ILogger<DependencyService> logger, ILoggerFactory
 
     public void Register(Action<ServiceCollection> configure, bool activate = true)
     {
-        var pluginServices = new ServiceCollection();
-        configure(pluginServices);
+        var configuredServices = new ServiceCollection();
+        configure(configuredServices);
+        configuredServices.RegisterListeners();
 
-        foreach (var service in pluginServices)
+        foreach (var service in configuredServices)
         {
-            if (service.ServiceType.ContainsGenericParameters || service.ServiceType.IsAssignableTo(typeof(IHostedService)))
-            {
-                services.Add(service);
-                continue;
-            }
-
-            services.Add(ServiceDescriptor.Describe(service.ServiceType, provider =>
-            {
-                var instance = ActivatorUtilities.CreateInstance(provider, service.ServiceType);
-
-                if (instance is IEventListener listener)
-                    events.RegisterListeners(listener);
-
-                return instance;
-            }, service.Lifetime));
+            services.Add(service);
         }
+
 
         if (!activate)
             return;

@@ -3,8 +3,9 @@ using Void.Proxy.Api.Players.Contexts;
 
 namespace Void.Proxy.Players.Contexts;
 
-public record PlayerContext(IServiceProvider Services) : IPlayerContext
+public record PlayerContext(AsyncServiceScope Scope) : IPlayerContext
 {
+    public IServiceProvider Services => Scope.ServiceProvider;
     public INetworkChannel? Channel { get; set; }
 
     public async ValueTask DisposeAsync()

@@ -1,12 +1,10 @@
 ﻿using Nito.AsyncEx;
 using System.Diagnostics;
 using System.Net.Sockets;
-using Void.Minecraft.Players;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players;
@@ -27,16 +25,8 @@ public class PlayerService(ILogger<PlayerService> logger, IServiceProvider servi
     {
         logger.LogTrace("Accepted client from {RemoteEndPoint}", client.Client.RemoteEndPoint);
 
-        var collection = new ServiceCollection();
-        services.ForwardServices(collection);
-
-        await events.ThrowAsync(new PlayerConnectingEvent(client, collection), cancellationToken);
-
-        var player = new Player(client);
-        collection.AddSingleton<IPlayer>(player);
-        collection.AddSingleton<IMinecraftPlayer>(player);
-
-        player.Context = new PlayerContext(collection.BuildServiceProvider());
+        await events.ThrowAsync(new PlayerConnectingEvent(client), cancellationToken);
+        var player = new Player(client) { Context = new PlayerContext(services.CreateAsyncScope()) };
 
         try
         {

@@ -1,5 +1,6 @@
 ﻿using Serilog;
 using Serilog.Events;
+using Void.Minecraft.Players.Extensions;
 using Void.Proxy;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Commands;
@@ -67,6 +68,17 @@ try
     builder.Services.AddSingleton<IProxy, Platform>();
     builder.Services.AddHostedService(services => services.GetRequiredService<IConfigurationService>());
     builder.Services.AddHostedService(services => services.GetRequiredService<IProxy>());
+
+    builder.Services.AddScoped(provider => provider.GetRequiredService<IPlayer>().AsMinecraftPlayer());
+    builder.Services.AddScoped(provider =>
+    {
+        var players = provider.GetRequiredService<IPlayerService>();
+
+        var player = players.All.FirstOrDefault(player => player.Context.Services == provider) ??
+            throw new InvalidOperationException("Player not found.");
+
+        return player;
+    });
 
     builder.Services.RegisterListeners();
 

@@ -5,7 +5,7 @@ using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Channels;
-using Void.Proxy.Api.Events.Player;
+using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Network;
@@ -21,10 +21,10 @@ namespace Void.Proxy.Plugins.Common.Services.Channels;
 public abstract class AbstractChannelService(IEventService events) : IPluginCommonService
 {
     [Subscribe]
-    public static void OnPlayerConnecting(PlayerConnectingEvent @event)
+    public static void OnProxyStarting(ProxyStartingEvent @event)
     {
         if (!@event.Services.HasService<IChannelBuilderService>())
-            @event.Services.AddSingleton<IChannelBuilderService, SimpleMinecraftChannelBuilderService>();
+            @event.Services.AddScoped<IChannelBuilderService, SimpleMinecraftChannelBuilderService>();
     }
 
     [Subscribe]

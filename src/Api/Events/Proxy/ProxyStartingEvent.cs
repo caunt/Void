@@ -1,3 +1,5 @@
-﻿namespace Void.Proxy.Api.Events.Proxy;
+﻿using Microsoft.Extensions.DependencyInjection;
 
-public record ProxyStartingEvent : IEvent;
+namespace Void.Proxy.Api.Events.Proxy;
+
+public record ProxyStartingEvent(ServiceCollection Services) : IEvent;

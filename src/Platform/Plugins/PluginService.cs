@@ -184,7 +184,7 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
             throw new Exception("Plugin context already unloaded");
 
         foreach (var player in players.All)
-            player.Context.Services.RemoveServicesByAssembly(container.Context.PluginAssembly);
+            player.Context.Services.Remove(descriptor => descriptor.ServiceType.Assembly == container.Context.PluginAssembly);
 
         var count = container.Plugins.Count();
 

@@ -6,7 +6,7 @@ using Void.Proxy.Api.Crypto;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Encryption;
 using Void.Proxy.Api.Events.Network;
-using Void.Proxy.Api.Events.Player;
+using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
@@ -24,10 +24,10 @@ namespace Void.Proxy.Plugins.Common.Services.Encryption;
 public abstract class AbstractEncryptionService(IEventService events, ICryptoService crypto) : IPluginCommonService
 {
     [Subscribe]
-    public static void OnPlayerConnecting(PlayerConnectingEvent @event)
+    public static void OnProxyStarting(ProxyStartingEvent @event)
     {
         if (!@event.Services.HasService<ITokenHolder>())
-            @event.Services.AddSingleton<ITokenHolder, SimpleTokenHolder>();
+            @event.Services.AddScoped<ITokenHolder, SimpleTokenHolder>();
     }
 
 
