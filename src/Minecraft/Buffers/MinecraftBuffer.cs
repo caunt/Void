@@ -199,9 +199,9 @@ public ref struct MinecraftBuffer
         return _backingBuffer.ReadPropertyArray();
     }
 
-    public void WritePropertyArray(Property[] value)
+    public void WritePropertyArray(Property[]? value)
     {
-        _backingBuffer.WritePropertyArray(value);
+        _backingBuffer.WritePropertyArray(value ?? []);
     }
 
     public NbtTag ReadTag(bool readName = false)

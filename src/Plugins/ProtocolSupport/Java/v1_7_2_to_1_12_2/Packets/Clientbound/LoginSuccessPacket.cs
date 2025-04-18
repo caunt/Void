@@ -23,7 +23,10 @@ public class LoginSuccessPacket : IMinecraftClientboundPacket<LoginSuccessPacket
 
     public static LoginSuccessPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        return new LoginSuccessPacket { GameProfile = new GameProfile(Uuid.Parse(buffer.ReadString(36)), buffer.ReadString(), []) };
+        var uuid = Uuid.Parse(buffer.ReadString(36));
+        var name = buffer.ReadString();
+
+        return new LoginSuccessPacket { GameProfile = new GameProfile(name, uuid) };
     }
 
     public void Dispose()

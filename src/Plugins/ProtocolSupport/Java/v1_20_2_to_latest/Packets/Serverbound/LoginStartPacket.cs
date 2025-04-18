@@ -20,7 +20,7 @@ public class LoginStartPacket : IMinecraftServerboundPacket<LoginStartPacket>
         var username = buffer.ReadString();
         var uuid = buffer.ReadUuid();
 
-        return new LoginStartPacket { Profile = new GameProfile(uuid, username, []) };
+        return new LoginStartPacket { Profile = new GameProfile(username, uuid) };
     }
 
     public void Dispose()

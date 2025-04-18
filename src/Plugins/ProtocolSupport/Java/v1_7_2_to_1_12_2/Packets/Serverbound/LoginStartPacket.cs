@@ -16,7 +16,7 @@ public class LoginStartPacket : IMinecraftServerboundPacket<LoginStartPacket>
 
     public static LoginStartPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        return new LoginStartPacket { Profile = new GameProfile(Uuid.Empty, buffer.ReadString(), []) };
+        return new LoginStartPacket { Profile = new GameProfile(buffer.ReadString()) };
     }
 
     public void Dispose()

@@ -41,7 +41,7 @@ public class LoginSuccessPacket : IMinecraftClientboundPacket<LoginSuccessPacket
             _ => []
         };
 
-        return new LoginSuccessPacket { GameProfile = new GameProfile(uuid, username, properties) };
+        return new LoginSuccessPacket { GameProfile = new GameProfile(username, uuid, properties) };
     }
 
     public void Dispose()

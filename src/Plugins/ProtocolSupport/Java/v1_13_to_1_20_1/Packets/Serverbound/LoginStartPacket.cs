@@ -94,7 +94,7 @@ public class LoginStartPacket : IMinecraftServerboundPacket<LoginStartPacket>
 
         return new LoginStartPacket
         {
-            Profile = new GameProfile(uuid, username, []),
+            Profile = new GameProfile(username, uuid),
             Key = key
         };
     }

@@ -37,7 +37,7 @@ public class LoginSuccessPacket : IMinecraftClientboundPacket<LoginSuccessPacket
 
         return new LoginSuccessPacket
         {
-            GameProfile = new GameProfile(uuid, username, properties),
+            GameProfile = new GameProfile(username, uuid, properties),
             StrictErrorHandling = strictErrorHandling
         };
     }

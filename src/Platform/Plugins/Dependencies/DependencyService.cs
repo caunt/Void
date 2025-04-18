@@ -4,6 +4,7 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
+using Void.Proxy.Extensions;
 
 namespace Void.Proxy.Plugins.Dependencies;
 
@@ -68,11 +69,11 @@ public class DependencyService(ILogger<DependencyService> logger, ILoggerFactory
         {
             if (service.ServiceType.ContainsGenericParameters || service.ServiceType.IsAssignableTo(typeof(IHostedService)))
             {
-                services.AddService(service);
+                services.Add(service);
                 continue;
             }
 
-            services.AddService(ServiceDescriptor.Describe(service.ServiceType, provider =>
+            services.Add(ServiceDescriptor.Describe(service.ServiceType, provider =>
             {
                 var instance = ActivatorUtilities.CreateInstance(provider, service.ServiceType);
 
@@ -102,7 +103,7 @@ public class DependencyService(ILogger<DependencyService> logger, ILoggerFactory
         logger.LogTrace("Injecting {Plugin} into {Name} service collection", plugin.GetType(), plugin.Name);
 
         // Plugin => Plugin
-        services.AddService(ServiceDescriptor.Singleton(pluginType, plugin));
+        services.Add(ServiceDescriptor.Singleton(pluginType, plugin));
 
         services.GetRequiredService(pluginType);
     }

@@ -185,7 +185,7 @@ public static class WriteMinecraftBufferExtensions
     /// <typeparam name="TBuffer">This type is a structure that implements a specific buffer interface for Minecraft data handling.</typeparam>
     /// <param name="buffer">The buffer to which the array of properties will be written.</param>
     /// <param name="value">The array of properties that will be written to the buffer.</param>
-    public static void WritePropertyArray<TBuffer>(ref this TBuffer buffer, Property[] value)
+    public static void WritePropertyArray<TBuffer>(ref this TBuffer buffer, Property[]? value)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>
         WritePropertyArrayCore(ref buffer, value);
@@ -312,8 +312,10 @@ public static class WriteMinecraftBufferExtensions
         buffer.WriteString(value.Signature);
     }
 
-    private static void WritePropertyArrayCore<TBuffer>(ref TBuffer buffer, Property[] value) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    private static void WritePropertyArrayCore<TBuffer>(ref TBuffer buffer, Property[]? value) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
+        value ??= [];
+
         buffer.WriteVarInt(value.Length);
 
         foreach (var property in value)
