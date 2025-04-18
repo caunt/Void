@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Extensions;
@@ -7,7 +8,6 @@ using Void.Minecraft.Players;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
-using Void.Proxy.Api.Events.Commands;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Common.Services;
@@ -25,26 +25,13 @@ public class PlatformService(ILogger<PlatformService> logger, IHostApplicationLi
 
         commands.Register(builder => builder
             .Literal("plugins")
-            .Executes(ListPlugins));
-    }
+            .Executes(ListContainersAsync));
 
-    [Subscribe]
-    public async ValueTask OnChatCommand(ChatCommandEvent @event, CancellationToken cancellationToken)
-    {
-        var parts = @event.Command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-        if (parts.Length is 0)
-            return;
-
-        switch (parts[0].ToLower())
-        {
-            case "unload":
-                if (parts.Length is 1)
-                    break;
-
-                await plugins.UnloadContainerAsync(parts[1], cancellationToken);
-                break;
-        }
+        commands.Register(builder => builder
+            .Literal("unload")
+            .Then(builder => builder
+                .Argument("container", Arguments.String())
+                .Executes(UnloadContainerAsync)));
     }
 
     private int StopServer(CommandContext context)
@@ -54,7 +41,7 @@ public class PlatformService(ILogger<PlatformService> logger, IHostApplicationLi
         return 0;
     }
 
-    private async ValueTask<int> ListPlugins(CommandContext context, CancellationToken cancellationToken)
+    private async ValueTask<int> ListContainersAsync(CommandContext context, CancellationToken cancellationToken)
     {
         var names = string.Join(", ", plugins.Containers);
 
@@ -67,6 +54,13 @@ public class PlatformService(ILogger<PlatformService> logger, IHostApplicationLi
             logger.LogInformation("Loaded plugins: {List}", names);
         }
 
+        return 0;
+    }
+
+    private async ValueTask<int> UnloadContainerAsync(CommandContext context, CancellationToken cancellationToken)
+    {
+        var container = context.GetArgument<string>("container");
+        await plugins.UnloadContainerAsync(container, cancellationToken);
         return 0;
     }
 }
