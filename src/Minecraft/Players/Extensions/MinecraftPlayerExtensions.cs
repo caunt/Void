@@ -25,7 +25,7 @@ public static class MinecraftPlayerExtensions
     public static async ValueTask<ChatSendResult> SendChatMessageAsync(this IMinecraftPlayer player, Component message, CancellationToken cancellationToken = default)
     {
         var events = player.Context.Services.GetRequiredService<IEventService>();
-        return await events.ThrowWithResultAsync(new ChatMessageSendEvent(player, message), cancellationToken);
+        return await events.ThrowWithResultAsync(new ChatMessageSendEvent(player, message, Side.Proxy), cancellationToken);
     }
 
     public static async ValueTask KickAsync(this IMinecraftPlayer player, Component? reason = null, CancellationToken cancellationToken = default)
