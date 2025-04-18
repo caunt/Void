@@ -2,6 +2,7 @@
 using Void.Minecraft.Events;
 using Void.Minecraft.Events.Chat;
 using Void.Minecraft.Network;
+using Void.Minecraft.Players;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Player;
@@ -63,6 +64,6 @@ public abstract class AbstractLifecycleService : IPluginCommonService
 
     protected abstract ValueTask EnableCompressionAsync(ILink link, CancellationToken cancellationToken);
     protected abstract ValueTask<bool> KickPlayerAsync(IPlayer player, Component reason, CancellationToken cancellationToken);
-    protected abstract ValueTask<bool> SendChatMessageAsync(IPlayer player, Component text, CancellationToken cancellationToken);
+    protected abstract ValueTask<bool> SendChatMessageAsync(IMinecraftPlayer player, Component text, CancellationToken cancellationToken);
     protected abstract bool IsSupportedVersion(ProtocolVersion version);
 }

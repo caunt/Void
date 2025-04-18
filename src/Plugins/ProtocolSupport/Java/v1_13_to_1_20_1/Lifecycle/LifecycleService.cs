@@ -2,6 +2,7 @@
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
+using Void.Minecraft.Players;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Players;
@@ -25,17 +26,14 @@ public class LifecycleService : AbstractLifecycleService
         return Plugin.SupportedVersions.Contains(protocolVersion);
     }
 
-    protected override async ValueTask<bool> SendChatMessageAsync(IPlayer player, Component text, CancellationToken cancellationToken)
+    protected override async ValueTask<bool> SendChatMessageAsync(IMinecraftPlayer player, Component text, CancellationToken cancellationToken)
     {
-        if (!player.TryGetMinecraftPlayer(out var minecraftPlayer))
-            return false;
-
         if (!await player.IsPlayingAsync(cancellationToken))
             return false;
 
         var channel = await player.GetChannelAsync(cancellationToken);
 
-        if (minecraftPlayer.ProtocolVersion < ProtocolVersion.MINECRAFT_1_19)
+        if (player.ProtocolVersion < ProtocolVersion.MINECRAFT_1_19)
             await channel.SendPacketAsync(new ChatMessagePacket { Message = text, Position = 1 }, cancellationToken);
         else
             await channel.SendPacketAsync(new SystemChatMessagePacket { Message = text, Overlay = false }, cancellationToken);

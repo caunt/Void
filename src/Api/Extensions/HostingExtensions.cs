@@ -31,8 +31,8 @@ public static class HostingExtensions
             return false;
 
         // What should I do with scoped services?
-        if (descriptor.Lifetime is ServiceLifetime.Scoped)
-            return false;
+        // if (descriptor.Lifetime is ServiceLifetime.Scoped)
+        //     return false;
 
         return true;
     }
