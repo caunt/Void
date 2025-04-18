@@ -19,14 +19,14 @@ public class ExamplePlugin(ILogger<ExamplePlugin> logger, IDependencyService dep
         if (@event.Plugin != this)
             return;
 
-        // TODO: make them hosted?
-
         dependencies.Register(services =>
         {
+            // You can expose your services to another plugins
             services.AddSingleton<InventoryService>();
             services.AddSingleton<ChatService>();
         });
 
+        // TODO: make them hosted?
         dependencies.CreateInstance<InventoryService>();
         dependencies.CreateInstance<ChatService>();
     }
