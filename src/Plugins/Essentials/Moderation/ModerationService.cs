@@ -9,17 +9,20 @@ using Void.Minecraft.Players;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
-using Void.Proxy.Api.Events.Proxy;
+using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Plugins.Common.Services;
 
 namespace Void.Proxy.Plugins.Essentials.Moderation;
 
-public class ModerationService(IPlayerService players, ICommandService commands) : IPluginCommonService
+public class ModerationService(IPlayerService players, ICommandService commands, Plugin plugin) : IPluginCommonService
 {
     [Subscribe]
-    public void OnProxyStarted(ProxyStartedEvent _)
+    public void OnPluginLoad(PluginLoadEvent @event)
     {
+        if (@event.Plugin != plugin)
+            return;
+
         commands.Register(builder => builder
             .Literal("kick")
             .Then(builder => builder

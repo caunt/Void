@@ -8,17 +8,20 @@ using Void.Minecraft.Players;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
-using Void.Proxy.Api.Events.Proxy;
+using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Common.Services;
 
 namespace Void.Proxy.Plugins.Essentials.Platform;
 
-public class PlatformService(ILogger<PlatformService> logger, IHostApplicationLifetime hostApplicationLifetime, IPluginService plugins, ICommandService commands) : IPluginCommonService
+public class PlatformService(ILogger<PlatformService> logger, IHostApplicationLifetime hostApplicationLifetime, IPluginService plugins, ICommandService commands, Plugin plugin) : IPluginCommonService
 {
     [Subscribe]
-    public void OnProxyStarted(ProxyStartedEvent _)
+    public void OnPluginLoad(PluginLoadEvent @event)
     {
+        if (@event.Plugin != plugin)
+            return;
+
         commands.Register(builder => builder
             .Literal("stop")
             .Executes(StopServer));
