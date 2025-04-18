@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
@@ -26,11 +26,11 @@ public class InventoryService(ILogger<InventoryService> logger, ICommandService 
     {
         // This event is fired when any plugin is being loaded
 
-        // Skip all other plugins except ours
+        // Skip all other plugins load events except ours
         if (@event.Plugin != plugin)
             return;
 
-        // Register your commands brigadier-like way
+        // Register your commands in brigadier-like way
         // https://github.com/Mojang/brigadier/
         commands.Register(builder => builder
             .Literal("slot")
@@ -42,12 +42,14 @@ public class InventoryService(ILogger<InventoryService> logger, ICommandService 
 
     public async ValueTask<int> ChangeSlotAsync(CommandContext context, CancellationToken cancellationToken)
     {
+        // Commands might be triggered by console, plugins, or anything
         if (context.Source is not IMinecraftPlayer player)
         {
             logger.LogInformation("This command can be executed only by player");
             return 1;
         }
 
+        // Some arguments might be optional
         if (!context.TryGetArgument<int>("slot", out var slot))
         {
             // If slot argument is not provided, we will use random one
@@ -107,6 +109,7 @@ public class InventoryService(ILogger<InventoryService> logger, ICommandService 
                 new(0x62, ProtocolVersion.MINECRAFT_1_21_5)
             ]);
 
+            // Registrations above are explicitly registered for both sides Phase change. This is intentionally required by design.
             logger.LogTrace("Registered packet mappings for player {Player} at {Side} side", player, side);
         }
     }
