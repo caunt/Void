@@ -1,9 +1,9 @@
-﻿using Void.Common.Network.Messages;
-using Void.Minecraft.Links.Extensions;
+﻿using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Proxy.Api.Crypto;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network.Messages;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Services.Encryption;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientbound;

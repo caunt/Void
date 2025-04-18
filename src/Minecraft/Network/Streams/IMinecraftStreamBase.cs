@@ -1,4 +1,4 @@
-﻿using Void.Common.Network.Streams;
+﻿using Void.Proxy.Api.Network.Streams;
 
 namespace Void.Minecraft.Network.Streams;
 

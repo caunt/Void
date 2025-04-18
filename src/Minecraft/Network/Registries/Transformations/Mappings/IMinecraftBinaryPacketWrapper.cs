@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Void.Common.Network;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
+using Void.Proxy.Api.Network;
 
 namespace Void.Minecraft.Network.Registries.Transformations.Mappings;
 

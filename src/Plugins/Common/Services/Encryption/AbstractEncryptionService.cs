@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System.Security.Cryptography;
-using Void.Common.Network;
-using Void.Common.Network.Messages;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Crypto;
@@ -12,6 +10,8 @@ using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.Messages;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Plugins.Common.Crypto;
 using Void.Proxy.Plugins.Common.Events;

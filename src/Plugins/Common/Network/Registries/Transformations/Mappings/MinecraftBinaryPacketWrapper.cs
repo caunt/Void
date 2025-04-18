@@ -1,10 +1,10 @@
 ﻿using Nito.Collections;
 using System.Diagnostics.CodeAnalysis;
-using Void.Common.Network;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
+using Void.Proxy.Api.Network;
 
 namespace Void.Proxy.Plugins.Common.Network.Registries.Transformations.Mappings;
 

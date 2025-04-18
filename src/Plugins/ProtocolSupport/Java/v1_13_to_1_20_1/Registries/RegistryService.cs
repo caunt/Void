@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Diagnostics;
-using Void.Common.Network;
-using Void.Common.Network.Channels;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Players.Extensions;
@@ -9,6 +7,8 @@ using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Common.Extensions;

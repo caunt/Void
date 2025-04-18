@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Void.Common.Network;
-using Void.Common.Network.Channels;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries;
 using Void.Minecraft.Network.Streams.Packet;
+using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.Channels;
 
 namespace Void.Minecraft.Network.Channels.Extensions;
 

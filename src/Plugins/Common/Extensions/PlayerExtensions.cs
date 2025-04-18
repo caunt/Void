@@ -1,6 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Void.Common.Network;
-using Void.Common.Network.Channels;
 using Void.Minecraft.Events;
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
@@ -9,6 +7,8 @@ using Void.Minecraft.Network.Registries.Transformations.Extensions;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Players;
 using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Players.Extensions;
 
 namespace Void.Proxy.Plugins.Common.Extensions;

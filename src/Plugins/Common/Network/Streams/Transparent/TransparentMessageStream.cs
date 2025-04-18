@@ -1,5 +1,5 @@
-﻿using Void.Common.Network.Streams;
-using Void.Proxy.Api.Network.Messages;
+﻿using Void.Proxy.Api.Network.Messages;
+using Void.Proxy.Api.Network.Streams;
 using Void.Proxy.Api.Network.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.Streams.Manual.Network;
 using Void.Proxy.Api.Network.Streams.Recyclable;

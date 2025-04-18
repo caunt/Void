@@ -1,8 +1,8 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Void.Common.Network;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries;
+using Void.Proxy.Api.Network;
 
 namespace Void.Minecraft.Network.Streams.Packet;
 

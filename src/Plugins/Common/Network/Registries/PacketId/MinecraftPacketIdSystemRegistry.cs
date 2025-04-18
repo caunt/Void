@@ -1,9 +1,9 @@
-﻿using Void.Common.Network;
-using Void.Minecraft.Network;
+﻿using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.PacketId;
 using Void.Minecraft.Network.Registries.PacketId.Mappings;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Plugins;
 
 namespace Void.Proxy.Plugins.Common.Network.Registries.PacketId;

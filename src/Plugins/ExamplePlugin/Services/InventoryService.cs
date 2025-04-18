@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Void.Common.Network;
 using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
@@ -13,6 +12,7 @@ using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Plugins;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Plugins.ExamplePlugin.Packets.Clientbound;
 using Void.Proxy.Plugins.ExamplePlugin.Packets.Serverbound;
 

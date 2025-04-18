@@ -1,8 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace Void.Common.Network.Streams;
+﻿namespace Void.Proxy.Api.Network.Streams;
 
 public interface IMessageStreamBase : IDisposable, IAsyncDisposable
 {

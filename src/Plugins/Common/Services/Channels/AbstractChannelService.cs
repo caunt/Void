@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
-using Void.Common.Network;
-using Void.Common.Network.Channels;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
@@ -10,6 +8,7 @@ using Void.Proxy.Api.Events.Channels;
 using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Plugins.Common.Network.Channels;

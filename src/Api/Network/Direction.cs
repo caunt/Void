@@ -1,4 +1,4 @@
-﻿namespace Void.Common.Network;
+﻿namespace Void.Proxy.Api.Network;
 
 public enum Direction
 {

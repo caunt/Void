@@ -1,11 +1,8 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
-using System.Threading.Tasks;
-using Void.Common.Network.Messages;
-using Void.Common.Network.Streams;
+﻿using System.Diagnostics.CodeAnalysis;
+using Void.Proxy.Api.Network.Messages;
+using Void.Proxy.Api.Network.Streams;
 
-namespace Void.Common.Network.Channels;
+namespace Void.Proxy.Api.Network.Channels;
 
 public interface INetworkChannel : IDisposable, IAsyncDisposable
 {

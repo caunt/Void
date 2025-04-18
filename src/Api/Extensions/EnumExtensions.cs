@@ -1,5 +1,5 @@
-﻿using Void.Common.Network;
-using Void.Proxy.Api.Links;
+﻿using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network;
 
 namespace Void.Proxy.Api.Extensions;
 

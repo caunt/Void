@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using Void.Common.Network.Messages;
 using Void.Minecraft.Network.Messages.Packets;
+using Void.Proxy.Api.Network.Messages;
 using Void.Proxy.Api.Plugins;
 
 namespace Void.Minecraft.Network.Registries.PacketId;

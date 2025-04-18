@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using Void.Common.Network.Messages;
+using Void.Proxy.Api.Network.Messages;
 using Void.Proxy.Plugins.Common.Services.Compression;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
 

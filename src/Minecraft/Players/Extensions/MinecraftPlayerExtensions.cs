@@ -2,7 +2,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Void.Common.Network;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Events.Chat;
 using Void.Minecraft.Links.Extensions;
@@ -13,6 +12,7 @@ using Void.Minecraft.Network.Registries.PacketId.Mappings;
 using Void.Minecraft.Network.Registries.Transformations.Extensions;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins;

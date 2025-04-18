@@ -1,6 +1,6 @@
-﻿using Void.Common.Network;
-using Void.Common.Network.Messages;
-using Void.Proxy.Api.Links;
+﻿using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.Messages;
 
 namespace Void.Proxy.Api.Events.Network;
 

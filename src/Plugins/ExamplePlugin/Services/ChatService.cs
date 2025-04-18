@@ -1,11 +1,11 @@
-﻿using Void.Common.Network;
-using Void.Minecraft.Events;
+﻿using Void.Minecraft.Events;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Configurations;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network;
 
 namespace Void.Proxy.Plugins.ExamplePlugin.Services;
 

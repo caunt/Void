@@ -1,11 +1,11 @@
 ﻿using Nito.AsyncEx;
 using System.Diagnostics.CodeAnalysis;
-using Void.Common.Network;
-using Void.Common.Network.Channels;
-using Void.Common.Network.Messages;
-using Void.Common.Network.Streams;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Streams.Packet;
+using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.Channels;
+using Void.Proxy.Api.Network.Messages;
+using Void.Proxy.Api.Network.Streams;
 using Void.Proxy.Api.Network.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.Streams.Manual.Network;
 using Void.Proxy.Plugins.Common.Network.Messages.Binary;

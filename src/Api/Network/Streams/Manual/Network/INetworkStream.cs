@@ -1,5 +1,4 @@
 ﻿using System.Net.Sockets;
-using Void.Common.Network.Streams;
 
 namespace Void.Proxy.Api.Network.Streams.Manual.Network;
 
