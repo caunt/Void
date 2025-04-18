@@ -10,6 +10,14 @@ namespace Void.Proxy.Api.Players.Extensions;
 
 public static class PlayerExtensions
 {
+    public static IServer? GetServer(this IPlayer player)
+    {
+        if (!player.TryGetLink(out var link))
+            return null;
+
+        return link.Server;
+    }
+
     public static bool TryGetLink(this IPlayer player, [MaybeNullWhen(false)] out ILink link)
     {
         var links = player.Context.Services.GetRequiredService<ILinkService>();
