@@ -72,6 +72,8 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
             throw new InvalidOperationException("Source service provider is not found");
 
         existingServices.ForwardServices(pluginServices);
+        pluginServices.RegisterListeners();
+
         _pluginServices[plugin] = pluginServices.BuildServiceProvider();
     }
 
@@ -110,14 +112,21 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
         if (_pluginServices.ContainsKey(plugin))
             return;
 
+        var pluginType = plugin.GetType();
         var pluginServices = new ServiceCollection();
 
         logger.LogTrace("Injecting {Plugin} into {Name} service collection", plugin.GetType(), plugin.Name);
 
         // Plugin => Plugin
-        pluginServices.AddSingleton(plugin.GetType(), plugin);
+        pluginServices.AddSingleton(pluginType, plugin);
         services.ForwardServices(pluginServices);
 
+        pluginServices.RegisterListeners();
+
         _pluginServices[plugin] = pluginServices.BuildServiceProvider();
+
+        // This ensures that the plugin instance is registered as event listeners,
+        // Executes custom service factory behind RegisterListeners call above
+        _pluginServices[plugin].GetRequiredService(pluginType);
     }
 }

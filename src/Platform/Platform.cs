@@ -33,7 +33,7 @@ public class Platform(
     {
         LoggingLevelSwitch.MinimumLevel = LogEventLevel.Debug;
 
-        logger.LogInformation("Starting Void proxy");
+        logger.LogInformation("Starting {Name} proxy", nameof(Void));
         var startTime = Stopwatch.GetTimestamp();
 
         logger.LogTrace("Working directory is {Path}", Directory.GetCurrentDirectory());

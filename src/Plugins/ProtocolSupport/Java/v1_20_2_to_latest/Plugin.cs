@@ -1,7 +1,7 @@
 ﻿using Void.Minecraft.Network;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
-using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Plugins.Common.Plugins;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Authentication;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Bundles;
@@ -15,11 +15,11 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Transformations;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest;
 
-public class Plugin(IEventService events) : IProtocolPlugin
+public class Plugin(IDependencyService dependencies) : IProtocolPlugin
 {
     public static IEnumerable<ProtocolVersion> SupportedVersions => ProtocolVersion.Range(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.Latest);
 
-    public string Name => nameof(Plugin);
+    public string Name => nameof(v1_20_2_to_latest);
 
     [Subscribe]
     public void OnPluginLoad(PluginLoadEvent @event)
@@ -29,15 +29,15 @@ public class Plugin(IEventService events) : IProtocolPlugin
 
         Registry.Fill();
 
-        events.RegisterListener<RegistryService>(this);
-        events.RegisterListener<ChannelService>();
-        events.RegisterListener<CompressionService>();
-        events.RegisterListener<EncryptionService>();
-        events.RegisterListener<AuthenticationService>();
-        events.RegisterListener<TransformationService>();
+        dependencies.CreateInstance<RegistryService>();
+        dependencies.CreateInstance<ChannelService>();
+        dependencies.CreateInstance<CompressionService>();
+        dependencies.CreateInstance<EncryptionService>();
+        dependencies.CreateInstance<AuthenticationService>();
+        dependencies.CreateInstance<TransformationService>();
 
-        events.RegisterListener<CommandService>();
-        events.RegisterListener<BundleService>();
-        events.RegisterListener<LifecycleService>();
+        dependencies.CreateInstance<CommandService>();
+        dependencies.CreateInstance<BundleService>();
+        dependencies.CreateInstance<LifecycleService>();
     }
 }

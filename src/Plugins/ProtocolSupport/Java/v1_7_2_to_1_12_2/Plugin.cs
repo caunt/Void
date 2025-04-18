@@ -1,7 +1,7 @@
 ﻿using Void.Minecraft.Network;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
-using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Plugins.Common.Plugins;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Authentication;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Channels;
@@ -14,11 +14,11 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Transformations;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2;
 
-public class Plugin(IEventService events) : IProtocolPlugin
+public class Plugin(IDependencyService dependencies) : IProtocolPlugin
 {
     public static IEnumerable<ProtocolVersion> SupportedVersions => ProtocolVersion.Range(ProtocolVersion.MINECRAFT_1_7_2, ProtocolVersion.MINECRAFT_1_12_2);
 
-    public string Name => nameof(Plugin);
+    public string Name => nameof(v1_7_2_to_1_12_2);
 
     [Subscribe]
     public void OnPluginLoad(PluginLoadEvent @event)
@@ -28,14 +28,14 @@ public class Plugin(IEventService events) : IProtocolPlugin
 
         Registry.Fill();
 
-        events.RegisterListener<ChannelService>();
-        events.RegisterListener<RegistryService>(this);
-        events.RegisterListener<CompressionService>();
-        events.RegisterListener<EncryptionService>();
-        events.RegisterListener<AuthenticationService>();
-        events.RegisterListener<TransformationService>();
+        dependencies.CreateInstance<ChannelService>();
+        dependencies.CreateInstance<RegistryService>();
+        dependencies.CreateInstance<CompressionService>();
+        dependencies.CreateInstance<EncryptionService>();
+        dependencies.CreateInstance<AuthenticationService>();
+        dependencies.CreateInstance<TransformationService>();
 
-        events.RegisterListener<CommandService>();
-        events.RegisterListener<LifecycleService>();
+        dependencies.CreateInstance<CommandService>();
+        dependencies.CreateInstance<LifecycleService>();
     }
 }

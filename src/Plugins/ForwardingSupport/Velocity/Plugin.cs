@@ -15,7 +15,7 @@ public class Plugin : IProtocolPlugin
 {
     public static IEnumerable<ProtocolVersion> SupportedVersions => ProtocolVersion.Range(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.Latest);
 
-    public string Name => nameof(Plugin);
+    public string Name => nameof(Velocity);
 
     [Subscribe]
     public void OnPluginLoad(PluginLoadEvent @event)

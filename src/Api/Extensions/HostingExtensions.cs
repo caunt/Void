@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
 using System.Text.Json;
@@ -27,42 +28,24 @@ public static class HostingExtensions
 
     public static void RegisterListeners(this IServiceCollection services)
     {
-        for (var i = services.Count - 1; i >= 0; i--)
+        var provider = services.BuildServiceProvider();
+        services.Clear();
+
+        provider.ForwardServices(services, (provider, serviceType) =>
         {
-            var service = services[i];
+            var logger = provider.GetRequiredService<ILogger<IProxy>>();
+            var instance = provider.GetRequiredService(serviceType);
 
-            if (!(service.ImplementationType ?? service.ServiceType).IsAssignableTo(typeof(IEventListener)))
-                continue;
-
-            if (service.ImplementationType is { ContainsGenericParameters: true })
-                continue;
-
-            if (service.Lifetime is not ServiceLifetime.Singleton)
-                continue;
-
-            if (service.ImplementationType is null)
-                continue;
-
-            // Hide service from ServiceType
-            services[i] = new ServiceDescriptor(service.ImplementationType, service.ImplementationType, service.Lifetime);
-
-            // Add wrapped service under original ServiceType
-            services.AddSingleton(service.ServiceType, provider =>
+            if (instance is IEventListener listener)
             {
-                var logger = provider.GetRequiredService<ILogger<IProxy>>();
-                var instance = provider.GetRequiredService(service.ImplementationType);
+                var events = provider.GetRequiredService<IEventService>();
+                events.RegisterListeners(listener);
 
-                if (instance is IEventListener listener)
-                {
-                    var events = provider.GetRequiredService<IEventService>();
-                    events.RegisterListeners(listener);
+                logger.LogTrace("Registered {Type} event listener", listener);
+            }
 
-                    logger.LogTrace("Registered {Type} event listener", listener);
-                }
-
-                return instance;
-            });
-        }
+            return instance;
+        });
     }
 
     public static ServiceDescriptor[] GetAllServices(this IServiceProvider provider)
@@ -91,41 +74,26 @@ public static class HostingExtensions
         field.SetValue(instance, descriptorsValue.Where(serviceDescriptor => serviceDescriptor.ServiceType.Assembly != assembly).ToArray());
     }
 
-    public static void ForwardServices(this IServiceProvider provider, IServiceCollection collection)
+    public static void ForwardServices(this IServiceProvider provider, IServiceCollection collection, Func<IServiceProvider, Type, object>? customFactory = null)
     {
+        customFactory ??= (provider, serviceType) => provider.GetRequiredService(serviceType);
+
         foreach (var descriptor in provider.GetAllServices())
         {
-            var factory = new Func<IServiceProvider, object>(_ => provider.GetRequiredService(descriptor.ServiceType));
-
-            switch (descriptor.Lifetime)
+            if (descriptor.ImplementationType is { ContainsGenericParameters: true } type)
             {
-                case ServiceLifetime.Singleton:
-                    {
-                        if (descriptor.ImplementationType is { ContainsGenericParameters: true } type)
-                            collection.AddSingleton(descriptor.ServiceType, type);
-                        else
-                            collection.AddSingleton(descriptor.ServiceType, factory);
-                        break;
-                    }
-                case ServiceLifetime.Scoped:
-                    {
-                        if (descriptor.ImplementationType is { ContainsGenericParameters: true } type)
-                            collection.AddScoped(descriptor.ServiceType, type);
-                        else
-                            collection.AddScoped(descriptor.ServiceType, factory);
-                        break;
-                    }
-                case ServiceLifetime.Transient:
-                    {
-                        if (descriptor.ImplementationType is { ContainsGenericParameters: true } type)
-                            collection.AddTransient(descriptor.ServiceType, type);
-                        else
-                            collection.AddTransient(descriptor.ServiceType, factory);
-                        break;
-                    }
-                default:
-                    throw new NotSupportedException($"Unsupported service lifetime: {descriptor.Lifetime}");
+                collection.Add(descriptor);
+                continue;
             }
+
+            if (descriptor.ServiceType.IsAssignableTo(typeof(IHostedService)))
+            {
+                // TODO: Support hosted services forwarding via custom factory
+                collection.Add(descriptor);
+                continue;
+            }
+
+            collection.Add(ServiceDescriptor.Describe(descriptor.ServiceType, _ => customFactory(provider, descriptor.ServiceType), descriptor.Lifetime));
         }
     }
 

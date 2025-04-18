@@ -14,7 +14,7 @@ public class Plugin(IDependencyService dependencies) : IProtocolPlugin
 {
     public static IEnumerable<ProtocolVersion> SupportedVersions => ProtocolVersion.Range(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.Latest);
 
-    public string Name => nameof(Plugin);
+    public string Name => nameof(Essentials);
 
     [Subscribe]
     public void OnPluginLoad(PluginLoadEvent @event)
