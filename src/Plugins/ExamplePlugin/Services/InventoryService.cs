@@ -19,6 +19,7 @@ public class InventoryService(ILogger<InventoryService> logger) : IEventListener
     [Subscribe]
     public void OnMessageReceived(MessageReceivedEvent @event)
     {
+        // Messages are considered as "Network" messages. Minecraft messages are always packets.
         // This event is fired when a packet is received from the server or from the client at proxy side
 
         switch (@event.Message)
