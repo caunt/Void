@@ -1,44 +1,72 @@
-﻿using System.Collections.Concurrent;
+﻿using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 using Void.Common.Players;
+using Void.Minecraft.Commands.Brigadier;
+using Void.Minecraft.Commands.Brigadier.Builder;
+using Void.Minecraft.Commands.Brigadier.Context;
+using Void.Minecraft.Commands.Extensions;
+using Void.Minecraft.Players;
+using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
-using Void.Proxy.Api.Events.Commands;
 using Void.Proxy.Api.Events.Player;
+using Void.Proxy.Api.Events.Plugins;
+using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Servers;
 using Void.Proxy.Plugins.Common.Services;
 
 namespace Void.Proxy.Plugins.Essentials.Redirection;
 
-public class RedirectionService(IServerService servers) : IPluginCommonService
+public class RedirectionService(ILogger<RedirectionService> logger, Plugin plugin, IServerService servers, ICommandService commands) : IPluginCommonService
 {
     private readonly ConcurrentDictionary<IPlayer, IServer> _connecting = [];
 
     [Subscribe]
-    public void OnChatCommand(ChatCommandEvent @event)
+    public void OnPluginLoad(PluginLoadEvent @event)
     {
-        var parts = @event.Command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-        if (parts.Length is 0)
+        if (@event.Plugin != plugin)
             return;
 
-        switch (parts[0].ToLower())
+        commands.Register(builder => builder
+            .Literal("server")
+            .Then(builder => builder
+                .Argument("server", Arguments.GreedyString())
+                .Executes(ChangeServer))
+            .Executes(ChangeServer));
+    }
+
+    public int ChangeServer(CommandContext context)
+    {
+        if (context.Source is not IMinecraftPlayer player)
         {
-            case "server":
-                @event.Result = true;
-
-                // find selected IServer or choose random from registered servers
-                var server = parts.Length switch
-                {
-                    > 1 when servers.RegisteredServers.FirstOrDefault(server => server.Name.Equals(parts[1], StringComparison.CurrentCultureIgnoreCase)) is { } found => found,
-                    _ => servers.RegisteredServers.Except([@event.Link.Server]).ElementAt(Random.Shared.Next(servers.RegisteredServers.Count - 1))
-                };
-
-                if (_connecting.ContainsKey(@event.Link.Player))
-                    _connecting[@event.Link.Player] = server;
-                else if (_connecting.TryAdd(@event.Link.Player, server))
-                    @event.Link.ServerChannel.Close();
-
-                break;
+            logger.LogInformation("This command can be executed only by player");
+            return 1;
         }
+
+        var currentServer = player.GetServer();
+        var nextServer = context.TryGetArgument<string>("server", out var serverText) switch
+        {
+            true when servers.RegisteredServers.FirstOrDefault(server => server.Name.Equals(serverText, StringComparison.CurrentCultureIgnoreCase)) is { } found => found,
+            _ => servers.RegisteredServers.Except([currentServer]).ElementAt(Random.Shared.Next(servers.RegisteredServers.Count - 1))
+        };
+
+        if (nextServer is null)
+            return 1;
+
+        if (_connecting.ContainsKey(player))
+        {
+            _connecting[player] = nextServer;
+            return 0;
+        }
+
+        if (_connecting.TryAdd(player, nextServer))
+        {
+            if (player.TryGetLink(out var link))
+                link.ServerChannel.Close();
+
+            return 0;
+        }
+
+        return 0;
     }
 
     [Subscribe]
