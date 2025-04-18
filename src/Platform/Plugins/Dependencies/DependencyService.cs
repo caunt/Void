@@ -80,7 +80,7 @@ public class DependencyService(ILogger<DependencyService> logger, ILoggerFactory
             return;
 
         foreach (var descriptor in _pluginServices[plugin].GetAllServices().Where(descriptor => descriptor.Lifetime is ServiceLifetime.Singleton && !descriptor.ServiceType.ContainsGenericParameters))
-            _pluginServices[plugin].GetService(descriptor.ServiceType);
+            Services.GetService(descriptor.ServiceType);
     }
 
     private ServiceProvider GetAll(string? caller = null)
