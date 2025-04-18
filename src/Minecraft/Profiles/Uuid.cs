@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Void.Minecraft.Profiles;
 
-public struct Uuid(Guid guid)
+public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
 {
     public static Uuid Empty { get; } = new(Guid.Empty);
 
@@ -89,7 +89,7 @@ public struct Uuid(Guid guid)
             leastSigBytes[0]
         ]));
     }
-    
+
     public static Uuid Offline(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -120,6 +120,36 @@ public struct Uuid(Guid guid)
             1110 => 3,
             _ => -1
         };
+    }
+
+    public readonly int CompareTo(Uuid other)
+    {
+        return AsGuid.CompareTo(other.AsGuid);
+    }
+
+    public readonly bool Equals(Uuid other)
+    {
+        return AsGuid.Equals(other.AsGuid);
+    }
+
+    public override readonly bool Equals(object? obj)
+    {
+        return obj is Uuid other && Equals(other);
+    }
+
+    public override readonly int GetHashCode()
+    {
+        return AsGuid.GetHashCode();
+    }
+
+    public static bool operator ==(Uuid left, Uuid right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(Uuid left, Uuid right)
+    {
+        return !left.Equals(right);
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 16)]
