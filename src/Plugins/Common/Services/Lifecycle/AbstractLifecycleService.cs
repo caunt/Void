@@ -6,6 +6,7 @@ using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Plugins.Common.Events;
 
@@ -16,6 +17,9 @@ public abstract class AbstractLifecycleService : IPluginCommonService
     [Subscribe]
     public async ValueTask OnChatMessageSend(ChatMessageSendEvent @event, CancellationToken cancellationToken)
     {
+        if (@event.Origin is not Side.Proxy)
+            return;
+
         if (!@event.Player.TryGetMinecraftPlayer(out var player))
             return;
 
