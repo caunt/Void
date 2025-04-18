@@ -9,7 +9,7 @@ using Void.Proxy.Api.Plugins.Dependencies;
 
 namespace Void.Proxy.Plugins.Dependencies;
 
-public class DependencyService(ILogger<DependencyService> logger, IServiceProvider services, IEventService events) : IDependencyService
+public class DependencyService(ILogger<DependencyService> logger, ILoggerFactory loggerFactory, IServiceProvider services, IEventService events) : IDependencyService
 {
     private readonly Dictionary<IPlugin, IServiceProvider> _pluginServices = [];
 
@@ -39,11 +39,11 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
     {
         var instance = Services.GetService(serviceType) ?? ActivatorUtilities.CreateInstance(Services, serviceType);
 
-        if (serviceType.IsAssignableTo(typeof(IEventListener)))
-            events.RegisterListeners((IEventListener)instance);
+        if (instance is IEventListener listener)
+            events.RegisterListeners(listener);
 
-        if (serviceType.IsAssignableTo(typeof(IPlugin)))
-            RegisterPlugin((IPlugin)instance);
+        if (instance is IPlugin plugin)
+            RegisterPlugin(plugin);
 
         return instance;
     }
@@ -77,7 +77,7 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
         _pluginServices[plugin] = pluginServices.BuildServiceProvider();
     }
 
-    private ServiceProvider GetAll()
+    private ServiceProvider GetAll(string? caller = null)
     {
         var forwardedServices = new ServiceCollection();
 
@@ -86,6 +86,17 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
 
         if (_pluginServices.Values.Count is 0)
             services.ForwardServices(forwardedServices);
+
+        if (!forwardedServices.HasService<ILogger>())
+        {
+            forwardedServices.AddSingleton(provider =>
+            {
+                if (string.IsNullOrWhiteSpace(caller))
+                    throw new InvalidOperationException("Please use generic type of ILogger<>");
+
+                return loggerFactory.CreateLogger(caller);
+            });
+        }
 
         return forwardedServices.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }

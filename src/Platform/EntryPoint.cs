@@ -43,6 +43,12 @@ try
 {
     var builder = Host.CreateApplicationBuilder(args);
 
+    builder.Services.Configure<HostOptions>(options =>
+    {
+        options.ServicesStartConcurrently = true;
+        options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.StopHost;
+    });
+
     builder.Services.AddSerilog();
     builder.Services.AddJsonOptions();
     builder.Services.AddHttpClient();
@@ -84,10 +90,6 @@ try
     }
 
     await app;
-}
-catch (Exception exception)
-{
-    Log.Fatal(exception, "Host terminated unexpectedly");
 }
 finally
 {
