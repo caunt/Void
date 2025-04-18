@@ -54,6 +54,7 @@ public class InventoryService(ILogger<InventoryService> logger, ICommandService 
             slot = Random.Shared.Next(0, 9);
         }
 
+        await player.SendChatMessageAsync($"Your held item slot is changed to {slot}", cancellationToken);
         await player.SendPacketAsync(new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
         return 0;
     }
