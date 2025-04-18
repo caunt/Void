@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Void.Minecraft.Commands.Brigadier.Exceptions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Commands;
@@ -31,21 +30,7 @@ public abstract class AbstractCommandService(ILogger logger, IEventService event
         if (!IsSupportedVersion(player.ProtocolVersion))
             return;
 
-        player.GetLogger().LogInformation("Entered command: {Command}", @event.Command);
-
-        try
-        {
-            await commands.ExecuteAsync(player, @event.Command, cancellationToken);
-            @event.Result = true;
-        }
-        catch (CommandSyntaxException exception) when (exception.Message.Contains("Unknown command"))
-        {
-            // Ignore unknown commands
-        }
-        catch (CommandSyntaxException exception)
-        {
-            await player.SendChatMessageAsync(exception.Message, cancellationToken);
-        }
+        @event.Result = await commands.ExecuteAsync(player, @event.Command, cancellationToken) is CommandExecutionResult.Executed;
     }
 
     protected abstract bool IsSupportedVersion(ProtocolVersion version);
