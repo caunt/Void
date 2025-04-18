@@ -33,8 +33,8 @@ public class ExamplePlugin(ILogger<ExamplePlugin> logger, IDependencyService dep
         });
 
         // TODO: make them hosted?
-        dependencies.CreateInstance<InventoryService>();
-        dependencies.CreateInstance<ChatService>();
+        dependencies.GetRequiredService<InventoryService>();
+        dependencies.GetRequiredService<ChatService>();
     }
 
     [Subscribe]
