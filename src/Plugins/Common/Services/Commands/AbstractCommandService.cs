@@ -17,7 +17,7 @@ public abstract class AbstractCommandService(ILogger logger, IEventService event
         var cancelled = await events.ThrowWithResultAsync(new ChatCommandEvent(link, command, isSigned), cancellationToken);
 
         if (isSigned && cancelled)
-            throw new InvalidOperationException("Signed chat commands cannot be cancelled");
+            logger.LogWarning("Signed command cannot be cancelled: {Command}", command);
 
         return cancelled;
     }
@@ -31,7 +31,7 @@ public abstract class AbstractCommandService(ILogger logger, IEventService event
         if (!IsSupportedVersion(player.ProtocolVersion))
             return;
 
-        logger.LogInformation("Player {Player} entered command: {Command}", player, @event.Command);
+        player.GetLogger().LogInformation("Entered command: {Command}", @event.Command);
 
         try
         {
