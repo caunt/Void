@@ -9,15 +9,16 @@ namespace Void.Proxy.Plugins.Dependencies;
 
 public class DependencyService(ILogger<DependencyService> logger, IServiceProvider services, IEventService events) : IDependencyService
 {
-    private readonly Dictionary<IPlugin, IServiceProvider> _pluginServices = [];
-
     [Subscribe(PostOrder.First)]
     public void OnPluginUnloading(PluginUnloadingEvent @event)
     {
-        if (!_pluginServices.TryGetValue(@event.Plugin, out _))
-            return;
+        var assembly = @event.Plugin.GetType().Assembly;
 
-        _pluginServices.Remove(@event.Plugin);
+        services.Remove(descriptor =>
+        {
+            var instance = descriptor.CreateInstance(services);
+            return instance?.GetType().Assembly == assembly;
+        });
     }
 
     public TService CreateInstance<TService>()
