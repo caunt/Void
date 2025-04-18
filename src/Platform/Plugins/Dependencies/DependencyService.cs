@@ -63,7 +63,7 @@ public class DependencyService(ILogger<DependencyService> logger, ILoggerFactory
         return provider(Services);
     }
 
-    public void Register(Action<ServiceCollection> configure)
+    public void Register(Action<ServiceCollection> configure, bool activate = true)
     {
         var pluginServices = new ServiceCollection();
         configure(pluginServices);
@@ -75,6 +75,12 @@ public class DependencyService(ILogger<DependencyService> logger, ILoggerFactory
         pluginServices.RegisterListeners();
 
         _pluginServices[plugin] = pluginServices.BuildServiceProvider();
+
+        if (!activate)
+            return;
+
+        foreach (var descriptor in _pluginServices[plugin].GetAllServices().Where(descriptor => !descriptor.ServiceType.ContainsGenericParameters))
+            _pluginServices[plugin].GetService(descriptor.ServiceType);
     }
 
     private ServiceProvider GetAll(string? caller = null)

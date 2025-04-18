@@ -31,10 +31,6 @@ public class ExamplePlugin(ILogger<ExamplePlugin> logger, IDependencyService dep
             services.AddSingleton<InventoryService>();
             services.AddSingleton<ChatService>();
         });
-
-        // TODO: make them hosted?
-        dependencies.GetRequiredService<InventoryService>();
-        dependencies.GetRequiredService<ChatService>();
     }
 
     [Subscribe]

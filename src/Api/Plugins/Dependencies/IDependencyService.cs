@@ -14,5 +14,5 @@ public interface IDependencyService : IEventListener
     public TService? GetService<TService>();
     public TService GetRequiredService<TService>() where TService : notnull;
     public TService Get<TService>(Func<IServiceProvider, TService> configure);
-    public void Register(Action<ServiceCollection> configure);
+    public void Register(Action<ServiceCollection> configure, bool activate = true);
 }
