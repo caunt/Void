@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Commands.Brigadier.Exceptions;
+﻿using Microsoft.Extensions.Logging;
+using Void.Minecraft.Commands.Brigadier.Exceptions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Commands;
@@ -9,7 +10,7 @@ using Void.Proxy.Api.Links;
 
 namespace Void.Proxy.Plugins.Common.Services.Commands;
 
-public abstract class AbstractCommandService(IEventService events, ICommandService commands) : IPluginCommonService
+public abstract class AbstractCommandService(ILogger logger, IEventService events, ICommandService commands) : IPluginCommonService
 {
     public async ValueTask<bool> HandleCommandAsync(ILink link, string command, bool isSigned, CancellationToken cancellationToken)
     {
@@ -29,6 +30,8 @@ public abstract class AbstractCommandService(IEventService events, ICommandServi
 
         if (!IsSupportedVersion(player.ProtocolVersion))
             return;
+
+        logger.LogInformation("Player {Player} entered command: {Command}", player, @event.Command);
 
         try
         {

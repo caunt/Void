@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Network;
+﻿using Microsoft.Extensions.Logging;
+using Void.Minecraft.Network;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
@@ -8,7 +9,7 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Serverbou
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Commands;
 
-public class CommandService(IEventService events, ICommandService commands) : AbstractCommandService(events, commands)
+public class CommandService(ILogger<CommandService> logger, IEventService events, ICommandService commands) : AbstractCommandService(logger, events, commands)
 {
     protected override bool IsSupportedVersion(ProtocolVersion protocolVersion)
     {
@@ -26,7 +27,7 @@ public class CommandService(IEventService events, ICommandService commands) : Ab
                 if (string.IsNullOrEmpty(text) || text[0] != '/')
                     return;
 
-                await HandleCommandAsync(@event.Link, text[1..], false, cancellationToken);
+                @event.Result = await HandleCommandAsync(@event.Link, text[1..], false, cancellationToken);
                 break;
         }
     }
