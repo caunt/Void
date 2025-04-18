@@ -1,5 +1,4 @@
-﻿using Void.Common.Commands;
-using Void.Minecraft.Commands.Brigadier;
+﻿using Void.Minecraft.Commands.Brigadier;
 using Void.Proxy.Api.Commands;
 
 namespace Void.Proxy.Commands;

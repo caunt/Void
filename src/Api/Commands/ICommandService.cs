@@ -1,6 +1,4 @@
-﻿using Void.Common.Commands;
-
-namespace Void.Proxy.Api.Commands;
+﻿namespace Void.Proxy.Api.Commands;
 
 public interface ICommandService
 {

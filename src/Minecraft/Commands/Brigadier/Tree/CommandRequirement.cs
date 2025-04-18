@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Void.Common.Commands;
+using Void.Proxy.Api.Commands;
 
 namespace Void.Minecraft.Commands.Brigadier.Tree;
 

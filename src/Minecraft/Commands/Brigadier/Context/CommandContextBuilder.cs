@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using Void.Common.Commands;
 using Void.Minecraft.Commands.Brigadier.Tree;
+using Void.Proxy.Api.Commands;
 
 namespace Void.Minecraft.Commands.Brigadier.Context;
 

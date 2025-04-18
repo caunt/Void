@@ -1,6 +1,6 @@
-﻿using Void.Common.Commands;
-using Void.Minecraft.Network;
+﻿using Void.Minecraft.Network;
 using Void.Minecraft.Profiles;
+using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Players;
 
 namespace Void.Minecraft.Players;

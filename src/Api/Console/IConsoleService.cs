@@ -1,4 +1,4 @@
-﻿using Void.Common.Commands;
+﻿using Void.Proxy.Api.Commands;
 
 namespace Void.Proxy.Api.Console;
 

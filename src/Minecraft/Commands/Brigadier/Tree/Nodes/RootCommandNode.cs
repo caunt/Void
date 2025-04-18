@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Void.Common.Commands;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Suggestion;
+using Void.Proxy.Api.Commands;
 
 namespace Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 
