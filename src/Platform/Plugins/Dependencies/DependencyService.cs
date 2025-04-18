@@ -10,7 +10,7 @@ using Void.Proxy.Api.Plugins;
 
 namespace Void.Proxy.Plugins.Dependencies;
 
-public class DependencyService(IServiceProvider services, IEventService events) : IDependencyService
+public class DependencyService(ILogger<DependencyService> logger, IServiceProvider services, IEventService events) : IDependencyService
 {
     private readonly Dictionary<IPlugin, IServiceProvider> _pluginServices = [];
 
@@ -112,6 +112,10 @@ public class DependencyService(IServiceProvider services, IEventService events) 
             return;
 
         var pluginServices = new ServiceCollection();
+
+        logger.LogTrace("Injecting {Plugin} into {Name} service collection", plugin.GetType(), plugin.Name);
+
+        // Plugin => Plugin
         pluginServices.AddSingleton(plugin.GetType(), plugin);
         services.ForwardServices(pluginServices);
 
