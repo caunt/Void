@@ -1,6 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using Void.Proxy.Api.Events;
+﻿using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
@@ -12,8 +10,6 @@ namespace Void.Proxy.Plugins.Dependencies;
 public class DependencyService(ILogger<DependencyService> logger, ILoggerFactory loggerFactory, IServiceProvider services, IEventService events) : IDependencyService
 {
     private readonly Dictionary<IPlugin, IServiceProvider> _pluginServices = [];
-
-    public IServiceProvider Services => GetAll();
 
     [Subscribe(PostOrder.First)]
     public void OnPluginUnloading(PluginUnloadingEvent @event)
@@ -37,7 +33,7 @@ public class DependencyService(ILogger<DependencyService> logger, ILoggerFactory
 
     public object CreateInstance(Type serviceType)
     {
-        var instance = Services.GetService(serviceType) ?? ActivatorUtilities.CreateInstance(Services, serviceType);
+        var instance = services.HasService(serviceType) ? services.GetRequiredService(serviceType) : ActivatorUtilities.CreateInstance(services, serviceType);
 
         if (instance is IEventListener listener)
             events.RegisterListeners(listener);
@@ -60,7 +56,7 @@ public class DependencyService(ILogger<DependencyService> logger, ILoggerFactory
 
     public TService Get<TService>(Func<IServiceProvider, TService> provider)
     {
-        return provider(Services);
+        return provider(services);
     }
 
     public void Register(Action<ServiceCollection> configure, bool activate = true)
@@ -68,82 +64,46 @@ public class DependencyService(ILogger<DependencyService> logger, ILoggerFactory
         var pluginServices = new ServiceCollection();
         configure(pluginServices);
 
-        if (!GetByAssembly(pluginServices[0].ServiceType.Assembly, out var plugin, out var existingServices))
-            throw new InvalidOperationException("Source service provider is not found");
+        foreach (var service in pluginServices)
+        {
+            if (service.ServiceType.ContainsGenericParameters || service.ServiceType.IsAssignableTo(typeof(IHostedService)))
+            {
+                services.AddService(service);
+                continue;
+            }
 
-        existingServices.ForwardServices(pluginServices);
-        pluginServices.RegisterListeners();
+            services.AddService(ServiceDescriptor.Describe(service.ServiceType, provider =>
+            {
+                var instance = ActivatorUtilities.CreateInstance(provider, service.ServiceType);
 
-        _pluginServices[plugin] = pluginServices.BuildServiceProvider();
+                if (instance is IEventListener listener)
+                    events.RegisterListeners(listener);
+
+                return instance;
+            }, service.Lifetime));
+        }
 
         if (!activate)
             return;
 
-        foreach (var descriptor in _pluginServices[plugin].GetAllServices().Where(descriptor => descriptor.Lifetime is ServiceLifetime.Singleton && !descriptor.ServiceType.ContainsGenericParameters))
-            Services.GetService(descriptor.ServiceType);
-    }
-
-    private ServiceProvider GetAll(string? caller = null)
-    {
-        var forwardedServices = new ServiceCollection();
-
-        foreach (var services in _pluginServices.Values)
-            services.ForwardServices(forwardedServices);
-
-        if (_pluginServices.Values.Count is 0)
-            services.ForwardServices(forwardedServices);
-
-        if (!forwardedServices.HasService<ILogger>())
+        foreach (var descriptor in services.GetDescriptors().Where(descriptor => descriptor.Lifetime is ServiceLifetime.Singleton && !descriptor.ServiceType.ContainsGenericParameters))
         {
-            forwardedServices.AddSingleton(provider =>
-            {
-                if (string.IsNullOrWhiteSpace(caller))
-                    throw new InvalidOperationException("Please use generic type of ILogger<>");
+            var instance = services.GetService(descriptor.ServiceType);
 
-                return loggerFactory.CreateLogger(caller);
-            });
+            if (instance is IEventListener listener)
+                events.RegisterListeners(listener);
         }
-
-        return forwardedServices.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
-    }
-
-    private bool GetByAssembly(Assembly assembly, [MaybeNullWhen(false)] out IPlugin plugin, [MaybeNullWhen(false)] out IServiceProvider services)
-    {
-        foreach (var (_plugin, _services) in _pluginServices)
-        {
-            if (_plugin.GetType().Assembly != assembly)
-                continue;
-
-            plugin = _plugin;
-            services = _services;
-            return true;
-        }
-
-        plugin = null;
-        services = null;
-        return false;
     }
 
     private void RegisterPlugin(IPlugin plugin)
     {
-        if (_pluginServices.ContainsKey(plugin))
-            return;
-
         var pluginType = plugin.GetType();
-        var pluginServices = new ServiceCollection();
 
         logger.LogTrace("Injecting {Plugin} into {Name} service collection", plugin.GetType(), plugin.Name);
 
         // Plugin => Plugin
-        pluginServices.AddSingleton(pluginType, plugin);
-        services.ForwardServices(pluginServices);
+        services.AddService(ServiceDescriptor.Singleton(pluginType, plugin));
 
-        pluginServices.RegisterListeners();
-
-        _pluginServices[plugin] = pluginServices.BuildServiceProvider();
-
-        // This ensures that the plugin instance is registered as event listeners,
-        // Executes custom service factory behind RegisterListeners call above
-        _pluginServices[plugin].GetRequiredService(pluginType);
+        services.GetRequiredService(pluginType);
     }
 }
