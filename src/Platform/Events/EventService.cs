@@ -74,6 +74,14 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
         }
 
         logger.LogTrace("Completed invoking {TypeName} event", eventType.Name);
+
+        var createdEntries = entriesNotSafe.Except(entries);
+
+        if (createdEntries.Any())
+        {
+            logger.LogTrace("Created {Count} listeners after event, rethrowing {EventType} event for them", createdEntries.Count(), eventType.Name);
+            await ThrowAsync(createdEntries, @event, cancellationToken);
+        }
     }
 
     [Obsolete("Use IDependencyService.CreateInstance<TService>() instead")]
