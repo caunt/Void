@@ -1,6 +1,6 @@
-﻿using Void.Common.Events;
-using Void.Minecraft.Components.Text;
+﻿using Void.Minecraft.Components.Text;
 using Void.Minecraft.Players;
+using Void.Proxy.Api.Events;
 
 namespace Void.Minecraft.Events.Chat;
 

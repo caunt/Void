@@ -1,5 +1,5 @@
 ﻿using Void.Common.Network.Channels;
-using Void.Common.Players;
+using Void.Proxy.Api.Players.Contexts;
 
 namespace Void.Proxy.Players.Contexts;
 

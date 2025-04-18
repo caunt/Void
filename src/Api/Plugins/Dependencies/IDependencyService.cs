@@ -1,6 +1,6 @@
 ﻿
 using Microsoft.Extensions.DependencyInjection;
-using Void.Common.Events;
+using Void.Proxy.Api.Events;
 
 namespace Void.Proxy.Api.Plugins.Dependencies;
 

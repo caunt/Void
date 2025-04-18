@@ -1,5 +1,4 @@
-﻿using Void.Common.Events;
-using Void.Common.Network;
+﻿using Void.Common.Network;
 using Void.Minecraft.Events;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;

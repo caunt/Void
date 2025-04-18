@@ -1,7 +1,7 @@
 ﻿using Void.Common.Commands;
-using Void.Common.Players;
 using Void.Minecraft.Network;
 using Void.Minecraft.Profiles;
+using Void.Proxy.Api.Players;
 
 namespace Void.Minecraft.Players;
 

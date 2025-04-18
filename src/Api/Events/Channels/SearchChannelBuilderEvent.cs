@@ -1,6 +1,5 @@
-﻿using Void.Common.Events;
-using Void.Common.Players;
-using Void.Proxy.Api.Network.Channels;
+﻿using Void.Proxy.Api.Network.Channels;
+using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Api.Events.Channels;
 

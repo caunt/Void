@@ -2,7 +2,6 @@
 using Void.Common.Network;
 using Void.Common.Network.Channels;
 using Void.Common.Network.Messages;
-using Void.Common.Players;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Api.Events.Network;
@@ -10,6 +9,7 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network.Exceptions;
+using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Servers;
 

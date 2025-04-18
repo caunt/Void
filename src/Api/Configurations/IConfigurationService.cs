@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Hosting;
-using Void.Common.Events;
+using Void.Proxy.Api.Events;
 
 namespace Void.Proxy.Api.Configurations;
 

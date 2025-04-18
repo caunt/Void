@@ -1,8 +1,8 @@
-﻿using System;
-using System.Net.Sockets;
+﻿using System.Net.Sockets;
 using Void.Common.Commands;
+using Void.Proxy.Api.Players.Contexts;
 
-namespace Void.Common.Players;
+namespace Void.Proxy.Api.Players;
 
 public interface IPlayer : ICommandSource, IAsyncDisposable
 {

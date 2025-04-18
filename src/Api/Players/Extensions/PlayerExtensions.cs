@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics.CodeAnalysis;
 using Void.Common.Network.Channels;
-using Void.Common.Players;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Servers;

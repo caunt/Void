@@ -1,5 +1,4 @@
-﻿using Void.Common.Players;
-using Void.Minecraft.Components.Text;
+﻿using Void.Minecraft.Components.Text;
 using Void.Minecraft.Events;
 using Void.Minecraft.Events.Chat;
 using Void.Minecraft.Network;
@@ -7,6 +6,7 @@ using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Players;
 using Void.Proxy.Plugins.Common.Events;
 
 namespace Void.Proxy.Plugins.Common.Services.Lifecycle;

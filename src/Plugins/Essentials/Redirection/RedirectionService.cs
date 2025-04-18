@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
-using Void.Common.Players;
 using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
@@ -10,6 +9,7 @@ using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Plugins;
+using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Servers;
 using Void.Proxy.Plugins.Common.Services;

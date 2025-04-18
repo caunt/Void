@@ -3,7 +3,6 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
-using Void.Common.Players;
 using Void.Minecraft.Components.Text;
 using Void.Proxy.Api.Players;
 

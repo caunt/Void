@@ -1,8 +1,6 @@
 ﻿using Nito.AsyncEx;
 using System.Diagnostics;
 using System.Net.Sockets;
-using Void.Common.Events;
-using Void.Common.Players;
 using Void.Minecraft.Players;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Links;

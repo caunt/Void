@@ -1,6 +1,4 @@
-﻿using Void.Common.Events;
-
-namespace Void.Proxy.Api.Events.Services;
+﻿namespace Void.Proxy.Api.Events.Services;
 
 public interface IEventService
 {

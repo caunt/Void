@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Void.Common.Events;
 using Void.Common.Network;
 using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Builder;

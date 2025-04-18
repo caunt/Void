@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using Void.Common.Events;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;

@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Void.Common.Players;
 using Void.Minecraft.Mojang;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;

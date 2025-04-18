@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Void.Common.Events;
+using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Services;
 
 namespace Void.Proxy.Api.Extensions;

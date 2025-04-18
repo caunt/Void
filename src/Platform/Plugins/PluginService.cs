@@ -2,7 +2,7 @@
 using Nito.Disposables.Internals;
 using System.Diagnostics;
 using System.Reflection;
-using Void.Common.Events;
+using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;

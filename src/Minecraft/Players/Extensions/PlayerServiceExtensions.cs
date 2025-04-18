@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Void.Common.Players;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Events;
 using Void.Proxy.Api.Players;
