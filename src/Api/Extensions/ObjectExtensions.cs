@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace Void.Proxy.Extensions;
+namespace Void.Proxy.Api.Extensions;
 
 public static class ObjectExtensions
 {

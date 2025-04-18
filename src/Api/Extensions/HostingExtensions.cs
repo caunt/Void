@@ -5,7 +5,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Extensions;
 
 namespace Void.Proxy.Api.Extensions;
 
