@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
@@ -21,7 +21,7 @@ public class ExamplePlugin(ILogger<ExamplePlugin> logger, IDependencyService dep
 
         dependencies.Register(services =>
         {
-            // You can expose your services to another plugins
+            // You can expose your services to other plugins
             services.AddSingleton<InventoryService>();
             services.AddSingleton<ChatService>();
         });
