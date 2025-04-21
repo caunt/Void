@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Events.Chat;
 using Void.Minecraft.Links.Extensions;

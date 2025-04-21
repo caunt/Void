@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Net.Sockets;
+﻿using System.Net.Sockets;
+using Microsoft.Extensions.Logging;
 using Void.Proxy.Api.Events.Channels;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Network;

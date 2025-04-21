@@ -1,6 +1,6 @@
-﻿using Nito.AsyncEx;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Net.Sockets;
+using Nito.AsyncEx;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Api.Events.Player;

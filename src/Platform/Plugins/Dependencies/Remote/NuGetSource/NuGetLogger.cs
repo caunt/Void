@@ -1,5 +1,5 @@
-﻿using NuGet.Common;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
+using NuGet.Common;
 
 namespace Void.Proxy.Plugins.Dependencies.Remote.NuGetSource;
 

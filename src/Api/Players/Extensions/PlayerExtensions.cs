@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.DependencyInjection;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Servers;

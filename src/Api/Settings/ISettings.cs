@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Net;
+﻿using System.Net;
+using Microsoft.Extensions.Logging;
 using Void.Proxy.Api.Forwarding;
 using Void.Proxy.Api.Servers;
 

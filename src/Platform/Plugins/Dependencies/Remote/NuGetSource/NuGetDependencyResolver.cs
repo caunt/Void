@@ -1,4 +1,6 @@
-﻿using Nito.Disposables.Internals;
+﻿using System.Reflection;
+using System.Runtime.Versioning;
+using Nito.Disposables.Internals;
 using NuGet.Configuration;
 using NuGet.Frameworks;
 using NuGet.PackageManagement;
@@ -7,8 +9,6 @@ using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
-using System.Reflection;
-using System.Runtime.Versioning;
 
 namespace Void.Proxy.Plugins.Dependencies.Remote.NuGetSource;
 

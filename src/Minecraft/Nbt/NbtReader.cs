@@ -1,6 +1,6 @@
-﻿using SharpNBT;
-using System;
+﻿using System;
 using System.IO;
+using SharpNBT;
 
 namespace Void.Minecraft.Nbt;
 

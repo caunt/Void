@@ -1,5 +1,5 @@
-﻿using Nito.Collections;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
+using Nito.Collections;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;

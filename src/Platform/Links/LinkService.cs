@@ -1,5 +1,5 @@
-﻿using Nito.AsyncEx;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
+using Nito.AsyncEx;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Authentication;

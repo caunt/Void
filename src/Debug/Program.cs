@@ -1,9 +1,9 @@
-﻿using Docker.DotNet;
+﻿using System.Net.Sockets;
+using System.Reflection;
+using Docker.DotNet;
 using Docker.DotNet.Models;
 using MCStatus;
 using Nito.AsyncEx;
-using System.Net.Sockets;
-using System.Reflection;
 using Void.Minecraft.Network;
 
 if (OperatingSystem.IsWindows())

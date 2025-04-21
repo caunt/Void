@@ -1,5 +1,5 @@
-﻿using Microsoft.IO;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.IO;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Network.Messages.Packets;
