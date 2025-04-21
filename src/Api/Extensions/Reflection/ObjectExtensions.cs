@@ -1,6 +1,8 @@
 ﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 
-namespace Void.Proxy.Api.Extensions;
+[assembly: InternalsVisibleTo("Void.Proxy")]
+namespace Void.Proxy.Api.Extensions.Reflection;
 
 public static class ObjectExtensions
 {
@@ -14,7 +16,7 @@ public static class ObjectExtensions
     internal static T? InvokeMethod<T>(this object instance, string methodName, params object[] args)
     {
         var method = instance.GetType().GetMethod(methodName, DefaultFlags) ??
-            throw new MissingMethodException($"Method '{methodName}' not found in '{instance}'.");
+            throw new MissingMethodException($"Method '{methodName}({string.Join(", ", args.Select(arg => arg.GetType()))})' not found in '{instance}'");
 
         return (T?)method.Invoke(instance, args);
     }
