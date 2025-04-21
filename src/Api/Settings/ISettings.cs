@@ -11,5 +11,5 @@ public interface ISettings
     public int CompressionThreshold { get; }
     public int KickTimeout { get; }
     public LogLevel LogLevel { get; }
-    public List<IServer> Servers { get; }
+    public IEnumerable<IServer> Servers { get; }
 }

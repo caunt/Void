@@ -4,9 +4,9 @@ namespace Void.Proxy.Api.Servers;
 
 public interface IServer
 {
-    public string Name { get; set; }
-    public string Host { get; set; }
-    public int Port { get; set; }
+    public string Name { get; }
+    public string Host { get; }
+    public int Port { get; }
     public string? Brand { get; set; }
 
     public TcpClient CreateTcpClient() => new(Host, Port);
