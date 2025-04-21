@@ -85,14 +85,14 @@ try
 
     builder.Services.RegisterListeners();
 
-    var host = builder.Build();
+    using var host = builder.Build();
 
     var console = host.Services.GetRequiredService<IConsoleService>();
     var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
     var token = lifetime.ApplicationStopping;
 
     console.Setup();
-    var app = host.RunAsync();
+    using var app = host.RunAsync();
 
     try
     {
