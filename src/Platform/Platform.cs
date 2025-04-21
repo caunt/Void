@@ -41,7 +41,7 @@ public class Platform(
         logger.LogInformation("Loading directory plugins");
         await plugins.LoadPluginsAsync(cancellationToken: cancellationToken);
 
-        await events.ThrowAsync(new ProxyStartingEvent(), cancellationToken);
+        await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
 
 #if RELEASE
         LoggingLevelSwitch.MinimumLevel = (LogEventLevel)settings.LogLevel;
