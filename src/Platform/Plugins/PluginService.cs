@@ -1,7 +1,7 @@
-﻿using Nito.AsyncEx;
-using Nito.Disposables.Internals;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Reflection;
+using Nito.AsyncEx;
+using Nito.Disposables.Internals;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
@@ -16,6 +16,7 @@ namespace Void.Proxy.Plugins;
 
 public class PluginService(ILogger<PluginService> logger, IPlayerService players, IEventService events, IDependencyService dependencies) : IPluginService
 {
+    private readonly AsyncLock _lock = new();
     private readonly List<WeakPluginContainer> _containers = [];
     private readonly TimeSpan _gcRate = TimeSpan.FromMilliseconds(500);
     private readonly TimeSpan _unloadTimeout = TimeSpan.FromSeconds(10);
@@ -102,9 +103,12 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
 
         logger.LogTrace("Loading {Name} plugin", plugin.Name);
 
-        await events.ThrowAsync(new PluginLoadingEvent(plugin), cancellationToken);
-        container.Add(plugin);
-        await events.ThrowAsync(new PluginLoadedEvent(plugin), cancellationToken);
+        using (var _ = await _lock.LockAsync(cancellationToken))
+        {
+            await events.ThrowAsync(new PluginLoadingEvent(plugin), cancellationToken);
+            container.Add(plugin);
+            await events.ThrowAsync(new PluginLoadedEvent(plugin), cancellationToken);
+        }
 
         logger.LogInformation("Loaded {Name} plugin from {AssemblyName} ", pluginType.Name, container.Context.PluginAssembly.GetName().Name);
     }
@@ -190,11 +194,14 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
 
         logger.LogTrace("Unloading {ContextName} {Count} plugin(s)", name, count);
 
-        foreach (var plugin in container.Plugins)
+        using (var _ = await _lock.LockAsync(cancellationToken))
         {
-            logger.LogTrace("Unloading {PluginName} plugin", plugin.Name);
-            await events.ThrowAsync(new PluginUnloadingEvent(plugin), cancellationToken);
-            await events.ThrowAsync(new PluginUnloadedEvent(plugin), cancellationToken);
+            foreach (var plugin in container.Plugins)
+            {
+                logger.LogTrace("Unloading {PluginName} plugin", plugin.Name);
+                await events.ThrowAsync(new PluginUnloadingEvent(plugin), cancellationToken);
+                await events.ThrowAsync(new PluginUnloadedEvent(plugin), cancellationToken);
+            }
         }
 
         events.UnregisterListeners(container.Plugins.Cast<IEventListener>());
