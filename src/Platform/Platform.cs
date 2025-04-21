@@ -5,7 +5,6 @@ using Serilog.Events;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Forwarding;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins;
@@ -16,12 +15,11 @@ namespace Void.Proxy;
 
 public class Platform(
     ILogger<Platform> logger,
-    ISettings settings,
     IPluginService plugins,
     IEventService events,
     IPlayerService players,
     IServerService servers,
-    IForwardingService forwardings,
+    ISettings settings,
     IHostApplicationLifetime hostApplicationLifetime) : IProxy
 {
     public static readonly LoggingLevelSwitch LoggingLevelSwitch = new();
@@ -44,10 +42,6 @@ public class Platform(
         await plugins.LoadPluginsAsync(cancellationToken: cancellationToken);
 
         await events.ThrowAsync(new ProxyStartingEvent(), cancellationToken);
-        forwardings.RegisterDefault();
-
-        logger.LogInformation("Loading settings file");
-        await settings.LoadAsync(cancellationToken: cancellationToken);
 
 #if RELEASE
         LoggingLevelSwitch.MinimumLevel = (LogEventLevel)settings.LogLevel;
@@ -93,9 +87,6 @@ public class Platform(
             await _backgroundTask;
 
         _listener?.Stop();
-
-        logger.LogInformation("Saving settings file");
-        await settings.SaveAsync(cancellationToken: cancellationToken);
 
         await events.ThrowAsync<ProxyStoppedEvent>(cancellationToken);
 
