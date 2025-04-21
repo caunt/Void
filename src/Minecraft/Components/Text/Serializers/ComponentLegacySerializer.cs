@@ -181,7 +181,13 @@ public static class ComponentLegacySerializer
         if (text.Length > 0)
             MoveNext();
 
-        return Component.Default with { Children = new(segments) };
+        if (segments.Count is 0)
+            return Component.Default;
+
+        if (segments.Count is 1)
+            return segments[0];
+
+        return segments[0] with { Children = new(segments[1..]) };
 
         void MoveNext()
         {
