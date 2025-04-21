@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using SharpNBT;
 
 namespace Void.Minecraft.Nbt;
@@ -19,9 +20,13 @@ public class NbtReader(Stream stream, FormatOptions options, bool leaveOpen = fa
 
             var tag = ReadTag(tagType, named: true);
 
-            // 1.21.4 sents empty string tag name with empty value for achievements
+            // 1.21.4 send empty string tag name with empty value for achievements
+            // 1.21.5 send new line characters in chat with empty tag name
             if (string.IsNullOrWhiteSpace(tag.Name))
-                continue;
+            {
+                var field = typeof(Tag).GetField($"<{nameof(tag.Name)}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+                field?.SetValue(tag, "text");
+            }
 
             compoundTag.Add(tag);
         }
