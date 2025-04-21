@@ -210,19 +210,23 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
     private string GetFileName<TConfiguration>(string? key) where TConfiguration : notnull
     {
+        var configurationType = typeof(TConfiguration);
         var pluginName = GetPluginNameFromConfiguration<TConfiguration>();
         var fileNameBuilder = new StringBuilder();
 
-        fileNameBuilder.Append(ConfigurationsPath);
-        fileNameBuilder.Append(Path.DirectorySeparatorChar);
-
-        if (!string.IsNullOrWhiteSpace(pluginName))
+        if (!IsRoot(configurationType))
         {
-            fileNameBuilder.Append(pluginName);
+            fileNameBuilder.Append(ConfigurationsPath);
             fileNameBuilder.Append(Path.DirectorySeparatorChar);
+
+            if (!string.IsNullOrWhiteSpace(pluginName))
+            {
+                fileNameBuilder.Append(pluginName);
+                fileNameBuilder.Append(Path.DirectorySeparatorChar);
+            }
         }
 
-        fileNameBuilder.Append(GetConfigurationName(typeof(TConfiguration)));
+        fileNameBuilder.Append(GetConfigurationName(configurationType));
 
         if (!string.IsNullOrWhiteSpace(key))
         {
@@ -242,6 +246,11 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
             { Name: { } name } when !string.IsNullOrWhiteSpace(name) => name,
             _ => configurationType.Name
         };
+    }
+
+    private static bool IsRoot(Type configurationType)
+    {
+        return configurationType.GetCustomAttribute<RootConfigurationAttribute>() is not null;
     }
 
     private string? GetPluginNameFromConfiguration<TConfiguration>() where TConfiguration : notnull
