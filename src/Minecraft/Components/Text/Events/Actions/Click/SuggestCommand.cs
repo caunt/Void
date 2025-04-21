@@ -1,6 +1,6 @@
 ﻿namespace Void.Minecraft.Components.Text.Events.Actions.Click;
 
-public record SuggestCommand : IClickEventAction
+public record SuggestCommand(string Command) : IClickEventAction
 {
     public string ActionName => "suggest_command";
 }
