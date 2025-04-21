@@ -95,9 +95,17 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
 
     private IResolverContext GetScopedContainer(Assembly assembly)
     {
-        if (!_containers.TryGetValue(assembly, out var scope))
-            _containers.Add(assembly, scope = serviceProvider.GetRequiredService<IContainer>().CreateChild(RegistrySharing.Share, assembly));
+        if (!_containers.TryGetValue(assembly, out var child))
+        {
+            var root = serviceProvider.GetRequiredService<IContainer>();
+            child = root.CreateChild(RegistrySharing.Share, assembly);
 
-        return scope;
+            // Serilog logger factory not getting shared into a child
+            child.RegisterInstance(root.GetRequiredService<ILoggerFactory>());
+
+            _containers.Add(assembly, child);
+        }
+
+        return child;
     }
 }
