@@ -5,7 +5,6 @@ using Nito.Disposables.Internals;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Plugins.Container;
@@ -13,7 +12,7 @@ using Void.Proxy.Plugins.Context;
 
 namespace Void.Proxy.Plugins;
 
-public class PluginService(ILogger<PluginService> logger, IPlayerService players, IEventService events, IDependencyService dependencies) : IPluginService
+public class PluginService(ILogger<PluginService> logger, IEventService events, IDependencyService dependencies) : IPluginService
 {
     private readonly AsyncLock _lock = new();
     private readonly List<WeakPluginContainer> _containers = [];
