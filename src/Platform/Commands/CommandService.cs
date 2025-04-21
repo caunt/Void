@@ -1,19 +1,32 @@
-﻿using Void.Minecraft.Commands.Brigadier;
+﻿using System.Reflection;
+using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Exceptions;
+using Void.Minecraft.Commands.Brigadier.Suggestion;
+using Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 using Void.Minecraft.Events.Chat;
 using Void.Minecraft.Players;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Commands;
+using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Extensions.Reflection;
 using Void.Proxy.Api.Network;
 
 namespace Void.Proxy.Commands;
 
-public class CommandService(IEventService events) : ICommandService
+public class CommandService(IEventService events) : ICommandService, IEventListener
 {
     private readonly CommandDispatcher _dispatcher = new();
 
     public ICommandDispatcher Dispatcher => _dispatcher;
+
+    [Subscribe]
+    public void OnPluginUnloading(PluginUnloadingEvent @event)
+    {
+        lock (this)
+            ClearByAssembly(@event.Plugin.GetType().Assembly);
+    }
 
     public async ValueTask<CommandExecutionResult> ExecuteAsync(ICommandSource source, string command, CancellationToken cancellationToken = default)
     {
@@ -54,5 +67,59 @@ public class CommandService(IEventService events) : ICommandService
     {
         var suggestions = await _dispatcher.SuggestAsync(input, source, cancellationToken);
         return [.. suggestions.All.Select(suggestion => suggestion.Text)];
+    }
+
+    private void ClearByAssembly(Assembly assembly)
+    {
+        foreach (var node in _dispatcher.All())
+        {
+            if (node.Executor is not null)
+            {
+                foreach (var invocation in node.Executor.GetInvocationList().Cast<CommandExecutor>())
+                {
+                    if (invocation.Target is null)
+                        continue;
+
+                    var target = invocation.Target.GetFieldValue("command") switch
+                    {
+                        CommandExecutorSync value => value.Target,
+                        CommandExecutor value => value.Target,
+                        _ => invocation.Target
+                    };
+
+                    if (target is null)
+                        continue;
+
+                    if (target.GetType().Assembly != assembly)
+                        continue;
+
+                    node.Executor -= invocation;
+                }
+            }
+
+            if (node is ArgumentCommandNode { CustomSuggestions: not null } argumentCommandNode)
+            {
+                foreach (var invocation in argumentCommandNode.CustomSuggestions.GetInvocationList().Cast<SuggestionProvider>())
+                {
+                    if (invocation.Target is null)
+                        continue;
+
+                    var target = invocation.Target.GetFieldValue("provider") switch
+                    {
+                        SuggestionProviderSync value => value.Target,
+                        SuggestionProvider value => value.Target,
+                        _ => invocation.Target
+                    };
+
+                    if (target is null)
+                        continue;
+
+                    if (target.GetType().Assembly != assembly)
+                        continue;
+
+                    argumentCommandNode.CustomSuggestions -= invocation;
+                }
+            }
+        }
     }
 }
