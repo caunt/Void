@@ -105,11 +105,34 @@ public static class ComponentNbtSerializer
 
             if (clickEvent is not null)
             {
-                tag["clickEvent"] = new NbtCompound
+                var clickEventTag = new NbtCompound
                 {
                     ["action"] = new NbtString(clickEvent.ActionName),
-                    ["value"] = new NbtString(clickEvent.Value)
                 };
+
+                switch (clickEvent.Content)
+                {
+                    case OpenUrl openUrl:
+                        clickEventTag["url"] = new NbtString(openUrl.Url);
+                        break;
+                    case OpenFile openFile:
+                        clickEventTag["value"] = new NbtString(openFile.File);
+                        break;
+                    case RunCommand runCommand:
+                        clickEventTag["command"] = new NbtString(runCommand.Command);
+                        break;
+                    case SuggestCommand suggestCommand:
+                        clickEventTag["command"] = new NbtString(suggestCommand.Command);
+                        break;
+                    case ChangePage changePage:
+                        clickEventTag["page"] = new NbtInt(changePage.Page);
+                        break;
+                    case CopyToClipboard copyToClipboard:
+                        clickEventTag["value"] = new NbtString(copyToClipboard.Value);
+                        break;
+                }
+
+                tag["click_event"] = clickEventTag;
             }
 
             var hoverEvent = interactivity.HoverEvent;
@@ -117,40 +140,39 @@ public static class ComponentNbtSerializer
             if (hoverEvent is not null)
             {
                 var action = new NbtString(hoverEvent.ActionName);
-                var contents = new NbtCompound();
+                var hoverEventTag = new NbtCompound
+                {
+                    ["action"] = action
+                };
 
                 if (hoverEvent.Content is ShowText { } showText)
                 {
-                    contents = Serialize(showText.Value);
+                    hoverEventTag["value"] = Serialize(showText.Value);
                 }
 
                 if (hoverEvent.Content is ShowItem { } showItem)
                 {
-                    contents["id"] = new NbtString(showItem.Id);
+                    hoverEventTag["id"] = new NbtString(showItem.Id);
 
                     if (showItem.Count.HasValue)
-                        contents["count"] = new NbtInt(showItem.Count.Value);
+                        hoverEventTag["count"] = new NbtInt(showItem.Count.Value);
 
                     if (showItem.ItemComponents is not null)
-                        contents["components"] = showItem.ItemComponents;
+                        hoverEventTag["components"] = showItem.ItemComponents;
                 }
 
                 if (hoverEvent.Content is ShowEntity { } showEntity)
                 {
-                    contents["id"] = new NbtString(showEntity.Id.ToString());
+                    hoverEventTag["uuid"] = new NbtString(showEntity.Id.ToString());
 
                     if (showEntity.Type is not null)
-                        contents["type"] = new NbtString(showEntity.Type);
+                        hoverEventTag["id"] = new NbtString(showEntity.Type);
 
                     if (showEntity.Name is not null)
-                        contents["name"] = Serialize(showEntity.Name);
+                        hoverEventTag["name"] = Serialize(showEntity.Name);
                 }
 
-                tag["hoverEvent"] = new NbtCompound
-                {
-                    ["action"] = action,
-                    ["contents"] = contents
-                };
+                tag["hover_event"] = hoverEventTag;
             }
         }
 
@@ -319,58 +341,49 @@ public static class ComponentNbtSerializer
         if (TryGet<NbtString>(compound, "insertion") is { } insertionNbtString)
             component = component with { Interactivity = component.Interactivity with { Insertion = insertionNbtString.Value } };
 
-        if (TryGet<NbtCompound>(compound, "clickEvent") is { } clickEventNbtCompound)
+        if (TryGet<NbtCompound>(compound, "click_event") is { } clickEventNbtCompound)
         {
             var actionNbtString = Get<NbtString>(clickEventNbtCompound, "action");
-            var valueNbtString = Get<NbtString>(clickEventNbtCompound, "value");
 
             var action = actionNbtString.Value switch
             {
-                "open_url" => new OpenUrl() as IClickEventAction,
-                "open_file" => new OpenFile(),
-                "run_command" => new RunCommand(),
-                "suggest_command" => new SuggestCommand(),
-                "change_page" => new ChangePage(),
-                "copy_to_clipboard" => new CopyToClipboard(),
+                "open_url" => new OpenUrl(Get<NbtString>(clickEventNbtCompound, "url").Value) as IClickEventAction,
+                "open_file" => new OpenFile(Get<NbtString>(clickEventNbtCompound, "value").Value),
+                "run_command" => new RunCommand(Get<NbtString>(clickEventNbtCompound, "command").Value),
+                "suggest_command" => new SuggestCommand(Get<NbtString>(clickEventNbtCompound, "command").Value),
+                "change_page" => new ChangePage(Get<NbtInt>(clickEventNbtCompound, "page").Value),
+                "copy_to_clipboard" => new CopyToClipboard(Get<NbtString>(clickEventNbtCompound, "value").Value),
                 var value => throw new NotSupportedException(value)
             };
 
-            component = component with { Interactivity = component.Interactivity with { ClickEvent = new ClickEvent(action, valueNbtString.Value) } };
+            component = component with { Interactivity = component.Interactivity with { ClickEvent = new ClickEvent(action) } };
         }
 
-        if (TryGet<NbtCompound>(compound, "hoverEvent") is { } hoverEventNbtCompound)
+        if (TryGet<NbtCompound>(compound, "hover_event") is { } hoverEventNbtCompound)
         {
             var actionNbtString = Get<NbtString>(hoverEventNbtCompound, "action");
-            var contentsNbtTag = Get<NbtTag>(hoverEventNbtCompound, "contents");
 
             var content = actionNbtString.Value switch
             {
-                "show_text" => contentsNbtTag switch
+                "show_text" => Get<NbtTag>(hoverEventNbtCompound, "value") switch
                 {
-                    NbtString or NbtCompound => new ShowText(Deserialize(contentsNbtTag)),
+                    NbtString value => new ShowText(Deserialize(value)),
+                    NbtCompound value => new ShowText(Deserialize(value)),
                     var value => throw new NbtException(value)
                 } as IHoverEventAction,
-                "show_item" => contentsNbtTag switch
+                "show_item" => new ShowItem(Get<NbtString>(hoverEventNbtCompound, "id").Value, TryGet<NbtInt>(hoverEventNbtCompound, "type")?.Value, TryGet<NbtCompound>(hoverEventNbtCompound, "components")),
+                "show_entity" => new ShowEntity(Get<NbtTag>(hoverEventNbtCompound, "uuid") switch
                 {
-                    NbtCompound contentsNbtCompoundTag => new ShowItem(Get<NbtString>(contentsNbtCompoundTag, "id").Value, TryGet<NbtInt>(contentsNbtCompoundTag, "type")?.Value, Get<NbtCompound>(contentsNbtCompoundTag, "components")),
+                    NbtString idNbtString => Uuid.Parse(idNbtString.Value),
+                    NbtIntArray idNbtIntArray => Uuid.Parse([.. idNbtIntArray.Data]),
                     var value => throw new NbtException(value)
                 },
-                "show_entity" => contentsNbtTag switch
+                TryGet<NbtString>(hoverEventNbtCompound, "id")?.Value,
+                TryGet<NbtTag>(hoverEventNbtCompound, "name") switch
                 {
-                    NbtCompound contentsNbtCompoundTag => new ShowEntity(Get<NbtTag>(contentsNbtCompoundTag, "id") switch
-                    {
-                        NbtString idNbtString => Uuid.Parse(idNbtString.Value),
-                        NbtIntArray idNbtIntArray => Uuid.Parse([.. idNbtIntArray.Data]),
-                        var value => throw new NbtException(value)
-                    },
-                    TryGet<NbtString>(contentsNbtCompoundTag, "type")?.Value,
-                    TryGet<NbtTag>(contentsNbtCompoundTag, "name") switch
-                    {
-                        { } nameTag => Deserialize(nameTag),
-                        _ => null
-                    }),
-                    var value => throw new NbtException(value)
-                },
+                    { } nameTag => Deserialize(nameTag),
+                    _ => null
+                }),
                 var value => throw new NotSupportedException(value)
             };
 
