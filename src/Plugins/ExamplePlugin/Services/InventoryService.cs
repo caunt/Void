@@ -27,8 +27,8 @@ public class InventoryService(ILogger<InventoryService> logger, ICommandService 
         // This event is fired when any plugin is being loaded
 
         // Skip all other plugins load events except ours
-        // if (@event.Plugin != plugin)
-        //     return;
+        if (@event.Plugin != plugin)
+            return;
 
         // Register your commands in brigadier-like way
         // https://github.com/Mojang/brigadier/
