@@ -5,7 +5,6 @@ using Nito.Disposables.Internals;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
@@ -186,9 +185,6 @@ public class PluginService(ILogger<PluginService> logger, IPlayerService players
 
         if (!container.IsAlive)
             throw new Exception("Plugin context already unloaded");
-
-        foreach (var player in players.All)
-            player.Context.Services.Remove(descriptor => descriptor.ServiceType.Assembly == container.Context.PluginAssembly);
 
         var count = container.Plugins.Count();
 
