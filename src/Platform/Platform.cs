@@ -1,11 +1,10 @@
-﻿using Serilog.Core;
-using Serilog.Events;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Net.Sockets;
+using Serilog.Core;
+using Serilog.Events;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Forwarding;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
@@ -17,7 +16,6 @@ namespace Void.Proxy;
 
 public class Platform(
     ILogger<Platform> logger,
-    IServiceProvider services,
     ISettings settings,
     IPluginService plugins,
     IEventService events,
@@ -45,12 +43,7 @@ public class Platform(
         logger.LogInformation("Loading directory plugins");
         await plugins.LoadPluginsAsync(cancellationToken: cancellationToken);
 
-        var collection = new ServiceCollection();
-        await events.ThrowAsync(new ProxyStartingEvent(collection), cancellationToken);
-
-        foreach (var service in collection)
-            services.Add(service);
-
+        await events.ThrowAsync(new ProxyStartingEvent(), cancellationToken);
         forwardings.RegisterDefault();
 
         logger.LogInformation("Loading settings file");
