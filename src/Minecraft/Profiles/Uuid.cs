@@ -17,6 +17,11 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
         return AsGuid.ToString();
     }
 
+    public static Uuid NewUuid()
+    {
+        return new Uuid(Guid.NewGuid());
+    }
+
     public static Uuid Parse(string text)
     {
         return new Uuid(Guid.Parse(text));
