@@ -52,7 +52,7 @@ public class MinecraftPacketTransformationsRegistry : IMinecraftPacketTransforma
 
             foreach (var mapping in mappings)
             {
-                if (mapping.From <= protocolVersion && mapping.To < protocolVersion)
+                if (mapping.From <= protocolVersion && mapping.To <= protocolVersion)
                     continue;
 
                 if (mapping.From > mapping.To)
