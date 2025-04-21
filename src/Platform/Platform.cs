@@ -29,7 +29,11 @@ public class Platform(
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+#if RELEASE
+        LoggingLevelSwitch.MinimumLevel = (LogEventLevel)settings.LogLevel;
+#else
         LoggingLevelSwitch.MinimumLevel = LogEventLevel.Debug;
+#endif
 
         logger.LogInformation("Starting {Name} proxy", nameof(Void));
         var startTime = Stopwatch.GetTimestamp();
@@ -42,10 +46,6 @@ public class Platform(
         await plugins.LoadPluginsAsync(cancellationToken: cancellationToken);
 
         await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
-
-#if RELEASE
-        LoggingLevelSwitch.MinimumLevel = (LogEventLevel)settings.LogLevel;
-#endif
 
         logger.LogInformation("Registering servers from settings file");
         foreach (var server in settings.Servers)
