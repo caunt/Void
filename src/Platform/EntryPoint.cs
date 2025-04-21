@@ -1,4 +1,5 @@
-﻿using Serilog;
+﻿using DryIoc.Microsoft.DependencyInjection;
+using Serilog;
 using Serilog.Events;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy;
@@ -43,6 +44,8 @@ Log.Logger = configuration.CreateLogger();
 try
 {
     var builder = Host.CreateApplicationBuilder(args);
+
+    builder.ConfigureContainer(new DryIocServiceProviderFactory());
 
     builder.Services.Configure<HostOptions>(options =>
     {
