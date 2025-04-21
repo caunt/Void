@@ -74,7 +74,7 @@ public static class HostingExtensions
         }
     }
 
-    public static void Add(this IServiceProvider serviceProvider, ServiceDescriptor descriptor, bool weaklyReferenced = false)
+    public static void Add(this IServiceProvider serviceProvider, ServiceDescriptor descriptor)
     {
         var container = serviceProvider.GetRequiredService<IContainer>();
 
@@ -84,7 +84,7 @@ public static class HostingExtensions
         var serviceKey = (object?)null;
         var ifAlreadyRegistered = IfAlreadyRegistered.Replace;
 
-        var setup = Setup.With(weaklyReferenced: weaklyReferenced, asResolutionCall: true);
+        var setup = Setup.With(weaklyReferenced: false, asResolutionCall: true);
         var serviceType = descriptor.ServiceType;
         var implementationType = descriptor.ImplementationType;
 
