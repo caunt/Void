@@ -148,7 +148,12 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
         if (IsSystemType(type))
             return cache[type] = type;
 
-        var typeBuilder = moduleBuilder.DefineType(type.FullName + "TomletMappedByVoidType", TypeAttributes.Public);
+        var typeName = type.FullName + "TomletMappedByVoidType";
+
+        if (moduleBuilder.GetType(typeName) is { } existingType)
+            return cache[type] = existingType;
+
+        var typeBuilder = moduleBuilder.DefineType(typeName, TypeAttributes.Public);
         var attributesWithValues = new Dictionary<Type, object[]>(2);
 
         if (root)
@@ -180,6 +185,9 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
 
             if (property.GetCustomAttribute<ConfigurationPropertyAttribute>() is { } configurationPropertyAttribute)
             {
+                if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.Name))
+                    attributesWithValues.Add(typeof(TomlPropertyAttribute), [configurationPropertyAttribute.Name]);
+
                 if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.InlineComment))
                     attributesWithValues.Add(typeof(TomlInlineCommentAttribute), [configurationPropertyAttribute.InlineComment]);
 
@@ -204,6 +212,9 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
 
             if (field.GetCustomAttribute<ConfigurationPropertyAttribute>() is { } configurationPropertyAttribute)
             {
+                if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.Name))
+                    attributesWithValues.Add(typeof(TomlPropertyAttribute), [configurationPropertyAttribute.Name]);
+
                 if (!string.IsNullOrWhiteSpace(configurationPropertyAttribute.InlineComment))
                     attributesWithValues.Add(typeof(TomlInlineCommentAttribute), [configurationPropertyAttribute.InlineComment]);
 
@@ -506,7 +517,7 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
     }
 
     // Updated IsSystemType method to also consider types from dynamic assemblies as system types.
-    private static bool IsSystemType(Type type) => type.Namespace?.StartsWith("System") ?? true;
+    private static bool IsSystemType(Type type) => type.IsEnum || (type.Namespace?.StartsWith(nameof(System)) ?? true);
 
     private static bool IsList(Type type)
     {
