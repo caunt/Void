@@ -13,6 +13,7 @@ using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
+using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Network.Bundles;
@@ -23,7 +24,7 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbo
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Authentication;
 
-public class AuthenticationService(ILogger<AuthenticationService> logger, IEventService events, IPlayerService players) : AbstractAuthenticationService(events, players)
+public class AuthenticationService(ILogger<AuthenticationService> logger, IEventService events, IPlayerService players, IDependencyService dependencies) : AbstractAuthenticationService(events, players, dependencies)
 {
     private readonly IEventService _events = events;
 

@@ -7,23 +7,22 @@ using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Authentication;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
+using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Mojang;
 
 namespace Void.Proxy.Plugins.Common.Services.Authentication;
 
-public abstract class AbstractAuthenticationService(IEventService events, IPlayerService players) : IPluginCommonService
+public abstract class AbstractAuthenticationService(IEventService events, IPlayerService players, IDependencyService dependencies) : IPluginCommonService
 {
     [Subscribe]
-    public static void OnProxyStarting(ProxyStartingEvent @event)
+    public void OnProxyStarting(ProxyStartingEvent _)
     {
-        if (!@event.Services.HasService<IMojangService>())
-            @event.Services.AddSingleton<IMojangService, MojangService>();
+        dependencies.Register(services => services.AddSingleton<IMojangService, MojangService>());
     }
 
     [Subscribe]

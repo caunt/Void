@@ -1,7 +1,11 @@
-﻿using Void.Minecraft.Network;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Void.Minecraft.Network;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
+using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Plugins.Dependencies;
+using Void.Proxy.Plugins.Common.Crypto;
+using Void.Proxy.Plugins.Common.Network.Channels.Services;
 using Void.Proxy.Plugins.Common.Plugins;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Authentication;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Bundles;
@@ -28,6 +32,13 @@ public class Plugin(IDependencyService dependencies) : IProtocolPlugin
             return;
 
         Registry.Fill();
+
+        dependencies.Register(services =>
+        {
+            services.AddScoped<Common.Network.Bundles.IBundleService, Common.Network.Bundles.BundleService>();
+            services.AddScoped<IChannelBuilderService, SimpleMinecraftChannelBuilderService>();
+            services.AddScoped<ITokenHolder, SimpleTokenHolder>();
+        });
 
         dependencies.CreateInstance<RegistryService>();
         dependencies.CreateInstance<ChannelService>();

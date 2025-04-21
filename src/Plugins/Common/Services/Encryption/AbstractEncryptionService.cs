@@ -1,14 +1,12 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
+using Microsoft.Extensions.DependencyInjection;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Crypto;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Encryption;
 using Void.Proxy.Api.Events.Network;
-using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Messages;
@@ -23,14 +21,6 @@ namespace Void.Proxy.Plugins.Common.Services.Encryption;
 
 public abstract class AbstractEncryptionService(IEventService events, ICryptoService crypto) : IPluginCommonService
 {
-    [Subscribe]
-    public static void OnProxyStarting(ProxyStartingEvent @event)
-    {
-        if (!@event.Services.HasService<ITokenHolder>())
-            @event.Services.AddScoped<ITokenHolder, SimpleTokenHolder>();
-    }
-
-
     [Subscribe(PostOrder.First)]
     public async ValueTask OnMessageSent(MessageSentEvent @event, CancellationToken cancellationToken)
     {
