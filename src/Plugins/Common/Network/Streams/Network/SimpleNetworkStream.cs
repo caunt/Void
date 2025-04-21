@@ -161,7 +161,12 @@ public class SimpleNetworkStream(NetworkStream baseStream) : INetworkStream
             var received = baseStream.Read(buffer);
 
             if (expected != received)
+            {
+                if (received is 0)
+                    throw new StreamClosedException();
+
                 throw new IOException($"Socket read received length ({received}) is not equal to expected length ({expected})");
+            }
 
             PrependBuffer(buffer);
         }
