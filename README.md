@@ -30,12 +30,12 @@
 >| Pocket Edition Alpha | :x:                | :x:                | :x:                | :x:                |
 
 ### Mod Loaders
-NeoForge / Forge / others are playable since proxy does not manipulate their protocols.
+NeoForge / Forge / others are playable since the proxy does not manipulate their protocols.
 <br>
-Redirections definitely won't work with them until full support implemented.
+Redirections definitely won't work with them until full support is implemented.
 
 ### Forwarding
-The proxy allows plugins to choose side of authentication (Server or Proxy).
+The proxy allows plugins to choose the side of authentication (Server or Proxy).
 <br>
 Most of the time, you want to authenticate on the proxy side, so you have protocol API working.
 
@@ -47,20 +47,20 @@ Most of the time, you want to authenticate on the proxy side, so you have protoc
 | Online (PK)       | :white_check_mark: | :white_check_mark: |
 
 #### Online (Private Key) is a new type of forwarding being developed.
-It allows to play through proxy on servers that are configured with online mode.
+It allows to play through the proxy on servers that are configured with online mode.
 <br>
 The only caveat is that you need to install plugin / modification / anything on the server side.
 <br>
-Server will send it's own private key to the proxy, so proxy can provide protocol API to plugins.
+Server will send its own private key to the proxy, so proxy can provide protocol API to plugins.
 <br>
 If no key provided, you still can play through proxy, but protocol API will be very limited.
 
 
 ### Plugins
-See the [Example Plugin](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) on how to create a plugin.
+See the [Example Plugin](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) to learn how to create a plugin.
 <br>
 This is still an early version of the API, so it may change drastically in the future.
 <br>
-Protocol API, Events, Chat Commands, Text Components, NBT are some of available features.
+Protocol API, Events, Chat Commands, Text Components, NBT are some of the available features.
 <br>
 Plugin Development Kit and Documentation about plugins are planned.
