@@ -53,6 +53,19 @@ public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
         return build;
     }
 
+    public IEnumerable<CommandNode> All(CommandNode? root = null)
+    {
+        root ??= Root;
+
+        foreach (var child in root.Children)
+        {
+            yield return child;
+
+            foreach (var grandChild in All(child))
+                yield return grandChild;
+        }
+    }
+
     public async ValueTask<Suggestions> SuggestAsync(string input, ICommandSource source, CancellationToken cancellationToken)
     {
         return await SuggestAsync(new StringReader(input), source, cancellationToken);
