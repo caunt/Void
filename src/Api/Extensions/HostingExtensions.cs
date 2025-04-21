@@ -1,8 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using System.Collections;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using DryIoc;
+using DryIoc.Microsoft.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Services;
 
@@ -73,88 +74,68 @@ public static class HostingExtensions
         }
     }
 
-    public static bool HasService<TService>(this IServiceCollection services)
+    public static void Add(this IServiceProvider serviceProvider, ServiceDescriptor descriptor, bool weaklyReferenced = false)
     {
-        return services.HasService(typeof(TService));
-    }
+        var container = serviceProvider.GetRequiredService<IContainer>();
+        var a = container.OpenScope();
 
-    public static bool HasService(this IServiceCollection services, Type serviceType)
-    {
-        var hasDescriptor = services.Any(descriptor => descriptor.ServiceType == serviceType);
-        return hasDescriptor;
-    }
+        // DryIocAdapter.cs copied here to inject Setup.With configuration
+        // container.RegisterDescriptor(descriptor);
 
-    public static bool HasService<TService>(this IServiceProvider serviceProvider)
-    {
-        return serviceProvider.HasService(typeof(TService));
-    }
+        var serviceKey = (object?)null;
+        var ifAlreadyRegistered = IfAlreadyRegistered.Replace;
 
-    public static bool HasService(this IServiceProvider serviceProvider, Type serviceType)
-    {
-        serviceProvider = serviceProvider.GetRootProvider();
+        var setup = Setup.With(weaklyReferenced: weaklyReferenced, asResolutionCall: true);
+        var serviceType = descriptor.ServiceType;
+        var implementationType = descriptor.ImplementationType;
 
-        var accessors = serviceProvider.GetFieldValue<IEnumerable>("_serviceAccessors") ??
-            throw new InvalidOperationException($"Unable to find _serviceAccessors field in {serviceProvider}. This may be due to a version mismatch or an internal change in the library.");
-
-        foreach (var keyValuePair in accessors)
+        if (implementationType is not null)
         {
-            var key = keyValuePair.GetFieldValue("key") ??
-                throw new InvalidOperationException($"Unable to find key field in {keyValuePair}. This may be due to a version mismatch or an internal change in the library.");
-
-            var identifierServiceType = key.GetPropertyValue<Type>("ServiceType");
-
-            if (identifierServiceType == serviceType)
-                return true;
+            container.Register(
+                ReflectionFactory.Of(
+                    implementationType,
+                    descriptor.Lifetime.ToReuse(),
+                    setup: setup),
+                serviceType,
+                serviceKey,
+                ifAlreadyRegistered,
+                isStaticallyChecked: implementationType == serviceType);
         }
-
-        return serviceProvider.GetDescriptors().Any(descriptor => descriptor.ServiceType == serviceType);
+        else if (descriptor.ImplementationFactory is not null)
+        {
+            container.Register(
+                DelegateFactory.Of(
+                    descriptor.ImplementationFactory.ToFactoryDelegate,
+                    descriptor.Lifetime.ToReuse(),
+                    setup: setup),
+                serviceType,
+                serviceKey,
+                ifAlreadyRegistered,
+                isStaticallyChecked: true);
+        }
+        else
+        {
+            var instance = descriptor.ImplementationInstance;
+            container.Register(
+                InstanceFactory.Of(instance, setup: setup),
+                serviceType,
+                serviceKey,
+                ifAlreadyRegistered,
+                isStaticallyChecked: true);
+            container.TrackDisposable(instance);
+        }
     }
 
-    public static void Add(this IServiceProvider serviceProvider, ServiceDescriptor descriptor)
+    public static void Remove(this IServiceProvider serviceProvider, Func<ServiceRegistrationInfo, bool> condition)
     {
-        serviceProvider = serviceProvider.GetRootProvider();
+        var container = serviceProvider.GetRequiredService<IContainer>();
 
-        var descriptors = serviceProvider.GetDescriptors();
-        serviceProvider.SetDescriptors([.. descriptors, descriptor]);
+        foreach (var service in container.GetServiceRegistrations())
+        {
+            if (!condition(service))
+                continue;
 
-        serviceProvider.GetCallSiteFactory().InvokeMethod("Populate");
-    }
-
-    public static void Remove(this IServiceProvider provider, Func<ServiceDescriptor, bool> condition)
-    {
-        var descriptors = provider.GetDescriptors();
-        provider.SetDescriptors([.. descriptors.Where(condition)]);
-
-        // TODO: may need to clear service provider cache?
-    }
-
-    public static ServiceDescriptor[] GetDescriptors(this IServiceProvider serviceProvider)
-    {
-        var descriptors = serviceProvider.GetCallSiteFactory().GetFieldValue<ServiceDescriptor[]>("_descriptors") ??
-            throw new InvalidOperationException($"Unable to find _descriptors field in. This may be due to a version mismatch or an internal change in the library.");
-
-        return descriptors;
-    }
-
-    public static void SetDescriptors(this IServiceProvider serviceProvider, ServiceDescriptor[] descriptors)
-    {
-        serviceProvider.GetCallSiteFactory().SetFieldValue("_descriptors", descriptors);
-    }
-
-    public static ServiceProvider GetRootProvider(this IServiceProvider serviceProvider)
-    {
-        return serviceProvider as ServiceProvider
-            ?? serviceProvider.GetPropertyValue<ServiceProvider>("RootProvider")
-            ?? throw new InvalidOperationException($"Unable to find RootProvider property in {serviceProvider}. This may be due to a version mismatch or an internal change in the library.");
-    }
-
-    public static object GetCallSiteFactory(this IServiceProvider serviceProvider)
-    {
-        serviceProvider = serviceProvider.GetRootProvider();
-
-        var callSiteFactory = serviceProvider.GetPropertyValue("CallSiteFactory") ??
-            throw new InvalidOperationException($"Unable to find CallSiteFactory property in {serviceProvider}. This may be due to a version mismatch or an internal change in the library.");
-
-        return callSiteFactory;
+            container.Unregister(service.ServiceType);
+        }
     }
 }
