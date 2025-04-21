@@ -42,19 +42,14 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
         return instance;
     }
 
+    public object? GetService(Type serviceType)
+    {
+        return serviceProvider.GetService(serviceType);
+    }
+
     public TService? GetService<TService>()
     {
-        return Get(services => services.GetService<TService>());
-    }
-
-    public TService GetRequiredService<TService>() where TService : notnull
-    {
-        return Get(services => services.GetRequiredService<TService>());
-    }
-
-    public TService Get<TService>(Func<IServiceProvider, TService> provider)
-    {
-        return provider(serviceProvider);
+        return serviceProvider.GetService<TService>();
     }
 
     public void Register(Action<ServiceCollection> configure, bool activate = true)
@@ -87,8 +82,7 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
         logger.LogTrace("Injecting {Plugin} into {Name} service collection", plugin.GetType(), plugin.Name);
 
         // Plugin => Plugin
-        serviceProvider.Add(ServiceDescriptor.Singleton(pluginType, plugin), true);
-
+        serviceProvider.Add(ServiceDescriptor.Singleton(pluginType, plugin));
         serviceProvider.GetRequiredService(pluginType);
     }
 }

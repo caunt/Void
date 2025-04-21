@@ -77,7 +77,6 @@ public static class HostingExtensions
     public static void Add(this IServiceProvider serviceProvider, ServiceDescriptor descriptor, bool weaklyReferenced = false)
     {
         var container = serviceProvider.GetRequiredService<IContainer>();
-        var a = container.OpenScope();
 
         // DryIocAdapter.cs copied here to inject Setup.With configuration
         // container.RegisterDescriptor(descriptor);
