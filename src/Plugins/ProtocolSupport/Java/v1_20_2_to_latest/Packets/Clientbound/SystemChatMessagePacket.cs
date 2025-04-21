@@ -13,7 +13,6 @@ public class SystemChatMessagePacket : IMinecraftClientboundPacket<SystemChatMes
     public static MinecraftPacketTransformationMapping[] Transformations { get; } = [
         new(ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_21_5, wrapper =>
         {
-            Console.WriteLine("111");
             ComponentNbtTransformers.Passthrough_v1_21_4_to_v1_21_5(wrapper);
             wrapper.Passthrough<BoolProperty>();
         }),
