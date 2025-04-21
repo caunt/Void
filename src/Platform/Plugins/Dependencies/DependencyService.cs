@@ -31,7 +31,7 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
 
     public object CreateInstance(Type serviceType)
     {
-        var instance = serviceProvider.HasService(serviceType) ? serviceProvider.GetRequiredService(serviceType) : ActivatorUtilities.CreateInstance(serviceProvider, serviceType);
+        var instance = serviceProvider.GetService(serviceType) ?? ActivatorUtilities.CreateInstance(serviceProvider, serviceType);
 
         if (instance is IEventListener listener)
             events.RegisterListeners(listener);
@@ -87,7 +87,7 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
         logger.LogTrace("Injecting {Plugin} into {Name} service collection", plugin.GetType(), plugin.Name);
 
         // Plugin => Plugin
-        serviceProvider.Add(ServiceDescriptor.Singleton(pluginType, plugin));
+        serviceProvider.Add(ServiceDescriptor.Singleton(pluginType, plugin), true);
 
         serviceProvider.GetRequiredService(pluginType);
     }
