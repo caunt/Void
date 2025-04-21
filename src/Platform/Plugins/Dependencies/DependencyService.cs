@@ -7,18 +7,15 @@ using Void.Proxy.Api.Plugins.Dependencies;
 
 namespace Void.Proxy.Plugins.Dependencies;
 
-public class DependencyService(ILogger<DependencyService> logger, IServiceProvider services, IEventService events) : IDependencyService
+public class DependencyService(ILogger<DependencyService> logger, IServiceProvider serviceProvider, IEventService events) : IDependencyService
 {
     [Subscribe(PostOrder.First)]
     public void OnPluginUnloading(PluginUnloadingEvent @event)
     {
         var assembly = @event.Plugin.GetType().Assembly;
 
-        services.Remove(descriptor =>
-        {
-            var instance = descriptor.CreateInstance(services);
-            return instance?.GetType().Assembly == assembly;
-        });
+        serviceProvider.Remove(descriptor => descriptor.ServiceType.Assembly == assembly);
+        events.UnregisterListeners(events.Listeners.Where(listener => listener.GetType().Assembly == assembly));
     }
 
     public TService CreateInstance<TService>()
@@ -34,7 +31,7 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
 
     public object CreateInstance(Type serviceType)
     {
-        var instance = services.HasService(serviceType) ? services.GetRequiredService(serviceType) : ActivatorUtilities.CreateInstance(services, serviceType);
+        var instance = serviceProvider.HasService(serviceType) ? serviceProvider.GetRequiredService(serviceType) : ActivatorUtilities.CreateInstance(serviceProvider, serviceType);
 
         if (instance is IEventListener listener)
             events.RegisterListeners(listener);
@@ -57,30 +54,29 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
 
     public TService Get<TService>(Func<IServiceProvider, TService> provider)
     {
-        return provider(services);
+        return provider(serviceProvider);
     }
 
     public void Register(Action<ServiceCollection> configure, bool activate = true)
     {
-        var configuredServices = new ServiceCollection();
-        configure(configuredServices);
-        configuredServices.RegisterListeners();
+        var services = new ServiceCollection();
+        configure(services);
+        services.RegisterListeners();
 
-        foreach (var service in configuredServices)
-        {
-            services.Add(service);
-        }
-
+        foreach (var service in services)
+            serviceProvider.Add(service);
 
         if (!activate)
             return;
 
-        foreach (var descriptor in services.GetDescriptors().Where(descriptor => descriptor.Lifetime is ServiceLifetime.Singleton && !descriptor.ServiceType.ContainsGenericParameters))
+        foreach (var descriptor in services.Where(descriptor => descriptor.Lifetime is ServiceLifetime.Singleton))
         {
-            var instance = services.GetService(descriptor.ServiceType);
+            var instance = serviceProvider.GetService(descriptor.ServiceType);
 
-            if (instance is IEventListener listener)
-                events.RegisterListeners(listener);
+            if (instance is not IEventListener listener)
+                continue;
+
+            events.RegisterListeners(listener);
         }
     }
 
@@ -91,8 +87,8 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
         logger.LogTrace("Injecting {Plugin} into {Name} service collection", plugin.GetType(), plugin.Name);
 
         // Plugin => Plugin
-        services.Add(ServiceDescriptor.Singleton(pluginType, plugin));
+        serviceProvider.Add(ServiceDescriptor.Singleton(pluginType, plugin));
 
-        services.GetRequiredService(pluginType);
+        serviceProvider.GetRequiredService(pluginType);
     }
 }
