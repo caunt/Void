@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Void.Proxy")]
+[assembly: InternalsVisibleTo("Void.Minecraft")]
 namespace Void.Proxy.Api.Extensions.Reflection;
 
 public static class ObjectExtensions
@@ -91,6 +92,34 @@ public static class ObjectExtensions
         }
 
         return value;
+    }
+
+    internal static void SetPropertyValue(this object instance, string propertyName, object propertyValue)
+    {
+        var type = instance.GetType();
+        var propertyInfo = type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.SetProperty);
+
+        if (propertyInfo != null)
+        {
+            propertyInfo.SetValue(instance, propertyValue, null);
+        }
+        else
+        {
+            var baseType = type.BaseType;
+
+            while (baseType != null)
+            {
+                propertyInfo = type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.GetProperty);
+
+                if (propertyInfo != null)
+                {
+                    propertyInfo.SetValue(instance, propertyValue, null);
+                    break;
+                }
+
+                baseType = baseType.BaseType;
+            }
+        }
     }
 
     internal static void SetFieldValue(this object instance, string fieldName, object value)
