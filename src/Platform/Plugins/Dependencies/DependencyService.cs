@@ -1,4 +1,6 @@
-﻿using Void.Proxy.Api.Events;
+﻿using System.Reflection;
+using DryIoc;
+using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
@@ -9,6 +11,8 @@ namespace Void.Proxy.Plugins.Dependencies;
 
 public class DependencyService(ILogger<DependencyService> logger, IServiceProvider serviceProvider, IEventService events) : IDependencyService
 {
+    private readonly Dictionary<Assembly, IContainer> _containers = [];
+
     [Subscribe(PostOrder.First)]
     public void OnPluginUnloading(PluginUnloadingEvent @event)
     {
@@ -16,6 +20,9 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
 
         serviceProvider.Remove(descriptor => descriptor.ServiceType.Assembly == assembly);
         events.UnregisterListeners(events.Listeners.Where(listener => listener.GetType().Assembly == assembly));
+
+        _containers.Remove(assembly, out var container);
+        container?.Dispose();
     }
 
     public TService CreateInstance<TService>()
@@ -44,12 +51,12 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
 
     public object? GetService(Type serviceType)
     {
-        return serviceProvider.GetService(serviceType);
+        return GetScopedContainer(serviceType.Assembly).GetService(serviceType);
     }
 
     public TService? GetService<TService>()
     {
-        return serviceProvider.GetService<TService>();
+        return GetScopedContainer(typeof(TService).Assembly).GetService<TService>();
     }
 
     public void Register(Action<ServiceCollection> configure, bool activate = true)
@@ -66,7 +73,7 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
 
         foreach (var descriptor in services.Where(descriptor => descriptor.Lifetime is ServiceLifetime.Singleton))
         {
-            var instance = serviceProvider.GetService(descriptor.ServiceType);
+            var instance = this.GetRequiredService(descriptor.ServiceType);
 
             if (instance is not IEventListener listener)
                 continue;
@@ -83,6 +90,14 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
 
         // Plugin => Plugin
         serviceProvider.Add(ServiceDescriptor.Singleton(pluginType, plugin));
-        serviceProvider.GetRequiredService(pluginType);
+        this.GetRequiredService(pluginType);
+    }
+
+    private IResolverContext GetScopedContainer(Assembly assembly)
+    {
+        if (!_containers.TryGetValue(assembly, out var scope))
+            _containers.Add(assembly, scope = serviceProvider.GetRequiredService<IContainer>().CreateChild(RegistrySharing.Share, assembly));
+
+        return scope;
     }
 }
