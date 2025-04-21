@@ -1,5 +1,5 @@
-﻿using Nito.Disposables.Internals;
-using System.Reflection;
+﻿using System.Reflection;
+using Nito.Disposables.Internals;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Services;
 
@@ -8,6 +8,8 @@ namespace Void.Proxy.Events;
 public class EventService(ILogger<EventService> logger, IServiceProvider services) : IEventService
 {
     private readonly List<Entry> _entries = [];
+
+    public IEnumerable<IEventListener> Listeners => [.. _entries.Select(entry => entry.Listener)];
 
     public async ValueTask ThrowAsync<T>(CancellationToken cancellationToken = default) where T : IEvent, new()
     {
