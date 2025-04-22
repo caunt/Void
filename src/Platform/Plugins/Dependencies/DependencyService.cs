@@ -111,6 +111,18 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
         }
     }
 
+    public IServiceProvider CreatePlayerScope(IPlayer player)
+    {
+        var root = serviceProvider.GetRequiredService<IContainer>();
+        var child = root.CreateChild(RegistrySharing.Share, player);
+
+        // Serilog logger factory not getting shared into a child
+        child.RegisterInstance(root.GetRequiredService<ILoggerFactory>());
+        child.RegisterInstance(player);
+
+        return new ListeningServiceProvider(child);
+    }
+
     private void RegisterPlugin(IPlugin plugin)
     {
         var pluginType = plugin.GetType();

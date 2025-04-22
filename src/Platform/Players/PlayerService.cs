@@ -9,12 +9,13 @@ using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
+using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Api.Settings;
 using Void.Proxy.Players.Contexts;
 
 namespace Void.Proxy.Players;
 
-public class PlayerService(ILogger<PlayerService> logger, IServiceProvider services, ILinkService links, IEventService events, ISettings settings) : IPlayerService, IEventListener
+public class PlayerService(ILogger<PlayerService> logger, IDependencyService dependencies, ILinkService links, IEventService events, ISettings settings) : IPlayerService, IEventListener
 {
     private readonly AsyncLock _lock = new();
     private readonly List<IPlayer> _players = [];
@@ -26,7 +27,8 @@ public class PlayerService(ILogger<PlayerService> logger, IServiceProvider servi
         logger.LogTrace("Accepted client from {RemoteEndPoint}", client.Client.RemoteEndPoint);
 
         await events.ThrowAsync(new PlayerConnectingEvent(client), cancellationToken);
-        var player = new Player(client) { Context = new PlayerContext(services.CreateAsyncScope()) };
+        var player = new Player(client);
+        player.Context = new PlayerContext(dependencies.CreatePlayerScope(player));
 
         try
         {
