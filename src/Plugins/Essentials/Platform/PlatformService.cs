@@ -62,7 +62,24 @@ public class PlatformService(ILogger<PlatformService> logger, IHostApplicationLi
 
     private async ValueTask<int> UnloadContainerAsync(CommandContext context, CancellationToken cancellationToken)
     {
-        var container = context.GetArgument<string>("container");
+        var containerName = context.GetArgument<string>("container");
+        var container = plugins.Containers.FirstOrDefault(container => container.Contains(containerName, StringComparison.OrdinalIgnoreCase));
+
+        if (container is null)
+        {
+            if (context.Source is IMinecraftPlayer player)
+            {
+                await player.SendChatMessageAsync($"Container '{containerName}' not found", cancellationToken);
+            }
+            else
+            {
+                logger.LogError("Container '{ContainerName}' not found", containerName);
+            }
+
+            return 1;
+        }
+
+        logger.LogWarning("Unloading '{ContainerName}' container requested by {Source}", containerName, context.Source);
         await plugins.UnloadContainerAsync(container, cancellationToken);
         return 0;
     }
