@@ -72,7 +72,7 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
 
         events.RegisterListeners(link);
 
-        var side = await events.ThrowWithResultAsync(new AuthenticationStartingEvent(link), cancellationToken);
+        var side = await events.ThrowWithResultAsync(new AuthenticationStartingEvent(link, player), cancellationToken);
 
         if (side is AuthenticationSide.Proxy && !await player.IsProtocolSupportedAsync(cancellationToken))
         {
@@ -80,12 +80,12 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
             side = AuthenticationSide.Server;
         }
 
-        var result = await events.ThrowWithResultAsync(new AuthenticationStartedEvent(link, side), cancellationToken);
+        var result = await events.ThrowWithResultAsync(new AuthenticationStartedEvent(link, player, side), cancellationToken);
 
         if (result is AuthenticationResult.NoResult)
             throw new InvalidOperationException($"No {nameof(AuthenticationResult)} provided for {link}");
 
-        await events.ThrowAsync(new AuthenticationFinishedEvent(link, side, result), cancellationToken);
+        await events.ThrowAsync(new AuthenticationFinishedEvent(link, player, side, result), cancellationToken);
 
         if (result is AuthenticationResult.NotAuthenticatedPlayer or AuthenticationResult.NotAuthenticatedServer)
         {

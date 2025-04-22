@@ -2,7 +2,7 @@
 
 namespace Void.Proxy.Api.Events.Player;
 
-public record PlayerKickEvent(IPlayer Player, string? Text = null) : IEventWithResult<bool>
+public record PlayerKickEvent(IPlayer Player, string? Text = null) : IScopedEventWithResult<bool>
 {
     /// <summary>
     ///     <see langword="true" /> if kick was made; otherwise, <see langword="false" />.

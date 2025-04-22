@@ -1,9 +1,11 @@
 ﻿using System.Reflection;
 using DryIoc;
 using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
+using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
 
@@ -23,6 +25,26 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
 
         _containers.Remove(assembly, out var container);
         container?.Dispose();
+    }
+
+    [Subscribe(PostOrder.First)]
+    public static void OnPlayerConnected(PlayerConnectedEvent @event)
+    {
+        var container = @event.Player.Context.Services.GetRequiredService<IContainer>();
+
+        foreach (var registration in container.GetServiceRegistrations())
+        {
+            if (registration.ServiceType.ContainsGenericParameters)
+                continue;
+
+            var reuse = registration.Factory.Reuse;
+
+            // Is not 'Scoped?
+            if (reuse.Lifespan <= Reuse.Transient.Lifespan || reuse.Lifespan >= Reuse.Singleton.Lifespan)
+                continue;
+
+            @event.Player.Context.Services.GetRequiredService(registration.ServiceType);
+        }
     }
 
     public TService CreateInstance<TService>()
@@ -51,22 +73,12 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
 
     public object? GetService(Type serviceType)
     {
-        var instance = GetScopedContainer(serviceType.Assembly).GetService(serviceType);
-
-        if (instance is IEventListener listener)
-            events.RegisterListeners(listener);
-
-        return instance;
+        return GetScoped(serviceType.Assembly).GetService(serviceType);
     }
 
     public TService? GetService<TService>()
     {
-        var instance = GetScopedContainer(typeof(TService).Assembly).GetService<TService>();
-
-        if (instance is IEventListener listener)
-            events.RegisterListeners(listener);
-
-        return instance;
+        return GetScoped(typeof(TService).Assembly).GetService<TService>();
     }
 
     public void Register(Action<ServiceCollection> configure, bool activate = true)
@@ -81,8 +93,22 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
         if (!activate)
             return;
 
-        foreach (var descriptor in services.Where(descriptor => descriptor.Lifetime is ServiceLifetime.Singleton))
-            this.GetRequiredService(descriptor.ServiceType);
+        var players = serviceProvider.GetRequiredService<IPlayerService>();
+
+        foreach (var descriptor in services)
+        {
+            if (descriptor.Lifetime is ServiceLifetime.Singleton)
+            {
+                GetScoped(descriptor.ServiceType.Assembly).GetRequiredService(descriptor.ServiceType);
+            }
+            else if (descriptor.Lifetime is ServiceLifetime.Scoped)
+            {
+                foreach (var player in players.All)
+                {
+                    player.Context.Services.GetRequiredService(descriptor.ServiceType);
+                }
+            }
+        }
     }
 
     private void RegisterPlugin(IPlugin plugin)
@@ -96,7 +122,7 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
         this.GetRequiredService(pluginType);
     }
 
-    private IResolverContext GetScopedContainer(Assembly assembly)
+    private ListeningServiceProvider GetScoped(Assembly assembly)
     {
         if (!_containers.TryGetValue(assembly, out var child))
         {
@@ -109,6 +135,6 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
             _containers.Add(assembly, child);
         }
 
-        return child;
+        return new ListeningServiceProvider(child);
     }
 }

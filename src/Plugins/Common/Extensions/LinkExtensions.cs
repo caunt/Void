@@ -33,7 +33,7 @@ public static class LinkExtensions
 
         var events = link.Player.Context.Services.GetRequiredService<IEventService>();
         var direction = side is Side.Client ? Direction.Serverbound : Direction.Clientbound;
-        var cancelled = await events.ThrowWithResultAsync(new MessageReceivedEvent(side, side, Side.Proxy, direction, packet, link), cancellationToken);
+        var cancelled = await events.ThrowWithResultAsync(new MessageReceivedEvent(side, side, Side.Proxy, direction, packet, link, link.Player), cancellationToken);
 
         if (cancelled)
             throw new NotSupportedException("Cancelling manually read packets by protocol support plugins is not supported yet");

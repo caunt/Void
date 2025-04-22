@@ -36,7 +36,7 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
         if (!IsEncryptionResponsePacket(@event.Message, out var sharedSecret))
             return;
 
-        var privateKey = await events.ThrowWithResultAsync(new SearchServerPrivateKey(@event.Link.Server), cancellationToken);
+        var privateKey = await events.ThrowWithResultAsync(new SearchServerPrivateKeyEvent(@event.Link.Server), cancellationToken);
 
         if (privateKey is null)
         {

@@ -16,7 +16,7 @@ public abstract class AbstractCommandService(ILogger logger, IEventService event
 {
     public async ValueTask<bool> HandleCommandAsync(ILink link, string command, bool isSigned, CancellationToken cancellationToken)
     {
-        var cancelled = await events.ThrowWithResultAsync(new ChatCommandEvent(link, command, isSigned), cancellationToken);
+        var cancelled = await events.ThrowWithResultAsync(new ChatCommandEvent(link, link.Player, command, isSigned), cancellationToken);
 
         if (isSigned && cancelled)
             logger.LogWarning("Signed command cannot be cancelled: {Command}", command);

@@ -113,7 +113,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
                 return;
 
             foreach (var packet in packets)
-                @event.Result = await events.ThrowWithResultAsync(new MessageReceivedEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link), cancellationToken);
+                @event.Result = await events.ThrowWithResultAsync(new MessageReceivedEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link, player), cancellationToken);
         }
         catch (Exception exception)
         {
@@ -153,7 +153,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
                 return;
 
             foreach (var packet in packets)
-                await events.ThrowAsync(new MessageSentEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link), cancellationToken);
+                await events.ThrowAsync(new MessageSentEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link, player), cancellationToken);
         }
         catch (Exception exception)
         {

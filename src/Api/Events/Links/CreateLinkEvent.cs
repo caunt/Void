@@ -5,7 +5,7 @@ using Void.Proxy.Api.Servers;
 
 namespace Void.Proxy.Api.Events.Links;
 
-public record CreateLinkEvent(IPlayer Player, IServer Server, INetworkChannel PlayerChannel, INetworkChannel ServerChannel) : IEventWithResult<ILink>
+public record CreateLinkEvent(IPlayer Player, IServer Server, INetworkChannel PlayerChannel, INetworkChannel ServerChannel) : IScopedEventWithResult<ILink>
 {
     public ILink? Result { get; set; }
 }

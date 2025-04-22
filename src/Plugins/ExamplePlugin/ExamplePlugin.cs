@@ -27,9 +27,11 @@ public class ExamplePlugin(ILogger<ExamplePlugin> logger, IDependencyService dep
 
         dependencies.Register(services =>
         {
-            // You can expose your services to other plugins
-            services.AddSingleton<InventoryService>();
+            // Your services will be exposed to other plugins
             services.AddSingleton<ChatService>();
+
+            // Scoped services are instantiated per-player
+            services.AddScoped<InventoryService>();
         });
     }
 

@@ -49,7 +49,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
         if (this is { _playerToServerTask: not null } or { _serverToPlayerTask: not null })
             throw new InvalidOperationException("Link was already started");
 
-        await events.ThrowAsync(new LinkStartingEvent(this), cancellationToken);
+        await events.ThrowAsync(new LinkStartingEvent(this, Player), cancellationToken);
 
         _playerToServerTask = ExecuteAsync(PlayerChannel, ServerChannel, Direction.Serverbound, _ctsPlayerToServer.Token, _ctsPlayerToServerForce.Token);
         _serverToPlayerTask = ExecuteAsync(ServerChannel, PlayerChannel, Direction.Clientbound, _ctsServerToPlayer.Token, _ctsServerToPlayerForce.Token);
@@ -57,7 +57,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
         _onStoppingTask = Task.WhenAll(_playerToServerTask, _serverToPlayerTask).ContinueWith(task => OnStopped(task, cancellationToken).CatchExceptions(logger, $"{nameof(LinkStoppedEvent)} caused exception(s)"));
 
         logger.LogTrace("Started forwarding {Link} traffic", this);
-        await events.ThrowAsync(new LinkStartedEvent(this), cancellationToken);
+        await events.ThrowAsync(new LinkStartedEvent(this, Player), cancellationToken);
     }
 
     public async ValueTask StopAsync(CancellationToken cancellationToken)
@@ -155,7 +155,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             {
                 message = await sourceChannel.ReadMessageAsync(sourceSide, forceCancellationToken);
 
-                var cancelled = await events.ThrowWithResultAsync(new MessageReceivedEvent(sourceSide, sourceSide, Side.Proxy, direction, message, this), cancellationToken);
+                var cancelled = await events.ThrowWithResultAsync(new MessageReceivedEvent(sourceSide, sourceSide, Side.Proxy, direction, message, this, Player), cancellationToken);
 
                 if (cancelled)
                     continue;
@@ -179,7 +179,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             {
                 await destinationChannel.WriteMessageAsync(message, sourceSide, forceCancellationToken);
 
-                await events.ThrowAsync(new MessageSentEvent(sourceSide, Side.Proxy, destinationSide, direction, message, this), cancellationToken);
+                await events.ThrowAsync(new MessageSentEvent(sourceSide, Side.Proxy, destinationSide, direction, message, this, Player), cancellationToken);
             }
             catch (StreamClosedException)
             {
@@ -211,7 +211,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
                 if (!_stopping)
                 {
                     _stopping = true;
-                    await events.ThrowAsync(new LinkStoppingEvent(this), forceCancellationToken);
+                    await events.ThrowAsync(new LinkStoppingEvent(this, Player), forceCancellationToken);
                 }
             }
 
@@ -254,6 +254,6 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
         await task;
 
         // do not wait completion as this may start initiating new ILink instance
-        await events.ThrowAsync(new LinkStoppedEvent(this), cancellationToken);
+        await events.ThrowAsync(new LinkStoppedEvent(this, Player), cancellationToken);
     }
 }

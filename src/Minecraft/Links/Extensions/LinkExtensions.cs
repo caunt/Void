@@ -36,7 +36,7 @@ public static class LinkExtensions
 
         var events = link.Player.Context.Services.GetRequiredService<IEventService>();
         var direction = side is Side.Client ? Direction.Clientbound : Direction.Serverbound;
-        await events.ThrowAsync(new MessageSentEvent(Side.Proxy, Side.Proxy, side, direction, packet, link), cancellationToken);
+        await events.ThrowAsync(new MessageSentEvent(Side.Proxy, Side.Proxy, side, direction, packet, link, link.Player), cancellationToken);
     }
 
     public static IRegistryHolder GetRegistries(this ILink link, Direction direction)

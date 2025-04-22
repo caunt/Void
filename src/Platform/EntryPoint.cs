@@ -79,7 +79,10 @@ try
         return player;
     });
 
-    builder.Services.AddSingleton<ISettings>(services => services.GetRequiredService<IConfigurationService>().GetAsync<Settings>().AsTask().Result);
+    builder.Services.AddSingleton<ISettings>(services =>
+    {
+        return services.GetRequiredService<IConfigurationService>().GetAsync<Settings>().AsTask().Result;
+    });
 
     builder.Services.RegisterListeners();
 
@@ -90,7 +93,15 @@ try
     var token = lifetime.ApplicationStopping;
 
     console.Setup();
-    await host.StartAsync();
+
+    try
+    {
+        await host.StartAsync();
+    }
+    catch (ContainerException containerException)
+    {
+        throw new Exception(containerException.TryGetDetails(host.Services.GetRequiredService<IContainer>()), containerException);
+    }
 
     try
     {

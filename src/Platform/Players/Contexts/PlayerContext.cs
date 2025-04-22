@@ -5,7 +5,7 @@ namespace Void.Proxy.Players.Contexts;
 
 public record PlayerContext(AsyncServiceScope Scope) : IPlayerContext
 {
-    public IServiceProvider Services => Scope.ServiceProvider;
+    public IServiceProvider Services { get; } = Scope.ServiceProvider; // new ListeningServiceProvider(Scope.ServiceProvider);
     public INetworkChannel? Channel { get; set; }
 
     public async ValueTask DisposeAsync()

@@ -1,13 +1,16 @@
-﻿using System.Reflection;
+﻿using System.Collections.Concurrent;
+using System.Reflection;
+using DryIoc;
 using Nito.Disposables.Internals;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Services;
 
 namespace Void.Proxy.Events;
 
-public class EventService(ILogger<EventService> logger, IServiceProvider services) : IEventService
+public class EventService(ILogger<EventService> logger, IContainer container) : IEventService
 {
     private readonly List<Entry> _entries = [];
+    private readonly ConcurrentDictionary<Type, bool> _scopedEventTypes = [];
 
     public IEnumerable<IEventListener> Listeners => [.. _entries.Select(entry => entry.Listener)];
 
@@ -48,6 +51,19 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
         var simpleParameters = (object[])[@event];
         var cancellableParameters = (object[])[@event, cancellationToken];
 
+        var isScoped = _scopedEventTypes.GetOrAdd(eventType, type =>
+        {
+            var matches = container
+                .GetServiceRegistrations()
+                .Where(r => type.IsAssignableTo(r.ServiceType))
+                .ToArray();
+
+            if (matches.Length > 1)
+                throw new NotSupportedException($"Duplicate service listening to {type.Name}: " + string.Join(", ", matches.Select(r => r.ServiceType)));
+
+            return matches.Length == 1 && matches[0].Factory.Reuse == Reuse.Scoped;
+        });
+
         foreach (var entry in entries)
         {
             var parameters = entry.Method.GetParameters();
@@ -84,14 +100,6 @@ public class EventService(ILogger<EventService> logger, IServiceProvider service
             logger.LogTrace("Created {Count} listeners after event, rethrowing {EventType} event for them", createdEntries.Count(), eventType.Name);
             await ThrowAsync(createdEntries, @event, cancellationToken);
         }
-    }
-
-    [Obsolete("Use IDependencyService.CreateInstance<TService>() instead")]
-    public T RegisterListener<T>(params object[] parameters) where T : IEventListener
-    {
-        var instance = ActivatorUtilities.CreateInstance<T>(services, parameters);
-        RegisterListeners(instance);
-        return instance;
     }
 
     public void RegisterListeners(IEnumerable<IEventListener> listeners)

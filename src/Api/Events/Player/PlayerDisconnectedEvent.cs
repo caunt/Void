@@ -2,4 +2,4 @@
 
 namespace Void.Proxy.Api.Events.Player;
 
-public record PlayerDisconnectedEvent(IPlayer Player) : IEvent;
+public record PlayerDisconnectedEvent(IPlayer Player) : IScopedEvent;
