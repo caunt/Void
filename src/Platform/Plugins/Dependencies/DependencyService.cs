@@ -51,12 +51,22 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
 
     public object? GetService(Type serviceType)
     {
-        return GetScopedContainer(serviceType.Assembly).GetService(serviceType);
+        var instance = GetScopedContainer(serviceType.Assembly).GetService(serviceType);
+
+        if (instance is IEventListener listener)
+            events.RegisterListeners(listener);
+
+        return instance;
     }
 
     public TService? GetService<TService>()
     {
-        return GetScopedContainer(typeof(TService).Assembly).GetService<TService>();
+        var instance = GetScopedContainer(typeof(TService).Assembly).GetService<TService>();
+
+        if (instance is IEventListener listener)
+            events.RegisterListeners(listener);
+
+        return instance;
     }
 
     public void Register(Action<ServiceCollection> configure, bool activate = true)
@@ -72,14 +82,7 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
             return;
 
         foreach (var descriptor in services.Where(descriptor => descriptor.Lifetime is ServiceLifetime.Singleton))
-        {
-            var instance = this.GetRequiredService(descriptor.ServiceType);
-
-            if (instance is not IEventListener listener)
-                continue;
-
-            events.RegisterListeners(listener);
-        }
+            this.GetRequiredService(descriptor.ServiceType);
     }
 
     private void RegisterPlugin(IPlugin plugin)
