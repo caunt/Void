@@ -44,6 +44,12 @@ public class RegistryHolder : IRegistryHolder
         PacketTransformationsPlugins.ProtocolVersion = protocolVersion;
     }
 
+    public void ClearPlugin(IPlugin plugin)
+    {
+        PacketIdPlugins.Remove(plugin);
+        PacketTransformationsPlugins.Remove(plugin);
+    }
+
     public void ClearPlugins()
     {
         PacketIdPlugins.Clear();

@@ -34,6 +34,19 @@ namespace Void.Proxy.Plugins.Common.Services.Registries;
 public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> logger, IPlugin plugin, IPlayerService players, ILinkService links, IEventService events) : IPluginCommonService
 {
     [Subscribe]
+    public void OnPluginUnloading(PluginUnloadingEvent @event)
+    {
+        foreach (var player in players.All)
+        {
+            if (!player.TryGetLink(out var link))
+                continue;
+
+            link.GetRegistries(Direction.Clientbound).ClearPlugin(@event.Plugin);
+            link.GetRegistries(Direction.Serverbound).ClearPlugin(@event.Plugin);
+        }
+    }
+
+    [Subscribe]
     public async ValueTask OnChannelCreated(ChannelCreatedEvent @event, CancellationToken cancellationToken)
     {
         if (!@event.Player.TryGetMinecraftPlayer(out var player))

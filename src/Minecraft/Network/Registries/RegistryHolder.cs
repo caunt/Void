@@ -15,6 +15,7 @@ public interface IRegistryHolder : IDisposable
     public IMinecraftPacketTransformationsPluginsRegistry PacketTransformationsPlugins { get; }
 
     public void Setup(IPlugin managedBy, ProtocolVersion protocolVersion);
+    public void ClearPlugin(IPlugin plugin);
     public void ClearPlugins();
     public string PrintPackets();
     public void DisposeBy(IPlugin managedBy);
