@@ -40,11 +40,25 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
 
     private async ValueTask ThrowAsync<T>(IEnumerable<Entry> entriesNotSafe, T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
-        Entry[] entries;
+        var eventType = @event.GetType();
+        var invoked = new HashSet<Entry>();
 
-        lock (this)
-            entries = [.. entriesNotSafe];
+        while (true)
+        {
+            var next = entriesNotSafe
+                .Where(e => eventType.IsAssignableTo(e.Method.GetParameters()[0].ParameterType))
+                .Where(invoked.Add)
+                .ToArray();
 
+            if (next.Length == 0)
+                return;
+
+            await ThrowOnceAsync(next, @event, cancellationToken);
+        }
+    }
+
+    private async ValueTask ThrowOnceAsync<T>(Entry[] entries, T @event, CancellationToken cancellationToken = default) where T : IEvent
+    {
         var eventType = @event.GetType();
         logger.LogTrace("Invoking {TypeName} event", eventType.Name);
 
@@ -92,14 +106,6 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
         }
 
         logger.LogTrace("Completed invoking {TypeName} event", eventType.Name);
-
-        var createdEntries = entriesNotSafe.Except(entries);
-
-        if (createdEntries.Any())
-        {
-            logger.LogTrace("Created {Count} listeners after event, rethrowing {EventType} event for them", createdEntries.Count(), eventType.Name);
-            await ThrowAsync(createdEntries, @event, cancellationToken);
-        }
     }
 
     public void RegisterListeners(IEnumerable<IEventListener> listeners)
