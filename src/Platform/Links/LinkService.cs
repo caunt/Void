@@ -11,6 +11,7 @@ using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Servers;
+using Void.Proxy.Players.Extensions;
 
 namespace Void.Proxy.Links;
 
@@ -23,7 +24,7 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
     {
         logger.LogTrace("Looking for a server for {Player} player", player);
 
-        var server = await events.ThrowWithResultAsync(new PlayerSearchServerEvent(player), cancellationToken)
+        var server = await events.ThrowWithResultAsync(new PlayerSearchServerEvent(player.Unwrap()), cancellationToken)
                      ?? servers.RegisteredServers[0];
 
         return await ConnectAsync(player, server, cancellationToken);
@@ -38,64 +39,71 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
         // Also stopping token is used for all events triggered by link.
         cancellationToken = hostApplicationLifetime.ApplicationStopping;
 
-        if (TryGetLink(player, out var link))
+        var unwrappedPlayer = player.Unwrap();
+
+        if (TryGetLink(unwrappedPlayer, out var link))
             await link.StopAsync(cancellationToken);
 
-        logger.LogTrace("Connecting {Player} player to a {Server} server", player, server);
+        logger.LogTrace("Connecting {Player} player to a {Server} server", unwrappedPlayer, server);
 
-        var firstConnection = player.Context.Channel is null;
-        var playerChannel = await player.GetChannelAsync(cancellationToken);
+        var firstConnection = unwrappedPlayer.Context.Channel is null;
+        var playerChannelBuilder = await unwrappedPlayer.GetChannelBuilderAsync(cancellationToken);
+
+        // After searching for player channel builder, player might be upgraded to another implementation, unwrap proxy again
+        unwrappedPlayer = player.Unwrap();
+
+        var playerChannel = await unwrappedPlayer.GetChannelAsync(cancellationToken);
 
         INetworkChannel serverChannel;
 
         try
         {
-            serverChannel = await player.BuildServerChannelAsync(server, cancellationToken);
+            serverChannel = await unwrappedPlayer.BuildServerChannelAsync(server, cancellationToken);
         }
         catch (Exception exception)
         {
-            logger.LogWarning("Player {Player} cannot connect to a {Server} server because it is unavailable: {Message}", player, server, exception.Message);
-            logger.LogTrace("Player {Player} cannot connect to a {Server} server because it is unavailable:\n{Exception}", player, server, exception);
+            logger.LogWarning("Player {Player} cannot connect to a {Server} server because it is unavailable: {Message}", unwrappedPlayer, server, exception.Message);
+            logger.LogTrace("Player {Player} cannot connect to a {Server} server because it is unavailable:\n{Exception}", unwrappedPlayer, server, exception);
 
-            await player.KickAsync($"Server {server} is unavailable", cancellationToken);
+            await unwrappedPlayer.KickAsync($"Server {server} is unavailable", cancellationToken);
             return ConnectionResult.NotConnected;
         }
 
         if (firstConnection)
-            await events.ThrowAsync(new PlayerConnectedEvent(player), cancellationToken);
+            await events.ThrowAsync(new PlayerConnectedEvent(unwrappedPlayer), cancellationToken);
 
-        link = await events.ThrowWithResultAsync(new CreateLinkEvent(player, server, playerChannel, serverChannel), cancellationToken)
-                   ?? new Link(player, server, playerChannel, serverChannel, logger, events, cancellationToken);
+        link = await events.ThrowWithResultAsync(new CreateLinkEvent(unwrappedPlayer, server, playerChannel, serverChannel), cancellationToken)
+                   ?? new Link(unwrappedPlayer, server, playerChannel, serverChannel, logger, events, cancellationToken);
 
         using (await _lock.LockAsync(cancellationToken))
             _links.Add(link);
 
         events.RegisterListeners(link);
 
-        var side = await events.ThrowWithResultAsync(new AuthenticationStartingEvent(link, player), cancellationToken);
+        var side = await events.ThrowWithResultAsync(new AuthenticationStartingEvent(link, unwrappedPlayer), cancellationToken);
 
-        if (side is AuthenticationSide.Proxy && !await player.IsProtocolSupportedAsync(cancellationToken))
+        if (side is AuthenticationSide.Proxy && !await unwrappedPlayer.IsProtocolSupportedAsync(cancellationToken))
         {
-            logger.LogWarning("Player {Player} protocol is not supported, forcing authentication to Server side", player);
+            logger.LogWarning("Player {Player} protocol is not supported, forcing authentication to Server side", unwrappedPlayer);
             side = AuthenticationSide.Server;
         }
 
-        var result = await events.ThrowWithResultAsync(new AuthenticationStartedEvent(link, player, side), cancellationToken);
+        var result = await events.ThrowWithResultAsync(new AuthenticationStartedEvent(link, unwrappedPlayer, side), cancellationToken);
 
         if (result is AuthenticationResult.NoResult)
             throw new InvalidOperationException($"No {nameof(AuthenticationResult)} provided for {link}");
 
-        await events.ThrowAsync(new AuthenticationFinishedEvent(link, player, side, result), cancellationToken);
+        await events.ThrowAsync(new AuthenticationFinishedEvent(link, unwrappedPlayer, side, result), cancellationToken);
 
         if (result is AuthenticationResult.NotAuthenticatedPlayer or AuthenticationResult.NotAuthenticatedServer)
         {
-            await player.KickAsync("You are not authorized to play", cancellationToken);
+            await unwrappedPlayer.KickAsync("You are not authorized to play", cancellationToken);
             return ConnectionResult.NotConnected;
         }
         else
         {
             await link.StartAsync(cancellationToken);
-            logger.LogInformation("Player {Player} connected to {Server}", player, link.Server);
+            logger.LogInformation("Player {Player} connected to {Server}", unwrappedPlayer, link.Server);
 
             return ConnectionResult.Connected;
         }
@@ -126,6 +134,7 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
 
     public bool TryGetLink(IPlayer player, [NotNullWhen(true)] out ILink? link)
     {
+        player = player.Unwrap();
         link = _links.FirstOrDefault(link => link.Player == player);
         return link is not null;
     }

@@ -1,13 +1,13 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using Void.Minecraft.Network;
-using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Channels;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Players;
+using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Network.Channels;
 using Void.Proxy.Plugins.Common.Network.Streams.Network;
 using Void.Proxy.Plugins.Common.Network.Streams.Packet;
@@ -17,15 +17,14 @@ namespace Void.Proxy.Plugins.Common.Services.Channels;
 public abstract class AbstractChannelService(IEventService events) : IPluginCommonService
 {
     [Subscribe]
-    public void OnSearchChannelBuilder(SearchChannelBuilderEvent @event)
+    public async ValueTask OnSearchChannelBuilder(SearchChannelBuilderEvent @event, CancellationToken cancellationToken)
     {
-        if (!@event.Player.TryGetMinecraftPlayer(out var player))
-            return;
-
         if (!IsSupportedHandshake(@event.Buffer, out var protocolVersion))
             return;
 
-        player.ProtocolVersion = protocolVersion;
+        // This is definitely a Minecraft connection
+        var player = await @event.Player.UpgradeToMinecraftAsync(protocolVersion, cancellationToken);
+
         @event.Result = ChannelBuilderAsync;
     }
 

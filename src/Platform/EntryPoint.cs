@@ -2,7 +2,6 @@
 using DryIoc.Microsoft.DependencyInjection;
 using Serilog;
 using Serilog.Events;
-using Void.Minecraft.Players.Extensions;
 using Void.Proxy;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Commands;
@@ -13,6 +12,7 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Players.Contexts;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Api.Servers;
@@ -24,6 +24,7 @@ using Void.Proxy.Crypto;
 using Void.Proxy.Events;
 using Void.Proxy.Links;
 using Void.Proxy.Players;
+using Void.Proxy.Players.Contexts;
 using Void.Proxy.Plugins;
 using Void.Proxy.Plugins.Dependencies;
 using Void.Proxy.Servers;
@@ -68,16 +69,8 @@ try
     builder.Services.AddHostedService(services => services.GetRequiredService<IConfigurationService>());
     builder.Services.AddHostedService(services => services.GetRequiredService<IProxy>());
 
-    builder.Services.AddScoped(services => services.GetRequiredService<IPlayer>().AsMinecraftPlayer());
-    builder.Services.AddScoped(services =>
-    {
-        var players = services.GetRequiredService<IPlayerService>();
-
-        var player = players.All.FirstOrDefault(player => player.Context.Services == services) ??
-            throw new InvalidOperationException("Player not found.");
-
-        return player;
-    });
+    builder.Services.AddScoped<IPlayerContextAccessor, PlayerContextAccessor>();
+    builder.Services.AddScoped(services => services.GetRequiredService<IPlayerContextAccessor>().Context?.Player ?? throw new InvalidOperationException("Player context is not set"));
 
     builder.Services.AddSingleton<ISettings>(services =>
     {

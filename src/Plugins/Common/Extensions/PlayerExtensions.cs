@@ -9,6 +9,7 @@ using Void.Minecraft.Players;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Channels;
+using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 
 namespace Void.Proxy.Plugins.Common.Extensions;
@@ -29,5 +30,15 @@ public static class PlayerExtensions
 
         var events = player.Context.Services.GetRequiredService<IEventService>();
         await events.ThrowAsync(new PhaseChangedEvent(player, side, channel, phase), cancellationToken);
+    }
+
+    public static async ValueTask<IMinecraftPlayer> UpgradeToMinecraftAsync(this IPlayer player, ProtocolVersion protocolVersion, CancellationToken cancellationToken)
+    {
+        var minecraftPlayer = new MinecraftPlayer(player.Client, player.Context, protocolVersion);
+
+        var players = player.Context.Services.GetRequiredService<IPlayerService>();
+        await players.UpgradeAsync(player, minecraftPlayer, cancellationToken);
+
+        return minecraftPlayer;
     }
 }

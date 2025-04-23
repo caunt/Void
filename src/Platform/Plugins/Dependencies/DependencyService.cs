@@ -3,28 +3,49 @@ using DryIoc;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Plugins;
+using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
+using Void.Proxy.Utils;
 
 namespace Void.Proxy.Plugins.Dependencies;
 
-public class DependencyService(ILogger<DependencyService> logger, IServiceProvider serviceProvider, IEventService events) : IDependencyService
+public class DependencyService(ILogger<DependencyService> logger, IContainer container, IEventService events) : IDependencyService
 {
     private readonly Dictionary<Assembly, IContainer> _containers = [];
+
+    [Subscribe]
+    public async ValueTask OnProxyStopping(ProxyStoppingEvent @event, CancellationToken cancellationToken)
+    {
+        await File.WriteAllTextAsync("containers.dot", await DryIocTracker.ToGraphStringAsync(), cancellationToken);
+    }
 
     [Subscribe(PostOrder.First)]
     public void OnPluginUnloading(PluginUnloadingEvent @event)
     {
         var assembly = @event.Plugin.GetType().Assembly;
 
-        serviceProvider.Remove(descriptor => descriptor.ServiceType.Assembly == assembly);
+        container.Remove(descriptor => descriptor.ServiceType.Assembly == assembly);
         events.UnregisterListeners(events.Listeners.Where(listener => listener.GetType().Assembly == assembly));
 
-        _containers.Remove(assembly, out var container);
-        container?.Dispose();
+        // Do not dispose container, as it does share registrations and resolutions cache with root
+        if (_containers.Remove(assembly, out var pluginContainer))
+            pluginContainer.Untrack();
+
+        var players = container.GetRequiredService<IPlayerService>();
+
+        foreach (var player in players.All)
+        {
+            var playerContainer = player.Context.Services.GetRequiredService<IContainer>();
+
+            if (playerContainer == null)
+                continue;
+
+            playerContainer.Remove(descriptor => descriptor.ServiceType.Assembly == assembly);
+        }
     }
 
     [Subscribe(PostOrder.First)]
@@ -60,7 +81,7 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
 
     public object CreateInstance(Type serviceType)
     {
-        var instance = serviceProvider.GetService(serviceType) ?? ActivatorUtilities.CreateInstance(serviceProvider, serviceType);
+        var instance = container.GetService(serviceType) ?? ActivatorUtilities.CreateInstance(container, serviceType);
 
         if (instance is IEventListener listener)
             events.RegisterListeners(listener);
@@ -88,12 +109,12 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
         services.RegisterListeners();
 
         foreach (var service in services)
-            serviceProvider.Add(service);
+            container.Add(service);
 
         if (!activate)
             return;
 
-        var players = serviceProvider.GetRequiredService<IPlayerService>();
+        var players = container.GetRequiredService<IPlayerService>();
 
         foreach (var descriptor in services)
         {
@@ -111,18 +132,6 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
         }
     }
 
-    public IServiceProvider CreatePlayerScope(IPlayer player)
-    {
-        var root = serviceProvider.GetRequiredService<IContainer>();
-        var child = root.CreateChild(RegistrySharing.Share, player);
-
-        // Serilog logger factory not getting shared into a child
-        child.RegisterInstance(root.GetRequiredService<ILoggerFactory>());
-        child.RegisterInstance(player);
-
-        return new ListeningServiceProvider(child);
-    }
-
     private void RegisterPlugin(IPlugin plugin)
     {
         var pluginType = plugin.GetType();
@@ -130,7 +139,7 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
         logger.LogTrace("Injecting {Plugin} into {Name} service collection", plugin.GetType(), plugin.Name);
 
         // Plugin => Plugin
-        serviceProvider.Add(ServiceDescriptor.Singleton(pluginType, plugin));
+        container.Add(ServiceDescriptor.Singleton(pluginType, plugin));
         this.GetRequiredService(pluginType);
     }
 
@@ -138,11 +147,13 @@ public class DependencyService(ILogger<DependencyService> logger, IServiceProvid
     {
         if (!_containers.TryGetValue(assembly, out var child))
         {
-            var root = serviceProvider.GetRequiredService<IContainer>();
-            child = root.CreateChild(RegistrySharing.Share, assembly);
+            child = container.CreateChild(RegistrySharing.Share, assembly);
+
+            container.Track("App Root Container");
+            child.Track($"[{assembly.GetName().Name}] Assembly Container", container);
 
             // Serilog logger factory not getting shared into a child
-            child.RegisterInstance(root.GetRequiredService<ILoggerFactory>());
+            child.RegisterInstance(container.GetRequiredService<ILoggerFactory>());
 
             _containers.Add(assembly, child);
         }

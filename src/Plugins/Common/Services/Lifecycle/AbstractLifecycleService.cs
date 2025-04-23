@@ -10,11 +10,19 @@ using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Plugins.Common.Events;
+using Void.Proxy.Plugins.Common.Players;
+using Void.Proxy.Plugins.Common.Players.Contexts;
 
 namespace Void.Proxy.Plugins.Common.Services.Lifecycle;
 
 public abstract class AbstractLifecycleService : IPluginCommonService
 {
+    [Subscribe]
+    public static void OnPlayerConnecting(PlayerConnectingEvent @event)
+    {
+        @event.Result = new SimplePlayer(@event.Client, instance => new PlayerContext(instance, @event.Scope, @event.RegisterEventListeners(@event.Scope.ServiceProvider)));
+    }
+
     [Subscribe]
     public async ValueTask OnChatMessageSend(ChatMessageSendEvent @event, CancellationToken cancellationToken)
     {

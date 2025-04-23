@@ -59,7 +59,7 @@ public static class PlayerExtensions
         return player.Context.Channel;
     }
 
-    private static async ValueTask<IChannelBuilderService> GetChannelBuilderAsync(this IPlayer player, CancellationToken cancellationToken = default)
+    internal static async ValueTask<IChannelBuilderService> GetChannelBuilderAsync(this IPlayer player, CancellationToken cancellationToken = default)
     {
         var channelBuilder = player.Context.Services.GetRequiredService<IChannelBuilderService>();
         await channelBuilder.SearchChannelBuilderAsync(player, cancellationToken);

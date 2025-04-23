@@ -8,27 +8,47 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Players.Contexts;
 using Void.Proxy.Api.Players.Extensions;
-using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Api.Settings;
-using Void.Proxy.Players.Contexts;
+using Void.Proxy.Players.Extensions;
+using Void.Proxy.Plugins.Dependencies;
 
 namespace Void.Proxy.Players;
 
-public class PlayerService(ILogger<PlayerService> logger, IDependencyService dependencies, ILinkService links, IEventService events, ISettings settings) : IPlayerService, IEventListener
+public class PlayerService(ILogger<PlayerService> logger, IServiceProvider serviceProvider, ILinkService links, IEventService events, ISettings settings) : IPlayerService, IEventListener
 {
     private readonly AsyncLock _lock = new();
-    private readonly List<IPlayer> _players = [];
+    private readonly List<PlayerProxy> _players = [];
 
-    public IReadOnlyList<IPlayer> All => _players;
+    public IEnumerable<IPlayer> All => _players.Select(proxy => proxy.Source);
+
+    public void ForEach(Action<IPlayer> action)
+    {
+        for (var i = _players.Count - 1; i >= 0; i--)
+            action(_players[i].Unwrap());
+    }
+
+    public async ValueTask ForEachAsync(Func<IPlayer, CancellationToken, ValueTask> action, CancellationToken cancellationToken = default)
+    {
+        for (var i = _players.Count - 1; i >= 0; i--)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                break;
+
+            await action(_players[i].Unwrap(), cancellationToken);
+        }
+    }
 
     public async ValueTask AcceptPlayerAsync(TcpClient client, CancellationToken cancellationToken = default)
     {
         logger.LogTrace("Accepted client from {RemoteEndPoint}", client.Client.RemoteEndPoint);
 
-        await events.ThrowAsync(new PlayerConnectingEvent(client), cancellationToken);
-        var player = new Player(client);
-        player.Context = new PlayerContext(dependencies.CreatePlayerScope(player));
+        var player = new PlayerProxy(await events.ThrowWithResultAsync(new PlayerConnectingEvent(client, serviceProvider.CreateAsyncScope(), ListeningServiceProvider.Wrap), cancellationToken) ??
+            throw new InvalidOperationException("Player is not instantiated"));
+
+        var playerContextAccessor = player.Context.Services.GetRequiredService<IPlayerContextAccessor>();
+        playerContextAccessor.Context = player.Context;
 
         try
         {
@@ -38,7 +58,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
             logger.LogTrace("Player {Player} connecting", player);
             var result = await links.ConnectPlayerAnywhereAsync(player, cancellationToken);
 
-            if (!links.TryGetLink(player, out var link))
+            if (!links.TryGetLink(player.Unwrap(), out var link))
                 logger.LogWarning("Player {Player} failed to connect", player);
         }
         catch (Exception exception)
@@ -47,29 +67,18 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
                 logger.LogError(exception, "Client {RemoteEndPoint} cannot be proxied", player.RemoteEndPoint);
 
             // just in case
-            await events.ThrowAsync(new PlayerDisconnectedEvent(player), cancellationToken);
+            await events.ThrowAsync(new PlayerDisconnectedEvent(player.Unwrap()), cancellationToken);
         }
     }
 
-    [Subscribe]
-    public async ValueTask OnLinkStopped(LinkStoppedEvent @event, CancellationToken cancellationToken)
+    public async ValueTask UpgradeAsync(IPlayer player, IPlayer upgradedPlayer, CancellationToken cancellationToken)
     {
-        if (@event.Link.PlayerChannel.IsAlive)
-            await links.ConnectPlayerAnywhereAsync(@event.Link.Player, cancellationToken);
-        else
-            await events.ThrowAsync(new PlayerDisconnectedEvent(@event.Link.Player), cancellationToken);
-    }
+        using var sync = await _lock.LockAsync(cancellationToken);
 
-    [Subscribe]
-    public async ValueTask OnPlayerDisconnected(PlayerDisconnectedEvent @event, CancellationToken cancellationToken)
-    {
-        using (var sync = await _lock.LockAsync(cancellationToken))
-            if (!_players.Remove(@event.Player))
-                return;
+        var proxy = _players.FirstOrDefault(proxy => proxy == player || proxy.Source == player) ??
+            throw new InvalidOperationException($"Player {player} not found");
 
-        logger.LogInformation("Player {Player} disconnected", @event.Player);
-
-        await @event.Player.DisposeAsync();
+        proxy.Replace(upgradedPlayer);
     }
 
     public async ValueTask KickPlayerAsync(IPlayer player, string? text = null, CancellationToken cancellationToken = default)
@@ -137,5 +146,33 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
             link?.PlayerChannel.TryResume();
             link?.ServerChannel.TryResume();
         }
+    }
+
+    [Subscribe]
+    public async ValueTask OnLinkStopped(LinkStoppedEvent @event, CancellationToken cancellationToken)
+    {
+        if (@event.Link.PlayerChannel.IsAlive)
+            await links.ConnectPlayerAnywhereAsync(@event.Link.Player, cancellationToken);
+        else
+            await events.ThrowAsync(new PlayerDisconnectedEvent(@event.Link.Player), cancellationToken);
+    }
+
+    [Subscribe]
+    public async ValueTask OnPlayerDisconnected(PlayerDisconnectedEvent @event, CancellationToken cancellationToken)
+    {
+        using (var sync = await _lock.LockAsync(cancellationToken))
+        {
+            var count = _players.RemoveAll(proxy => proxy == @event.Player || proxy.Source == @event.Player);
+
+            if (count is 0)
+                return;
+
+            if (count > 1)
+                logger.LogWarning("Multiple players disconnected in one event");
+        }
+
+        logger.LogInformation("Player {Player} disconnected", @event.Player);
+
+        await @event.Player.DisposeAsync();
     }
 }

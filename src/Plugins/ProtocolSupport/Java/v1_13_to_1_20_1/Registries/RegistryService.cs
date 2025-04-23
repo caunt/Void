@@ -19,7 +19,6 @@ namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Registries;
 
 public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPlayerService players, ILinkService links, IEventService events) : AbstractRegistryService(logger, plugin, players, links, events)
 {
-    private readonly IEventService _events = events;
     private readonly IPlugin _plugin = plugin;
 
     [Subscribe]

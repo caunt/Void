@@ -4,9 +4,9 @@ using Void.Proxy.Api.Players.Contexts;
 
 namespace Void.Proxy.Api.Players;
 
-public interface IPlayer : ICommandSource, IAsyncDisposable
+public interface IPlayer : ICommandSource, IAsyncDisposable, IDisposable
 {
-    public IPlayerContext Context { get; }
     public TcpClient Client { get; }
     public string RemoteEndPoint { get; }
+    public IPlayerContext Context { get; }
 }
