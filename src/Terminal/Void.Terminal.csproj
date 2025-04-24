@@ -8,6 +8,7 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	<DebugType>embedded</DebugType>
+	<LangVersion>preview</LangVersion>
   </PropertyGroup>
 
 	<ItemGroup>
