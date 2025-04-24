@@ -77,6 +77,10 @@ public class InventoryService(ILogger<InventoryService> logger, ICommandService 
     [Subscribe]
     public void OnPhaseChanged(PhaseChangedEvent @event)
     {
+        // Minecraft Phase indicate state of the game. Common Phases are Handshake, Login, Configuration and Play
+        // They are NOT synced between server and player instantly. When player is in Play phase, server might be still in Login phase.
+        // This means you should decide which side Phase change you want to handle here. In this case, both sides are handled.
+
         switch (@event)
         {
             // Since wanted packet is in Play phase, we register it only in Play phase
@@ -108,7 +112,8 @@ public class InventoryService(ILogger<InventoryService> logger, ICommandService 
                 new(0x62, ProtocolVersion.MINECRAFT_1_21_5)
             ]);
 
-            // Registrations above are explicitly registered for both sides Phase change. This is intentionally required by design.
+            // Registrations above are implicitly registered twice, so this log message will appear twice. 
+            // This is intentionally required by design.
             logger.LogTrace("Registered packet mappings for player {Player} at {Side} side", player, side);
         }
     }
