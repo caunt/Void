@@ -80,12 +80,6 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
     protected async ValueTask DisposeServerboundAsync()
     {
-        if (!await Player.IsProtocolSupportedAsync())
-        {
-            // PlayerChannel.Close();
-            // await PlayerChannel.DisposeAsync();
-        }
-
         if (_playerToServerTaskDisposed)
             return;
 
@@ -111,9 +105,6 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
     protected async ValueTask DisposeClientboundAsync()
     {
-        // ServerChannel.Close();
-        // await ServerChannel.DisposeAsync();
-
         if (_serverToPlayerTaskDisposed)
             return;
 
