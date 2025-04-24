@@ -7,7 +7,7 @@ using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
-using Void.Proxy.Plugins.Container;
+using Void.Proxy.Plugins.Containers;
 using Void.Proxy.Plugins.Context;
 
 namespace Void.Proxy.Plugins;

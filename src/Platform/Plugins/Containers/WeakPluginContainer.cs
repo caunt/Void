@@ -2,7 +2,7 @@
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Context;
 
-namespace Void.Proxy.Plugins.Container;
+namespace Void.Proxy.Plugins.Containers;
 
 public class WeakPluginContainer
 {
