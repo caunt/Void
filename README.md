@@ -1,7 +1,9 @@
 <h1 align="center">
-	<img src="https://github.com/caunt/Void/actions/workflows/dotnet.yml/badge.svg" alt="GitHub Actions" />
-	<br>
-	VOID
+  <a href="https://github.com/caunt/Void/actions">
+    <img src="https://github.com/caunt/Void/actions/workflows/dotnet.yml/badge.svg" alt="GitHub Actions">
+  </a>
+  <br>
+  VOID
 </h1>
 
 
