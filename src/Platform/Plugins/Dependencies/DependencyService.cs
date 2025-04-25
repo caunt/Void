@@ -15,12 +15,35 @@ namespace Void.Proxy.Plugins.Dependencies;
 
 public class DependencyService(ILogger<DependencyService> logger, IContainer container, IEventService events) : IDependencyService
 {
-    private readonly Dictionary<Assembly, IContainer> _containers = [];
+    private readonly Dictionary<Assembly, IContainer> _assemblyContainers = [];
+    private readonly Dictionary<Assembly, Dictionary<IPlayer, IContainer>> _assemblyPlayerContainers = [];
+
+    public IServiceProvider Services => CreateCompositeContainer("Transient Composite", [.. _assemblyContainers.Values, container]);
 
     [Subscribe]
-    public async ValueTask OnProxyStopping(ProxyStoppingEvent @event, CancellationToken cancellationToken)
+    public static async ValueTask OnProxyStopping(ProxyStoppingEvent _, CancellationToken cancellationToken)
     {
         await File.WriteAllTextAsync("containers.dot", await DryIocTracker.ToGraphStringAsync(), cancellationToken);
+    }
+
+    [Subscribe(PostOrder.First)]
+    public void OnPlayerConnected(PlayerConnectedEvent @event)
+    {
+        foreach (var (assembly, container) in _assemblyContainers)
+        {
+            foreach (var registration in container.GetServiceRegistrations())
+            {
+                if (registration.ServiceType.ContainsGenericParameters)
+                    continue;
+
+                var reuse = registration.Factory.Reuse;
+
+                if (reuse.Lifespan <= Reuse.Transient.Lifespan || reuse.Lifespan >= Reuse.Singleton.Lifespan)
+                    continue;
+
+                GetScoped(assembly, @event.Player).GetRequiredService(registration.ServiceType);
+            }
+        }
     }
 
     [Subscribe(PostOrder.First)]
@@ -28,43 +51,34 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
     {
         var assembly = @event.Plugin.GetType().Assembly;
 
-        container.Remove(descriptor => descriptor.ServiceType.Assembly == assembly);
         events.UnregisterListeners(events.Listeners.Where(listener => listener.GetType().Assembly == assembly));
 
-        // Do not dispose container, as it does share registrations and resolutions cache with root
-        if (_containers.Remove(assembly, out var pluginContainer))
-            pluginContainer.Untrack();
-
-        var players = container.GetRequiredService<IPlayerService>();
-
-        foreach (var player in players.All)
+        if (_assemblyContainers.Remove(assembly, out var pluginContainer))
         {
-            var playerContainer = player.Context.Services.GetRequiredService<IContainer>();
+            pluginContainer.Untrack();
+            pluginContainer.Dispose();
+        }
 
-            if (playerContainer == null)
-                continue;
-
-            playerContainer.Remove(descriptor => descriptor.ServiceType.Assembly == assembly);
+        if (_assemblyPlayerContainers.Remove(assembly, out var playerContainers))
+        {
+            foreach (var (player, container) in playerContainers)
+            {
+                container.Untrack();
+                container.Dispose();
+            }
         }
     }
 
-    [Subscribe(PostOrder.First)]
-    public static void OnPlayerConnected(PlayerConnectedEvent @event)
+    [Subscribe]
+    public void OnPlayerDisconnected(PlayerDisconnectedEvent @event)
     {
-        var container = @event.Player.Context.Services.GetRequiredService<IContainer>();
-
-        foreach (var registration in container.GetServiceRegistrations())
+        foreach (var playersContainers in _assemblyPlayerContainers.Values)
         {
-            if (registration.ServiceType.ContainsGenericParameters)
+            if (!playersContainers.Remove(@event.Player, out var container))
                 continue;
 
-            var reuse = registration.Factory.Reuse;
-
-            // Is not 'Scoped?
-            if (reuse.Lifespan <= Reuse.Transient.Lifespan || reuse.Lifespan >= Reuse.Singleton.Lifespan)
-                continue;
-
-            @event.Player.Context.Services.GetRequiredService(registration.ServiceType);
+            container.Untrack();
+            container.Dispose();
         }
     }
 
@@ -81,7 +95,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
     public object CreateInstance(Type serviceType)
     {
-        var instance = container.GetService(serviceType) ?? ActivatorUtilities.CreateInstance(container, serviceType);
+        var instance = container.GetService(serviceType) ?? ActivatorUtilities.CreateInstance(Services, serviceType);
 
         if (instance is IEventListener listener)
             events.RegisterListeners(listener);
@@ -94,12 +108,12 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
     public object? GetService(Type serviceType)
     {
-        return GetScoped(serviceType.Assembly).GetService(serviceType);
+        return Services.GetService(serviceType);
     }
 
     public TService? GetService<TService>()
     {
-        return GetScoped(typeof(TService).Assembly).GetService<TService>();
+        return Services.GetService<TService>();
     }
 
     public void Register(Action<ServiceCollection> configure, bool activate = true)
@@ -109,24 +123,34 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         services.RegisterListeners();
 
         foreach (var service in services)
-            container.Add(service);
-
-        if (!activate)
-            return;
-
-        var players = container.GetRequiredService<IPlayerService>();
-
-        foreach (var descriptor in services)
         {
-            if (descriptor.Lifetime is ServiceLifetime.Singleton)
+            var serviceType = service.ServiceType;
+            var assembly = service.ServiceType.Assembly;
+
+            // TODO: ServiceType.IsCollectible does not guarantee that the service is from plugin assembly
+            // ServiceType might be just an interface from proxy itself, and plugin less likely, but might be not collectible
+            if (assembly.IsCollectible)
+                GetScoped(assembly).Add(service);
+            else
+                container.Add(service);
+
+            if (!activate)
+                continue;
+
+            if (service.Lifetime is ServiceLifetime.Singleton)
             {
-                GetScoped(descriptor.ServiceType.Assembly).GetRequiredService(descriptor.ServiceType);
+                GetScoped(assembly).GetRequiredService(service.ServiceType);
             }
-            else if (descriptor.Lifetime is ServiceLifetime.Scoped)
+            else if (service.Lifetime is ServiceLifetime.Scoped)
             {
+                var players = container.GetRequiredService<IPlayerService>();
+
                 foreach (var player in players.All)
                 {
-                    player.Context.Services.GetRequiredService(descriptor.ServiceType);
+                    if (service.ServiceType.ContainsGenericParameters)
+                        continue;
+
+                    GetScoped(assembly, player).GetRequiredService(service.ServiceType);
                 }
             }
         }
@@ -139,15 +163,15 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         logger.LogTrace("Injecting {Plugin} into {Name} service collection", plugin.GetType(), plugin.Name);
 
         // Plugin => Plugin
-        container.Add(ServiceDescriptor.Singleton(pluginType, plugin));
-        this.GetRequiredService(pluginType);
+        GetScoped(pluginType.Assembly).Add(ServiceDescriptor.Singleton(pluginType, plugin));
+        GetScoped(pluginType.Assembly).GetRequiredService(pluginType);
     }
 
     private ListeningServiceProvider GetScoped(Assembly assembly)
     {
-        if (!_containers.TryGetValue(assembly, out var child))
+        if (!_assemblyContainers.TryGetValue(assembly, out var child))
         {
-            child = container.CreateChild(RegistrySharing.Share, assembly);
+            child = CreateCompositeContainer($"{assembly.GetName().Name} Composite", _assemblyPlayerContainers.SelectMany(pair => pair.Value.Select(pair => pair.Value)).Concat(_assemblyContainers.Values).Append(container));
 
             container.Track("App Root Container");
             child.Track($"[{assembly.GetName().Name}] Assembly Container", container);
@@ -155,9 +179,105 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
             // Serilog logger factory not getting shared into a child
             child.RegisterInstance(container.GetRequiredService<ILoggerFactory>());
 
-            _containers.Add(assembly, child);
+            _assemblyContainers.Add(assembly, child);
         }
 
         return new ListeningServiceProvider(child);
+    }
+
+    private ListeningServiceProvider GetScoped(Assembly assembly, IPlayer player)
+    {
+        if (!_assemblyPlayerContainers.TryGetValue(assembly, out var playerContainers))
+        {
+            playerContainers = [];
+            _assemblyPlayerContainers.Add(assembly, playerContainers);
+        }
+
+        if (!playerContainers.TryGetValue(player, out var assemblyContainer))
+        {
+            assemblyContainer = CreateCompositeContainer("Player Composite", _assemblyPlayerContainers.SelectMany(pair => pair.Value.Select(pair => pair.Value)).Concat(_assemblyContainers.Values).Append(container));
+
+            // IPlayer
+            assemblyContainer.RegisterDelegate(request => player);
+
+            playerContainers.Add(player, assemblyContainer);
+        }
+
+        // Ensure all scoped services are registered in player container
+        var source = GetScoped(assembly).Source.GetRequiredService<IContainer>();
+
+        foreach (var registration in source.GetServiceRegistrations())
+        {
+            var lifespan = registration.Factory.Reuse.Lifespan;
+
+            if (lifespan <= Reuse.Transient.Lifespan || lifespan >= Reuse.Singleton.Lifespan)
+                continue;
+
+            var serviceType = registration.ServiceType;
+
+            // Open generic types like ILogger<Something> to ILogger<>
+            if (serviceType.IsGenericType)
+                serviceType = serviceType.GetGenericTypeDefinition();
+
+            if (assemblyContainer.IsRegistered(serviceType, registration.OptionalServiceKey))
+                continue;
+
+            var registrationFactory = registration.Factory;
+
+            if (registration.ImplementationType is not null)
+            {
+                assemblyContainer.Register(
+                    registration.ServiceType,
+                    registration.ImplementationType,
+                    registrationFactory.Reuse,
+                    registrationFactory.Made,
+                    serviceKey: registration.OptionalServiceKey);
+            }
+            else
+            {
+                assemblyContainer.Register(
+                    registrationFactory,
+                    registration.ServiceType,
+                    registration.OptionalServiceKey,
+                    IfAlreadyRegistered.Throw,
+                    false);
+            }
+        }
+
+        return new ListeningServiceProvider(assemblyContainer);
+    }
+
+    private Container CreateCompositeContainer(string name, params IEnumerable<IContainer> containers)
+    {
+        var compositeContainer = new Container(container.Rules
+            .WithUnknownServiceResolvers(request =>
+            {
+                return DelegateFactory.Of(context =>
+                {
+                    foreach (var childContainer in containers)
+                    {
+                        var serviceType = request.ServiceType;
+
+                        // Open generic types like ILogger<Something> to ILogger<>
+                        if (serviceType.IsGenericType)
+                            serviceType = serviceType.GetGenericTypeDefinition();
+
+                        if (!childContainer.IsRegistered(serviceType, request.ServiceKey))
+                            continue;
+
+                        var instance = childContainer.Resolve(request.ServiceType, request.ServiceKey, IfUnresolved.ReturnDefaultIfNotRegistered);
+
+                        if (instance is null)
+                            continue;
+
+                        return instance;
+                    }
+
+                    return null;
+                });
+            }));
+
+        compositeContainer.Track(name);
+        return compositeContainer;
     }
 }
