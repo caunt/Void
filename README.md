@@ -45,7 +45,7 @@ Most of the time, you want to authenticate on the proxy side, so you have protoc
 | :---------------- | :----------------: | :----------------: |
 | None (Offline)    | :white_check_mark: | :white_check_mark: |
 | Legacy (Bungee)   | :x:                | :white_check_mark: |
-| Modern (Velocity) | :white_check_mark: | :white_check_mark: |
+| Modern (Velocity) | :x:                | :white_check_mark: |
 | Online (PK)       | :white_check_mark: | :white_check_mark: |
 
 #### Online (Private Key) is a new type of forwarding being developed.
