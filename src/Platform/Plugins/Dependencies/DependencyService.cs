@@ -131,19 +131,13 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
     {
         var services = new ServiceCollection();
         configure(services);
-        // services.RegisterListeners();
 
         foreach (var service in services)
         {
             var serviceType = service.ServiceType;
             var assembly = service.ServiceType.Assembly;
 
-            // TODO: ServiceType.IsCollectible does not guarantee that the service is from plugin assembly
-            // ServiceType might be just an interface from proxy itself, and plugin less likely, but might be not collectible
-            if (assembly.IsCollectible)
-                GetContainer(assembly).Add(service);
-            else
-                container.Add(service);
+            GetContainer(assembly).Add(service);
 
             if (!activate)
                 continue;
