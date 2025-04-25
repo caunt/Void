@@ -10,13 +10,13 @@ using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Contexts;
 using Void.Proxy.Api.Players.Extensions;
+using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Api.Settings;
 using Void.Proxy.Players.Extensions;
-using Void.Proxy.Plugins.Dependencies;
 
 namespace Void.Proxy.Players;
 
-public class PlayerService(ILogger<PlayerService> logger, IServiceProvider serviceProvider, ILinkService links, IEventService events, ISettings settings) : IPlayerService, IEventListener
+public class PlayerService(ILogger<PlayerService> logger, IDependencyService dependencies, ILinkService links, IEventService events, ISettings settings) : IPlayerService, IEventListener
 {
     private readonly AsyncLock _lock = new();
     private readonly List<PlayerProxy> _players = [];
@@ -44,7 +44,7 @@ public class PlayerService(ILogger<PlayerService> logger, IServiceProvider servi
     {
         logger.LogTrace("Accepted client from {RemoteEndPoint}", client.Client.RemoteEndPoint);
 
-        var player = new PlayerProxy(await events.ThrowWithResultAsync(new PlayerConnectingEvent(client, serviceProvider.CreateAsyncScope(), ListeningServiceProvider.Wrap), cancellationToken) ??
+        var player = new PlayerProxy(await events.ThrowWithResultAsync(new PlayerConnectingEvent(client, dependencies.CreatePlayerComposite), cancellationToken) ??
             throw new InvalidOperationException("Player is not instantiated"));
 
         var playerContextAccessor = player.Context.Services.GetRequiredService<IPlayerContextAccessor>();

@@ -20,7 +20,7 @@ public abstract class AbstractLifecycleService : IPluginCommonService
     [Subscribe]
     public static void OnPlayerConnecting(PlayerConnectingEvent @event)
     {
-        @event.Result = new SimplePlayer(@event.Client, instance => new PlayerContext(instance, @event.Scope, @event.RegisterEventListeners(@event.Scope.ServiceProvider)));
+        @event.Result ??= new SimplePlayer(@event.Client, instance => new PlayerContext(instance, @event.GetServices(instance)));
     }
 
     [Subscribe]
