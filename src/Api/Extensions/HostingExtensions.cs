@@ -138,7 +138,6 @@ public static class HostingExtensions
                 continue;
 
             container.Unregister(service.ServiceType);
-            container.ClearCache(service.ServiceType);
         }
     }
 }
