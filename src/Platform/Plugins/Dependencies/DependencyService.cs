@@ -169,7 +169,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
         // Plugin => Plugin
         container.Add(ServiceDescriptor.Singleton(pluginType, pluginType));
-        container.Add(ServiceDescriptor.Singleton(provider => (ILogger)provider.GetRequiredService(typeof(ILogger<>).MakeGenericType(pluginType))));
+        container.Add(ServiceDescriptor.Singleton(provider => provider.GetRequiredService<ILoggerFactory>().CreateLogger(pluginType.Name)));
         container.GetRequiredService(pluginType);
     }
 
