@@ -18,8 +18,6 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
     private readonly Dictionary<Assembly, IContainer> _assemblyContainers = [];
     private readonly Dictionary<Assembly, Dictionary<int, IContainer>> _assemblyPlayerContainers = [];
 
-    public IServiceProvider Services => CreateCompositeContainer("Transient Composite", [.. _assemblyContainers.Values, container]);
-
     [Subscribe]
     public static async ValueTask OnProxyStopping(ProxyStoppingEvent _, CancellationToken cancellationToken)
     {
@@ -88,13 +86,14 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
     public object CreateInstance(Type serviceType)
     {
-        var instance = container.GetService(serviceType) ?? ActivatorUtilities.CreateInstance(Services, serviceType);
+        if (serviceType.IsAssignableTo(typeof(IPlugin)))
+            RegisterPlugin(serviceType);
 
+        var instance = ActivatorUtilities.GetServiceOrCreateInstance(GetCompositeSortedBy(serviceType.Assembly), serviceType);
+
+        // Since all containers might not have this service type, register it manually
         if (instance is IEventListener listener)
             events.RegisterListeners(listener);
-
-        if (instance is IPlugin plugin)
-            RegisterPlugin(plugin);
 
         return instance;
     }
@@ -119,12 +118,12 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
     public object? GetService(Type serviceType)
     {
-        return Services.GetService(serviceType);
+        return GetCompositeSortedBy(serviceType.Assembly).Resolve(serviceType);
     }
 
     public TService? GetService<TService>()
     {
-        return Services.GetService<TService>();
+        return GetCompositeSortedBy(typeof(TService).Assembly).Resolve<TService>();
     }
 
     public void Register(Action<ServiceCollection> configure, bool activate = true)
@@ -161,29 +160,24 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         }
     }
 
-    private void RegisterPlugin(IPlugin plugin)
+    private void RegisterPlugin(Type pluginType)
     {
-        var pluginType = plugin.GetType();
+        logger.LogTrace("Injecting {PluginType}", pluginType);
 
-        logger.LogTrace("Injecting {Plugin} into {Name} service collection", plugin.GetType(), plugin.Name);
+        var assembly = pluginType.Assembly;
+        var container = GetContainer(assembly);
 
         // Plugin => Plugin
-        GetContainer(pluginType.Assembly).Add(ServiceDescriptor.Singleton(pluginType, plugin));
-        GetContainer(pluginType.Assembly).GetRequiredService(pluginType);
+        container.Add(ServiceDescriptor.Singleton(pluginType, pluginType));
+        container.Add(ServiceDescriptor.Singleton(provider => (ILogger)provider.GetRequiredService(typeof(ILogger<>).MakeGenericType(pluginType))));
+        container.GetRequiredService(pluginType);
     }
 
     private ListeningServiceProvider GetContainer(Assembly assembly)
     {
         if (!_assemblyContainers.TryGetValue(assembly, out var child))
         {
-            child = CreateCompositeContainer($"[{assembly.GetName().Name}] Assembly Composite",
-                _assemblyPlayerContainers.SelectMany(pair => pair.Value.Select(pair => pair.Value))
-                .Concat(_assemblyContainers.Values)
-                .Append(container));
-
-            // Serilog logger factory not getting shared into a child
-            child.RegisterInstance(container.GetRequiredService<ILoggerFactory>());
-
+            child = CreateCompositeContainer($"[{assembly.GetName().Name}] Assembly Composite", _assemblyContainers.Values.Append(container));
             _assemblyContainers.Add(assembly, child);
         }
 
@@ -200,14 +194,8 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
         if (!playerContainers.TryGetValue(player.GetStableHashCode(), out var assemblyContainer))
         {
-            assemblyContainer = CreateCompositeContainer($"[{assembly.GetName().Name}/{player}] Assembly Player Composite",
-                _assemblyPlayerContainers.SelectMany(pair => pair.Value.Select(pair => pair.Value))
-                .Concat(_assemblyContainers.Values)
-                .Append(container));
-
-            // IPlayer
-            assemblyContainer.RegisterDelegate(request => player, Reuse.Singleton);
-
+            assemblyContainer = CreateCompositeContainer($"[{assembly.GetName().Name}/{player}] Assembly Player Composite", _assemblyContainers.Values.Append(container));
+            assemblyContainer.RegisterInstance(player);
             playerContainers.Add(player.GetStableHashCode(), assemblyContainer);
         }
 
@@ -251,6 +239,11 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         }
 
         return new ListeningServiceProvider(assemblyContainer);
+    }
+
+    private Container GetCompositeSortedBy(Assembly assembly)
+    {
+        return CreateCompositeContainer("Transient Composite", [.. _assemblyContainers.Values.OrderByDescending(container => container == _assemblyContainers[assembly]), container]);
     }
 
     private Container CreateCompositeContainer(string name, params IEnumerable<IContainer> containers)
