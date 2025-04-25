@@ -16,7 +16,7 @@ namespace Void.Proxy.Plugins.Dependencies;
 public class DependencyService(ILogger<DependencyService> logger, IContainer container, IEventService events) : IDependencyService
 {
     private readonly Dictionary<Assembly, IContainer> _assemblyContainers = [];
-    private readonly Dictionary<Assembly, Dictionary<IPlayer, IContainer>> _assemblyPlayerContainers = [];
+    private readonly Dictionary<Assembly, Dictionary<int, IContainer>> _assemblyPlayerContainers = [];
 
     public IServiceProvider Services => CreateCompositeContainer("Transient Composite", [.. _assemblyContainers.Values, container]);
 
@@ -24,18 +24,6 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
     public static async ValueTask OnProxyStopping(ProxyStoppingEvent _, CancellationToken cancellationToken)
     {
         await File.WriteAllTextAsync("containers.dot", await DryIocTracker.ToGraphStringAsync(), cancellationToken);
-    }
-
-    [Subscribe(PostOrder.First)]
-    public void OnPlayerConnected(PlayerConnectedEvent @event)
-    {
-        foreach (var (assembly, container) in _assemblyContainers)
-        {
-            foreach (var registration in GetServiceRegistrations(container))
-            {
-                GetContainer(assembly, @event.Player).GetRequiredService(registration.ServiceType);
-            }
-        }
     }
 
     [Subscribe(PostOrder.First)]
@@ -64,9 +52,11 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
     [Subscribe]
     public void OnPlayerDisconnected(PlayerDisconnectedEvent @event)
     {
+        var foundContainer = false;
+
         foreach (var playersContainers in _assemblyPlayerContainers.Values)
         {
-            if (!playersContainers.Remove(@event.Player, out var container))
+            if (!playersContainers.Remove(@event.Player.GetStableHashCode(), out var container))
                 continue;
 
             foreach (var service in GetServices(container))
@@ -77,7 +67,12 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
             container.Untrack();
             container.Dispose();
+
+            foundContainer = true;
         }
+
+        if (!foundContainer)
+            logger.LogWarning("No container found when disconnecting player {Player}", @event.Player);
     }
 
     public TService CreateInstance<TService>()
@@ -102,6 +97,24 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
             RegisterPlugin(plugin);
 
         return instance;
+    }
+
+    public IServiceProvider CreatePlayerComposite(IPlayer player)
+    {
+        // Ensure scoped services instantiated
+        foreach (var (assembly, container) in _assemblyContainers)
+        {
+            foreach (var registration in GetServiceRegistrations(container))
+            {
+                GetContainer(assembly, player).GetRequiredService(registration.ServiceType);
+            }
+        }
+
+        var composite = CreateCompositeContainer($"[{player}] Player Composite",
+            _assemblyPlayerContainers.SelectMany(pair => pair.Value.Where(pair => pair.Key == player.GetStableHashCode()).Select(pair => pair.Value))
+            .Append(container));
+
+        return ListeningServiceProvider.Wrap(composite);
     }
 
     public object? GetService(Type serviceType)
@@ -169,7 +182,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
     {
         if (!_assemblyContainers.TryGetValue(assembly, out var child))
         {
-            child = CreateCompositeContainer($"{assembly.GetName().Name} Assembly Composite",
+            child = CreateCompositeContainer($"[{assembly.GetName().Name}] Assembly Composite",
                 _assemblyPlayerContainers.SelectMany(pair => pair.Value.Select(pair => pair.Value))
                 .Concat(_assemblyContainers.Values)
                 .Append(container));
@@ -191,9 +204,9 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
             _assemblyPlayerContainers.Add(assembly, playerContainers);
         }
 
-        if (!playerContainers.TryGetValue(player, out var assemblyContainer))
+        if (!playerContainers.TryGetValue(player.GetStableHashCode(), out var assemblyContainer))
         {
-            assemblyContainer = CreateCompositeContainer($"{player} Player Composite",
+            assemblyContainer = CreateCompositeContainer($"[{assembly.GetName().Name}/{player}] Assembly Player Composite",
                 _assemblyPlayerContainers.SelectMany(pair => pair.Value.Select(pair => pair.Value))
                 .Concat(_assemblyContainers.Values)
                 .Append(container));
@@ -201,7 +214,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
             // IPlayer
             assemblyContainer.RegisterDelegate(request => player, Reuse.Singleton);
 
-            playerContainers.Add(player, assemblyContainer);
+            playerContainers.Add(player.GetStableHashCode(), assemblyContainer);
         }
 
         // Ensure all scoped services are registered in player container
