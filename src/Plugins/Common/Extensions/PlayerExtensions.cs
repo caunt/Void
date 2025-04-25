@@ -11,6 +11,7 @@ using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
+using Void.Proxy.Plugins.Common.Players.Contexts;
 
 namespace Void.Proxy.Plugins.Common.Extensions;
 
@@ -35,6 +36,9 @@ public static class PlayerExtensions
     public static async ValueTask<IMinecraftPlayer> UpgradeToMinecraftAsync(this IPlayer player, ProtocolVersion protocolVersion, CancellationToken cancellationToken)
     {
         var minecraftPlayer = new MinecraftPlayer(player.Client, player.Context, player.RemoteEndPoint, protocolVersion);
+
+        if (player.Context is PlayerContext playerContext)
+            playerContext.Player = minecraftPlayer;
 
         var players = player.Context.Services.GetRequiredService<IPlayerService>();
         await players.UpgradeAsync(player, minecraftPlayer, cancellationToken);

@@ -174,6 +174,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
         // Plugin => Plugin
         container.Add(ServiceDescriptor.Singleton(pluginType, pluginType));
+        container.Add(ServiceDescriptor.Singleton(provider => (IPlugin)provider.GetRequiredService(pluginType)));
         container.Add(ServiceDescriptor.Singleton(provider => provider.GetRequiredService<ILoggerFactory>().CreateLogger(pluginType.Name)));
         container.GetRequiredService(pluginType);
     }
@@ -200,7 +201,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         if (!playerContainers.TryGetValue(player.GetStableHashCode(), out var assemblyContainer))
         {
             assemblyContainer = CreateCompositeContainer($"[{assembly.GetName().Name}/{player}] Assembly Player Composite", _assemblyContainers.Values.Append(container));
-            assemblyContainer.RegisterInstance(player, setup: Setup.With(preventDisposal: true));
+            assemblyContainer.RegisterDelegate(_ => player.Context.Player, setup: Setup.With(preventDisposal: true));
             playerContainers.Add(player.GetStableHashCode(), assemblyContainer);
         }
 
