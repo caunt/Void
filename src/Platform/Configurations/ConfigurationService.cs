@@ -14,7 +14,7 @@ using Timer = System.Timers.Timer;
 
 namespace Void.Proxy.Configurations;
 
-public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginService plugins) : BackgroundService, IConfigurationService
+public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginService plugins) : BackgroundService, IConfigurationService, IEventListener
 {
     private const string ConfigurationsPath = "configs";
 
@@ -24,14 +24,16 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
     [Subscribe(PostOrder.First)]
     public void OnPluginUnloading(PluginUnloadingEvent @event)
     {
+        var assembly = @event.Plugin.GetType().Assembly;
+
         lock (this)
         {
-            for (var i = _configurations.Count - 1; i >= 0; i--)
+            for (var i = _configurations.Count - 1; i > 0; i--)
             {
                 var (key, configuration) = _configurations.ElementAt(i);
                 var configurationType = configuration.GetType();
 
-                if (configurationType.Assembly != @event.Plugin.GetType().Assembly)
+                if (configurationType.Assembly != assembly)
                     continue;
 
                 _configurations.Remove(key);

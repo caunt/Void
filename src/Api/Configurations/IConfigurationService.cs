@@ -1,9 +1,8 @@
 ﻿using Microsoft.Extensions.Hosting;
-using Void.Proxy.Api.Events;
 
 namespace Void.Proxy.Api.Configurations;
 
-public interface IConfigurationService : IHostedService, IEventListener
+public interface IConfigurationService : IHostedService
 {
     /// <summary>
     /// Retrieves a configuration instance of type <typeparamref name="TConfiguration"/>.
