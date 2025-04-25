@@ -31,17 +31,9 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
     {
         foreach (var (assembly, container) in _assemblyContainers)
         {
-            foreach (var registration in container.GetServiceRegistrations())
+            foreach (var registration in GetScopedServiceRegistrations(container))
             {
-                if (registration.ServiceType.ContainsGenericParameters)
-                    continue;
-
-                var reuse = registration.Factory.Reuse;
-
-                if (reuse.Lifespan <= Reuse.Transient.Lifespan || reuse.Lifespan >= Reuse.Singleton.Lifespan)
-                    continue;
-
-                GetScoped(assembly, @event.Player).GetRequiredService(registration.ServiceType);
+                GetContainer(assembly, @event.Player).GetRequiredService(registration.ServiceType);
             }
         }
     }
@@ -76,6 +68,12 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         {
             if (!playersContainers.Remove(@event.Player, out var container))
                 continue;
+
+            foreach (var service in GetScopedServices(@event.Player))
+            {
+                if (service is IEventListener listener)
+                    events.UnregisterListeners(listener);
+            }
 
             container.Untrack();
             container.Dispose();
@@ -130,7 +128,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
             // TODO: ServiceType.IsCollectible does not guarantee that the service is from plugin assembly
             // ServiceType might be just an interface from proxy itself, and plugin less likely, but might be not collectible
             if (assembly.IsCollectible)
-                GetScoped(assembly).Add(service);
+                GetContainer(assembly).Add(service);
             else
                 container.Add(service);
 
@@ -139,7 +137,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
             if (service.Lifetime is ServiceLifetime.Singleton)
             {
-                GetScoped(assembly).GetRequiredService(service.ServiceType);
+                GetContainer(assembly).GetRequiredService(service.ServiceType);
             }
             else if (service.Lifetime is ServiceLifetime.Scoped)
             {
@@ -150,7 +148,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
                     if (service.ServiceType.ContainsGenericParameters)
                         continue;
 
-                    GetScoped(assembly, player).GetRequiredService(service.ServiceType);
+                    GetContainer(assembly, player).GetRequiredService(service.ServiceType);
                 }
             }
         }
@@ -163,11 +161,11 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         logger.LogTrace("Injecting {Plugin} into {Name} service collection", plugin.GetType(), plugin.Name);
 
         // Plugin => Plugin
-        GetScoped(pluginType.Assembly).Add(ServiceDescriptor.Singleton(pluginType, plugin));
-        GetScoped(pluginType.Assembly).GetRequiredService(pluginType);
+        GetContainer(pluginType.Assembly).Add(ServiceDescriptor.Singleton(pluginType, plugin));
+        GetContainer(pluginType.Assembly).GetRequiredService(pluginType);
     }
 
-    private ListeningServiceProvider GetScoped(Assembly assembly)
+    private ListeningServiceProvider GetContainer(Assembly assembly)
     {
         if (!_assemblyContainers.TryGetValue(assembly, out var child))
         {
@@ -182,7 +180,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         return new ListeningServiceProvider(child);
     }
 
-    private ListeningServiceProvider GetScoped(Assembly assembly, IPlayer player)
+    private ListeningServiceProvider GetContainer(Assembly assembly, IPlayer player)
     {
         if (!_assemblyPlayerContainers.TryGetValue(assembly, out var playerContainers))
         {
@@ -201,22 +199,11 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         }
 
         // Ensure all scoped services are registered in player container
-        var source = GetScoped(assembly).Source.GetRequiredService<IContainer>();
+        var source = GetContainer(assembly).Source.GetRequiredService<IContainer>();
 
-        foreach (var registration in source.GetServiceRegistrations())
+        foreach (var registration in GetScopedServiceRegistrations(source))
         {
-            var lifespan = registration.Factory.Reuse.Lifespan;
-
-            if (lifespan <= Reuse.Transient.Lifespan || lifespan >= Reuse.Singleton.Lifespan)
-                continue;
-
-            var serviceType = registration.ServiceType;
-
-            // Open generic types like ILogger<Something> to ILogger<>
-            if (serviceType.IsGenericType)
-                serviceType = serviceType.GetGenericTypeDefinition();
-
-            if (assemblyContainer.IsRegistered(serviceType, registration.OptionalServiceKey))
+            if (assemblyContainer.IsRegistered(registration.ServiceType, registration.OptionalServiceKey))
                 continue;
 
             var registrationFactory = registration.Factory;
@@ -278,5 +265,50 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         compositeContainer.Track(name);
 
         return compositeContainer;
+    }
+
+    private IEnumerable<object> GetScopedServices(IPlayer player)
+    {
+        foreach (var (assembly, playersContainers) in _assemblyPlayerContainers)
+        {
+            foreach (var (scopedPlayer, container) in playersContainers)
+            {
+                if (scopedPlayer != player)
+                    continue;
+
+                foreach (var service in GetScopedServices(container))
+                    yield return service;
+            }
+        }
+    }
+
+    private static IEnumerable<object> GetScopedServices(IContainer container)
+    {
+        foreach (var registration in GetScopedServiceRegistrations(container))
+        {
+            if (container.GetService(registration.ServiceType) is not { } instance)
+                continue;
+
+            yield return instance;
+        }
+    }
+
+    private static IEnumerable<ServiceRegistrationInfo> GetScopedServiceRegistrations(IContainer container)
+    {
+        foreach (var registration in container.GetServiceRegistrations())
+        {
+            var lifespan = registration.Factory.Reuse.Lifespan;
+
+            if (lifespan <= Reuse.Transient.Lifespan || lifespan >= Reuse.Singleton.Lifespan)
+                continue;
+
+            var serviceType = registration.ServiceType;
+
+            // Open generic types like ILogger<Something> to ILogger<>
+            if (serviceType.IsGenericType)
+                serviceType = serviceType.GetGenericTypeDefinition();
+
+            yield return registration;
+        }
     }
 }
