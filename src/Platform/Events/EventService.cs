@@ -34,30 +34,32 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
 
     public async ValueTask ThrowAsync<T>(T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
-        var entries = _entries.WhereNotNull().OrderBy(entry => entry.Order);
+        var entries = _entries.WhereNotNull().OrderBy(entry => entry.Order).Select(entry => new WeakEntry(new WeakReference<IEventListener>(entry.Listener), new WeakReference<MethodInfo>(entry.Method), entry.Order));
         await ThrowAsync(entries, @event, cancellationToken);
     }
 
-    private async ValueTask ThrowAsync<T>(IEnumerable<Entry> entriesNotSafe, T @event, CancellationToken cancellationToken = default) where T : IEvent
+    private async ValueTask ThrowAsync<T>(IEnumerable<WeakEntry> entriesNotSafe, T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
         var eventType = @event.GetType();
-        var invoked = new HashSet<Entry>();
+        var alreadyInvoked = new HashSet<WeakEntry>();
 
         while (true)
         {
-            var next = entriesNotSafe
-                .Where(e => eventType.IsAssignableTo(e.Method.GetParameters()[0].ParameterType))
-                .Where(invoked.Add)
+            var toInvoke = entriesNotSafe
+                .Where(entry => entry.IsCompatible(eventType))
+                .Where(entry => alreadyInvoked.All(invokedEntry => invokedEntry.Listener != entry.Listener))
+                .Where(alreadyInvoked.Add)
                 .ToArray();
 
-            if (next.Length == 0)
+            if (toInvoke.Length == 0)
                 return;
 
-            await ThrowOnceAsync(next, @event, cancellationToken);
+            await ThrowOnceAsync(toInvoke, @event, cancellationToken);
         }
     }
 
-    private async ValueTask ThrowOnceAsync<T>(Entry[] entries, T @event, CancellationToken cancellationToken = default) where T : IEvent
+
+    private async ValueTask ThrowOnceAsync<T>(WeakEntry[] entries, T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
         var eventType = @event.GetType();
         logger.LogTrace("Invoking {TypeName} event", eventType.Name);
@@ -80,16 +82,22 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
 
         foreach (var entry in entries)
         {
-            var parameters = entry.Method.GetParameters();
+            var listener = entry.Listener;
+            var method = entry.Method;
 
-            if (!eventType.IsAssignableTo(parameters[0].ParameterType))
+            if (listener is null || method is null)
+                continue;
+
+            var parameters = method.GetParameters();
+
+            if (!entry.IsCompatible(eventType))
                 continue;
 
             await Task.Yield();
 
             try
             {
-                var value = entry.Method.Invoke(entry.Listener, parameters.Length == 1 ? simpleParameters : cancellableParameters);
+                var value = method.Invoke(listener, parameters.Length == 1 ? simpleParameters : cancellableParameters);
                 var handle = value switch
                 {
                     Task task => new ValueTask(task),
@@ -180,6 +188,14 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
                 }
             }
         }
+    }
+
+    private record WeakEntry(WeakReference<IEventListener> ListenerReference, WeakReference<MethodInfo> MethodReference, PostOrder Order)
+    {
+        public IEventListener? Listener => ListenerReference.TryGetTarget(out var listener) ? listener : null;
+        public MethodInfo? Method => MethodReference.TryGetTarget(out var method) ? method : null;
+
+        public bool IsCompatible(Type eventType) => MethodReference.TryGetTarget(out var method) && eventType.IsAssignableTo(method.GetParameters()[0].ParameterType);
     }
 
     private record Entry(IEventListener Listener, MethodInfo Method, PostOrder Order);
