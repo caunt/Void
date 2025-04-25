@@ -34,7 +34,7 @@ public static class PlayerExtensions
 
     public static async ValueTask<IMinecraftPlayer> UpgradeToMinecraftAsync(this IPlayer player, ProtocolVersion protocolVersion, CancellationToken cancellationToken)
     {
-        var minecraftPlayer = new MinecraftPlayer(player.Client, player.Context, protocolVersion);
+        var minecraftPlayer = new MinecraftPlayer(player.Client, player.Context, player.RemoteEndPoint, protocolVersion);
 
         var players = player.Context.Services.GetRequiredService<IPlayerService>();
         await players.UpgradeAsync(player, minecraftPlayer, cancellationToken);
