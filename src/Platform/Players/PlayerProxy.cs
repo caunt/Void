@@ -29,6 +29,11 @@ public class PlayerProxy(IPlayer player) : IPlayer
         return Source.ToString();
     }
 
+    public bool Equals(IPlayer? other)
+    {
+        return ((IPlayer)this).GetStableHashCode() == other?.GetStableHashCode();
+    }
+
     public async ValueTask DisposeAsync()
     {
         await Source.DisposeAsync();

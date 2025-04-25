@@ -18,6 +18,16 @@ public class SimplePlayer : IPlayer
         Context = contextBuilder(this);
     }
 
+    public override string ToString()
+    {
+        return RemoteEndPoint;
+    }
+
+    public bool Equals(IPlayer? other)
+    {
+        return ((IPlayer)this).GetStableHashCode() == other?.GetStableHashCode();
+    }
+
     public async ValueTask DisposeAsync()
     {
         await Context.DisposeAsync();
@@ -28,10 +38,5 @@ public class SimplePlayer : IPlayer
     {
         Context.Dispose();
         GC.SuppressFinalize(this);
-    }
-
-    public override string ToString()
-    {
-        return RemoteEndPoint;
     }
 }

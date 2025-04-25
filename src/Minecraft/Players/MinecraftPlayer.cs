@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using Void.Minecraft.Network;
 using Void.Minecraft.Profiles;
+using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Contexts;
 
 namespace Void.Minecraft.Players;
@@ -18,6 +19,16 @@ public class MinecraftPlayer(TcpClient client, IPlayerContext context, string re
     public GameProfile? Profile { get; set; }
     public Phase Phase { get; set; }
 
+    public override string ToString()
+    {
+        return Profile?.Username ?? RemoteEndPoint;
+    }
+
+    public bool Equals(IPlayer? other)
+    {
+        return ((IPlayer)this).GetStableHashCode() == other?.GetStableHashCode();
+    }
+
     public ValueTask DisposeAsync()
     {
         GC.SuppressFinalize(this);
@@ -27,10 +38,5 @@ public class MinecraftPlayer(TcpClient client, IPlayerContext context, string re
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-    }
-
-    public override string ToString()
-    {
-        return Profile?.Username ?? RemoteEndPoint;
     }
 }
