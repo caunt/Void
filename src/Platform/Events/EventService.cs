@@ -47,7 +47,7 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
         {
             var toInvoke = entriesNotSafe
                 .Where(entry => entry.IsCompatible(eventType))
-                .Where(entry => alreadyInvoked.All(invokedEntry => invokedEntry.Listener != entry.Listener))
+                .Where(entry => alreadyInvoked.All(invokedEntry => invokedEntry.Listener != entry.Listener || invokedEntry.Method != entry.Method))
                 .Where(alreadyInvoked.Add)
                 .ToArray();
 
@@ -71,7 +71,7 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
         {
             var matches = container
                 .GetServiceRegistrations()
-                .Where(r => type.IsAssignableTo(r.ServiceType))
+                .Where(registration => type.IsAssignableTo(registration.ServiceType))
                 .ToArray();
 
             if (matches.Length > 1)
