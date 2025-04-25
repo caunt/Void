@@ -35,7 +35,7 @@ public class Plugin : IProtocolPlugin
 
         var requestedVersion = @event.Data.Length == 0 ? ForwardingVersion.Default : (ForwardingVersion)@event.Data[0];
         var actualVersion = FindForwardingVersion(player, requestedVersion);
-        var array = new byte[2048];
+        Span<byte> array = stackalloc byte[2048];
         var buffer = new MinecraftBuffer(array);
 
         buffer.WriteVarInt((int)actualVersion);
