@@ -69,6 +69,11 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
             foundContainer = true;
         }
 
+        var scopedComposite = @event.Player.Context.Services.GetRequiredService<IContainer>();
+
+        scopedComposite.Untrack();
+        scopedComposite.Dispose();
+
         if (!foundContainer)
             logger.LogWarning("No container found when disconnecting player {Player}", @event.Player);
     }
@@ -195,7 +200,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         if (!playerContainers.TryGetValue(player.GetStableHashCode(), out var assemblyContainer))
         {
             assemblyContainer = CreateCompositeContainer($"[{assembly.GetName().Name}/{player}] Assembly Player Composite", _assemblyContainers.Values.Append(container));
-            assemblyContainer.RegisterInstance(player);
+            assemblyContainer.RegisterInstance(player, setup: Setup.With(preventDisposal: true));
             playerContainers.Add(player.GetStableHashCode(), assemblyContainer);
         }
 
