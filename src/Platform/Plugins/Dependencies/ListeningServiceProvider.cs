@@ -7,6 +7,8 @@ public class ListeningServiceProvider(IServiceProvider source) : IServiceProvide
 {
     private readonly IEventService _events = source.GetRequiredService<IEventService>();
 
+    public IServiceProvider Source => source;
+
     public static IServiceProvider Wrap(IServiceProvider serviceProvider)
     {
         return new ListeningServiceProvider(serviceProvider);
