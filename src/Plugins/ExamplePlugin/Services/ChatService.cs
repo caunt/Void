@@ -25,11 +25,14 @@ public class ChatService(IConfigurationService configs) : IEventListener
     [Subscribe]
     public async ValueTask OnPhaseChanged(PhaseChangedEvent @event, CancellationToken cancellationToken)
     {
-        // Send message only when the connection is in the Play phase on the client side
+        // Send message only when the connection is in the Play phase on the client side.
         if (@event is not { Phase: Phase.Play, Side: Side.Client })
             return;
 
-        // Only if player has active link to the server
+        // Link is a connection between player and server.
+        // If player is being redirected to another server, another link will be created.
+
+        // Only if player has active link to the server.
         if (!@event.Player.TryGetLink(out var link))
             return;
 
