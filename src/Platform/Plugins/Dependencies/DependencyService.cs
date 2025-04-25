@@ -173,9 +173,6 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         {
             child = CreateCompositeContainer($"{assembly.GetName().Name} Composite", _assemblyPlayerContainers.SelectMany(pair => pair.Value.Select(pair => pair.Value)).Concat(_assemblyContainers.Values).Append(container));
 
-            container.Track("App Root Container");
-            child.Track($"[{assembly.GetName().Name}] Assembly Container", container);
-
             // Serilog logger factory not getting shared into a child
             child.RegisterInstance(container.GetRequiredService<ILoggerFactory>());
 
@@ -277,7 +274,9 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
                 });
             }));
 
+        container.Track("App Root Container");
         compositeContainer.Track(name);
+
         return compositeContainer;
     }
 }
