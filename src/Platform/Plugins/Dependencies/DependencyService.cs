@@ -31,7 +31,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
     {
         foreach (var (assembly, container) in _assemblyContainers)
         {
-            foreach (var registration in GetScopedServiceRegistrations(container))
+            foreach (var registration in GetServiceRegistrations(container))
             {
                 GetContainer(assembly, @event.Player).GetRequiredService(registration.ServiceType);
             }
@@ -69,7 +69,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
             if (!playersContainers.Remove(@event.Player, out var container))
                 continue;
 
-            foreach (var service in GetScopedServices(@event.Player))
+            foreach (var service in GetServices(container))
             {
                 if (service is IEventListener listener)
                     events.UnregisterListeners(listener);
@@ -118,7 +118,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
     {
         var services = new ServiceCollection();
         configure(services);
-        services.RegisterListeners();
+        // services.RegisterListeners();
 
         foreach (var service in services)
         {
@@ -137,7 +137,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
             if (service.Lifetime is ServiceLifetime.Singleton)
             {
-                GetContainer(assembly).GetRequiredService(service.ServiceType);
+                GetContainer(assembly).GetRequiredService(serviceType);
             }
             else if (service.Lifetime is ServiceLifetime.Scoped)
             {
@@ -145,10 +145,10 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
                 foreach (var player in players.All)
                 {
-                    if (service.ServiceType.ContainsGenericParameters)
+                    if (serviceType.ContainsGenericParameters)
                         continue;
 
-                    GetContainer(assembly, player).GetRequiredService(service.ServiceType);
+                    GetContainer(assembly, player).GetRequiredService(serviceType);
                 }
             }
         }
@@ -169,7 +169,10 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
     {
         if (!_assemblyContainers.TryGetValue(assembly, out var child))
         {
-            child = CreateCompositeContainer($"{assembly.GetName().Name} Composite", _assemblyPlayerContainers.SelectMany(pair => pair.Value.Select(pair => pair.Value)).Concat(_assemblyContainers.Values).Append(container));
+            child = CreateCompositeContainer($"{assembly.GetName().Name} Assembly Composite",
+                _assemblyPlayerContainers.SelectMany(pair => pair.Value.Select(pair => pair.Value))
+                .Concat(_assemblyContainers.Values)
+                .Append(container));
 
             // Serilog logger factory not getting shared into a child
             child.RegisterInstance(container.GetRequiredService<ILoggerFactory>());
@@ -190,10 +193,13 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
         if (!playerContainers.TryGetValue(player, out var assemblyContainer))
         {
-            assemblyContainer = CreateCompositeContainer("Player Composite", _assemblyPlayerContainers.SelectMany(pair => pair.Value.Select(pair => pair.Value)).Concat(_assemblyContainers.Values).Append(container));
+            assemblyContainer = CreateCompositeContainer($"{player} Player Composite",
+                _assemblyPlayerContainers.SelectMany(pair => pair.Value.Select(pair => pair.Value))
+                .Concat(_assemblyContainers.Values)
+                .Append(container));
 
             // IPlayer
-            assemblyContainer.RegisterDelegate(request => player);
+            assemblyContainer.RegisterDelegate(request => player, Reuse.Singleton);
 
             playerContainers.Add(player, assemblyContainer);
         }
@@ -201,24 +207,33 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         // Ensure all scoped services are registered in player container
         var source = GetContainer(assembly).Source.GetRequiredService<IContainer>();
 
-        foreach (var registration in GetScopedServiceRegistrations(source))
+        foreach (var registration in GetServiceRegistrations(source))
         {
+            var registrationFactory = registration.Factory;
+            var reuse = registrationFactory.Reuse;
+
+            // Register only Scoped services in player own "scoped" container
+            if (reuse.Lifespan <= Reuse.Transient.Lifespan || reuse.Lifespan >= Reuse.Singleton.Lifespan)
+                continue;
+
             if (assemblyContainer.IsRegistered(registration.ServiceType, registration.OptionalServiceKey))
                 continue;
 
-            var registrationFactory = registration.Factory;
+            // Switch Scoped to Singleton, as it is now registered in its own "scoped" container
+            reuse = Reuse.Singleton;
 
             if (registration.ImplementationType is not null)
             {
                 assemblyContainer.Register(
                     registration.ServiceType,
                     registration.ImplementationType,
-                    registrationFactory.Reuse,
+                    reuse,
                     registrationFactory.Made,
                     serviceKey: registration.OptionalServiceKey);
             }
             else
             {
+                // TODO: Bug, need to change reuse of factory to singleton
                 assemblyContainer.Register(
                     registrationFactory,
                     registration.ServiceType,
@@ -236,20 +251,23 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         var compositeContainer = new Container(container.Rules
             .WithUnknownServiceResolvers(request =>
             {
+                var serviceKey = request.ServiceKey;
+                var serviceTypeClosedGeneric = request.ServiceType;
+                var serviceTypeOpenGeneric = serviceTypeClosedGeneric;
+
+                // Open generic types like ILogger<Something> to ILogger<>
+                if (serviceTypeOpenGeneric.IsGenericType)
+                    serviceTypeOpenGeneric = serviceTypeOpenGeneric.GetGenericTypeDefinition();
+
                 return DelegateFactory.Of(context =>
                 {
                     foreach (var childContainer in containers)
                     {
-                        var serviceType = request.ServiceType;
-
-                        // Open generic types like ILogger<Something> to ILogger<>
-                        if (serviceType.IsGenericType)
-                            serviceType = serviceType.GetGenericTypeDefinition();
-
-                        if (!childContainer.IsRegistered(serviceType, request.ServiceKey))
+                        if (!childContainer.IsRegistered(serviceTypeOpenGeneric, serviceKey))
                             continue;
 
-                        var instance = childContainer.Resolve(request.ServiceType, request.ServiceKey, IfUnresolved.ReturnDefaultIfNotRegistered);
+                        // TODO: Add OptionalServiceKey?
+                        var instance = childContainer.GetService(serviceTypeClosedGeneric);
 
                         if (instance is null)
                             continue;
@@ -267,46 +285,40 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         return compositeContainer;
     }
 
-    private IEnumerable<object> GetScopedServices(IPlayer player)
+    private IEnumerable<object> GetServices(IContainer container)
     {
-        foreach (var (assembly, playersContainers) in _assemblyPlayerContainers)
+        foreach (var registration in GetServiceRegistrations(container))
         {
-            foreach (var (scopedPlayer, container) in playersContainers)
-            {
-                if (scopedPlayer != player)
-                    continue;
+            var serviceType = registration.ServiceType;
 
-                foreach (var service in GetScopedServices(container))
-                    yield return service;
-            }
-        }
-    }
+            // Open generic types like ILogger<Something> to ILogger<>
+            if (serviceType.IsGenericType)
+                serviceType = serviceType.GetGenericTypeDefinition();
 
-    private static IEnumerable<object> GetScopedServices(IContainer container)
-    {
-        foreach (var registration in GetScopedServiceRegistrations(container))
-        {
-            if (container.GetService(registration.ServiceType) is not { } instance)
+            if (container.GetService(serviceType) is not { } instance)
                 continue;
 
             yield return instance;
         }
     }
 
-    private static IEnumerable<ServiceRegistrationInfo> GetScopedServiceRegistrations(IContainer container)
+    private IEnumerable<ServiceRegistrationInfo> GetServiceRegistrations(IContainer container)
     {
+        // Scoped services are allowed in non scoped containers, so they can later be copied to "scoped" player containers as singletons
+        var allowScoped = _assemblyContainers.ContainsValue(container);
+
         foreach (var registration in container.GetServiceRegistrations())
         {
             var lifespan = registration.Factory.Reuse.Lifespan;
 
-            if (lifespan <= Reuse.Transient.Lifespan || lifespan >= Reuse.Singleton.Lifespan)
+            if (lifespan <= Reuse.Transient.Lifespan)
                 continue;
 
-            var serviceType = registration.ServiceType;
-
-            // Open generic types like ILogger<Something> to ILogger<>
-            if (serviceType.IsGenericType)
-                serviceType = serviceType.GetGenericTypeDefinition();
+            if (!allowScoped)
+            {
+                if (lifespan < Reuse.Singleton.Lifespan)
+                    throw new InvalidOperationException($"Scoped service registrations are not allowed ({registration.ServiceType}) since Scoped services registered as Singletons in corresponding player containers.");
+            }
 
             yield return registration;
         }
