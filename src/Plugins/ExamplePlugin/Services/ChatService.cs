@@ -4,12 +4,12 @@ using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Configurations;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Proxy;
-using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Players.Extensions;
 
 namespace Void.Proxy.Plugins.ExamplePlugin.Services;
 
-public class ChatService(ILinkService links, IConfigurationService configs) : IEventListener
+public class ChatService(IConfigurationService configs) : IEventListener
 {
     private ChatSettings? _settings;
 
@@ -30,7 +30,7 @@ public class ChatService(ILinkService links, IConfigurationService configs) : IE
             return;
 
         // Only if player has active link to the server
-        if (!links.TryGetLink(@event.Player, out var link))
+        if (!@event.Player.TryGetLink(out var link))
             return;
 
         // If settings are not loaded, do nothing. Practically impossible, but just in case.
