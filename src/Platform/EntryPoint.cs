@@ -55,17 +55,17 @@ try
     builder.Services.AddSerilog();
     builder.Services.AddJsonOptions();
     builder.Services.AddHttpClient();
-    builder.Services.AddSingleton<ICryptoService, RsaCryptoService>();
-    builder.Services.AddSingleton<IEventService, EventService>();
-    builder.Services.AddSingleton<IPluginService, PluginService>();
-    builder.Services.AddSingleton<IPlayerService, PlayerService>();
-    builder.Services.AddSingleton<IServerService, ServerService>();
-    builder.Services.AddSingleton<ILinkService, LinkService>();
-    builder.Services.AddSingleton<IConsoleService, ConsoleService>();
-    builder.Services.AddSingleton<ICommandService, CommandService>();
-    builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
-    builder.Services.AddSingleton<IDependencyService, DependencyService>();
-    builder.Services.AddSingleton<IProxy, Platform>();
+    builder.Services.AddSingletonAndListen<ICryptoService, RsaCryptoService>();
+    builder.Services.AddSingletonAndListen<IEventService, EventService>();
+    builder.Services.AddSingletonAndListen<IPluginService, PluginService>();
+    builder.Services.AddSingletonAndListen<IPlayerService, PlayerService>();
+    builder.Services.AddSingletonAndListen<IServerService, ServerService>();
+    builder.Services.AddSingletonAndListen<ILinkService, LinkService>();
+    builder.Services.AddSingletonAndListen<IConsoleService, ConsoleService>();
+    builder.Services.AddSingletonAndListen<ICommandService, CommandService>();
+    builder.Services.AddSingletonAndListen<IConfigurationService, ConfigurationService>();
+    builder.Services.AddSingletonAndListen<IDependencyService, DependencyService>();
+    builder.Services.AddSingletonAndListen<IProxy, Platform>();
     builder.Services.AddHostedService(services => services.GetRequiredService<IConfigurationService>());
     builder.Services.AddHostedService(services => services.GetRequiredService<IProxy>());
 
@@ -76,8 +76,6 @@ try
     {
         return services.GetRequiredService<IConfigurationService>().GetAsync<Settings>().AsTask().Result;
     });
-
-    builder.Services.RegisterListeners();
 
     using var host = builder.Build();
 
