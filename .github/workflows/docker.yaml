@@ -46,8 +46,11 @@ jobs:
 
       - name: Publish ${{ matrix.container_image_tag }}
         shell: bash
+        env:
+          MSYS_NO_PATHCONV: 1
+          MSYS2_ARG_CONV_EXCL: '*'
         run: |
-          dotnet publish src/Platform -- \
+          dotnet publish src/Platform \
             /t:PublishContainer \
             /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
             /p:ContainerImageTag="${{ matrix.container_image_tag }}" \
