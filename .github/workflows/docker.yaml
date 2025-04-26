@@ -17,16 +17,21 @@ jobs:
         include:
           - name: latest
             os: ubuntu-latest
-            args: '/p:ContainerRuntimeIdentifiers=''"linux-arm;linux-arm64;linux-x64"'' src/Platform'
+            container_runtime_identifiers: linux-arm;linux-arm64;linux-x64
+            container_image_tag: latest
           - name: latest-android
             os: ubuntu-latest
-            args: '/p:ContainerImageTag=latest-android /p:ContainerRuntimeIdentifiers=''"linux-bionic-arm64;linux-bionic-x64"'' src/Platform'
+            container_runtime_identifiers: linux-bionic-arm64;linux-bionic-x64
+            container_image_tag: latest-android
           - name: latest-alpine
             os: ubuntu-latest
-            args: '/p:ContainerImageTag=latest-alpine /p:ContainerRuntimeIdentifiers=''"linux-musl-arm;linux-musl-arm64;linux-musl-x64"'' src/Platform'
+            container_runtime_identifiers: linux-musl-arm;linux-musl-arm64;linux-musl-x64
+            container_image_tag: latest-alpine
           - name: win-x64
             os: windows-latest
-            args: '/p:ContainerImageTag=latest-windows /p:ContainerRuntimeIdentifier=win-x64 /p:ContainerBaseImage=mcr.microsoft.com/dotnet/runtime:9.0-nanoserver-ltsc2025 src/Platform'
+            container_runtime_identifiers: win-x64
+            container_image_tag: latest-windows
+            container_base_image: mcr.microsoft.com/dotnet/runtime:9.0-nanoserver-ltsc2025
 
     steps:
       - uses: actions/checkout@v4
@@ -45,4 +50,8 @@ jobs:
 
       - name: Publish ${{ matrix.name }}
         run: |
-          dotnet publish /t:PublishContainer ${{ matrix.args }}
+          dotnet publish /t:PublishContainer \
+            /p:ContainerRuntimeIdentifiers="${{ matrix.container_runtime_identifiers }}" \
+            /p:ContainerImageTag="${{ matrix.container_image_tag }}" \
+            /p:ContainerBaseImage="${{ matrix.container_base_image }}" \
+            src/Platform
