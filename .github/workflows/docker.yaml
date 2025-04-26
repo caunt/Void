@@ -15,20 +15,16 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: latest
-            os: ubuntu-latest
+          - os: ubuntu-latest
             container_runtime_identifiers: linux-arm;linux-arm64;linux-x64
             container_image_tag: latest
-          - name: latest-android
-            os: ubuntu-latest
+          - os: ubuntu-latest
             container_runtime_identifiers: linux-bionic-arm64;linux-bionic-x64
             container_image_tag: latest-android
-          - name: latest-alpine
-            os: ubuntu-latest
+          - os: ubuntu-latest
             container_runtime_identifiers: linux-musl-arm;linux-musl-arm64;linux-musl-x64
             container_image_tag: latest-alpine
-          - name: win-x64
-            os: windows-latest
+          - os: windows-latest
             container_runtime_identifiers: win-x64
             container_image_tag: latest-windows
             container_base_image: mcr.microsoft.com/dotnet/runtime:9.0-nanoserver-ltsc2025
@@ -48,7 +44,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Publish ${{ matrix.name }}
+      - name: Publish ${{ matrix.container_image_tag }}
         run: |
           dotnet publish src/Platform
             /t:PublishContainer \
