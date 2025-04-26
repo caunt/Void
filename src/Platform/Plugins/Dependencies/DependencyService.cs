@@ -122,18 +122,6 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
                 GetContainer(assembly, context.Player).GetRequiredService(registration.ServiceType);
             }
         }
-
-        // foreach (var playersContainers in _assemblyPlayerContainers.Values)
-        // {
-        //     foreach (var (playerStableHashCode, playerContainer) in playersContainers)
-        //     {
-        //         if (context.Player.GetStableHashCode() != playerStableHashCode)
-        //             continue;
-        // 
-        //         playerContainer.RegisterInstance(context, setup: Setup.With(preventDisposal: true));
-        //         playerContainer.RegisterInstance(context.Player, setup: Setup.With(preventDisposal: true));
-        //     }
-        // }
     }
 
     public object? GetService(Type serviceType)
