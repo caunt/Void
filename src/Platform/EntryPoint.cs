@@ -27,6 +27,7 @@ using Void.Proxy.Players;
 using Void.Proxy.Players.Contexts;
 using Void.Proxy.Plugins;
 using Void.Proxy.Plugins.Dependencies;
+using Void.Proxy.Plugins.Dependencies.Extensions;
 using Void.Proxy.Servers;
 
 Console.Title = nameof(Void);
