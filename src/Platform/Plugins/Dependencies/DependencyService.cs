@@ -75,11 +75,6 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
             foundContainer = true;
         }
 
-        var scopedComposite = @event.Player.Context.Services.GetRequiredService<IContainer>();
-
-        scopedComposite.Untrack();
-        scopedComposite.Dispose();
-
         if (!foundContainer)
             logger.LogWarning("No container found when disconnecting player {Player}", @event.Player);
     }
