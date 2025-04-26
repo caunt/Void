@@ -1,7 +1,4 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-
-name: .NET
+name: ".NET Build"
 
 permissions:
   contents: write
@@ -9,13 +6,14 @@ permissions:
   issues: write
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-  Build:
+  build:
     strategy:
       matrix:
         include:
@@ -46,70 +44,34 @@ jobs:
           - os: windows-latest
             runtime: win-x86
     runs-on: ${{ matrix.os }}
-
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10'
-        dotnet-quality: 'preview'
-    
-    - name: Restore dependencies
-      run: dotnet restore --runtime ${{ matrix.runtime }}
-    
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
-    
-    - name: Build Platform
-      run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded --configuration Release --no-restore
-    
-    - name: Test
-      run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal
-    
-    - name: Publish
-      run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded src/Platform --output artifacts --configuration Release --no-build
-      
-    - name: Save Artifact Suffix
-      id: get_suffix
-      shell: bash
-      run: echo "result=$([[ $OSTYPE == msys* ]] && echo .exe)" >> "$GITHUB_OUTPUT"
-        
-    - name: Rename Artifact
-      shell: bash
-      run: mv artifacts/Void.Proxy${{ steps.get_suffix.outputs.result }} artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
-
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
-        path: artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
-        compression-level: 9
-        if-no-files-found: error
-
-  Release:
-    needs: Build
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-    
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
-          path: artifacts
-          merge-multiple: true
-          
-      - name: Create Release
-        uses: googleapis/release-please-action@v4
-        id: release
+          dotnet-version: "10"
+          dotnet-quality: "preview"
+      - name: Restore dependencies
+        run: dotnet restore --runtime ${{ matrix.runtime }}
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+      - name: Build Platform
+        run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded --configuration Release --no-restore
+      - name: Test
+        run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal
+      - name: Publish
+        run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded src/Platform --output artifacts --configuration Release --no-build
+      - name: Save Artifact Suffix
+        id: get_suffix
+        shell: bash
+        run: echo "result=$([[ $OSTYPE == msys* ]] && echo .exe)" >> "$GITHUB_OUTPUT"
+      - name: Rename Artifact
+        shell: bash
+        run: mv artifacts/Void.Proxy${{ steps.get_suffix.outputs.result }} artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          config-file: .github/RELEASE_PLEASE/config.json
-          manifest-file: .github/RELEASE_PLEASE/manifest.json
-
-      - name: Upload Release Artifacts
-        if: ${{ steps.release.outputs.release_created }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ steps.release.outputs.tag_name }} artifacts/*
+          name: void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
+          path: artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
+          compression-level: 9
+          if-no-files-found: error
