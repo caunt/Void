@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Net.Sockets;
-using DryIoc;
 using Nito.AsyncEx;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Links;
@@ -13,7 +12,6 @@ using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Api.Settings;
 using Void.Proxy.Players.Extensions;
-using Void.Proxy.Utils;
 
 namespace Void.Proxy.Players;
 
@@ -173,11 +171,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
 
         logger.LogInformation("Player {Player} disconnected", @event.Player);
 
+        dependencies.DisposePlayerContext(@event.Player.Context);
         await @event.Player.DisposeAsync();
-
-        // Services wont be disposed before player disposal, so all plugins can gracefully finish processing player disconnected event
-        var scopedComposite = @event.Player.Context.Services.GetRequiredService<IContainer>();
-        scopedComposite.Untrack();
-        scopedComposite.Dispose();
     }
 }

@@ -2,7 +2,6 @@
 using System.Reflection;
 using DryIoc;
 using Void.Proxy.Api.Events;
-using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
@@ -48,35 +47,6 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
                 container.Dispose();
             }
         }
-    }
-
-    [Subscribe(PostOrder.Last)]
-    public void OnPlayerDisconnected(PlayerDisconnectedEvent @event)
-    {
-        var foundContainer = false;
-
-        foreach (var playersContainers in _assemblyPlayerContainers.Values)
-        {
-            if (!playersContainers.Remove(@event.Player.GetStableHashCode(), out var container))
-                continue;
-
-            foreach (var service in GetServices(container))
-            {
-                if (service is IEventListener listener)
-                {
-                    var events = container.GetRequiredService<IEventService>();
-                    events.UnregisterListeners(listener);
-                }
-            }
-
-            container.Untrack();
-            container.Dispose();
-
-            foundContainer = true;
-        }
-
-        if (!foundContainer)
-            logger.LogWarning("No container found when disconnecting player {Player}", @event.Player);
     }
 
     public TService CreateInstance<TService>()
@@ -148,6 +118,39 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
                 GetContainer(assembly, context.Player).GetRequiredService(registration.ServiceType);
             }
         }
+    }
+
+    public void DisposePlayerContext(IPlayerContext context)
+    {
+        var foundContainer = false;
+
+        foreach (var playersContainers in _assemblyPlayerContainers.Values)
+        {
+            if (!playersContainers.Remove(context.Player.GetStableHashCode(), out var container))
+                continue;
+
+            foreach (var service in GetServices(container))
+            {
+                if (service is IEventListener listener)
+                {
+                    var events = container.GetRequiredService<IEventService>();
+                    events.UnregisterListeners(listener);
+                }
+            }
+
+            container.Untrack();
+            container.Dispose();
+
+            foundContainer = true;
+        }
+
+        var scopedComposite = context.Services.GetRequiredService<IContainer>();
+
+        scopedComposite.Untrack();
+        scopedComposite.Dispose();
+
+        if (!foundContainer)
+            logger.LogWarning("No container found when disconnecting player {Player}", context.Player);
     }
 
     public object? GetService(Type serviceType)

@@ -15,6 +15,7 @@ public interface IDependencyService : IEventListener, IServiceProvider
     public bool TryGetScopedPlayerContext(object instance, [MaybeNullWhen(false)] out IPlayerContext context);
     public IServiceProvider CreatePlayerComposite(IPlayer player);
     public void ActivatePlayerContext(IPlayerContext context);
+    public void DisposePlayerContext(IPlayerContext context);
     public TService? GetService<TService>();
     public void Register(Action<ServiceCollection> configure, bool activate = true);
 }
