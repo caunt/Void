@@ -150,8 +150,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         {
             foreach (var registration in GetServiceRegistrations(container))
             {
-                // GetContainer(assembly, context.Player).GetRequiredService(registration.ServiceType);
-                GetCompositeSortedBy(registration.ServiceType.Assembly).GetRequiredService(registration.ServiceType);
+                GetContainer(assembly, context.Player).GetRequiredService(registration.ServiceType);
             }
         }
     }
