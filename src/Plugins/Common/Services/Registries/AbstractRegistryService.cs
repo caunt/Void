@@ -201,7 +201,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!link.Player.TryGetMinecraftPlayer(out var player))
             yield break;
 
-        foreach (var registry in registries.All)
+        var queue = new Queue<IMinecraftPacketIdRegistry>(registries.All);
+        while (queue.TryDequeue(out var registry))
         {
             if (!registry.TryCreateDecoder(binaryMessage.Id, out var type, out var decoder))
                 continue;
@@ -249,7 +250,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!playerRegistry.Write.TryGetPacketId(minecraftPacket, out var id) && !serverRegistry.Write.TryGetPacketId(minecraftPacket, out id))
             yield break;
 
-        foreach (var registry in registries.All)
+        var queue = new Queue<IMinecraftPacketIdRegistry>(registries.All);
+        while (queue.TryDequeue(out var registry))
         {
             if (!registry.TryCreateDecoder(id, out var type, out var decoder))
                 continue;
