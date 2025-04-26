@@ -1,4 +1,4 @@
-name: ".NET Build"
+name: "NuGet Push"
 permissions:
   contents: write
   pull-requests: write
