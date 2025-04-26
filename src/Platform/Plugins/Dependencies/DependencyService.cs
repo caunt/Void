@@ -157,12 +157,12 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
     public object? GetService(Type serviceType)
     {
-        return GetCompositeSortedBy(serviceType.Assembly).Resolve(serviceType);
+        return ListeningServiceProvider.Wrap(GetCompositeSortedBy(serviceType.Assembly)).GetService(serviceType);
     }
 
     public TService? GetService<TService>()
     {
-        return GetCompositeSortedBy(typeof(TService).Assembly).Resolve<TService>();
+        return ListeningServiceProvider.Wrap(GetCompositeSortedBy(typeof(TService).Assembly)).GetService<TService>();
     }
 
     public void Register(Action<ServiceCollection> configure, bool activate = true)
