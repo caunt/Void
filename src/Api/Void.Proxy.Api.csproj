@@ -1,22 +1,37 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-	<DebugType>embedded</DebugType>
-	<LangVersion>preview</LangVersion>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<DebugType>embedded</DebugType>
+		<LangVersion>preview</LangVersion>
+		<RuntimeIdentifiers>
+			linux-arm;
+			linux-arm64;
+			linux-bionic-arm64;
+			linux-bionic-x64;
+			linux-musl-arm;
+			linux-musl-arm64;
+			linux-musl-x64;
+			linux-x64;
+			osx-arm64;
+			osx-x64;
+			win-arm64;
+			win-x64;
+			win-x86;
+		</RuntimeIdentifiers>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="DryIoc.Microsoft.DependencyInjection" Version="6.2.0" />
-    <PackageReference Include="Ionic.Zlib.Core" Version="1.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.4" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.4" />
-    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
-    <PackageReference Include="Nito.AsyncEx" Version="5.1.2" />
-    <PackageReference Include="Serilog" Version="4.2.0" />
-    <PackageReference Include="SharpZipLib" Version="1.4.2" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="DryIoc.Microsoft.DependencyInjection" Version="6.2.0" />
+		<PackageReference Include="Ionic.Zlib.Core" Version="1.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.4" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="9.0.4" />
+		<PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
+		<PackageReference Include="Nito.AsyncEx" Version="5.1.2" />
+		<PackageReference Include="Serilog" Version="4.2.0" />
+		<PackageReference Include="SharpZipLib" Version="1.4.2" />
+	</ItemGroup>
 </Project>

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Worker">
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
@@ -8,7 +8,28 @@
 		<NeutralLanguage>en</NeutralLanguage>
 		<DebugType>embedded</DebugType>
 		<LangVersion>preview</LangVersion>
+		<RuntimeIdentifiers>
+			linux-arm;
+			linux-arm64;
+			linux-bionic-arm64;
+			linux-bionic-x64;
+			linux-musl-arm;
+			linux-musl-arm64;
+			linux-musl-x64;
+			linux-x64;
+			osx-arm64;
+			osx-x64;
+			win-arm64;
+			win-x64;
+			win-x86;
+		</RuntimeIdentifiers>
+		<ContainerRegistry>docker.io</ContainerRegistry>
+		<ContainerRepository>caunt/void</ContainerRepository>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<ContainerPort Include="25565" Type="tcp" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="DotNetGraph" Version="3.2.0" />
