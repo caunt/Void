@@ -50,8 +50,8 @@ jobs:
 
       - name: Publish ${{ matrix.name }}
         run: |
-          dotnet publish /t:PublishContainer \
-            /p:ContainerRuntimeIdentifiers="${{ matrix.container_runtime_identifiers }}" \
+          dotnet publish src/Platform
+            /t:PublishContainer \
+            /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
             /p:ContainerImageTag="${{ matrix.container_image_tag }}" \
-            /p:ContainerBaseImage="${{ matrix.container_base_image }}" \
-            src/Platform
+            /p:ContainerBaseImage="${{ matrix.container_base_image }}"
