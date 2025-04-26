@@ -16,13 +16,13 @@ jobs:
       matrix:
         include:
           - name: latest
-            args: /p:ContainerRuntimeIdentifiers='\"linux-arm;linux-arm64;linux-x64\"'
+            args: /p:ContainerRuntimeIdentifiers='\"linux-arm\;linux-arm64\;linux-x64\"'
           - name: latest-android
-            args: /p:ContainerImageTag=latest-android /p:ContainerRuntimeIdentifiers='\"linux-bionic-arm64;linux-bionic-x64\"'
+            args: /p:ContainerImageTag=latest-android /p:ContainerRuntimeIdentifiers='\"linux-bionic-arm64\;linux-bionic-x64\"'
           - name: latest-alpine
-            args: /p:ContainerImageTag=latest-alpine /p:ContainerRuntimeIdentifiers='\"linux-musl-arm;linux-musl-arm64;linux-musl-x64\"'
+            args: /p:ContainerImageTag=latest-alpine /p:ContainerRuntimeIdentifiers='\"linux-musl-arm\;linux-musl-arm64\;linux-musl-x64\"'
           - name: win-x64
-            args: /p:ContainerImageTag=latest-win-x64 /p:ContainerRuntimeIdentifier=win-x64 /p:ContainerBaseImage=mcr.microsoft.com/dotnet/runtime:9.0-nanoserver-ltsc2025
+            args: /p:ContainerImageTag=latest-windows /p:ContainerRuntimeIdentifier=win-x64 /p:ContainerBaseImage=mcr.microsoft.com/dotnet/runtime:9.0-nanoserver-ltsc2025
     steps:
       - uses: actions/checkout@v4
 
