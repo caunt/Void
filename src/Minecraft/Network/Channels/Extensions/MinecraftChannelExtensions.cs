@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Network.Messages;
+using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Network.Registries;
 using Void.Minecraft.Network.Streams.Packet;
 using Void.Proxy.Api.Network;
@@ -13,6 +15,9 @@ public static class MinecraftChannelExtensions
 {
     public static async ValueTask SendPacketAsync<T>(this INetworkChannel channel, T packet, CancellationToken cancellationToken) where T : IMinecraftMessage
     {
+        if (packet is IMinecraftBinaryMessage binaryMessage)
+            binaryMessage.Stream.Position = binaryMessage.Id.VarIntSize();
+
         await channel.WriteMessageAsync(packet, Side.Proxy, cancellationToken);
     }
 
