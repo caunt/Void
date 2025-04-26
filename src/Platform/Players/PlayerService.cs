@@ -8,7 +8,6 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players;
-using Void.Proxy.Api.Players.Contexts;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Api.Settings;
@@ -46,9 +45,6 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
 
         var player = new PlayerProxy(await events.ThrowWithResultAsync(new PlayerConnectingEvent(client, dependencies.CreatePlayerComposite), cancellationToken) ??
             throw new InvalidOperationException("Player is not instantiated"));
-
-        var playerContextAccessor = player.Context.Services.GetRequiredService<IPlayerContextAccessor>();
-        playerContextAccessor.Context = player.Context;
 
         dependencies.ActivatePlayerContext(player.Context);
 

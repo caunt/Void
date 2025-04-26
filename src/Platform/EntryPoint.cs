@@ -12,7 +12,6 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Players;
-using Void.Proxy.Api.Players.Contexts;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Api.Servers;
@@ -24,7 +23,6 @@ using Void.Proxy.Crypto;
 using Void.Proxy.Events;
 using Void.Proxy.Links;
 using Void.Proxy.Players;
-using Void.Proxy.Players.Contexts;
 using Void.Proxy.Plugins;
 using Void.Proxy.Plugins.Dependencies;
 using Void.Proxy.Plugins.Dependencies.Extensions;
@@ -69,9 +67,6 @@ try
     builder.Services.AddSingletonAndListen<IProxy, Platform>();
     builder.Services.AddHostedService(services => services.GetRequiredService<IConfigurationService>());
     builder.Services.AddHostedService(services => services.GetRequiredService<IProxy>());
-
-    builder.Services.AddScoped<IPlayerContextAccessor, PlayerContextAccessor>();
-    builder.Services.AddScoped(services => services.GetRequiredService<IPlayerContextAccessor>().Context?.Player ?? throw new InvalidOperationException("Player context is not set"));
 
     builder.Services.AddSingleton<ISettings>(services =>
     {
