@@ -50,7 +50,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         }
     }
 
-    [Subscribe]
+    [Subscribe(PostOrder.Last)]
     public void OnPlayerDisconnected(PlayerDisconnectedEvent @event)
     {
         var foundContainer = false;
