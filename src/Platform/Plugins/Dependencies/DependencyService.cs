@@ -264,7 +264,12 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
     private Container GetCompositeSortedBy(Assembly assembly)
     {
-        return CreateCompositeContainer("Transient Composite", [.. _assemblyContainers.Values.OrderByDescending(container => container == _assemblyContainers[assembly]), container]);
+        var containers = _assemblyContainers.Values.AsEnumerable();
+
+        if (_assemblyContainers.TryGetValue(assembly, out var preferredContainer))
+            containers = containers.OrderByDescending(container => container == preferredContainer);
+
+        return CreateCompositeContainer("Transient Composite", [.. containers, container]);
     }
 
     private Container CreateCompositeContainer(string name, params IEnumerable<IContainer> containers)
