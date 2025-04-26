@@ -67,7 +67,6 @@ public class EventService(ILogger<EventService> logger, IContainer container/*, 
         var eventType = @event.GetType();
         logger.LogTrace("Invoking {TypeName} event", eventType.Name);
 
-        var scopedPlayer = @event switch { IScopedEvent scopedEvent => scopedEvent.Player, _ => null };
         var simpleParameters = (object[])[@event];
         var cancellableParameters = (object[])[@event, cancellationToken];
 
@@ -84,11 +83,11 @@ public class EventService(ILogger<EventService> logger, IContainer container/*, 
 
             await Task.Yield();
 
-            if (!entry.BypassScopedFilter)
+            if (!entry.BypassScopedFilter && @event is IScopedEvent scopedEvent)
             {
                 if (dependencies.TryGetScopedPlayerContext(listener, out var context))
                 {
-                    if (context.Player != scopedPlayer)
+                    if (context.Player != scopedEvent.Player)
                         continue;
 
                     // Allow invocation of scoped events only if scoped player matched
