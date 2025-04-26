@@ -53,7 +53,7 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore --runtime ${{ matrix.runtime }}
       - name: Build
-        run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release --no-restore /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false
+        run: dotnet build --runtime ${{ matrix.runtime }} --self-contained --configuration Release --no-restore /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false
       - name: Test
         run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal
       - name: Publish
