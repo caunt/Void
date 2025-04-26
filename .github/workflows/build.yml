@@ -56,11 +56,11 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release --no-restore
       - name: Build Platform
-        run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded --configuration Release --no-restore
+        run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release --no-restore /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false
       - name: Test
         run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal
       - name: Publish
-        run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained -p:GenerateRuntimeConfigurationFiles=false -p:PublishSingleFile=true -p:DebugType=embedded src/Platform --output artifacts --configuration Release --no-build
+        run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained src/Platform --output artifacts --configuration Release --no-build /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false
       - name: Save Artifact Suffix
         id: get_suffix
         shell: bash
