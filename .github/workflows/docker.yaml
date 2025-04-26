@@ -47,7 +47,7 @@ jobs:
       - name: Publish ${{ matrix.container_image_tag }}
         shell: bash
         run: |
-          dotnet publish src/Platform \
+          dotnet publish src/Platform -- \
             /t:PublishContainer \
             /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
             /p:ContainerImageTag="${{ matrix.container_image_tag }}" \
