@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using DryIoc;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Player;
@@ -14,7 +15,7 @@ using Void.Proxy.Utils;
 
 namespace Void.Proxy.Plugins.Dependencies;
 
-public class DependencyService(ILogger<DependencyService> logger, IContainer container, IEventService events) : IDependencyService
+public class DependencyService(ILogger<DependencyService> logger, IContainer container) : IDependencyService
 {
     private readonly Dictionary<Assembly, IContainer> _assemblyContainers = [];
     private readonly Dictionary<Assembly, Dictionary<int, IContainer>> _assemblyPlayerContainers = [];
@@ -30,6 +31,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
     {
         var assembly = @event.Plugin.GetType().Assembly;
 
+        var events = container.GetRequiredService<IEventService>();
         events.UnregisterListeners(events.Listeners.Where(listener => listener.GetType().Assembly == assembly));
 
         if (_assemblyContainers.Remove(assembly, out var pluginContainer))
@@ -61,7 +63,10 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
             foreach (var service in GetServices(container))
             {
                 if (service is IEventListener listener)
+                {
+                    var events = container.GetRequiredService<IEventService>();
                     events.UnregisterListeners(listener);
+                }
             }
 
             container.Untrack();
@@ -99,9 +104,35 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
         // Since all containers might not have this service type, register it manually
         if (instance is IEventListener listener)
+        {
+            var events = container.Resolve<IEventService>();
             events.RegisterListeners(listener);
+        }
 
         return instance;
+    }
+
+    public bool TryGetScopedPlayerContext(object instance, [MaybeNullWhen(false)] out IPlayerContext context)
+    {
+        var serviceType = instance.GetType();
+
+        foreach (var playersContainer in _assemblyPlayerContainers.Values)
+        {
+            foreach (var (playerStableHashCode, container) in playersContainer)
+            {
+                if (!container.IsRegistered(serviceType))
+                    continue;
+
+                if (container.Resolve(serviceType) != instance)
+                    continue;
+
+                context = container.Resolve<IPlayerContext>();
+                return true;
+            }
+        }
+
+        context = null;
+        return false;
     }
 
     public IServiceProvider CreatePlayerComposite(IPlayer player)

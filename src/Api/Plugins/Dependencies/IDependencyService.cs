@@ -1,4 +1,5 @@
 ﻿
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Players;
@@ -11,6 +12,7 @@ public interface IDependencyService : IEventListener, IServiceProvider
     public TService CreateInstance<TService>();
     public TService CreateInstance<TService>(Type serviceType);
     public object CreateInstance(Type serviceType);
+    public bool TryGetScopedPlayerContext(object instance, [MaybeNullWhen(false)] out IPlayerContext context);
     public IServiceProvider CreatePlayerComposite(IPlayer player);
     public void ActivatePlayerContext(IPlayerContext context);
     public TService? GetService<TService>();

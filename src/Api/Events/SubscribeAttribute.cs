@@ -2,10 +2,16 @@
 
 namespace Void.Proxy.Api.Events;
 
+/// <summary>
+/// Attribute to mark a method as an event listener.
+/// </summary>
+/// <param name="order">Specifies the order in which the event should be processed.</param>
+/// <param name="bypassScopedFilter">Indicates if this event should be triggered by all players, not only scoped one.</param>
 [AttributeUsage(AttributeTargets.Method)]
-public class SubscribeAttribute(PostOrder order = PostOrder.Normal) : Attribute
+public class SubscribeAttribute(PostOrder order = PostOrder.Normal, bool bypassScopedFilter = false) : Attribute
 {
     public PostOrder Order => order;
+    public bool BypassScopedFilter => bypassScopedFilter;
 
     public static void SanityChecks(MethodInfo methodInfo)
     {
