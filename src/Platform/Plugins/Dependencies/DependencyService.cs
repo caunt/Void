@@ -6,11 +6,11 @@ using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
-using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Contexts;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
+using Void.Proxy.Plugins.Dependencies.Extensions;
 using Void.Proxy.Utils;
 
 namespace Void.Proxy.Plugins.Dependencies;

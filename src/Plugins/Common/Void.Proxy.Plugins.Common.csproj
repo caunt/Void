@@ -26,6 +26,8 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\Api\Void.Proxy.Api.csproj" />
 		<ProjectReference Include="..\..\Minecraft\Void.Minecraft.csproj" />
+		<PackageReference Include="SharpZipLib" Version="1.4.2" />
+		<PackageReference Include="Ionic.Zlib.Core" Version="1.0.0" />
 	</ItemGroup>
 
 </Project>
