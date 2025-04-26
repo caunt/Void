@@ -18,4 +18,9 @@ public interface IPlayerContext : IDisposable, IAsyncDisposable
     /// Gets or sets the network channel used for communication.
     /// </summary>
     public INetworkChannel? Channel { get; set; }
+
+    /// <summary>
+    /// Gets the current state of the player context.
+    /// </summary>
+    public bool IsDisposed { get; }
 }

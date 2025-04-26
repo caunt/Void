@@ -9,15 +9,19 @@ internal record PlayerContext(IServiceProvider Services) : IPlayerContext
     // Set is allowed to upgrade the player into different implementations when required.
     public required IPlayer Player { get; internal set; }
     public INetworkChannel? Channel { get; set; }
+    public bool IsDisposed { get; private set; }
 
     public void Dispose()
     {
+        IsDisposed = true;
         Channel?.Dispose();
         GC.SuppressFinalize(this);
     }
 
     public async ValueTask DisposeAsync()
     {
+        IsDisposed = true;
+
         if (Channel is not null)
             await Channel.DisposeAsync();
 
