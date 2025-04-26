@@ -45,6 +45,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Publish ${{ matrix.container_image_tag }}
+        shell: bash
         run: |
           dotnet publish src/Platform \
             /t:PublishContainer \
