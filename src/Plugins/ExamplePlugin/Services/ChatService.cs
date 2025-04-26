@@ -9,6 +9,7 @@ using Void.Proxy.Api.Players.Extensions;
 
 namespace Void.Proxy.Plugins.ExamplePlugin.Services;
 
+// Here you can use DI to inject any service API you want to use.
 public class ChatService(IConfigurationService configs) : IEventListener
 {
     private ChatSettings? _settings;

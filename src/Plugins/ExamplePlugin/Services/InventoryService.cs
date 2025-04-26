@@ -18,7 +18,10 @@ using Void.Proxy.Plugins.ExamplePlugin.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.ExamplePlugin.Services;
 
-// Here you can use DI to inject any service API you want to use. Instance of your ExamplePlugin also can be injected.
+// Here you can use DI to inject any service API you want to use.
+// Since this service is Scoped, it is being instantiated per player. 
+// So you can inject IPlayerContext to get access to the player instance.
+// Instance of your ExamplePlugin also can be injected.
 public class InventoryService(IPlayerContext context, ILogger<InventoryService> logger, ICommandService commands, ExamplePlugin plugin) : IEventListener
 {
     [Subscribe]
