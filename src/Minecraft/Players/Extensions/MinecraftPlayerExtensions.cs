@@ -6,6 +6,7 @@ using Void.Minecraft.Components.Text;
 using Void.Minecraft.Events.Chat;
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network.Channels.Extensions;
+using Void.Minecraft.Network.Messages;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.PacketId.Extensions;
 using Void.Minecraft.Network.Registries.PacketId.Mappings;
@@ -34,7 +35,7 @@ public static class MinecraftPlayerExtensions
         await players.KickPlayerAsync(player, reason, cancellationToken);
     }
 
-    public static async ValueTask SendPacketAsync<T>(this IMinecraftPlayer player, T packet, CancellationToken cancellationToken = default) where T : IMinecraftPacket
+    public static async ValueTask SendPacketAsync<T>(this IMinecraftPlayer player, T packet, CancellationToken cancellationToken = default) where T : IMinecraftMessage
     {
         var channel = await player.GetChannelAsync(cancellationToken);
         await channel.SendPacketAsync(packet, cancellationToken);
