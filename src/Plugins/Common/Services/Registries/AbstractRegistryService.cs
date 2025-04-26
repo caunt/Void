@@ -33,8 +33,8 @@ namespace Void.Proxy.Plugins.Common.Services.Registries;
 
 public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> logger, IPlugin plugin, IPlayerService players, ILinkService links, IEventService events) : IPluginCommonService
 {
-    [Subscribe]
-    public void OnPluginUnloading(PluginUnloadingEvent @event)
+    [Subscribe(PostOrder.First)]
+    public void OnPluginUnloaded(PluginUnloadedEvent @event)
     {
         foreach (var player in players.All)
         {
