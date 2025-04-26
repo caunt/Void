@@ -234,7 +234,11 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
         if (!playerContainers.TryGetValue(player.GetStableHashCode(), out var assemblyContainer))
         {
-            assemblyContainer = CreateCompositeContainer($"[{assembly.GetName().Name}/{player}] Assembly Player Composite", _assemblyContainers.Values.Append(container));
+            assemblyContainer = CreateCompositeContainer($"[{assembly.GetName().Name}/{player}] Assembly Player Composite", _assemblyPlayerContainers.Values
+                .SelectMany(playersContainers => playersContainers.Where(pair => pair.Key == player.GetStableHashCode()).Select(pair => pair.Value))
+                .Append(container)
+                .Concat(_assemblyContainers.Values));
+
             assemblyContainer.RegisterInstance(player.Context, setup: Setup.With(preventDisposal: true));
             playerContainers.Add(player.GetStableHashCode(), assemblyContainer);
         }
