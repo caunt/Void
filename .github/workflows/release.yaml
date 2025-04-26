@@ -21,6 +21,7 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
+          run-id: ${{ github.event.workflow_run.id }}
       - name: Create Release
         uses: googleapis/release-please-action@v4
         id: release
