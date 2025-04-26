@@ -45,11 +45,12 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
 
                 // TODO is it safe to cancel Player Session (chat_session_update) packet?
                 // helps to join vanilla servers (from 1.19.3?)
-                if (player.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_21_2)
-                {
-                    if (binaryMessage.Id is 0x08)
-                        @event.Result = true;
-                }
+                // UPDATE: cancelling this packet causes chat to stop working
+                // if (player.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_21_2)
+                // {
+                //     if (binaryMessage.Id is 0x08)
+                //         @event.Result = true;
+                // }
 
                 break;
         }
