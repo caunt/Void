@@ -22,7 +22,10 @@ public class MinecraftPacketIdPluginsRegistry : IMinecraftPacketIdPluginsRegistr
             throw new InvalidOperationException("Protocol version is not set yet");
 
         if (!_map.TryGetValue(plugin, out var registry))
-            _map[plugin] = registry = new MinecraftPacketIdRegistry();
+        {
+            lock (this)
+                _map[plugin] = registry = new MinecraftPacketIdRegistry();
+        }
 
         return registry;
     }
@@ -55,7 +58,8 @@ public class MinecraftPacketIdPluginsRegistry : IMinecraftPacketIdPluginsRegistr
 
     public void Remove(IPlugin plugin)
     {
-        _map.Remove(plugin);
+        lock (this)
+            _map.Remove(plugin);
     }
 
     public bool Contains<T>() where T : IMinecraftPacket
@@ -75,7 +79,8 @@ public class MinecraftPacketIdPluginsRegistry : IMinecraftPacketIdPluginsRegistr
 
     public void Clear()
     {
-        _map = [];
+        lock (this)
+            _map = [];
     }
 
     public void Reset()
