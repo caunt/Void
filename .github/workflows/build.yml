@@ -1,5 +1,4 @@
 name: ".NET Build"
-
 permissions:
   contents: write
   pull-requests: write
