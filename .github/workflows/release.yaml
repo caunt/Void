@@ -3,6 +3,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  actions: read
 
 on:
   workflow_dispatch:
