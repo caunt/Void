@@ -7,6 +7,7 @@ using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Players.Contexts;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Utils;
@@ -105,20 +106,34 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
     public IServiceProvider CreatePlayerComposite(IPlayer player)
     {
-        // Ensure scoped services instantiated
-        foreach (var (assembly, container) in _assemblyContainers)
-        {
-            foreach (var registration in GetServiceRegistrations(container))
-            {
-                GetContainer(assembly, player).GetRequiredService(registration.ServiceType);
-            }
-        }
-
         var composite = CreateCompositeContainer($"[{player}] Player Composite",
             _assemblyPlayerContainers.SelectMany(pair => pair.Value.Where(pair => pair.Key == player.GetStableHashCode()).Select(pair => pair.Value))
             .Append(container));
 
         return ListeningServiceProvider.Wrap(composite);
+    }
+
+    public void ActivatePlayerContext(IPlayerContext context)
+    {
+        foreach (var (assembly, container) in _assemblyContainers)
+        {
+            foreach (var registration in GetServiceRegistrations(container))
+            {
+                GetContainer(assembly, context.Player).GetRequiredService(registration.ServiceType);
+            }
+        }
+
+        // foreach (var playersContainers in _assemblyPlayerContainers.Values)
+        // {
+        //     foreach (var (playerStableHashCode, playerContainer) in playersContainers)
+        //     {
+        //         if (context.Player.GetStableHashCode() != playerStableHashCode)
+        //             continue;
+        // 
+        //         playerContainer.RegisterInstance(context, setup: Setup.With(preventDisposal: true));
+        //         playerContainer.RegisterInstance(context.Player, setup: Setup.With(preventDisposal: true));
+        //     }
+        // }
     }
 
     public object? GetService(Type serviceType)
@@ -201,7 +216,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         if (!playerContainers.TryGetValue(player.GetStableHashCode(), out var assemblyContainer))
         {
             assemblyContainer = CreateCompositeContainer($"[{assembly.GetName().Name}/{player}] Assembly Player Composite", _assemblyContainers.Values.Append(container));
-            assemblyContainer.RegisterDelegate(_ => player.Context.Player, setup: Setup.With(preventDisposal: true));
+            assemblyContainer.RegisterInstance(player.Context, setup: Setup.With(preventDisposal: true));
             playerContainers.Add(player.GetStableHashCode(), assemblyContainer);
         }
 
@@ -315,7 +330,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
         foreach (var registration in container.GetServiceRegistrations())
         {
-            var lifespan = registration.Factory.Reuse.Lifespan;
+            var lifespan = registration.Factory.Reuse?.Lifespan ?? Reuse.Singleton.Lifespan;
 
             if (lifespan <= Reuse.Transient.Lifespan)
                 continue;

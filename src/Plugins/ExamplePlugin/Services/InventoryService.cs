@@ -12,13 +12,14 @@ using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Players.Contexts;
 using Void.Proxy.Plugins.ExamplePlugin.Packets.Clientbound;
 using Void.Proxy.Plugins.ExamplePlugin.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.ExamplePlugin.Services;
 
 // Here you can use DI to inject any service API you want to use. Instance of your ExamplePlugin also can be injected.
-public class InventoryService(ILogger<InventoryService> logger, ICommandService commands, ExamplePlugin plugin) : IEventListener
+public class InventoryService(IPlayerContext context, ILogger<InventoryService> logger, ICommandService commands, ExamplePlugin plugin) : IEventListener
 {
     [Subscribe]
     public void OnPluginLoading(PluginLoadingEvent @event)
@@ -69,7 +70,7 @@ public class InventoryService(ILogger<InventoryService> logger, ICommandService 
         switch (@event.Message)
         {
             case SetHeldItemServerboundPacket setHeldItemPacket:
-                logger.LogInformation("Player {Player} changed held item slot to {Slot}", @event.Link.Player, setHeldItemPacket.Slot);
+                logger.LogInformation("Player {Player} changed held item slot to {Slot}", context.Player, setHeldItemPacket.Slot);
                 break;
         }
     }

@@ -50,6 +50,8 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
         var playerContextAccessor = player.Context.Services.GetRequiredService<IPlayerContextAccessor>();
         playerContextAccessor.Context = player.Context;
 
+        dependencies.ActivatePlayerContext(player.Context);
+
         try
         {
             using (var sync = await _lock.LockAsync(cancellationToken))
