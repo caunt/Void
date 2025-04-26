@@ -47,6 +47,7 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
     var timeout = TimeSpan.FromSeconds(900);
     var variables = new List<string>
     {
+        "PAPER_CONFIG_REPO=https://raw.githubusercontent.com/Shonz1/minecraft-default-configs/main",
         "EULA=TRUE",
         "TYPE=" + type,
         "MODE=CREATIVE",
