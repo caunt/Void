@@ -1,0 +1,179 @@
+name: ".NET Build"
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  dotnet-build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            runtime: linux-arm
+          - os: ubuntu-latest
+            runtime: linux-arm64
+          - os: ubuntu-latest
+            runtime: linux-bionic-arm64
+          - os: ubuntu-latest
+            runtime: linux-bionic-x64
+          - os: ubuntu-latest
+            runtime: linux-musl-arm
+          - os: ubuntu-latest
+            runtime: linux-musl-arm64
+          - os: ubuntu-latest
+            runtime: linux-musl-x64
+          - os: ubuntu-latest
+            runtime: linux-x64
+          - os: macos-latest
+            runtime: osx-arm64
+          - os: macos-latest
+            runtime: osx-x64
+          - os: windows-latest
+            runtime: win-arm64
+          - os: windows-latest
+            runtime: win-x64
+          - os: windows-latest
+            runtime: win-x86
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10"
+          dotnet-quality: "preview"
+      - name: Restore dependencies
+        run: dotnet restore --runtime ${{ matrix.runtime }}
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+      - name: Build Platform
+        run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release --no-restore /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false
+      - name: Test
+        run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal
+      - name: Publish
+        run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained src/Platform --output artifacts --configuration Release --no-build /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false
+      - name: Save Artifact Suffix
+        id: get_suffix
+        shell: bash
+        run: echo "result=$([[ $OSTYPE == msys* ]] && echo .exe)" >> "$GITHUB_OUTPUT"
+      - name: Rename Artifact
+        shell: bash
+        run: mv artifacts/Void.Proxy${{ steps.get_suffix.outputs.result }} artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
+          path: artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
+          compression-level: 9
+          if-no-files-found: error
+
+  release-please:
+    needs: dotnet-build
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Create Release
+        uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .github/RELEASE_PLEASE/config.json
+          manifest-file: .github/RELEASE_PLEASE/manifest.json
+      - name: Upload Release Artifacts
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload ${{ steps.release.outputs.tag_name }} artifacts/*
+
+  docker-push:
+    needs: dotnet-build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-arm;linux-arm64;linux-x64
+            container_image_tag: latest
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-bionic-arm64;linux-bionic-x64
+            container_image_tag: latest-android
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-musl-arm;linux-musl-arm64;linux-musl-x64
+            container_image_tag: latest-alpine
+          - os: windows-latest
+            container_runtime_identifiers: win-x64
+            container_image_tag: latest-windows
+            container_base_image: mcr.microsoft.com/dotnet/runtime:9.0-nanoserver-ltsc2025
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10'
+          dotnet-quality: 'preview'
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Publish ${{ matrix.container_image_tag }}
+        shell: bash
+        env:
+          MSYS_NO_PATHCONV: 1
+          MSYS2_ARG_CONV_EXCL: '*'
+        run: |
+          dotnet publish src/Platform \
+            /t:PublishContainer \
+            /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
+            /p:ContainerImageTag="${{ matrix.container_image_tag }}" \
+            /p:ContainerBaseImage="${{ matrix.container_base_image }}"
+
+  nuget-push:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10"
+          dotnet-quality: "preview"
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+      - name: Test
+        run: dotnet test --no-build --verbosity normal
+      - name: Pack Api
+        run: dotnet pack src/Api --configuration Release --output artifacts --property Version=${{ needs.release-please.outputs.version }}
+      - name: Pack Minecraft
+        run: dotnet pack src/Minecraft --configuration Release --output artifacts --property Version=${{ needs.release-please.outputs.version }}
+      - name: Rename Artifacts
+        shell: bash
+        run: mv artifacts/*Api* artifacts/api.nupkg && mv artifacts/*Minecraft* artifacts/minecraft.nupkg
+      - name: NuGet Push
+        run: dotnet nuget push artifacts/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+      - name: Upload a Pack Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          path: artifacts
+          compression-level: 9
+          if-no-files-found: error
