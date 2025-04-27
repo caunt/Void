@@ -221,14 +221,15 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
         }
         catch (ReflectionTypeLoadException exception)
         {
-            logger.LogError("Assembly {Name} cannot be loaded:", assemblyName);
+            logger.LogError(exception, "Assembly {Name} cannot be loaded:", assemblyName);
 
-            var noStackTrace = exception.LoaderExceptions.WhereNotNull().Where(loaderException => string.IsNullOrWhiteSpace(loaderException.StackTrace)).ToArray();
-
-            if (noStackTrace.Length == exception.LoaderExceptions.Length)
-                logger.LogError("{Exceptions}", string.Join(", ", noStackTrace.Select(loaderException => loaderException.Message)));
-            else
-                logger.LogError(exception, "Multiple Exceptions:");
+            // TODO: prints empty exception?
+            // var noStackTrace = exception.LoaderExceptions.WhereNotNull().Where(loaderException => string.IsNullOrWhiteSpace(loaderException.StackTrace)).ToArray();
+            // 
+            // if (noStackTrace.Length == exception.LoaderExceptions.Length)
+            //     logger.LogError("{Exceptions}", string.Join(", ", noStackTrace.Select(loaderException => loaderException.Message)));
+            // else
+            //     logger.LogError(exception, "Multiple Exceptions:");
         }
 
         return [];
