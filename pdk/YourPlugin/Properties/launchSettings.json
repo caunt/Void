@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Run": {
+      "commandName": "Executable",
+      "executablePath": "void/start.exe",
+      "commandLineArgs": "--plugins ../ExamplePlugin.dll",
+      "nativeDebugging": true
+    }
+  }
+}

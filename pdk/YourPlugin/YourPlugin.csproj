@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<EnableDynamicLoading>true</EnableDynamicLoading>
+		<DebugType>embedded</DebugType>
+		<LangVersion>preview</LangVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Void.Minecraft" Version="0.2.0" />
+		<PackageReference Include="Void.Proxy.Api" Version="0.2.0" />
+	</ItemGroup>
+
+	<PropertyGroup>
+		<VoidExtension Condition="'$(OS)' == 'Windows_NT'">.exe</VoidExtension>
+		<VoidPlatform Condition="'$(OS)' == 'Windows_NT'">win-x64</VoidPlatform>
+		<VoidPlatform Condition="$([MSBuild]::IsOsPlatform('Linux'))">linux-x64</VoidPlatform>
+	</PropertyGroup>
+
+	<Target Name="Download" AfterTargets="Build">
+		<DownloadFile SourceUrl="https://github.com/caunt/Void/releases/latest/download/void-$(VoidPlatform)$(VoidExtension)" DestinationFolder="$(TargetDir)void" DestinationFileName="start$(VoidExtension)" />
+	</Target>
+</Project>
