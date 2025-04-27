@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.1](https://github.com/caunt/Void/compare/v0.2.0...v0.2.1) (2025-04-27)
+
+
+### Features
+
+* loading environment plugins ([97e300a](https://github.com/caunt/Void/commit/97e300acb98587c60497987caaf81d3205b040c4))
+* plugin devkit ([20382bf](https://github.com/caunt/Void/commit/20382bf8d24c33fe60bf01d7ee344ca96f23b132))
+* switch example plugin dependencies to nuget source ([5eaa7dd](https://github.com/caunt/Void/commit/5eaa7dd0f4d8e080dfbd8b342c852d66e6475cc3))
+
+
+### Bug Fixes
+
+* concurrent configurations map ([e93e995](https://github.com/caunt/Void/commit/e93e9950fb7a3addc18f1e6097e6208914f98b49))
+* print reflection type load exceptions ([a5a8624](https://github.com/caunt/Void/commit/a5a86245bd51a87d0393741994c8e9ccfc00b254))
+
 ## [0.2.0](https://github.com/caunt/Void/compare/v0.1.0...v0.2.0) (2025-04-26)
 
 
