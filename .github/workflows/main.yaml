@@ -163,9 +163,9 @@ jobs:
       - name: Test
         run: dotnet test --no-build --verbosity normal
       - name: Pack Api
-        run: dotnet pack src/Api --configuration Release --output artifacts --property Version=${{ release.release.outputs.version }}
+        run: dotnet pack src/Api --configuration Release --output artifacts --property Version=${{ release.outputs.version }}
       - name: Pack Minecraft
-        run: dotnet pack src/Minecraft --configuration Release --output artifacts --property Version=${{ release.release.outputs.version }}
+        run: dotnet pack src/Minecraft --configuration Release --output artifacts --property Version=${{ release.outputs.version }}
       - name: Rename Artifacts
         shell: bash
         run: mv artifacts/*Api* artifacts/api.nupkg && mv artifacts/*Minecraft* artifacts/minecraft.nupkg
