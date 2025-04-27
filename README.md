@@ -1,6 +1,6 @@
 <h1 align="center">
   <a href="https://github.com/caunt/Void/actions">
-    <img src="https://github.com/caunt/Void/actions/workflows/build.yml/badge.svg" alt="GitHub Actions">
+    <img src="https://github.com/caunt/Void/actions/workflows/main.yml/badge.svg" alt="GitHub Actions">
   </a>
   <br>
   VOID
