@@ -1,5 +1,72 @@
 # Changelog
 
+## [0.2.0](https://github.com/caunt/Void/compare/v0.1.0...v0.2.0) (2025-04-27)
+
+
+### Features
+
+* add clear plugin methods to registries ([d641d10](https://github.com/caunt/Void/commit/d641d10a98b8c863434363a2926e9506122e2bce))
+* add IsDisposed property to IPlayerContext ([2555af7](https://github.com/caunt/Void/commit/2555af72e8a1e6237a93a3d99d1660dcbcbbf5b5))
+* add PAPER_CONFIG_REPO environment variable for configuration ([7734d2a](https://github.com/caunt/Void/commit/7734d2a73f19a3252957f691d5084745b7d28602))
+* add runtime identifiers to all projects ([4a41bcc](https://github.com/caunt/Void/commit/4a41bcc9e2f4ee83ffb8f299e537c218105f556e))
+* add Source property to ListeningServiceProvider ([eb27de7](https://github.com/caunt/Void/commit/eb27de708c16e799efe180d15765feb98621ff10))
+* allow injecting non-generic ILogger ([9fc8fba](https://github.com/caunt/Void/commit/9fc8fbaf5e499196a004f2d54a3dcafc70ff33d9))
+* allow injecting player context in scoped services ([e0a1fc9](https://github.com/caunt/Void/commit/e0a1fc9b551be0d1fe965290630226cba8b362e6))
+* composite services for players ([c603085](https://github.com/caunt/Void/commit/c603085f4b0252cc09424109e5da25addccf24cd))
+* create per-player scopes in dependency service ([3a5fb1e](https://github.com/caunt/Void/commit/3a5fb1efe5d2536d1a906651e754f9ce1f138a66))
+* detection if player is a minecraft player, upgrading its implementation ([569c5ef](https://github.com/caunt/Void/commit/569c5ef710c83ebd812588587d7330f9e01444e7))
+* dry ioc container tracking ([0d68799](https://github.com/caunt/Void/commit/0d68799fc69ad2650b61bbc96751d742c3306059))
+* enable preview language features ([4ee7183](https://github.com/caunt/Void/commit/4ee7183e3d74c3962f7beb91cee1181dabc8fbd3))
+* enhance DependencyService for better service management ([0e9a6b2](https://github.com/caunt/Void/commit/0e9a6b270acbc30e66aa50b9103aecda6ccb9770))
+* enhance scoped service registration in DependencyService ([77ac2eb](https://github.com/caunt/Void/commit/77ac2ebdb664a622ee704a6e087d78d81fc5622e))
+* enhance service registration in HostingExtensions ([cbac74a](https://github.com/caunt/Void/commit/cbac74a6beb310ddcf8c36f5b6546133d1b391ae))
+* extension methods for synchronizing collections ([f2a1493](https://github.com/caunt/Void/commit/f2a14932752db501fb92fd1f2f44c7a9426d7cc5))
+* filtering and bypassing the filter of scoped player events ([1a578e0](https://github.com/caunt/Void/commit/1a578e0ce44d6f19c6cc2afa129d7d4051b1050c))
+* player-scoped events for scoped services ([f2f681b](https://github.com/caunt/Void/commit/f2f681b18a41bd618a8850dfa9aa50fe98be570a))
+* stable hash codes for IPlayer ([32ec5ad](https://github.com/caunt/Void/commit/32ec5adb47841baeb2ad893c5793ce072c5cf4eb))
+* stable hash codes for players ([68f6e32](https://github.com/caunt/Void/commit/68f6e32a5b2a7550e332309ba063cdbe3f08b5b1))
+* update packet/message handling in extensions ([55f8ebf](https://github.com/caunt/Void/commit/55f8ebfbe3b22268991a805723912de8d5156abf))
+
+
+### Bug Fixes
+
+* add thread safety to MinecraftPacketIdPluginsRegistry ([f26c85b](https://github.com/caunt/Void/commit/f26c85bfe7da27145ba94fb912c1d9acd64d47cd))
+* add using directive for extensions in EntryPoint ([0ab5b28](https://github.com/caunt/Void/commit/0ab5b289f72349485245078620d58fa8b5345f2a))
+* allow creating composite without preferred container ([2bb05d7](https://github.com/caunt/Void/commit/2bb05d7c98d90c2d7d41b9531a589724d450a411))
+* allow non-scoped events triggering scoped listeners ([da5ea30](https://github.com/caunt/Void/commit/da5ea305dfe144b660a67be35025a1ceb0008497))
+* always register plugin services outside root container ([55d99c5](https://github.com/caunt/Void/commit/55d99c51cb7d1dc9ee5e9bdbea275543fd7b6e43))
+* avoid collection modified exceptions in plugin transformers ([97d2430](https://github.com/caunt/Void/commit/97d243014ac25c1b2ad090ddb9c43d17da323948))
+* clear plugin registries later ([5391e8e](https://github.com/caunt/Void/commit/5391e8e725e23270d44334f1b2ea030e9db90d25))
+* composite scoped service providers for players ([ce35f90](https://github.com/caunt/Void/commit/ce35f90858668ecc400d157ac02c94bc9eebf30a))
+* consolidate player context disposal and clean up code ([b6199e2](https://github.com/caunt/Void/commit/b6199e2b5508764602f1c7c0b4057d5e5d1d38d7))
+* correctly dispose scoped player composite and do not dispose player instantly ([a4a7719](https://github.com/caunt/Void/commit/a4a7719d066bfd81e824bbb33d848200ee7664e9))
+* dispose player services later ([ff9b2fa](https://github.com/caunt/Void/commit/ff9b2fad49d1481a97ad0aa0640fc663876e1137))
+* double ioc container tracking ([81ffa92](https://github.com/caunt/Void/commit/81ffa92f187319a8011436c8e63cd902f459d673))
+* escalate container user permissions ([de971ea](https://github.com/caunt/Void/commit/de971ea32d78e373a800bf88c736dc32b929610a))
+* explicitly register services as listeners ([e63f81d](https://github.com/caunt/Void/commit/e63f81d60b5b20becc06a3b16bbb7004a98cb610))
+* improve composite layers in player scoped resolutions ([bc2291d](https://github.com/caunt/Void/commit/bc2291d724140f7341f10366bfc27afcd5316bdc))
+* improve error handling in UnloadContainerAsync ([81f28f1](https://github.com/caunt/Void/commit/81f28f15f36bc21a35d34656f83e2f03ac396f8b))
+* improve event filtering and service registration logic ([b91ba76](https://github.com/caunt/Void/commit/b91ba767364b5ef4252b138b04e2cbc0d9409065))
+* indexing typo in unloading configurations ([4b4bbc4](https://github.com/caunt/Void/commit/4b4bbc4a8b6520eabacf60cf9aeb3891781443d0))
+* let other listeners process disconnected player before disposing him ([0d1a354](https://github.com/caunt/Void/commit/0d1a35450e3514401eea0865982dfe722e31e167))
+* pass weak references to event listeners pipeline ([a38a5dc](https://github.com/caunt/Void/commit/a38a5dc745d57c4ec53e0db5acf0d1699b13d316))
+* register services as event listeners on resolve ([0c7522d](https://github.com/caunt/Void/commit/0c7522d9b751f5e4575f2cc1ff92c8f8d5120cd4))
+* remove cache clearing after service unregistration ([7c5f1b4](https://github.com/caunt/Void/commit/7c5f1b4ed64cb702f6157a7a67ec5a0aeb3d1b76))
+* remove recursion from rethrowing events for new listeners ([a4dbb58](https://github.com/caunt/Void/commit/a4dbb58a54e72c2a0263f7b0791accd2325101cd))
+* reset binary message stream position after packet id var int ([b83b15b](https://github.com/caunt/Void/commit/b83b15b4bb3ebf500a4a193431e3de2623c51ea8))
+* resolve scoped services via composite ([f9ad174](https://github.com/caunt/Void/commit/f9ad1741563dc5a2c25a019c7847b3c948ca8a1b))
+* save forwarded properties from previous player implementation to bypass ObjectDisposedException when trying to access RemoteEndPoint ([9aa0796](https://github.com/caunt/Void/commit/9aa0796e5f03039e3fca4dc0a91d1a2f47e23ffb))
+* subscribe as event listeners services resolved from dependency service ([dbb91e6](https://github.com/caunt/Void/commit/dbb91e6141464160d25c81c39c8b29f2d7916974))
+* unloading plugins with per-player scoped services ([740cd18](https://github.com/caunt/Void/commit/740cd18c4a8842651df3a38b7a1f669f07ab3f25))
+* update dotnet.yml to use .NET 10 SDK preview ([67c6ef7](https://github.com/caunt/Void/commit/67c6ef7c4cb3ba984b5304587d430bd7fc4f8b15))
+* update player in player context ([aa9b732](https://github.com/caunt/Void/commit/aa9b732204d2dd4d2bfda910fabdaa3fd91432f0))
+
+
+### Performance Improvements
+
+* optimize BlockSize in RecyclableMemoryStreamManager ([5a831f3](https://github.com/caunt/Void/commit/5a831f3f2c8d7f55075304d5dc254d8f4a449b0c))
+* optimize byte array allocation in forwarding plugin ([32f64f5](https://github.com/caunt/Void/commit/32f64f507b9f3237fbcae8baccd2e5881a840ca4))
+
 ## [0.2.0](https://github.com/caunt/Void/compare/v0.1.0...v0.2.0) (2025-04-26)
 
 
