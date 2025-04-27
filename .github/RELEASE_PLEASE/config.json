@@ -8,13 +8,8 @@
       "pull-request-footer": "This PR was generated with Release Please.",
       "draft": false,
       "changelog-path": "CHANGELOG.md",
-		
-      // BREAKING CHANGE only bumps semver minor if version < 1.0.0
-      // absence defaults to false
+	
       "bump-minor-pre-major": true,
-
-      // feat commits bump semver patch instead of minor if version < 1.0.0
-      // absence defaults to false
       "bump-patch-for-minor-pre-major": true
     }
   },
