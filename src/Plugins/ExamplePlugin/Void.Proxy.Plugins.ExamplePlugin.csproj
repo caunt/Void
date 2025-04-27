@@ -33,11 +33,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Api\Void.Proxy.Api.csproj">
-			<Private>false</Private>
-			<ExcludeAssets>runtime</ExcludeAssets>
-		</ProjectReference>
-		<ProjectReference Include="..\..\Minecraft\Void.Minecraft.csproj" />
+	  <PackageReference Include="Void.Minecraft" Version="0.2.0" />
+	  <PackageReference Include="Void.Proxy.Api" Version="0.2.0" />
 	</ItemGroup>
 
 </Project>

@@ -23,7 +23,7 @@ public class DependencyResolver(ILogger logger, AssemblyLoadContext context, Fun
         // try loading embedded assemblies
         if (VoidDependencies.Any(assemblyName.FullName.StartsWith))
         {
-            assembly = AssemblyLoadContext.Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.FullName == assemblyName.FullName);
+            assembly = AssemblyLoadContext.Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.GetName().Name == assemblyName.Name);
 
             if (assembly is null)
             {
