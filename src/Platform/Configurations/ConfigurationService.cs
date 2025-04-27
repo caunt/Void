@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Collections.Concurrent;
+using System.Reflection;
 using System.Text;
 using System.Threading.Channels;
 using System.Timers;
@@ -19,7 +20,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
     private const string ConfigurationsPath = "configs";
 
     private readonly ConfigurationTomlSerializer _serializer = new();
-    private readonly Dictionary<string, object> _configurations = [];
+    private readonly ConcurrentDictionary<string, object> _configurations = [];
 
     [Subscribe(PostOrder.First)]
     public void OnPluginUnloading(PluginUnloadingEvent @event)
@@ -36,7 +37,8 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
                 if (configurationType.Assembly != assembly)
                     continue;
 
-                _configurations.Remove(key);
+                if (!_configurations.Remove(key, out _))
+                    throw new InvalidOperationException($"Failed to remove configuration {key}");
             }
         }
     }
@@ -59,7 +61,9 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         if (_configurations.TryGetValue(fileName, out var configuration))
             return CastConfiguration<TConfiguration>(configuration);
 
-        _configurations.Add(fileName, await ReadAsync<TConfiguration>(fileName, cancellationToken));
+        if (!_configurations.TryAdd(fileName, await ReadAsync<TConfiguration>(fileName, cancellationToken)))
+            throw new InvalidOperationException($"Failed to add configuration {fileName}");
+
         return await GetAsync<TConfiguration>(key, cancellationToken);
     }
 
@@ -131,8 +135,10 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
                         }
                     case ElapsedEventArgs:
                         {
-                            foreach (var (key, configuration) in _configurations)
+                            var queue = new Queue<KeyValuePair<string, object>>(_configurations);
+                            while (queue.TryDequeue(out var pair))
                             {
+                                var (key, configuration) = pair;
                                 var serializedValue = _serializer.Serialize(configuration);
 
                                 if (!previousConfigurations.TryGetValue(key, out var previousSerializedValue))
