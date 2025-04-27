@@ -79,6 +79,9 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      version: ${{ steps.release.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - name: Download Artifacts
@@ -144,7 +147,7 @@ jobs:
 
   push:
     needs: release
-    if: ${{ steps.release.outputs.release_created }}
+    if: ${{ release.outputs.release_created }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -160,9 +163,9 @@ jobs:
       - name: Test
         run: dotnet test --no-build --verbosity normal
       - name: Pack Api
-        run: dotnet pack src/Api --configuration Release --output artifacts --property Version=${{ steps.release.outputs.release_created }}
+        run: dotnet pack src/Api --configuration Release --output artifacts --property Version=${{ release.release.outputs.version }}
       - name: Pack Minecraft
-        run: dotnet pack src/Minecraft --configuration Release --output artifacts --property Version=${{ steps.release.outputs.release_created }}
+        run: dotnet pack src/Minecraft --configuration Release --output artifacts --property Version=${{ release.release.outputs.version }}
       - name: Rename Artifacts
         shell: bash
         run: mv artifacts/*Api* artifacts/api.nupkg && mv artifacts/*Minecraft* artifacts/minecraft.nupkg
