@@ -103,7 +103,7 @@ jobs:
         run: gh release upload ${{ steps.release.outputs.tag_name }} artifacts/*
 
   docker-push:
-    needs: build
+    needs: dotnet-build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
