@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/caunt/Void/compare/v0.2.0...v0.3.0) (2025-04-27)
+
+
+### Features
+
+* switch example plugin dependencies to nuget source ([5eaa7dd](https://github.com/caunt/Void/commit/5eaa7dd0f4d8e080dfbd8b342c852d66e6475cc3))
+
 ## [0.2.0](https://github.com/caunt/Void/compare/v0.1.0...v0.2.0) (2025-04-27)
 
 
