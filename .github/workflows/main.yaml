@@ -13,7 +13,7 @@ on:
     branches: ["main"]
 
 jobs:
-  build:
+  dotnet-build:
     strategy:
       matrix:
         include:
@@ -76,8 +76,8 @@ jobs:
           compression-level: 9
           if-no-files-found: error
 
-  release:
-    needs: build
+  release-please:
+    needs: dotnet-build
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -102,7 +102,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload ${{ steps.release.outputs.tag_name }} artifacts/*
 
-  publish-containers:
+  docker-push:
     needs: build
     runs-on: ${{ matrix.os }}
     strategy:
@@ -145,9 +145,9 @@ jobs:
             /p:ContainerImageTag="${{ matrix.container_image_tag }}" \
             /p:ContainerBaseImage="${{ matrix.container_base_image }}"
 
-  push:
-    needs: release
-    if: ${{ needs.release.outputs.release_created }}
+  nuget-push:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -163,9 +163,9 @@ jobs:
       - name: Test
         run: dotnet test --no-build --verbosity normal
       - name: Pack Api
-        run: dotnet pack src/Api --configuration Release --output artifacts --property Version=${{ needs.release.outputs.version }}
+        run: dotnet pack src/Api --configuration Release --output artifacts --property Version=${{ needs.release-please.outputs.version }}
       - name: Pack Minecraft
-        run: dotnet pack src/Minecraft --configuration Release --output artifacts --property Version=${{ needs.release.outputs.version }}
+        run: dotnet pack src/Minecraft --configuration Release --output artifacts --property Version=${{ needs.release-please.outputs.version }}
       - name: Rename Artifacts
         shell: bash
         run: mv artifacts/*Api* artifacts/api.nupkg && mv artifacts/*Minecraft* artifacts/minecraft.nupkg
