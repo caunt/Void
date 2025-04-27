@@ -7,7 +7,9 @@ public interface IPluginService
     public IEnumerable<IPlugin> All { get; }
     public IEnumerable<string> Containers { get; }
 
+    public ValueTask LoadEnvironmentPluginsAsync(CancellationToken cancellationToken = default);
     public ValueTask LoadEmbeddedPluginsAsync(CancellationToken cancellationToken = default);
+    public ValueTask LoadDirectoryPluginsAsync(string path = "plugins", CancellationToken cancellationToken = default);
     public ValueTask LoadPluginsAsync(string path = "plugins", CancellationToken cancellationToken = default);
     public ValueTask LoadPluginsAsync(IEnumerable<Type> plugins, CancellationToken cancellationToken = default);
     public ValueTask LoadPluginAsync(Type pluginType, CancellationToken cancellationToken = default);

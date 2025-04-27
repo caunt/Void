@@ -40,9 +40,7 @@ public class Platform(
 
         logger.LogTrace("Working directory is {Path}", Directory.GetCurrentDirectory());
 
-        logger.LogInformation("Loading embedded plugins");
-        await plugins.LoadEmbeddedPluginsAsync(cancellationToken);
-        logger.LogInformation("Loading directory plugins");
+        logger.LogInformation("Loading plugins");
         await plugins.LoadPluginsAsync(cancellationToken: cancellationToken);
 
         await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);

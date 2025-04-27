@@ -23,6 +23,69 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
     public IEnumerable<string> Containers => _containers.Select(container => container.Context.Name!);
 
+    public async ValueTask LoadPluginsAsync(string path = "plugins", CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation("Loading environment plugins");
+        await LoadEnvironmentPluginsAsync(cancellationToken);
+
+        logger.LogInformation("Loading embedded plugins");
+        await LoadEmbeddedPluginsAsync(cancellationToken);
+
+        logger.LogInformation("Loading directory plugins");
+        await LoadDirectoryPluginsAsync(cancellationToken: cancellationToken);
+    }
+
+    public async ValueTask LoadEnvironmentPluginsAsync(CancellationToken cancellationToken = default)
+    {
+        var plugins = await GetArgumentsPlugins().Concat(GetVariablesPlugins()).Select(async variable =>
+        {
+            if (File.Exists(variable))
+            {
+                var name = Path.GetFileName(variable);
+                logger.LogTrace("Found {Name} local plugin", name);
+
+                await using var stream = File.OpenRead(variable);
+                return LoadContainer(name, stream);
+            }
+            else if (Uri.TryCreate(variable, UriKind.Absolute, out var url))
+            {
+                var name = url.LocalPath;
+                logger.LogTrace("Found {Name} local plugin", name);
+
+                using var response = await new HttpClient().GetAsync(url);
+                await using var stream = response.Content.ReadAsStream();
+                return LoadContainer(name, stream);
+            }
+            else
+            {
+                return null;
+            }
+        }).WhenAll();
+
+        await LoadPluginsAsync(plugins.WhereNotNull().SelectMany(x => x), cancellationToken);
+
+        static string[] GetArgumentsPlugins()
+        {
+            var args = Environment.GetCommandLineArgs();
+            var argIndex = args.IndexOf("--plugins");
+
+            if (argIndex < 0 || argIndex + 1 >= args.Length)
+                return [];
+
+            return args[argIndex + 1].Split(',', ';');
+        }
+
+        static string[] GetVariablesPlugins()
+        {
+            var args = Environment.GetEnvironmentVariable("PLUGINS");
+
+            if (string.IsNullOrWhiteSpace(args))
+                return [];
+
+            return args.Split(',', ';');
+        }
+    }
+
     public async ValueTask LoadEmbeddedPluginsAsync(CancellationToken cancellationToken = default)
     {
         var assembly = Assembly.GetExecutingAssembly();
@@ -51,7 +114,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
         await LoadPluginsAsync(plugins, cancellationToken);
     }
 
-    public async ValueTask LoadPluginsAsync(string path = "plugins", CancellationToken cancellationToken = default)
+    public async ValueTask LoadDirectoryPluginsAsync(string path = "plugins", CancellationToken cancellationToken = default)
     {
         var pluginsDirectoryInfo = new DirectoryInfo(path);
 
