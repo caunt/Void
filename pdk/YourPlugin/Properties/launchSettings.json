@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Run": {
+      "commandName": "Executable",
+      "executablePath": "$(TargetDir)void/start",
+      "commandLineArgs": "--plugins \"$(TargetPath)\"",
+      "workingDirectory": "$(TargetDir)void",
+      "nativeDebugging": false
+    }
+  }
+}

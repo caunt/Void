@@ -15,17 +15,15 @@
 		<PackageReference Include="Void.Minecraft" Version="0.2.1" />
 		<PackageReference Include="Void.Proxy.Api" Version="0.2.1" />
 	</ItemGroup>
-
-	<Target Name="Download" AfterTargets="Build">
-		<DownloadFile SourceUrl="https://github.com/caunt/Void/releases/latest/download/void-$(VoidPlatform)$(VoidExtension)" DestinationFolder="$(TargetDir)void" />
+	
+	<Target Name="Setup" AfterTargets="Build">
+		<PropertyGroup>
+			<VoidExtension Condition="'$(OS)' == 'Windows_NT'">.exe</VoidExtension>
+			<VoidPlatform Condition="'$(OS)' == 'Windows_NT'">win-x64</VoidPlatform>
+			<VoidPlatform Condition="$([MSBuild]::IsOsPlatform('Linux'))">linux-x64</VoidPlatform>
+			<VoidDirectory>$(TargetDir)void</VoidDirectory>
+		</PropertyGroup>
+		
+		<DownloadFile SourceUrl="https://github.com/caunt/Void/releases/latest/download/void-$(VoidPlatform)$(VoidExtension)" DestinationFolder="$(VoidDirectory)" DestinationFileName="start" />
 	</Target>
-
-	<PropertyGroup>
-		<VoidExtension Condition="'$(OS)' == 'Windows_NT'">.exe</VoidExtension>
-		<VoidPlatform Condition="'$(OS)' == 'Windows_NT'">win-x64</VoidPlatform>
-		<VoidPlatform Condition="$([MSBuild]::IsOsPlatform('Linux'))">linux-x64</VoidPlatform>
-		<StartAction>Program</StartAction>
-		<StartProgram>$(TargetDir)void\void-$(VoidPlatform)$(VoidExtension)</StartProgram>
-		<StartArguments>--plugins $(TargetDir)../ExamplePlugin.dll</StartArguments>
-	</PropertyGroup>
 </Project>
