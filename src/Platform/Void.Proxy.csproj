@@ -6,7 +6,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<NeutralLanguage>en</NeutralLanguage>
-		<!--<DebugType>embedded</DebugType>-->
+		<DebugType>embedded</DebugType>
 		<LangVersion>preview</LangVersion>
 		<RuntimeIdentifiers>
 			linux-arm;
