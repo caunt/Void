@@ -1,0 +1,6 @@
+[book]
+authors = ["Vitalii Kotenko"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Void Documentation"
