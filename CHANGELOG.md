@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.3](https://github.com/caunt/Void/compare/v0.2.2...v0.2.3) (2025-04-28)
+
+
+### Bug Fixes
+
+* cleanup plugin devkit ([9883c29](https://github.com/caunt/Void/commit/9883c292a4e3cd2b831707955667b88fd5fc776d))
+* more crossplatform plugin devkit ([eec8107](https://github.com/caunt/Void/commit/eec81071ee006f1f36b1f0e7d331ed55385fdbb0))
+
 ## [0.2.2](https://github.com/caunt/Void/compare/v0.2.1...v0.2.2) (2025-04-28)
 
 
