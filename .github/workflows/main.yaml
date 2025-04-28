@@ -181,3 +181,25 @@ jobs:
           path: artifacts
           compression-level: 9
           if-no-files-found: error
+
+  docs-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install mdBook
+        run: |
+          curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf -y | sh
+          rustup update
+          cargo install mdbook
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Build with mdBook
+        run: |
+          cd docs
+          mdbook build
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./book
+      - name: Deploy GitHub Pages site
+        uses: actions/deploy-pages@v4
