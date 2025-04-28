@@ -58,7 +58,10 @@ Server will send its own private key to the proxy, so proxy can provide protocol
 If no key provided, you still can play through proxy, but protocol API will be very limited.
 
 
-### Plugins
+### Developing Plugins
+Download [**Plugin DevKit**](https://github.com/caunt/Void/releases/latest/download/plugin-devkit.zip) and open it with your IDE.
+<br>
+<br>
 See the [Example Plugin](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) to learn how to create a plugin.
 <br>
 This is still an early version of the API, so it may change drastically in the future.
