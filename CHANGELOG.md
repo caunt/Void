@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.2](https://github.com/caunt/Void/compare/v0.2.1...v0.2.2) (2025-04-28)
+
+
+### Features
+
+* include plugin development kit in release ([4ac5930](https://github.com/caunt/Void/commit/4ac5930791c0d1904267bf7a6399171b4d5af06a))
+
+
+### Bug Fixes
+
+* plugin devkit properties evaluation ([bd07714](https://github.com/caunt/Void/commit/bd077141fdbbc2d5aa9d3cedd88fb94c5de86349))
+* remove launchSettings.json from plugin devkit ([aebe396](https://github.com/caunt/Void/commit/aebe396e112cc5ed6e3124601b4e1cc1f4d7c9e1))
+
 ## [0.2.1](https://github.com/caunt/Void/compare/v0.2.0...v0.2.1) (2025-04-27)
 
 
