@@ -15,15 +15,15 @@
 		<PackageReference Include="Void.Minecraft" Version="0.2.1" />
 		<PackageReference Include="Void.Proxy.Api" Version="0.2.1" />
 	</ItemGroup>
-	
-	<Target Name="Setup" AfterTargets="Build">
+
+	<Target Name="Setup" AfterTargets="Build" BeforeTargets="CoreCompile;PrepareForBuild;ResolveAssemblyReferences">
 		<PropertyGroup>
+			<VoidPlatform>$(NETCoreSdkRuntimeIdentifier)</VoidPlatform>
 			<VoidExtension Condition="'$(OS)' == 'Windows_NT'">.exe</VoidExtension>
-			<VoidPlatform Condition="'$(OS)' == 'Windows_NT'">win-x64</VoidPlatform>
-			<VoidPlatform Condition="$([MSBuild]::IsOsPlatform('Linux'))">linux-x64</VoidPlatform>
 			<VoidDirectory>$(TargetDir)void</VoidDirectory>
 		</PropertyGroup>
-		
+
 		<DownloadFile SourceUrl="https://github.com/caunt/Void/releases/latest/download/void-$(VoidPlatform)$(VoidExtension)" DestinationFolder="$(VoidDirectory)" DestinationFileName="start" />
+		<Exec Condition="'$(OS)'!='Windows_NT'" Command="chmod +x &quot;$(VoidDirectory)/start&quot;" />
 	</Target>
 </Project>
