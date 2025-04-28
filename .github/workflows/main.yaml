@@ -84,11 +84,6 @@ jobs:
       version: ${{ steps.release.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: true
       - name: Create Release
         uses: googleapis/release-please-action@v4
         id: release
@@ -96,6 +91,15 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: .github/RELEASE_PLEASE/config.json
           manifest-file: .github/RELEASE_PLEASE/manifest.json
+      - name: Download Artifacts
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Compress Plugin DevKit
+        if: ${{ steps.release.outputs.release_created }}
+        run: zip -r -9 artifacts/plugin-devkit.zip pdk
       - name: Upload Release Artifacts
         if: ${{ steps.release.outputs.release_created }}
         env:
