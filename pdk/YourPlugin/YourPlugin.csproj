@@ -3,17 +3,17 @@
 	<PropertyGroup>
 		<OutputType>Library</OutputType>
 		<TargetFramework>net9.0</TargetFramework>
+		<LangVersion>preview</LangVersion>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<EnableDynamicLoading>true</EnableDynamicLoading>
 		<DebugType>embedded</DebugType>
-		<LangVersion>preview</LangVersion>
 		<DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Void.Minecraft" Version="0.2.1" />
-		<PackageReference Include="Void.Proxy.Api" Version="0.2.1" />
+		<PackageReference Include="Void.Minecraft" Version="*-*" />
+		<PackageReference Include="Void.Proxy.Api" Version="*-*" />
 	</ItemGroup>
 
 	<Target Name="Setup" AfterTargets="Build" BeforeTargets="CoreCompile;PrepareForBuild;ResolveAssemblyReferences">

@@ -4,7 +4,6 @@
       "commandName": "Executable",
       "executablePath": "$(TargetDir)void/start",
       "commandLineArgs": "--plugins \"$(TargetPath)\"",
-      "workingDirectory": "$(TargetDir)void",
       "hotReloadEnabled": true
     }
   }

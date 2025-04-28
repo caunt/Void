@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
-using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
 
@@ -17,6 +16,8 @@ public class YourPlugin(ILogger logger, IDependencyService dependencies) : IPlug
         if (@event.Plugin != this)
             return;
 
+        logger.LogInformation("Registering {PluginName} services", Name);
+
         dependencies.Register(services =>
         {
             // Register your services here
@@ -24,17 +25,5 @@ public class YourPlugin(ILogger logger, IDependencyService dependencies) : IPlug
             // https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs
             // https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/Services/
         });
-    }
-
-    [Subscribe]
-    public void OnProxyStarting(ProxyStartingEvent @event)
-    {
-        logger.LogInformation("Received ProxyStarting event");
-    }
-
-    [Subscribe]
-    public void OnProxyStopping(ProxyStoppingEvent @event)
-    {
-        logger.LogInformation("Received ProxyStopping event");
     }
 }
