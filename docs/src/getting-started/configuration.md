@@ -1,5 +1,8 @@
 # Configuration
 
+File configurations and environment variables are primary ways of configuration.
+However many options may be rewritten in runtime using the API from Plugins.
+
 ## Proxy (settings.toml)
 
 ```ini
@@ -27,7 +30,23 @@ Servers = [
 ]
 ```
 
-## Plugins (configs/\<Plugin\>/*.toml)
+## Plugins Installation
+
+Plugins are compiled with the *.dll extension in any .NET compatible language.
+See the [Plugins overview](../developing-plugins/overview.md) section for more details.
+
+Directory `plugins` is the default location for plugins.
+Environment variable `PLUGINS` might be used to include URLs or Local Paths to plugins, separated by coma or semicolon.
+Same applies to `--plugins` command line argument.
+
+Examples:
+```bash
+$ ./void-linux-x64 --plugins "/home/YourPlugin1.dll;/home/YourPlugin2.dll"
+
+$ PLUGINS="/home/YourPlugin1.dll;/home/YourPlugin2.dll" ./void-linux-x64
+```
+
+## Plugins Configurations (configs/\<Plugin\>/*.toml)
 
 Each plugin may define one or subset of keyed configuration files in its own directory. 
 Plugins are not required to save or load configurations manually. 
