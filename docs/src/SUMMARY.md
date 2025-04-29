@@ -3,8 +3,7 @@
 ---
 
 # Getting Started
-- [Installation]()
-- [Configuration]()
+- [Configuration](getting-started/configuration.md)
 - [Running]()
 
 ---
@@ -38,6 +37,7 @@
 
 ---
 
+# Containers
 - [Running in Docker]()
 - [Running in Kubernetes]()
 
@@ -45,4 +45,4 @@
 
 - [FAQ]()
 - [Troubleshooting]()
-- [Changelog]()
+- [Changelog](https://github.com/caunt/Void/blob/main/CHANGELOG.md)
