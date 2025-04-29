@@ -6,14 +6,15 @@
   VOID
 </h1>
 
-
 **Download:**
 <br>
 [**Stable Development Builds**](https://github.com/caunt/Void/releases)
 <br>
 [**Unstable Daily Builds**](https://github.com/caunt/Void/actions)
 
-
+**Getting Started:**
+<br>
+[**Open Documentation**](https://void.caunt.world)
 
 ### Supported / Planned Features:
 
@@ -22,7 +23,7 @@
 >| Game Version         | Proxying           | Redirects          | API                | WIP                |
 >| :------------------- | :----------------: | :----------------: | :----------------: | :----------------: |
 >| Java 1.7.2 - 1.21.5  | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
->| Java 1.0.0 - 1.6.4   | :white_check_mark: | :x:                | :x:                | :x:                |
+>| Java 1.0.0 - 1.7.1   | :white_check_mark: | :x:                | :x:                | :x:                |
 >| Java Beta            | :white_check_mark: | :x:                | :x:                | :x:                |
 >| Java Alpha           | :white_check_mark: | :x:                | :x:                | :x:                |
 >| Java Classic         | :white_check_mark: | :x:                | :x:                | :x:                |
