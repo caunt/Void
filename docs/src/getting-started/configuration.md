@@ -41,9 +41,10 @@ Same applies to `--plugins` command line argument.
 
 Examples:
 ```bash
-$ ./void-linux-x64 --plugins "/home/YourPlugin1.dll;/home/YourPlugin2.dll"
-
-$ PLUGINS="/home/YourPlugin1.dll;/home/YourPlugin2.dll" ./void-linux-x64
+$ ./void-linux-x64 --plugins "/home/YourPlugin1.dll;https://example.org/download/YoutPlugin2.dll"
+```
+```bash
+$ PLUGINS="https://example.org/download/YoutPlugin1.dll;/home/YourPlugin2.dll" ./void-linux-x64
 ```
 
 ## Plugins Configurations (configs/\<Plugin\>/*.toml)
