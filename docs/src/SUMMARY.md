@@ -4,7 +4,7 @@
 
 # Getting Started
 - [Configuration](getting-started/configuration.md)
-- [Running]()
+- [Running](getting-started/running.md)
 
 ---
 
