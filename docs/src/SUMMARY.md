@@ -45,4 +45,3 @@
 
 - [FAQ]()
 - [Troubleshooting]()
-- [Changelog](https://github.com/caunt/Void/blob/main/CHANGELOG.md)
