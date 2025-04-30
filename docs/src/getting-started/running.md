@@ -1,16 +1,16 @@
-# Running
+﻿# Running
 
 [**Download**](https://github.com/caunt/Void/releases/latest/) latest release
 
 **Supported platforms**:
 
-| OS - Arch       | X64                | ARM64              | ARM                | X86                |
-|:---------------:|:------------------:|:------------------:|:------------------:|:------------------:|
-| Linux           | :white_check_mark: | :white_check_mark: | :white_check_mark: | :x:                |
-| Linux (Alpine)  | :white_check_mark: | :white_check_mark: | :white_check_mark: | :x:                |
-| Linux (Android) | :white_check_mark: | :white_check_mark: | :x:                | :x:                |
-| macOS           | :white_check_mark: | :white_check_mark: | :x:                | :x:                |
-| Windows         | :white_check_mark: | :white_check_mark: | :x:                | :white_check_mark: |
+| OS - Arch       | X64 | ARM64 | ARM | X86 |
+|:---------------:|:---:|:-----:|:---:|:---:|
+| Linux           | ✅ | ✅ | ✅ | ❌ |
+| Linux (Alpine)  | ✅ | ✅ | ✅ | ❌ |
+| Linux (Android) | ✅ | ✅ | ❌ | ❌ |
+| macOS           | ✅ | ✅ | ❌ | ❌ |
+| Windows         | ✅ | ✅ | ❌ | ✅ |
 
 ### Linux
 
