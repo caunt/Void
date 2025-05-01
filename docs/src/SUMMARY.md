@@ -9,8 +9,7 @@
 ---
 
 # Developing Plugins
-[Overview](developing-plugins/overview.md)
-- [Development Kit]()
+- [Development Kit](developing-plugins/development-kit.md)
 - [Compiling]()
 - [Services]()
     - [Singleton]()
