@@ -14,7 +14,7 @@
 
 ### Linux
 
-Set the executable permission and run it.
+Set the executable permission
 ```bash
 chmod +x void-linux-x64
 ```
