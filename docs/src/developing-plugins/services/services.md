@@ -73,4 +73,4 @@ Services in the DI container can have different lifetimes, which determine how l
 See the detailed description of each lifetime in the [**Microsoft Documentation**](https://docs.microsoft.com/en-us/dotnet/core/extensions/dependency-injection#service-lifetimes).
 
 ## Example
-See the [**ExamplePlugin.cs**](https://github.com/caunt/Void/blob/f334cd5c11ed0a8f3b253017f00106316201bce2/src/Plugins/ExamplePlugin/ExamplePlugin.cs#L15) with sample services registrations and usage.
+See the [**ExamplePlugin.cs**](https://github.com/caunt/Void/blob/f334cd5c11ed0a8f3b253017f00106316201bce2/src/Plugins/ExamplePlugin/ExamplePlugin.cs#L15) for services registrations and [**Services**](https://github.com/caunt/Void/tree/main/src/Plugins/ExamplePlugin/Services) directory for services usage and implementations.
