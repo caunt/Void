@@ -10,7 +10,6 @@
 
 # Developing Plugins
 - [Development Kit](developing-plugins/development-kit.md)
-- [Compiling]()
 - [Services]()
     - [Singleton]()
     - [Scoped]()
