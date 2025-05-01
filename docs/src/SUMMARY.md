@@ -14,7 +14,7 @@
     - [Singleton](developing-plugins/services/singleton.md)
     - [Scoped](developing-plugins/services/scoped.md)
     - [Transient](developing-plugins/services/transient.md)
-- [Events]()
+- [Events](developing-plugins/events/events.md)
     - [Player Events]()
     - [Plugin Events]()
     - [Custom Events]()
