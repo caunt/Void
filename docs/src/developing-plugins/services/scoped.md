@@ -5,7 +5,7 @@ This means that a new instance of the service is created for each player, and it
 Scoped services are useful for managing player-specific state or resources that should not be shared across different players.
 
 ## Example Definition
-IPlayerContext may be injected into your service to access the player context.
+**IPlayerContext** may be injected into your service to access the player context.
 You can get player instance, other player-scoped services, or network channel from it.
 
 ```csharp
