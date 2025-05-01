@@ -193,12 +193,18 @@ jobs:
           curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf -y | sh
           rustup update
           cargo install mdbook
+      - name: Install static-sitemap-cli
+        run: npm install static-sitemap-cli
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Build with mdBook
         run: |
           cd docs
           mdbook build
+      - name: Generate sitemap
+        run: |
+          cd docs/src
+          npx sscli --no-clean --base https://void.caunt.world
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
