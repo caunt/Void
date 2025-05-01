@@ -14,7 +14,7 @@
 
 **Getting Started:**
 <br>
-[**Open Documentation**](https://void.caunt.world)
+[**Open Documentation**](https://void.caunt.world/getting-started/running.html)
 
 ### Supported / Planned Features:
 
