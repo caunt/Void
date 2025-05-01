@@ -10,10 +10,10 @@
 
 # Developing Plugins
 - [Development Kit](developing-plugins/development-kit.md)
-- [Services](services/services.md)
-    - [Singleton](services/singleton.md)
-    - [Scoped](services/scoped.md)
-    - [Transient](services/transient.md)
+- [Services](developing-plugins/services/services.md)
+    - [Singleton](developing-plugins/services/singleton.md)
+    - [Scoped](developing-plugins/services/scoped.md)
+    - [Transient](developing-plugins/services/transient.md)
 - [Events]()
     - [Player Events]()
     - [Plugin Events]()
