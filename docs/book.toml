@@ -7,3 +7,4 @@ title = "Void Documentation"
 
 [output.html]
 hash-files = true
+google-analytics = "G-YVWLCNQ15D"
