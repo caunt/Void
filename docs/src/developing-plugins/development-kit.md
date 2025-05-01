@@ -3,6 +3,16 @@
 Plugin Development Kit is a set of predefined configurations that simplifies the development process of plugins.
 It can be used with any msbuild-compatible IDE, such as Visual Studio or Rider.
 
+## Prerequisites
+Void plugins are written with many modern .NET features, so you will need to ensure that you had experience with them or at least know what are you doing.
+Some of them include:
+- Dependency Injection
+- Asynchronous Programming
+- Event-Driven Programming
+- Stack-allocating and Memory Management
+- Serialization and Deserialization of data
+- Network Packets and Protocols
+
 ## Installation
 1) [**Download**](https://github.com/caunt/Void/releases/latest/download/plugin-devkit.zip) the latest **Plugin Development Kit**.
 2) Extract the downloaded zip file to your desired location.
