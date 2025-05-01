@@ -132,3 +132,16 @@ public class TrackerService(IPlayerService players)
 Most of the events that have Player property are already implemented as `IScopedEvent`.
 While you can listen to them in Scoped services, they are still available for Singleton services.
 In Singleton context, you will receive events NOT filtered. Meaning you will receive events for all players in single service.
+
+If you would like to not filter events in scoped events, pass `bypassScopedFilter: true` to the `Subscribe` attribute.
+```csharp
+public class MyScopedService(IPlayerContext context) : IEventListener
+{
+    [Subscribe(bypassScopedFilter: true)]
+    public void OnPlayerConnected(PlayerConnectedEvent @event)
+    {
+        // This event will be triggered for all players
+        // regardless of the current player context
+    }
+}
+```
