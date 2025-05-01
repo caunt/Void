@@ -204,7 +204,7 @@ jobs:
       - name: Generate sitemap
         run: |
           cd docs/src
-          npx sscli --no-clean --base https://void.caunt.world
+          npx sscli --no-clean --base "https://void.caunt.world"
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
