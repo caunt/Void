@@ -7,14 +7,14 @@ To learn more about DI, see [**Microsoft DI Documentation**](https://docs.micros
 
 ## Registration
 
-1) Inject DependencyService into your main plugin constructor:
+Inject DependencyService into your main plugin constructor:
 ```csharp
 public class MyPlugin(DependencyService dependencies) : IPlugin
 {
 
 }
 ```
-2) Register your services with injected DependencyService:
+Register your services with injected DependencyService:
 ```csharp
 dependencies.Register(services =>
 {
@@ -23,7 +23,7 @@ dependencies.Register(services =>
     services.AddTransient<ExampleTransientService>();
 });
 ```
-3) Your services will be automatically activated (instantiated) and subscribed to events, if not delayed explicitly.
+Your services will be automatically activated (instantiated) and subscribed to events, if not delayed explicitly.
 You can delay your services activation, by providing "activate: false" parameter to the registration method:
 ```csharp
 dependencies.Register(services =>
