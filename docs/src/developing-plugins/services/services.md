@@ -67,7 +67,7 @@ public class ExampleScopedService(
 Services in the DI container can have different lifetimes, which determine how long they persist and how often they are created. These lifetimes are:
 
 1. [**Singleton**](singleton.md): A single instance is created and shared throughout the application.
-2. [**Scoped**](scoped.md): An instance is created once per player (or scope).
+2. [**Scoped**](scoped.md): An instance is created once per player.
 3. [**Transient**](transient.md): A new instance is provided every time it is requested.
 
 See the detailed description of each lifetime in the [**Microsoft Documentation**](https://docs.microsoft.com/en-us/dotnet/core/extensions/dependency-injection#service-lifetimes).
