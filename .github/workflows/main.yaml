@@ -191,20 +191,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install mdBook
+        run: |
+          curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf -y | sh
+          rustup update
+          cargo install mdbook
+      - name: Install static-sitemap-cli
+        run: npm install static-sitemap-cli
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Build with mdBook
+        run: |
+          cd docs
+          mdbook build
+      - name: Generate sitemap
+        run: |
+          cd docs/book
+          npx sscli --no-clean --base https://void.caunt.world
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/book
+      - name: Deploy GitHub Pages site
+        uses: actions/deploy-pages@v4
+
+  docfx-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "9"
       - name: Setup DocFX
         run: dotnet tool update -g docfx
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
       - name: Build with DocFX
         run: docfx docfx/docfx.json --verbose
-      - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docfx/_site
-      - name: Deploy GitHub Pages site
-        id: deployment
-        uses: actions/deploy-pages@v4
+        continue-on-error: true
