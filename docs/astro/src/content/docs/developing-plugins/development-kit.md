@@ -1,5 +1,5 @@
 ---
-title: Plugin Development Kit
+title: Development Kit
 description: Learn how to use the Plugin Development Kit to create plugins for Void
 ---
 
@@ -25,29 +25,24 @@ Some of them include:
 Press **F5** to run the project. This will start the Void Proxy with your plugin loaded.
 
 ## Debugging
-<div class="warning">
-
+:::caution
 Debugging currently is not supported by JetBrains Rider.
 Proxy is distributed with PublishSingleFile=true flag, which makes Rider unable to attach debugger to the process.
 See [Rider Debugging](https://www.jetbrains.com/help/rider/Debugging_Code.html) for more details.
-
-</div>
+:::
 
 With Visual Studio, you can set breakpoints in your code and use the **Debug** menu to start debugging.
 
 ## Compiling
-
 1) Build the project with your IDE.
 2) Take the compiled dll from the **bin** folder.
 3) Do not use and do not include any other dlls from that directory. 
 Your dependencies will be automatically resolved by the proxy in runtime.
 
 ## Dependencies
-
 Dependencies are automatically resolved in runtime in several ways and fallbacks. 
 Including nuget packages, local dlls, and looking in runtime.
 NuGet dependencies will be automatically downloaded and cached in the **packages** directory.
 
 ## Distribution
-
 Share your ***.dll** file, without any other files from the **bin** directory.

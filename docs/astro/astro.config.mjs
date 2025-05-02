@@ -20,6 +20,7 @@ export default defineConfig({
             {
                 label: 'Developing Plugins',
                 items: [
+                    { slug: 'developing-plugins/development-kit' },
                     {
                         label: 'Events',
                         items: [
