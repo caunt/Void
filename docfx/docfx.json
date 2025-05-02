@@ -41,6 +41,10 @@
       "_appTitle": "Void",
       "_enableSearch": true,
       "pdf": true
+    },
+    "sitemap": {
+      "baseUrl": "https://void.caunt.world",
+      "priority": 1.0
     }
   }
 }
