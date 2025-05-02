@@ -3,6 +3,8 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import sitemap from '@astrojs/sitemap';
 
+const googleAnalyticsId = 'G-3KT5D46L8T'
+
 // https://astro.build/config
 export default defineConfig({
     site: 'https://void.caunt.world',
@@ -41,6 +43,22 @@ export default defineConfig({
             {
                 label: 'Reference',
                 autogenerate: { directory: 'reference' }
+            }
+        ],
+        head: [
+            {
+                tag: 'script',
+                attrs: { src: `https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}` }
+            },
+            {
+                tag: 'script',
+                content: `
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+                    
+                    gtag('config', '${googleAnalyticsId}');
+                    `,
             }
         ]
     }), sitemap()],
