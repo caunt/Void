@@ -4,6 +4,7 @@
   <Project Path="src\Debug\Void.Proxy.Debug.csproj" />
   <Project Path="src\Minecraft\Void.Minecraft.csproj" />
   <Project Path="src\Platform\Void.Proxy.csproj" />
+  <Project Path="src\Playground\Void.Playground.csproj" />
   <Project Path="src\Plugins\Common\Void.Proxy.Plugins.Common.csproj" />
   <Project Path="src\Plugins\ExamplePlugin\Void.Proxy.Plugins.ExamplePlugin.csproj" />
   <Project Path="src\Plugins\ModsSupport\Forge\Void.Proxy.Plugins.ModsSupport.Forge.csproj" />
