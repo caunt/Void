@@ -60,6 +60,10 @@ export default defineConfig({
                     gtag('config', '${googleAnalyticsId}');
                     `,
             }
-        ]
+        ],
+        editLink: {
+            baseUrl: 'https://github.com/caunt/void/edit/main/docs/astro',
+        },
+        lastUpdated: true
     }), sitemap()],
 });
