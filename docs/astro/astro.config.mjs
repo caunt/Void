@@ -14,7 +14,7 @@ export default defineConfig({
                 label: 'Getting Started',
                 items: [
                     { label: 'Configuration', slug: 'getting-started/configuration' },
-                    { label: 'Running', slug: 'getting-started/running' },
+                    { label: 'Running', slug: 'getting-started/running' }
                 ],
             },
             {
@@ -39,8 +39,8 @@ export default defineConfig({
             },
             {
                 label: 'Reference',
-                autogenerate: { directory: 'reference' },
-            },
-        ],
+                autogenerate: { directory: 'reference' }
+            }
+        ]
     }), sitemap()],
 });
