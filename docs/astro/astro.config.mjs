@@ -13,8 +13,8 @@ export default defineConfig({
             {
                 label: 'Getting Started',
                 items: [
-                    { label: 'Configuration', slug: 'getting-started/configuration' },
-                    { label: 'Running', slug: 'getting-started/running' }
+                    { slug: 'getting-started/running' },
+                    { slug: 'getting-started/configuration' }
                 ],
             },
             {
@@ -23,16 +23,16 @@ export default defineConfig({
                     {
                         label: 'Events',
                         items: [
-                            { label: 'Overview', slug: 'developing-plugins/events/overview' }
+                            { slug: 'developing-plugins/events/overview' }
                         ]
                     },
                     {
                         label: 'Services',
                         items: [
-                            { label: 'Overview', slug: 'developing-plugins/services/overview' },
-                            { label: 'Singleton Services', slug: 'developing-plugins/services/singleton' },
-                            { label: 'Scoped Services', slug: 'developing-plugins/services/scoped' },
-                            { label: 'Transient Services', slug: 'developing-plugins/services/transient' }
+                            { slug: 'developing-plugins/services/overview' },
+                            { slug: 'developing-plugins/services/singleton' },
+                            { slug: 'developing-plugins/services/scoped' },
+                            { slug: 'developing-plugins/services/transient' }
                         ]
                     }
                 ],

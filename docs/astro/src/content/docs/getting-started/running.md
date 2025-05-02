@@ -1,5 +1,5 @@
 ﻿---
-title: Void Running
+title: Running
 description: Learn how to run Void Proxy
 ---
 

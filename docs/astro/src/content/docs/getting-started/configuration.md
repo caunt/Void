@@ -1,5 +1,5 @@
 ---
-title: Void Configuration
+title: Configuration
 description: Learn how to configure Void Proxy
 ---
 
