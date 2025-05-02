@@ -200,7 +200,7 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Build with DocFX
-        run: docfx docfx/docfx.json
+        run: docfx docfx/docfx.json --verbose
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
