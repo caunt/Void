@@ -194,8 +194,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "10"
-          dotnet-quality: "preview"
+          dotnet-version: "9"
       - name: Setup DocFX
         run: dotnet tool update -g docfx
       - name: Configure GitHub Pages
