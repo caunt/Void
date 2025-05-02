@@ -4,8 +4,8 @@
 ## Get latest from `dotnet new gitignore`
 
 # DocFX
-docfx/_site
-docfx/api
+**/docfx/_site
+**/docfx/api
 
 # dotenv files
 .env
