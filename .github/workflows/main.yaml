@@ -188,10 +188,24 @@ jobs:
           compression-level: 9
           if-no-files-found: error
 
-  docs-push:
+  docs-astro-push:
     environment:
-      name: github-pages
+      name: docs-astro-push
       url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Install, build, and upload documentation site
+        uses: withastro/action@v4
+        with:
+          path: docs/astro
+      - name: Deploy GitHub Pages site
+        uses: actions/deploy-pages@v4
+
+  docs-mdbook-deprecated:
+    environment: docs-mdbook-deprecated
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -202,8 +216,6 @@ jobs:
           cargo install mdbook
       - name: Install static-sitemap-cli
         run: npm install static-sitemap-cli
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
       - name: Build with mdBook
         run: |
           cd docs/mdbook
@@ -212,15 +224,9 @@ jobs:
         run: |
           cd docs/mdbook/book
           npx sscli --no-clean --base https://void.caunt.world
-      - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/mdbook/book
-      - name: Deploy GitHub Pages site
-        uses: actions/deploy-pages@v4
 
-  docfx-test:
-    environment: docfx-test
+  docs-docfx-bug-test:
+    environment: docs-docfx-bug-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
