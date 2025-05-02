@@ -231,5 +231,5 @@ jobs:
       - name: Setup DocFX
         run: dotnet tool update -g docfx
       - name: Build with DocFX
-        run: docfx docfx/docfx.json --verbose
+        run: docfx docs/docfx/docfx.json --verbose
         continue-on-error: true
