@@ -2,10 +2,6 @@
 _layout: landing
 ---
 
-# This is the **HOMEPAGE**.
+# This Documentation is under active development.
 
-Refer to [Markdown](http://daringfireball.net/projects/markdown/) for how to write markdown files.
-
-## Quick Start Notes:
-
-1. Add images to the *images* folder if the file is referencing an image.
+Glad to see you being interested in this proxy. Visit this page later to see more information about configuring proxy and developing your first plugin.
