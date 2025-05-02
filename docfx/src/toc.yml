@@ -1,4 +1,69 @@
-- name: Introduction
-  href: introduction.md
 - name: Getting Started
-  href: getting-started.md
+  items:
+  - name: Configuration
+    href: getting-started/configuration.md
+  - name: Running
+    href: getting-started/running.md
+- name: Developing Plugins
+  items:
+  - href: developing-plugins/development-kit.md
+  - name: Services
+    href: developing-plugins/services/services.md
+    items:
+    - name: Singleton
+      href: developing-plugins/services/singleton.md
+    - name: Scoped
+      href: developing-plugins/services/scoped.md
+    - name: Transient
+      href: developing-plugins/services/transient.md
+  - name: Events
+    href: developing-plugins/events/events.md
+    items:
+    - name: Player Events
+      href: developing-plugins/events/player-events.md
+    - name: Plugin Events
+      href: developing-plugins/events/plugin-events.md
+    - name: custom-events.md
+      href: developing-plugins/events/custom-events.md
+  - name: Commands
+    href: developing-plugins/commands/commands.md
+  - name: Text Components
+    href: developing-plugins/text-components/text-components.md
+    items:
+    - name: Serializers
+      href: developing-plugins/text-components/serializers.md
+  - name: NBT Handling
+    href: developing-plugins/nbt-handling/nbt-handling.md
+    items:
+    - name: Serializers
+      href: developing-plugins/nbt-handling/serializers.md
+  - name: Packets (Messages)
+    href: developing-plugins/packets/messages.md
+    items:
+    - name: Mapping Packets
+      href: developing-plugins/packets/mapping-packets.md
+    - name: Transforming Mappings
+      href: developing-plugins/packets/transforming-mappings.md
+    - name: Modifying Packet Data
+      href: developing-plugins/packets/modifying-packet-data.md
+  - name: Forwarding Strategies
+    href: developing-plugins/forwarding-strategies/forwarding-strategies.md
+    items:
+    - name: Comparison
+      href: developing-plugins/forwarding-strategies/comparison.md
+    - name: Bungee (Legacy)
+      href: developing-plugins/forwarding-strategies/bungee.md
+    - name: Velocity (Legacy)
+      href: developing-plugins/forwarding-strategies/velocity.md
+    - name: Online (Private-Key)
+      href: developing-plugins/forwarding-strategies/online.md
+- name: Containers
+  items:
+  - name: Running in Docker
+    href: containers/running-in-docker.md
+  - name: Running in Kubernetes
+    href: containers/running-in-kubernetes.md
+- name: FAQ
+  href: faq.md
+- name: Troubleshooting
+  href: troubleshooting.md
