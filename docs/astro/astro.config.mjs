@@ -3,6 +3,9 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import sitemap from '@astrojs/sitemap';
 
+import { ExpressiveCodeTheme } from '@astrojs/starlight/expressive-code'
+import fs from 'node:fs'
+
 const googleAnalyticsId = 'G-3KT5D46L8T'
 
 // https://astro.build/config
@@ -64,6 +67,9 @@ export default defineConfig({
         editLink: {
             baseUrl: 'https://github.com/caunt/void/edit/main/docs/astro',
         },
-        lastUpdated: true
+        lastUpdated: true,
+        expressiveCode: {
+            themes: [ExpressiveCodeTheme.fromJSONString(fs.readFileSync(new URL(`./themes/visual-studio-2019-dark.jsonc`, import.meta.url), 'utf-8'))]
+        }
     }), sitemap()],
 });
