@@ -1,9 +1,8 @@
 ﻿using System;
-using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Proxy.Api.Commands;
 
-namespace Void.Minecraft.Commands.Extensions;
+namespace Void.Minecraft.Commands.Brigadier.Extensions;
 
 public static class CommandServiceExtensions
 {

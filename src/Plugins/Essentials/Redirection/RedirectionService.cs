@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
-using Void.Minecraft.Commands.Extensions;
+using Void.Minecraft.Commands.Brigadier.Extensions;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Player;

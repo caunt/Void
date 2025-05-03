@@ -1,15 +1,10 @@
 using Microsoft.Extensions.Logging;
-using Void.Minecraft.Commands.Brigadier;
-using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
-using Void.Minecraft.Commands.Extensions;
 using Void.Minecraft.Events;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
-using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
-using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Contexts;
@@ -22,27 +17,8 @@ namespace Void.Proxy.Plugins.ExamplePlugin.Services;
 // Since this service is Scoped, it is being instantiated per player. 
 // So you can inject IPlayerContext to get access to the player instance.
 // Instance of your ExamplePlugin also can be injected.
-public class InventoryService(IPlayerContext context, ILogger<InventoryService> logger, ICommandService commands, ExamplePlugin plugin) : IEventListener
+public class InventoryService(IPlayerContext context, ILogger<InventoryService> logger) : IEventListener
 {
-    [Subscribe]
-    public void OnPluginLoading(PluginLoadingEvent @event)
-    {
-        // This event is fired when any plugin is being loaded
-
-        // Skip all other plugins load events except ours
-        if (@event.Plugin != plugin)
-            return;
-
-        // Register your commands in brigadier-like way
-        // https://github.com/Mojang/brigadier/
-        commands.Register(builder => builder
-            .Literal("slot")
-            .Executes(ChangeSlotAsync)
-            .Then(builder => builder
-                .Argument("index", Arguments.Integer())
-                .Executes(ChangeSlotAsync)));
-    }
-
     public async ValueTask<int> ChangeSlotAsync(CommandContext context, CancellationToken cancellationToken)
     {
         // Commands might be triggered by console, plugins, or anything
