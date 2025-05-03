@@ -28,12 +28,14 @@ export default defineConfig({
                     { slug: 'developing-plugins/development-kit' },
                     {
                         label: 'Events',
+                         collapsed: true,
                         items: [
                             { slug: 'developing-plugins/events/overview' }
                         ]
                     },
                     {
                         label: 'Services',
+                         collapsed: true,
                         items: [
                             { slug: 'developing-plugins/services/overview' },
                             { slug: 'developing-plugins/services/singleton' },
