@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.3.0](https://github.com/caunt/Void/compare/v0.2.3...v0.3.0) (2025-05-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove IMinecraftPlayer interface, move all minecraft extension methods to IPlayer directly
+
+### Features
+
+* gh pages documentation setup ([b6fb947](https://github.com/caunt/Void/commit/b6fb94753bdfe93956629c8d601e86ca9c179726))
+* setup docs pages ([2aaded2](https://github.com/caunt/Void/commit/2aaded23555be7a68f1d121b514d5e306c015af4))
+
+
+### Bug Fixes
+
+* gh pages permissions ([5ab9d61](https://github.com/caunt/Void/commit/5ab9d61599df9002dca39a09603f06b6e6aee38a))
+* gh pages upload path ([ad6d638](https://github.com/caunt/Void/commit/ad6d638c088e2c03b1119036dc6d04ede09df6a0))
+* msdi documentation link ([1e1bf3b](https://github.com/caunt/Void/commit/1e1bf3b96b6be6786a15d5936c1efe11a7ef5157))
+* temporary rollback C# 14 extension type ([680a580](https://github.com/caunt/Void/commit/680a580486d19b9548bc347f47d24ae3b6c266fa))
+
+
+### Code Refactoring
+
+* remove IMinecraftPlayer interface, move all minecraft extension methods to IPlayer directly ([a240a1d](https://github.com/caunt/Void/commit/a240a1d24757750e9b7af5750d0565dc5d69d6a6))
+
 ## [0.2.3](https://github.com/caunt/Void/compare/v0.2.2...v0.2.3) (2025-04-28)
 
 
