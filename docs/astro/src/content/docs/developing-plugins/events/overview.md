@@ -58,7 +58,7 @@ public class MyScopedService(IPlayerContext context) : IEventListener
 
 ## Registering services with events
 ```csharp
-public class MyPlugin(DependencyService services) : IPlugin
+public class MyPlugin(IDependencyService services) : IPlugin
 {
     [Subscribe]
     public void OnPluginLoading(PluginLoadingEvent @event)

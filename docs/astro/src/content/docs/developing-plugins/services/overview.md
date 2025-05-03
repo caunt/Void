@@ -12,7 +12,7 @@ To learn more about DI, see [**Microsoft DI Documentation**](https://docs.micros
 
 Inject `DependencyService` into your main plugin constructor:
 ```csharp
-public class MyPlugin(DependencyService dependencies) : IPlugin
+public class MyPlugin(IDependencyService dependencies) : IPlugin
 {
 
 }

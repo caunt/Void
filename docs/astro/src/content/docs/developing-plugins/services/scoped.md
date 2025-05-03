@@ -19,7 +19,7 @@ public class MyScopedService(IPlayerContext context)
 
 ## Example Registration
 ```csharp
-public class MyPlugin(DependencyService services) : IPlugin
+public class MyPlugin(IDependencyService services) : IPlugin
 {
     [Subscribe]
     public void OnPluginLoading(PluginLoadingEvent @event)
