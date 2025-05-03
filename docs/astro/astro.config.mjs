@@ -28,14 +28,14 @@ export default defineConfig({
                     { slug: 'developing-plugins/development-kit' },
                     {
                         label: 'Events',
-                         collapsed: true,
+                        collapsed: true,
                         items: [
                             { slug: 'developing-plugins/events/overview' }
                         ]
                     },
                     {
                         label: 'Services',
-                         collapsed: true,
+                        collapsed: true,
                         items: [
                             { slug: 'developing-plugins/services/overview' },
                             { slug: 'developing-plugins/services/singleton' },
@@ -44,10 +44,6 @@ export default defineConfig({
                         ]
                     }
                 ],
-            },
-            {
-                label: 'Reference',
-                autogenerate: { directory: 'reference' }
             }
         ],
         head: [
