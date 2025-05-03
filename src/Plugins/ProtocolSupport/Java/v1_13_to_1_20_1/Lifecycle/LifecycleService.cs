@@ -2,7 +2,6 @@
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
-using Void.Minecraft.Players;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Players;
@@ -26,7 +25,7 @@ public class LifecycleService : AbstractLifecycleService
         return Plugin.SupportedVersions.Contains(protocolVersion);
     }
 
-    protected override async ValueTask<bool> SendChatMessageAsync(IMinecraftPlayer player, Component text, CancellationToken cancellationToken)
+    protected override async ValueTask<bool> SendChatMessageAsync(IPlayer player, Component text, CancellationToken cancellationToken)
     {
         if (!await player.IsPlayingAsync(cancellationToken))
             return false;

@@ -37,10 +37,10 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
                 if (@event.Direction is not Direction.Serverbound)
                     break;
 
-                if (!@event.Link.Player.TryGetMinecraftPlayer(out var player))
+                if (!@event.Player.IsMinecraft)
                     break;
 
-                if (player.Phase is not Phase.Play)
+                if (@event.Player.Phase is not Phase.Play)
                     break;
 
                 // TODO is it safe to cancel Player Session (chat_session_update) packet?
@@ -108,7 +108,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
 
     protected override async ValueTask<bool> IdentifyPlayerAsync(ILink link, CancellationToken cancellationToken)
     {
-        if (!link.Player.TryGetMinecraftPlayer(out var player))
+        if (!link.Player.IsMinecraft)
             return false;
 
         var loginStart = await link.ReceivePacketAsync<LoginStartPacket>(cancellationToken);
@@ -116,21 +116,21 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         if (IsAlreadyOnline(loginStart.Profile.Username))
             return false;
 
-        player.Profile = loginStart.Profile;
+        link.Player.Profile = loginStart.Profile;
         return true;
     }
 
     protected override async ValueTask AdmitPlayerAsync(ILink link, CancellationToken cancellationToken)
     {
-        if (!link.Player.TryGetMinecraftPlayer(out var player))
+        if (!link.Player.IsMinecraft)
             return;
 
-        if (player.Profile is null)
+        if (link.Player.Profile is not { } profile)
             throw new InvalidOperationException("Player should be identified before admitting");
 
         await link.SendPacketAsync(new LoginSuccessPacket
         {
-            GameProfile = player.Profile,
+            GameProfile = profile,
             StrictErrorHandling = false
         }, cancellationToken);
 
@@ -139,23 +139,23 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
 
     protected override async ValueTask PrepareServerAuthenticationAsync(ILink link, CancellationToken cancellationToken)
     {
-        if (!link.Player.TryGetMinecraftPlayer(out var player))
+        if (!link.Player.IsMinecraft)
             return;
 
-        if (player.Profile is null)
+        if (link.Player.Profile is not { } profile)
             throw new InvalidOperationException("Player should be admitted before preparing server");
 
         await link.SendPacketAsync(new HandshakePacket
         {
             NextState = 2,
-            ProtocolVersion = player.ProtocolVersion.Version,
+            ProtocolVersion = link.Player.ProtocolVersion.Version,
             ServerAddress = link.Server.Host,
             ServerPort = (ushort)link.Server.Port
         }, cancellationToken);
 
         await link.SendPacketAsync(new LoginStartPacket
         {
-            Profile = player.Profile
+            Profile = profile
         }, cancellationToken);
     }
 
@@ -164,7 +164,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         switch (packet)
         {
             case LoginPluginRequestPacket loginPluginRequestPacket:
-                var result = await _events.ThrowWithResultAsync(new LoginPluginRequestEvent(link, loginPluginRequestPacket.Channel, loginPluginRequestPacket.Data), cancellationToken);
+                var result = await _events.ThrowWithResultAsync(new LoginPluginRequestEvent(link.Player, link, loginPluginRequestPacket.Channel, loginPluginRequestPacket.Data), cancellationToken);
                 await link.SendPacketAsync(new LoginPluginResponsePacket { Successful = result is not null, Data = result ?? [], MessageId = loginPluginRequestPacket.MessageId }, cancellationToken);
                 break;
             case SetCompressionPacket:

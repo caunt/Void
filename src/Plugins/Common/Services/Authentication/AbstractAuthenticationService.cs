@@ -28,24 +28,24 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
     [Subscribe]
     public async ValueTask OnAuthenticationStarting(AuthenticationStartingEvent @event, CancellationToken cancellationToken)
     {
-        if (!@event.Link.Player.TryGetMinecraftPlayer(out var player))
+        if (!@event.Player.IsMinecraft)
             return;
 
-        if (!IsSupportedVersion(player.ProtocolVersion))
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
-        if (!await @event.Link.Player.IsProtocolSupportedAsync(cancellationToken))
+        if (!await @event.Player.IsProtocolSupportedAsync(cancellationToken))
         {
             @event.Result = AuthenticationSide.Server;
             return;
         }
 
-        if (await IsPlayerAuthenticatedAsync(@event.Link.Player, cancellationToken))
+        if (await IsPlayerAuthenticatedAsync(@event.Player, cancellationToken))
         {
             // since IPlayer is already authenticated, we have no choice but to continue authenticating IServer on proxy side
             @event.Result = AuthenticationSide.Proxy;
 
-            if (await IsPlayerPlayingAsync(@event.Link.Player, cancellationToken))
+            if (await IsPlayerPlayingAsync(@event.Player, cancellationToken))
                 await FinishPlayingAsync(@event.Link, cancellationToken);
         }
         else
@@ -60,7 +60,7 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
     [Subscribe]
     public async ValueTask OnAuthenticationStarted(AuthenticationStartedEvent @event, CancellationToken cancellationToken)
     {
-        if (!@event.Link.Player.TryGetMinecraftPlayer(out var player))
+        if (!@event.Player.IsMinecraft)
             return;
 
         if (@event.Side is AuthenticationSide.Server)
@@ -69,10 +69,10 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
             return;
         }
 
-        if (!IsSupportedVersion(player.ProtocolVersion))
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
-        if (!await @event.Link.Player.IsProtocolSupportedAsync(cancellationToken))
+        if (!await @event.Player.IsProtocolSupportedAsync(cancellationToken))
             return;
 
         var authenticationResult = await AuthenticatePlayerAsync(@event.Link, cancellationToken);
@@ -85,7 +85,7 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
 
     protected bool IsAlreadyOnline(string username)
     {
-        return players.All.Select(player => player.TryGetMinecraftPlayer(out var minecraftPlayer) ? minecraftPlayer : null).Any(player => player?.Profile?.Username == username);
+        return players.All.Any(player => player.IsMinecraft && player.Profile?.Username == username);
     }
 
     protected async ValueTask<AuthenticationResult> AuthenticatePlayerAsync(ILink link, CancellationToken cancellationToken)
@@ -96,10 +96,10 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         if (!await IdentifyPlayerAsync(link, cancellationToken))
             return AuthenticationResult.NotAuthenticatedPlayer;
 
-        if (!await events.ThrowWithResultAsync(new PlayerVerifyingEncryptionEvent(link), cancellationToken))
+        if (!await events.ThrowWithResultAsync(new PlayerVerifyingEncryptionEvent(link.Player, link), cancellationToken))
             return AuthenticationResult.NotAuthenticatedPlayer;
 
-        await events.ThrowAsync(new PlayerVerifiedEncryptionEvent(link), cancellationToken);
+        await events.ThrowAsync(new PlayerVerifiedEncryptionEvent(link.Player, link), cancellationToken);
         await AdmitPlayerAsync(link, cancellationToken);
 
         return AuthenticationResult.Authenticated;
@@ -107,14 +107,14 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
 
     protected async ValueTask<AuthenticationResult> AuthenticateServerAsync(ILink link, AuthenticationResult authenticationResult, CancellationToken cancellationToken)
     {
-        if (!link.Player.TryGetMinecraftPlayer(out var player))
+        if (!link.Player.IsMinecraft)
             return AuthenticationResult.Authenticated;
 
         // server channel might be closed very early, skip authentication, ILink should stop itself as soon as its executes
         if (!link.ServerChannel.IsAlive)
             return AuthenticationResult.Authenticated;
 
-        if (player.Profile is null)
+        if (link.Player.Profile is null)
             throw new InvalidOperationException("Player should be authenticated before Server");
 
         await PrepareServerAuthenticationAsync(link, cancellationToken);
@@ -150,15 +150,15 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
 
     protected static async ValueTask VerifyMojangProfile(IPlayer player, ReadOnlyMemory<byte> sharedSecret, CancellationToken cancellationToken)
     {
-        if (!player.TryGetMinecraftPlayer(out var minecraftPlayer))
+        if (!player.IsMinecraft)
             return;
 
         var mojang = player.Context.Services.GetRequiredService<IMojangService>();
 
-        if (await mojang.VerifyAsync(minecraftPlayer, sharedSecret, cancellationToken) is not { } onlineProfile)
+        if (await mojang.VerifyAsync(player, sharedSecret, cancellationToken) is not { } onlineProfile)
             throw new NotSupportedException("Playing in offline-mode is not supported yet. Cannot verify profile.");
 
-        minecraftPlayer.Profile = onlineProfile;
+        player.Profile = onlineProfile;
     }
 
     protected abstract bool IsSupportedVersion(ProtocolVersion version);

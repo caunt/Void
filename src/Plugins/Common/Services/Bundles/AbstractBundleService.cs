@@ -14,7 +14,7 @@ public abstract class AbstractBundleService : IPluginCommonService
         if (!IsBundlePacket(@event.Message))
             return;
 
-        var bundles = @event.Link.Player.Context.Services.GetRequiredService<IBundleService>();
+        var bundles = @event.Player.Context.Services.GetRequiredService<IBundleService>();
         bundles.ToggleBundle();
     }
 

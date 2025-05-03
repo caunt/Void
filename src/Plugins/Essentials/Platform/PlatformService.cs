@@ -4,11 +4,11 @@ using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Extensions;
-using Void.Minecraft.Players;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
+using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Common.Services;
 
@@ -48,7 +48,7 @@ public class PlatformService(ILogger<PlatformService> logger, IHostApplicationLi
     {
         var names = string.Join(", ", plugins.Containers);
 
-        if (context.Source is IMinecraftPlayer player)
+        if (context.Source is IPlayer player)
         {
             await player.SendChatMessageAsync("Loaded plugins: " + names, cancellationToken);
         }
@@ -67,7 +67,7 @@ public class PlatformService(ILogger<PlatformService> logger, IHostApplicationLi
 
         if (container is null)
         {
-            if (context.Source is IMinecraftPlayer player)
+            if (context.Source is IPlayer player)
             {
                 await player.SendChatMessageAsync($"Container '{containerName}' not found", cancellationToken);
             }

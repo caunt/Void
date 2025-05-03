@@ -24,10 +24,10 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
     [Subscribe(PostOrder.First)]
     public async ValueTask OnMessageSent(MessageSentEvent @event, CancellationToken cancellationToken)
     {
-        if (!@event.Link.Player.TryGetMinecraftPlayer(out var player))
+        if (!@event.Player.IsMinecraft)
             return;
 
-        if (!IsSupportedVersion(player.ProtocolVersion))
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
         if (@event.Origin is Side.Proxy)
@@ -58,13 +58,13 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
     [Subscribe]
     public async ValueTask OnPlayerVerifyingEncryption(PlayerVerifyingEncryptionEvent @event, CancellationToken cancellationToken)
     {
-        if (!@event.Link.Player.TryGetMinecraftPlayer(out var player))
+        if (!@event.Player.IsMinecraft)
             return;
 
-        if (!IsSupportedVersion(player.ProtocolVersion))
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
-        var tokens = @event.Link.Player.Context.Services.GetRequiredService<ITokenHolder>();
+        var tokens = @event.Player.Context.Services.GetRequiredService<ITokenHolder>();
         tokens.Store(TokenType.VerifyToken, BitConverter.GetBytes(Random.Shared.Next()));
 
         var request = new EncryptionRequest(crypto.Instance.ExportSubjectPublicKeyInfo(), tokens.Get(TokenType.VerifyToken).ToArray());
@@ -72,7 +72,7 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
 
         var response = await ReceiveEncryptionResponseAsync(@event.Link, cancellationToken);
 
-        if (!VerifyToken(@event.Link.Player, tokens.Get(TokenType.VerifyToken), response.VerifyToken, response.Salt))
+        if (!VerifyToken(@event.Player, tokens.Get(TokenType.VerifyToken), response.VerifyToken, response.Salt))
             return; // invalid verify token
 
         var sharedSecret = new byte[response.SharedSecret.Length];
@@ -86,17 +86,17 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
 
     protected bool VerifyToken(IPlayer player, ReadOnlySpan<byte> original, ReadOnlySpan<byte> encrypted, long salt = 0)
     {
-        if (!player.TryGetMinecraftPlayer(out var minecraftPlayer))
+        if (!player.IsMinecraft)
             return false;
 
-        if (minecraftPlayer.IdentifiedKey is not null)
+        if (player.IdentifiedKey is { } identifiedKey)
         {
             var saltBytes = BitConverter.GetBytes(salt);
 
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(saltBytes);
 
-            return minecraftPlayer.IdentifiedKey.VerifyDataSignature(encrypted, [.. original, .. saltBytes]);
+            return identifiedKey.VerifyDataSignature(encrypted, [.. original, .. saltBytes]);
         }
 
         var decrypted = new byte[encrypted.Length];

@@ -126,7 +126,7 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
 
         if (!@event.Link.PlayerChannel.IsAlive)
             @event.Link.PlayerChannel.Close();
-        else if (!await @event.Link.Player.IsProtocolSupportedAsync(cancellationToken))
+        else if (!await @event.Player.IsProtocolSupportedAsync(cancellationToken))
             @event.Link.PlayerChannel.Close();
 
         logger.LogTrace("Stopped forwarding {Link} traffic", @event.Link);

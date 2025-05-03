@@ -5,13 +5,13 @@ using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Extensions;
 using Void.Minecraft.Events;
 using Void.Minecraft.Network;
-using Void.Minecraft.Players;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Contexts;
 using Void.Proxy.Plugins.ExamplePlugin.Packets.Clientbound;
 using Void.Proxy.Plugins.ExamplePlugin.Packets.Serverbound;
@@ -46,7 +46,7 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
     public async ValueTask<int> ChangeSlotAsync(CommandContext context, CancellationToken cancellationToken)
     {
         // Commands might be triggered by console, plugins, or anything
-        if (context.Source is not IMinecraftPlayer player)
+        if (context.Source is not IPlayer player)
         {
             logger.LogInformation("This command can be executed only by player");
             return 1;
@@ -94,7 +94,7 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
                 break;
         }
 
-        void RegisterPlayMappings(IMinecraftPlayer player, Side side)
+        void RegisterPlayMappings(IPlayer player, Side side)
         {
             // Many packet ids and their properties can be found at
             // https://minecraft.wiki/w/Java_Edition_protocol

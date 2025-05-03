@@ -5,7 +5,6 @@ using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Suggestion;
 using Void.Minecraft.Commands.Extensions;
-using Void.Minecraft.Players;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
@@ -49,22 +48,22 @@ public class ModerationService(IPlayerService players, ICommandService commands,
         return 0;
     }
 
-    private bool TryGetPlayerByName(string name, [MaybeNullWhen(false)] out IMinecraftPlayer player)
+    private bool TryGetPlayerByName(string name, [MaybeNullWhen(false)] out IPlayer player)
     {
         player = null;
 
         foreach (var candidate in players.All)
         {
-            if (!candidate.TryGetMinecraftPlayer(out var candidateMinecraftPlayer))
+            if (!candidate.IsMinecraft)
                 continue;
 
-            if (candidateMinecraftPlayer.Profile is null)
+            if (candidate.Profile is not { } profile)
                 continue;
 
-            if (!candidateMinecraftPlayer.Profile.Username.Equals(name, StringComparison.CurrentCultureIgnoreCase))
+            if (!profile.Username.Equals(name, StringComparison.CurrentCultureIgnoreCase))
                 continue;
 
-            player = candidateMinecraftPlayer;
+            player = candidate;
             return true;
         }
 
@@ -75,13 +74,13 @@ public class ModerationService(IPlayerService players, ICommandService commands,
     {
         return Suggestions.Create(context.Input, players.All.Select(player =>
         {
-            if (!player.TryGetMinecraftPlayer(out var minecraftPlayer))
+            if (!player.IsMinecraft)
                 return null;
 
-            if (minecraftPlayer.Profile is null)
+            if (player.Profile is not { } profile)
                 return null;
 
-            var name = minecraftPlayer.Profile.Username;
+            var name = profile.Username;
             return new Suggestion(StringRange.Between(0, context.Input.Length), name);
         }).WhereNotNull());
     }

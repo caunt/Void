@@ -4,7 +4,6 @@ using Void.Minecraft.Commands.Brigadier.Exceptions;
 using Void.Minecraft.Commands.Brigadier.Suggestion;
 using Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 using Void.Minecraft.Events.Chat;
-using Void.Minecraft.Players;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
@@ -12,6 +11,7 @@ using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions.Reflection;
 using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Commands;
 
@@ -40,7 +40,7 @@ public class CommandService(IEventService events) : ICommandService, IEventListe
 
         try
         {
-            if (source is IMinecraftPlayer player)
+            if (source is IPlayer player)
                 player.GetLogger().LogInformation("Entered command: {Command}", command);
 
             _ = await _dispatcher.ExecuteAsync(command, source, cancellationToken);
@@ -49,14 +49,14 @@ public class CommandService(IEventService events) : ICommandService, IEventListe
         catch (CommandSyntaxException exception) when (exception.Message.Contains("Unknown command"))
         {
             // Ignore unknown commands
-            if (source is IMinecraftPlayer player)
+            if (source is IPlayer player)
                 await events.ThrowAsync(new ChatCommandSendEvent(player, command, origin), cancellationToken);
 
             return CommandExecutionResult.Forwarded;
         }
         catch (CommandSyntaxException exception)
         {
-            if (source is IMinecraftPlayer player)
+            if (source is IPlayer player)
                 await player.SendChatMessageAsync(exception.Message, cancellationToken);
 
             return CommandExecutionResult.Exception;

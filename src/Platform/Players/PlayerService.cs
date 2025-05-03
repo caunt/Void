@@ -150,9 +150,9 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
     public async ValueTask OnLinkStopped(LinkStoppedEvent @event, CancellationToken cancellationToken)
     {
         if (@event.Link.PlayerChannel.IsAlive)
-            await links.ConnectPlayerAnywhereAsync(@event.Link.Player, cancellationToken);
+            await links.ConnectPlayerAnywhereAsync(@event.Player, cancellationToken);
         else
-            await events.ThrowAsync(new PlayerDisconnectedEvent(@event.Link.Player), cancellationToken);
+            await events.ThrowAsync(new PlayerDisconnectedEvent(@event.Player), cancellationToken);
     }
 
     [Subscribe(PostOrder.Last)]

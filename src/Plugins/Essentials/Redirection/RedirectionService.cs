@@ -4,7 +4,6 @@ using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Extensions;
-using Void.Minecraft.Players;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Player;
@@ -36,7 +35,7 @@ public class RedirectionService(ILogger<RedirectionService> logger, Plugin plugi
 
     public int ChangeServer(CommandContext context)
     {
-        if (context.Source is not IMinecraftPlayer player)
+        if (context.Source is not IPlayer player)
         {
             logger.LogInformation("This command can be executed only by player");
             return 1;

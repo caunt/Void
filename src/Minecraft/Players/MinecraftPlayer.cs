@@ -8,7 +8,7 @@ using Void.Proxy.Api.Players.Contexts;
 
 namespace Void.Minecraft.Players;
 
-public class MinecraftPlayer(TcpClient client, IPlayerContext context, string remoteEndPoint, ProtocolVersion protocolVersion) : IMinecraftPlayer
+public class MinecraftPlayer(TcpClient client, IPlayerContext context, string remoteEndPoint, ProtocolVersion protocolVersion) : IPlayer
 {
     public TcpClient Client { get; } = client;
     public IPlayerContext Context { get; } = context;

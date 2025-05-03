@@ -2,9 +2,10 @@
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using Void.Minecraft.Mojang;
-using Void.Minecraft.Players;
+using Void.Minecraft.Players.Extensions;
 using Void.Minecraft.Profiles;
 using Void.Proxy.Api.Crypto;
+using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Plugins.Common.Mojang;
 
@@ -14,9 +15,9 @@ public class MojangService(ICryptoService crypto) : IMojangService
     private static readonly string SessionServer = Environment.GetEnvironmentVariable("mojang.sessionserver") ?? "https://sessionserver.mojang.com/session/minecraft/hasJoined";
     private static readonly bool PreventProxyConnections = bool.TryParse(Environment.GetEnvironmentVariable("mojang.prevent-proxy-connections"), out var value) && value;
 
-    public async ValueTask<GameProfile?> VerifyAsync(IMinecraftPlayer player, ReadOnlyMemory<byte> secret, CancellationToken cancellationToken = default)
+    public async ValueTask<GameProfile?> VerifyAsync(IPlayer player, ReadOnlyMemory<byte> secret, CancellationToken cancellationToken = default)
     {
-        if (player.Profile is null)
+        if (player.Profile is not { } profile)
             throw new ArgumentNullException(nameof(player), "Player profile should be set in order to verify his session");
 
         var serverId = SHA1.HashData([.. secret.Span, .. crypto.Instance.ExportSubjectPublicKeyInfo()]);
@@ -30,7 +31,7 @@ public class MojangService(ICryptoService crypto) : IMojangService
         if (negative)
             serverIdComplement = "-" + serverIdComplement;
 
-        var url = $"{SessionServer}?username={player.Profile.Username}&serverId={serverIdComplement}";
+        var url = $"{SessionServer}?username={profile.Username}&serverId={serverIdComplement}";
 
         if (PreventProxyConnections)
             url += "&ip=" + player.RemoteEndPoint;
@@ -40,13 +41,15 @@ public class MojangService(ICryptoService crypto) : IMojangService
         if (response.StatusCode is HttpStatusCode.NoContent)
             return null;
 
-        if (await response.Content.ReadFromJsonAsync<GameProfile>(cancellationToken) is not { } profile)
+        if (await response.Content.ReadFromJsonAsync<GameProfile>(cancellationToken) is not { } onlineProfile)
             return null;
 
-        if (player.IdentifiedKey is null || player.IdentifiedKey.Revision != IdentifiedKeyRevision.LinkedV2Revision)
-            return profile;
+        var key = player.IdentifiedKey;
 
-        return player.IdentifiedKey.AddUuid(profile.Id) ? profile : null;
+        if (key is null || key.Revision != IdentifiedKeyRevision.LinkedV2Revision)
+            return onlineProfile;
+
+        return key.AddUuid(onlineProfile.Id) ? onlineProfile : null;
     }
 
     private static byte[] TwosComplement(byte[] data)
