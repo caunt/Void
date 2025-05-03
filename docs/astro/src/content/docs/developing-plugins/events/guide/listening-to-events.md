@@ -1,6 +1,8 @@
 ---
-title: Events
-description: Learn how to use events in your plugins
+title: Listening to Events
+description: Learn how to listen to events in your plugin
+sidebar:
+  order: 1
 ---
 
 Events are a great way to communicate between different plugins and proxy. 
@@ -8,7 +10,6 @@ They allow you to respond to specific actions or changes in the game, such as a 
 
 ## Subscribing to events
 You can subscribe to events by applying the `Subscribe` attribute to a method in your class.
-Many events are implmented by the proxy itself, and you can make your own events by implementing the `IEvent` interface.
 ```csharp
 public class MyPlugin : IPlugin
 {
@@ -46,31 +47,28 @@ public class MySingletonService : IEventListener
     {
     }
 }
+```
 
-public class MyScopedService(IPlayerContext context) : IEventListener
+## Listening to events in Scoped services
+Just like with other services, you should apply `IEventListener` interface to your scoped service class.
+However, listening to events in scoped services is a bit different.
+Scoped events are filtered by the player context, so you will only receive events that are relevant to the player that owns the service.
+All other types of events will be not be filtered, since they are not scoped.
+Scoped events filter can be disabled by applying `bypassScopedFilter: true` to the `Subscribe` attribute.
+```csharp
+public class MyScopedService(IPlayerContext context, ILogger logger) : IEventListener
 {
     [Subscribe]
     public void OnPlayerConnected(PlayerConnectedEvent @event)
     {
+        // Code here will be executed only when @event.Player and context.Player are same player.
+        logger.LogInformation("Player {Player} is in its own context? {Result}", @event.Player.Name, @event.Player == context.Player);
     }
-}
-```
 
-## Registering services with events
-```csharp
-public class MyPlugin(IDependencyService services) : IPlugin
-{
-    [Subscribe]
-    public void OnPluginLoading(PluginLoadingEvent @event)
+    [Subscribe(bypassScopedFilter: true)]
+    public void OnPlayerConnected(PlayerConnectedEvent @event)
     {
-        if (@event.Plugin != this)
-            return;
-
-        dependencies.Register(services =>
-        {
-            services.AddSingleton<MySingletonService>();
-            services.AddScoped<MyScopedService>();
-        });
+        // Code here will be executed for all players in all scopes.
     }
 }
 ```

@@ -1,5 +1,5 @@
 ---
-title: Transient Services
+title: Transient
 description: Learn how to use transient services in your plugins
 ---
 

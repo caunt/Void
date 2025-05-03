@@ -1,5 +1,5 @@
 ---
-title: Services
+title: Creating a Service
 description: Learn how to use services in your plugin
 ---
 

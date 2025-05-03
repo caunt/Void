@@ -1,5 +1,5 @@
 ---
-title: Singleton Services
+title: Singleton
 description: Learn how to use singleton services in your plugins
 ---
 

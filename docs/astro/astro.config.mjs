@@ -17,10 +17,7 @@ export default defineConfig({
         sidebar: [
             {
                 label: 'Getting Started',
-                items: [
-                    { slug: 'getting-started/running' },
-                    { slug: 'getting-started/configuration' }
-                ],
+                autogenerate: { directory: 'getting-started' }
             },
             {
                 label: 'Developing Plugins',
@@ -30,17 +27,27 @@ export default defineConfig({
                         label: 'Events',
                         collapsed: true,
                         items: [
-                            { slug: 'developing-plugins/events/overview' }
+                            {
+                                label: 'Guide',
+                                autogenerate: { directory: 'developing-plugins/events/guide' }
+                            },
+                            {
+                                label: 'Types',
+                                collapsed: true,
+                                autogenerate: { directory: 'developing-plugins/events/types' }
+                            }
                         ]
                     },
                     {
                         label: 'Services',
                         collapsed: true,
                         items: [
-                            { slug: 'developing-plugins/services/overview' },
-                            { slug: 'developing-plugins/services/singleton' },
-                            { slug: 'developing-plugins/services/scoped' },
-                            { slug: 'developing-plugins/services/transient' }
+                            { slug: 'developing-plugins/services/creating-a-service' },
+                            {
+                                label: 'Types',
+                                collapsed: true,
+                                autogenerate: { directory: 'developing-plugins/services/types' }
+                            }
                         ]
                     }
                 ],

@@ -1,5 +1,5 @@
 ---
-title: Scoped Services
+title: Scoped
 description: Learn how to use scoped services in your plugins
 ---
 
