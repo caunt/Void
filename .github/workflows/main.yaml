@@ -158,7 +158,7 @@ jobs:
           dotnet publish src/Platform \
             /t:PublishContainer \
             /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
-            /p:ContainerImageTags="${{ matrix.container_image_tags }}" \
+            /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
             /p:ContainerBaseImage="${{ matrix.container_base_image }}"
 
   docker-push:
@@ -203,7 +203,7 @@ jobs:
           dotnet publish src/Platform \
             /t:PublishContainer \
             /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
-            /p:ContainerImageTags="${{ matrix.container_image_tags }}" \
+            /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
             /p:ContainerBaseImage="${{ matrix.container_base_image }}"
 
   nuget-push:
