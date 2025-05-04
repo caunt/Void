@@ -44,6 +44,9 @@ public static class PlayerExtensions
 
         var players = player.Context.Services.GetRequiredService<IPlayerService>();
         await players.KickPlayerAsync(player, text, cancellationToken);
+
+        if (!player.Context.IsDisposed)
+            throw new Exception("Player context should be disposed after kick");
     }
 
     public static async ValueTask<bool> IsProtocolSupportedAsync(this IPlayer player, CancellationToken cancellationToken = default)
