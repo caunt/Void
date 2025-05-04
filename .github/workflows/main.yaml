@@ -112,7 +112,8 @@ jobs:
 
   docker-push:
     environment: docker-push
-    needs: dotnet-build
+    needs: [dotnet-build,release-please]
+    if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -156,7 +157,7 @@ jobs:
 
   nuget-push:
     environment: nuget-push
-    needs: release-please
+    needs: [dotnet-build,release-please]
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
     steps:
