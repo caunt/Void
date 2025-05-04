@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.1](https://github.com/caunt/Void/compare/v0.3.0...v0.3.1) (2025-05-04)
+
+
+### Bug Fixes
+
+* allow passing cancellation token to event listeners ([c89dfc1](https://github.com/caunt/Void/commit/c89dfc1f44127cb9ab91c0ef68adae7fbffbc2d3))
+* allow registration event listeners without cancellation token ([fe1a4ff](https://github.com/caunt/Void/commit/fe1a4ffef54a86cc357e240df29da66652845575))
+* dispose minecraft player context ([9dd962c](https://github.com/caunt/Void/commit/9dd962c0aad78628798e5068de308aff2f359c81))
+* do not kick player twice ([eb1dddc](https://github.com/caunt/Void/commit/eb1dddce34be240638670c349230d92cd64c9f6f))
+* example plugin commands registration ([b26a5cd](https://github.com/caunt/Void/commit/b26a5cdc4834910f45c2b7703d404a3fc987c49b))
+* isolate runtime assembly resolver ([4969583](https://github.com/caunt/Void/commit/49695830bda47f2bc0cead299809522460b136af))
+* make dependencies cancellable ([883342f](https://github.com/caunt/Void/commit/883342f06fa776d289fd95313f21af6e71da3b4d))
+* move brigadier extension types to same namespace ([b26a5cd](https://github.com/caunt/Void/commit/b26a5cdc4834910f45c2b7703d404a3fc987c49b))
+* override console name ([4daa833](https://github.com/caunt/Void/commit/4daa833ef1b8023f9c29b624f41a3797b7b3ae0a))
+
 ## [0.3.0](https://github.com/caunt/Void/compare/v0.2.3...v0.3.0) (2025-05-03)
 
 
