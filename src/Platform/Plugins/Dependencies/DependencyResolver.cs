@@ -1,11 +1,12 @@
 ﻿using System.Reflection;
 using System.Runtime.Loader;
+using Void.Proxy.Plugins.Containers;
 using Void.Proxy.Plugins.Dependencies.Embedded;
 using Void.Proxy.Plugins.Dependencies.Remote.NuGetSource;
 
 namespace Void.Proxy.Plugins.Dependencies;
 
-public class DependencyResolver(ILogger logger, AssemblyLoadContext context, Func<AssemblyName, Assembly?> searchInPlugins)
+public class DependencyResolver(ILogger logger, AssemblyLoadContext context, IReadOnlyCollection<WeakPluginContainer> containers)
 {
     private static readonly string[] VoidDependencies = [nameof(Void)];
     private static readonly string[] SharedDependencies = [nameof(Microsoft)];
@@ -14,7 +15,6 @@ public class DependencyResolver(ILogger logger, AssemblyLoadContext context, Fun
     private readonly NuGetDependencyResolver _nuget = new(logger);
     private readonly EmbeddedDependencyResolver _embedded = new(logger);
     private readonly AssemblyDependencyResolver _directory = new(Directory.GetCurrentDirectory());
-    private readonly Func<AssemblyName, Assembly?>? _searchInPlugins = searchInPlugins;
 
     public Assembly? Resolve(AssemblyName assemblyName)
     {
@@ -52,11 +52,7 @@ public class DependencyResolver(ILogger logger, AssemblyLoadContext context, Fun
         if (SystemDependencies.Any(assemblyName.FullName.StartsWith) && assembly is null)
             return AssemblyLoadContext.Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.GetName().Name == assemblyName.Name) ?? AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName);
 
-        if (_searchInPlugins is not null && assembly is null)
-        {
-            // TODO: this is a temporary workaround
-            assembly = _searchInPlugins(assemblyName);
-        }
+        assembly ??= ResolveContainerAssembly(assemblyName);
 
         // fallback to local directory and NuGet
         if (assembly is null)
@@ -73,5 +69,20 @@ public class DependencyResolver(ILogger logger, AssemblyLoadContext context, Fun
     public string? ResolveUnmanagedDll(string unmanagedDllName)
     {
         return _directory.ResolveUnmanagedDllToPath(unmanagedDllName);
+    }
+
+    public Assembly? ResolveContainerAssembly(AssemblyName assemblyName)
+    {
+        foreach (var reference in containers)
+        {
+            var assembly = reference.Context.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.FullName == assemblyName.FullName);
+
+            if (assembly is null)
+                continue;
+
+            return assembly;
+        }
+
+        return null;
     }
 }

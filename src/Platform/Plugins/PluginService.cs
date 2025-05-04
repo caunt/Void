@@ -177,20 +177,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
     public IEnumerable<Type> LoadContainer(string name, Stream stream, bool ignoreEmpty = false)
     {
         logger.LogTrace("Loading {Name} plugins", name);
-        var context = new PluginAssemblyLoadContext(dependencies, name, stream, searchInPlugins: (assemblyName) =>
-        {
-            foreach (var reference in _containers)
-            {
-                var assembly = reference.Context.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.FullName == assemblyName.FullName);
-
-                if (assembly is null)
-                    continue;
-
-                return assembly;
-            }
-
-            return null;
-        });
+        var context = new PluginAssemblyLoadContext(dependencies, name, stream, _containers.AsReadOnly());
 
         var plugins = GetPlugins(context.PluginAssembly);
 

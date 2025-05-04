@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.Loader;
 using Void.Proxy.Api.Plugins.Dependencies;
+using Void.Proxy.Plugins.Containers;
 using Void.Proxy.Plugins.Dependencies;
 
 namespace Void.Proxy.Plugins.Context;
@@ -12,10 +13,10 @@ public class PluginAssemblyLoadContext : AssemblyLoadContext
 
     public Assembly PluginAssembly { get; }
 
-    public PluginAssemblyLoadContext(IDependencyService dependencies, string name, Stream assemblyStream, Func<AssemblyName, Assembly?> searchInPlugins) : base(name, true)
+    public PluginAssemblyLoadContext(IDependencyService dependencies, string name, Stream assemblyStream, IReadOnlyCollection<WeakPluginContainer> containers) : base(name, true)
     {
         _logger = dependencies.GetRequiredService<ILogger<PluginAssemblyLoadContext>>();
-        _resolver = new DependencyResolver(_logger, this, searchInPlugins);
+        _resolver = new DependencyResolver(_logger, this, containers);
 
         PluginAssembly = LoadFromStream(assemblyStream);
     }
