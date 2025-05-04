@@ -13,11 +13,11 @@ public record IdentifiedKey(IdentifiedKeyRevision Revision, long ExpiresAt, byte
 
     private bool? _isSignatureValid;
 
-    public Uuid? ProfileUuid { get; set; }
+    public Uuid ProfileUuid { get; set; }
 
-    public bool? IsSignatureValid
+    public bool IsSignatureValid
     {
-        get => _isSignatureValid ??= ValidateData(ProfileUuid ?? default);
+        get => _isSignatureValid ??= ValidateData(ProfileUuid);
         set => _isSignatureValid = value;
     }
 
@@ -38,15 +38,11 @@ public record IdentifiedKey(IdentifiedKeyRevision Revision, long ExpiresAt, byte
 
     public bool AddUuid(Uuid uuid)
     {
-        var guid = uuid.AsGuid;
-
-        if (guid == default)
+        if (uuid == default)
             return false;
 
-        var profileGuid = ProfileUuid?.AsGuid;
-
-        if (profileGuid != null)
-            return IsSignatureValid.HasValue && IsSignatureValid.Value && profileGuid.Equals(guid);
+        if (ProfileUuid != default)
+            return ProfileUuid.Equals(uuid) && IsSignatureValid;
 
         if (!ValidateData(uuid))
             return false;
@@ -90,12 +86,9 @@ public record IdentifiedKey(IdentifiedKeyRevision Revision, long ExpiresAt, byte
     }
 }
 
-public class IdentifiedKeyRevision(IEnumerable<IdentifiedKeyRevision> backwardsCompatibleTo, List<ProtocolVersion> applicableTo)
+public record IdentifiedKeyRevision(IEnumerable<IdentifiedKeyRevision> BackwardsCompatibleTo, List<ProtocolVersion> ApplicableTo)
 {
     public static readonly IdentifiedKeyRevision GenericV1Revision = new([], [ProtocolVersion.MINECRAFT_1_19]);
 
     public static readonly IdentifiedKeyRevision LinkedV2Revision = new([], [ProtocolVersion.MINECRAFT_1_19_1]);
-
-    public IEnumerable<IdentifiedKeyRevision> BackwardsCompatibleTo { get; } = backwardsCompatibleTo;
-    public List<ProtocolVersion> ApplicableTo { get; } = applicableTo;
 }

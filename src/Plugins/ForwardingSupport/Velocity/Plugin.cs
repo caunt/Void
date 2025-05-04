@@ -5,6 +5,7 @@ using Void.Minecraft.Buffers;
 using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
+using Void.Minecraft.Profiles;
 using Void.Proxy.Api.Configurations;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
@@ -66,7 +67,7 @@ public class Plugin(ILogger logger, IConfigurationService configs) : IProtocolPl
         buffer.WriteString(profile.Username);
         buffer.WritePropertyArray(profile.Properties);
 
-        if (actualVersion.CompareTo(ForwardingVersion.WithKey) >= 0 && actualVersion.CompareTo(ForwardingVersion.LazySession) < 0)
+        if (actualVersion >= ForwardingVersion.WithKey && actualVersion < ForwardingVersion.LazySession)
         {
             if (player.IdentifiedKey is not { } identifiedKey)
                 throw new Exception("Player identified key cannot be forwarded");
@@ -77,12 +78,18 @@ public class Plugin(ILogger logger, IConfigurationService configs) : IProtocolPl
             buffer.WriteVarInt(identifiedKey.Signature.Length);
             buffer.Write(identifiedKey.Signature);
 
-            if (actualVersion.CompareTo(ForwardingVersion.WithKeyV2) >= 0)
-                // if key signature holder is not null (seems to be always null)
-                // WriteBoolean(true)
-                // WriteGuid(key.GetSignatureHolder())
-                // else
-                buffer.WriteBoolean(false);
+            if (actualVersion >= ForwardingVersion.WithKeyV2)
+            {
+                if (identifiedKey.ProfileUuid != default)
+                {
+                    buffer.WriteBoolean(true);
+                    buffer.WriteUuid(identifiedKey.ProfileUuid);
+                }
+                else
+                {
+                    buffer.WriteBoolean(false);
+                }
+            }
         }
 
         var forwardingData = array[..buffer.Position];
@@ -95,17 +102,22 @@ public class Plugin(ILogger logger, IConfigurationService configs) : IProtocolPl
     {
         requested = (ForwardingVersion)Math.Min((int)requested, Enum.GetValues<ForwardingVersion>().Cast<int>().Max());
 
-        if (requested.CompareTo(ForwardingVersion.Default) > 0)
+        if (requested > ForwardingVersion.Default)
         {
-            // if protocol version > 1.19.3
-            // return requested.CompareTo(Version.LazySession) >= 0 ? Version.LazySession : Versions.Default
+            if (player.ProtocolVersion > ProtocolVersion.MINECRAFT_1_19_3)
+                return requested >= ForwardingVersion.LazySession ? ForwardingVersion.LazySession : ForwardingVersion.Default;
 
-            if (player.IdentifiedKey is not null)
+            var identifiedKey = player.IdentifiedKey;
+
+            if (identifiedKey is not null)
             {
-                // if key revision is Generic (protocol version 1.19)
-                // return Versions.WithKey
-                // else if key revision is Linked (protocol version every other)
-                // return requested.CompareTo(Versions.WithKeyV2) >= 0 ? Versions.WithKeyV2 : Versions.Default
+                if (identifiedKey.Revision == IdentifiedKeyRevision.GenericV1Revision)
+                    return ForwardingVersion.WithKey;
+
+                if (identifiedKey.Revision == IdentifiedKeyRevision.LinkedV2Revision)
+                    return requested >= ForwardingVersion.WithKeyV2 ? ForwardingVersion.WithKeyV2 : ForwardingVersion.Default;
+
+                throw new NotSupportedException($"Unknown key revision {identifiedKey.Revision}");
             }
             else
             {

@@ -35,10 +35,10 @@ public class LoginStartPacket : IMinecraftServerboundPacket<LoginStartPacket>
 
             if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19_1)
             {
-                if (Key is { ProfileUuid: not null })
+                if (Key is not null && Key.ProfileUuid != default)
                 {
                     buffer.WriteBoolean(true);
-                    buffer.WriteUuid(Key.ProfileUuid.Value);
+                    buffer.WriteUuid(Key.ProfileUuid);
                 }
                 else if (Profile.Id.AsGuid != default)
                 {
@@ -78,8 +78,8 @@ public class LoginStartPacket : IMinecraftServerboundPacket<LoginStartPacket>
 
                     key = new IdentifiedKey(revision, expiresAt, publicKey, signature);
 
-                    if (key.ProfileUuid.HasValue)
-                        uuid = key.ProfileUuid.Value;
+                    if (key.ProfileUuid != default)
+                        uuid = key.ProfileUuid;
                 }
             }
 
