@@ -2,5 +2,5 @@
 	<path fill="#A189C5" d="M4 9.7 16 3 28 9.7 28 10.2 16 17 4 10.2Z"/>
 	<path fill="#8B6BB3" d="M4 10.2 16 17V30L4 23.2Z M16 17 28 10.2V23.2L16 30Z"/>
 	<path d="M4 9.7V23.2L16 30l12-6.8V9.7L16 3Z M4 10.2 16 17 28 10.2 M16 30V17" fill="none" stroke="#594A8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-	<text fill="#594A8A" x="16" y="41" text-anchor="middle" font-family="Arial Rounded MT Bold, sans-serif" font-size="10">VOID</text>
+	<text fill="#594A8A" x="16" y="41" text-anchor="middle" font-family="Arial Rounded MT Bold, sans-serif" font-size="10" font-weight="768">VOID</text>
 </svg>
