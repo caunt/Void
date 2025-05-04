@@ -36,6 +36,20 @@ Servers = [
 ]
 ```
 
+## Forwarding
+
+Forwarding helps to forward player data (IP, UUID, Skin, etc.) to the backend server.
+
+### Velocity (Modern)
+```toml
+// configs/Velocity/Settings.toml
+# Enables Velocity forwarding
+Enabled = true
+
+# The secret key (should be same as on backend server)
+Secret = "YourSecretKeyHere"
+```
+
 ## Plugins Installation
 
 Plugins are compiled with the *.dll extension in any .NET compatible language.
