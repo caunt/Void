@@ -117,28 +117,27 @@ jobs:
           gh release upload ${{ needs.release-please.outputs.tag_name }} artifacts/plugin*
           gh release upload ${{ needs.release-please.outputs.tag_name }} artifacts/void*
 
-  docker-push:
-    environment: docker-push
-    needs: [dotnet-build,release-please]
-    if: ${{ needs.release-please.outputs.release_created }}
+  docker-dev-push:
+    environment: docker-dev-push
+    needs: [dotnet-build]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
             container_runtime_identifiers: linux-arm;linux-arm64;linux-x64
-            container_image_tag: latest
+            container_image_tags: dev
           - os: ubuntu-latest
             container_runtime_identifiers: linux-bionic-arm64;linux-bionic-x64
-            container_image_tag: latest-android
+            container_image_tags: dev-android
           - os: ubuntu-latest
             container_runtime_identifiers: linux-musl-arm;linux-musl-arm64;linux-musl-x64
-            container_image_tag: latest-alpine
+            container_image_tags: dev-alpine
           - os: windows-latest
             container_runtime_identifiers: win-x64
-            container_image_tag: latest-windows
+            container_image_tags: dev-windows
             container_base_image: mcr.microsoft.com/dotnet/runtime:9.0-nanoserver-ltsc2025
-    steps:
+    steps: &docker-push-steps
       - uses: actions/checkout@v4
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -150,7 +149,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Publish ${{ matrix.container_image_tag }}
+      - name: Publish ${{ matrix.container_image_tags }}
         shell: bash
         env:
           MSYS_NO_PATHCONV: 1
@@ -159,8 +158,31 @@ jobs:
           dotnet publish src/Platform \
             /t:PublishContainer \
             /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
-            /p:ContainerImageTag="${{ matrix.container_image_tag }}" \
+            /p:ContainerImageTags="${{ matrix.container_image_tags }}" \
             /p:ContainerBaseImage="${{ matrix.container_base_image }}"
+
+  docker-push:
+    environment: docker-push
+    needs: [dotnet-build,release-please]
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-arm;linux-arm64;linux-x64
+            container_image_tags: ${{ needs.release-please.outputs.version }};latest
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-bionic-arm64;linux-bionic-x64
+            container_image_tags: ${{ needs.release-please.outputs.version }}-android;latest-android
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-musl-arm;linux-musl-arm64;linux-musl-x64
+            container_image_tags: ${{ needs.release-please.outputs.version }}-alpine;latest-alpine
+          - os: windows-latest
+            container_runtime_identifiers: win-x64
+            container_image_tags: ${{ needs.release-please.outputs.version }}-windows;latest-windows
+            container_base_image: mcr.microsoft.com/dotnet/runtime:9.0-nanoserver-ltsc2025
+    steps: *docker-push-steps
 
   nuget-push:
     environment: nuget-push
