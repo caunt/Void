@@ -86,6 +86,7 @@ jobs:
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       version: ${{ steps.release.outputs.version }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: actions/checkout@v4
       - name: Create Release
@@ -95,24 +96,31 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: .github/RELEASE_PLEASE/config.json
           manifest-file: .github/RELEASE_PLEASE/manifest.json
+
+  github-push:
+    needs: [dotnet-build,release-please]
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Download Artifacts
-        if: ${{ steps.release.outputs.release_created }}
         uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
       - name: Compress Plugin DevKit
-        if: ${{ steps.release.outputs.release_created }}
         run: zip -r -9 artifacts/plugin-devkit.zip pdk
       - name: Upload Release Artifacts
-        if: ${{ steps.release.outputs.release_created }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ steps.release.outputs.tag_name }} artifacts/*
+        run: |
+          gh release upload ${{ needs.release-please.outputs.tag_name }} artifacts/plugin*
+          gh release upload ${{ needs.release-please.outputs.tag_name }} artifacts/void*
 
   docker-push:
     environment: docker-push
-    needs: dotnet-build
+    needs: [dotnet-build,release-please]
+    if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -156,7 +164,7 @@ jobs:
 
   nuget-push:
     environment: nuget-push
-    needs: release-please
+    needs: [dotnet-build,release-please]
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
     steps:
