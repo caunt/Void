@@ -18,18 +18,15 @@
   <img alt="Greetings!" width="200" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/logo-text.svg">
 </h1>
 
-**Download:**
-<br>
-[**Stable Development Builds**](https://github.com/caunt/Void/releases)
-<br>
+Minecraft proxy designed to work through all versions and all mods.
+
+### **Download:**
+[**Stable Development Builds**](https://github.com/caunt/Void/releases)  
 [**Unstable Daily Builds**](https://github.com/caunt/Void/actions)
 
-**Getting Started:**
-<br>
-[**Running Guide**](https://void.caunt.world/getting-started/running/)
-<br>
-[**Supported / Planned Features**](https://void.caunt.world/getting-started/features/)
+### **Getting Started:**
+[**Running Guide**](https://void.caunt.world/getting-started/running/)  
+[**Supported Features**](https://void.caunt.world/getting-started/features/) `(!)`
 
-**Developing Plugins:**
-<br>
+### **Developing Plugins:**
 Download [**Plugin Development Kit**](https://github.com/caunt/Void/releases/latest/download/plugin-devkit.zip), look at the [**Documentation**](https://void.caunt.world/developing-plugins/development-kit/) and use [**Example Plugin**](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) as walkthrough to create a plugin.
