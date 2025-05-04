@@ -85,16 +85,16 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
-      version:          ${{ steps.release.outputs.version }}
-      tag_name:         ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: actions/checkout@v4
       - name: Create Release
         uses: googleapis/release-please-action@v4
         id: release
         with:
-          token:        ${{ secrets.GITHUB_TOKEN }}
-          config-file:  .github/RELEASE_PLEASE/config.json
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .github/RELEASE_PLEASE/config.json
           manifest-file: .github/RELEASE_PLEASE/manifest.json
 
   github-push:
@@ -113,7 +113,9 @@ jobs:
       - name: Upload Release Artifacts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ needs.release-please.outputs.tag_name }} artifacts/*
+        run: |
+          gh release upload ${{ needs.release-please.outputs.tag_name }} artifacts/plugin*
+          gh release upload ${{ needs.release-please.outputs.tag_name }} artifacts/void*
 
   docker-push:
     environment: docker-push
