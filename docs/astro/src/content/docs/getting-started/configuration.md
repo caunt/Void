@@ -1,6 +1,8 @@
 ---
 title: Configuration
 description: Learn how to configure Void Proxy
+sidebar:
+  order: 2
 ---
 
 File configurations and environment variables are primary ways of configuration.
