@@ -2,8 +2,10 @@
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Void.Minecraft.Buffers;
+using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
+using Void.Proxy.Api.Configurations;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Players;
@@ -12,17 +14,24 @@ using Void.Proxy.Plugins.Common.Plugins;
 
 namespace Void.Proxy.Plugins.ForwardingSupport.Velocity;
 
-public class Plugin(ILogger logger) : IProtocolPlugin
+public class Plugin(ILogger logger, IConfigurationService configs) : IProtocolPlugin
 {
+    private Settings? _settings;
+
     public static IEnumerable<ProtocolVersion> SupportedVersions => ProtocolVersion.Range(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.Latest);
 
     public string Name => nameof(Velocity);
 
     [Subscribe]
-    public void OnPluginLoading(PluginLoadingEvent @event)
+    public async ValueTask OnPluginLoading(PluginLoadingEvent @event, CancellationToken cancellationToken)
     {
         if (@event.Plugin != this)
             return;
+
+        _settings = await configs.GetAsync<Settings>(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(_settings.Secret))
+            _settings.Secret = Guid.NewGuid().ToString("N");
     }
 
     [Subscribe]
@@ -30,6 +39,9 @@ public class Plugin(ILogger logger) : IProtocolPlugin
     {
         if (!@event.Player.IsMinecraft)
             return;
+
+        if (_settings is null)
+            throw new Exception("Settings are not initialized yet");
 
         var player = @event.Player;
 
@@ -39,7 +51,7 @@ public class Plugin(ILogger logger) : IProtocolPlugin
         var requestedVersion = @event.Data.Length == 0 ? ForwardingVersion.Default : (ForwardingVersion)@event.Data[0];
         var actualVersion = FindForwardingVersion(player, requestedVersion);
         var array = (Span<byte>)stackalloc byte[2048];
-        var buffer = new MinecraftBuffer(array);
+        var buffer = new BufferSpan(array);
 
         buffer.WriteVarInt((int)actualVersion);
         buffer.WriteString(player.RemoteEndPoint.Split(':')[0]);
@@ -73,8 +85,8 @@ public class Plugin(ILogger logger) : IProtocolPlugin
                 buffer.WriteBoolean(false);
         }
 
-        var forwardingData = array[..(int)buffer.Position];
-        var signature = HMACSHA256.HashData(Encoding.UTF8.GetBytes("aaa"), forwardingData);
+        var forwardingData = array[..buffer.Position];
+        var signature = HMACSHA256.HashData(Encoding.UTF8.GetBytes(_settings.Secret), forwardingData);
 
         @event.Result = [.. signature, .. forwardingData];
     }

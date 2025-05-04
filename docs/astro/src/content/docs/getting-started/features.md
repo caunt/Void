@@ -33,7 +33,7 @@ This page provides an overview of the features supported or planned to implement
 | :---------------- | :------:  | :------: |
 | None (Offline)    | &#x2705;  | &#x2705; |
 | Legacy (Bungee)   | &#x274C;  | &#x2705; |
-| Modern (Velocity) | &#x274C;  | &#x2705; |
+| Modern (Velocity) | &#x2705;  | &#x2705; |
 | Online (PK)       | &#x2705;  | &#x2705; |
 
 :::tip[Online (Private Key)]
