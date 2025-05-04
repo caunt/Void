@@ -12,6 +12,7 @@ public interface IEventService
 
     public void RegisterListeners(IEnumerable<IEventListener> listeners, CancellationToken cancellationToken = default);
     public void RegisterListeners(CancellationToken cancellationToken = default, params IEventListener[] listeners);
+    public void RegisterListeners(params IEventListener[] listeners);
     public void UnregisterListeners(IEnumerable<IEventListener> listeners);
     public void UnregisterListeners(params IEventListener[] listeners);
 }

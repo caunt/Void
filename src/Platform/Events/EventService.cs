@@ -36,7 +36,7 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
         var entries = _entries
             .WhereNotNull()
             .OrderBy(entry => entry.Order)
-            .Select(entry => new WeakEntry(entry.CancellationToken, new WeakReference<IEventListener>(entry.Listener), new WeakReference<MethodInfo>(entry.Method), entry.Order, entry.BypassScopedFilter));
+            .Select(entry => new WeakEntry(new WeakReference<IEventListener>(entry.Listener), new WeakReference<MethodInfo>(entry.Method), entry.Order, entry.BypassScopedFilter, entry.CancellationToken));
 
         await ThrowAsync(entries, @event, cancellationToken);
     }
@@ -121,6 +121,12 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
             RegisterListeners(cancellationToken, listener);
     }
 
+    public void RegisterListeners(params IEventListener[] listeners)
+    {
+        foreach (var listener in listeners)
+            RegisterListeners(CancellationToken.None, listener);
+    }
+
     public void RegisterListeners(CancellationToken cancellationToken = default, params IEventListener[] listeners)
     {
         lock (this)
@@ -150,7 +156,7 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
                         SubscribeAttribute.SanityChecks(method);
 
                         var attribute = method.GetCustomAttribute<SubscribeAttribute>()!;
-                        _entries.Add(new Entry(cancellationToken, listener, method, attribute.Order, attribute.BypassScopedFilter));
+                        _entries.Add(new Entry(listener, method, attribute.Order, attribute.BypassScopedFilter, cancellationToken));
                     }
 
                     type = type.BaseType;
@@ -189,7 +195,7 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
         }
     }
 
-    private record WeakEntry(CancellationToken CancellationToken, WeakReference<IEventListener> ListenerReference, WeakReference<MethodInfo> MethodReference, PostOrder Order, bool BypassScopedFilter)
+    private record WeakEntry(WeakReference<IEventListener> ListenerReference, WeakReference<MethodInfo> MethodReference, PostOrder Order, bool BypassScopedFilter, CancellationToken CancellationToken)
     {
         public IEventListener? Listener => ListenerReference.TryGetTarget(out var listener) ? listener : null;
         public MethodInfo? Method => MethodReference.TryGetTarget(out var method) ? method : null;
@@ -197,5 +203,5 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
         public bool IsCompatible(Type eventType) => MethodReference.TryGetTarget(out var method) && eventType.IsAssignableTo(method.GetParameters()[0].ParameterType);
     }
 
-    private record Entry(CancellationToken CancellationToken, IEventListener Listener, MethodInfo Method, PostOrder Order, bool BypassScopedFilter);
+    private record Entry(IEventListener Listener, MethodInfo Method, PostOrder Order, bool BypassScopedFilter, CancellationToken CancellationToken);
 }
