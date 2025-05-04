@@ -1,5 +1,5 @@
 ﻿using Void.Minecraft.Network.Channels.Extensions;
-using Void.Minecraft.Network.Messages.Packets;
+using Void.Minecraft.Network.Messages;
 using Void.Minecraft.Network.Registries.PacketId;
 using Void.Minecraft.Network.Registries.PacketId.Mappings;
 using Void.Minecraft.Network.Streams.Packet;
@@ -11,7 +11,7 @@ namespace Void.Proxy.Plugins.Common.Extensions;
 
 public static class ChannelExtensions
 {
-    public static async ValueTask<T> ReceivePacketAsync<T>(this INetworkChannel channel, Side origin, CancellationToken cancellationToken) where T : IMinecraftPacket
+    public static async ValueTask<T> ReceivePacketAsync<T>(this INetworkChannel channel, Side origin, CancellationToken cancellationToken) where T : IMinecraftMessage
     {
         // just for safety, ensure we do have such IMinecraftPacket implementation in channel registry
         if (!typeof(T).IsInterface)

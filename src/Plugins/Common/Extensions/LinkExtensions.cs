@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Void.Minecraft.Links.Extensions;
+using Void.Minecraft.Network.Messages;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
@@ -13,6 +14,12 @@ public static class LinkExtensions
 {
     public static async ValueTask<T> ReceivePacketAsync<T>(this ILink link, CancellationToken cancellationToken) where T : class, IMinecraftPacket
     {
+        return await link.ReceiveCancellablePacketAsync<T>(cancellationToken) ??
+            throw new OperationCanceledException($"Packet {typeof(T).Name} was expected to be not canceled");
+    }
+
+    public static async ValueTask<T?> ReceiveCancellablePacketAsync<T>(this ILink link, CancellationToken cancellationToken) where T : class, IMinecraftPacket
+    {
         var type = typeof(T);
 
         if (type == typeof(IMinecraftPacket))
@@ -20,10 +27,10 @@ public static class LinkExtensions
 
         var side = type.IsAssignableTo(typeof(IMinecraftClientboundPacket)) ? Side.Server : Side.Client;
 
-        return await link.ReceivePacketAsync<T>(side, cancellationToken);
+        return await link.ReceiveCancellablePacketAsync<T>(side, cancellationToken);
     }
 
-    public static async ValueTask<T> ReceivePacketAsync<T>(this ILink link, Side side, CancellationToken cancellationToken) where T : IMinecraftPacket
+    public static async ValueTask<T?> ReceiveCancellablePacketAsync<T>(this ILink link, Side side, CancellationToken cancellationToken) where T : IMinecraftMessage
     {
         if (side is Side.Proxy)
             throw new InvalidOperationException("How would I read packet from proxy?");
@@ -35,10 +42,7 @@ public static class LinkExtensions
         var direction = side is Side.Client ? Direction.Serverbound : Direction.Clientbound;
         var cancelled = await events.ThrowWithResultAsync(new MessageReceivedEvent(side, side, Side.Proxy, direction, packet, link, link.Player), cancellationToken);
 
-        if (cancelled)
-            throw new NotSupportedException("Cancelling manually read packets by protocol support plugins is not supported yet");
-
-        return packet;
+        return cancelled ? default : packet;
     }
 
     public static async ValueTask SendTerminalPacketAsync<T>(this ILink link, CancellationToken cancellationToken) where T : class, IMinecraftPacket, new()

@@ -1,6 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Mojang;
 using Void.Minecraft.Network;
+using Void.Minecraft.Network.Channels.Extensions;
+using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
@@ -110,7 +113,7 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         if (!link.Player.IsMinecraft)
             return AuthenticationResult.Authenticated;
 
-        // server channel might be closed very early, skip authentication, ILink should stop itself as soon as its executes
+        // Server channel might be closed very early, skip authentication, ILink should stop itself as soon as its executes
         if (!link.ServerChannel.IsAlive)
             return AuthenticationResult.Authenticated;
 
@@ -121,7 +124,22 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            var packet = await link.ReceivePacketAsync<IMinecraftClientboundPacket>(cancellationToken);
+            var packet = await link.ReceiveCancellablePacketAsync<IMinecraftClientboundPacket>(cancellationToken);
+
+            if (packet is null)
+                continue;
+
+            if (packet is IMinecraftBinaryMessage message)
+            {
+                // TODO: What should we do with unknown messages that expect a response?
+                // Client is already in a Play state, so he cannot answer these messages
+                // Possible solution is to handle these packets in some "healing" service?
+                // Happens when Velocity Forwarding plugin is not loaded
+                await link.SendPacketAsync(message, cancellationToken);
+                throw new NotSupportedException("This packet is not processed by anyone and might be waiting response");
+                // continue;
+            }
+
             var result = await HandleServerPacketAsync(link, packet, cancellationToken);
 
             if (result is AuthenticationResult.NoResult)

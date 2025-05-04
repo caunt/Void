@@ -10,7 +10,6 @@ using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins.Dependencies;
-using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Network.Bundles;
 using Void.Proxy.Plugins.Common.Services.Authentication;
@@ -125,13 +124,6 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
     {
         switch (packet)
         {
-            case LoginPluginRequestPacket loginPluginRequestPacket:
-                var result = await _events.ThrowWithResultAsync(new LoginPluginRequestEvent(link.Player, link, loginPluginRequestPacket.Channel, loginPluginRequestPacket.Data), cancellationToken);
-                await link.SendPacketAsync(new LoginPluginResponsePacket { Successful = result is not null, Data = result ?? [], MessageId = loginPluginRequestPacket.MessageId }, cancellationToken);
-                break;
-            case SetCompressionPacket:
-                // handled by compression service
-                break;
             case LoginDisconnectPacket loginDisconnectPacket:
                 logger.LogInformation("Player {Player} cannot authenticate on {Server}: {Reason}", link.Player, link.Server, loginDisconnectPacket.Reason.SerializeLegacy());
 
@@ -140,6 +132,9 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
                 return AuthenticationResult.NotAuthenticatedServer;
             case LoginSuccessPacket:
                 return AuthenticationResult.Authenticated;
+            case SetCompressionPacket:
+                // handled by compression service
+                break;
             default:
                 throw new InvalidOperationException($"Unexpected {packet} packet received");
         }

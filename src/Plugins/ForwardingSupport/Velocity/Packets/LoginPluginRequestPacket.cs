@@ -2,27 +2,27 @@
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
 
-namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Serverbound;
+namespace Void.Proxy.Plugins.ForwardingSupport.Velocity.Packets;
 
-public class LoginPluginResponsePacket : IMinecraftServerboundPacket<LoginPluginResponsePacket>
+public class LoginPluginRequestPacket : IMinecraftClientboundPacket<LoginPluginRequestPacket>
 {
     public required int MessageId { get; set; }
-    public required bool Successful { get; set; }
+    public required string Channel { get; set; }
     public required byte[] Data { get; set; }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         buffer.WriteVarInt(MessageId);
-        buffer.WriteBoolean(Successful);
+        buffer.WriteString(Channel);
         buffer.Write(Data);
     }
 
-    public static LoginPluginResponsePacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
+    public static LoginPluginRequestPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        return new LoginPluginResponsePacket
+        return new LoginPluginRequestPacket
         {
             MessageId = buffer.ReadVarInt(),
-            Successful = buffer.ReadBoolean(),
+            Channel = buffer.ReadString(),
             Data = buffer.ReadToEnd().ToArray()
         };
     }

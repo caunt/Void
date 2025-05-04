@@ -1,6 +1,5 @@
 ﻿using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages;
-using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.PacketId;
 using Void.Minecraft.Network.Registries.PacketId.Mappings;
 using Void.Proxy.Api.Network;
@@ -16,7 +15,7 @@ public class MinecraftPacketIdSystemRegistry : IMinecraftPacketIdSystemRegistry
     public IMinecraftPacketIdRegistry Read { get; set; } = new MinecraftPacketIdRegistry();
     public IMinecraftPacketIdRegistry Write { get; set; } = new MinecraftPacketIdRegistry();
 
-    public bool Contains<T>() where T : IMinecraftPacket
+    public bool Contains<T>() where T : IMinecraftMessage
     {
         return Contains(typeof(T));
     }

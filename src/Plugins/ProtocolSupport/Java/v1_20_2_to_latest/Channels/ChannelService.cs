@@ -25,12 +25,6 @@ public class ChannelService(IEventService events) : AbstractChannelService(event
             case LoginStartPacket:
                 @event.Link.PlayerChannel.Pause();
                 break;
-            case LoginPluginRequestPacket:
-                @event.Link.PlayerChannel.TryResume();
-                break;
-            case LoginPluginResponsePacket:
-                @event.Link.PlayerChannel.Pause();
-                break;
             case EncryptionRequestPacket:
                 @event.Link.PlayerChannel.Resume();
                 @event.Link.ServerChannel.Pause();
