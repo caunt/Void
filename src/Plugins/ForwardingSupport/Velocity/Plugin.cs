@@ -51,8 +51,7 @@ public class Plugin(ILogger logger, IConfigurationService configs) : IProtocolPl
 
         var requestedVersion = @event.Data.Length == 0 ? ForwardingVersion.Default : (ForwardingVersion)@event.Data[0];
         var actualVersion = FindForwardingVersion(player, requestedVersion);
-        var array = (Span<byte>)stackalloc byte[2048];
-        var buffer = new BufferSpan(array);
+        var buffer = new BufferSpan(stackalloc byte[2048]);
 
         buffer.WriteVarInt((int)actualVersion);
         buffer.WriteString(player.RemoteEndPoint.Split(':')[0]);
@@ -92,11 +91,12 @@ public class Plugin(ILogger logger, IConfigurationService configs) : IProtocolPl
             }
         }
 
-        var forwardingData = array[..buffer.Position];
+        var forwardingData = buffer.Access(0, buffer.Position);
         var signature = HMACSHA256.HashData(Encoding.UTF8.GetBytes(_settings.Secret), forwardingData);
 
         @event.Result = [.. signature, .. forwardingData];
     }
+
 
     private static ForwardingVersion FindForwardingVersion(IPlayer player, ForwardingVersion requested)
     {
