@@ -166,8 +166,10 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
         using (var _ = await _lock.LockAsync(cancellationToken))
         {
-            await events.ThrowAsync(new PluginLoadingEvent(plugin), cancellationToken);
+            // Add to container before events, so listeners of plugin loading event can resolve configs with that plugin assembly
             container.Add(plugin);
+
+            await events.ThrowAsync(new PluginLoadingEvent(plugin), cancellationToken);
             await events.ThrowAsync(new PluginLoadedEvent(plugin), cancellationToken);
         }
 
