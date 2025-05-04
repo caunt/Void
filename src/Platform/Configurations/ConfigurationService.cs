@@ -45,26 +45,34 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
     public async ValueTask<TConfiguration> GetAsync<TConfiguration>(CancellationToken cancellationToken = default) where TConfiguration : notnull
     {
-        return await GetAsync<TConfiguration>(key: null, cancellationToken);
+        return CastConfiguration<TConfiguration>(await GetAsync(typeof(TConfiguration), cancellationToken));
+    }
+
+    public async ValueTask<object> GetAsync(Type configurationType, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync(key: null, configurationType, cancellationToken);
     }
 
     public async ValueTask<TConfiguration> GetAsync<TConfiguration>(string? key, CancellationToken cancellationToken = default) where TConfiguration : notnull
     {
-        var configurationType = typeof(TConfiguration);
+        return CastConfiguration<TConfiguration>(await GetAsync(key, typeof(TConfiguration), cancellationToken));
+    }
 
+    public async ValueTask<object> GetAsync(string? key, Type configurationType, CancellationToken cancellationToken = default)
+    {
         // Tomlet constraint
         if (configurationType.Attributes.HasFlag(TypeAttributes.Sealed) || (!configurationType.Attributes.HasFlag(TypeAttributes.Public) && !configurationType.Attributes.HasFlag(TypeAttributes.NestedPublic)))
             throw new ArgumentException($"{configurationType} is either sealed or not public");
 
-        var fileName = GetFileName<TConfiguration>(key);
+        var fileName = GetFileName(key, configurationType);
 
         if (_configurations.TryGetValue(fileName, out var configuration))
-            return CastConfiguration<TConfiguration>(configuration);
+            return configuration;
 
-        if (!_configurations.TryAdd(fileName, await ReadAsync<TConfiguration>(fileName, cancellationToken)))
+        if (!_configurations.TryAdd(fileName, await ReadAsync(fileName, configurationType, cancellationToken)))
             throw new InvalidOperationException($"Failed to add configuration {fileName}");
 
-        return await GetAsync<TConfiguration>(key, cancellationToken);
+        return await GetAsync(key, configurationType, cancellationToken);
     }
 
     internal static TConfiguration CastConfiguration<TConfiguration>(object configuration) where TConfiguration : notnull
@@ -139,14 +147,19 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
                             while (queue.TryDequeue(out var pair))
                             {
                                 var (key, configuration) = pair;
-                                var serializedValue = _serializer.Serialize(configuration);
 
                                 if (!previousConfigurations.TryGetValue(key, out var previousSerializedValue))
                                 {
-                                    previousConfigurations.Add(key, serializedValue);
+                                    var configurationType = configuration.GetType();
+
+                                    configuration = await ReadAsync(key, configurationType, stoppingToken);
+                                    previousSerializedValue = _serializer.Serialize(configuration);
+
+                                    previousConfigurations.Add(key, previousSerializedValue);
                                     continue;
                                 }
 
+                                var serializedValue = _serializer.Serialize(configuration);
                                 if (serializedValue != previousSerializedValue)
                                 {
                                     logger.LogTrace("Configuration {ConfigurationName} changed", GetConfigurationName(configuration.GetType()));
@@ -216,10 +229,9 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         await File.WriteAllTextAsync(fileName, value, cancellationToken);
     }
 
-    private string GetFileName<TConfiguration>(string? key) where TConfiguration : notnull
+    private string GetFileName(string? key, Type configurationType)
     {
-        var configurationType = typeof(TConfiguration);
-        var pluginName = GetPluginNameFromConfiguration<TConfiguration>();
+        var pluginName = GetPluginNameFromConfiguration(configurationType);
         var fileNameBuilder = new StringBuilder();
 
         if (!IsRoot(configurationType))
@@ -261,9 +273,9 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         return configurationType.GetCustomAttribute<RootConfigurationAttribute>() is not null;
     }
 
-    private string? GetPluginNameFromConfiguration<TConfiguration>() where TConfiguration : notnull
+    private string? GetPluginNameFromConfiguration(Type configurationType)
     {
-        plugins.TryGetPlugin(typeof(TConfiguration), out var plugin);
+        plugins.TryGetPlugin(configurationType, out var plugin);
         return plugin?.Name;
     }
 
