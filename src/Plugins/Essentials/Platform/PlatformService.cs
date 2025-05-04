@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Void.Minecraft.Commands.Brigadier;
-using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Extensions;
 using Void.Minecraft.Players.Extensions;
@@ -67,20 +66,27 @@ public class PlatformService(ILogger<PlatformService> logger, IHostApplicationLi
 
         if (container is null)
         {
-            if (context.Source is IPlayer player)
-            {
-                await player.SendChatMessageAsync($"Container '{containerName}' not found", cancellationToken);
-            }
-            else
-            {
-                logger.LogError("Container '{ContainerName}' not found", containerName);
-            }
-
+            await SendAnswerAsync($"Container '{containerName}' not found");
             return 1;
         }
 
         logger.LogWarning("Unloading '{ContainerName}' container requested by {Source}", containerName, context.Source);
+
         await plugins.UnloadContainerAsync(container, cancellationToken);
+        await SendAnswerAsync($"Container '{container}' unloaded successfully");
+
         return 0;
+
+        async ValueTask SendAnswerAsync(string message)
+        {
+            if (context.Source is IPlayer player)
+            {
+                await player.SendChatMessageAsync(message, cancellationToken);
+            }
+            else
+            {
+                logger.LogError("{Message}", message);
+            }
+        }
     }
 }
