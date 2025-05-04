@@ -72,8 +72,4 @@ If no key provided, you still can play through proxy, but protocol API will be v
 
 
 ### Developing Plugins
-Download [**Plugin Development Kit**](https://github.com/caunt/Void/releases/latest/download/plugin-devkit.zip) and open it with your IDE.
-<br>
-See the [Documentation](https://void.caunt.world/developing-plugins/development-kit.html) to learn how to create a plugin.
-<br>
-Use [Example Plugin](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) as example to begin with.
+Download [**Plugin Development Kit**](https://github.com/caunt/Void/releases/latest/download/plugin-devkit.zip), look at the [**Documentation**](https://void.caunt.world/developing-plugins/development-kit/) and use [**Example Plugin**](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) as walkthrough to create a plugin.
