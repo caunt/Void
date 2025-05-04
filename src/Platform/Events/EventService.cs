@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Reflection;
+﻿using System.Reflection;
 using DryIoc;
 using Nito.Disposables.Internals;
 using Void.Proxy.Api.Events;
@@ -8,10 +7,9 @@ using Void.Proxy.Api.Plugins.Dependencies;
 
 namespace Void.Proxy.Events;
 
-public class EventService(ILogger<EventService> logger, IContainer container/*, IDependencyService dependencies*/) : IEventService
+public class EventService(ILogger<EventService> logger, IContainer container) : IEventService
 {
     private readonly List<Entry> _entries = [];
-    private readonly ConcurrentDictionary<Type, bool> _scopedEventTypes = [];
 
     public IEnumerable<IEventListener> Listeners => [.. _entries.Select(entry => entry.Listener)];
 
@@ -35,7 +33,11 @@ public class EventService(ILogger<EventService> logger, IContainer container/*, 
 
     public async ValueTask ThrowAsync<T>(T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
-        var entries = _entries.WhereNotNull().OrderBy(entry => entry.Order).Select(entry => new WeakEntry(new WeakReference<IEventListener>(entry.Listener), new WeakReference<MethodInfo>(entry.Method), entry.Order, entry.BypassScopedFilter));
+        var entries = _entries
+            .WhereNotNull()
+            .OrderBy(entry => entry.Order)
+            .Select(entry => new WeakEntry(entry.CancellationToken, new WeakReference<IEventListener>(entry.Listener), new WeakReference<MethodInfo>(entry.Method), entry.Order, entry.BypassScopedFilter));
+
         await ThrowAsync(entries, @event, cancellationToken);
     }
 
@@ -59,16 +61,12 @@ public class EventService(ILogger<EventService> logger, IContainer container/*, 
         }
     }
 
-
     private async ValueTask ThrowOnceAsync<T>(WeakEntry[] entries, T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
         var dependencies = container.Resolve<IDependencyService>();
 
         var eventType = @event.GetType();
         logger.LogTrace("Invoking {TypeName} event", eventType.Name);
-
-        var simpleParameters = (object[])[@event];
-        var cancellableParameters = (object[])[@event, cancellationToken];
 
         foreach (var entry in entries)
         {
@@ -98,7 +96,7 @@ public class EventService(ILogger<EventService> logger, IContainer container/*, 
 
             try
             {
-                var value = method.Invoke(listener, parameters.Length == 1 ? simpleParameters : cancellableParameters);
+                var value = method.Invoke(listener, parameters.Length == 1 ? [@event] : [@event, CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, entry.CancellationToken).Token]);
                 var handle = value switch
                 {
                     Task task => new ValueTask(task),
@@ -117,13 +115,13 @@ public class EventService(ILogger<EventService> logger, IContainer container/*, 
         logger.LogTrace("Completed invoking {TypeName} event", eventType.Name);
     }
 
-    public void RegisterListeners(IEnumerable<IEventListener> listeners)
+    public void RegisterListeners(IEnumerable<IEventListener> listeners, CancellationToken cancellationToken = default)
     {
         foreach (var listener in listeners)
-            RegisterListeners(listener);
+            RegisterListeners(cancellationToken, listener);
     }
 
-    public void RegisterListeners(params IEventListener[] listeners)
+    public void RegisterListeners(CancellationToken cancellationToken = default, params IEventListener[] listeners)
     {
         lock (this)
         {
@@ -152,7 +150,7 @@ public class EventService(ILogger<EventService> logger, IContainer container/*, 
                         SubscribeAttribute.SanityChecks(method);
 
                         var attribute = method.GetCustomAttribute<SubscribeAttribute>()!;
-                        _entries.Add(new Entry(listener, method, attribute.Order, attribute.BypassScopedFilter));
+                        _entries.Add(new Entry(cancellationToken, listener, method, attribute.Order, attribute.BypassScopedFilter));
                     }
 
                     type = type.BaseType;
@@ -191,7 +189,7 @@ public class EventService(ILogger<EventService> logger, IContainer container/*, 
         }
     }
 
-    private record WeakEntry(WeakReference<IEventListener> ListenerReference, WeakReference<MethodInfo> MethodReference, PostOrder Order, bool BypassScopedFilter)
+    private record WeakEntry(CancellationToken CancellationToken, WeakReference<IEventListener> ListenerReference, WeakReference<MethodInfo> MethodReference, PostOrder Order, bool BypassScopedFilter)
     {
         public IEventListener? Listener => ListenerReference.TryGetTarget(out var listener) ? listener : null;
         public MethodInfo? Method => MethodReference.TryGetTarget(out var method) ? method : null;
@@ -199,5 +197,5 @@ public class EventService(ILogger<EventService> logger, IContainer container/*, 
         public bool IsCompatible(Type eventType) => MethodReference.TryGetTarget(out var method) && eventType.IsAssignableTo(method.GetParameters()[0].ParameterType);
     }
 
-    private record Entry(IEventListener Listener, MethodInfo Method, PostOrder Order, bool BypassScopedFilter);
+    private record Entry(CancellationToken CancellationToken, IEventListener Listener, MethodInfo Method, PostOrder Order, bool BypassScopedFilter);
 }
