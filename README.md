@@ -15,7 +15,9 @@
     <img alt="NuGet Downloads" src="https://img.shields.io/nuget/dt/void.minecraft?label=nuget%20void.minecraft">
   </a>
   <br>
-  <img alt="Greetings!" width="200" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/logo-text.svg">
+  <a href="https://github.com/caunt/Void/releases/latest/">
+    <img alt="Greetings!" width="200" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/logo-text.svg">
+  </a>
 </h1>
 
 Minecraft proxy designed to work through all versions and all mods.
