@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
+using Nito.AsyncEx;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Servers;
@@ -8,6 +9,8 @@ namespace Void.Proxy.Api.Players.Extensions;
 
 public static class PlayerExtensions
 {
+    private static readonly AsyncLock _lock = new();
+
     public static IServer? GetServer(this IPlayer player)
     {
         if (!player.TryGetLink(out var link))
@@ -32,6 +35,13 @@ public static class PlayerExtensions
 
     public static async ValueTask KickAsync(this IPlayer player, string text, CancellationToken cancellationToken = default)
     {
+        // Synchronize in case two threads try to kick the same player at the same time
+        using var _ = await _lock.LockAsync(cancellationToken);
+
+        // Might be called twice, so just handle first one
+        if (player.Context.IsDisposed)
+            return;
+
         var players = player.Context.Services.GetRequiredService<IPlayerService>();
         await players.KickPlayerAsync(player, text, cancellationToken);
     }
