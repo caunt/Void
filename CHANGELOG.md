@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/caunt/Void/compare/v0.3.2...v0.3.3) (2025-05-04)
+
+
+### Bug Fixes
+
+* docker image tags single quotes ([e922c85](https://github.com/caunt/Void/commit/e922c85eb4f8dccd27fcc1875eaefc1c947b2ad7))
+
 ## [0.3.2](https://github.com/caunt/Void/compare/v0.3.1...v0.3.2) (2025-05-04)
 
 
