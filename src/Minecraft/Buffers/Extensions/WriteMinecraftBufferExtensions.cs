@@ -294,7 +294,10 @@ public static class WriteMinecraftBufferExtensions
     private static void WriteStringCore<TBuffer>(ref TBuffer buffer, string value) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
         var bytes = Encoding.UTF8.GetBytes(value);
-        bytes.CopyTo(buffer.AccessWrite(bytes.Length));
+        var length = bytes.Length;
+
+        buffer.WriteVarInt(length);
+        bytes.CopyTo(buffer.AccessWrite(length));
     }
 
     private static void WritePropertyCore<TBuffer>(ref TBuffer buffer, Property value) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
