@@ -26,50 +26,9 @@
 
 **Getting Started:**
 <br>
-[**Open Documentation**](https://void.caunt.world/getting-started/running/)
-
-### Supported / Planned Features:
-
-> [!NOTE]
->
->| Game Version         | Proxying           | Redirects          | API                | WIP                |
->| :------------------- | :----------------: | :----------------: | :----------------: | :----------------: |
->| Java 1.7.2 - 1.21.5  | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
->| Java 1.0.0 - 1.7.1   | :white_check_mark: | :x:                | :x:                | :x:                |
->| Java Beta            | :white_check_mark: | :x:                | :x:                | :x:                |
->| Java Alpha           | :white_check_mark: | :x:                | :x:                | :x:                |
->| Java Classic         | :white_check_mark: | :x:                | :x:                | :x:                |
->| Bedrock Edition      | :x:                | :x:                | :x:                | :x:                |
->| Windows 10 Edition   | :x:                | :x:                | :x:                | :x:                |
->| Pocket Edition       | :x:                | :x:                | :x:                | :x:                |
->| Pocket Edition Alpha | :x:                | :x:                | :x:                | :x:                |
-
-### Mod Loaders
-NeoForge / Forge / others are playable since the proxy does not manipulate their protocols.
+[**Running Guide**](https://void.caunt.world/getting-started/running/)
 <br>
-Redirections definitely won't work with them until full support is implemented.
-
-### Forwarding
-The proxy allows plugins to choose the side of authentication (Server or Proxy).
-<br>
-Most of the time, you want to authenticate on the proxy side, so you have protocol API working.
-
-| Forwarding        | Supported          | WIP                |
-| :---------------- | :----------------: | :----------------: |
-| None (Offline)    | :white_check_mark: | :white_check_mark: |
-| Legacy (Bungee)   | :x:                | :white_check_mark: |
-| Modern (Velocity) | :x:                | :white_check_mark: |
-| Online (PK)       | :white_check_mark: | :white_check_mark: |
-
-#### Online (Private Key) is a new type of forwarding being developed.
-It allows to play through the proxy on servers that are configured with online mode.
-<br>
-The only caveat is that you need to install plugin / modification / anything on the server side.
-<br>
-Server will send its own private key to the proxy, so proxy can provide protocol API to plugins.
-<br>
-If no key provided, you still can play through proxy, but protocol API will be very limited.
-
+[**Supported / Planned Features**](https://void.caunt.world/getting-started/features/)
 
 ### Developing Plugins
 Download [**Plugin Development Kit**](https://github.com/caunt/Void/releases/latest/download/plugin-devkit.zip), look at the [**Documentation**](https://void.caunt.world/developing-plugins/development-kit/) and use [**Example Plugin**](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) as walkthrough to create a plugin.
