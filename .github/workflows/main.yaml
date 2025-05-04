@@ -163,7 +163,7 @@ jobs:
 
   docker-push:
     environment: docker-push
-    needs: [dotnet-build,release-please]
+    needs: [dotnet-build,release-please,docker-dev-push]
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ${{ matrix.os }}
     strategy:
