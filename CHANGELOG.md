@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.2](https://github.com/caunt/Void/compare/v0.3.1...v0.3.2) (2025-05-04)
+
+
+### Features
+
+* configurable velocity forwarding ([1a64fb3](https://github.com/caunt/Void/commit/1a64fb381c487babf13e2734b7975635085a472c))
+
+
+### Bug Fixes
+
+* build configuration cache from existing files ([7dec9d7](https://github.com/caunt/Void/commit/7dec9d794ccf7ce30b96a99b2e99269f2c9a7226))
+* ensure player is disposed after kick ([f70cbbc](https://github.com/caunt/Void/commit/f70cbbc72b37d7d504777f6e72ad88b834512170))
+* make velocity forwarding packets be decoded on plugin side ([b741357](https://github.com/caunt/Void/commit/b74135739df8ea642f4df45850c885f15da6fa4c))
+* register plugin container before loading event ([55473e3](https://github.com/caunt/Void/commit/55473e32c9ccfef1e8a944074bbd18f2ea8808d1))
+* send feedback about unloaded container ([276aafc](https://github.com/caunt/Void/commit/276aafc7b2e7badd8ab53002a8e76c1475be731d))
+* velocity forwarding 1.19.* versions ([2cb6a9c](https://github.com/caunt/Void/commit/2cb6a9c063e030ae0ee2e77bbd4c4d90442c25b4))
+* velocity forwarding enabled check ([0330b99](https://github.com/caunt/Void/commit/0330b99721ad81c5435b7060fbb9e0718d506b89))
+* write string length in span buffers ([90be225](https://github.com/caunt/Void/commit/90be225da7b3c26278743ed8f123d6c3c80d725d))
+
 ## [0.3.1](https://github.com/caunt/Void/compare/v0.3.0...v0.3.1) (2025-05-04)
 
 
