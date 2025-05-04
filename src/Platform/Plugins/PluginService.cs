@@ -160,7 +160,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
         var container = _containers.FirstOrDefault(reference => reference.Context.PluginAssembly == pluginType.Assembly) ??
             throw new Exception($"No container found for {pluginType.Name} plugin");
 
-        var plugin = dependencies.CreateInstance<IPlugin>(pluginType);
+        var plugin = dependencies.CreateInstance<IPlugin>(pluginType, container.CancellationTokenSource.Token);
 
         logger.LogTrace("Loading {Name} plugin", plugin.Name);
 
@@ -252,6 +252,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
         events.UnregisterListeners(container.Plugins.Cast<IEventListener>());
 
+        container.CancellationTokenSource.Cancel();
         container.Context.Unload();
 
         var collectionTime = Stopwatch.GetTimestamp();

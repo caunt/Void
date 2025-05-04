@@ -11,6 +11,7 @@ public class WeakPluginContainer
     public IEnumerable<IPlugin> Plugins => GetReferences();
     public bool IsAlive => _references.All(plugin => plugin.TryGetTarget(out _));
     public PluginAssemblyLoadContext Context { get; }
+    public CancellationTokenSource CancellationTokenSource { get; } = new();
 
     [SuppressMessage("Style", "IDE0290:Use primary constructor", Justification = "They are saving strict reference to parameters")]
     public WeakPluginContainer(PluginAssemblyLoadContext context, params IPlugin[] plugins)

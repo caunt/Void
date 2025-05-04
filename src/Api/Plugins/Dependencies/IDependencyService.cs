@@ -9,9 +9,9 @@ namespace Void.Proxy.Api.Plugins.Dependencies;
 
 public interface IDependencyService : IEventListener, IServiceProvider
 {
-    public TService CreateInstance<TService>();
-    public TService CreateInstance<TService>(Type serviceType);
-    public object CreateInstance(Type serviceType);
+    public TService CreateInstance<TService>(CancellationToken cancellationToken = default);
+    public TService CreateInstance<TService>(Type serviceType, CancellationToken cancellationToken = default);
+    public object CreateInstance(Type serviceType, CancellationToken cancellationToken = default);
     public bool TryGetScopedPlayerContext(object instance, [MaybeNullWhen(false)] out IPlayerContext context);
     public IServiceProvider CreatePlayerComposite(IPlayer player);
     public void ActivatePlayerContext(IPlayerContext context);

@@ -49,21 +49,21 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         }
     }
 
-    public TService CreateInstance<TService>()
+    public TService CreateInstance<TService>(CancellationToken cancellationToken = default)
     {
-        return CreateInstance<TService>(typeof(TService));
+        return CreateInstance<TService>(typeof(TService), cancellationToken);
     }
 
-    public TService CreateInstance<TService>(Type serviceType)
+    public TService CreateInstance<TService>(Type serviceType, CancellationToken cancellationToken = default)
     {
-        return (TService?)CreateInstance(serviceType) ??
+        return (TService?)CreateInstance(serviceType, cancellationToken) ??
             throw new InvalidOperationException($"Unable to cast instance of {serviceType} to {typeof(TService)}");
     }
 
-    public object CreateInstance(Type serviceType)
+    public object CreateInstance(Type serviceType, CancellationToken cancellationToken = default)
     {
         if (serviceType.IsAssignableTo(typeof(IPlugin)))
-            RegisterPlugin(serviceType);
+            RegisterPlugin(serviceType, cancellationToken);
 
         var instance = ActivatorUtilities.GetServiceOrCreateInstance(GetCompositeSortedBy(serviceType.Assembly), serviceType);
 
@@ -71,7 +71,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         if (instance is IEventListener listener)
         {
             var events = container.Resolve<IEventService>();
-            events.RegisterListeners(listener);
+            events.RegisterListeners(cancellationToken, listener);
         }
 
         return instance;
@@ -106,7 +106,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
             _assemblyPlayerContainers.SelectMany(pair => pair.Value.Where(pair => pair.Key == player.GetStableHashCode()).Select(pair => pair.Value))
             .Append(container));
 
-        return ListeningServiceProvider.Wrap(composite);
+        return ListeningServiceProvider.Wrap(composite, default);
     }
 
     public void ActivatePlayerContext(IPlayerContext context)
@@ -155,12 +155,12 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
     public object? GetService(Type serviceType)
     {
-        return ListeningServiceProvider.Wrap(GetCompositeSortedBy(serviceType.Assembly)).GetService(serviceType);
+        return ListeningServiceProvider.Wrap(GetCompositeSortedBy(serviceType.Assembly), default).GetService(serviceType);
     }
 
     public TService? GetService<TService>()
     {
-        return ListeningServiceProvider.Wrap(GetCompositeSortedBy(typeof(TService).Assembly)).GetService<TService>();
+        return ListeningServiceProvider.Wrap(GetCompositeSortedBy(typeof(TService).Assembly), default).GetService<TService>();
     }
 
     public void Register(Action<ServiceCollection> configure, bool activate = true)
@@ -197,12 +197,12 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         }
     }
 
-    private void RegisterPlugin(Type pluginType)
+    private void RegisterPlugin(Type pluginType, CancellationToken cancellationToken)
     {
         logger.LogTrace("Injecting {PluginType}", pluginType);
 
         var assembly = pluginType.Assembly;
-        var container = GetContainer(assembly);
+        var container = GetContainer(assembly, cancellationToken);
 
         // Plugin => Plugin
         container.Add(ServiceDescriptor.Singleton(pluginType, pluginType));
@@ -211,7 +211,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         container.GetRequiredService(pluginType);
     }
 
-    private ListeningServiceProvider GetContainer(Assembly assembly)
+    private ListeningServiceProvider GetContainer(Assembly assembly, CancellationToken cancellationToken = default)
     {
         if (!_assemblyContainers.TryGetValue(assembly, out var child))
         {
@@ -219,7 +219,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
             _assemblyContainers.Add(assembly, child);
         }
 
-        return new ListeningServiceProvider(child);
+        return new ListeningServiceProvider(child, cancellationToken);
     }
 
     private ListeningServiceProvider GetContainer(Assembly assembly, IPlayer player)
@@ -230,19 +230,20 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
             _assemblyPlayerContainers.Add(assembly, playerContainers);
         }
 
-        if (!playerContainers.TryGetValue(player.GetStableHashCode(), out var assemblyContainer))
+        if (!playerContainers.TryGetValue(player.GetStableHashCode(), out var playerContainer))
         {
-            assemblyContainer = CreateCompositeContainer($"[{assembly.GetName().Name}/{player}] Assembly Player Composite", _assemblyPlayerContainers.Values
+            playerContainer = CreateCompositeContainer($"[{assembly.GetName().Name}/{player}] Assembly Player Composite", _assemblyPlayerContainers.Values
                 .SelectMany(playersContainers => playersContainers.Where(pair => pair.Key == player.GetStableHashCode()).Select(pair => pair.Value))
                 .Append(container)
                 .Concat(_assemblyContainers.Values));
 
-            assemblyContainer.RegisterInstance(player.Context, setup: Setup.With(preventDisposal: true));
-            playerContainers.Add(player.GetStableHashCode(), assemblyContainer);
+            playerContainer.RegisterInstance(player.Context, setup: Setup.With(preventDisposal: true));
+            playerContainers.Add(player.GetStableHashCode(), playerContainer);
         }
 
         // Ensure all scoped services are registered in player container
-        var source = GetContainer(assembly).Source.GetRequiredService<IContainer>();
+        var assemblyContainer = GetContainer(assembly);
+        var source = assemblyContainer.Source.GetRequiredService<IContainer>();
 
         foreach (var registration in GetServiceRegistrations(source))
         {
@@ -253,7 +254,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
             if (reuse.Lifespan <= Reuse.Transient.Lifespan || reuse.Lifespan >= Reuse.Singleton.Lifespan)
                 continue;
 
-            if (assemblyContainer.IsRegistered(registration.ServiceType, registration.OptionalServiceKey))
+            if (playerContainer.IsRegistered(registration.ServiceType, registration.OptionalServiceKey))
                 continue;
 
             // Switch Scoped to Singleton, as it is now registered in its own "scoped" container
@@ -261,7 +262,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
             if (registration.ImplementationType is not null)
             {
-                assemblyContainer.Register(
+                playerContainer.Register(
                     registration.ServiceType,
                     registration.ImplementationType,
                     reuse,
@@ -271,7 +272,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
             else
             {
                 // TODO: Bug, need to change reuse of factory to singleton
-                assemblyContainer.Register(
+                playerContainer.Register(
                     registrationFactory,
                     registration.ServiceType,
                     registration.OptionalServiceKey,
@@ -280,7 +281,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
             }
         }
 
-        return new ListeningServiceProvider(assemblyContainer);
+        return new ListeningServiceProvider(playerContainer, assemblyContainer.CancellationToken);
     }
 
     private Container GetCompositeSortedBy(Assembly assembly)
