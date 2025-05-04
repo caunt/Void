@@ -44,6 +44,9 @@ public class Plugin(ILogger logger, IConfigurationService configs) : IProtocolPl
         if (_settings is null)
             throw new Exception("Settings are not initialized yet");
 
+        if (!_settings.Enabled)
+            return;
+
         var player = @event.Player;
 
         if (@event.Channel is not "velocity:player_info")
