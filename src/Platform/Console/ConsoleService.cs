@@ -40,6 +40,11 @@ public class ConsoleService(ILogger<ConsoleService> logger, ICommandService comm
         }
     }
 
+    public override string ToString()
+    {
+        return nameof(Console);
+    }
+
     private async ValueTask<string[]> SuggestAsync(string input, CancellationToken cancellationToken = default)
     {
         return await commands.CompleteAsync(input, this, cancellationToken);
