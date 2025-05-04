@@ -50,7 +50,7 @@ public class ExamplePlugin(ILogger logger, IDependencyService dependencies, ICom
 
         async ValueTask<int> SlotCommandAsync(CommandContext context, CancellationToken cancellationToken)
         {
-            // Commands might be triggered by console, plugins, or anything
+            // Commands might be triggered by console, plugins, players, or anything
             if (context.Source is not IPlayer player)
             {
                 logger.LogInformation("This command can be executed only by player");
