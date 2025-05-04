@@ -15,7 +15,7 @@
     <img alt="NuGet Downloads" src="https://img.shields.io/nuget/dt/void.minecraft?label=nuget%20void.minecraft">
   </a>
   <br>
-  VOID
+  <img alt="Greetings!" width="200" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/logo-text.svg">
 </h1>
 
 **Download:**
