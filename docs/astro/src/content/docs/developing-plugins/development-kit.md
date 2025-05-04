@@ -4,7 +4,7 @@ description: Learn how to use the Plugin Development Kit to create plugins for V
 ---
 
 Plugin Development Kit is a set of predefined configurations that simplifies the development process of plugins.
-It can be used with any msbuild-compatible IDE, such as Visual Studio or Rider.
+It can be used with any msbuild-compatible IDE, such as Visual Studio or JetBrains Rider.
 
 ## Prerequisites
 Void plugins are written with many modern .NET features, so you will need to ensure that you had experience with them or at least know what are you doing.
