@@ -85,30 +85,35 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
-      version: ${{ steps.release.outputs.version }}
+      version:          ${{ steps.release.outputs.version }}
+      tag_name:         ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: actions/checkout@v4
       - name: Create Release
         uses: googleapis/release-please-action@v4
         id: release
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          config-file: .github/RELEASE_PLEASE/config.json
+          token:        ${{ secrets.GITHUB_TOKEN }}
+          config-file:  .github/RELEASE_PLEASE/config.json
           manifest-file: .github/RELEASE_PLEASE/manifest.json
+
+  github-push:
+    needs: [dotnet-build,release-please]
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Download Artifacts
-        if: ${{ steps.release.outputs.release_created }}
         uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
       - name: Compress Plugin DevKit
-        if: ${{ steps.release.outputs.release_created }}
         run: zip -r -9 artifacts/plugin-devkit.zip pdk
       - name: Upload Release Artifacts
-        if: ${{ steps.release.outputs.release_created }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ steps.release.outputs.tag_name }} artifacts/*
+        run: gh release upload ${{ needs.release-please.outputs.tag_name }} artifacts/*
 
   docker-push:
     environment: docker-push
