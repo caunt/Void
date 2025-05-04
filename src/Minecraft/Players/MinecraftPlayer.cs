@@ -29,14 +29,15 @@ public class MinecraftPlayer(TcpClient client, IPlayerContext context, string re
         return ((IPlayer)this).GetStableHashCode() == other?.GetStableHashCode();
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
+        await Context.DisposeAsync();
         GC.SuppressFinalize(this);
-        return ValueTask.CompletedTask;
     }
 
     public void Dispose()
     {
+        Context.Dispose();
         GC.SuppressFinalize(this);
     }
 }
