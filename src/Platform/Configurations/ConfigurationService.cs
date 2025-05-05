@@ -21,7 +21,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
     private readonly ConfigurationTomlSerializer _serializer = new();
     private readonly ConcurrentDictionary<string, object> _configurations = [];
-    private readonly HashSet<string> _skipNextUpdate = [];
+    private readonly ConcurrentDictionary<string, DateTime> _updatesCooldown = [];
 
     [Subscribe(PostOrder.First)]
     public void OnPluginUnloading(PluginUnloadingEvent @event)
@@ -132,7 +132,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
                             if (!_configurations.TryGetValue(fileSystemEventArgs.FullPath, out var configuration))
                                 continue;
 
-                            if (_skipNextUpdate.Remove(fileSystemEventArgs.FullPath))
+                            if (_updatesCooldown.TryGetValue(fileSystemEventArgs.FullPath, out var skipUntilDate) && skipUntilDate > DateTime.Now)
                                 continue;
 
                             logger.LogInformation("Configuration {ConfigurationName} changed from disk", GetConfigurationName(configuration.GetType()));
@@ -146,16 +146,19 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
                             var queue = new Queue<KeyValuePair<string, object>>(_configurations);
                             while (queue.TryDequeue(out var pair))
                             {
-                                var (key, configuration) = pair;
+                                var (fileName, configuration) = pair;
 
-                                if (!previousConfigurations.TryGetValue(key, out var previousSerializedValue))
+                                if (_updatesCooldown.TryGetValue(fileName, out var skipUntilDate) && skipUntilDate > DateTime.Now)
+                                    continue;
+
+                                if (!previousConfigurations.TryGetValue(fileName, out var previousSerializedValue))
                                 {
                                     var configurationType = configuration.GetType();
 
-                                    configuration = await ReadAsync(key, configurationType, stoppingToken);
+                                    configuration = await ReadAsync(fileName, configurationType, stoppingToken);
                                     previousSerializedValue = _serializer.Serialize(configuration);
 
-                                    previousConfigurations.Add(key, previousSerializedValue);
+                                    previousConfigurations.Add(fileName, previousSerializedValue);
                                     continue;
                                 }
 
@@ -163,10 +166,10 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
                                 if (serializedValue != previousSerializedValue)
                                 {
                                     logger.LogTrace("Configuration {ConfigurationName} changed in memory", GetConfigurationName(configuration.GetType()));
-                                    previousConfigurations[key] = serializedValue;
+                                    previousConfigurations[fileName] = serializedValue;
 
-                                    await WaitFileLockAsync(key, stoppingToken);
-                                    await SaveAsync(key, configuration, stoppingToken);
+                                    await WaitFileLockAsync(fileName, stoppingToken);
+                                    await SaveAsync(fileName, configuration, stoppingToken);
                                 }
                             }
                             break;
@@ -196,7 +199,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
     private async ValueTask SaveAsync(string fileName, object configuration, CancellationToken cancellationToken)
     {
-        _skipNextUpdate.Add(fileName);
+        _updatesCooldown[fileName] = DateTime.Now.AddMilliseconds(500);
 
         if (configuration is Type)
             logger.LogTrace("Saving default configuration file {FileName}", fileName);
