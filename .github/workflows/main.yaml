@@ -158,7 +158,7 @@ jobs:
           dotnet publish src/Platform \
             /t:PublishContainer \
             /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
-            /p:ContainerImageTags="${{ matrix.container_image_tags }}" \
+            /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
             /p:ContainerBaseImage="${{ matrix.container_base_image }}"
 
   docker-push:
@@ -203,7 +203,7 @@ jobs:
           dotnet publish src/Platform \
             /t:PublishContainer \
             /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
-            /p:ContainerImageTags="${{ matrix.container_image_tags }}" \
+            /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
             /p:ContainerBaseImage="${{ matrix.container_base_image }}"
 
   nuget-push:
@@ -255,27 +255,6 @@ jobs:
           path: docs/astro
       - name: Deploy GitHub Pages site
         uses: actions/deploy-pages@v4
-
-  docs-mdbook-deprecated:
-    environment: docs-mdbook-deprecated
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install mdBook
-        run: |
-          curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf -y | sh
-          rustup update
-          cargo install mdbook
-      - name: Install static-sitemap-cli
-        run: npm install static-sitemap-cli
-      - name: Build with mdBook
-        run: |
-          cd docs/mdbook
-          mdbook build
-      - name: Generate sitemap
-        run: |
-          cd docs/mdbook/book
-          npx sscli --no-clean --base https://void.caunt.world
 
   docs-docfx-bug-test:
     environment: docs-docfx-bug-test
