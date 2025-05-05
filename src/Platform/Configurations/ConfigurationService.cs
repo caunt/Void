@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Channels;
 using System.Timers;
+using Nito.AsyncEx;
 using Void.Proxy.Api.Configurations;
 using Void.Proxy.Api.Configurations.Attributes;
 using Void.Proxy.Api.Configurations.Exceptions;
@@ -21,6 +22,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
     private readonly ConfigurationTomlSerializer _serializer = new();
     private readonly ConcurrentDictionary<string, object> _configurations = [];
+    private readonly AsyncLock _lock = new();
 
     [Subscribe(PostOrder.First)]
     public void OnPluginUnloading(PluginUnloadingEvent @event)
@@ -143,6 +145,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
                         }
                     case ElapsedEventArgs:
                         {
+                            using var _ = await _lock.LockAsync(stoppingToken);
                             var queue = new Queue<KeyValuePair<string, object>>(_configurations);
                             while (queue.TryDequeue(out var pair))
                             {
@@ -189,6 +192,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
     private async ValueTask<object> ReadAsync(string fileName, Type configurationType, CancellationToken cancellationToken)
     {
+        using var _ = await _lock.LockAsync(cancellationToken);
         logger.LogTrace("Loading configuration file {FileName}", fileName);
 
         if (!File.Exists(fileName))
