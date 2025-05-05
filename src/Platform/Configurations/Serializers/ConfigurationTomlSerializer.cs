@@ -27,14 +27,12 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
         return Serialize<TConfiguration>(default);
     }
 
-    public string Serialize(Type configurationType)
-    {
-        return Serialize(configuration: null, configurationType);
-    }
-
     public string Serialize(object configuration)
     {
-        return Serialize(configuration, configuration.GetType());
+        if (configuration is Type configurationType)
+            return Serialize(configuration: null, configurationType);
+        else
+            return Serialize(configuration, configuration.GetType());
     }
 
     public string Serialize<TConfiguration>(TConfiguration? configuration) where TConfiguration : notnull

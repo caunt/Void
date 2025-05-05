@@ -3,7 +3,6 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Channels;
 using System.Timers;
-using Nito.AsyncEx;
 using Void.Proxy.Api.Configurations;
 using Void.Proxy.Api.Configurations.Attributes;
 using Void.Proxy.Api.Configurations.Exceptions;
@@ -22,7 +21,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
     private readonly ConfigurationTomlSerializer _serializer = new();
     private readonly ConcurrentDictionary<string, object> _configurations = [];
-    private readonly AsyncLock _lock = new();
+    private readonly HashSet<string> _skipNextUpdate = [];
 
     [Subscribe(PostOrder.First)]
     public void OnPluginUnloading(PluginUnloadingEvent @event)
@@ -62,8 +61,6 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
     public async ValueTask<object> GetAsync(string? key, Type configurationType, CancellationToken cancellationToken = default)
     {
-        using var _ = await _lock.LockAsync(cancellationToken);
-
         // Tomlet constraint
         if (configurationType.Attributes.HasFlag(TypeAttributes.Sealed) || (!configurationType.Attributes.HasFlag(TypeAttributes.Public) && !configurationType.Attributes.HasFlag(TypeAttributes.NestedPublic)))
             throw new ArgumentException($"{configurationType} is either sealed or not public");
@@ -114,12 +111,9 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         fileSystemWatcher.Changed += (_, args) => channel.Writer.TryWrite(args);
 
         var previousConfigurations = new Dictionary<string, string>();
-        var skippedUpdates = new HashSet<string>();
 
         await foreach (var args in channel.Reader.ReadAllAsync(stoppingToken))
         {
-            using var _ = await _lock.LockAsync(stoppingToken);
-
             try
             {
                 fileSystemWatcher.EnableRaisingEvents = false;
@@ -138,7 +132,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
                             if (!_configurations.TryGetValue(fileSystemEventArgs.FullPath, out var configuration))
                                 continue;
 
-                            if (skippedUpdates.Remove(fileSystemEventArgs.FullPath))
+                            if (_skipNextUpdate.Remove(fileSystemEventArgs.FullPath))
                                 continue;
 
                             logger.LogInformation("Configuration {ConfigurationName} changed from disk", GetConfigurationName(configuration.GetType()));
@@ -173,8 +167,6 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
                                     await WaitFileLockAsync(key, stoppingToken);
                                     await SaveAsync(key, configuration, stoppingToken);
-
-                                    // skippedUpdates.Add(key);
                                 }
                             }
                             break;
@@ -202,23 +194,14 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         return configuration;
     }
 
-    private async ValueTask SaveAsync(string fileName, Type configurationType, CancellationToken cancellationToken)
-    {
-        logger.LogTrace("Saving default configuration file {FileName}", fileName);
-
-        EnsureConfigurationsPathExists();
-
-        if (Path.GetDirectoryName(fileName) is { } path && !string.IsNullOrWhiteSpace(path))
-            EnsureConfigurationsPathExists(path);
-
-        var value = _serializer.Serialize(configurationType);
-        await WaitFileLockAsync(fileName, cancellationToken);
-        await File.WriteAllTextAsync(fileName, value, cancellationToken);
-    }
-
     private async ValueTask SaveAsync(string fileName, object configuration, CancellationToken cancellationToken)
     {
-        logger.LogTrace("Saving configuration file {FileName}", fileName);
+        _skipNextUpdate.Add(fileName);
+
+        if (configuration is Type)
+            logger.LogTrace("Saving default configuration file {FileName}", fileName);
+        else
+            logger.LogTrace("Saving configuration file {FileName}", fileName);
 
         EnsureConfigurationsPathExists();
 
