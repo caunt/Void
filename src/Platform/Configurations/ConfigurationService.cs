@@ -62,6 +62,8 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
     public async ValueTask<object> GetAsync(string? key, Type configurationType, CancellationToken cancellationToken = default)
     {
+        using var _ = await _lock.LockAsync(cancellationToken);
+
         // Tomlet constraint
         if (configurationType.Attributes.HasFlag(TypeAttributes.Sealed) || (!configurationType.Attributes.HasFlag(TypeAttributes.Public) && !configurationType.Attributes.HasFlag(TypeAttributes.NestedPublic)))
             throw new ArgumentException($"{configurationType} is either sealed or not public");
@@ -71,10 +73,10 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         if (_configurations.TryGetValue(fileName, out var configuration))
             return configuration;
 
-        if (!_configurations.TryAdd(fileName, await ReadAsync(fileName, configurationType, cancellationToken)))
+        if (!_configurations.TryAdd(fileName, configuration = await ReadAsync(fileName, configurationType, cancellationToken)))
             throw new InvalidOperationException($"Failed to add configuration {fileName}");
 
-        return await GetAsync(key, configurationType, cancellationToken);
+        return configuration;
     }
 
     internal static TConfiguration CastConfiguration<TConfiguration>(object configuration) where TConfiguration : notnull
@@ -116,6 +118,8 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
         await foreach (var args in channel.Reader.ReadAllAsync(stoppingToken))
         {
+            using var _ = await _lock.LockAsync(stoppingToken);
+
             try
             {
                 fileSystemWatcher.EnableRaisingEvents = false;
@@ -145,7 +149,6 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
                         }
                     case ElapsedEventArgs:
                         {
-                            using var _ = await _lock.LockAsync(stoppingToken);
                             var queue = new Queue<KeyValuePair<string, object>>(_configurations);
                             while (queue.TryDequeue(out var pair))
                             {
@@ -165,7 +168,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
                                 var serializedValue = _serializer.Serialize(configuration);
                                 if (serializedValue != previousSerializedValue)
                                 {
-                                    logger.LogTrace("Configuration {ConfigurationName} changed", GetConfigurationName(configuration.GetType()));
+                                    logger.LogTrace("Configuration {ConfigurationName} changed in memory", GetConfigurationName(configuration.GetType()));
                                     previousConfigurations[key] = serializedValue;
 
                                     await WaitFileLockAsync(key, stoppingToken);
@@ -185,14 +188,8 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         }
     }
 
-    private async ValueTask<TConfiguration> ReadAsync<TConfiguration>(string fileName, CancellationToken cancellationToken) where TConfiguration : notnull
-    {
-        return CastConfiguration<TConfiguration>(await ReadAsync(fileName, typeof(TConfiguration), cancellationToken));
-    }
-
     private async ValueTask<object> ReadAsync(string fileName, Type configurationType, CancellationToken cancellationToken)
     {
-        using var _ = await _lock.LockAsync(cancellationToken);
         logger.LogTrace("Loading configuration file {FileName}", fileName);
 
         if (!File.Exists(fileName))
