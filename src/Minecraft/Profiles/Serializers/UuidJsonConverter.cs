@@ -15,4 +15,17 @@ public class UuidJsonConverter : JsonConverter<Uuid>
     {
         writer.WriteStringValue(value.ToString());
     }
+
+    public override Uuid ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var name = reader.GetString() ??
+            throw new JsonException($"{nameof(Uuid)} property name cannot be null.");
+
+        return Uuid.Parse(name);
+    }
+
+    public override void WriteAsPropertyName(Utf8JsonWriter writer, Uuid value, JsonSerializerOptions options)
+    {
+        writer.WritePropertyName(value.ToString());
+    }
 }
