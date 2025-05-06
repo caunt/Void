@@ -104,7 +104,8 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
     {
         var composite = CreateCompositeContainer($"[{player}] Player Composite",
             _assemblyPlayerContainers.SelectMany(pair => pair.Value.Where(pair => pair.Key == player.GetStableHashCode()).Select(pair => pair.Value))
-            .Append(container));
+            .Append(container)
+            .Concat(_assemblyContainers.Values));
 
         return ListeningServiceProvider.Wrap(composite, default);
     }
