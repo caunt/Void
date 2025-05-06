@@ -83,8 +83,11 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
 
         foreach (var playersContainer in _assemblyPlayerContainers.Values)
         {
-            foreach (var (playerStableHashCode, container) in playersContainer)
+            var queue = new Queue<KeyValuePair<int, IContainer>>(playersContainer.AsEnumerable());
+            while (queue.TryDequeue(out var pair))
             {
+                var (playerStableHashCode, container) = pair;
+
                 if (!container.IsRegistered(serviceType))
                     continue;
 
