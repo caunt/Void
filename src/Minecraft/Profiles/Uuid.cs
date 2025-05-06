@@ -3,9 +3,12 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
+using Void.Minecraft.Profiles.Serializers;
 
 namespace Void.Minecraft.Profiles;
 
+[JsonConverter(typeof(UuidJsonConverter))]
 public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
 {
     public static Uuid Empty { get; } = new(Guid.Empty);
