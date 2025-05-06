@@ -102,6 +102,9 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         if (!await events.ThrowWithResultAsync(new PlayerVerifyingEncryptionEvent(link.Player, link), cancellationToken))
             return AuthenticationResult.NotAuthenticatedPlayer;
 
+        if (!await VerifyMojangProfile(link.Player, cancellationToken))
+            return AuthenticationResult.NotAuthenticatedPlayer;
+
         await events.ThrowAsync(new PlayerVerifiedEncryptionEvent(link.Player, link), cancellationToken);
         await AdmitPlayerAsync(link, cancellationToken);
 
@@ -166,17 +169,18 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
 
     protected abstract ValueTask<int> GetHandshakeNextStateAsync(ILink link, CancellationToken cancellationToken);
 
-    protected static async ValueTask VerifyMojangProfile(IPlayer player, ReadOnlyMemory<byte> sharedSecret, CancellationToken cancellationToken)
+    protected static async ValueTask<bool> VerifyMojangProfile(IPlayer player, CancellationToken cancellationToken)
     {
         if (!player.IsMinecraft)
-            return;
+            return false;
 
         var mojang = player.Context.Services.GetRequiredService<IMojangService>();
 
-        if (await mojang.VerifyAsync(player, sharedSecret, cancellationToken) is not { } onlineProfile)
-            throw new NotSupportedException("Playing in offline-mode is not supported yet. Cannot verify profile.");
+        if (await mojang.VerifyAsync(player, cancellationToken) is not { } onlineProfile)
+            return false;
 
         player.Profile = onlineProfile;
+        return true;
     }
 
     protected abstract bool IsSupportedVersion(ProtocolVersion version);

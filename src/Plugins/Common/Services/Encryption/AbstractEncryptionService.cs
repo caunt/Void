@@ -72,15 +72,18 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
 
         var response = await ReceiveEncryptionResponseAsync(@event.Link, cancellationToken);
 
-        if (!VerifyToken(@event.Player, tokens.Get(TokenType.VerifyToken), response.VerifyToken, response.Salt))
+        if (!VerifyToken(@event.Player, tokens.Get(TokenType.VerifyToken).Span, response.VerifyToken, response.Salt))
             return; // invalid verify token
 
-        var sharedSecret = new byte[response.SharedSecret.Length];
+        var sharedSecret = (stackalloc byte[response.SharedSecret.Length]);
 
         if (!crypto.Instance.TryDecrypt(response.SharedSecret, sharedSecret, RSAEncryptionPadding.Pkcs1, out var length))
             return; // invalid shared secret
 
-        @event.Link.PlayerChannel.AddBefore<MinecraftPacketMessageStream, AesCfb8BufferedStream>(new AesCfb8BufferedStream(sharedSecret[..length]));
+        var sharedSecretArray = sharedSecret[..length].ToArray();
+        tokens.Store(TokenType.SharedSecret, sharedSecretArray);
+
+        @event.Link.PlayerChannel.AddBefore<MinecraftPacketMessageStream, AesCfb8BufferedStream>(new AesCfb8BufferedStream(sharedSecretArray));
         @event.Result = true;
     }
 

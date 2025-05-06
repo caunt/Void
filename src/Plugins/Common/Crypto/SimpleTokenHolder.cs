@@ -4,9 +4,9 @@ public class SimpleTokenHolder : ITokenHolder
 {
     private readonly Dictionary<TokenType, ReadOnlyMemory<byte>> _tokens = [];
 
-    public ReadOnlySpan<byte> Get(TokenType type)
+    public ReadOnlyMemory<byte> Get(TokenType type)
     {
-        return _tokens[type].Span;
+        return _tokens[type];
     }
 
     public bool Has(TokenType type)
