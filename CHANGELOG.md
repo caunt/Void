@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.4](https://github.com/caunt/Void/compare/v0.3.3...v0.3.4) (2025-05-06)
+
+
+### Bug Fixes
+
+* add plugins layer to player context composite ([5600129](https://github.com/caunt/Void/commit/560012989dee5ee7f24150945af798f53c003b65))
+* allow empty components deserializing ([0d0b255](https://github.com/caunt/Void/commit/0d0b2556a1f9ec08cb0079e878d1907856bde7bc))
+* apply convert attribute on uuid ([dac32a2](https://github.com/caunt/Void/commit/dac32a2fb0cfce027a4d6fa13d54bcfd94399940))
+* do not update configuration files from disk if they were just saved ([54e01c5](https://github.com/caunt/Void/commit/54e01c53b72b9e44d35b68c24986e44282618639))
+* mojang service authentication ([236a403](https://github.com/caunt/Void/commit/236a40350118e5bc7c9fa8b2262581005a6c90a1))
+* read and write as property names for uuid converter ([74b5854](https://github.com/caunt/Void/commit/74b585452b8ad36a98b151ede7ede07cceb6385c))
+* replace updates skips with half second cooldown ([be9a358](https://github.com/caunt/Void/commit/be9a3580114e235a245de97799e6a773ae8de949))
+* synchronize configuration loading ([b12b128](https://github.com/caunt/Void/commit/b12b128a27e90f00f9a1cf5a57c66efcd96d8da8))
+* synchronize configuration service even more ([a131819](https://github.com/caunt/Void/commit/a1318195bee43095dd9f899c900710d1a518c2cb))
+
 ## [0.3.3](https://github.com/caunt/Void/compare/v0.3.2...v0.3.3) (2025-05-04)
 
 
