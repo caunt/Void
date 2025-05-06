@@ -183,6 +183,9 @@ public static class ComponentNbtSerializer
     {
         var component = Component.Default;
 
+        if (tag is NbtEnd)
+            return component;
+
         if (tag is NbtString nbtString)
             return component with { Content = new TextContent(nbtString.Value) };
 
