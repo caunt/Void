@@ -46,7 +46,7 @@ public class DependencyResolver(
         return null;
     }
 
-    public Assembly ResolveStandardAssembly(AssemblyName assemblyName)
+    public Assembly? ResolveStandardAssembly(AssemblyName assemblyName)
     {
         Assembly? assembly = null;
 
