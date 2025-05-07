@@ -1,7 +1,11 @@
-﻿using DryIoc;
+﻿using System.CommandLine;
+using System.CommandLine.Builder;
+using System.CommandLine.Hosting;
+using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
+using DryIoc;
 using DryIoc.Microsoft.DependencyInjection;
 using Serilog;
-using Serilog.Events;
 using Void.Proxy;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Commands;
@@ -15,12 +19,12 @@ using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Api.Servers;
-using Void.Proxy.Api.Settings;
 using Void.Proxy.Commands;
 using Void.Proxy.Configurations;
 using Void.Proxy.Console;
 using Void.Proxy.Crypto;
 using Void.Proxy.Events;
+using Void.Proxy.Extensions;
 using Void.Proxy.Links;
 using Void.Proxy.Players;
 using Void.Proxy.Plugins;
@@ -37,64 +41,66 @@ Directory.SetCurrentDirectory(AppContext.BaseDirectory);
 var configuration = new LoggerConfiguration();
 configuration.Enrich.FromLogContext();
 configuration.MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch);
-configuration.MinimumLevel.Override("Microsoft", LogEventLevel.Warning);
 configuration.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}");
 
 Log.Logger = configuration.CreateLogger();
 
+
 try
 {
-    var builder = Host.CreateApplicationBuilder(args);
+    await BuildCommandLine()
+        .UseHost(builder => builder
+            .UseServiceProviderFactory(new DryIocServiceProviderFactory(new Container(Rules.MicrosoftDependencyInjectionRules)))
+            .UseConsoleLifetime(options => options.SuppressStatusMessages = true)
+            .ConfigureServices(services => services
+                .AddSerilog()
+                .AddJsonOptions()
+                .AddHttpClient()
+                .AddSettings()
+                .AddSingletonAndListen<ICryptoService, RsaCryptoService>()
+                .AddSingletonAndListen<IEventService, EventService>()
+                .AddSingletonAndListen<IPluginService, PluginService>()
+                .AddSingletonAndListen<IPlayerService, PlayerService>()
+                .AddSingletonAndListen<IServerService, ServerService>()
+                .AddSingletonAndListen<ILinkService, LinkService>()
+                .AddSingletonAndListen<IConsoleService, ConsoleService>()
+                .AddSingletonAndListen<ICommandService, CommandService>()
+                .AddSingletonAndListen<IConfigurationService, ConfigurationService>()
+                .AddSingletonAndListen<IDependencyService, DependencyService>()
+                .AddSingletonAndListen<IProxy, Platform>()
+                .AddSingleton<IFileDependencyResolver, FileDependencyResolver>(FileDependencyResolver.Factory)
+                .AddSingleton<INuGetDependencyResolver, NuGetDependencyResolver>()
+                .AddSingleton<IEmbeddedDependencyResolver, EmbeddedDependencyResolver>()
+                .AddHostedService(services => services.GetRequiredService<IConfigurationService>())
+                .AddHostedService(services => services.GetRequiredService<IProxy>())))
+        .Build()
+        .InvokeAsync(args);
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
-    builder.ConfigureContainer(new DryIocServiceProviderFactory(new Container(Rules.MicrosoftDependencyInjectionRules)));
-
-    builder.Services.Configure<HostOptions>(options =>
+static CommandLineBuilder BuildCommandLine()
+{
+    var root = new RootCommand("Runs the proxy")
     {
-        options.ServicesStartConcurrently = true;
-        options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.StopHost;
-    });
+        new Option<string>("--name")
+    };
 
-    builder.Services.AddSerilog();
-    builder.Services.AddJsonOptions();
-    builder.Services.AddHttpClient();
-    builder.Services.AddSingletonAndListen<ICryptoService, RsaCryptoService>();
-    builder.Services.AddSingletonAndListen<IEventService, EventService>();
-    builder.Services.AddSingletonAndListen<IPluginService, PluginService>();
-    builder.Services.AddSingletonAndListen<IPlayerService, PlayerService>();
-    builder.Services.AddSingletonAndListen<IServerService, ServerService>();
-    builder.Services.AddSingletonAndListen<ILinkService, LinkService>();
-    builder.Services.AddSingletonAndListen<IConsoleService, ConsoleService>();
-    builder.Services.AddSingletonAndListen<ICommandService, CommandService>();
-    builder.Services.AddSingletonAndListen<IConfigurationService, ConfigurationService>();
-    builder.Services.AddSingletonAndListen<IDependencyService, DependencyService>();
-    builder.Services.AddSingletonAndListen<IProxy, Platform>();
-    builder.Services.AddSingleton<IFileDependencyResolver, FileDependencyResolver>(FileDependencyResolver.Factory);
-    builder.Services.AddSingleton<INuGetDependencyResolver, NuGetDependencyResolver>();
-    builder.Services.AddSingleton<IEmbeddedDependencyResolver, EmbeddedDependencyResolver>();
-    builder.Services.AddHostedService(services => services.GetRequiredService<IConfigurationService>());
-    builder.Services.AddHostedService(services => services.GetRequiredService<IProxy>());
+    root.SetHandler(ReadCommands);
 
-    builder.Services.AddSingleton<ISettings>(services =>
-    {
-        return services.GetRequiredService<IConfigurationService>().GetAsync<Settings>().AsTask().Result;
-    });
+    return new CommandLineBuilder(root);
+}
 
-    using var host = builder.Build();
-
+static async Task ReadCommands(InvocationContext context)
+{
+    var host = context.GetHost();
     var console = host.Services.GetRequiredService<IConsoleService>();
     var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
     var token = lifetime.ApplicationStopping;
 
     console.Setup();
-
-    try
-    {
-        await host.StartAsync();
-    }
-    catch (ContainerException containerException)
-    {
-        throw new Exception(containerException.TryGetDetails(host.Services.GetRequiredService<IContainer>()), containerException);
-    }
 
     try
     {
@@ -105,10 +111,4 @@ try
     {
         // Ignore
     }
-
-    await host.StopAsync();
-}
-finally
-{
-    Log.CloseAndFlush();
 }
