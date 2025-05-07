@@ -35,20 +35,20 @@ public class Plugin(IDependencyService dependencies) : IProtocolPlugin
 
         dependencies.Register(services =>
         {
+            services.AddSingleton<RegistryService>();
+            services.AddSingleton<ChannelService>();
+            services.AddSingleton<CompressionService>();
+            services.AddSingleton<EncryptionService>();
+            services.AddSingleton<AuthenticationService>();
+            services.AddSingleton<TransformationService>();
+
+            services.AddSingleton<CommandService>();
+            services.AddSingleton<BundleService>();
+            services.AddSingleton<LifecycleService>();
+
             services.AddScoped<Common.Network.Bundles.IBundleService, Common.Network.Bundles.BundleService>();
             services.AddScoped<IChannelBuilderService, SimpleMinecraftChannelBuilderService>();
             services.AddScoped<ITokenHolder, SimpleTokenHolder>();
         });
-
-        dependencies.CreateInstance<RegistryService>();
-        dependencies.CreateInstance<ChannelService>();
-        dependencies.CreateInstance<CompressionService>();
-        dependencies.CreateInstance<EncryptionService>();
-        dependencies.CreateInstance<AuthenticationService>();
-        dependencies.CreateInstance<TransformationService>();
-
-        dependencies.CreateInstance<CommandService>();
-        dependencies.CreateInstance<BundleService>();
-        dependencies.CreateInstance<LifecycleService>();
     }
 }

@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Network;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Void.Minecraft.Network;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
@@ -22,9 +23,12 @@ public class Plugin(IDependencyService dependencies) : IProtocolPlugin
         if (@event.Plugin != this)
             return;
 
-        dependencies.CreateInstance<RedirectionService>();
-        dependencies.CreateInstance<ModerationService>();
-        dependencies.CreateInstance<PlatformService>();
-        dependencies.CreateInstance<TraceService>();
+        dependencies.Register(services =>
+        {
+            services.AddSingleton<RedirectionService>();
+            services.AddSingleton<ModerationService>();
+            services.AddSingleton<PlatformService>();
+            services.AddSingleton<TraceService>();
+        });
     }
 }
