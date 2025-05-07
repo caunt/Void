@@ -179,7 +179,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
     public IEnumerable<Type> LoadContainer(string name, Stream stream, bool ignoreEmpty = false)
     {
         logger.LogTrace("Loading {Name} plugins", name);
-        var context = new PluginAssemblyLoadContext(dependencies, name, stream, _containers.AsReadOnly());
+        var context = dependencies.CreateInstance<PluginAssemblyLoadContext>(default, name, stream, _containers.AsReadOnly());
 
         var plugins = GetPlugins(context.PluginAssembly);
 

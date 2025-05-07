@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using NuGet.Common;
 
-namespace Void.Proxy.Plugins.Dependencies.Remote.NuGetSource;
+namespace Void.Proxy.Plugins.Dependencies.Nuget;
 
 [SuppressMessage("CodeQuality", "IDE0079:Remove unnecessary suppression", Justification = "Why would I remove suppress message if I need it?")]
 [SuppressMessage("Usage", "CA2254:Template should be a static expression", Justification = "Do not template NuGet messages")]

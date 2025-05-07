@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Runtime.Loader;
 using System.Runtime.Versioning;
 using Nito.Disposables.Internals;
 using NuGet.Configuration;
@@ -9,10 +10,11 @@ using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
+using Void.Proxy.Api.Plugins.Dependencies;
 
-namespace Void.Proxy.Plugins.Dependencies.Remote.NuGetSource;
+namespace Void.Proxy.Plugins.Dependencies.Nuget;
 
-public class NuGetDependencyResolver(ILogger logger)
+public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger) : INuGetDependencyResolver
 {
     private static readonly string FrameworkName = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName
         ?? throw new InvalidOperationException("Cannot determine the target framework.");
@@ -23,17 +25,7 @@ public class NuGetDependencyResolver(ILogger logger)
 
     private readonly NuGet.Common.ILogger _nugetLogger = new NuGetLogger(logger);
 
-    private async Task<string?> ResolveAssemblyFromNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)
-    {
-        var assemblyPath = await ResolveAssemblyFromOfflineNuGetAsync(assemblyName, cancellationToken);
-
-        if (string.IsNullOrWhiteSpace(assemblyPath))
-            assemblyPath = await ResolveAssemblyFromOnlineNuGetAsync(assemblyName, cancellationToken);
-
-        return assemblyPath;
-    }
-
-    public string? ResolveAssemblyPath(AssemblyName assemblyName)
+    public Assembly? Resolve(AssemblyLoadContext context, AssemblyName assemblyName)
     {
         logger.LogTrace("Resolving {AssemblyName} dependency", assemblyName.Name);
 
@@ -44,6 +36,16 @@ public class NuGetDependencyResolver(ILogger logger)
         }
 
         var assemblyPath = ResolveAssemblyFromNuGetAsync(assemblyName).GetAwaiter().GetResult();
+        return assemblyPath is null ? null : context.LoadFromAssemblyPath(assemblyPath);
+    }
+
+    private async Task<string?> ResolveAssemblyFromNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)
+    {
+        var assemblyPath = await ResolveAssemblyFromOfflineNuGetAsync(assemblyName, cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(assemblyPath))
+            assemblyPath = await ResolveAssemblyFromOnlineNuGetAsync(assemblyName, cancellationToken);
+
         return assemblyPath;
     }
 

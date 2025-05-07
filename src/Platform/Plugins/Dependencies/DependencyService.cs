@@ -22,7 +22,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
     [Subscribe]
     public static async ValueTask OnProxyStopping(ProxyStoppingEvent _, CancellationToken cancellationToken)
     {
-        await File.WriteAllTextAsync("containers.dot", await DryIocTracker.ToGraphStringAsync(), cancellationToken);
+        await System.IO.File.WriteAllTextAsync("containers.dot", await DryIocTracker.ToGraphStringAsync(), cancellationToken);
     }
 
     [Subscribe(PostOrder.First)]

@@ -25,7 +25,10 @@ using Void.Proxy.Links;
 using Void.Proxy.Players;
 using Void.Proxy.Plugins;
 using Void.Proxy.Plugins.Dependencies;
+using Void.Proxy.Plugins.Dependencies.Embedded;
 using Void.Proxy.Plugins.Dependencies.Extensions;
+using Void.Proxy.Plugins.Dependencies.File;
+using Void.Proxy.Plugins.Dependencies.Nuget;
 using Void.Proxy.Servers;
 
 Console.Title = nameof(Void);
@@ -65,6 +68,9 @@ try
     builder.Services.AddSingletonAndListen<IConfigurationService, ConfigurationService>();
     builder.Services.AddSingletonAndListen<IDependencyService, DependencyService>();
     builder.Services.AddSingletonAndListen<IProxy, Platform>();
+    builder.Services.AddSingleton<IFileDependencyResolver, FileDependencyResolver>(FileDependencyResolver.Factory);
+    builder.Services.AddSingleton<INuGetDependencyResolver, NuGetDependencyResolver>();
+    builder.Services.AddSingleton<IEmbeddedDependencyResolver, EmbeddedDependencyResolver>();
     builder.Services.AddHostedService(services => services.GetRequiredService<IConfigurationService>());
     builder.Services.AddHostedService(services => services.GetRequiredService<IProxy>());
 

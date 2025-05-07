@@ -1,22 +1,52 @@
 ﻿using System.Reflection;
 using System.Runtime.Loader;
+using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Plugins.Containers;
-using Void.Proxy.Plugins.Dependencies.Embedded;
-using Void.Proxy.Plugins.Dependencies.Remote.NuGetSource;
 
 namespace Void.Proxy.Plugins.Dependencies;
 
-public class DependencyResolver(ILogger logger, AssemblyLoadContext context, IReadOnlyCollection<WeakPluginContainer> containers)
+public class DependencyResolver(
+    ILogger<DependencyResolver> logger,
+    INuGetDependencyResolver nuget,
+    IEmbeddedDependencyResolver embedded,
+    IFileDependencyResolver file,
+    AssemblyLoadContext context,
+    IReadOnlyCollection<WeakPluginContainer> containers)
 {
     private static readonly string[] VoidDependencies = [nameof(Void)];
     private static readonly string[] SharedDependencies = [nameof(Microsoft)];
     private static readonly string[] SystemDependencies = [nameof(System), "netstandard"];
 
-    private readonly NuGetDependencyResolver _nuget = new(logger);
-    private readonly EmbeddedDependencyResolver _embedded = new(logger);
-    private readonly AssemblyDependencyResolver _directory = new(Directory.GetCurrentDirectory());
-
     public Assembly? Resolve(AssemblyName assemblyName)
+    {
+        return
+            ResolveStandardAssembly(assemblyName) ??
+            ResolveContainerAssembly(assemblyName) ??
+            file.Resolve(context, assemblyName) ??
+            nuget.Resolve(context, assemblyName);
+    }
+
+    public string? ResolveUnmanagedDll(string unmanagedDllName)
+    {
+        return file.ResolveUnmanagedDllToPath(unmanagedDllName);
+    }
+
+    public Assembly? ResolveContainerAssembly(AssemblyName assemblyName)
+    {
+        foreach (var reference in containers)
+        {
+            var assembly = reference.Context.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.FullName == assemblyName.FullName);
+
+            if (assembly is null)
+                continue;
+
+            return assembly;
+        }
+
+        return null;
+    }
+
+    public Assembly ResolveStandardAssembly(AssemblyName assemblyName)
     {
         Assembly? assembly = null;
 
@@ -24,14 +54,7 @@ public class DependencyResolver(ILogger logger, AssemblyLoadContext context, IRe
         if (VoidDependencies.Any(assemblyName.FullName.StartsWith))
         {
             assembly = AssemblyLoadContext.Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.GetName().Name == assemblyName.Name);
-
-            if (assembly is null)
-            {
-                using var assemblyStream = _embedded.ResolveEmbeddedAssemblyStream(assemblyName);
-
-                if (assemblyStream is not null)
-                    assembly = AssemblyLoadContext.Default.LoadFromStream(assemblyStream);
-            }
+            assembly ??= embedded.Resolve(AssemblyLoadContext.Default, assemblyName);
         }
 
         // try loading platform referenced assemblies
@@ -52,37 +75,6 @@ public class DependencyResolver(ILogger logger, AssemblyLoadContext context, IRe
         if (SystemDependencies.Any(assemblyName.FullName.StartsWith) && assembly is null)
             return AssemblyLoadContext.Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.GetName().Name == assemblyName.Name) ?? AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName);
 
-        assembly ??= ResolveContainerAssembly(assemblyName);
-
-        // fallback to local directory and NuGet
-        if (assembly is null)
-        {
-            var assemblyPath = _directory?.ResolveAssemblyToPath(assemblyName) ?? _nuget.ResolveAssemblyPath(assemblyName);
-
-            if (assemblyPath is not null)
-                assembly = context.LoadFromAssemblyPath(assemblyPath);
-        }
-
         return assembly;
-    }
-
-    public string? ResolveUnmanagedDll(string unmanagedDllName)
-    {
-        return _directory.ResolveUnmanagedDllToPath(unmanagedDllName);
-    }
-
-    public Assembly? ResolveContainerAssembly(AssemblyName assemblyName)
-    {
-        foreach (var reference in containers)
-        {
-            var assembly = reference.Context.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.FullName == assemblyName.FullName);
-
-            if (assembly is null)
-                continue;
-
-            return assembly;
-        }
-
-        return null;
     }
 }

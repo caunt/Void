@@ -1,10 +1,12 @@
 ﻿using System.Reflection;
+using System.Runtime.Loader;
+using Void.Proxy.Api.Plugins.Dependencies;
 
 namespace Void.Proxy.Plugins.Dependencies.Embedded;
 
-public class EmbeddedDependencyResolver(ILogger logger)
+public class EmbeddedDependencyResolver(ILogger<EmbeddedDependencyResolver> logger) : IEmbeddedDependencyResolver
 {
-    public Stream? ResolveEmbeddedAssemblyStream(AssemblyName assemblyName)
+    public Assembly? Resolve(AssemblyLoadContext context, AssemblyName assemblyName)
     {
         logger.LogTrace("Resolving {AssemblyName} embedded dependency", assemblyName.Name);
 
@@ -18,7 +20,7 @@ public class EmbeddedDependencyResolver(ILogger logger)
             return null;
 
         if (assembly.GetManifestResourceStream(resource) is { } stream)
-            return stream;
+            return context.LoadFromStream(stream);
 
         logger.LogWarning("Embedded assembly {ResourceName} couldn't be loaded", resource);
         return null;
