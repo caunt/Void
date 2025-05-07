@@ -49,23 +49,24 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         }
     }
 
-    public TService CreateInstance<TService>(CancellationToken cancellationToken = default)
+    public TService CreateInstance<TService>(CancellationToken cancellationToken = default, params object[] parameters)
     {
-        return CreateInstance<TService>(typeof(TService), cancellationToken);
+        return CreateInstance<TService>(typeof(TService), cancellationToken, parameters);
     }
 
-    public TService CreateInstance<TService>(Type serviceType, CancellationToken cancellationToken = default)
+    public TService CreateInstance<TService>(Type serviceType, CancellationToken cancellationToken = default, params object[] parameters)
     {
-        return (TService?)CreateInstance(serviceType, cancellationToken) ??
+        return (TService?)CreateInstance(serviceType, cancellationToken, parameters) ??
             throw new InvalidOperationException($"Unable to cast instance of {serviceType} to {typeof(TService)}");
     }
 
-    public object CreateInstance(Type serviceType, CancellationToken cancellationToken = default)
+    public object CreateInstance(Type serviceType, CancellationToken cancellationToken = default, params object[] parameters)
     {
         if (serviceType.IsAssignableTo(typeof(IPlugin)))
             RegisterPlugin(serviceType, cancellationToken);
 
-        var instance = ActivatorUtilities.GetServiceOrCreateInstance(GetCompositeSortedBy(serviceType.Assembly), serviceType);
+        var composite = GetCompositeSortedBy(serviceType.Assembly) as IServiceProvider;
+        var instance = composite.GetService(serviceType) ?? ActivatorUtilities.CreateInstance(composite, serviceType, parameters);
 
         // Since all containers might not have this service type, register it manually
         if (instance is IEventListener listener)
