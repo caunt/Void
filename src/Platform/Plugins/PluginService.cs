@@ -56,7 +56,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
                 await using var stream = File.OpenRead(variable);
                 return LoadContainer(name, stream);
             }
-            if (Directory.Exists(variable))
+            else if (Directory.Exists(variable))
             {
                 return await LoadDirectoryPluginTypesAsync(new DirectoryInfo(variable), cancellationToken);
             }
