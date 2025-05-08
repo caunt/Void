@@ -3,7 +3,7 @@
     "Run": {
       "commandName": "Executable",
       "executablePath": "$(TargetDir)void/start",
-      "commandLineArgs": "--plugins \"$(TargetPath)\"",
+      "commandLineArgs": "--plugin \"$(TargetPath)\"",
       "hotReloadEnabled": true
     }
   }
