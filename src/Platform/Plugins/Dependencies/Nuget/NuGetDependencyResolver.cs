@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.CommandLine.Invocation;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.Versioning;
@@ -15,15 +16,15 @@ using Void.Proxy.Api.Plugins.Dependencies;
 
 namespace Void.Proxy.Plugins.Dependencies.Nuget;
 
-public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger) : INuGetDependencyResolver
+public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, InvocationContext context) : INuGetDependencyResolver
 {
     private static readonly Option<string[]> _repositoriesOption = new(["--repository", "-r"], "Provides a URI to NuGet repository [--repository https://nuget.example.com/v3/index.json or --repository https://username:password@nuget.example.com/v3/index.json].");
     private static readonly string FrameworkName = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName
         ?? throw new InvalidOperationException("Cannot determine the target framework.");
 
-    private static readonly SourceRepository NuGetRepository = Repository.Factory.GetCoreV3(new PackageSource("https://api.nuget.org/v3/index.json").Source);
-    private static readonly SourceCacheContext NuGetCache = new();
-    private static readonly string NuGetPackagesPath = Path.Combine(Directory.GetCurrentDirectory(), SettingsUtility.DefaultGlobalPackagesFolderPath);
+    private static readonly SourceRepository DefaultRepository = Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
+    private static readonly SourceCacheContext Cache = new();
+    private static readonly string PackagesPath = Path.Combine(Directory.GetCurrentDirectory(), SettingsUtility.DefaultGlobalPackagesFolderPath);
 
     private readonly NuGet.Common.ILogger _nugetLogger = new NuGetLogger(logger);
 
@@ -64,7 +65,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger) : 
                 return null;
 
             // TODO: directory name does not guarantee NuGet package name 
-            var localPackagePath = Path.Combine(NuGetPackagesPath, assemblyName.Name.ToLower());
+            var localPackagePath = Path.Combine(PackagesPath, assemblyName.Name.ToLower());
 
             if (!Directory.Exists(localPackagePath))
             {
@@ -97,7 +98,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger) : 
                 return null;
             }
 
-            var packagePath = Path.Combine(NuGetPackagesPath, identity.Id.ToLower(), identity.Version.ToString());
+            var packagePath = Path.Combine(PackagesPath, identity.Id.ToLower(), identity.Version.ToString());
             var packageReader = new PackageFolderReader(packagePath);
 
             var frameworks = await packageReader.GetLibItemsAsync(cancellationToken);
@@ -135,10 +136,42 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger) : 
                 return null;
             }
 
-            var packagePath = Path.Combine(NuGetPackagesPath, identity.Id.ToLower(), identity.Version.ToString());
+            var packagePath = Path.Combine(PackagesPath, identity.Id.ToLower(), identity.Version.ToString());
+            var repositories = (context.ParseResult.GetValueForOption(_repositoriesOption) ?? [])
+                .Select(source =>
+                {
+                    if (!Uri.TryCreate(source, UriKind.Absolute, out var uri))
+                        return null;
 
-            if (!Directory.Exists(packagePath))
-                await TryDownloadNuGetPackageAsync(identity, cancellationToken);
+                    var url = new UriBuilder(uri)
+                    {
+                        UserName = "",
+                        Password = ""
+                    }.Uri.ToString();
+
+                    var repository = Repository.Factory.GetCoreV3(url);
+
+                    if (string.IsNullOrWhiteSpace(uri.UserInfo))
+                        return repository;
+
+                    var parts = uri.UserInfo.Split(':');
+
+                    if (parts.Length is not 2)
+                        return repository;
+
+                    repository.PackageSource.Credentials = PackageSourceCredential.FromUserInput(url, parts[0], parts[1], true, null);
+                    return repository;
+                })
+                .Append(DefaultRepository)
+                .WhereNotNull();
+
+            foreach (var repository in repositories)
+            {
+                if (Directory.Exists(packagePath))
+                    break;
+
+                await TryDownloadNuGetPackageAsync(repository, identity, cancellationToken);
+            }
 
             if (!Directory.Exists(packagePath))
             {
@@ -170,20 +203,20 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger) : 
         return null;
     }
 
-    private async Task TryDownloadNuGetPackageAsync(PackageIdentity identity, CancellationToken cancellationToken)
+    private async Task TryDownloadNuGetPackageAsync(SourceRepository repository, PackageIdentity identity, CancellationToken cancellationToken)
     {
         try
         {
-            using var result = await PackageDownloader.GetDownloadResourceResultAsync(NuGetRepository, identity, new PackageDownloadContext(NuGetCache), NuGetPackagesPath, _nugetLogger, cancellationToken);
-            logger.LogTrace("Downloaded {PackageId} version {PackageVersion} dependency", identity.Id, identity.Version);
+            using var result = await PackageDownloader.GetDownloadResourceResultAsync(repository, identity, new PackageDownloadContext(Cache), PackagesPath, _nugetLogger, cancellationToken);
+            logger.LogTrace("Downloaded {PackageId} version {PackageVersion} dependency from {Repository}", identity.Id, identity.Version, repository.PackageSource.Name);
         }
         catch (FatalProtocolException exception)
         {
-            logger.LogError("Dependency {PackageId} cannot be downloaded: {Reason}", identity.Id, exception.Message);
+            logger.LogError("Dependency {PackageId} cannot be downloaded from {Repository}: {Reason}", identity.Id, repository.PackageSource.Name, exception.Message);
         }
         catch (RetriableProtocolException exception)
         {
-            logger.LogWarning("Dependency {PackageId} loading was cancelled: {Message}", identity.Id, exception.Message);
+            logger.LogWarning("Dependency {PackageId} loading from {Repository} was cancelled: {Message}", identity.Id, repository.PackageSource.Name, exception.Message);
         }
     }
 
@@ -218,7 +251,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger) : 
 
     private async Task<PackageIdentity?> TryResolveNuGetPackageSearchAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
     {
-        var packageSearchResource = await NuGetRepository.GetResourceAsync<PackageSearchResource>(cancellationToken);
+        var packageSearchResource = await DefaultRepository.GetResourceAsync<PackageSearchResource>(cancellationToken);
         var packageSearchResults = await packageSearchResource.SearchAsync(assemblyName.Name, new SearchFilter(true), 0, 1, _nugetLogger, cancellationToken);
 
         // actually always 1
@@ -266,7 +299,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger) : 
 
     private async Task<IEnumerable<IPackageSearchMetadata>> GetNuGetPackageVersionAsync(string packageId, CancellationToken cancellationToken)
     {
-        var packageMetadataResource = await NuGetRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
-        return await packageMetadataResource.GetMetadataAsync(packageId, true, false, NuGetCache, _nugetLogger, cancellationToken);
+        var packageMetadataResource = await DefaultRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
+        return await packageMetadataResource.GetMetadataAsync(packageId, true, false, Cache, _nugetLogger, cancellationToken);
     }
 }
