@@ -17,6 +17,7 @@ public static class HostingExtensions
             {
                 options.ServicesStartConcurrently = true;
                 options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.StopHost;
+                options.ShutdownTimeout = TimeSpan.MaxValue;
             });
     }
 }

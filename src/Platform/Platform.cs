@@ -26,6 +26,7 @@ public class Platform(
 
     private Task? _backgroundTask;
     private TcpListener? _listener;
+    private bool _waitPlayers;
 
     public void StartAcceptingConnections()
     {
@@ -35,12 +36,13 @@ public class Platform(
         _listener.Start();
     }
 
-    public void PauseAcceptingConnections()
+    public void PauseAcceptingConnections(bool waitOnlinePlayers = false)
     {
         if (_listener is null)
             throw new InvalidOperationException("Listener is not created yet.");
 
         _listener.Stop();
+        _waitPlayers = waitOnlinePlayers;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -92,6 +94,15 @@ public class Platform(
     {
         logger.LogInformation("Stopping proxy");
         await events.ThrowAsync<ProxyStoppingEvent>(cancellationToken);
+
+        if (_waitPlayers)
+        {
+            while (players.All.Any())
+            {
+                logger.LogInformation("Waiting for {Count} players to disconnect ...", players.All.Count());
+                await Task.Delay(5_000, cancellationToken);
+            }
+        }
 
         await players.ForEachAsync(async (player, cancellationToken) => await player.KickAsync("Proxy is shutting down", cancellationToken), cancellationToken);
 
