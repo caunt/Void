@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.4.0](https://github.com/caunt/Void/compare/v0.3.4...v0.4.0) (2025-05-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* dependency resolvers interface
+
+### Features
+
+* include nuget repositories from command line options ([a8421bc](https://github.com/caunt/Void/commit/a8421bc9de8cedec693f70845f86d85831e036a6))
+* parameters injection in service instantiation ([a8f777a](https://github.com/caunt/Void/commit/a8f777a469abbddaf5230a3400233757cb362bb3))
+* register custom nuget repositories option ([e3ba723](https://github.com/caunt/Void/commit/e3ba723417a3cb6c0faf135fff2c9c731a4f3127))
+
+
+### Bug Fixes
+
+* allow adding repositories from plugins ([75a2159](https://github.com/caunt/Void/commit/75a215985e9fd55d29832140a561af3e3da66a0d))
+* allow loading directories with plugins ([b81e0ab](https://github.com/caunt/Void/commit/b81e0ab7c23fb21de0e2ec873ee4e90a13600640))
+* collection modified ([4d55cae](https://github.com/caunt/Void/commit/4d55caec72be9813254cbdc1ea401626cbf627da))
+* conditional else ([165f88e](https://github.com/caunt/Void/commit/165f88e432d0aa1301c1476003c6d79f478e88ba))
+* configure commandline with default options ([763274d](https://github.com/caunt/Void/commit/763274d8b81171c55238be5e889149b2c2afe7a3))
+* custom repositories nuget authentication ([1f36778](https://github.com/caunt/Void/commit/1f36778268a78587751fe5c11c7157a5f55ddfb9))
+* do not create services instances manually ([f2234b1](https://github.com/caunt/Void/commit/f2234b183222d83a8693a6c613079d62c7e1e4ee))
+* enable more default commandline options ([71e44f5](https://github.com/caunt/Void/commit/71e44f5b93fa920c9a812047308bf82381aa0c60))
+* regiter options via commandline ([94b425e](https://github.com/caunt/Void/commit/94b425e9038d745efc85438751b191e0c2636be5))
+* update plugins option name ([7673b4e](https://github.com/caunt/Void/commit/7673b4ec6aeea5764363364ef3d3804d5758ffe0))
+
+
+### Code Refactoring
+
+* dependency resolvers interface ([1eec2b9](https://github.com/caunt/Void/commit/1eec2b9d0300cfaf2e8bfdc2e97676e51c4571d2))
+
 ## [0.3.4](https://github.com/caunt/Void/compare/v0.3.3...v0.3.4) (2025-05-06)
 
 
