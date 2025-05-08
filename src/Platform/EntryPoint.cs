@@ -85,6 +85,7 @@ static CommandLineBuilder BuildCommandLine()
 {
     var root = new RootCommand("Runs the proxy");
 
+    NuGetDependencyResolver.RegisterOptions(root);
     PluginService.RegisterOptions(root);
 
     root.SetHandler(ReadCommands);

@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.CommandLine;
+using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.Versioning;
 using Nito.Disposables.Internals;
@@ -16,6 +17,7 @@ namespace Void.Proxy.Plugins.Dependencies.Nuget;
 
 public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger) : INuGetDependencyResolver
 {
+    private static readonly Option<string[]> _repositoriesOption = new(["--repository", "-r"], "Provides a URI to NuGet repository [--repository https://nuget.example.com/v3/index.json or --repository https://username:password@nuget.example.com/v3/index.json].");
     private static readonly string FrameworkName = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName
         ?? throw new InvalidOperationException("Cannot determine the target framework.");
 
@@ -24,6 +26,11 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger) : 
     private static readonly string NuGetPackagesPath = Path.Combine(Directory.GetCurrentDirectory(), SettingsUtility.DefaultGlobalPackagesFolderPath);
 
     private readonly NuGet.Common.ILogger _nugetLogger = new NuGetLogger(logger);
+
+    public static void RegisterOptions(Command command)
+    {
+        command.AddOption(_repositoriesOption);
+    }
 
     public Assembly? Resolve(AssemblyLoadContext context, AssemblyName assemblyName)
     {
