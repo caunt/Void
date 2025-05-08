@@ -27,10 +27,16 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, In
     private static readonly string PackagesPath = Path.Combine(Directory.GetCurrentDirectory(), SettingsUtility.DefaultGlobalPackagesFolderPath);
 
     private readonly NuGet.Common.ILogger _nugetLogger = new NuGetLogger(logger);
+    private readonly HashSet<string> _repositories = [];
 
     public static void RegisterOptions(Command command)
     {
         command.AddOption(_repositoriesOption);
+    }
+
+    public void AddRepository(string uri)
+    {
+        _repositories.Add(uri);
     }
 
     public Assembly? Resolve(AssemblyLoadContext context, AssemblyName assemblyName)
@@ -136,7 +142,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, In
     {
         try
         {
-            var repositories = (context.ParseResult.GetValueForOption(_repositoriesOption) ?? [])
+            var repositories = _repositories.Concat(context.ParseResult.GetValueForOption(_repositoriesOption) ?? [])
                 .Select(source =>
                 {
                     if (!Uri.TryCreate(source, UriKind.Absolute, out var uri))
