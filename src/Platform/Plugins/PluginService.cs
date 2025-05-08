@@ -16,7 +16,7 @@ namespace Void.Proxy.Plugins;
 
 public class PluginService(ILogger<PluginService> logger, IEventService events, IDependencyService dependencies, InvocationContext context) : IPluginService
 {
-    private static readonly Option<string[]> _pluginsOption = new Option<string[]>(["--plugin", "-p"], "Provides a path to file, directory or url to load plugin.");
+    private static readonly Option<string[]> _pluginsOption = new Option<string[]>(["--plugin", "-p"], "Provides a path to the file, directory or url to load plugin.");
 
     private readonly AsyncLock _lock = new();
     private readonly List<WeakPluginContainer> _containers = [];
