@@ -83,10 +83,9 @@ finally
 
 static CommandLineBuilder BuildCommandLine()
 {
-    var root = new RootCommand("Runs the proxy")
-    {
-        new Option<string>("--name")
-    };
+    var root = new RootCommand("Runs the proxy");
+
+    PluginService.RegisterOptions(root);
 
     root.SetHandler(ReadCommands);
 
