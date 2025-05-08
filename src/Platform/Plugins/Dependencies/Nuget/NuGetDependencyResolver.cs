@@ -43,21 +43,28 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, In
             return null;
         }
 
-        var assemblyPath = ResolveAssemblyFromNuGetAsync(assemblyName).GetAwaiter().GetResult();
-        return assemblyPath is null ? null : context.LoadFromAssemblyPath(assemblyPath);
+        if (ResolveAssemblyFromOfflineNuGetAsync(assemblyName).GetAwaiter().GetResult() is { } offlineAssemblyPath)
+        {
+            var assembly = context.LoadFromAssemblyPath(offlineAssemblyPath);
+
+            if (AreEqual(assembly.GetName(), assemblyName))
+                return assembly;
+        }
+
+        if (ResolveAssemblyFromOnlineNuGetAsync(assemblyName).GetAwaiter().GetResult() is { } onlineAssemblyPath)
+        {
+            var assembly = context.LoadFromAssemblyPath(onlineAssemblyPath);
+
+            if (AreEqual(assembly.GetName(), assemblyName))
+                return assembly;
+        }
+
+        return null;
+
+        static bool AreEqual(AssemblyName assemblyName1, AssemblyName assemblyName2) => assemblyName1.Name?.Equals(assemblyName2.Name) ?? false;
     }
 
-    private async Task<string?> ResolveAssemblyFromNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)
-    {
-        var assemblyPath = await ResolveAssemblyFromOfflineNuGetAsync(assemblyName, cancellationToken);
-
-        if (string.IsNullOrWhiteSpace(assemblyPath))
-            assemblyPath = await ResolveAssemblyFromOnlineNuGetAsync(assemblyName, cancellationToken);
-
-        return assemblyPath;
-    }
-
-    private async Task<string?> ResolveAssemblyFromOfflineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
+    private async Task<string?> ResolveAssemblyFromOfflineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -76,9 +83,10 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, In
                     return null;
 
                 var prefix = assemblyName.Name[..assemblyName.Name.LastIndexOf('.')];
-                assemblyName.Name = prefix;
+                var variant = (AssemblyName)assemblyName.Clone();
+                variant.Name = prefix;
 
-                return await ResolveAssemblyFromOfflineNuGetAsync(assemblyName, cancellationToken);
+                return await ResolveAssemblyFromOfflineNuGetAsync(variant, cancellationToken);
             }
 
             var availableVersions = Directory.GetDirectories(localPackagePath).Select(Path.GetFileName).WhereNotNull().ToArray();
@@ -124,19 +132,10 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, In
         return null;
     }
 
-    private async Task<string?> ResolveAssemblyFromOnlineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
+    private async Task<string?> ResolveAssemblyFromOnlineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)
     {
         try
         {
-            var identity = await TryResolveNuGetIdentityAsync(assemblyName, cancellationToken);
-
-            if (identity is null)
-            {
-                logger.LogTrace("Dependency {DependencyName} not found in NuGet at all", assemblyName.Name);
-                return null;
-            }
-
-            var packagePath = Path.Combine(PackagesPath, identity.Id.ToLower(), identity.Version.ToString());
             var repositories = (context.ParseResult.GetValueForOption(_repositoriesOption) ?? [])
                 .Select(source =>
                 {
@@ -154,7 +153,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, In
                     if (string.IsNullOrWhiteSpace(uri.UserInfo))
                         return repository;
 
-                    var parts = uri.UserInfo.Split(':');
+                    var parts = Uri.UnescapeDataString(uri.UserInfo).Split(':');
 
                     if (parts.Length is not 2)
                         return repository;
@@ -167,32 +166,42 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, In
 
             foreach (var repository in repositories)
             {
+                var identity = await TryResolveNuGetIdentityAsync(repository, assemblyName, cancellationToken);
+
+                if (identity is null)
+                {
+                    logger.LogTrace("Dependency {DependencyName} not found in {Repository}", assemblyName.Name, repository.PackageSource.Name);
+                    return null;
+                }
+
+                var packagePath = Path.Combine(PackagesPath, identity.Id.ToLower(), identity.Version.ToString());
+
                 if (Directory.Exists(packagePath))
                     break;
 
                 await TryDownloadNuGetPackageAsync(repository, identity, cancellationToken);
-            }
 
-            if (!Directory.Exists(packagePath))
-            {
-                logger.LogWarning("Dependency {DependencyName} cannot be downloaded from NuGet", identity.Id);
-                return null;
-            }
+                if (!Directory.Exists(packagePath))
+                {
+                    logger.LogWarning("Dependency {DependencyName} cannot be downloaded from {Repository}", identity.Id, repository.PackageSource.Name);
+                    return null;
+                }
 
-            var packageReader = new PackageFolderReader(packagePath);
-            var frameworks = await packageReader.GetLibItemsAsync(cancellationToken);
-            var targetFramework = NuGetFramework.ParseFrameworkName(FrameworkName, new DefaultFrameworkNameProvider());
+                var packageReader = new PackageFolderReader(packagePath);
+                var frameworks = await packageReader.GetLibItemsAsync(cancellationToken);
+                var targetFramework = NuGetFramework.ParseFrameworkName(FrameworkName, new DefaultFrameworkNameProvider());
 
-            foreach (var framework in frameworks)
-            {
-                if (!DefaultCompatibilityProvider.Instance.IsCompatible(targetFramework, framework.TargetFramework))
-                    continue;
+                foreach (var framework in frameworks)
+                {
+                    if (!DefaultCompatibilityProvider.Instance.IsCompatible(targetFramework, framework.TargetFramework))
+                        continue;
 
-                var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
+                    var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
 
-                return assembly is null
-                    ? throw new FileNotFoundException($"Dependency {identity.Id} was downloaded from NuGet but file cannot be located")
-                    : Path.Combine(packagePath, assembly);
+                    return assembly is null
+                        ? throw new FileNotFoundException($"Dependency {identity.Id} was downloaded from NuGet but file cannot be located")
+                        : Path.Combine(packagePath, assembly);
+                }
             }
         }
         catch (Exception exception)
@@ -220,16 +229,16 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, In
         }
     }
 
-    private async Task<PackageIdentity?> TryResolveNuGetIdentityAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
+    private async Task<PackageIdentity?> TryResolveNuGetIdentityAsync(SourceRepository repository, AssemblyName assemblyName, CancellationToken cancellationToken)
     {
         logger.LogTrace("Looking for dependency {DependencyName} as Identity in NuGet", assemblyName.Name);
-        var identity = await TryResolveNuGetPackageIdAsync(assemblyName, cancellationToken);
+        var identity = await TryResolveNuGetPackageIdAsync(repository, assemblyName, cancellationToken);
 
         if (identity is not null)
             return identity;
 
         logger.LogTrace("Looking for dependency {DependencyName} with TryGet in NuGet", assemblyName.Name);
-        identity = await TryResolveNuGetPackageSearchAsync(assemblyName, cancellationToken);
+        identity = await TryResolveNuGetPackageSearchAsync(repository, assemblyName, cancellationToken);
 
         if (identity is not null)
             return identity;
@@ -238,26 +247,26 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, In
         return null;
     }
 
-    private async Task<PackageIdentity?> TryResolveNuGetPackageIdAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
+    private async Task<PackageIdentity?> TryResolveNuGetPackageIdAsync(SourceRepository repository, AssemblyName assemblyName, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(assemblyName.Name))
             return null;
 
-        var packages = await GetNuGetPackageVersionAsync(assemblyName.Name, cancellationToken);
+        var packages = await GetNuGetPackageVersionAsync(repository, assemblyName.Name, cancellationToken);
         var best = SelectBestNuGetPackageVersion(packages.Select(package => package.Identity), assemblyName.Version);
 
         return best;
     }
 
-    private async Task<PackageIdentity?> TryResolveNuGetPackageSearchAsync(AssemblyName assemblyName, CancellationToken cancellationToken)
+    private async Task<PackageIdentity?> TryResolveNuGetPackageSearchAsync(SourceRepository repository, AssemblyName assemblyName, CancellationToken cancellationToken)
     {
-        var packageSearchResource = await DefaultRepository.GetResourceAsync<PackageSearchResource>(cancellationToken);
+        var packageSearchResource = await repository.GetResourceAsync<PackageSearchResource>(cancellationToken);
         var packageSearchResults = await packageSearchResource.SearchAsync(assemblyName.Name, new SearchFilter(true), 0, 1, _nugetLogger, cancellationToken);
 
         // actually always 1
         foreach (var packageSearchResult in packageSearchResults)
         {
-            var packages = await GetNuGetPackageVersionAsync(packageSearchResult.Identity.Id, cancellationToken);
+            var packages = await GetNuGetPackageVersionAsync(repository, packageSearchResult.Identity.Id, cancellationToken);
             var best = SelectBestNuGetPackageVersion(packages.Select(package => package.Identity), assemblyName.Version);
 
             return best;
@@ -297,9 +306,9 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, In
         return result;
     }
 
-    private async Task<IEnumerable<IPackageSearchMetadata>> GetNuGetPackageVersionAsync(string packageId, CancellationToken cancellationToken)
+    private async Task<IEnumerable<IPackageSearchMetadata>> GetNuGetPackageVersionAsync(SourceRepository repository, string packageId, CancellationToken cancellationToken)
     {
-        var packageMetadataResource = await DefaultRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
+        var packageMetadataResource = await repository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
         return await packageMetadataResource.GetMetadataAsync(packageId, true, false, Cache, _nugetLogger, cancellationToken);
     }
 }

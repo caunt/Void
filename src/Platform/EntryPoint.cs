@@ -45,7 +45,6 @@ configuration.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}]
 
 Log.Logger = configuration.CreateLogger();
 
-
 try
 {
     await BuildCommandLine()
