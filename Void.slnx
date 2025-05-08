@@ -13,5 +13,6 @@
   <Project Path="src\Plugins\ProtocolSupport\Java\v1_7_2_to_1_12_2\Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.csproj" />
   <Project Path="src\Plugins\ForwardingSupport\Velocity\Void.Proxy.Plugins.ForwardingSupport.Velocity.csproj" />
   <Project Path="src\Plugins\Essentials\Void.Proxy.Plugins.Essentials.csproj" />
+  <Project Path="src\Plugins\Watchdog\Void.Proxy.Plugins.Watchdog.csproj" />
   <Project Path="src\Terminal\Void.Terminal.csproj" />
 </Solution>
