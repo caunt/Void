@@ -16,7 +16,7 @@ namespace Void.Proxy.Plugins;
 
 public class PluginService(ILogger<PluginService> logger, IEventService events, IDependencyService dependencies, InvocationContext context) : IPluginService
 {
-    private static readonly Option<string[]> _pluginsOption = new Option<string[]>("--plugins", "Provides a list of plugins files, directories or urls to load");
+    private static readonly Option<string[]> _pluginsOption = new Option<string[]>(["--plugin", "-p"], "Provides a path to file, directory or url to load plugin.");
 
     private readonly AsyncLock _lock = new();
     private readonly List<WeakPluginContainer> _containers = [];
@@ -55,6 +55,10 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
                 await using var stream = File.OpenRead(variable);
                 return LoadContainer(name, stream);
+            }
+            if (Directory.Exists(variable))
+            {
+                return await LoadDirectoryPluginTypesAsync(new DirectoryInfo(variable), cancellationToken);
             }
             else if (Uri.TryCreate(variable, UriKind.Absolute, out var url))
             {
@@ -135,7 +139,13 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
             return;
         }
 
-        var plugins = await pluginsDirectoryInfo.GetFiles("*.dll")
+        var plugins = await LoadDirectoryPluginTypesAsync(pluginsDirectoryInfo, cancellationToken);
+        await LoadPluginsAsync(plugins, cancellationToken);
+    }
+
+    public async ValueTask<IEnumerable<Type>> LoadDirectoryPluginTypesAsync(DirectoryInfo directoryInfo, CancellationToken cancellationToken = default)
+    {
+        return await directoryInfo.GetFiles("*.dll")
             .Select(fileInfo => fileInfo.FullName)
             .Select(async fileName =>
             {
@@ -146,8 +156,6 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
             })
             .WhenAll()
             .ContinueWith(task => task.Result.SelectMany(plugins => plugins));
-
-        await LoadPluginsAsync(plugins, cancellationToken);
     }
 
     public async ValueTask LoadPluginsAsync(IEnumerable<Type> plugins, CancellationToken cancellationToken = default)
