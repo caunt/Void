@@ -49,6 +49,9 @@ Log.Logger = configuration.CreateLogger();
 try
 {
     await BuildCommandLine()
+        .UseHelp()
+        .UseVersionOption()
+        .UseTypoCorrections()
         .UseHost(builder => builder
             .UseServiceProviderFactory(new DryIocServiceProviderFactory(new Container(Rules.MicrosoftDependencyInjectionRules)))
             .UseConsoleLifetime(options => options.SuppressStatusMessages = true)
