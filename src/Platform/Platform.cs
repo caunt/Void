@@ -27,6 +27,22 @@ public class Platform(
     private Task? _backgroundTask;
     private TcpListener? _listener;
 
+    public void StartAcceptingConnections()
+    {
+        if (_listener is null)
+            throw new InvalidOperationException("Listener is not created yet.");
+
+        _listener.Start();
+    }
+
+    public void PauseAcceptingConnections()
+    {
+        if (_listener is null)
+            throw new InvalidOperationException("Listener is not created yet.");
+
+        _listener.Stop();
+    }
+
     public async Task StartAsync(CancellationToken cancellationToken)
     {
 #if RELEASE

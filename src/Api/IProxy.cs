@@ -2,4 +2,18 @@
 
 namespace Void.Proxy.Api;
 
-public interface IProxy : IHostedService;
+public interface IProxy : IHostedService
+{
+    /// <summary>
+    /// Starts accepting connections on the listener.
+    /// </summary>
+    public void StartAcceptingConnections();
+
+    /// <summary>
+    /// Pauses the acceptance of new incoming connections.
+    /// </summary>
+    /// <remarks>This method temporarily halts the ability to accept new connections. Existing connections
+    /// remain unaffected and continue to operate normally. Use this method when you need to stop accepting new
+    /// connections without disrupting online players.</remarks>
+    public void PauseAcceptingConnections();
+}
