@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
@@ -24,8 +24,8 @@
 		<IsBionic>$([System.Text.RegularExpressions.Regex]::IsMatch('$(RuntimeIdentifier)','^linux-bionic-'))</IsBionic>
 	</PropertyGroup>
 
-	<ItemGroup Condition="'$(IsBionic)'=='True'">
-		<FrameworkReference Remove="Microsoft.AspNetCore.App" />
+	<ItemGroup Condition="'$(IsBionic)'!='True'">
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
 
 	<ItemGroup>
