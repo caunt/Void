@@ -9,14 +9,14 @@ using Void.Proxy.Api.Events.Plugins;
 
 namespace Void.Proxy.Plugins.Watchdog.Services;
 
-public class WebService(ILogger logger, Settings settings) : IEventListener
+public class WebService(ILogger logger, Settings settings, Plugin plugin) : IEventListener
 {
     private IHost? _host;
 
     [Subscribe]
     public async ValueTask OnPluginLoading(PluginLoadingEvent @event, CancellationToken cancellationToken)
     {
-        if (@event.Plugin != this)
+        if (@event.Plugin != plugin)
             return;
 
         _host = new HostBuilder()
@@ -34,7 +34,7 @@ public class WebService(ILogger logger, Settings settings) : IEventListener
     [Subscribe]
     public async ValueTask OnPluginUnloading(PluginUnloadingEvent @event, CancellationToken cancellationToken)
     {
-        if (@event.Plugin != this)
+        if (@event.Plugin != plugin)
             return;
 
         if (_host is not null)
@@ -46,3 +46,28 @@ public class WebService(ILogger logger, Settings settings) : IEventListener
         builder.MapGet("/health", () => Results.Ok("OK"));
     }
 }
+
+
+// private HttpListener _listener = new();
+
+// [Subscribe]
+// public void OnPluginLoading(PluginLoadingEvent @event)
+// {
+//     if (@event.Plugin != this)
+//         return;
+
+//     _listener.Prefixes.Clear();
+//     _listener.Prefixes.Add("http://*:" + settings.Port);
+
+//     _listener.Start();
+//     logger.LogInformation("Started web service on port {Port}", settings.Port);
+// }
+
+// [Subscribe]
+// public void OnPluginUnloading(PluginUnloadingEvent @event)
+// {
+//     if (@event.Plugin != this)
+//         return;
+
+//     _listener.Stop();
+// }
