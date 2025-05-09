@@ -26,8 +26,10 @@ jobs:
             runtime: linux-arm64
           - os: ubuntu-latest
             runtime: linux-bionic-arm64
+            parameters: /p:UseWorkerSdk=true
           - os: ubuntu-latest
             runtime: linux-bionic-x64
+            parameters: /p:UseWorkerSdk=true
           - os: ubuntu-latest
             runtime: linux-musl-arm
           - os: ubuntu-latest
@@ -55,15 +57,15 @@ jobs:
           dotnet-version: "10"
           dotnet-quality: "preview"
       - name: Restore dependencies
-        run: dotnet restore --runtime ${{ matrix.runtime }}
+        run: dotnet restore --runtime ${{ matrix.runtime }} ${{ matrix.parameters }} 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build --runtime ${{ matrix.runtime }} --configuration Release --no-restore ${{ matrix.parameters }} 
       - name: Build Platform
-        run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release --no-restore /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false
+        run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release --no-restore /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false ${{ matrix.parameters }} 
       - name: Test
-        run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal
+        run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal ${{ matrix.parameters }} 
       - name: Publish
-        run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained src/Platform --output artifacts --configuration Release --no-build /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false
+        run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained src/Platform --output artifacts --configuration Release --no-build /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false ${{ matrix.parameters }} 
       - name: Save Artifact Suffix
         id: get_suffix
         shell: bash
