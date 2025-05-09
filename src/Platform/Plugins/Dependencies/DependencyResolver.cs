@@ -50,28 +50,35 @@ public class DependencyResolver(
     {
         Assembly? assembly = null;
 
-        // try loading embedded assemblies
+        // Lookup void assemblies
         if (VoidDependencies.Any(assemblyName.FullName.StartsWith))
         {
             assembly = AssemblyLoadContext.Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.GetName().Name == assemblyName.Name);
             assembly ??= embedded.Resolve(AssemblyLoadContext.Default, assemblyName);
         }
 
-        // try loading platform referenced assemblies
+        // Lookup shared assemblies
         if (SharedDependencies.Any(assemblyName.FullName.StartsWith) && assembly is null)
         {
             assembly = AssemblyLoadContext.Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.GetName().Name == assemblyName.Name);
 
-            if (assembly is not null && assemblyName.Version is not null)
+            if (assembly is not null)
             {
-                var loadedAssemblyName = assembly.GetName();
+                if (assemblyName.Version is not null)
+                {
+                    var loadedAssemblyName = assembly.GetName();
 
-                if (loadedAssemblyName.Version is not null && loadedAssemblyName.Version.CompareTo(assemblyName.Version) is not 0)
-                    logger.LogWarning("In {ContextName} context {AssemblyName} version {AssemblyVersion} mismatch requested {RequestedAssemblyVersion} version", context.Name, loadedAssemblyName.Name, loadedAssemblyName.Version, assemblyName.Version);
+                    if (loadedAssemblyName.Version is not null && loadedAssemblyName.Version.CompareTo(assemblyName.Version) is not 0)
+                        logger.LogWarning("Assembly {AssemblyName} version {AssemblyVersion} does not match requested version {RequestedAssemblyVersion} in {ContextName}", loadedAssemblyName.Name, loadedAssemblyName.Version, assemblyName.Version, context.Name);
+                }
+            }
+            else
+            {
+                assembly = AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName);
             }
         }
 
-        // try loading system assemblies
+        // Force load system assemblies
         if (SystemDependencies.Any(assemblyName.FullName.StartsWith) && assembly is null)
             return AssemblyLoadContext.Default.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.GetName().Name == assemblyName.Name) ?? AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName);
 
