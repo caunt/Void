@@ -87,7 +87,7 @@
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 			<CopyToOutputDirectory>false</CopyToOutputDirectory>
 		</ProjectReference>
-		<ProjectReference Include="..\Plugins\Watchdog\Void.Proxy.Plugins.Watchdog.csproj">
+		<ProjectReference Condition="'$(IsBionic)'!='True'" Include="..\Plugins\Watchdog\Void.Proxy.Plugins.Watchdog.csproj">
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 			<CopyToOutputDirectory>false</CopyToOutputDirectory>
 		</ProjectReference>
@@ -139,7 +139,7 @@
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
 
-		<EmbeddedResource Include="..\Plugins\Watchdog\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.Watchdog.dll">
+		<EmbeddedResource Condition="'$(IsBionic)'!='True'" Include="..\Plugins\Watchdog\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.Watchdog.dll">
 			<Link>Embedded\Void.Proxy.Plugins.Watchdog.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
