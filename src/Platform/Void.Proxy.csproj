@@ -1,7 +1,7 @@
 ﻿<Project>
-
-	<Sdk Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(RuntimeIdentifier)','^linux-bionic-'))" Name="Microsoft.NET.Sdk.Web" />
-	<Sdk Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(RuntimeIdentifier)','^linux-bionic-'))" Name="Microsoft.NET.Sdk.Worker" />
+	
+	<Sdk Name="Microsoft.NET.Sdk.Web" Condition="'$(UseWorkerSdk)'!='true'" />
+	<Sdk Name="Microsoft.NET.Sdk.Worker" Condition="'$(UseWorkerSdk)'=='true'" />
 	
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
