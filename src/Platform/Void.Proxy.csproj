@@ -1,8 +1,5 @@
-﻿<Project>
-	
-	<Sdk Name="Microsoft.NET.Sdk.Web" Condition="'$(UseWorkerSdk)'!='true'" />
-	<Sdk Name="Microsoft.NET.Sdk.Worker" Condition="'$(UseWorkerSdk)'=='true'" />
-	
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net9.0</TargetFramework>
@@ -16,6 +13,20 @@
 		<!-- I cannot even create a /app/configs directory, and there is no option to allow access APP to THE APP directory. -->
 		<ContainerUser>root</ContainerUser>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<AssemblyAttribute Include="Void.Proxy.Utils.BuildDateAttribute">
+			<_Parameter1>$([System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss"))</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+
+	<PropertyGroup>
+		<IsBionic>$([System.Text.RegularExpressions.Regex]::IsMatch('$(RuntimeIdentifier)','^linux-bionic-'))</IsBionic>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(IsBionic)'=='True'">
+		<FrameworkReference Remove="Microsoft.AspNetCore.App" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<ContainerPort Include="25565" Type="tcp" />
@@ -40,16 +51,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<AssemblyAttribute Include="Void.Proxy.Utils.BuildDateAttribute">
-			<_Parameter1>$([System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss"))</_Parameter1>
-		</AssemblyAttribute>
-	</ItemGroup>
-
-	<ItemGroup>
 		<ProjectReference Include="..\Api\Void.Proxy.Api.csproj" />
 		<ProjectReference Include="..\Minecraft\Void.Minecraft.csproj" />
 		<ProjectReference Include="..\Terminal\Void.Terminal.csproj" />
-		
+
 		<ProjectReference Include="..\Plugins\Common\Void.Proxy.Plugins.Common.csproj">
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 			<CopyToOutputDirectory>false</CopyToOutputDirectory>
@@ -100,7 +105,7 @@
 			<Link>Embedded\Void.Minecraft.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
-		
+
 		<EmbeddedResource Include="..\Plugins\Common\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.Common.dll">
 			<Link>Embedded\Void.Proxy.Plugins.Common.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
@@ -118,7 +123,7 @@
 			<Link>Embedded\Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
-		
+
 		<EmbeddedResource Include="..\Plugins\ForwardingSupport\Velocity\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ForwardingSupport.Velocity.dll">
 			<Link>Embedded\Void.Proxy.Plugins.ForwardingSupport.Velocity.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
