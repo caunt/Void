@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Net.Sockets;
+using System.Reflection;
 using Serilog.Core;
 using Serilog.Events;
 using Void.Proxy.Api;
@@ -53,7 +54,7 @@ public class Platform(
         LoggingLevelSwitch.MinimumLevel = LogEventLevel.Debug;
 #endif
 
-        logger.LogInformation("Starting {Name} proxy", nameof(Void));
+        logger.LogInformation("Starting {Name} {Version} proxy", nameof(Void), "v" + Assembly.GetExecutingAssembly().GetName().Version);
         var startTime = Stopwatch.GetTimestamp();
 
         logger.LogTrace("Working directory is {Path}", Directory.GetCurrentDirectory());
