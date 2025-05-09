@@ -8,7 +8,7 @@ using Void.Proxy.Plugins.Watchdog.Services;
 
 namespace Void.Proxy.Plugins.Watchdog;
 
-public class Plugin(IDependencyService dependencies, IConfigurationService configs) : IPlugin
+public class WatchdogPlugin(IDependencyService dependencies, IConfigurationService configs) : IPlugin
 {
     public string Name => nameof(Watchdog);
 

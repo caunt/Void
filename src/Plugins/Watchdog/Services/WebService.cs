@@ -9,7 +9,7 @@ using Void.Proxy.Api.Events.Plugins;
 
 namespace Void.Proxy.Plugins.Watchdog.Services;
 
-public class WebService(ILogger logger, Settings settings, Plugin plugin) : IEventListener
+public class WebService(ILogger logger, Settings settings, WatchdogPlugin plugin) : IEventListener
 {
     private IHost? _host;
 
@@ -43,6 +43,6 @@ public class WebService(ILogger logger, Settings settings, Plugin plugin) : IEve
 
     private void ConfigureEndpoints(IEndpointRouteBuilder builder)
     {
-        builder.MapGet("/health", () => Results.Ok("OK"));
+        builder.MapGet("/health", () => TypedResults.Ok("OK"));
     }
 }
