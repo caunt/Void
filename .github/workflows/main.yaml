@@ -26,10 +26,8 @@ jobs:
             runtime: linux-arm64
           - os: ubuntu-latest
             runtime: linux-bionic-arm64
-            parameters: /p:UseWorkerSdk=true
           - os: ubuntu-latest
             runtime: linux-bionic-x64
-            parameters: /p:UseWorkerSdk=true
           - os: ubuntu-latest
             runtime: linux-musl-arm
           - os: ubuntu-latest
