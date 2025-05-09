@@ -46,28 +46,3 @@ public class WebService(ILogger logger, Settings settings, Plugin plugin) : IEve
         builder.MapGet("/health", () => Results.Ok("OK"));
     }
 }
-
-
-// private HttpListener _listener = new();
-
-// [Subscribe]
-// public void OnPluginLoading(PluginLoadingEvent @event)
-// {
-//     if (@event.Plugin != this)
-//         return;
-
-//     _listener.Prefixes.Clear();
-//     _listener.Prefixes.Add("http://*:" + settings.Port);
-
-//     _listener.Start();
-//     logger.LogInformation("Started web service on port {Port}", settings.Port);
-// }
-
-// [Subscribe]
-// public void OnPluginUnloading(PluginUnloadingEvent @event)
-// {
-//     if (@event.Plugin != this)
-//         return;
-
-//     _listener.Stop();
-// }
