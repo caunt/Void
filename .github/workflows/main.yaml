@@ -36,7 +36,7 @@ jobs:
         run: |
           base=$(jq -r '.["."]' .github/RELEASE_PLEASE/manifest.json)
           sha=$(git rev-parse --short HEAD)
-          echo "fallback_version=${base}-${sha}" >> $GITHUB_OUTPUT
+          echo "fallback_version=${base}+${sha}" >> $GITHUB_OUTPUT
 
   dotnet-build:
     environment: dotnet-build
