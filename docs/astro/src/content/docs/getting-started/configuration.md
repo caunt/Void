@@ -46,7 +46,7 @@ Servers = [
 Enabled = false
 
 # Defines the network interface to bind on
-Address = *
+Address = "*"
 
 # Defines the port
 Port = 80
