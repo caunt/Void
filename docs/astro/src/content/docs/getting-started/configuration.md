@@ -36,6 +36,22 @@ Servers = [
 ]
 ```
 
+## Watchdog
+
+Watchdog is a built-in HTTP server that allows you to check status or control the proxy.
+
+```toml
+// configs/Watchdog/Settings.toml
+# Enables the watchdog
+Enabled = false
+
+# Defines the network interface to bind on
+Address = *
+
+# Defines the port
+Port = 80
+```
+
 ## Forwarding
 
 Forwarding helps to forward player data (IP, UUID, Skin, etc.) to the backend server.
@@ -56,15 +72,15 @@ Plugins are compiled with the *.dll extension in any .NET compatible language.
 See the [Plugins overview](../developing-plugins/overview.md) section for more details.
 
 Directory `plugins` is the default location for plugins.
-Environment variable `PLUGINS` might be used to include URLs or Local Paths to plugins, separated by coma or semicolon.
-Same applies to `--plugins` command line argument.
+Environment variable `VOID_PLUGINS` might be used to include URLs or Local Paths to plugins, separated by coma or semicolon.
+Multiple options `--plugin` (short `-p`) might be used to include URLs or Local Paths to plugins.
 
 Examples:
 ```bash
-$ ./void-linux-x64 --plugins "/home/YourPlugin1.dll;https://example.org/download/YoutPlugin2.dll"
+$ ./void-linux-x64 --plugin "/home/YourPlugin1.dll" --plugin "https://example.org/download/YoutPlugin2.dll"
 ```
 ```bash
-$ PLUGINS="https://example.org/download/YoutPlugin1.dll;/home/YourPlugin2.dll" ./void-linux-x64
+$ VOID_PLUGINS="https://example.org/download/YoutPlugin1.dll;/home/YourPlugin2.dll" ./void-linux-x64
 ```
 
 ## Plugins Configurations (configs/\<Plugin\>/*.toml)
