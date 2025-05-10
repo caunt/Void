@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Void.Minecraft.Commands.Brigadier;
-using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Extensions;
 using Void.Proxy.Api.Commands;
@@ -44,8 +43,8 @@ public class RedirectionService(ILogger<RedirectionService> logger, Plugin plugi
         var currentServer = player.GetServer();
         var nextServer = context.TryGetArgument<string>("server", out var serverText) switch
         {
-            true when servers.RegisteredServers.FirstOrDefault(server => server.Name.Equals(serverText, StringComparison.CurrentCultureIgnoreCase)) is { } found => found,
-            _ => servers.RegisteredServers.Except([currentServer]).ElementAt(Random.Shared.Next(servers.RegisteredServers.Count - 1))
+            true when servers.All.FirstOrDefault(server => server.Name.Equals(serverText, StringComparison.CurrentCultureIgnoreCase)) is { } found => found,
+            _ => servers.All.Except([currentServer]).ElementAt(Random.Shared.Next(servers.All.Count() - 1))
         };
 
         if (nextServer is null)

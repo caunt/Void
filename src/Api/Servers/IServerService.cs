@@ -2,7 +2,5 @@
 
 public interface IServerService
 {
-    public IReadOnlyList<IServer> RegisteredServers { get; }
-
-    public void RegisterServer(IServer server);
+    public IEnumerable<IServer> All { get; }
 }

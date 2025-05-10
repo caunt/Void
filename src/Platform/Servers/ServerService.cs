@@ -1,14 +1,10 @@
-﻿using Void.Proxy.Api.Servers;
+﻿using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Servers;
+using Void.Proxy.Api.Settings;
 
 namespace Void.Proxy.Servers;
 
-public class ServerService : IServerService
+public class ServerService(ISettings settings, ILinkService links) : IServerService
 {
-    private readonly List<IServer> _servers = [];
-    public IReadOnlyList<IServer> RegisteredServers => _servers;
-
-    public void RegisterServer(IServer server)
-    {
-        _servers.Add(server);
-    }
+    public IEnumerable<IServer> All => settings.Servers.Concat(links.All.Select(link => link.Server));
 }

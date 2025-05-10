@@ -101,10 +101,6 @@ public class Platform(
 
         await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
 
-        logger.LogInformation("Registering servers from settings file");
-        foreach (var server in settings.Servers)
-            servers.RegisterServer(server);
-
         logger.LogInformation("Starting connection listener");
         _listener = new TcpListener(settings.Address, settings.Port);
         _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
