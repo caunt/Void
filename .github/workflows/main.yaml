@@ -15,8 +15,26 @@ on:
     branches: ["main"]
 
 jobs:
+  release-please:
+    environment: release-please
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      version: ${{ steps.release.outputs.version }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Release
+        uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .github/RELEASE_PLEASE/config.json
+          manifest-file: .github/RELEASE_PLEASE/manifest.json
+
   dotnet-build:
     environment: dotnet-build
+    needs: release-please
     strategy:
       matrix:
         include:
@@ -59,13 +77,13 @@ jobs:
       - name: Build
         # Do not include runtime here
         # error NETSDK1134: Building a solution with a specific RuntimeIdentifier is not supported. If you would like to publish for a single RID, specify the RID at the individual project level instead.
-        run: dotnet build --configuration Release --no-restore ${{ matrix.parameters }} 
+        run: dotnet build --configuration Release --no-restore /p:Version=${{ needs.release-please.outputs.version }} ${{ matrix.parameters }}
       - name: Build Platform
-        run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release --no-restore /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false ${{ matrix.parameters }} 
+        run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release --no-restore /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ needs.release-please.outputs.version }} ${{ matrix.parameters }} 
       - name: Test
         run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal ${{ matrix.parameters }} 
       - name: Publish
-        run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained src/Platform --output artifacts --configuration Release --no-build /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false ${{ matrix.parameters }} 
+        run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained src/Platform --output artifacts --configuration Release --no-build /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ needs.release-please.outputs.version }} ${{ matrix.parameters }} 
       - name: Save Artifact Suffix
         id: get_suffix
         shell: bash
@@ -80,24 +98,6 @@ jobs:
           path: artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
           compression-level: 9
           if-no-files-found: error
-
-  release-please:
-    environment: release-please
-    needs: dotnet-build
-    runs-on: ubuntu-latest
-    outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      version: ${{ steps.release.outputs.version }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Create Release
-        uses: googleapis/release-please-action@v4
-        id: release
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          config-file: .github/RELEASE_PLEASE/config.json
-          manifest-file: .github/RELEASE_PLEASE/manifest.json
 
   github-push:
     needs: [dotnet-build,release-please]
@@ -121,7 +121,7 @@ jobs:
 
   docker-dev-push:
     environment: docker-dev-push
-    needs: [dotnet-build]
+    needs: [dotnet-build,release-please]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -162,7 +162,8 @@ jobs:
             /p:RuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
             /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
             /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
-            /p:ContainerBaseImage='"${{ matrix.container_base_image }}"'
+            /p:ContainerBaseImage='"${{ matrix.container_base_image }}"' \
+            /p:Version=${{ needs.release-please.outputs.version }}
 
   docker-push:
     environment: docker-push
@@ -208,7 +209,8 @@ jobs:
             /p:RuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
             /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
             /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
-            /p:ContainerBaseImage='"${{ matrix.container_base_image }}"'
+            /p:ContainerBaseImage='"${{ matrix.container_base_image }}"' \
+            /p:Version=${{ needs.release-please.outputs.version }}
 
   nuget-push:
     environment: nuget-push
@@ -225,13 +227,13 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build --configuration Release --no-restore /p:Version=${{ needs.release-please.outputs.version }}
       - name: Test
         run: dotnet test --no-build --verbosity normal
       - name: Pack Api
-        run: dotnet pack src/Api --configuration Release --output artifacts --property Version=${{ needs.release-please.outputs.version }}
+        run: dotnet pack src/Api --configuration Release --output artifacts /p:Version=${{ needs.release-please.outputs.version }}
       - name: Pack Minecraft
-        run: dotnet pack src/Minecraft --configuration Release --output artifacts --property Version=${{ needs.release-please.outputs.version }}
+        run: dotnet pack src/Minecraft --configuration Release --output artifacts /p:Version=${{ needs.release-please.outputs.version }}
       - name: Rename Artifacts
         shell: bash
         run: mv artifacts/*Api* artifacts/api.nupkg && mv artifacts/*Minecraft* artifacts/minecraft.nupkg
