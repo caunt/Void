@@ -72,7 +72,7 @@ try
                 .AddSingleton<INuGetDependencyResolver, NuGetDependencyResolver>()
                 .AddSingleton<IEmbeddedDependencyResolver, EmbeddedDependencyResolver>()
                 .AddHostedService(services => services.GetRequiredService<IConfigurationService>())
-                .AddHostedService(services => services.GetRequiredService<IProxy>())))
+                .AddHostedService(services => (Platform)services.GetRequiredService<IProxy>())))
         .Build()
         .InvokeAsync(args);
 }
