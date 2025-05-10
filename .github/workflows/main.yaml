@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
-      version: ${{ steps.release.outputs.version }}
+      version: ${{ steps.release.outputs.version != '' && steps.release.outputs.version || steps.fallback.outputs.latest_tag }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +31,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: .github/RELEASE_PLEASE/config.json
           manifest-file: .github/RELEASE_PLEASE/manifest.json
+      - name: Fallback version to last tag
+        id: fallback
+        run: |
+          tag=$(git describe --tags --match 'v*' --abbrev=0 2>/dev/null || echo 'v0.0.0')
+          echo "latest_tag=$tag" >> $GITHUB_OUTPUT
 
   dotnet-build:
     environment: dotnet-build
