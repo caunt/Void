@@ -142,7 +142,8 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, In
     {
         try
         {
-            var repositories = _repositories.Concat(context.ParseResult.GetValueForOption(_repositoriesOption) ?? [])
+            var environmentVariableRepositories = Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES")?.Split(';') ?? [];
+            var repositories = environmentVariableRepositories.Concat(_repositories.Concat(context.ParseResult.GetValueForOption(_repositoriesOption) ?? []))
                 .Select(source =>
                 {
                     if (!Uri.TryCreate(source, UriKind.Absolute, out var uri))
