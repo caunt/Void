@@ -12,6 +12,9 @@ public class ConsoleService(ILogger<ConsoleService> logger, ICommandService comm
 
     public void Setup()
     {
+        if (SystemConsole.IsOutputRedirected)
+            return;
+
         SystemConsole.SetOut(_reader.TextWriter);
 
         _reader.ResetStyle();
@@ -20,6 +23,9 @@ public class ConsoleService(ILogger<ConsoleService> logger, ICommandService comm
 
     public async ValueTask HandleCommandsAsync(CancellationToken cancellationToken = default)
     {
+        if (SystemConsole.IsInputRedirected)
+            await Task.Delay(1_000, cancellationToken);
+
         var command = await _reader.ReadLineAsync(SuggestAsync, cancellationToken);
         logger.LogInformation("Proxy issued command: {command}", command);
 
