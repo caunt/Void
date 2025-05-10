@@ -84,7 +84,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
         static string[] GetVariablesPlugins()
         {
-            var args = Environment.GetEnvironmentVariable("PLUGINS");
+            var args = Environment.GetEnvironmentVariable("VOID_PLUGINS");
 
             if (string.IsNullOrWhiteSpace(args))
                 return [];

@@ -44,7 +44,6 @@ public class WebService(ILogger logger, IProxy proxy, Settings settings, Watchdo
 
     private void ConfigureEndpoints(IEndpointRouteBuilder builder)
     {
-
         builder.MapGet("/health", () => TypedResults.Text(GetMessage()));
         builder.MapGet("/bound", () => TypedResults.Text(GetMessage(), statusCode: GetStatusCode()));
         builder.MapGet("/pause", () => proxy.PauseAcceptingConnections());

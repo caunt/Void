@@ -14,8 +14,8 @@ namespace Void.Proxy.Plugins.Common.Mojang;
 public class MojangService(ICryptoService crypto) : IMojangService
 {
     private static readonly HttpClient Client = new();
-    private static readonly string SessionServer = Environment.GetEnvironmentVariable("mojang.sessionserver") ?? "https://sessionserver.mojang.com/session/minecraft/hasJoined";
-    private static readonly bool PreventProxyConnections = bool.TryParse(Environment.GetEnvironmentVariable("mojang.prevent-proxy-connections"), out var value) && value;
+    private static readonly string SessionServer = Environment.GetEnvironmentVariable("VOID_MOJANG_SESSIONSERVER") ?? "https://sessionserver.mojang.com/session/minecraft/hasJoined";
+    private static readonly bool PreventProxyConnections = bool.TryParse(Environment.GetEnvironmentVariable("VOID_MOJANG_PREVENT_PROXY_CONNECTIONS"), out var value) && value;
 
     public async ValueTask<GameProfile?> VerifyAsync(IPlayer player, CancellationToken cancellationToken = default)
     {
