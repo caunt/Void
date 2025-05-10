@@ -69,11 +69,11 @@ public class ExampleScopedService(
 ## Lifetimes
 Services in the DI container can have different lifetimes, which determine how long they persist and how often they are created. These lifetimes are:
 
-1. [**Singleton**](singleton.md): A single instance is created and shared throughout the application.
-2. [**Scoped**](scoped.md): An instance is created once per player.
-3. [**Transient**](transient.md): A new instance is provided every time it is requested.
+1. [**Singleton**](../types/singleton): A single instance is created and shared throughout the application.
+2. [**Scoped**](../types/scoped): An instance is created once per player.
+3. [**Transient**](../types/transient): A new instance is provided every time it is requested.
 
 See the detailed description of each lifetime in the [**Microsoft Documentation**](https://docs.microsoft.com/en-us/dotnet/core/extensions/dependency-injection#service-lifetimes).
 
 ## Example
-See the [**ExamplePlugin.cs**](https://github.com/caunt/Void/blob/f334cd5c11ed0a8f3b253017f00106316201bce2/src/Plugins/ExamplePlugin/ExamplePlugin.cs#L15) for services registrations and [**Services**](https://github.com/caunt/Void/tree/main/src/Plugins/ExamplePlugin/Services) directory for services usage and implementations.
+See the [**ExamplePlugin.cs**](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) for services registrations and [**Services**](https://github.com/caunt/Void/tree/main/src/Plugins/ExamplePlugin/Services) directory for services usage and implementations.
