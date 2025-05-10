@@ -24,7 +24,10 @@ public class ConsoleService(ILogger<ConsoleService> logger, ICommandService comm
     public async ValueTask HandleCommandsAsync(CancellationToken cancellationToken = default)
     {
         if (SystemConsole.IsInputRedirected)
+        {
             await Task.Delay(1_000, cancellationToken);
+            return;
+        }
 
         var command = await _reader.ReadLineAsync(SuggestAsync, cancellationToken);
         logger.LogInformation("Proxy issued command: {command}", command);
