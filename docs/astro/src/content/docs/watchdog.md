@@ -49,7 +49,7 @@ In such case, the `/bound` endpoint will return `503 Service Unavailable`, while
 :::
 
 ## Pause
-`/pause` endpoint is used to pause the Void Proxy. This will stop accepting new connections but will allow existing connections to continue.
+`/pause` endpoint is used to pause the Void Proxy. This will stop accepting new connections but connected players will still be able to play.
 ```bash
 $ curl http://localhost:80/pause
 ```
