@@ -27,7 +27,6 @@ public class Platform(
 
     private Task? _backgroundTask;
     private TcpListener? _listener;
-    private bool _waitPlayers;
 
     public ProxyStatus Status
     {
@@ -65,8 +64,23 @@ public class Platform(
 
     public void Stop(bool waitOnlinePlayers = false)
     {
-        _waitPlayers = waitOnlinePlayers;
-        hostApplicationLifetime.StopApplication();
+        if (waitOnlinePlayers)
+        {
+            _ = Task.Run(async () =>
+            {
+                while (players.All.Any())
+                {
+                    logger.LogInformation("Waiting for {Count} players to disconnect ...", players.All.Count());
+                    await Task.Delay(5_000);
+                }
+
+                hostApplicationLifetime.StopApplication();
+            });
+        }
+        else
+        {
+            hostApplicationLifetime.StopApplication();
+        }
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -120,15 +134,6 @@ public class Platform(
 
         logger.LogInformation("Stopping proxy");
         await events.ThrowAsync<ProxyStoppingEvent>(cancellationToken);
-
-        if (_waitPlayers)
-        {
-            while (players.All.Any())
-            {
-                logger.LogInformation("Waiting for {Count} players to disconnect ...", players.All.Count());
-                await Task.Delay(5_000, cancellationToken);
-            }
-        }
 
         await players.ForEachAsync(async (player, cancellationToken) => await player.KickAsync("Proxy is shutting down", cancellationToken), cancellationToken);
 
