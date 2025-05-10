@@ -15,32 +15,24 @@ on:
     branches: ["main"]
 
 jobs:
-  release-please:
-    environment: release-please
+  release-dev:
+    environment: release-dev
+    needs: dotnet-build
     runs-on: ubuntu-latest
     outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      version: ${{ steps.release.outputs.release_created == 'true' && steps.release.outputs.version || steps.fallback.outputs.fallback_version }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: steps.fallback.outputs.result
     steps:
       - uses: actions/checkout@v4
-      - name: Create Release
-        uses: googleapis/release-please-action@v4
-        id: release
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          config-file: .github/RELEASE_PLEASE/config.json
-          manifest-file: .github/RELEASE_PLEASE/manifest.json
-      - name: Fallback version to last tag
+      - name: Fallback version to manifest with sha
         id: fallback
         run: |
           base=$(jq -r '.["."]' .github/RELEASE_PLEASE/manifest.json)
           sha=$(git rev-parse --short HEAD)
-          echo "fallback_version=${base}+${sha}" >> $GITHUB_OUTPUT
+          echo "result=${base}+${sha}" >> $GITHUB_OUTPUT
 
   dotnet-build:
     environment: dotnet-build
-    needs: release-please
+    needs: release-dev
     strategy:
       matrix:
         include:
@@ -83,13 +75,13 @@ jobs:
       - name: Build
         # Do not include runtime here
         # error NETSDK1134: Building a solution with a specific RuntimeIdentifier is not supported. If you would like to publish for a single RID, specify the RID at the individual project level instead.
-        run: dotnet build --configuration Release --no-restore /p:Version=${{ needs.release-please.outputs.version }} ${{ matrix.parameters }}
+        run: dotnet build --configuration Release --no-restore /p:Version=${{ needs.release-dev.outputs.version }} ${{ matrix.parameters }}
       - name: Build Platform
-        run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release --no-restore /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ needs.release-please.outputs.version }} ${{ matrix.parameters }} 
+        run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release --no-restore /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ needs.release-dev.outputs.version }} ${{ matrix.parameters }} 
       - name: Test
         run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal ${{ matrix.parameters }} 
       - name: Publish
-        run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained src/Platform --output artifacts --configuration Release --no-build /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ needs.release-please.outputs.version }} ${{ matrix.parameters }} 
+        run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained src/Platform --output artifacts --configuration Release --no-build /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ needs.release-dev.outputs.version }} ${{ matrix.parameters }} 
       - name: Save Artifact Suffix
         id: get_suffix
         shell: bash
@@ -104,6 +96,30 @@ jobs:
           path: artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
           compression-level: 9
           if-no-files-found: error
+
+  release-please:
+    environment: release-please
+    needs: dotnet-build
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      version: ${{ steps.release.outputs.release_created == 'true' && steps.release.outputs.version || steps.fallback.outputs.fallback_version }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Release
+        uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .github/RELEASE_PLEASE/config.json
+          manifest-file: .github/RELEASE_PLEASE/manifest.json
+      - name: Fallback version to last tag
+        id: fallback
+        run: |
+          base=$(jq -r '.["."]' .github/RELEASE_PLEASE/manifest.json)
+          sha=$(git rev-parse --short HEAD)
+          echo "fallback_version=${base}+${sha}" >> $GITHUB_OUTPUT
 
   github-push:
     needs: [dotnet-build,release-please]
@@ -127,7 +143,7 @@ jobs:
 
   docker-dev-push:
     environment: docker-dev-push
-    needs: [dotnet-build,release-please]
+    needs: [dotnet-build,release-dev]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -169,7 +185,7 @@ jobs:
             /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
             /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
             /p:ContainerBaseImage='"${{ matrix.container_base_image }}"' \
-            /p:Version=${{ needs.release-please.outputs.version }}
+            /p:Version=${{ needs.release-dev.outputs.version }}
 
   docker-push:
     environment: docker-push
