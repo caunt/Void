@@ -22,7 +22,7 @@ public class WebService(ILogger logger, IProxy proxy, Settings settings, Watchdo
 
         _host = new HostBuilder()
             .ConfigureWebHostDefaults(builder => builder
-                .UseUrls("http://*:" + settings.Port)
+                .UseUrls($"http://{settings.Address}:{settings.Port}")
                 .Configure(builder => builder
                     .UseRouting()
                     .UseEndpoints(ConfigureEndpoints)))

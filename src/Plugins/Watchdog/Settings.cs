@@ -1,3 +1,3 @@
 ﻿namespace Void.Proxy.Plugins.Watchdog;
 
-public record Settings(bool Enabled = false, int Port = 80);
+public record Settings(bool Enabled = false, string Address = "*", int Port = 80);
