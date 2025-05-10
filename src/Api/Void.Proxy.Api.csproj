@@ -7,6 +7,21 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<DebugType>embedded</DebugType>
 		<LangVersion>preview</LangVersion>
+		<RuntimeIdentifiers>
+			linux-arm;
+			linux-arm64;
+			linux-bionic-arm64;
+			linux-bionic-x64;
+			linux-musl-arm;
+			linux-musl-arm64;
+			linux-musl-x64;
+			linux-x64;
+			osx-arm64;
+			osx-x64;
+			win-arm64;
+			win-x64;
+			win-x86;
+		</RuntimeIdentifiers>
 	</PropertyGroup>
 
 	<PropertyGroup>
