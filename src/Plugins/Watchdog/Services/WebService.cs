@@ -4,12 +4,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Void.Proxy.Api;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 
 namespace Void.Proxy.Plugins.Watchdog.Services;
 
-public class WebService(ILogger logger, Settings settings, WatchdogPlugin plugin) : IEventListener
+public class WebService(ILogger logger, IProxy proxy, Settings settings, WatchdogPlugin plugin) : IEventListener
 {
     private IHost? _host;
 
@@ -43,6 +44,33 @@ public class WebService(ILogger logger, Settings settings, WatchdogPlugin plugin
 
     private void ConfigureEndpoints(IEndpointRouteBuilder builder)
     {
-        builder.MapGet("/health", () => TypedResults.Ok("OK"));
+
+        builder.MapGet("/health", () => TypedResults.Text(GetMessage()));
+        builder.MapGet("/bound", () => TypedResults.Text(GetMessage(), statusCode: GetStatusCode()));
+        builder.MapGet("/pause", () => proxy.PauseAcceptingConnections());
+        builder.MapGet("/continue", () => proxy.StartAcceptingConnections());
+        builder.MapGet("/slow-stop", () => Stop(waitOnlinePlayers: true));
+        builder.MapGet("/stop", () => Stop(waitOnlinePlayers: false));
+
+        IResult Stop(bool waitOnlinePlayers)
+        {
+            proxy.PauseAcceptingConnections();
+            proxy.Stop(waitOnlinePlayers);
+            return TypedResults.Ok();
+        }
+
+        string GetMessage() => proxy.Status switch
+        {
+            ProxyStatus.Alive => "OK",
+            ProxyStatus.Paused => "PAUSED",
+            ProxyStatus.Stopping => "STOPPING",
+            _ => "UNKNOWN"
+        };
+
+        int GetStatusCode() => proxy.Status switch
+        {
+            ProxyStatus.Alive => 200,
+            _ => 503
+        };
     }
 }
