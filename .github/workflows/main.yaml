@@ -17,7 +17,6 @@ on:
 jobs:
   release-dev:
     environment: release-dev
-    needs: dotnet-build
     runs-on: ubuntu-latest
     outputs:
       version: steps.fallback.outputs.result
