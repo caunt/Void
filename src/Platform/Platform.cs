@@ -91,7 +91,7 @@ public class Platform(
         LoggingLevelSwitch.MinimumLevel = LogEventLevel.Debug;
 #endif
 
-        logger.LogInformation("Starting {Name} {Version} proxy", nameof(Void), "v" + Assembly.GetExecutingAssembly().GetName().Version);
+        logger.LogInformation("Starting {Name} {Version} proxy", nameof(Void), "v" + GetType().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion);
         var startTime = Stopwatch.GetTimestamp();
 
         logger.LogTrace("Working directory is {Path}", Directory.GetCurrentDirectory());
