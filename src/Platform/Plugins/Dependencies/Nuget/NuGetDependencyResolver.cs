@@ -3,6 +3,7 @@ using System.CommandLine.Invocation;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.Versioning;
+using System.Text.RegularExpressions;
 using Nito.Disposables.Internals;
 using NuGet.Configuration;
 using NuGet.Frameworks;
@@ -16,7 +17,7 @@ using Void.Proxy.Api.Plugins.Dependencies;
 
 namespace Void.Proxy.Plugins.Dependencies.Nuget;
 
-public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, InvocationContext context) : INuGetDependencyResolver
+public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, InvocationContext context) : INuGetDependencyResolver
 {
     private static readonly Option<string[]> _repositoriesOption = new(["--repository", "-r"], "Provides a URI to NuGet repository [--repository https://nuget.example.com/v3/index.json or --repository https://username:password@nuget.example.com/v3/index.json].");
     private static readonly string FrameworkName = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName
@@ -142,7 +143,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, In
     {
         try
         {
-            var environmentVariableRepositories = Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES")?.Split(';') ?? [];
+            var environmentVariableRepositories = UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";"));
             var repositories = environmentVariableRepositories.Concat(_repositories.Concat(context.ParseResult.GetValueForOption(_repositoriesOption) ?? []))
                 .Select(source =>
                 {
@@ -318,4 +319,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, In
         var packageMetadataResource = await repository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
         return await packageMetadataResource.GetMetadataAsync(packageId, true, false, Cache, _nugetLogger, cancellationToken);
     }
+
+    [GeneratedRegex(@"(?<!\\);")]
+    private static partial Regex UnescapedSemicolonRegex();
 }
