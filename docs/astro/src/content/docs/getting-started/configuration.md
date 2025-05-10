@@ -38,7 +38,7 @@ Servers = [
 
 ## Watchdog
 
-Watchdog is a built-in HTTP server that allows you to check status or control the proxy.
+[**Watchdog**](../../watchdog) is a built-in HTTP server that allows you to check status or control the proxy.
 
 ```toml
 // configs/Watchdog/Settings.toml
@@ -69,7 +69,7 @@ Secret = "YourSecretKeyHere"
 ## Plugins Installation
 
 Plugins are compiled with the *.dll extension in any .NET compatible language.
-See the [Plugins overview](../developing-plugins/overview.md) section for more details.
+See the [**Plugin Development Kit**](../../developing-plugins/development-kit) section for more details.
 
 Directory `plugins` is the default location for plugins.
 Environment variable `VOID_PLUGINS` might be used to include URLs or Local Paths to plugins, separated by coma or semicolon.
