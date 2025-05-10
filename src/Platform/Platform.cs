@@ -21,7 +21,7 @@ public class Platform(
     IPlayerService players,
     IServerService servers,
     ISettings settings,
-    IHostApplicationLifetime hostApplicationLifetime) : IProxy
+    IHostApplicationLifetime hostApplicationLifetime) : IProxy, IHostedService
 {
     public static readonly LoggingLevelSwitch LoggingLevelSwitch = new();
 
@@ -29,21 +29,44 @@ public class Platform(
     private TcpListener? _listener;
     private bool _waitPlayers;
 
+    public ProxyStatus Status
+    {
+        get;
+        private set
+        {
+            logger.LogInformation("Proxy is {Status}", value);
+            field = value;
+        }
+    }
+
     public void StartAcceptingConnections()
     {
         if (_listener is null)
             throw new InvalidOperationException("Listener is not created yet.");
 
+        if (Status is ProxyStatus.Stopping)
+            throw new InvalidOperationException("Proxy is stopping.");
+
+        Status = ProxyStatus.Alive;
         _listener.Start();
     }
 
-    public void PauseAcceptingConnections(bool waitOnlinePlayers = false)
+    public void PauseAcceptingConnections()
     {
         if (_listener is null)
             throw new InvalidOperationException("Listener is not created yet.");
 
+        if (Status is ProxyStatus.Stopping)
+            throw new InvalidOperationException("Proxy is stopping.");
+
+        Status = ProxyStatus.Paused;
         _listener.Stop();
+    }
+
+    public void Stop(bool waitOnlinePlayers = false)
+    {
         _waitPlayers = waitOnlinePlayers;
+        hostApplicationLifetime.StopApplication();
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -71,7 +94,7 @@ public class Platform(
         logger.LogInformation("Starting connection listener");
         _listener = new TcpListener(settings.Address, settings.Port);
         _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-        _listener.Start();
+        StartAcceptingConnections();
 
         logger.LogInformation("Connection listener started on port {Port}", settings.Port);
 
@@ -93,6 +116,8 @@ public class Platform(
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
+        Status = ProxyStatus.Stopping;
+
         logger.LogInformation("Stopping proxy");
         await events.ThrowAsync<ProxyStoppingEvent>(cancellationToken);
 
@@ -121,11 +146,32 @@ public class Platform(
         logger.LogInformation("Proxy stopped!");
     }
 
-    public async Task ExecuteAsync(CancellationToken cancellationToken)
+    private async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         await events.ThrowAsync<ProxyStartedEvent>(cancellationToken);
         ArgumentNullException.ThrowIfNull(_listener);
         while (!cancellationToken.IsCancellationRequested)
-            await players.AcceptPlayerAsync(await _listener.AcceptTcpClientAsync(cancellationToken), cancellationToken);
+        {
+            if (Status is ProxyStatus.Stopping)
+            {
+                break;
+            }
+            if (Status is ProxyStatus.Paused)
+            {
+                await Task.Delay(1_000, cancellationToken);
+                continue;
+            }
+            else
+            {
+                try
+                {
+                    await players.AcceptPlayerAsync(await _listener.AcceptTcpClientAsync(cancellationToken), cancellationToken);
+                }
+                catch (SocketException exception) when (exception.SocketErrorCode is SocketError.OperationAborted)
+                {
+                    continue;
+                }
+            }
+        }
     }
 }
