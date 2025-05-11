@@ -96,7 +96,8 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
 
             try
             {
-                var value = method.Invoke(listener, parameters.Length == 1 ? [@event] : [@event, CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, entry.CancellationToken).Token]);
+                using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, entry.CancellationToken);
+                var value = method.Invoke(listener, parameters.Length == 1 ? [@event] : [@event, cancellationTokenSource.Token]);
                 var handle = value switch
                 {
                     Task task => new ValueTask(task),
