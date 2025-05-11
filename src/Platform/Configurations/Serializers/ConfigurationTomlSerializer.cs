@@ -13,6 +13,7 @@ namespace Void.Proxy.Configurations.Serializers;
 
 public class ConfigurationTomlSerializer : IConfigurationSerializer
 {
+    private readonly Dictionary<Type, Type> _typeTomlMappedCache = [];
     private readonly TomlParser _parser = new();
     private readonly TomlSerializerOptions _options = new()
     {
@@ -21,6 +22,18 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
         IgnoreInvalidEnumValues = false,
         IgnoreNonPublicMembers = true
     };
+
+    public void RemoveAssemblyCache(Assembly assembly)
+    {
+        var queue = new Queue<Type>(_typeTomlMappedCache.Keys);
+        while (queue.TryDequeue(out var type))
+        {
+            if (type.Assembly != assembly)
+                continue;
+
+            _typeTomlMappedCache.Remove(type);
+        }
+    }
 
     public string Serialize<TConfiguration>() where TConfiguration : notnull
     {
@@ -101,8 +114,11 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
         return configurationDocument;
     }
 
-    private static Type MapTomlType(Type type, ModuleBuilder? moduleBuilder = null, Dictionary<Type, Type>? cache = null)
+    private Type MapTomlType(Type type, ModuleBuilder? moduleBuilder = null, Dictionary<Type, Type>? cache = null)
     {
+        if (_typeTomlMappedCache.TryGetValue(type, out var cachedType))
+            return cachedType;
+
         if (moduleBuilder is null)
         {
             var name = type.FullName + "TomletMappedByVoidAssembly";
@@ -232,6 +248,8 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
         }
 
         extendedType = typeBuilder.CreateType();
+        _typeTomlMappedCache[type] = extendedType;
+
         return cache[type] = extendedType;
     }
 

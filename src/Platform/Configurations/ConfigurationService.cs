@@ -28,6 +28,8 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
     {
         var assembly = @event.Plugin.GetType().Assembly;
 
+        _serializer.RemoveAssemblyCache(assembly);
+
         lock (this)
         {
             for (var i = _configurations.Count - 1; i > 0; i--)
