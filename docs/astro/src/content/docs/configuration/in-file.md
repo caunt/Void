@@ -5,8 +5,8 @@ sidebar:
   order: 0
 ---
 
-File configurations and environment variables are primary ways of configuration.
-However many options may be rewritten in runtime using the API from Plugins.
+File configurations are main way of configuration.
+However many options can be overriden in runtime using the API in Plugins.
 
 ## Proxy
 
