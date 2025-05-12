@@ -73,7 +73,7 @@ See the [**Plugin Development Kit**](../../developing-plugins/development-kit) s
 
 - Directory `plugins` is the default location for plugins.
 - [**Environment variable**](../environment-variables) `VOID_PLUGINS` might be used to include URLs or Local Paths to plugins, separated by coma or semicolon.
-Multiple options `--plugin` (short `-p`) might be used to include URLs or Local Paths to plugins.
+- [**Program argument**](../program-arguments) `--plugin` (short `-p`) might be used to include URL or Local Path to plugin.
 
 Examples:
 ```bash
