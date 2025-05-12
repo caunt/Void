@@ -20,6 +20,10 @@ export default defineConfig({
                 autogenerate: { directory: 'getting-started' }
             },
             {
+                label: 'Configuration',
+                autogenerate: { directory: 'configuration' }
+            },
+            {
                 label: 'Watchdog',
                 slug: 'watchdog'
             },

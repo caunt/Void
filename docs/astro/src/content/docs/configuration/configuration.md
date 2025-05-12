@@ -1,8 +1,8 @@
 ---
-title: Configuration
-description: Learn how to configure Void Proxy
+title: In-file
+description: Learn how to configure Void Proxy from files
 sidebar:
-  order: 2
+  order: 0
 ---
 
 File configurations and environment variables are primary ways of configuration.
