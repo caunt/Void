@@ -32,7 +32,7 @@ LogLevel = "Information"
 Servers = [
 	{ Name = "lobby", Host = "127.0.0.1", Port = 25566 },
 	{ Name = "minigames", Host = "127.0.0.1", Port = 25567 },
-	{ Name = "limbo", Host = "127.0.0.1", Port = 25568 },
+	{ Name = "limbo", Host = "127.0.0.1", Port = 25568 }
 ]
 ```
 
