@@ -5,14 +5,15 @@ sidebar:
   order: 1
 ---
 
-Environment variables help to easier configuration in container environments.  
+Environment variables make configuration in container environments easier.
 However, they might be used terminal directly as well.
 
-## Proxy
+## Plugins
 - `VOID_PLUGINS`
   Defines the list of URL's or Path's to load plugins from.  
   Example: `https://example.org/download/YoutPlugin1.dll;/home/YourPlugin2.dll` 
  
+## NuGet
 - `VOID_NUGET_REPOSITORIES`  
   Defines the NuGet repositories to use.  
   Example: `https://api.nuget.org/v3/index.json;https://nuget.void.dev/v3/index.json`
