@@ -16,7 +16,7 @@
   </a>
   <br>
   <a href="https://github.com/caunt/Void/releases/latest/">
-    <img alt="Greetings!" width="200" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/logo-text.svg">
+    <img alt="Greetings!" width="200" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/astro/public/logo-text.svg">
   </a>
 </h1>
 
