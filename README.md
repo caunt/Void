@@ -15,7 +15,7 @@
     <img alt="NuGet Downloads" src="https://img.shields.io/nuget/dt/void.minecraft?label=nuget%20void.minecraft">
   </a>
   <br>
-  <a href="https://github.com/caunt/Void/releases/latest/">
+  <a href="https://void.caunt.world/">
     <img alt="Greetings!" width="200" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/astro/public/logo-text.svg">
   </a>
 </h1>
