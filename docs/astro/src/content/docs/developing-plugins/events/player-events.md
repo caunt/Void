@@ -1,6 +1,6 @@
 ---
 title: Player Events
-description: Learn types of Player Events
+description: Learn types of Player Events.
 ---
 
 Very first event that is triggered when a player connects to the server.  

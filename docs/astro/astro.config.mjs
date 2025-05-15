@@ -23,10 +23,7 @@ export default defineConfig({
                 label: 'Configuration',
                 autogenerate: { directory: 'configuration' }
             },
-            {
-                label: 'Watchdog',
-                slug: 'watchdog'
-            },
+            { slug: 'watchdog' },
             {
                 label: 'Developing Plugins',
                 items: [
@@ -41,9 +38,27 @@ export default defineConfig({
                         collapsed: true,
                         autogenerate: { directory: 'developing-plugins/services' }
                     },
-                    { slug: 'developing-plugins/commands' }
+                    { slug: 'developing-plugins/commands' },
+                    { slug: 'developing-plugins/text-components' },
+                    { slug: 'developing-plugins/nbt' },
+                    {
+                        label: 'Network',
+                        autogenerate: { directory: 'developing-plugins/network' }
+                    },
+                    {
+                        label: 'Forwarding',
+                        collapsed: true,
+                        autogenerate: { directory: 'developing-plugins/forwarding' }
+                    },
+                    { slug: 'developing-plugins/serializers' }
                 ],
-            }
+            },
+            {
+                label: 'Containers',
+                autogenerate: { directory: 'containers' }
+            },
+            { slug: 'faq' },
+            { slug: 'troubleshooting' }
         ],
         head: [
             {

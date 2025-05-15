@@ -1,6 +1,6 @@
 ---
 title: Development Kit
-description: Learn how to use the Plugin Development Kit to create plugins for Void
+description: Learn how to use the Plugin Development Kit to create plugins for Void.
 ---
 
 Plugin Development Kit is a set of predefined configurations that simplifies the development process of plugins.

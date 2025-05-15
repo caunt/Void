@@ -1,6 +1,6 @@
 ---
 title: In-file
-description: Learn how to configure Void Proxy from files
+description: Learn how to configure Void Proxy from files.
 sidebar:
   order: 0
 ---

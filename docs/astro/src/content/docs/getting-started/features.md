@@ -1,6 +1,6 @@
 ---
 title: Features
-description: Explore Void proxy supported and features
+description: Explore Void proxy supported and features.
 sidebar:
   order: 1
 ---

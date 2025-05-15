@@ -1,6 +1,6 @@
 ---
 title: Transient Service
-description: Learn how to use transient services
+description: Learn how to use transient services.
 sidebar:
   order: 3
 ---

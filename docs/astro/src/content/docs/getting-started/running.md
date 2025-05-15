@@ -1,6 +1,6 @@
 ﻿---
 title: Running
-description: Learn how to run Void Proxy
+description: Learn how to run Void Proxy.
 sidebar:
   order: 0
 ---

@@ -1,6 +1,6 @@
 ---
 title: Creating your Events
-description: Learn how to create your own events in your plugin
+description: Learn how to create your own events in your plugin.
 sidebar:
   order: 2
 ---

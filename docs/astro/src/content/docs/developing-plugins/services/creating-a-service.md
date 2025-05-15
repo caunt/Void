@@ -1,6 +1,6 @@
 ---
 title: Creating a Service
-description: Learn how to develop and use services
+description: Learn how to develop and use services.
 sidebar:
   order: 0
 ---

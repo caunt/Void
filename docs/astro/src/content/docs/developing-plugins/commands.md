@@ -1,4 +1,4 @@
 ---
 title: Commands
-description: Learn how to define and listen to commands
+description: Learn how to define and listen to commands.
 ---

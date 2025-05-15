@@ -1,6 +1,6 @@
 ---
 title: Listening to Events
-description: Learn how to listen to events in your plugin
+description: Learn how to listen to events in your plugin.
 sidebar:
   order: 1
 ---

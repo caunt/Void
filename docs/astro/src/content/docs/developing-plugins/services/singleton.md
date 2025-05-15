@@ -1,6 +1,6 @@
 ---
 title: Singleton Service
-description: Learn how to use singleton services
+description: Learn how to use singleton services.
 sidebar:
   order: 1
 ---

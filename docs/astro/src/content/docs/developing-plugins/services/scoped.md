@@ -1,6 +1,6 @@
 ---
 title: Scoped Service
-description: Learn how to use scoped services
+description: Learn how to use scoped services.
 sidebar:
   order: 2
 ---

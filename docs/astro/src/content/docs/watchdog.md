@@ -1,6 +1,6 @@
 ---
 title: Watchdog
-description: Learn how to enable and use the Watchdog feature in Void
+description: Learn how to enable and use the Watchdog feature in Void.
 ---
 
 The Watchdog feature in Void is designed to monitor the health of the Void Proxy and schedule restart if required. 
