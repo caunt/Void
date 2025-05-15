@@ -1,6 +1,8 @@
 ---
 title: Creating a Service
-description: Learn how to use services in your plugin
+description: Learn how to develop and use services
+sidebar:
+  order: 0
 ---
 
 Services are used to build a Dependency Injection (DI) container.

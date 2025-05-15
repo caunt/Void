@@ -1,6 +1,8 @@
 ---
-title: Singleton
-description: Learn how to use singleton services in your plugins
+title: Singleton Service
+description: Learn how to use singleton services
+sidebar:
+  order: 1
 ---
 
 Singleton services are a type of service that is instantiated once and shared across the entire application. 

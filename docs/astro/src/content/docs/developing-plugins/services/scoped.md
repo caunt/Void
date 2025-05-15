@@ -1,6 +1,8 @@
 ---
-title: Scoped
-description: Learn how to use scoped services in your plugins
+title: Scoped Service
+description: Learn how to use scoped services
+sidebar:
+  order: 2
 ---
 
 Scoped services are a type of service that is instantiated once per player session.

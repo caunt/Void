@@ -34,30 +34,14 @@ export default defineConfig({
                     {
                         label: 'Events',
                         collapsed: true,
-                        items: [
-                            {
-                                label: 'Guide',
-                                autogenerate: { directory: 'developing-plugins/events/guide' }
-                            },
-                            {
-                                label: 'Types',
-                                collapsed: true,
-                                autogenerate: { directory: 'developing-plugins/events/types' }
-                            }
-                        ]
+                        autogenerate: { directory: 'developing-plugins/events' }
                     },
                     {
                         label: 'Services',
                         collapsed: true,
-                        items: [
-                            { slug: 'developing-plugins/services/creating-a-service' },
-                            {
-                                label: 'Types',
-                                collapsed: true,
-                                autogenerate: { directory: 'developing-plugins/services/types' }
-                            }
-                        ]
-                    }
+                        autogenerate: { directory: 'developing-plugins/services' }
+                    },
+                    { slug: 'developing-plugins/commands' }
                 ],
             }
         ],

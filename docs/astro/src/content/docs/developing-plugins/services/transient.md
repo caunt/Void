@@ -1,6 +1,8 @@
 ---
-title: Transient
-description: Learn how to use transient services in your plugins
+title: Transient Service
+description: Learn how to use transient services
+sidebar:
+  order: 3
 ---
 
 Transient services are a type of service that is instantiated every time it is requested.
