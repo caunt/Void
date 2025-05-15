@@ -89,6 +89,7 @@ jobs:
   docker:
     needs: [dotnet-build,release-dev]
     uses: ./.github/workflows/docker.yaml
+    secrets: inherit
     with:
       dotnet-version: ${{ needs.release-dev.outputs.dotnet-version }}
       void-version: ${{ needs.release-dev.outputs.void-fallback-version }}
