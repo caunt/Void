@@ -75,14 +75,12 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - name: Restore dependencies
-        run: dotnet restore --runtime ${{ matrix.runtime }} ${{ matrix.parameters }} 
       - name: Build
         # Do not include runtime here
         # error NETSDK1134: Building a solution with a specific RuntimeIdentifier is not supported. If you would like to publish for a single RID, specify the RID at the individual project level instead.
-        run: dotnet build --configuration Release --no-restore /p:Version=${{ needs.release-dev.outputs.version }} ${{ matrix.parameters }}
+        run: dotnet build --configuration Release /p:Version=${{ needs.release-dev.outputs.version }} ${{ matrix.parameters }}
       - name: Build Platform
-        run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release --no-restore /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ needs.release-dev.outputs.version }} ${{ matrix.parameters }} 
+        run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ needs.release-dev.outputs.version }} ${{ matrix.parameters }} 
       - name: Test
         run: dotnet test --runtime ${{ matrix.runtime }} --no-build --verbosity normal ${{ matrix.parameters }} 
       - name: Publish
@@ -248,10 +246,8 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - name: Restore dependencies
-        run: dotnet restore
       - name: Build
-        run: dotnet build --configuration Release --no-restore /p:Version=${{ needs.release-please.outputs.version }}
+        run: dotnet build --configuration Release /p:Version=${{ needs.release-please.outputs.version }}
       - name: Test
         run: dotnet test --no-build --verbosity normal
       - name: Pack Api
