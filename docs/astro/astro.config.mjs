@@ -73,11 +73,11 @@ export default defineConfig({
                     gtag('js', new Date());
                     
                     gtag('config', '${googleAnalyticsId}');
-                    `,
+                    `
             }
         ],
         editLink: {
-            baseUrl: 'https://github.com/caunt/void/edit/main/docs/astro',
+            baseUrl: 'https://github.com/caunt/void/edit/main/docs/astro'
         },
         lastUpdated: true,
         expressiveCode: {
@@ -92,5 +92,5 @@ export default defineConfig({
         changefreq: 'daily',
         priority: 1,
         lastmod: new Date()
-    })],
+    })]
 });
