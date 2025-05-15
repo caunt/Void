@@ -7,21 +7,19 @@ permissions:
   pages: write
   id-token: write
 
-env:
-  DOTNET_VERSION_DEFAULT: &dotnet_default "10.0.100-preview.3.25201.16"
-  DOTNET_VERSION: ${{ github.event.inputs.dotnet-version || env.DOTNET_VERSION_DEFAULT }}
-
 on:
   workflow_dispatch:
     inputs:
       dotnet-version:
-        description: ".NET SDK version"
-        default: *dotnet_default
+        description: "Full version of .NET SDK"
         required: false
   push:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+
+env:
+  DOTNET_VERSION: ${{ github.event.inputs.dotnet-version || "10.0.100-preview.3.25201.16" }}
 
 jobs:
   release-dev:
