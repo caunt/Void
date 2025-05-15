@@ -1,6 +1,34 @@
 ---
 title: Greetings
 description: Welcome to Void Proxy
+template: splash
+hero:
+  tagline: Void is a game network proxy with plugins API, designed for all Minecraft platforms, versions and compatible with any mods.
+  image:
+    file: ../../../public/favicon.svg
+  actions:
+    - text: Run the Void
+      link: /getting-started/running
+      icon: right-arrow
+    - text: Develop Plugins
+      link: /developing-plugins/development-kit
+      icon: document
+      variant: minimal
 ---
 
-Glad to see you being interested in this proxy. Visit this page later to see more information about configuring proxy and developing your first plugin.
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+	<Card title="Build Plugins" icon="pencil">
+		Void provides a powerful plugin API that allows you to create plugins on the raw network level.
+	</Card>
+	<Card title="Minecraft Platforms" icon="star">
+		Designed to support any Minecraft platforms, including Bedrock, Java, Pocket Edition and more.
+	</Card>
+	<Card title="Containers" icon="seti:docker">
+		Built with Containers in mind, easy to deploy to Docker or Kubernetes cluster.
+	</Card>
+	<Card title="Read the docs" icon="open-book">
+		See more features in the [Void Docs](getting-started/features).
+	</Card>
+</CardGrid>
