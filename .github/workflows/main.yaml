@@ -26,8 +26,8 @@ jobs:
     environment: release-dev
     runs-on: ubuntu-latest
     outputs:
-      void-fallback-version: ${{ steps.void-fallback-version.outputs.result }}
       dotnet-version: ${{ steps.dotnet-version.outputs.result }}
+      void-fallback-version: ${{ steps.void-fallback-version.outputs.result }}
     steps:
       - uses: actions/checkout@v4
       - name: Set .NET SDK version
