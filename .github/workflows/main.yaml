@@ -26,11 +26,16 @@ jobs:
     environment: release-dev
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.fallback.outputs.result }}
+      void-fallback-version: ${{ steps.void-fallback-version.outputs.result }}
+      dotnet-version: ${{ steps.dotnet-version.outputs.result }}
     steps:
       - uses: actions/checkout@v4
-      - name: Fallback version to manifest with sha
-        id: fallback
+      - name: Set .NET SDK version
+        id: dotnet-version
+        run: |
+          echo "$DOTNET_VERSION" >> $GITHUB_OUTPUT
+      - name: Set Void fallback version
+        id: void-fallback-version
         run: |
           base=$(jq -r '.["."]' .github/RELEASE_PLEASE/manifest.json)
           sha=$(git rev-parse --short HEAD)
@@ -40,8 +45,8 @@ jobs:
     needs: release-dev
     uses: ./.github/workflows/build.yaml
     with:
-      dotnet-version: ${{ env.DOTNET_VERSION }}
-      void-version: ${{ needs.release-dev.outputs.version }}
+      dotnet-version: ${{ needs.release-dev.outputs.dotnet-version }}
+      void-version: ${{ needs.release-dev.outputs.void-fallback-version }}
 
   release-please:
     environment: release-please
@@ -124,7 +129,7 @@ jobs:
             /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
             /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
             /p:ContainerBaseImage='"${{ matrix.container_base_image }}"' \
-            /p:Version=${{ needs.release-dev.outputs.version }}
+            /p:Version=${{ needs.release-dev.outputs.void-fallback-version }}
 
   docker-push:
     environment: docker-push
