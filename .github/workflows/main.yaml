@@ -38,7 +38,7 @@ jobs:
 
   dotnet-build:
     needs: release-dev
-    uses: ./.github/workflows/jobs/build.yaml
+    uses: ./.github/workflows/build.yaml
     with:
       dotnet-version: ${{ env.DOTNET_VERSION }}
       void-version: ${{ needs.release-dev.outputs.version }}
