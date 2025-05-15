@@ -1,0 +1,104 @@
+on:
+  workflow_call:
+    inputs:
+      dotnet-version:
+        type: string
+        required: true
+      void-version:
+        type: string
+        required: true
+      release:
+        type: boolean
+        default: false
+        required: false
+
+jobs:
+  docker-dev-push:
+    environment: docker-dev-push
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-arm;linux-arm64;linux-x64
+            container_image_tags: dev
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-bionic-arm64;linux-bionic-x64
+            container_image_tags: dev-android
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-musl-arm;linux-musl-arm64;linux-musl-x64
+            container_image_tags: dev-alpine
+          - os: windows-latest
+            container_runtime_identifiers: win-x64
+            container_image_tags: dev-windows
+            container_base_image: mcr.microsoft.com/dotnet/runtime:9.0-nanoserver-ltsc2025
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Publish ${{ matrix.container_image_tags }} tags
+        shell: bash
+        env:
+          MSYS_NO_PATHCONV: 1
+          MSYS2_ARG_CONV_EXCL: '*'
+        run: |
+          dotnet publish src/Platform \
+            /t:PublishContainer \
+            /p:RuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
+            /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
+            /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
+            /p:ContainerBaseImage='"${{ matrix.container_base_image }}"' \
+            /p:Version=${{ inputs.void-version }}
+
+  docker-push:
+    environment: docker-push
+    needs: docker-dev-push
+    if: ${{ inputs.release }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-arm;linux-arm64;linux-x64
+            container_image_tags: ${{ inputs.void-version }};latest
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-bionic-arm64;linux-bionic-x64
+            container_image_tags: ${{ inputs.void-version }}-android;latest-android
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-musl-arm;linux-musl-arm64;linux-musl-x64
+            container_image_tags: ${{ inputs.void-version }}-alpine;latest-alpine
+          - os: windows-latest
+            container_runtime_identifiers: win-x64
+            container_image_tags: ${{ inputs.void-version }}-windows;latest-windows
+            container_base_image: mcr.microsoft.com/dotnet/runtime:9.0-nanoserver-ltsc2025
+    steps: 
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Publish ${{ matrix.container_image_tags }} tags
+        shell: bash
+        env:
+          MSYS_NO_PATHCONV: 1
+          MSYS2_ARG_CONV_EXCL: '*'
+        run: |
+          dotnet publish src/Platform \
+            /t:PublishContainer \
+            /p:RuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
+            /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
+            /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
+            /p:ContainerBaseImage='"${{ matrix.container_base_image }}"' \
+            /p:Version=${{ inputs.void-version }}
