@@ -87,7 +87,8 @@ export default defineConfig({
         logo: {
             src: '/public/logo.svg'
         },
-        favicon: '/logo.svg'
+        favicon: '/logo.svg',
+        customCss: ['./src/assets/landing.css']
     }), sitemap({
         changefreq: 'daily',
         priority: 1,
