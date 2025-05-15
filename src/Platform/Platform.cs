@@ -9,7 +9,6 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins;
-using Void.Proxy.Api.Servers;
 using Void.Proxy.Api.Settings;
 
 namespace Void.Proxy;
@@ -19,7 +18,6 @@ public class Platform(
     IPluginService plugins,
     IEventService events,
     IPlayerService players,
-    IServerService servers,
     ISettings settings,
     IHostApplicationLifetime hostApplicationLifetime) : IProxy, IHostedService
 {
