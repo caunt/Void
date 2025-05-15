@@ -1,5 +1,60 @@
 # Changelog
 
+## [0.5.0](https://github.com/caunt/Void/compare/v0.4.0...v0.5.0) (2025-05-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* update environment variables names
+
+### Features
+
+* added many watchdog api methods ([9670d18](https://github.com/caunt/Void/commit/9670d1821f0481205f056eb645b6eea236c32837))
+* added VOID_WATCHDOG_ENABLE environment variable ([5bddb90](https://github.com/caunt/Void/commit/5bddb9018a0a7459c4ea5fbff85bea5ee37aa7f1))
+* added watchdog simple web application ([b82da8a](https://github.com/caunt/Void/commit/b82da8ad5fb09e918ccf0a568284ad600950f77c))
+* allow pausing accepting connections ([dc772e8](https://github.com/caunt/Void/commit/dc772e861e4057d39eabbf225249eb277f942eba))
+* allow specifying address to bind watchdog ([2790e7a](https://github.com/caunt/Void/commit/2790e7af73708f8065e118187b088f91a9ef3095))
+* allow specifying repositories with VOID_NUGET_REPOSITORIES environment variable ([627e243](https://github.com/caunt/Void/commit/627e2435d546d72d163e607879ec5f6f2315666d))
+* allow specifying whether to kick players on proxy shutdown ([704e89b](https://github.com/caunt/Void/commit/704e89b7d69a522a704589a95e4beae1b3d358c4))
+* discover servers automatically ([d700d6f](https://github.com/caunt/Void/commit/d700d6f8beae7287d6640f0b420219324e5bba01))
+* include asp.net runtime assemblies into a build ([860ddc3](https://github.com/caunt/Void/commit/860ddc347c5205b9cc7d5102f42086ef1101a5fb))
+* introduce watchdog plugin ([0fb4554](https://github.com/caunt/Void/commit/0fb4554db98de860500737a17f923168b09d7f4b))
+
+
+### Bug Fixes
+
+* added proxy statuses ([54a45ab](https://github.com/caunt/Void/commit/54a45abc3a820c9ed83e6fae3e182efc1a74d92d))
+* added version property to all builds ([e690e1e](https://github.com/caunt/Void/commit/e690e1eac5c051b154972490869a4b0dcc6f932b))
+* allow semicolon escaping ([fe2e1d4](https://github.com/caunt/Void/commit/fe2e1d421e41ccbe7b0d684390d7a7fee7f02250))
+* allow terminals without tty ([7be8071](https://github.com/caunt/Void/commit/7be8071555474c0243e12b2fe1cf4fd9a442bc1e))
+* cache toml mapped assembly types ([9b6c529](https://github.com/caunt/Void/commit/9b6c52974439cf7af5b2b1382e374cf6c108e1ee))
+* conditional dotnet sdk ([70444ed](https://github.com/caunt/Void/commit/70444edcdf5fd4bf3a40cbfae5a3eb3c5b476b4b))
+* conditional remove aspnet sdk ([c5a922a](https://github.com/caunt/Void/commit/c5a922ad93b901fa28a61fff41332024a216858e))
+* configure hosting shutdown timeout to infinite ([b35ada2](https://github.com/caunt/Void/commit/b35ada2d95bb62e5f9dfad3e85727e4b14e2459c))
+* custom conditional variable for bionic sdk switch ([7181430](https://github.com/caunt/Void/commit/71814300084261910e4802a2b288f7f3e5e0ff6d))
+* dispose cancellation token source after event is handled ([d815c5d](https://github.com/caunt/Void/commit/d815c5d93772380e04131e8235e272360dddf4c6))
+* do not include runtime identifier in solution build ([66255ad](https://github.com/caunt/Void/commit/66255add92df661f63e210b8f0f4d8958fac9ce1))
+* do not read console when input is redirected ([3fd46b2](https://github.com/caunt/Void/commit/3fd46b27a4ca12f00fb9590116f1b21794fc0121))
+* do not specify list of rids ([1af547c](https://github.com/caunt/Void/commit/1af547c62a4480ad469c77703a2e098246f9a3af))
+* exclude watchdog plugin from bionic builds ([64cd99b](https://github.com/caunt/Void/commit/64cd99bc849fde7261d2705a0d1c5c362f37944f))
+* include aspnet framework when not bionic ([75238e6](https://github.com/caunt/Void/commit/75238e62b3e869b95013a797464ac1c003d32b71))
+* include rids via msbuild property argument ([0f7e6d6](https://github.com/caunt/Void/commit/0f7e6d6a0fcc2a15ed3777d97018721f0107d0c0))
+* include sdk parameter in build ([90ed3bb](https://github.com/caunt/Void/commit/90ed3bb691a89a707ca0b4c01dffe87bcb0eca89))
+* loading shared assemblies ([ab36bb0](https://github.com/caunt/Void/commit/ab36bb0679a9ea71c02f32f7672af722357e0653))
+* print proxy version at start ([e82513b](https://github.com/caunt/Void/commit/e82513b6722f644725baabf0f016546ad81f26eb))
+* pull assembly version from attribute ([4cd32ff](https://github.com/caunt/Void/commit/4cd32ff2460026e761aa0dec35bde23cf8be62c5))
+* register proxy as hosted service ([89541b8](https://github.com/caunt/Void/commit/89541b80f175c23b775adf2025084682e96b29a7))
+* rename manifest_version to fallback_version ([5a31032](https://github.com/caunt/Void/commit/5a31032c294b3b74c029ca6a392370f743ce1e06))
+* update proxy interface to support manual stopping ([1ba2401](https://github.com/caunt/Void/commit/1ba2401ea8d1d526c45e7f031890a7ed6a904582))
+* use latest release v tag in unstable builds ([2b96f58](https://github.com/caunt/Void/commit/2b96f585a4849e2a36d003ed4f0a297f3d4d9b1a))
+* waiting for players to disconnect before emitting application lifetime stop ([b08b0ce](https://github.com/caunt/Void/commit/b08b0cefa1fdc892b8f54a88e15dfb2ae3055cbc))
+* watchdog is not started anymore if `Enabled` settings is set to false ([5bddb90](https://github.com/caunt/Void/commit/5bddb9018a0a7459c4ea5fbff85bea5ee37aa7f1))
+
+
+### Code Refactoring
+
+* update environment variables names ([5bddb90](https://github.com/caunt/Void/commit/5bddb9018a0a7459c4ea5fbff85bea5ee37aa7f1))
+
 ## [0.4.0](https://github.com/caunt/Void/compare/v0.3.4...v0.4.0) (2025-05-08)
 
 
