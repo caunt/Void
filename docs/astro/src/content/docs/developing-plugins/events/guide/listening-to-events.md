@@ -9,7 +9,7 @@ Events are a great way to communicate between different plugins and proxy.
 They allow you to respond to specific actions or changes in the game, such as a player joining or leaving.
 
 ## Subscribing to events
-You can subscribe to events by applying the `Subscribe` attribute to a method in your class.
+You can subscribe to events by applying the `Subscribe` attribute to a method in your class that inherits `IEventListener` interface.
 ```csharp
 public class MyPlugin : IPlugin
 {
@@ -21,24 +21,29 @@ public class MyPlugin : IPlugin
 }
 ```
 
+:::tip
+The `IPlugin` interface inherits `IEventListener` itself, so you can subscribe to events directly in your plugin class.
+However, in most cases, you must apply `IEventListener` interface to your classes.
+:::
+
 ## Async Events
 Most of the time, you will want to interact with players when receiving an event.
 Since the proxy is just network IO tool - such interactions are always implemented asynchronously, so you will need to make your listener asynchronous as well.
-Your method can inject `CancellationToken` for graceful player network lifetime.
+Your method can inject `CancellationToken` for graceful player network lifetime handling by proxy.
 
-You do not need to think or worry about lifetime of cancellation tokens, just pass them to `async` methods you call.
+You do not need to think or worry about lifetime of cancellation tokens, just pass them down to `async` methods you call.
 ```csharp
 [Subscribe]
 public async ValueTask OnPlayerConnected(PlayerConnectedEvent @event, CancellationToken cancellationToken)
 {
     // It is highly recommended to pass cancellation token in all async methods you call.
+    // This helps proxy to correctly manage player network lifetime.
     await @event.Player.KickAsync("You are not allowed to join this server.", cancellationToken);
 }
 ```
 
 ## Listening to events
-All `IPlugin` implementations are automatically scanned for the `Subscribe` attribute.
-For your managed services please include `IEventListener` interface on your service class.
+For your managed services include `IEventListener` interface on your service class.
 ```csharp
 public class MySingletonService : IEventListener
 {
