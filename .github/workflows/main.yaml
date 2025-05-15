@@ -106,7 +106,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
-      version: ${{ steps.release.outputs.release_created == 'true' && steps.release.outputs.version || steps.fallback.outputs.fallback_version }}
+      version: ${{ steps.release.outputs.version }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: actions/checkout@v4
@@ -117,12 +117,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: .github/RELEASE_PLEASE/config.json
           manifest-file: .github/RELEASE_PLEASE/manifest.json
-      - name: Fallback version to last tag
-        id: fallback
-        run: |
-          base=$(jq -r '.["."]' .github/RELEASE_PLEASE/manifest.json)
-          sha=$(git rev-parse --short HEAD)
-          echo "fallback_version=${base}+${sha}" >> $GITHUB_OUTPUT
 
   github-push:
     needs: [dotnet-build,release-please]
