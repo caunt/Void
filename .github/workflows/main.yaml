@@ -74,7 +74,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ github.event.inputs.dotnet-version }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Restore dependencies
         run: dotnet restore --runtime ${{ matrix.runtime }} ${{ matrix.parameters }} 
       - name: Build
@@ -171,7 +171,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ github.event.inputs.dotnet-version }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -217,7 +217,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ github.event.inputs.dotnet-version }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -247,7 +247,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ github.event.inputs.dotnet-version }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Restore dependencies
         run: dotnet restore
       - name: Build
@@ -294,7 +294,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ github.event.inputs.dotnet-version }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Setup DocFX
         run: dotnet tool update -g docfx
       - name: Build with DocFX
