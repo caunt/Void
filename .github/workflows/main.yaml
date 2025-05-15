@@ -19,7 +19,7 @@ on:
     branches: ["main"]
 
 env:
-  DOTNET_VERSION: ${{ github.event.inputs.dotnet-version || "10.0.100-preview.3.25201.16" }}
+  DOTNET_VERSION: ${{ github.event.inputs.dotnet-version || '10.0.100-preview.3.25201.16' }}
 
 jobs:
   release-dev:
