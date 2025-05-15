@@ -85,9 +85,9 @@ export default defineConfig({
             themes: [ExpressiveCodeTheme.fromJSONString(fs.readFileSync(new URL(`./themes/visual-studio-2019-dark.jsonc`, import.meta.url), 'utf-8'))]
         },
         logo: {
-            src: '/assets/logo.svg'
+            src: '/public/logo.svg'
         },
-        favicon: '/assets/logo.svg'
+        favicon: '/logo.svg'
     }), sitemap({
         changefreq: 'daily',
         priority: 1,
