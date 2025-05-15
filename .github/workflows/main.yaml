@@ -33,7 +33,7 @@ jobs:
       - name: Set .NET SDK version
         id: dotnet-version
         run: |
-          echo "$DOTNET_VERSION" >> $GITHUB_OUTPUT
+          echo "result=$DOTNET_VERSION" >> $GITHUB_OUTPUT
       - name: Set Void fallback version
         id: void-fallback-version
         run: |
