@@ -14,6 +14,8 @@
 		<ContainerUser>root</ContainerUser>
 		<!-- Exclude this SHA because it is very long string. GitHub Actions will make short version -->
 		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+		<!-- Required after .NET SDK 10.0.100-preview.4.25258.110 since it was not resolving global usings for Microsoft.Extensions namespace classes -->
+		<WorkerSdkImportPublishSdk>true</WorkerSdkImportPublishSdk>
 	</PropertyGroup>
 
 	<ItemGroup>
