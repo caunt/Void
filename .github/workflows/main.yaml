@@ -13,10 +13,14 @@ on:
       dotnet-version:
         description: ".NET SDK version"
         default: "10.0.100-preview.3.25201.16"
+        required: false
   push:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+
+env:
+  DOTNET_VERSION: ${{ github.event.inputs.dotnet-version || on.workflow_dispatch.inputs.dotnet-version.default }}
 
 jobs:
   release-dev:
