@@ -8,7 +8,7 @@ on:
         type: string
         required: true
       release:
-        type: boolean
+        type: string
         required: true
 
 jobs:
@@ -59,7 +59,7 @@ jobs:
   push:
     environment: void
     needs: push-dev
-    if: ${{ inputs.release }}
+    if: ${{ fromJson(inputs.release) }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

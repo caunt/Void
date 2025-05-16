@@ -5,13 +5,13 @@ on:
         type: string
         required: true
       release:
-        type: boolean
+        type: string
         required: true
 
 jobs:
   push:
     environment: void
-    if: ${{ inputs.release }}
+    if: ${{ fromJson(inputs.release) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
