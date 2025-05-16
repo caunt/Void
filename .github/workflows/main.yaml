@@ -32,12 +32,12 @@ jobs:
       void-version: ${{ needs.version.outputs.void-version }}
 
   github:
-    needs: [build,release-please]
+    needs: [build,version]
     uses: ./.github/workflows/github.yaml
     secrets: inherit
     with:
-      tag_name: ${{ needs.release-please.outputs.tag_name }}
-      release: ${{ needs.release-please.outputs.release_created == 'true' }}
+      tag_name: ${{ needs.version.outputs.tag_name }}
+      release: ${{ needs.version.outputs.release }}
 
   docker:
     needs: [build,version]
@@ -46,15 +46,15 @@ jobs:
     with:
       dotnet-version: ${{ needs.version.outputs.dotnet-version }}
       void-version: ${{ needs.version.outputs.void-version }}
-      release: ${{ needs.release-please.outputs.release_created == 'true' }}
+      release: ${{ needs.version.outputs.release }}
 
   nuget:
-    needs: [build,release-please]
+    needs: [build,version]
     uses: ./.github/workflows/nuget.yaml
     secrets: inherit
     with:
-      void-version: ${{ needs.release-please.outputs.version }}
-      release: ${{ needs.release-please.outputs.release_created == 'true' }}
+      void-version: ${{ needs.version.outputs.void-version }}
+      release: ${{ needs.version.outputs.release }}
 
   docs:
     needs: [version]
