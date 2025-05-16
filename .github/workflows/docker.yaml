@@ -58,7 +58,6 @@ jobs:
 
   push:
     environment: void
-    needs: push-dev
     if: ${{ fromJson(inputs.release) }}
     runs-on: ${{ matrix.os }}
     strategy:
