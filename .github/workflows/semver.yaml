@@ -1,0 +1,59 @@
+on:
+  workflow_call:
+    inputs:
+      dotnet-version:
+        type: string
+        required: false
+    outputs:
+      dotnet-version:
+        description: "Generated .NET Version"
+        value: ${{ jobs.dev.outputs.dotnet-version }}
+      void-version:
+        description: "Generated Void Version"
+        value: ${{ jobs.release-please.outputs.void-version || jobs.dev.outputs.void-fallback-version }}
+      release:
+        description: "Release Created"
+        value: ${{ jobs.release-please.outputs.release_created }}
+      tag_name:
+        description: "Release Tag Name"
+        value: ${{ jobs.release-please.outputs.tag_name }}
+
+env:
+  DOTNET_VERSION: ${{ github.event.inputs.dotnet-version || '10.0.100-preview.4.25258.110' }}
+
+jobs:
+  dev:
+    environment: void
+    runs-on: ubuntu-latest
+    outputs:
+      dotnet-version: ${{ steps.dotnet-version.outputs.result }}
+      void-fallback-version: ${{ steps.void-fallback-version.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set .NET SDK version
+        id: dotnet-version
+        run: |
+          echo "result=$DOTNET_VERSION" >> $GITHUB_OUTPUT
+      - name: Set Void fallback version
+        id: void-fallback-version
+        run: |
+          base=$(jq -r '.["."]' .github/RELEASE_PLEASE/manifest.json)
+          sha=$(git rev-parse --short HEAD)
+          echo "result=${base}+${sha}" >> $GITHUB_OUTPUT
+
+  release-please:
+    environment: void
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      void-version: ${{ steps.release.outputs.version }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Release
+        uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .github/RELEASE_PLEASE/config.json
+          manifest-file: .github/RELEASE_PLEASE/manifest.json
