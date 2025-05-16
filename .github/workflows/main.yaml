@@ -25,7 +25,7 @@ jobs:
       dotnet-version: ${{ github.event.inputs.dotnet-version }}
 
   build:
-    needs: version
+    needs: semver
     uses: ./.github/workflows/dotnet.yaml
     with:
       dotnet-version: ${{ needs.semver.outputs.dotnet-version }}
