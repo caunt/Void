@@ -66,25 +66,12 @@ jobs:
           config-file: .github/RELEASE_PLEASE/config.json
           manifest-file: .github/RELEASE_PLEASE/manifest.json
 
-  github-push:
+  github:
     needs: [build,release-please]
-    if: ${{ needs.release-please.outputs.release_created }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: true
-      - name: Compress Plugin DevKit
-        run: zip -r -9 artifacts/plugin-devkit.zip pdk
-      - name: Upload Release Artifacts
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload ${{ needs.release-please.outputs.tag_name }} artifacts/plugin*
-          gh release upload ${{ needs.release-please.outputs.tag_name }} artifacts/void*
+    uses: ./.github/workflows/github.yaml
+    with:
+      tag_name: ${{ needs.release-please.outputs.tag_name }}
+      release: ${{ needs.release-please.outputs.release_created }}
 
   docker:
     needs: [build,release-dev]

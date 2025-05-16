@@ -1,0 +1,30 @@
+on:
+  workflow_call:
+    inputs:
+      tag_name:
+        type: string
+        required: true
+      release:
+        type: boolean
+        default: false
+        required: false
+
+jobs:
+  github-push:
+    if: ${{ inputs.release }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Compress Plugin DevKit
+        run: zip -r -9 artifacts/plugin-devkit.zip pdk
+      - name: Upload Release Artifacts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ inputs.tag_name }} artifacts/plugin*
+          gh release upload ${{ inputs.tag_name }} artifacts/void*
