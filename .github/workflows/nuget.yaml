@@ -1,6 +1,9 @@
 on:
   workflow_call:
     inputs:
+      dotnet-version:
+        type: string
+        required: true
       void-version:
         type: string
         required: true
@@ -18,7 +21,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-version: ${{ inputs.dotnet-version }}
       - name: Build
         run: dotnet build --configuration Release /p:Version=${{ inputs.void-version }}
       - name: Test
