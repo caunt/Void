@@ -1,11 +1,11 @@
-name: ".NET Build"
+name: ".NET Workflow"
     
 permissions:
   contents: write
-  pull-requests: write
+  id-token: write
   issues: write
   pages: write
-  id-token: write
+  pull-requests: write
 
 on:
   workflow_dispatch:
@@ -57,7 +57,7 @@ jobs:
       release: ${{ needs.version.outputs.release }}
 
   docs:
-    needs: [version]
+    needs: [build,version]
     uses: ./.github/workflows/docs.yaml
     secrets: inherit
     with:
