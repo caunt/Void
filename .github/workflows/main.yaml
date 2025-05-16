@@ -95,35 +95,12 @@ jobs:
       void-version: ${{ needs.release-dev.outputs.void-fallback-version }}
 
   nuget-push:
-    environment: nuget-push
     needs: [dotnet-build,release-please]
-    if: ${{ needs.release-please.outputs.release_created }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-      - name: Build
-        run: dotnet build --configuration Release /p:Version=${{ needs.release-please.outputs.version }}
-      - name: Test
-        run: dotnet test --no-build --verbosity normal
-      - name: Pack Api
-        run: dotnet pack src/Api --configuration Release --output artifacts /p:Version=${{ needs.release-please.outputs.version }}
-      - name: Pack Minecraft
-        run: dotnet pack src/Minecraft --configuration Release --output artifacts /p:Version=${{ needs.release-please.outputs.version }}
-      - name: Rename Artifacts
-        shell: bash
-        run: mv artifacts/*Api* artifacts/api.nupkg && mv artifacts/*Minecraft* artifacts/minecraft.nupkg
-      - name: NuGet Push
-        run: dotnet nuget push artifacts/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
-      - name: Upload a Pack Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          path: artifacts
-          compression-level: 9
-          if-no-files-found: error
+    uses: ./.github/workflows/nuget.yaml
+    secrets: inherit
+    with:
+      void-version: ${{ needs.release-please.outputs.version }}
+      release: ${{ needs.release-please.outputs.release_created }}
 
   docs-astro-push:
     environment:

@@ -1,0 +1,41 @@
+on:
+  workflow_call:
+    inputs:
+      void-version:
+        type: string
+        required: true
+      release:
+        type: boolean
+        default: false
+        required: false
+
+jobs:
+  nuget-push:
+    environment: nuget-push
+    if: ${{ inputs.release }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Build
+        run: dotnet build --configuration Release /p:Version=${{ inputs.void-version }}
+      - name: Test
+        run: dotnet test --no-build --verbosity normal
+      - name: Pack Api
+        run: dotnet pack src/Api --configuration Release --output artifacts /p:Version=${{ inputs.void-version }}
+      - name: Pack Minecraft
+        run: dotnet pack src/Minecraft --configuration Release --output artifacts /p:Version=${{ inputs.void-version }}
+      - name: Rename Artifacts
+        shell: bash
+        run: mv artifacts/*Api* artifacts/api.nupkg && mv artifacts/*Minecraft* artifacts/minecraft.nupkg
+      - name: NuGet Push
+        run: dotnet nuget push artifacts/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+      - name: Upload a Pack Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          path: artifacts
+          compression-level: 9
+          if-no-files-found: error
