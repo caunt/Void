@@ -41,7 +41,7 @@ jobs:
           sha=$(git rev-parse --short HEAD)
           echo "result=${base}+${sha}" >> $GITHUB_OUTPUT
 
-  dotnet-build:
+  build:
     needs: release-dev
     uses: ./.github/workflows/dotnet.yaml
     with:
@@ -50,7 +50,7 @@ jobs:
 
   release-please:
     environment: release-please
-    needs: dotnet-build
+    needs: build
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -67,7 +67,7 @@ jobs:
           manifest-file: .github/RELEASE_PLEASE/manifest.json
 
   github-push:
-    needs: [dotnet-build,release-please]
+    needs: [build,release-please]
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
     steps:
@@ -87,7 +87,7 @@ jobs:
           gh release upload ${{ needs.release-please.outputs.tag_name }} artifacts/void*
 
   docker:
-    needs: [dotnet-build,release-dev]
+    needs: [build,release-dev]
     uses: ./.github/workflows/docker.yaml
     secrets: inherit
     with:
@@ -95,7 +95,7 @@ jobs:
       void-version: ${{ needs.release-dev.outputs.void-fallback-version }}
 
   nuget-push:
-    needs: [dotnet-build,release-please]
+    needs: [build,release-please]
     uses: ./.github/workflows/nuget.yaml
     secrets: inherit
     with:
