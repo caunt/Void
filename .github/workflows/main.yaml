@@ -80,6 +80,7 @@ jobs:
     with:
       dotnet-version: ${{ needs.release-dev.outputs.dotnet-version }}
       void-version: ${{ needs.release-dev.outputs.void-fallback-version }}
+      release: ${{ needs.release-please.outputs.release_created == 'true' }}
 
   nuget:
     needs: [build,release-please]
