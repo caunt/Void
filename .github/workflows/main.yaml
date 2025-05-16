@@ -28,37 +28,37 @@ jobs:
     needs: version
     uses: ./.github/workflows/dotnet.yaml
     with:
-      dotnet-version: ${{ needs.version.outputs.dotnet-version }}
-      void-version: ${{ needs.version.outputs.void-version }}
+      dotnet-version: ${{ needs.semver.outputs.dotnet-version }}
+      void-version: ${{ needs.semver.outputs.void-version }}
 
   github:
-    needs: [build,version]
+    needs: [build,semver]
     uses: ./.github/workflows/github.yaml
     secrets: inherit
     with:
-      tag_name: ${{ needs.version.outputs.tag_name }}
-      release: ${{ needs.version.outputs.release }}
+      tag_name: ${{ needs.semver.outputs.tag_name }}
+      release: ${{ needs.semver.outputs.release }}
 
   docker:
-    needs: [build,version]
+    needs: [build,semver]
     uses: ./.github/workflows/docker.yaml
     secrets: inherit
     with:
-      dotnet-version: ${{ needs.version.outputs.dotnet-version }}
-      void-version: ${{ needs.version.outputs.void-version }}
-      release: ${{ needs.version.outputs.release }}
+      dotnet-version: ${{ needs.semver.outputs.dotnet-version }}
+      void-version: ${{ needs.semver.outputs.void-version }}
+      release: ${{ needs.semver.outputs.release }}
 
   nuget:
-    needs: [build,version]
+    needs: [build,semver]
     uses: ./.github/workflows/nuget.yaml
     secrets: inherit
     with:
-      void-version: ${{ needs.version.outputs.void-version }}
-      release: ${{ needs.version.outputs.release }}
+      void-version: ${{ needs.semver.outputs.void-version }}
+      release: ${{ needs.semver.outputs.release }}
 
   docs:
-    needs: [build,version]
+    needs: [build,semver]
     uses: ./.github/workflows/docs.yaml
     secrets: inherit
     with:
-      dotnet-version: ${{ needs.version.outputs.dotnet-version }}
+      dotnet-version: ${{ needs.semver.outputs.dotnet-version }}
