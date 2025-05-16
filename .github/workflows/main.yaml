@@ -92,6 +92,7 @@ jobs:
       release: ${{ needs.release-please.outputs.release_created == 'true' }}
 
   docs:
+    needs: [release-dev]
     uses: ./.github/workflows/docs.yaml
     secrets: inherit
     with:
