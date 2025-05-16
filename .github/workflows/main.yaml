@@ -81,7 +81,7 @@ jobs:
       dotnet-version: ${{ needs.release-dev.outputs.dotnet-version }}
       void-version: ${{ needs.release-dev.outputs.void-fallback-version }}
 
-  nuget-push:
+  nuget:
     needs: [build,release-please]
     uses: ./.github/workflows/nuget.yaml
     secrets: inherit
