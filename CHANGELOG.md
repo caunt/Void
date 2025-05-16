@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/caunt/Void/compare/v0.5.0...v0.5.1) (2025-05-16)
+
+
+### Bug Fixes
+
+* bump compiled release version ([493b174](https://github.com/caunt/Void/commit/493b174e2d991e554caacfc3af19385aae3ae4dd))
+
 ## [0.5.0](https://github.com/caunt/Void/compare/v0.4.0...v0.5.0) (2025-05-15)
 
 
