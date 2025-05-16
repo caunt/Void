@@ -74,6 +74,24 @@ export default defineConfig({
                     
                     gtag('config', '${googleAnalyticsId}');
                     `
+            },
+            {
+                tag: 'script',
+                 attrs: { type: 'application/ld+json' },
+                content: `
+                    {
+                        "@context": "https://schema.org",
+                        "@type": "SoftwareSourceCode",
+                        "name": "Void",
+                        "url": "https://github.com/caunt/Void",
+                        "codeRepository": "https://github.com/caunt/Void",
+                        "author": {
+                            "@type": "Person",
+                            "name": "Vitalii",
+                            "url": "https://github.com/caunt"
+                        }
+                    }
+                    `
             }
         ],
         editLink: {
