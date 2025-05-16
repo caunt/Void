@@ -9,7 +9,8 @@ on:
         required: true
 
 jobs:
-  github-push:
+  push:
+    environment: void
     if: ${{ inputs.release }}
     runs-on: ubuntu-latest
     steps:

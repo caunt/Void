@@ -9,8 +9,8 @@ on:
         required: true
 
 jobs:
-  dotnet-build:
-    environment: dotnet-build
+  publish:
+    environment: void
     strategy:
       matrix:
         include:

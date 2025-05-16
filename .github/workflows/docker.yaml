@@ -12,8 +12,8 @@ on:
         required: true
 
 jobs:
-  docker-dev-push:
-    environment: docker-dev-push
+  push-dev:
+    environment: void
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -56,9 +56,9 @@ jobs:
             /p:ContainerBaseImage='"${{ matrix.container_base_image }}"' \
             /p:Version=${{ inputs.void-version }}
 
-  docker-push:
-    environment: docker-push
-    needs: docker-dev-push
+  push:
+    environment: void
+    needs: push-dev
     if: ${{ inputs.release }}
     runs-on: ${{ matrix.os }}
     strategy:
