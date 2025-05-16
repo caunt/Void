@@ -69,6 +69,7 @@ jobs:
   github:
     needs: [build,release-please]
     uses: ./.github/workflows/github.yaml
+    secrets: inherit
     with:
       tag_name: ${{ needs.release-please.outputs.tag_name }}
       release: ${{ needs.release-please.outputs.release_created == 'true' }}
@@ -90,33 +91,8 @@ jobs:
       void-version: ${{ needs.release-please.outputs.version }}
       release: ${{ needs.release-please.outputs.release_created == 'true' }}
 
-  docs-astro-push:
-    environment:
-      name: docs-astro-push
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-      - name: Install, build, and upload documentation site
-        uses: withastro/action@v4
-        with:
-          path: docs/astro
-      - name: Deploy GitHub Pages site
-        uses: actions/deploy-pages@v4
-
-  docs-docfx-bug-test:
-    environment: docs-docfx-bug-test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-      - name: Setup DocFX
-        run: dotnet tool update -g docfx
-      - name: Build with DocFX
-        run: docfx docs/docfx/docfx.json --verbose
-        continue-on-error: true
+  docs:
+    uses: ./.github/workflows/docs.yaml
+    secrets: inherit
+    with:
+      dotnet-version: ${{ needs.release-dev.outputs.dotnet-version }}

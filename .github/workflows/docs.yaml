@@ -1,0 +1,39 @@
+on:
+  workflow_call:
+    inputs:
+      dotnet-version:
+        type: string
+        required: true
+
+jobs:
+  push:
+    environment:
+      name: void
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Install, build, and upload documentation site
+        uses: withastro/action@v4
+        with:
+          path: docs/astro
+      - name: Deploy GitHub Pages site
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  docfx-bug-test:
+    environment: docs-docfx-bug-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+      - name: Setup DocFX
+        run: dotnet tool update -g docfx
+      - name: Build with DocFX
+        run: docfx docs/docfx/docfx.json --verbose
+        continue-on-error: true
