@@ -9,8 +9,7 @@ on:
         required: true
       release:
         type: boolean
-        default: false
-        required: false
+        required: true
 
 jobs:
   docker-dev-push:
