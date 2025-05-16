@@ -19,8 +19,8 @@ on:
     branches: ["main"]
 
 jobs:
-  version:
-    uses: ./.github/workflows/semver.yaml
+  semver:
+    uses: ./.github/workflows/version.yaml
     with:
       dotnet-version: ${{ github.event.inputs.dotnet-version }}
 
