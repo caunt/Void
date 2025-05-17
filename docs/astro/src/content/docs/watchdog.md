@@ -26,7 +26,7 @@ OK
 - PAUSED: The Void Proxy is not accepting connections.
 - STOPPING: The Void Proxy is shutting down.
 
-Status Code `200` may be in any combination of above responses.   
+Status Code `200 OK` may be in any combination of above responses.   
 It is just meaning that the Void Proxy is still running and healthy.
 
 ## Bound Check
@@ -45,7 +45,7 @@ Responses are the same as for the `/health` endpoint.
 
 :::tip
 While `/bound` may look similar to `/health`, it is important to note that the Void Proxy may be healthy but not accepting connections.  
-In such case, the `/bound` endpoint will return `503 Service Unavailable`, while the `/health` endpoint will return `OK`.
+In such case, the `/bound` endpoint will return `503 Service Unavailable`, while the `/health` endpoint will return `200 OK`.
 :::
 
 ## Pause
