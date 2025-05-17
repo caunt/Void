@@ -20,15 +20,15 @@
   </a>
 </h1>
 
-Minecraft proxy designed to work through all versions and all mods.
+:star: Minecraft proxy designed to work through all versions and all mods.
 
-### **Download:**
-[**Stable Development Builds**](https://github.com/caunt/Void/releases)  
-[**Unstable Daily Builds**](https://github.com/caunt/Void/actions)
+### :floppy_disk: **Download:**
+:green_circle: [**Stable Development Builds**](https://github.com/caunt/Void/releases)  
+:yellow_circle: [**Unstable Daily Builds**](https://github.com/caunt/Void/actions)
 
 ### **Getting Started:**
 [**Running Guide**](https://void.caunt.world/getting-started/running/)  
-[**Supported Features**](https://void.caunt.world/getting-started/features/) `(!)`
+[**Supported Features**](https://void.caunt.world/getting-started/features/) :exclamation:
 
 ### **Developing Plugins:**
-Download [**Plugin Development Kit**](https://github.com/caunt/Void/releases/latest/download/plugin-devkit.zip), look at the [**Documentation**](https://void.caunt.world/developing-plugins/development-kit/) and use [**Example Plugin**](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) as walkthrough to create a plugin.
+Download :hammer_and_wrench: [**Plugin Development Kit**](https://github.com/caunt/Void/releases/latest/download/plugin-devkit.zip), look at the :page_facing_up: [**Documentation**](https://void.caunt.world/developing-plugins/development-kit/) and use :mag_right: [**Example Plugin**](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) as walkthrough to create a plugin.
