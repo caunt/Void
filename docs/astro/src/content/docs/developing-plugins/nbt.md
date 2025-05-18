@@ -54,7 +54,7 @@ if (tag is NbtCompound compound)
 ```
 
 ## Writing NBT Tag
-To write NBT data, you can use the `NbtTag` class.
+Use `AsStream()` method on your tag instance to access NBT as a byte stream.
 ```csharp
 var tag = new NbtCompound
 {
