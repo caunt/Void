@@ -30,12 +30,10 @@ export default defineConfig({
                     { slug: 'developing-plugins/development-kit' },
                     {
                         label: 'Events',
-                        collapsed: true,
                         autogenerate: { directory: 'developing-plugins/events' }
                     },
                     {
                         label: 'Services',
-                        collapsed: true,
                         autogenerate: { directory: 'developing-plugins/services' }
                     },
                     { slug: 'developing-plugins/commands' },
@@ -47,7 +45,6 @@ export default defineConfig({
                     },
                     {
                         label: 'Forwarding',
-                        collapsed: true,
                         autogenerate: { directory: 'developing-plugins/forwarding' }
                     },
                     { slug: 'developing-plugins/serializers' }
