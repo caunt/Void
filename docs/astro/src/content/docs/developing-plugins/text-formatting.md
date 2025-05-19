@@ -1,10 +1,10 @@
 ---
-title: Text Components
+title: Text Formatting
 description: Learn how to work with text components.
 ---
 
-Most of the places where you send a text value to Minecraft, it accepts text components. This includes chat messages, titles, action bars, and more.  
-With Text Components, you can create rich text messages with formatting, colors and events.
+Most of the places where you send a text value to Minecraft, it accepts [**text components**](https://minecraft.wiki/w/Text_component_format). This includes chat messages, titles, action bars, and more.  
+With text Components, you can create rich text messages with formatting, colors and events.
 
 ## Basic Usage
 Likely you have already used text components in your plugin with `SendChatMessageAsync`.

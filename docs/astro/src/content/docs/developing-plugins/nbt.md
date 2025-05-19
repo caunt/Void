@@ -3,7 +3,7 @@ title: NBT
 description: Learn how to work with NBT (Named Binary Tags).
 ---
 
-[**NBT (Named Binary Tags)**](https://minecraft.fandom.com/wiki/NBT_format) is a binary format used by Minecraft to store data. It is commonly used for transferring chunks data, items data, and other game-related information over the network. In this section, we will explore how to work with NBT in your plugins.
+[**NBT (Named Binary Tags)**](https://minecraft.wiki/w/NBT_format) is a binary format used by Minecraft to store data. It is commonly used for transferring chunks data, items data, and other game-related information over the network. In this section, we will explore how to work with NBT in your plugins.
 
 ## Example Compound Tag
 ```csharp

@@ -37,7 +37,7 @@ export default defineConfig({
                         autogenerate: { directory: 'developing-plugins/services' }
                     },
                     { slug: 'developing-plugins/commands' },
-                    { slug: 'developing-plugins/text-components' },
+                    { slug: 'developing-plugins/text-formatting' },
                     { slug: 'developing-plugins/nbt' },
                     {
                         label: 'Network',
