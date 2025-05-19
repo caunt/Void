@@ -6,13 +6,13 @@ description: Learn about serializes in Void.
 Serializers are used to convert structured data between different formats. 
 
 ## Text Components
-Prefer using [**`Serialize` methods**](../text-components/#converting-components) on `Component` for serialization.
+Prefer using [**`Serialize` methods**](../text-formatting/#converting-components) on `Component` for serialization.
 - `ComponentJsonSerializer` 
-  - Converts **[Text Component](../text-components) to Json** or **Json to [Text Component](../text-components)**.
+  - Converts **[Text Component](../text-formatting) to Json** or **Json to [Text Component](../text-formatting)**.
 - `ComponentLegacySerializer` 
-  - Converts **[Text Component](../text-components) to [Legacy string](https://minecraft.fandom.com/wiki/Formatting_codes)** or **[Legacy string](https://minecraft.fandom.com/wiki/Formatting_codes) to [Text Component](../text-components)**.
+  - Converts **[Text Component](../text-formatting) to [Legacy string](https://minecraft.fandom.com/wiki/Formatting_codes)** or **[Legacy string](https://minecraft.fandom.com/wiki/Formatting_codes) to [Text Component](../text-formatting)**.
 - `ComponentNbtSerializer` 
-  - Converts **[Text Component](../text-components) to [Nbt](../nbt)** or **[Nbt](../nbt) to [Text Component](../text-components)**.
+  - Converts **[Text Component](../text-formatting) to [Nbt](../nbt)** or **[Nbt](../nbt) to [Text Component](../text-formatting)**.
 
 ## NBT
 Helpful to convert Json or Snbt to Nbt and vice versa.  
