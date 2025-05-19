@@ -25,6 +25,10 @@ export default defineConfig({
             },
             { slug: 'watchdog' },
             {
+                label: 'Forwarding',
+                autogenerate: { directory: 'forwardings' }
+            },
+            {
                 label: 'Developing Plugins',
                 items: [
                     { slug: 'developing-plugins/development-kit' },
@@ -43,10 +47,6 @@ export default defineConfig({
                     {
                         label: 'Network',
                         autogenerate: { directory: 'developing-plugins/network' }
-                    },
-                    {
-                        label: 'Forwarding',
-                        autogenerate: { directory: 'developing-plugins/forwarding' }
                     },
                     { slug: 'developing-plugins/serializers' }
                 ],

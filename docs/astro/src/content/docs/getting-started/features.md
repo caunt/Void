@@ -29,15 +29,15 @@ This page provides an overview of the features supported or planned to implement
 | Pocket Edition Alpha | &#x274C; | &#x274C;  | &#x274C; | &#x274C; |
 
 ### Forwardings
-| Forwarding        | Supported | WIP      |
-| :---------------- | :------:  | :------: |
-| None (Offline)    | &#x2705;  | &#x2705; |
-| Legacy (Bungee)   | &#x274C;  | &#x2705; |
-| Modern (Velocity) | &#x2705;  | &#x2705; |
-| Online (PK)       | &#x2705;  | &#x2705; |
+| Forwarding                                          | Supported | WIP      |
+| :-------------------------------------------------- | :------:  | :------: |
+| [**None (Offline)**](../../forwardings/comparison)  | &#x2705;  | &#x2705; |
+| [**Legacy (Bungee)**](../../forwardings/bungee)     | &#x274C;  | &#x2705; |
+| [**Modern (Velocity)**](../../forwardings/velocity) | &#x2705;  | &#x2705; |
+| [**Online (PK)**](../../forwardings/online)         | &#x2705;  | &#x2705; |
 
 :::tip[Online (Private Key)]
-A new type of forwarding being developed.  
+A new type of [**forwarding**](../../forwardings/online) being developed.  
 It allows to play through the proxy on servers that are configured with online mode.  
 Server must safely share its own private key, so proxy can provide API to plugins.  
 If no key provided, you still can play through proxy, but API will be very limited.
