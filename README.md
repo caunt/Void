@@ -16,7 +16,7 @@
   </a>
   <br>
   <a href="https://void.caunt.world/">
-    <img alt="Greetings!" width="200" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/astro/public/logo-text.svg">
+    <img alt="Greetings!" width="400" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/astro/public/logo-text-horizontal.svg">
   </a>
 </h1>
 
