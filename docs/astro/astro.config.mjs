@@ -39,6 +39,7 @@ export default defineConfig({
                     { slug: 'developing-plugins/commands' },
                     { slug: 'developing-plugins/text-formatting' },
                     { slug: 'developing-plugins/nbt' },
+                    { slug: 'developing-plugins/configuration' },
                     {
                         label: 'Network',
                         autogenerate: { directory: 'developing-plugins/network' }
