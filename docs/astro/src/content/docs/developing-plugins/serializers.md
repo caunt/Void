@@ -29,7 +29,7 @@ Json is not recommended because it's properties types conversion is guessed by b
 	"value": 1
 }
 ```
-This 'value' number does not specify is it a byte, short, int or long. So in deserialization time, parser checks if it firs in byte, short, int or long, and uses the first Nbt Tag Type that fits.
+This 'value' number does not specify if it is a byte, short, int or long. So in deserialization time, parser checks if it fits in byte, short, int or long, and uses the first Nbt Tag Type that fits.
 
 On other hand, Snbt specifies the type of the value. 
 ```json
