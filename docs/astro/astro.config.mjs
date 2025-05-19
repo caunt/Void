@@ -23,11 +23,11 @@ export default defineConfig({
                 label: 'Configuration',
                 autogenerate: { directory: 'configuration' }
             },
-            { slug: 'watchdog' },
             {
                 label: 'Forwarding',
                 autogenerate: { directory: 'forwardings' }
             },
+            { slug: 'watchdog' },
             {
                 label: 'Developing Plugins',
                 items: [
