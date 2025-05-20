@@ -13,13 +13,13 @@ Modern forwarding was updated multiple times, enabling new features and fixing b
 :::
 
 :::note[Mods]
-Modern forwarding does not support mods officially, but community has created some mods implementing it's protocol, such as [Proxy Compatible Forge](https://github.com/adde0109/Proxy-Compatible-Forge).
+Velocity forwarding is not supported by mod loaders, however community has created some mods implementing it's protocol, such as [Proxy Compatible Forge](https://github.com/adde0109/Proxy-Compatible-Forge).
 :::
 
 :::caution[Limitations]
-- Servers have to run in offline mode
-- You have to install a plugin, mod, or server with built-in implementation
-- Proxy must authenticate the Mojang player on proxy side
+- Servers have to run in offline mode.
+- You have to install a plugin, mod, or server with built-in implementation.
+- Proxy must authenticate the Mojang player on proxy side.
 :::
 
 ## Configuration
