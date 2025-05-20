@@ -21,6 +21,8 @@ class MySettings
 ```
 
 ## Loading Configuration
+Inject `IConfigurationService` into your plugin or service constructor.  
+Then use `GetAsync<T>()` method to get the configuration instance.
 ```csharp
 public class MyPlugin(IConfigurationService configs) : IPlugin
 {
@@ -58,7 +60,7 @@ All changes to the instance will be automatically saved to the configuration fil
 :::
 
 ## Decoration
-It is possible to decorate configuration properties with comments.
+It is possible to decorate configuration properties with `ConfigurationProperty` attribute.
 ```csharp
 public class MySettings
 {
@@ -67,7 +69,7 @@ public class MySettings
 }
 ```
 
-Also you can set custom name for the configuration file:
+Also you can set custom name for the configuration file with `RootConfiguration` attribute.
 ```csharp
 [RootConfiguration("settings")]
 public class MySettings
@@ -78,7 +80,7 @@ public class MySettings
 
 ## Keyed Configuration
 If you want to save multiple instances of the same configuration, you can use keyed configuration.  
-For example, if you want to save different settings per-player, you can use the following example:
+To save different settings per-player, you can use the following example:
 ```csharp
 public class MyPlugin(IConfigurationService configs) : IPlugin
 {
