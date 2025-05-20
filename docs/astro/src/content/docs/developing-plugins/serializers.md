@@ -10,7 +10,7 @@ Prefer using [**`Serialize` methods**](../text-formatting/#converting-components
 - `ComponentJsonSerializer` 
   - Converts **[Text Component](../text-formatting) to Json** or **Json to [Text Component](../text-formatting)**.
 - `ComponentLegacySerializer` 
-  - Converts **[Text Component](../text-formatting) to [Legacy string](https://minecraft.fandom.com/wiki/Formatting_codes)** or **[Legacy string](https://minecraft.fandom.com/wiki/Formatting_codes) to [Text Component](../text-formatting)**.
+  - Converts **[Text Component](../text-formatting) to [Legacy string](../text-formatting#formatting-codes)** or **[Legacy string](../text-formatting#formatting-codes) to [Text Component](../text-formatting)**.
 - `ComponentNbtSerializer` 
   - Converts **[Text Component](../text-formatting) to [Nbt](../nbt)** or **[Nbt](../nbt) to [Text Component](../text-formatting)**.
 
@@ -31,7 +31,7 @@ Json is not recommended because it's properties types conversion is guessed by b
 ```
 This 'value' number does not specify if it is a byte, short, int or long. So in deserialization time, parser checks if it fits in byte, short, int or long, and uses the first Nbt Tag Type that fits.
 
-On other hand, Snbt specifies the type of the value. 
+On other hand, Snbt specifies concrete type of the value. 
 ```json
 {
 	"value": 1b
