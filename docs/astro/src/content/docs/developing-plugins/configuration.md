@@ -80,7 +80,7 @@ public class MySettings
 
 ## Keyed Configuration
 If you want to save multiple instances of the same configuration, you can use keyed configuration.  
-To save different settings per-player, you can use the following example:
+To save different settings per-player, use the following example:
 ```csharp
 public class MyPlugin(IConfigurationService configs) : IPlugin
 {
