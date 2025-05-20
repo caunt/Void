@@ -34,7 +34,7 @@ This 'value' number does not specify if it is a byte, short, int or long. So in 
 On other hand, Snbt specifies concrete type of the value. 
 ```json
 {
-	"value": 1b
+	value: 1b
 }
 ```
 :::
