@@ -10,8 +10,8 @@ Forwarding is a feature to pass player's information from proxy to server, such 
 ## None (Offline)
 Without any forwarding enabled, the server will use player's offline UUID, name and IP address of the Void proxy.
 
-## Legacy (Bungee)
-One of the oldest forwarding modes, developed by [BungeeCord](https://github.com/SpigotMC/BungeeCord).  
+## Legacy (BungeeCord)
+One of the oldest forwarding modes, developed by [SpigotMC](https://github.com/SpigotMC/BungeeCord).  
 Learn how to configure it in the [**Legacy forwarding**](../legacy) page.
 
 ## Modern (Velocity)
