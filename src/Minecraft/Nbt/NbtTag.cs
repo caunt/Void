@@ -84,14 +84,16 @@ public abstract record NbtTag
 
     protected string ToSnbt() => NbtStringSerializer.Serialize(this);
 
-    public static NbtCompound ParseCompound(string data)
+    public static NbtTag Parse(string data)
     {
-        return StringNbt.Parse(data);
-    }
+        var trimmed = data.TrimStart();
 
-    public static NbtList ParseList(string data)
-    {
-        return StringNbt.ParseList(data);
+        if (trimmed.StartsWith('{'))
+            return StringNbt.Parse(data);
+        else if (trimmed.StartsWith('['))
+            return StringNbt.ParseList(data);
+        else
+            throw new FormatException($"Only NbtCompound and NbtList can be parsed from Snbt. Provided value: {data}");
     }
 
     public static long Parse(ReadOnlyMemory<byte> data, out NbtTag result, bool readName = false, NbtFormatOptions formatOptions = NbtFormatOptions.Java)
