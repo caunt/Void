@@ -19,7 +19,7 @@ Helpful to convert Json or Snbt to Nbt and vice versa.
 - `NbtJsonSerializer` 
   - Converts **[Nbt](../nbt) to Json** or **Json to [Nbt](../nbt)**.
 - `NbtStringSerializer` - 
-  - Converts **[Nbt](../nbt) to [Snbt](https://minecraft.fandom.com/wiki/NBT_format#SNBT_format)** or **[Snbt](https://minecraft.fandom.com/wiki/NBT_format#SNBT_format) to [Nbt](../nbt)**.
+  - Converts **[Nbt](../nbt) to [Snbt](../nbt/#snbt)** or **[Snbt](../nbt/#snbt) to [Nbt](../nbt)**.
 
 :::caution[Prefer deserializing from Snbt]
 Json is not recommended because it's properties types conversion is guessed by bounds of the value.  
