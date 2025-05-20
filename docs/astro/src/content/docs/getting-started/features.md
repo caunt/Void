@@ -31,9 +31,9 @@ This page provides an overview of the features supported or planned to implement
 ### Forwardings
 | Forwarding                                          | Supported | WIP      |
 | :-------------------------------------------------- | :------:  | :------: |
-| [**None (Offline)**](../../forwardings/comparison)  | &#x2705;  | &#x2705; |
-| [**Legacy (Bungee)**](../../forwardings/bungee)     | &#x274C;  | &#x2705; |
-| [**Modern (Velocity)**](../../forwardings/velocity) | &#x2705;  | &#x2705; |
+| [**None (Offline)**](../../forwardings/overview)    | &#x2705;  | &#x2705; |
+| [**Legacy (Bungee)**](../../forwardings/legacy)     | &#x274C;  | &#x2705; |
+| [**Modern (Velocity)**](../../forwardings/modern)   | &#x2705;  | &#x2705; |
 | [**Online (PK)**](../../forwardings/online)         | &#x2705;  | &#x2705; |
 
 :::tip[Online (Private Key)]

@@ -1,6 +1,6 @@
 ---
-title: Velocity (Modern)
-description: Learn how to configure the Velocity (Modern) forwarding.
+title: Modern (Velocity)
+description: Learn how to configure the Modern (Velocity) forwarding.
 sidebar:
   order: 2
 ---
@@ -24,4 +24,4 @@ Modern forwarding does not support mods officially, but community has created so
 
 ## Configuration
 To configure the Velocity forwarding, you need to set up 'Secret' key on both proxy and servers sides.
-Check the [**In-file configuration**](/configuration/in-file/#velocity-modern) for more details.
+Check the [**In-file configuration**](/configuration/in-file/#modern-velocity) for more details.

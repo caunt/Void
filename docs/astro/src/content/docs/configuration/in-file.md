@@ -56,7 +56,7 @@ Port = 80
 
 Forwarding helps to forward player data (IP, UUID, Skin, etc.) to the backend server.
 
-### Velocity (Modern)
+### Modern (Velocity)
 ```toml
 // configs/Velocity/Settings.toml
 # Enables Velocity forwarding
