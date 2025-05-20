@@ -37,7 +37,6 @@ Servers = [
 ```
 
 ## Watchdog
-
 [**Watchdog**](../../watchdog) is a built-in HTTP server that allows you to check status or control the proxy.
 
 ```toml
@@ -53,10 +52,11 @@ Port = 80
 ```
 
 ## Forwarding
-
 Forwarding helps to forward player data (IP, UUID, Skin, etc.) to the backend server.
 
 ### Modern (Velocity)
+Read more in [**Modern (Velocity)**](../../forwardings/modern) forwarding.
+
 ```toml
 // configs/Velocity/Settings.toml
 # Enables Velocity forwarding
