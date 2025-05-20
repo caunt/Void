@@ -64,3 +64,19 @@ var tag = new NbtCompound
 var stream = tag.AsStream();
 var bytes = stream.ToArray();
 ```
+
+## Snbt
+Snbt is a human-readable format for NBT data.
+[Read more about Snbt](https://minecraft.wiki/w/NBT_format#SNBT_format).
+
+### Converting Nbt to Snbt
+```csharp
+var tag = new NbtCompound { ["key"] = new NbtString("value") };
+Console.WriteLine(tag.ToString()); // Output: {key:"value"}
+```
+
+### Converting Snbt to Nbt
+```csharp
+var snbt = "{key:\"value\"}";
+var tag = NbtTag.Parse(snbt);
+```
