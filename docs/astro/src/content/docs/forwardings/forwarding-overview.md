@@ -1,5 +1,5 @@
 ---
-title: Overview
+title: Forwarding Overview
 description: Learn the about Void forwarding modes.
 sidebar:
   order: 0
