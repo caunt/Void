@@ -1,6 +1,6 @@
 ---
 title: Links (Connections)
-description: Learn how to define and receive Packets (Messages).
+description: Learn about ILink lifetime and channels.
 sidebar:
   order: 0
 ---
