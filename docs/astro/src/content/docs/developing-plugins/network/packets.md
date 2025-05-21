@@ -87,6 +87,20 @@ public void OnMessageReceived(MessageReceivedEvent @event)
 }
 ```
 
+There is also a `MessageSentEvent` event that is triggered when the packet is already sent to the server or player.
+```csharp
+[Subscribe]
+public void OnMessageSent(MessageSentEvent @event)
+{
+    // Check if the message is a SetHeldItemClientboundPacket
+    if (@event.Message is not SetHeldItemClientboundPacket packet)
+        return;
+        
+    // Print the slot value sent to the player
+    Console.WriteLine($"Sent {nameof(SetHeldItemClientboundPacket)} with Slot: {packet.Slot}");
+}
+```
+
 ## Sending Packets
 There are 3 ways to send packets in Void:
 - Directly to the `IPlayer` instance
@@ -123,3 +137,19 @@ await player.GetLink().SendPacketAsync(Side.Client, new SetHeldItemClientboundPa
 
 ## Complete Example
 Check out [**complete example**](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/Services/InventoryService.cs) for inventory service plugin that includes both clientbound and serverbound set held item packets.
+
+
+## Cancelling Packets
+You can cancel packets only at `MessageReceivedEvent` event.  
+Set `IEvent.Result` value to `true` to cancel packet sending to second side of the link.
+```csharp
+[Subscribe]
+public void OnMessageReceived(MessageReceivedEvent @event)
+{
+    if (@event.Message is not SetHeldItemClientboundPacket packet)
+        return;
+        
+    // Cancel the SetHeldItemClientboundPacket packet
+    @event.Result = true;
+}
+```
