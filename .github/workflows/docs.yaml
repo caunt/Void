@@ -37,3 +37,12 @@ jobs:
       - name: Build with DocFX
         run: docfx docs/docfx/docfx.json --verbose
         continue-on-error: true
+
+  validate:
+    environment: void
+    needs: push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: --verbose ${{ needs.push.outputs.page_url }} --github-token ${{ secrets.GITHUB_TOKEN }}
