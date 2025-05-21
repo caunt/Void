@@ -37,7 +37,7 @@ Servers = [
 ```
 
 ## Watchdog
-[**Watchdog**](../../watchdog) is a built-in HTTP server that allows you to check status or control the proxy.
+[**Watchdog**](/watchdog) is a built-in HTTP server that allows you to check status or control the proxy.
 
 ```toml
 // configs/Watchdog/Settings.toml
@@ -55,7 +55,7 @@ Port = 80
 Forwarding helps to forward player data (IP, UUID, Skin, etc.) to the backend server.
 
 ### Modern (Velocity)
-Read more in [**Modern (Velocity)**](../../forwardings/modern) forwarding.
+Read more in [**Modern (Velocity)**](/forwardings/modern) forwarding.
 
 ```toml
 // configs/Velocity/Settings.toml
@@ -69,11 +69,11 @@ Secret = "YourSecretKeyHere"
 ## Plugins Installation
 
 Plugins are compiled with the *.dll extension in any .NET compatible language.
-See the [**Plugin Development Kit**](../../developing-plugins/development-kit) section for more details.
+See the [**Plugin Development Kit**](/developing-plugins/development-kit) section for more details.
 
 - Directory `plugins` is the default location for plugins.
-- [**Environment variable**](../environment-variables) `VOID_PLUGINS` might be used to include URLs or Local Paths to plugins, separated by coma or semicolon.
-- [**Program argument**](../program-arguments) `--plugin` (short `-p`) might be used to include URL or Local Path to plugin.
+- [**Environment variable**](/configuration/environment-variables) `VOID_PLUGINS` might be used to include URLs or Local Paths to plugins, separated by coma or semicolon.
+- [**Program argument**](/configuration/program-arguments) `--plugin` (short `-p`) might be used to include URL or Local Path to plugin.
 
 Examples:
 ```bash

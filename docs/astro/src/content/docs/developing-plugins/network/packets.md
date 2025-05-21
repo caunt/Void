@@ -73,7 +73,7 @@ So the 0x4F packet id for `ProtocolVersion.MINECRAFT_1_20_2` means that this pac
 :::
 
 ## Receiving Packets
-Now that we have defined our packet, we can receive it with `MessageReceivedEvent` [**event**](../../events/listening-to-events/).
+Now that we have defined our packet, we can receive it with `MessageReceivedEvent` [**event**](/developing-plugins/events/listening-to-events/).
 ```csharp
 [Subscribe]
 public void OnMessageReceived(MessageReceivedEvent @event)
@@ -105,7 +105,7 @@ public void OnMessageSent(MessageSentEvent @event)
 There are 3 ways to send packets in Void:
 - Directly to the `IPlayer` instance
 - To the `INetworkChannel` of server or player 
-- To the `ILink` connection between the server and player
+- To the [**`ILink`**](/developing-plugins/network/links) connection between the server and player
 
 ### Sending Packets to the Player
 You can send packets to the player with `SendPacketAsync` method on `IPlayer` instance.
@@ -119,9 +119,9 @@ You can send packets to the server with `ILink.ServerChannel` instance.
 await player.GetLink().ServerChannel.SendPacketAsync(new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
 ```
 
-### Sending Packets to the [Link](../links)
+### Sending Packets to the [**`ILink`**](/developing-plugins/network/links)
 You can send packets to the link with `ILink.SendPacketAsync` method.
-`ILink` will automatically determine the destination of the packet based on the packet interface.  
+[**`ILink`**](/developing-plugins/network/links) will automatically determine the destination of the packet based on the packet interface.  
 - If the packet has `IMinecraftClientboundPacket<TPacket>` interface, it will be sent to the client.
 - If the packet has `IMinecraftServerboundPacket<TPacket>` interface, it will be sent to the server.
 - If the packet has both interfaces, it will be sent only to the client.

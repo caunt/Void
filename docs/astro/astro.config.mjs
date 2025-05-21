@@ -6,6 +6,8 @@ import sitemap from '@astrojs/sitemap';
 import { ExpressiveCodeTheme } from '@astrojs/starlight/expressive-code'
 import fs from 'node:fs'
 
+import starlightLinksValidator from 'starlight-links-validator'
+
 const googleAnalyticsId = 'G-3KT5D46L8T'
 
 // https://astro.build/config
@@ -103,7 +105,8 @@ export default defineConfig({
             src: '/public/logo.svg'
         },
         favicon: '/logo.svg',
-        customCss: ['./src/assets/landing.css']
+        customCss: ['./src/assets/landing.css'],
+        plugins: [starlightLinksValidator()]
     }), sitemap({
         changefreq: 'daily',
         priority: 1,
