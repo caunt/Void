@@ -22,8 +22,9 @@ jobs:
       - name: Validate links
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --verbose --github-token ${{ secrets.GITHUB_TOKEN }} --base dist --exclude-all-private dist
+          args: --verbose --github-token ${{ secrets.GITHUB_TOKEN }} --base-url dist --exclude-all-private dist
           workingDirectory: docs
+          lycheeVersion: nightly
       - name: Deploy GitHub Pages site
         id: deployment
         uses: actions/deploy-pages@v4
