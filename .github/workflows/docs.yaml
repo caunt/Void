@@ -19,6 +19,8 @@ jobs:
         uses: withastro/action@v4
         with:
           path: docs/astro
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: Validate links
         uses: lycheeverse/lychee-action@v2
         with:
