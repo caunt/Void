@@ -22,7 +22,7 @@ jobs:
       - name: Validate links
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --verbose --github-token ${{ secrets.GITHUB_TOKEN }} docs/dist
+          args: --verbose --github-token ${{ secrets.GITHUB_TOKEN }} --root-dir "${{ github.workspace }}/docs/dist" docs/dist
       - name: Deploy GitHub Pages site
         id: deployment
         uses: actions/deploy-pages@v4
