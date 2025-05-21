@@ -10,8 +10,6 @@ jobs:
     environment:
       name: void
       url: ${{ steps.deployment.outputs.page_url }}
-    outputs:
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +19,10 @@ jobs:
         uses: withastro/action@v4
         with:
           path: docs/astro
+      - name: Validate links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --verbose --github-token ${{ secrets.GITHUB_TOKEN }} docs/dist
       - name: Deploy GitHub Pages site
         id: deployment
         uses: actions/deploy-pages@v4
@@ -39,12 +41,4 @@ jobs:
       - name: Build with DocFX
         run: docfx docs/docfx/docfx.json --verbose
         continue-on-error: true
-
-  validate:
-    environment: void
-    needs: push
-    runs-on: ubuntu-latest
-    steps:
-      - uses: lycheeverse/lychee-action@v2
-        with:
-          args: --verbose --github-token ${{ secrets.GITHUB_TOKEN }} ${{ needs.push.outputs.url }}
+        
