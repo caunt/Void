@@ -87,7 +87,7 @@ public void OnMessageReceived(MessageReceivedEvent @event)
 }
 ```
 
-There is also a `MessageSentEvent` event that is triggered when the packet is already sent to the server or player.
+There is also a `MessageSentEvent` event that is triggered when the packet is already sent to the receiver.
 ```csharp
 [Subscribe]
 public void OnMessageSent(MessageSentEvent @event)
@@ -104,23 +104,23 @@ public void OnMessageSent(MessageSentEvent @event)
 ## Sending Packets
 There are 3 ways to send packets in Void:
 - Directly to the `IPlayer` instance
-- To the server / player `IMinecraftChannel`
-- To the `ILink` connected between the server and player
+- To the `INetworkChannel` of server or player 
+- To the `ILink` connection between the server and player
 
 ### Sending Packets to the Player
-You can send packets manually to the player with `SendPacketAsync` method on `IPlayer` instance.
+You can send packets to the player with `SendPacketAsync` method on `IPlayer` instance.
 ```csharp
 await player.SendPacketAsync(new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
 ```
 
 ### Sending Packets to the Server
-You can send packets manually to the server with `ILink.ServerChannel` instance.
+You can send packets to the server with `ILink.ServerChannel` instance.
 ```csharp
 await player.GetLink().ServerChannel.SendPacketAsync(new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
 ```
 
 ### Sending Packets to the [Link](../links)
-You can send packets manually to the link with `ILink.SendPacketAsync` method.
+You can send packets to the link with `ILink.SendPacketAsync` method.
 `ILink` will automatically determine the destination of the packet based on the packet interface.  
 - If the packet has `IMinecraftClientboundPacket<TPacket>` interface, it will be sent to the client.
 - If the packet has `IMinecraftServerboundPacket<TPacket>` interface, it will be sent to the server.
@@ -130,7 +130,7 @@ You can send packets manually to the link with `ILink.SendPacketAsync` method.
 await player.GetLink().SendPacketAsync(new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
 ```
 
-When you want to explicitly send a packet to the server or client, `SendPacketAsync` has overloads that specifies the Side of destination.
+When you want to explicitly send a packet to the server or client, `SendPacketAsync` has overload that specifies the Side of destination.
 ```csharp
 await player.GetLink().SendPacketAsync(Side.Client, new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
 ```
@@ -140,8 +140,8 @@ Check out [**complete example**](https://github.com/caunt/Void/blob/main/src/Plu
 
 
 ## Cancelling Packets
-You can cancel packets only at `MessageReceivedEvent` event.  
-Set `IEvent.Result` value to `true` to cancel packet sending to second side of the link.
+You can cancel packets in `MessageReceivedEvent` event.  
+Set `IEvent.Result` value to `true` to prevent sending packet to receiver.
 ```csharp
 [Subscribe]
 public void OnMessageReceived(MessageReceivedEvent @event)
