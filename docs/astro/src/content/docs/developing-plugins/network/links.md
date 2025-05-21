@@ -17,7 +17,7 @@ However, the player might be just redirecting to another server, so **new** link
 
 ## Channels
 Channels are used to send or receive data from **one** side of the link.
-So separate `IMinecraftChannel` is created for `IPlayer` and separate `IMinecraftChannel` is created for `IServer`.
+So separate `INetworkChannel` is created for `IPlayer` and separate `INetworkChannel` is created for `IServer`.
 
 [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) always has 2 channels that never change in whole lifetime of the link: `ILink.PlayerChannel` and `ILink.ServerChannel`.
 
