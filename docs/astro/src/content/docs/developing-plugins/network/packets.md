@@ -105,7 +105,7 @@ You can send packets manually to the server with `ILink.ServerChannel` instance.
 await player.GetLink().ServerChannel.SendPacketAsync(new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
 ```
 
-### Sending Packets to the Link
+### Sending Packets to the [Link](../links)
 You can send packets manually to the link with `ILink.SendPacketAsync` method.
 `ILink` will automatically determine the destination of the packet based on the packet interface.  
 - If the packet has `IMinecraftClientboundPacket<TPacket>` interface, it will be sent to the client.
