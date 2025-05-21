@@ -32,7 +32,7 @@ Plugin can override it by providing custom implementation of `ILink` with `Creat
 [Subscribe]
 public void OnCreateLink(CreateLinkEvent @event)
 {
-	@event.Result = new FasterLinkImplementation(@event.Player, @event.Server);
+    @event.Result = new FasterLinkImplementation(@event.Player, @event.Server);
 }
 ```
 
