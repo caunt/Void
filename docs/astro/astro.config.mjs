@@ -66,6 +66,20 @@ export default defineConfig({
         ],
         head: [
             {
+                tag: 'meta',
+                attrs: {
+                    property: 'og:image',
+                    content: 'https://void.caunt.world/logo-text-horizontal.svg'
+                }
+            },
+            {
+                tag: 'meta',
+                attrs: {
+                    property: 'twitter:image',
+                    content: 'https://void.caunt.world/logo-text-horizontal.svg'
+                }
+            },
+            {
                 tag: 'script',
                 attrs: { src: `https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}` }
             },
