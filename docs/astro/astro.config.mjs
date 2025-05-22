@@ -69,14 +69,14 @@ export default defineConfig({
                 tag: 'meta',
                 attrs: {
                     property: 'og:image',
-                    content: 'https://void.caunt.world/logo-text-horizontal.svg'
+                    content: 'https://void.caunt.world/logo-text-horizontal.1024x512.png'
                 }
             },
             {
                 tag: 'meta',
                 attrs: {
                     property: 'twitter:image',
-                    content: 'https://void.caunt.world/logo-text-horizontal.svg'
+                    content: 'https://void.caunt.world/logo-text-horizontal.1024x512.png'
                 }
             },
             {
