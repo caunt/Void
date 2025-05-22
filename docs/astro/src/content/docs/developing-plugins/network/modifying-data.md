@@ -21,17 +21,17 @@ We will use previously defined [**Set Held Item (clientbound)**](/developing-plu
 [Subscribe]
 public async ValueTask OnMessageReceived(MessageReceivedEvent @event, CancellationToken cancellationToken)
 {
-	if (@event.Message is not SetHeldItemClientboundPacket packet)
-		return;
-
-	// Cancel the original packet
-	@event.Cancel();
-
-	// Modify the packet
-	packet.Slot = 1;
-
-	// Send the modified packet manually
-	await @event.Player.SendPacketAsync(packet, cancellationToken);
+    if (@event.Message is not SetHeldItemClientboundPacket packet)
+        return;
+    
+    // Cancel the original packet
+    @event.Cancel();
+    
+    // Modify the packet
+    packet.Slot = 1;
+    
+    // Send the modified packet manually
+    await @event.Player.SendPacketAsync(packet, cancellationToken);
 }
 ```
 

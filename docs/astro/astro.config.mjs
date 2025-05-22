@@ -103,7 +103,8 @@ export default defineConfig({
         },
         lastUpdated: true,
         expressiveCode: {
-            themes: [ExpressiveCodeTheme.fromJSONString(fs.readFileSync(new URL(`./themes/visual-studio-2019-dark.jsonc`, import.meta.url), 'utf-8'))]
+            themes: [ExpressiveCodeTheme.fromJSONString(fs.readFileSync(new URL(`./themes/visual-studio-2019-dark.jsonc`, import.meta.url), 'utf-8'))],
+            tabWidth: 4
         },
         logo: {
             src: '/public/logo.svg'
