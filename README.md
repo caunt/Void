@@ -23,7 +23,7 @@
 :star: Minecraft proxy designed to work through all versions and all mods.
 
 ### :floppy_disk: **Download:**
-:green_circle: [**Stable Development Builds**](https://github.com/caunt/Void/releases)  
+:green_circle: [**Stable Development Builds**](https://void.caunt.world/download/)  
 :yellow_circle: [**Unstable Daily Builds**](https://github.com/caunt/Void/actions)
 
 ### **Getting Started:**
