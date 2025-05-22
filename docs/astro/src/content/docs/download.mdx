@@ -1,0 +1,69 @@
+---
+title: Downloads
+description: Download the Void Proxy.
+template: splash
+---
+
+import { getCollection } from 'astro:content';
+
+export const releases = await getCollection('releases');
+export const [firstRelease, ...olderReleases] = releases;
+export const platforms = [
+    { "id": "linux",        "title": "Linux",           "pattern": "-linux-",        "icon": "linux"        },
+    { "id": "windows",      "title": "Windows",         "pattern": "-win-",          "icon": "seti:windows" },
+    { "id": "osx",          "title": "OSX",             "pattern": "-osx-",          "icon": "apple"        },
+    { "id": "linux-bionic", "title": "Linux (Android)", "pattern": "-linux-bionic-", "icon": "linux"        },
+    { "id": "linux-musl",   "title": "Linux (Alpine)",  "pattern": "-linux-musl-",   "icon": "linux"        }
+];
+
+export const assetFilter = (asset, platform) => asset.name.includes(platform.pattern) && platforms.every(other => platform.pattern.includes(other.pattern) || !asset.name.includes(other.pattern));
+
+import { 
+    Card,
+    LinkCard,
+    CardGrid,
+    Tabs,
+    TabItem,
+    Steps
+} from '@astrojs/starlight/components';
+
+import { Markdown } from 'astro-remote';
+
+{
+    <Card title={firstRelease.data.name} icon="star">
+        <Markdown content={firstRelease.data.body.split('\n').slice(3).join('\n')} />
+        <Tabs syncKey="_key">
+            {platforms.map(platform => 
+                <TabItem label={platform.title} icon={platform.icon}>
+                    {firstRelease.data.assets
+                        .filter(asset => assetFilter(asset, platform))
+                        .map(asset => 
+                            <LinkCard title={`Download ${asset.name}`} href={asset.browser_download_url} />
+                        )}
+                </TabItem>
+            )}
+        </Tabs>
+    </Card>
+}
+
+<details>
+    <summary>Older releases</summary>
+
+    {olderReleases.map(entry => 
+        <Card title={entry.data.name} icon="seti:css">
+            <Tabs syncKey="_key">
+                {platforms.map(platform => 
+                    <TabItem label={platform.title} icon={platform.icon}>
+                        <CardGrid>
+                            {entry.data.assets
+                                .filter(asset => assetFilter(asset, platform))
+                                .map(asset => 
+                                    <LinkCard title={`Download ${asset.name}`} href={asset.browser_download_url} />
+                            )}
+                        </CardGrid>
+                    </TabItem>
+                )}
+            </Tabs>
+        </Card>
+    )}
+</details>
