@@ -4,7 +4,7 @@ description: Download the Void Proxy.
 template: splash
 ---
 
-import { Aside, Card, LinkCard, CardGrid, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
+import { Aside, Badge, Card, LinkCard, CardGrid, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 import { Markdown } from 'astro-remote';
 import { getCollection } from 'astro:content';
 
@@ -57,7 +57,10 @@ Downloads: {releases.reduce((acc, entry) => acc + entry.data.assets.reduce((acc,
     return (
         <>
             <Card title={latest ? `Latest (${entry.data.name})` : entry.data.name} icon={latest ? "star" : "seti:css"}>
-                {latest && <Markdown content={entry.data.body.split('\n').slice(3).join('\n')} />}
+                <Badge text={`Release Date: ${new Date(entry.data.published_at).toLocaleDateString()}`} variant="success" />
+                <br/>
+                <Badge text={`Downloads: ${entry.data.assets.reduce((acc, asset) => acc + asset.download_count, 0)}`} variant="note" />
+                {latest && <Markdown content={entry.data.body.split('\n').slice(3).join('\n').replace('#', '###')} />}
                 <Tabs syncKey="_key">
                     {platforms.map(platform => {
                         const cards = entry.data.assets
