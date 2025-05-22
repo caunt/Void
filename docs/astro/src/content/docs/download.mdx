@@ -9,11 +9,11 @@ import { getCollection } from 'astro:content';
 export const releases = await getCollection('releases');
 export const [firstRelease, ...olderReleases] = releases;
 export const platforms = [
-    { "id": "linux",        "title": "Linux",           "pattern": "-linux-",        "icon": "linux"        },
     { "id": "windows",      "title": "Windows",         "pattern": "-win-",          "icon": "seti:windows" },
+    { "id": "linux",        "title": "Linux",           "pattern": "-linux-",        "icon": "linux"        },
     { "id": "osx",          "title": "OSX",             "pattern": "-osx-",          "icon": "apple"        },
-    { "id": "linux-bionic", "title": "Linux (Android)", "pattern": "-linux-bionic-", "icon": "linux"        },
-    { "id": "linux-musl",   "title": "Linux (Alpine)",  "pattern": "-linux-musl-",   "icon": "linux"        }
+    // { "id": "linux-bionic", "title": "Linux (Android)", "pattern": "-linux-bionic-", "icon": "linux"        },
+    // { "id": "linux-musl",   "title": "Linux (Alpine)",  "pattern": "-linux-musl-",   "icon": "linux"        }
 ];
 
 export const assetFilter = (asset, platform) => asset.name.includes(platform.pattern) && platforms.every(other => platform.pattern.includes(other.pattern) || !asset.name.includes(other.pattern));
