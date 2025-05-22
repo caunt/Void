@@ -26,6 +26,10 @@ export default defineConfig({
                 autogenerate: { directory: 'configuration' }
             },
             {
+                label: 'Containers',
+                autogenerate: { directory: 'containers' }
+            },
+            {
                 label: 'Forwarding',
                 autogenerate: { directory: 'forwardings' }
             },
@@ -36,10 +40,12 @@ export default defineConfig({
                     { slug: 'developing-plugins/development-kit' },
                     {
                         label: 'Events',
+                        collapsed: true,
                         autogenerate: { directory: 'developing-plugins/events' }
                     },
                     {
                         label: 'Services',
+                        collapsed: true,
                         autogenerate: { directory: 'developing-plugins/services' }
                     },
                     { slug: 'developing-plugins/commands' },
@@ -48,14 +54,12 @@ export default defineConfig({
                     { slug: 'developing-plugins/configuration' },
                     {
                         label: 'Network',
+                        collapsed: true,
+                        badge: { text: 'expert', variant: 'danger' },
                         autogenerate: { directory: 'developing-plugins/network' }
                     },
                     { slug: 'developing-plugins/serializers' }
                 ],
-            },
-            {
-                label: 'Containers',
-                autogenerate: { directory: 'containers' }
             },
             { slug: 'faq' },
             { slug: 'troubleshooting' }
