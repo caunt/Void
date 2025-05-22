@@ -29,41 +29,35 @@ import {
 
 import { Markdown } from 'astro-remote';
 
-{
-    <Card title={firstRelease.data.name} icon="star">
-        <Markdown content={firstRelease.data.body.split('\n').slice(3).join('\n')} />
+<Card title={firstRelease.data.name} icon="star">
+    <Markdown content={firstRelease.data.body.split('\n').slice(3).join('\n')} />
+    <Tabs syncKey="_key">
+        {platforms.map(platform => 
+            <TabItem label={platform.title} icon={platform.icon}>
+                {firstRelease.data.assets
+                    .filter(asset => assetFilter(asset, platform))
+                    .map(asset => 
+                        <LinkCard title={`Download ${asset.name}`} href={asset.browser_download_url} />
+                    )}
+            </TabItem>
+        )}
+    </Tabs>
+</Card>
+
+{olderReleases.map(entry => 
+    <Card title={entry.data.name} icon="seti:css">
         <Tabs syncKey="_key">
             {platforms.map(platform => 
                 <TabItem label={platform.title} icon={platform.icon}>
-                    {firstRelease.data.assets
-                        .filter(asset => assetFilter(asset, platform))
-                        .map(asset => 
-                            <LinkCard title={`Download ${asset.name}`} href={asset.browser_download_url} />
+                    <CardGrid>
+                        {entry.data.assets
+                            .filter(asset => assetFilter(asset, platform))
+                            .map(asset => 
+                                <LinkCard title={`Download ${asset.name}`} href={asset.browser_download_url} />
                         )}
+                    </CardGrid>
                 </TabItem>
             )}
         </Tabs>
     </Card>
-}
-
-<details>
-    <summary>Older releases</summary>
-
-    {olderReleases.map(entry => 
-        <Card title={entry.data.name} icon="seti:css">
-            <Tabs syncKey="_key">
-                {platforms.map(platform => 
-                    <TabItem label={platform.title} icon={platform.icon}>
-                        <CardGrid>
-                            {entry.data.assets
-                                .filter(asset => assetFilter(asset, platform))
-                                .map(asset => 
-                                    <LinkCard title={`Download ${asset.name}`} href={asset.browser_download_url} />
-                            )}
-                        </CardGrid>
-                    </TabItem>
-                )}
-            </Tabs>
-        </Card>
-    )}
-</details>
+)}
