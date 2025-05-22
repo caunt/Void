@@ -5,17 +5,7 @@ sidebar:
   order: 0
 ---
 
-[**Download**](https://github.com/caunt/Void/releases/latest/) latest release
-
-**Supported platforms**:
-
-| OS - Arch       | X64      | ARM64    | ARM      | X86      |
-|:---------------:|:--------:|:--------:|:--------:|:--------:|
-| Linux           | &#x2705; | &#x2705; | &#x2705; | &#x274C; |
-| Linux (Alpine)  | &#x2705; | &#x2705; | &#x2705; | &#x274C; |
-| Linux (Android) | &#x2705; | &#x2705; | &#x274C; | &#x274C; |
-| macOS           | &#x2705; | &#x2705; | &#x274C; | &#x274C; |
-| Windows         | &#x2705; | &#x2705; | &#x274C; | &#x2705; |
+[**Download**](/download) latest release
 
 ### Linux
 

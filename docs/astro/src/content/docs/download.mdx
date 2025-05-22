@@ -1,63 +1,77 @@
 ---
-title: Downloads
+title: Download
 description: Download the Void Proxy.
 template: splash
 ---
 
+import { Aside, Card, LinkCard, CardGrid, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
+import { Markdown } from 'astro-remote';
 import { getCollection } from 'astro:content';
 
 export const releases = await getCollection('releases');
-export const [firstRelease, ...olderReleases] = releases;
 export const platforms = [
     { "id": "windows",      "title": "Windows",         "pattern": "-win-",          "icon": "seti:windows" },
     { "id": "linux",        "title": "Linux",           "pattern": "-linux-",        "icon": "linux"        },
     { "id": "osx",          "title": "OSX",             "pattern": "-osx-",          "icon": "apple"        },
+    { "id": "pdk",          "title": "DevKit",          "pattern": "-devkit",        "icon": "vscode"       },
     // { "id": "linux-bionic", "title": "Linux (Android)", "pattern": "-linux-bionic-", "icon": "linux"        },
     // { "id": "linux-musl",   "title": "Linux (Alpine)",  "pattern": "-linux-musl-",   "icon": "linux"        }
 ];
 
 export const assetFilter = (asset, platform) => asset.name.includes(platform.pattern) && platforms.every(other => platform.pattern.includes(other.pattern) || !asset.name.includes(other.pattern));
+export const formatFileSize = bytes => {
+    if (bytes < 1024) 
+        return `${bytes} B`
+    
+    const units = ['KB','MB','GB','TB']
 
-import { 
-    Card,
-    LinkCard,
-    CardGrid,
-    Tabs,
-    TabItem,
-    Steps
-} from '@astrojs/starlight/components';
+    let size = bytes / 1024
+    let unitIndex = 0
 
-import { Markdown } from 'astro-remote';
+    while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024
+        unitIndex++
+    }
 
-<Card title={firstRelease.data.name} icon="star">
-    <Markdown content={firstRelease.data.body.split('\n').slice(3).join('\n')} />
-    <Tabs syncKey="_key">
-        {platforms.map(platform => 
-            <TabItem label={platform.title} icon={platform.icon}>
-                {firstRelease.data.assets
-                    .filter(asset => assetFilter(asset, platform))
-                    .map(asset => 
-                        <LinkCard title={`Download ${asset.name}`} href={asset.browser_download_url} />
+    return `${size.toFixed(1)} ${units[unitIndex]}`
+}
+
+<Aside type="tip" title="Thanks for choosing Void">
+****  
+Releases: {releases.length}  
+Downloads: {releases.reduce((acc, entry) => acc + entry.data.assets.reduce((acc, asset) => acc + asset.download_count, 0), 0).toLocaleString()}
+</Aside>
+
+### Platforms
+
+| OS - Arch       | X64      | ARM64    | ARM      | X86      |
+|:---------------:|:--------:|:--------:|:--------:|:--------:|
+| Linux           | &#x2705; | &#x2705; | &#x2705; | &#x274C; |
+| Linux (Alpine)  | &#x2705; | &#x2705; | &#x2705; | &#x274C; |
+| Linux (Android) | &#x2705; | &#x2705; | &#x274C; | &#x274C; |
+| macOS           | &#x2705; | &#x2705; | &#x274C; | &#x274C; |
+| Windows         | &#x2705; | &#x2705; | &#x274C; | &#x2705; |
+
+{releases.map((entry, index) => {
+    const latest = index === 0
+    return (
+            <Card title={latest ? `Latest (${entry.data.name})` : entry.data.name} icon={latest ? "star" : "seti:css"}>
+                {latest && <Markdown content={entry.data.body.split('\n').slice(3).join('\n')} />}
+                <Tabs syncKey="_key">
+                    {platforms.map(platform =>
+                        <TabItem label={platform.title} icon={platform.icon}>
+                            <CardGrid>
+                                {entry.data.assets
+                                    .filter(asset => assetFilter(asset, platform))
+                                    .sort((a, b) => b.download_count - a.download_count)
+                                    .map(asset =>
+                                        <LinkCard title={`Download ${asset.name}`} href={asset.browser_download_url} description={`Downloads: ${asset.download_count} Size: ${formatFileSize(asset.size)}`} />
+                                    )}
+                            </CardGrid>
+                        </TabItem>
                     )}
-            </TabItem>
-        )}
-    </Tabs>
-</Card>
-
-{olderReleases.map(entry => 
-    <Card title={entry.data.name} icon="seti:css">
-        <Tabs syncKey="_key">
-            {platforms.map(platform => 
-                <TabItem label={platform.title} icon={platform.icon}>
-                    <CardGrid>
-                        {entry.data.assets
-                            .filter(asset => assetFilter(asset, platform))
-                            .map(asset => 
-                                <LinkCard title={`Download ${asset.name}`} href={asset.browser_download_url} />
-                        )}
-                    </CardGrid>
-                </TabItem>
-            )}
-        </Tabs>
-    </Card>
+                </Tabs>
+            </Card>
+        )
+    }
 )}
