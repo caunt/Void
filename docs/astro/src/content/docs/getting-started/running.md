@@ -5,9 +5,10 @@ sidebar:
   order: 0
 ---
 
-[**Download**](/download) latest release
+## Download
+Download [**latest version here**](/download).
 
-### Linux
+## Linux
 
 Set the executable permission
 ```bash
@@ -19,20 +20,20 @@ Run the executable
 ./void-linux-x64 [optional arguments]
 ```
 
-### Android
+## Android
 
 Run the [**Termux**](https://play.google.com/store/apps/details?id=com.termux) or any other terminal emulator.
 
 Follow instructions for Linux, but use "bionic" version of binary.
 
-### Alpine
+## Alpine
 
 Follow instructions for Linux, but use "musl" version of binary.
 
-### macOS
+## macOS
 
 Follow instructions for Linux, but use "osx" version of binary.
 
-### Windows
+## Windows
 
 Run the executable, simple as that.
