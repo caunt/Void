@@ -55,23 +55,33 @@ Downloads: {releases.reduce((acc, entry) => acc + entry.data.assets.reduce((acc,
 {releases.map((entry, index) => {
     const latest = index === 0
     return (
+        <>
             <Card title={latest ? `Latest (${entry.data.name})` : entry.data.name} icon={latest ? "star" : "seti:css"}>
                 {latest && <Markdown content={entry.data.body.split('\n').slice(3).join('\n')} />}
                 <Tabs syncKey="_key">
-                    {platforms.map(platform =>
-                        <TabItem label={platform.title} icon={platform.icon}>
-                            <CardGrid>
-                                {entry.data.assets
-                                    .filter(asset => assetFilter(asset, platform))
-                                    .sort((a, b) => b.download_count - a.download_count)
-                                    .map(asset =>
-                                        <LinkCard title={`Download ${asset.name}`} href={asset.browser_download_url} description={`Downloads: ${asset.download_count} Size: ${formatFileSize(asset.size)}`} />
-                                    )}
-                            </CardGrid>
-                        </TabItem>
-                    )}
+                    {platforms.map(platform => {
+                        const cards = entry.data.assets
+                            .filter(asset => assetFilter(asset, platform))
+                            .sort((a, b) => b.download_count - a.download_count)
+                            .map(asset => (
+                                <LinkCard
+                                    title={`Download ${asset.name}`}
+                                    href={asset.browser_download_url}
+                                    description={`Downloads: ${asset.download_count} Size: ${formatFileSize(asset.size)}`}
+                                />
+                            ))
+
+                        return (
+                            <TabItem key={platform.id} label={platform.title} icon={platform.icon}>
+                                {latest ? cards : <CardGrid>{cards}</CardGrid>}
+                            </TabItem>
+                        )
+                      })}
                 </Tabs>
             </Card>
+
+            {latest && <Aside title="Historical Versions" type="note">The following historical versions are no longer supported.</Aside>}
+        </>
         )
     }
 )}
