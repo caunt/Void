@@ -12,7 +12,6 @@ using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Servers;
 using Void.Proxy.Api.Settings;
-using Void.Proxy.Api.Services;
 using Void.Proxy.Players.Extensions;
 
 namespace Void.Proxy.Links;
