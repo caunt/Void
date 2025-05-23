@@ -12,14 +12,16 @@ using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Servers;
 using Void.Proxy.Api.Settings;
+using Void.Proxy.Api.Services;
 using Void.Proxy.Players.Extensions;
 
 namespace Void.Proxy.Links;
 
-public class LinkService(ILogger<LinkService> logger, ISettings settings, IEventService events, IHostApplicationLifetime hostApplicationLifetime) : ILinkService, IEventListener
+public class LinkService(ILogger<LinkService> logger, ISettings settings, IEventService events, IServerService serverService, IHostApplicationLifetime hostApplicationLifetime) : ILinkService, IEventListener
 {
     private readonly List<ILink> _links = [];
     private readonly AsyncLock _lock = new();
+    private readonly IServerService _serverService = serverService;
 
     public IReadOnlyList<ILink> All => _links.AsReadOnly();
 
@@ -32,7 +34,13 @@ public class LinkService(ILogger<LinkService> logger, ISettings settings, IEvent
         return await ConnectAsync(player, server, cancellationToken);
     }
 
-    public async ValueTask<ConnectionResult> ConnectAsync(IPlayer player, IServer server, CancellationToken cancellationToken = default)
+    public async ValueTask<ConnectionResult> ConnectAsync(IPlayer player, string host, int port, CancellationToken cancellationToken = default)
+    {
+        var server = await _serverService.GetOrAddServerAsync(host, port, cancellationToken);
+        return await ConnectAsync(player, server, cancellationToken);
+    }
+
+    public virtual async ValueTask<ConnectionResult> ConnectAsync(IPlayer player, IServer server, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 

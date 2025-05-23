@@ -10,5 +10,6 @@ public interface ILinkService
 
     public ValueTask<ConnectionResult> ConnectPlayerAnywhereAsync(IPlayer player, CancellationToken cancellationToken = default);
     public ValueTask<ConnectionResult> ConnectAsync(IPlayer player, IServer server, CancellationToken cancellationToken = default);
+    public ValueTask<ConnectionResult> ConnectAsync(IPlayer player, string host, int port, CancellationToken cancellationToken = default);
     public bool TryGetLink(IPlayer player, [NotNullWhen(true)] out ILink? link);
 }
