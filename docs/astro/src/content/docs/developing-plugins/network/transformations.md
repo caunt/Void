@@ -5,20 +5,20 @@ sidebar:
   order: 3
 ---
 
-When you have defined packets, they might be changed in future versions of minecraft. There is two ways to handle this:
-- Define conditional packet transformations
-- Define flat packet transformations
+When you have defined packet, it might be changed in future versions of Minecraft. There is two ways to handle this:
+- Define conditional packet transformation
+- Define flat packet transformation
 
 :::caution
 If packet is changed in new version of Minecraft, it is not recommended to define new classes for each packet version.
 
 **Do not define SetHeldItemPacket_v1_20_2, SetHeldItemPacket_v1_20_3, SetHeldItemPacket_v1_20_4, etc.**
 
-Instead, use transformations defined below.
+Instead, use transformations explained below.
 :::
 
 ## Conditional packet transformations
-Conditional packet transformations are easiest way to handle changes. However, they are likely to be tangled if changes to packet are made very often. This may lead to a spaghetti code.
+Conditional packet transformations are easiest way to handle changes. However, they are likely to be tangled if packet changes are made very often. This may lead to a spaghetti code.
 
 We will use previously defined [**Set Held Item (clientbound)**](/developing-plugins/network/packets#defining-packets) packet as an example.
 In this packet, changes were made from Minecraft version **1.21** to **1.21.2**.
@@ -61,11 +61,11 @@ public class SetHeldItemClientboundPacket : IMinecraftClientboundPacket<SetHeldI
 :::note
 These transformations are called **conditional** because they are defined with simple conditional operators.
 
-They are good until a packet is changed very often. Generally, we recommend to use such transformations for **no more than 2-3 versions of Minecraft**. After that point, they become unreadable spaghetti.
+They are good until a packet being changed very often. Generally, we recommend to use such transformations for **no more than 2-3 versions of Minecraft**. After that point, they become unreadable to normal [human](https://en.wikipedia.org/wiki/Human).
 :::
 
 ## Flat packet transformations
-Flat packet transformations are more complex and harder to define, but they lead to more consistent and readable code. This idea was adopted from [ViaVersion](https://github.com/ViaVersion/ViaVersion/) codebase.
+Flat packet transformations are more complex and harder to define, but they lead to more consistent behaviour and readable code. This idea was adopted from [ViaVersion](https://github.com/ViaVersion/ViaVersion/) codebase.
 
 When using these transformations, you have to keep only **latest** implementation of packet:
 ```csharp
@@ -95,9 +95,9 @@ public class SetHeldItemClientboundPacket : IMinecraftClientboundPacket<SetHeldI
 
 Now when we have latest implementation, we have to define changes that were made throughout the versions.
 
-In case of [**Set Held Item (clientbound)**](/developing-plugins/network/packets#defining-packets) packet, we have to define just one change - converting the property type of `byte` and `varint`.
+In case of [**Set Held Item (clientbound)**](/developing-plugins/network/packets#defining-packets) packet, just one change were made - `slot` property type changed from `byte` to `varint`.
 ```csharp
-public static MinecraftPacketTransformationMapping[] Transformations { get; } = [
+MinecraftPacketTransformationMapping[] Transformations { get; } = [
     new(ProtocolVersion.MINECRAFT_1_21, ProtocolVersion.MINECRAFT_1_21_2, wrapper =>
     {
         var slot = wrapper.Read<ByteProperty>();
@@ -120,7 +120,7 @@ If your packet has unchanged properties, you can use `wrapper.Passthrough()` met
 wrapper.Passthrough<ByteProperty>();
 ```
 
-Register your flat transformations for player in same time, when you register your packet:
+Register your flat transformations for player at same time, when you register your packet:
 ```csharp
 [Subscribe]
 public void OnPhaseChanged(PhaseChangedEvent @event)
@@ -140,8 +140,8 @@ public void OnPhaseChanged(PhaseChangedEvent @event)
 }
 ```
 
-Now the proxy can use your defined transformations to transform packets to version that is used by the player. If player is playing on version **1.21**, proxy will upgrade packet to **1.21.2** and pass it to the [**Events System**](/developing-plugins/events/listening-to-events/). When plugin is sending packet to the player playing old version, proxy will downgrade packet to **1.21** and send it to the player.
+Now the Void proxy can use your defined transformations to transform packets to version that is used by the player. If player is playing on version **1.21**, proxy will upgrade packet to your latest (**1.21.2**) version and pass it to the [**Events System**](/developing-plugins/events/listening-to-events/). When plugin is sending packet to the player playing old version, proxy will downgrade packet to **1.21** and send it to the player.
 
 :::tip
-Keep defining flat transformations from one version to another when packet is changing. You have to **define only changed versions** and **skip versions without changes**. When `slot` property will be changed by Mojang to `long` type, define another two transformations - **upgrading** and **downgrading**. Reading `varint` and writing `long` for upgrade, and vice versa for downgrade.
+Keep defining flat transformations from one version to another when packet is changing. You have to **define only changed versions** and **skip versions without changes**. When `slot` property will be changed by Mojang to `long` type, define another two transformations - **upgrading** and **downgrading**. Reading `varint` / writing `long` for upgrade, and reading `long` / writing `varint` for downgrade.
 :::
