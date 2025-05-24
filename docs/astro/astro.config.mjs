@@ -26,13 +26,10 @@ export default defineConfig({
                 autogenerate: { directory: 'configuration' }
             },
             {
-                label: 'Containers',
-                autogenerate: { directory: 'containers' }
-            },
-            {
                 label: 'Forwarding',
                 autogenerate: { directory: 'forwardings' }
             },
+            { slug: 'containers' },
             { slug: 'watchdog' },
             {
                 label: 'Developing Plugins',
