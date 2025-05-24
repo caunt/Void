@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.2](https://github.com/caunt/Void/compare/v0.5.1...v0.5.2) (2025-05-24)
+
+
+### Bug Fixes
+
+* changed player disconnection path ([1c901e9](https://github.com/caunt/Void/commit/1c901e97f02bb7a98167d68209421563a0c5ebd6))
+* handle online-mode servers with authentication side set to proxy ([3b38c96](https://github.com/caunt/Void/commit/3b38c96765f18d9d6e5405f3c42b195616af2247))
+* nbt compound and list parsing are now in one method ([f9d524b](https://github.com/caunt/Void/commit/f9d524b7abc0e3738738843aa749594d0858d9d2))
+
 ## [0.5.1](https://github.com/caunt/Void/compare/v0.5.0...v0.5.1) (2025-05-16)
 
 
