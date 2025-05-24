@@ -56,16 +56,15 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
             logger.LogTrace("Player {Player} connecting", player);
             var result = await links.ConnectPlayerAnywhereAsync(player, cancellationToken);
 
-            if (!links.TryGetLink(player.Unwrap(), out var link))
+            if (!links.TryGetLink(player, out var link))
                 logger.LogWarning("Player {Player} failed to connect", player);
         }
         catch (Exception exception)
         {
-            if (exception is not StreamClosedException)
-                logger.LogError(exception, "Client {RemoteEndPoint} cannot be proxied", player.RemoteEndPoint);
+            if (exception is StreamClosedException)
+                return;
 
-            // just in case
-            await events.ThrowAsync(new PlayerDisconnectedEvent(player.Unwrap()), cancellationToken);
+            logger.LogError(exception, "Client {RemoteEndPoint} cannot be proxied", player.RemoteEndPoint);
         }
     }
 
@@ -120,39 +119,32 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
                 logger.LogWarning("Player {Player} didn't handle graceful kick in {Timeout}ms", player, settings.KickTimeout);
         }
 
+        link?.PlayerChannel.TryResume();
+        link?.ServerChannel.TryResume();
+
+        await channel.FlushAsync(cancellationToken);
+
         if (link is not null)
         {
             await link.PlayerChannel.FlushAsync(cancellationToken);
             await link.ServerChannel.FlushAsync(cancellationToken);
-
-            link.PlayerChannel.Close();
-            link.ServerChannel.Close();
-        }
-        else
-        {
-            await channel.FlushAsync(cancellationToken);
-            player.Client.Close();
         }
 
-        if (link is not { IsAlive: true })
-        {
-            // since ILink is not running and will not execute link stopped event, trigger player disconnected event here
-            await events.ThrowAsync(new PlayerDisconnectedEvent(player), cancellationToken);
-        }
-        else
-        {
-            link?.PlayerChannel.TryResume();
-            link?.ServerChannel.TryResume();
-        }
+        link?.PlayerChannel.Close();
+        link?.ServerChannel.Close();
+
+        player.Client.Close();
+
+        await events.ThrowAsync(new PlayerDisconnectedEvent(player), cancellationToken);
     }
 
     [Subscribe]
     public async ValueTask OnLinkStopped(LinkStoppedEvent @event, CancellationToken cancellationToken)
     {
-        if (@event.Link.PlayerChannel.IsAlive)
-            await links.ConnectPlayerAnywhereAsync(@event.Player, cancellationToken);
-        else
-            await events.ThrowAsync(new PlayerDisconnectedEvent(@event.Player), cancellationToken);
+        if (!@event.Link.PlayerChannel.IsAlive)
+            return;
+
+        await links.ConnectPlayerAnywhereAsync(@event.Player, cancellationToken);
     }
 
     [Subscribe(PostOrder.Last)]
