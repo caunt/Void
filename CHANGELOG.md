@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/caunt/Void/compare/v0.5.1...v0.5.2) (2025-05-24)
+
+
+### Bug Fixes
+
+* nbt compound and list parsing are now in one method ([f9d524b](https://github.com/caunt/Void/commit/f9d524b7abc0e3738738843aa749594d0858d9d2))
+
 ## [0.5.1](https://github.com/caunt/Void/compare/v0.5.0...v0.5.1) (2025-05-16)
 
 
