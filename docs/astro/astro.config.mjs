@@ -14,7 +14,7 @@ const googleAnalyticsId = 'G-3KT5D46L8T'
 export default defineConfig({
     site: 'https://void.caunt.world',
     integrations: [starlight({
-        title: 'Void Docs',
+        title: 'Void',
         social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/caunt/void' }],
         sidebar: [
             {

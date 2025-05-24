@@ -3,8 +3,8 @@ title: Minecraft Proxy
 description: Welcome to the Void Proxy.
 template: splash
 hero:
-  title: Void Proxy
-  tagline: Network proxy with plugins API, designed for all Minecraft platforms, versions and compatible with any mods.
+  title: Minecraft Proxy
+  tagline: <strong>Void</strong> designed for all Minecraft platforms, versions and compatible with every mod.
   image:
     file: /public/logo-text-horizontal.svg
   actions:
@@ -17,9 +17,12 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
 <CardGrid stagger>
+	<Card title="Download" icon="cloud-download">
+		[**Download Void**](/download). Available for many platforms, including Kubernetes, Docker, Windows, Linux, OSX and more.
+	</Card>
 	<Card title="Build Plugins" icon="pencil">
 		Void provides a powerful plugin API that allows you to create plugins on the raw network level.
 	</Card>
@@ -27,9 +30,6 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 		Designed to support any Minecraft platforms, including Bedrock, Java, Pocket Edition and more.
 	</Card>
 	<Card title="Containers" icon="seti:docker">
-		Built with Containers in mind, easy to deploy to Docker or Kubernetes cluster.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		See more features in the [Void Docs](/getting-started/features).
+		Built with [Containers in mind](/containers), easy to deploy to Docker or Kubernetes cluster.
 	</Card>
 </CardGrid>
