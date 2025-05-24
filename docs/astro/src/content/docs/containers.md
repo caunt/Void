@@ -5,11 +5,11 @@ sidebar:
   order: 1
 ---
 
-Void has many images available for running in a container.
-Take a look at the [Void Docker Hub](https://hub.docker.com/r/caunt/void/tags) for all available images.
+Void provides docker images for running in a container.  
+See the [Void Docker Hub](https://hub.docker.com/r/caunt/void/tags) for all available images.
 
 ## Image Tags
-:::tip
+:::tip[Latest Stable Version]
 - **caunt/void:latest** - Latest stable version of Void.
 :::
 
@@ -26,7 +26,7 @@ Other `latest` versions:
 - caunt/void:latest-alpine-linux-musl-arm
 - caunt/void:latest-alpine-linux-musl-arm64
 
-:::tip
+:::tip[Latest Development Version]
 - **caunt/void:dev** - Latest development version of Void.
 :::
 
@@ -63,13 +63,13 @@ Other specific versions:
 - caunt/void:**`<version>`**-alpine-linux-musl-arm64
 
 ## Running Void in a Docker
-To run Void in a Docker container, use the following command:
+To run Void in a Docker container, use following example command:
 ```bash
 docker run -d --name void -p 25565:25565 caunt/void:latest
 ```
 
 ## Running Void in Kubernetes
-To run Void in a Kubernetes cluster, you can use the following example `Deployment` manifest:
+To run Void in a Kubernetes cluster, follow this example `Deployment` manifest:
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
