@@ -20,7 +20,9 @@
   </a>
 </h1>
 
-:star: Minecraft proxy designed to work through all versions and all mods.
+<h1 align="center">
+  <p>:star: Minecraft proxy designed for all versions and every mod.</p>
+</h1>
 
 ### :floppy_disk: **Download:**
 :green_circle: [**Stable Development Builds**](https://void.caunt.world/download/)  
