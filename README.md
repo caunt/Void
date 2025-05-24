@@ -21,7 +21,7 @@
 </h1>
 
 <h1 align="center">
-  <p>:star: Minecraft proxy designed for all versions and every mod.</p>
+  <p>:star: Minecraft proxy for all versions and every mod.</p>
 </h1>
 
 ### :floppy_disk: **Download:**
