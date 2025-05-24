@@ -8,6 +8,50 @@ sidebar:
 Void provides docker images for running in a container.  
 See the [Void Docker Hub](https://hub.docker.com/r/caunt/void/tags) for all available images.
 
+## Running Void in a Docker
+To run Void in a Docker container, use following example command:
+```bash
+docker run --name void --rm -p 25565:25565 caunt/void:dev
+```
+
+## Running Void in Kubernetes
+To run Void in a Kubernetes cluster, follow this example `Deployment` manifest:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: void-deployment
+  labels:
+    app: void
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: void
+  template:
+    metadata:
+      labels:
+        app: void
+    spec:
+      containers:
+      - name: void
+        image: caunt/void:latest
+        ports:
+        - name: watchdog
+          containerPort: 80
+        - name: proxy
+          containerPort: 25565
+        env:
+        - name: VOID_PLUGINS
+          value: "https://example.org/download/YoutPlugin1.dll"
+        - name: VOID_WATCHDOG_ENABLE
+          value: "true"
+```
+
+## Configuring Void in Containers
+Use [**enviroment variables**](/configuration/environment-variables/) or [**mount volumes**](/configuration/in-file/) to configure Void.
+
+
 ## Image Tags
 :::tip[Latest Stable Version]
 - **caunt/void:latest** - Latest stable version of Void.
@@ -61,46 +105,3 @@ Other specific versions:
 - caunt/void:**`<version>`**-alpine-linux-musl-arm64
 - caunt/void:**`<version>`**-android
 - caunt/void:**`<version>`**-android-linux-bionic-x64
-
-## Running Void in a Docker
-To run Void in a Docker container, use following example command:
-```bash
-docker run --name void --rm -p 25565:25565 caunt/void:dev
-```
-
-## Running Void in Kubernetes
-To run Void in a Kubernetes cluster, follow this example `Deployment` manifest:
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: void-deployment
-  labels:
-    app: void
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: void
-  template:
-    metadata:
-      labels:
-        app: void
-    spec:
-      containers:
-      - name: void
-        image: caunt/void:latest
-        ports:
-        - name: watchdog
-          containerPort: 80
-        - name: proxy
-          containerPort: 25565
-        env:
-        - name: VOID_PLUGINS
-          value: "https://example.org/download/YoutPlugin1.dll"
-        - name: VOID_WATCHDOG_ENABLE
-          value: "true"
-```
-
-## Configuring Void in Containers
-Use [**enviroment variables**](/configuration/environment-variables/) or [**mount volumes**](/configuration/in-file/) to configure Void.
