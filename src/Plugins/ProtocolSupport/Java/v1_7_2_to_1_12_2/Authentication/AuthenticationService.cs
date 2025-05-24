@@ -19,8 +19,6 @@ namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Authenticatio
 
 public class AuthenticationService(ILogger<AuthenticationService> logger, IEventService events, IPlayerService players, IDependencyService dependencies) : AbstractAuthenticationService(events, players, dependencies)
 {
-    private readonly IEventService _events = events;
-
     protected override bool IsSupportedVersion(ProtocolVersion protocolVersion)
     {
         return Plugin.SupportedVersions.Contains(protocolVersion);
@@ -122,6 +120,8 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
             case SetCompressionPacket:
                 // handled by compression service
                 break;
+            case EncryptionRequestPacket:
+                throw new InvalidOperationException("Authentication side is set to Proxy, but server is in online-mode.");
             default:
                 throw new InvalidOperationException($"Unexpected {packet} packet received");
         }
