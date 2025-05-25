@@ -3,4 +3,4 @@ using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Api.Events.Links;
 
-public record LinkStoppedEvent(ILink Link, IPlayer Player) : IScopedEvent;
+public record LinkStoppedEvent(ILink Link, IPlayer Player, LinkStopReason Reason) : IScopedEvent;

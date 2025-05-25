@@ -5,6 +5,7 @@ using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Links.Exceptions;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Network.Exceptions;
@@ -29,6 +30,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
     private bool _playerToServerTaskDisposed;
     private bool _serverToPlayerTaskDisposed;
     private bool _stopping;
+    private LinkStopReason? _stopReason;
 
     public IPlayer Player { get; init; } = player;
     public IServer Server { get; init; } = server;
@@ -153,16 +155,31 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             }
             catch (StreamClosedException)
             {
+                _stopReason ??= direction switch
+                {
+                    Direction.Serverbound => LinkStopReason.PlayerDisconnected, // source (player) disconnected
+                    Direction.Clientbound => LinkStopReason.ServerDisconnected, // source (server) disconnected
+                    _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+                };
+
                 break;
             }
             catch (Exception exception) when (exception is TaskCanceledException or OperationCanceledException or ObjectDisposedException)
             {
+                _stopReason ??= direction switch
+                {
+                    Direction.Serverbound => LinkStopReason.PlayerDisconnected, // source (player) disconnected
+                    Direction.Clientbound => LinkStopReason.ServerDisconnected, // source (server) disconnected
+                    _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+                };
+
                 break;
             }
             catch (Exception exception)
             {
+                _stopReason = LinkStopReason.InternalException;
                 logger.LogError(exception, "Unhandled read {Direction} exception in {Link} link", direction, this);
-                await Player.KickAsync("Unexpected error occurred in your connection.\n\n\n(TODO: do not kick)", forceCancellationToken);
+                await Player.KickAsync("Unexpected error occurred in your connection.\n(TODO: do not kick)", forceCancellationToken);
                 break;
             }
 
@@ -174,16 +191,31 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             }
             catch (StreamClosedException)
             {
+                _stopReason ??= direction switch
+                {
+                    Direction.Serverbound => LinkStopReason.ServerDisconnected, // destination (server) disconnected
+                    Direction.Clientbound => LinkStopReason.PlayerDisconnected, // destination (player) disconnected
+                    _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+                };
+
                 break;
             }
             catch (Exception exception) when (exception is TaskCanceledException or OperationCanceledException or ObjectDisposedException)
             {
+                _stopReason ??= direction switch
+                {
+                    Direction.Serverbound => LinkStopReason.ServerDisconnected, // destination (server) disconnected
+                    Direction.Clientbound => LinkStopReason.PlayerDisconnected, // destination (player) disconnected
+                    _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+                };
+
                 break;
             }
             catch (Exception exception)
             {
+                _stopReason = LinkStopReason.InternalException;
                 logger.LogError(exception, "Unhandled write {Direction} exception in {Link} link", direction, this);
-                await Player.KickAsync("Unexpected error occurred in your connection.\n\n\n(TODO: do not kick)", forceCancellationToken);
+                await Player.KickAsync("Unexpected error occurred in your connection.\n(TODO: do not kick)", forceCancellationToken);
                 break;
             }
             finally
@@ -202,7 +234,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
                 if (!_stopping)
                 {
                     _stopping = true;
-                    await events.ThrowAsync(new LinkStoppingEvent(this, Player), forceCancellationToken);
+                    await events.ThrowAsync(new LinkStoppingEvent(this, Player, _stopReason ?? throw new LinkInternalException("Stopping reason is unset")), forceCancellationToken);
                 }
             }
 
@@ -245,6 +277,6 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
         await task;
 
         // do not wait completion as this may start initiating new ILink instance
-        await events.ThrowAsync(new LinkStoppedEvent(this, Player), cancellationToken);
+        await events.ThrowAsync(new LinkStoppedEvent(this, Player, _stopReason ?? throw new LinkInternalException("Stopped reason is unset")), cancellationToken);
     }
 }
