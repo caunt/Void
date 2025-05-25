@@ -155,7 +155,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             }
             catch (StreamClosedException)
             {
-                _stopReason ??= direction switch
+                _stopReason = direction switch
                 {
                     Direction.Serverbound => LinkStopReason.PlayerDisconnected, // source (player) disconnected
                     Direction.Clientbound => LinkStopReason.ServerDisconnected, // source (server) disconnected
@@ -166,7 +166,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             }
             catch (Exception exception) when (exception is TaskCanceledException or OperationCanceledException or ObjectDisposedException)
             {
-                _stopReason ??= direction switch
+                _stopReason = direction switch
                 {
                     Direction.Serverbound => LinkStopReason.PlayerDisconnected, // source (player) disconnected
                     Direction.Clientbound => LinkStopReason.ServerDisconnected, // source (server) disconnected
@@ -191,7 +191,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             }
             catch (StreamClosedException)
             {
-                _stopReason ??= direction switch
+                _stopReason = direction switch
                 {
                     Direction.Serverbound => LinkStopReason.ServerDisconnected, // destination (server) disconnected
                     Direction.Clientbound => LinkStopReason.PlayerDisconnected, // destination (player) disconnected
@@ -202,7 +202,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             }
             catch (Exception exception) when (exception is TaskCanceledException or OperationCanceledException or ObjectDisposedException)
             {
-                _stopReason ??= direction switch
+                _stopReason = direction switch
                 {
                     Direction.Serverbound => LinkStopReason.ServerDisconnected, // destination (server) disconnected
                     Direction.Clientbound => LinkStopReason.PlayerDisconnected, // destination (player) disconnected
@@ -223,6 +223,8 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
                 message.Dispose();
             }
         }
+
+        _stopReason ??= LinkStopReason.Requested;
 
         // cancellationToken here most likely canceled already
         // use forceCancellationToken for events
