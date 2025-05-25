@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.3](https://github.com/caunt/Void/compare/v0.5.2...v0.5.3) (2025-05-25)
+
+
+### Features
+
+* added manually requested stop reason to link events ([1fdbb07](https://github.com/caunt/Void/commit/1fdbb072efefb6c743c8e6c05c8d0cbf5775bc2f))
+* added reason to link stop events ([04a5c64](https://github.com/caunt/Void/commit/04a5c646384768a87c1d6d00ebbd99099fd5b7f0))
+
+
+### Bug Fixes
+
+* proxy awaits for bind address to release ([7d7e54c](https://github.com/caunt/Void/commit/7d7e54cf649d2671b3ebc5c67902d02aadce0950))
+* read & write text components nbt as unnamed after minecraft 1.20 ([c8c2495](https://github.com/caunt/Void/commit/c8c24954cc4a4b75479adab2271cf1b9bc1615af))
+
 ## [0.5.2](https://github.com/caunt/Void/compare/v0.5.1...v0.5.2) (2025-05-24)
 
 
