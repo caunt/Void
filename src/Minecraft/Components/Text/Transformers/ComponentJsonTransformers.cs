@@ -10,7 +10,6 @@ using Void.Minecraft.Nbt.Serializers.String;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
-using Void.Minecraft.Profiles;
 
 namespace Void.Minecraft.Components.Text.Transformers;
 
@@ -53,9 +52,6 @@ public static class ComponentJsonTransformers
 
     private static JsonNode Downgrade(JsonNode node, ProtocolVersion from, ProtocolVersion to)
     {
-        if (from > ProtocolVersion.MINECRAFT_1_20_2 && to <= ProtocolVersion.MINECRAFT_1_20_2)
-            node = Downgrade_v1_20_3_to_v1_20_2(node);
-
         if (from > ProtocolVersion.MINECRAFT_1_15_2 && to <= ProtocolVersion.MINECRAFT_1_15_2)
             node = Downgrade_v1_16_to_v1_15_2(node);
 
@@ -79,26 +75,10 @@ public static class ComponentJsonTransformers
         if (from <= ProtocolVersion.MINECRAFT_1_15_2 && to > ProtocolVersion.MINECRAFT_1_15_2)
             node = Upgrade_v1_15_2_to_v1_16(node);
 
-        if (from <= ProtocolVersion.MINECRAFT_1_20_2 && to > ProtocolVersion.MINECRAFT_1_20_2)
-            node = Upgrade_v1_20_2_to_v1_20_3(node);
-
         return node;
     }
 
     #region Downgrade
-    public static void Passthrough_v1_20_3_to_v1_20_2(IMinecraftBinaryPacketWrapper wrapper)
-    {
-        var property = wrapper.Read<StringProperty>();
-
-        if (TryParse(property.AsPrimitive, out var node))
-        {
-            node = Downgrade_v1_20_3_to_v1_20_2(node);
-            property = StringProperty.FromPrimitive(node.ToString());
-        }
-
-        wrapper.Write(property);
-    }
-
     public static void Passthrough_v1_16_to_v1_15_2(IMinecraftBinaryPacketWrapper wrapper)
     {
         var property = wrapper.Read<StringProperty>();
@@ -140,19 +120,6 @@ public static class ComponentJsonTransformers
     #endregion
 
     #region Upgade
-    public static void Passthrough_v1_20_2_to_v1_20_3(IMinecraftBinaryPacketWrapper wrapper)
-    {
-        var property = wrapper.Read<StringProperty>();
-
-        if (TryParse(property.AsPrimitive, out var node))
-        {
-            node = Upgrade_v1_20_2_to_v1_20_3(node);
-            property = StringProperty.FromPrimitive(node.ToString());
-        }
-
-        wrapper.Write(property);
-    }
-
     public static void Passthrough_v1_15_2_to_v1_16(IMinecraftBinaryPacketWrapper wrapper)
     {
         var property = wrapper.Read<StringProperty>();
@@ -192,39 +159,6 @@ public static class ComponentJsonTransformers
         wrapper.Write(property);
     }
     #endregion
-
-    public static JsonNode Downgrade_v1_20_3_to_v1_20_2(JsonNode node)
-    {
-        // Replace "show_entity" contents "id" int array value to string
-        if (node is JsonObject rootObject)
-        {
-            if (rootObject["hoverEvent"] is JsonObject hoverEvent)
-            {
-                if (hoverEvent["contents"] is JsonObject contentsObject)
-                {
-                    if (contentsObject["action"] is { } action)
-                    {
-                        if (action.GetValue<string>() is "show_entity")
-                        {
-                            if (contentsObject["id"] is JsonArray idIntArray)
-                                contentsObject["id"] = Uuid.Parse([.. idIntArray.Select(node => node?.ToString() ?? throw new JsonException("Null entity id int element found")).Select(int.Parse)]).ToString();
-                            else if (contentsObject["id"]?.GetValueKind() is not JsonValueKind.String)
-                                throw new NotSupportedException($"Non-string id value found: {contentsObject["id"]}");
-                        }
-                    }
-                }
-            }
-
-            // Replace recursive text components
-            if (rootObject["with"] is JsonArray with)
-                rootObject["with"] = new JsonArray([.. with.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_20_3_to_v1_20_2(childNode)))]);
-
-            if (rootObject["extra"] is JsonArray extra)
-                rootObject["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_20_3_to_v1_20_2(childNode)))]);
-        }
-
-        return node;
-    }
 
     public static JsonNode Downgrade_v1_16_to_v1_15_2(JsonNode node)
     {
@@ -347,11 +281,6 @@ public static class ComponentJsonTransformers
                 rootObject["extra"] = new JsonArray([.. extra.WhereNotNull().Select(childNode => JsonSerializer.SerializeToNode(Downgrade_v1_9_to_v1_8(childNode)))]);
         }
 
-        return node;
-    }
-
-    public static JsonNode Upgrade_v1_20_2_to_v1_20_3(JsonNode node)
-    {
         return node;
     }
 

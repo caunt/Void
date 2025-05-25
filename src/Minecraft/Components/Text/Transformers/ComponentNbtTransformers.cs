@@ -128,19 +128,19 @@ public static class ComponentNbtTransformers
     #region Downgrade
     public static void Passthrough_v1_21_5_to_v1_21_4(IMinecraftBinaryPacketWrapper wrapper)
     {
-        var property = wrapper.Read<NamedNbtProperty>();
+        var property = wrapper.Read<NbtProperty>();
         var tag = Downgrade_v1_21_5_to_v1_21_4(property.AsNbtTag);
 
-        property = NamedNbtProperty.FromNbtTag(tag);
+        property = NbtProperty.FromNbtTag(tag);
         wrapper.Write(property);
     }
 
     public static void Passthrough_v1_20_3_to_v1_20_2(IMinecraftBinaryPacketWrapper wrapper)
     {
-        var property = wrapper.Read<NamedNbtProperty>();
+        var property = wrapper.Read<NbtProperty>();
         var tag = Downgrade_v1_20_3_to_v1_20_2(property.AsNbtTag);
 
-        property = NamedNbtProperty.FromNbtTag(tag);
+        property = NbtProperty.FromNbtTag(tag);
         wrapper.Write(property);
     }
 
@@ -175,19 +175,19 @@ public static class ComponentNbtTransformers
     #region Upgrade
     public static void Passthrough_v1_21_4_to_v1_21_5(IMinecraftBinaryPacketWrapper wrapper)
     {
-        var property = wrapper.Read<NamedNbtProperty>();
+        var property = wrapper.Read<NbtProperty>();
         var tag = Upgrade_v1_21_4_to_v1_21_5(property.AsNbtTag);
 
-        property = NamedNbtProperty.FromNbtTag(tag);
+        property = NbtProperty.FromNbtTag(tag);
         wrapper.Write(property);
     }
 
     public static void Passthrough_v1_20_2_to_v1_20_3(IMinecraftBinaryPacketWrapper wrapper)
     {
-        var property = wrapper.Read<NamedNbtProperty>();
+        var property = wrapper.Read<NbtProperty>();
         var tag = Upgrade_v1_20_2_to_v1_20_3(property.AsNbtTag);
 
-        property = NamedNbtProperty.FromNbtTag(tag);
+        property = NbtProperty.FromNbtTag(tag);
         wrapper.Write(property);
     }
 

@@ -58,19 +58,7 @@ public class ChatMessagePacket : IMinecraftClientboundPacket<ChatMessagePacket>
             _ = wrapper.Read<UuidProperty>();
         }),
 
-        // Ignored because this packet removed after 1.18
-        new(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.MINECRAFT_1_20_3, wrapper =>
-        {
-            ComponentJsonTransformers.Passthrough_v1_20_2_to_v1_20_3(wrapper);
-            wrapper.Passthrough<ByteProperty>();
-            wrapper.Passthrough<UuidProperty>();
-        }),
-        new(ProtocolVersion.MINECRAFT_1_20_3, ProtocolVersion.MINECRAFT_1_20_2, wrapper =>
-        {
-            ComponentJsonTransformers.Passthrough_v1_20_3_to_v1_20_2(wrapper);
-            wrapper.Passthrough<ByteProperty>();
-            wrapper.Passthrough<UuidProperty>();
-        })
+        // Packet is removed since 1.18
     ];
 
     public required Component Message { get; set; }
