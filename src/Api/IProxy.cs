@@ -10,7 +10,7 @@ public interface IProxy
     /// <summary>
     /// Starts accepting connections on the listener.
     /// </summary>
-    public void StartAcceptingConnections();
+    public ValueTask StartAcceptingConnectionsAsync(CancellationToken cancellationToken);
 
     /// <summary>
     /// Pauses the acceptance of new incoming connections.

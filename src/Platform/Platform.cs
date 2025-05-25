@@ -36,7 +36,7 @@ public class Platform(
         }
     }
 
-    public void StartAcceptingConnections()
+    public async ValueTask StartAcceptingConnectionsAsync(CancellationToken cancellationToken)
     {
         if (_listener is null)
             throw new InvalidOperationException("Listener is not created yet.");
@@ -44,8 +44,24 @@ public class Platform(
         if (Status is ProxyStatus.Stopping)
             throw new InvalidOperationException("Proxy is stopping.");
 
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                _listener.Start();
+                break;
+            }
+            catch (SocketException exception)
+            {
+                if (exception.SocketErrorCode is not SocketError.AddressAlreadyInUse)
+                    throw;
+
+                logger.LogError("Address {Address}:{Port} already in use by another process. Retrying in 5 seconds ...", settings.Address, settings.Port);
+                await Task.Delay(5_000, cancellationToken);
+            }
+        }
+
         Status = ProxyStatus.Alive;
-        _listener.Start();
     }
 
     public void PauseAcceptingConnections()
@@ -102,9 +118,9 @@ public class Platform(
         logger.LogInformation("Starting connection listener");
         _listener = new TcpListener(settings.Address, settings.Port);
         _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-        StartAcceptingConnections();
+        await StartAcceptingConnectionsAsync(cancellationToken);
 
-        logger.LogInformation("Connection listener started on port {Port}", settings.Port);
+        logger.LogInformation("Connection listener started on address {Address}:{Port}", settings.Address, settings.Port);
 
         _backgroundTask = ExecuteAsync(hostApplicationLifetime.ApplicationStopping).ContinueWith(backgroundTask =>
         {

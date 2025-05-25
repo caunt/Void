@@ -47,7 +47,7 @@ public class WebService(ILogger logger, IProxy proxy, Settings settings, Watchdo
         builder.MapGet("/health", () => TypedResults.Text(GetMessage()));
         builder.MapGet("/bound", () => TypedResults.Text(GetMessage(), statusCode: GetStatusCode()));
         builder.MapGet("/pause", () => proxy.PauseAcceptingConnections());
-        builder.MapGet("/continue", () => proxy.StartAcceptingConnections());
+        builder.MapGet("/continue", async (CancellationToken cancellationToken) => await proxy.StartAcceptingConnectionsAsync(cancellationToken));
         builder.MapGet("/slow-stop", () => Stop(waitOnlinePlayers: true));
         builder.MapGet("/stop", () => Stop(waitOnlinePlayers: false));
 
