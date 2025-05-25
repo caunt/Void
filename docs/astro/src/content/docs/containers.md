@@ -11,7 +11,7 @@ See the [Void Docker Hub](https://hub.docker.com/r/caunt/void/tags) for all avai
 ## Running Void in a Docker
 To run Void in a Docker container, use following example command:
 ```bash
-docker run --name void --rm -p 25565:25565 caunt/void:dev
+docker run --name void --network host --rm caunt/void:dev
 ```
 
 ## Running Void in Kubernetes
