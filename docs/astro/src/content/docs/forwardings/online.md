@@ -18,6 +18,7 @@ However, there is [**examples**](https://github.com/caunt/Void/blob/main/src/Ser
 
 :::caution[Limitations]
 - You have to install a plugin, mod, or server with built-in implementation.
+- Does not support redirections to online servers until release of [Transfer packet](https://minecraft.wiki/w/Java_Edition_protocol/Packets#Transfer_(configuration)) (1.20.5) version.
 :::
 
 ## Configuration
