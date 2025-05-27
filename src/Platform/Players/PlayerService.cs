@@ -116,7 +116,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
             }
 
             if (channel.IsAlive)
-                logger.LogWarning("Player {Player} didn't handle graceful kick in {Timeout}ms", player, settings.KickTimeout);
+                logger.LogWarning("Plugins didn't handle graceful {Player} player kick in {Timeout}ms", player, settings.KickTimeout);
         }
 
         link?.PlayerChannel.TryResume();
