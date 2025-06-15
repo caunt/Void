@@ -20,12 +20,8 @@ public class WatchdogPlugin(IDependencyService dependencies, IConfigurationServi
 
         var settings = await configs.GetAsync<Settings>(cancellationToken);
 
-        if (!settings.Enabled)
-        {
-            // Allow overriding the setting using environment variables
-            if (Environment.GetEnvironmentVariable("VOID_WATCHDOG_ENABLE") is not { } variable || !ParseBoolean(variable))
-                return;
-        }
+        if (!settings.Enabled && Environment.GetEnvironmentVariable("VOID_WATCHDOG_ENABLE") is not { } variable || !ParseBoolean(variable))
+            return;
 
         dependencies.Register(services =>
         {
