@@ -19,8 +19,10 @@ public class WatchdogPlugin(IDependencyService dependencies, IConfigurationServi
             return;
 
         var settings = await configs.GetAsync<Settings>(cancellationToken);
+        var environmentVariable = Environment.GetEnvironmentVariable("VOID_WATCHDOG_ENABLE");
 
-        if (!settings.Enabled && Environment.GetEnvironmentVariable("VOID_WATCHDOG_ENABLE") is not { } variable || !ParseBoolean(variable))
+        // Environment variable takes precedence over in-file configuration
+        if (environmentVariable is string value ? !ParseBoolean(value) : !settings.Enabled)
             return;
 
         dependencies.Register(services =>
@@ -29,6 +31,6 @@ public class WatchdogPlugin(IDependencyService dependencies, IConfigurationServi
             services.AddSingleton<WebService>();
         });
 
-        static bool ParseBoolean(string text) => double.TryParse(text, out var number) ? number > 0 : bool.Parse(text);
+        static bool ParseBoolean(string? text) => double.TryParse(text, out var number) ? number > 0 : bool.TryParse(text, out var boolean) && boolean;
     }
 }
