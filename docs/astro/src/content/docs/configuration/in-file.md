@@ -6,7 +6,7 @@ sidebar:
 ---
 
 File configurations are main way of configuration.
-However many options can be overriden in runtime using the API in Plugins.
+However many options can be overridden in runtime using the API in Plugins.
 
 ## Proxy
 
