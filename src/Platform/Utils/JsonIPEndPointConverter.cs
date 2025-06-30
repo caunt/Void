@@ -41,7 +41,8 @@ public class JsonIpEndPointConverter : JsonConverter<IPEndPoint>
     public override void Write(Utf8JsonWriter writer, IPEndPoint value, JsonSerializerOptions options)
     {
         var isIpv6 = value.AddressFamily == AddressFamily.InterNetworkV6;
-        Span<char> data = stackalloc char[isIpv6 ? 21 : 53];
+        // IPv6 endpoints require a larger buffer than IPv4 endpoints
+        Span<char> data = stackalloc char[isIpv6 ? 53 : 21];
         var offset = 0;
 
         if (isIpv6)
