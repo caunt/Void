@@ -11,7 +11,7 @@ However, they might be used terminal directly as well.
 ## Plugins
 - `VOID_PLUGINS`
   Defines the list of URL's or Path's to load plugins from.  
-  Example: `https://example.org/download/YoutPlugin1.dll;/home/YourPlugin2.dll` 
+  Example: `https://example.org/download/YourPlugin1.dll;/home/YourPlugin2.dll`
  
 ## NuGet
 - `VOID_NUGET_REPOSITORIES`  

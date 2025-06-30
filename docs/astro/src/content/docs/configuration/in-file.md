@@ -72,15 +72,15 @@ Plugins are compiled with the *.dll extension in any .NET compatible language.
 See the [**Plugin Development Kit**](/developing-plugins/development-kit) section for more details.
 
 - Directory `plugins` is the default location for plugins.
-- [**Environment variable**](/configuration/environment-variables) `VOID_PLUGINS` might be used to include URLs or Local Paths to plugins, separated by coma or semicolon.
+- [**Environment variable**](/configuration/environment-variables) `VOID_PLUGINS` might be used to include URLs or Local Paths to plugins, separated by comma or semicolon.
 - [**Program argument**](/configuration/program-arguments) `--plugin` (short `-p`) might be used to include URL or Local Path to plugin.
 
 Examples:
 ```bash
-$ ./void-linux-x64 --plugin "/home/YourPlugin1.dll" --plugin "https://example.org/download/YoutPlugin2.dll"
+$ ./void-linux-x64 --plugin "/home/YourPlugin1.dll" --plugin "https://example.org/download/YourPlugin2.dll"
 ```
 ```bash
-$ VOID_PLUGINS="https://example.org/download/YoutPlugin1.dll;/home/YourPlugin2.dll" ./void-linux-x64
+$ VOID_PLUGINS="https://example.org/download/YourPlugin1.dll;/home/YourPlugin2.dll" ./void-linux-x64
 ```
 
 ## Plugins Configurations (configs/\<Plugin\>/*.toml)
