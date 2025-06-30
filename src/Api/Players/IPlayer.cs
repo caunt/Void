@@ -4,10 +4,27 @@ using Void.Proxy.Api.Players.Contexts;
 
 namespace Void.Proxy.Api.Players;
 
+/// <summary>
+/// Represents a connected player and exposes information about their network
+/// connection and execution context.
+/// </summary>
 public interface IPlayer : IEquatable<IPlayer>, ICommandSource, IAsyncDisposable, IDisposable
 {
+    /// <summary>
+    /// Gets the underlying <see cref="TcpClient"/> used for network
+    /// communication.
+    /// </summary>
     public TcpClient Client { get; }
+
+    /// <summary>
+    /// Gets the textual representation of the client's remote endpoint.
+    /// </summary>
     public string RemoteEndPoint { get; }
+
+    /// <summary>
+    /// Gets the context containing services and state associated with the
+    /// player.
+    /// </summary>
     public IPlayerContext Context { get; }
 
     /// <summary>
