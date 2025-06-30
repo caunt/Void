@@ -47,7 +47,7 @@ public static class DryIocTracker
         {
             var parentNode = GetOrCreateNode(parent);
 
-            foreach (var child in parent.Childs)
+            foreach (var child in parent.Children)
             {
                 var childNode = GetOrCreateNode(child);
                 var edge = new DotEdge()
@@ -72,7 +72,7 @@ public static class DryIocTracker
         using (_lock.EnterScope())
         {
             var trackedAsRoot = _containers.FirstOrDefault(trackedContainer => trackedContainer.Container == container);
-            var trackedParent = _containers.FirstOrDefault(trackedContainer => trackedContainer.Childs.Any(trackedChild => trackedChild.Container == container));
+            var trackedParent = _containers.FirstOrDefault(trackedContainer => trackedContainer.Children.Any(trackedChild => trackedChild.Container == container));
 
             if (trackedAsRoot is not null)
             {
@@ -84,7 +84,7 @@ public static class DryIocTracker
 
             if (trackedParent is not null)
             {
-                var sameChild = trackedParent.Childs.First(trackedChild => trackedChild.Container == container);
+                var sameChild = trackedParent.Children.First(trackedChild => trackedChild.Container == container);
 
                 if (sameChild.Name == name)
                     return;
@@ -101,7 +101,7 @@ public static class DryIocTracker
             var parentTracked = _containers.FirstOrDefault(trackedContainer => trackedContainer.Container == parent) ??
                 throw new InvalidOperationException($"Parent container {parent} is not tracked. Cannot track {container} as child of {parent}.");
 
-            parentTracked.Childs.Add(new(name, container, []));
+            parentTracked.Children.Add(new(name, container, []));
         }
     }
 
@@ -117,16 +117,16 @@ public static class DryIocTracker
                 return;
             }
 
-            var parent = _containers.FirstOrDefault(trackedContainer => trackedContainer.Childs.Any(trackedChild => trackedChild.Container == container));
+            var parent = _containers.FirstOrDefault(trackedContainer => trackedContainer.Children.Any(trackedChild => trackedChild.Container == container));
 
             if (parent is null)
                 return;
 
-            parent.Childs.RemoveAll(trackedContainer => trackedContainer.Container == container);
+            parent.Children.RemoveAll(trackedContainer => trackedContainer.Container == container);
         }
     }
 
-    private record TrackedContainer(string Name, IContainer Container, List<TrackedContainer> Childs)
+    private record TrackedContainer(string Name, IContainer Container, List<TrackedContainer> Children)
     {
         public int ContainerHashCode => Container.GetHashCode();
         public override string ToString() => $"{Name} ({Container.GetHashCode()})";
