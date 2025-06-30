@@ -55,7 +55,7 @@ public record CommandContext(
             return false;
 
         if (argument.GenericResult is not TType result)
-            throw new ArgumentException($"Argument {name}' is defined as {argument.GenericResult}, not {typeof(TType)}");
+            throw new ArgumentException($"Argument '{name}' is defined as {argument.GenericResult}, not {typeof(TType)}");
 
         type = result;
         return true;
