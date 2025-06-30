@@ -25,7 +25,7 @@ So separate `INetworkChannel` is created for `IPlayer` and separate `INetworkCha
 [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) saves references to both sides: `ILink.Player` and `ILink.Server`.
 
 ## Custom Implementation
-Void uses internal implementation of [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) if not overriden by plugin.
+Void uses internal implementation of [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) if not overridden by plugin.
 
 Plugin can override it by providing custom implementation of [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) with `CreateLinkEvent` event.
 ```csharp

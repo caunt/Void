@@ -10,7 +10,7 @@ Program arguments make configuration in terminal easier.
 ## Help
 Provides a list of all available program arguments.
 ```bash
-./void-liux-x64 --help
+./void-linux-x64 --help
 Description:
   Runs the proxy
 
@@ -29,14 +29,14 @@ Options:
 ## Plugins
 - `--plugin`  
   Allows you to specify additional plugins to load.  
-  Example: `./void-liux-x64 --plugin https://example.org/download/YoutPlugin1.dll --plugin /home/YourPlugin2.dll`
+  Example: `./void-linux-x64 --plugin https://example.org/download/YourPlugin1.dll --plugin /home/YourPlugin2.dll`
 
 ## NuGet
 - `--repository`  
   Allows you to specify additional NuGet repositories to use.  
-  Example: `./void-liux-x64 --repository https://nuget.example.com/v3/index.json`
+  Example: `./void-linux-x64 --repository https://nuget.example.com/v3/index.json`
 
 ## Version
 - `--version`  
   Displays the current version of Void Proxy.  
-  Example: `./void-liux-x64 --version`
+  Example: `./void-linux-x64 --version`

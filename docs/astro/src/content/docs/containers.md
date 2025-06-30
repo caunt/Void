@@ -43,13 +43,13 @@ spec:
           containerPort: 25565
         env:
         - name: VOID_PLUGINS
-          value: "https://example.org/download/YoutPlugin1.dll"
+          value: "https://example.org/download/YourPlugin1.dll"
         - name: VOID_WATCHDOG_ENABLE
           value: "true"
 ```
 
 ## Configuring Void in Containers
-Use [**enviroment variables**](/configuration/environment-variables/) or [**mount volumes**](/configuration/in-file/) to configure Void.
+Use [**environment variables**](/configuration/environment-variables/) or [**mount volumes**](/configuration/in-file/) to configure Void.
 
 
 ## Image Tags
