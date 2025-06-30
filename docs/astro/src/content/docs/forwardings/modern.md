@@ -13,7 +13,7 @@ Modern forwarding was updated multiple times, enabling new features and fixing b
 :::
 
 :::note[Mods]
-Velocity forwarding is not supported by mod loaders, however community has created some mods implementing it's protocol, such as [Proxy Compatible Forge](https://github.com/adde0109/Proxy-Compatible-Forge).
+Velocity forwarding is not supported by mod loaders, however community has created some mods implementing its protocol, such as [Proxy Compatible Forge](https://github.com/adde0109/Proxy-Compatible-Forge).
 :::
 
 :::caution[Limitations]
