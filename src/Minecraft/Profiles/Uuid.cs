@@ -123,9 +123,9 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
         return (i128.variant >> 4) switch
         {
             <= 0b0111 => 0,
-            <= 1011 => 1,
-            <= 1101 => 2,
-            1110 => 3,
+            <= 0b1011 => 1,
+            <= 0b1101 => 2,
+            <= 0b1111 => 3,
             _ => -1
         };
     }
