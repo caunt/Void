@@ -35,7 +35,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- This is neccessary to include, so plugins using Void.Minecraft and Void.Plugins.Common can resolve them at runtime -->
+		<!-- This is necessary to include, so plugins using Void.Minecraft and Void.Plugins.Common can resolve them at runtime -->
 		<PackageReference Include="SharpNBT" Version="1.3.1" />
 		<PackageReference Include="SharpZipLib" Version="1.4.2" />
 		<PackageReference Include="Ionic.Zlib.Core" Version="1.0.0" />

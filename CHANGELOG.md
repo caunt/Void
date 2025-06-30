@@ -109,7 +109,7 @@
 * custom repositories nuget authentication ([1f36778](https://github.com/caunt/Void/commit/1f36778268a78587751fe5c11c7157a5f55ddfb9))
 * do not create services instances manually ([f2234b1](https://github.com/caunt/Void/commit/f2234b183222d83a8693a6c613079d62c7e1e4ee))
 * enable more default commandline options ([71e44f5](https://github.com/caunt/Void/commit/71e44f5b93fa920c9a812047308bf82381aa0c60))
-* regiter options via commandline ([94b425e](https://github.com/caunt/Void/commit/94b425e9038d745efc85438751b191e0c2636be5))
+* register options via commandline ([94b425e](https://github.com/caunt/Void/commit/94b425e9038d745efc85438751b191e0c2636be5))
 * update plugins option name ([7673b4e](https://github.com/caunt/Void/commit/7673b4ec6aeea5764363364ef3d3804d5758ffe0))
 
 

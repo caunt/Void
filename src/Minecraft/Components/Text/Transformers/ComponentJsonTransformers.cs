@@ -119,7 +119,7 @@ public static class ComponentJsonTransformers
     }
     #endregion
 
-    #region Upgade
+    #region Upgrade
     public static void Passthrough_v1_15_2_to_v1_16(IMinecraftBinaryPacketWrapper wrapper)
     {
         var property = wrapper.Read<StringProperty>();
