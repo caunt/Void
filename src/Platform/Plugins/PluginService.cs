@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Nito.AsyncEx;
 using Nito.Disposables.Internals;
+using System.Net.Http;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
@@ -14,7 +15,7 @@ using Void.Proxy.Plugins.Context;
 
 namespace Void.Proxy.Plugins;
 
-public class PluginService(ILogger<PluginService> logger, IEventService events, IDependencyService dependencies, InvocationContext context) : IPluginService
+public class PluginService(ILogger<PluginService> logger, IEventService events, IDependencyService dependencies, InvocationContext context, HttpClient httpClient) : IPluginService
 {
     private static readonly Option<string[]> _pluginsOption = new(["--plugin", "-p"], "Provides a path to the file, directory or url to load plugin.");
 
@@ -65,7 +66,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
                 var name = url.LocalPath;
                 logger.LogTrace("Found {Name} local plugin", name);
 
-                using var response = await new HttpClient().GetAsync(url);
+                using var response = await httpClient.GetAsync(url);
                 await using var stream = response.Content.ReadAsStream();
                 return LoadContainer(name, stream);
             }
