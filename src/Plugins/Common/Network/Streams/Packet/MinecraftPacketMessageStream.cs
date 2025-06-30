@@ -184,7 +184,6 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
         if (Registries.PacketIdSystem?.Read is not { } registry || !registry.TryCreateDecoder(id, out var packetType, out var decoder))
             return new MinecraftBinaryPacket(id, stream);
 
-        // Console.WriteLine(stream.Position + " " + stream.Length + " " + Convert.ToHexString(buffer.Dump()));
         if (TryGetTransformations(packetType, TransformationType.Upgrade, out var transformations))
         {
             var position = stream.Position;
