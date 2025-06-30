@@ -175,29 +175,26 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     }
 
     /// <summary>
-    /// Serializes the current object to JSON format using a specified protocol version.
+    /// Serializes the current component to JSON format.
     /// </summary>
-    /// <param name="protocolVersion">Specifies the version of the protocol to be used during serialization.</param>
-    /// <returns>Returns a JsonNode representing the serialized object.</returns>
+    /// <returns>Returns a JsonNode representing the serialized component.</returns>
     public JsonNode SerializeJson()
     {
         return ComponentJsonSerializer.Serialize(this);
     }
 
     /// <summary>
-    /// Serializes the current object into an NBT format.
+    /// Serializes the current component into NBT format.
     /// </summary>
-    /// <param name="protocolVersion">Specifies the version of the protocol to be used during serialization.</param>
-    /// <returns>Returns the serialized NBT tag representation of the object.</returns>
+    /// <returns>Returns the serialized NBT tag representation of the component.</returns>
     public NbtTag SerializeNbt()
     {
         return ComponentNbtSerializer.Serialize(this);
     }
 
     /// <summary>
-    /// Serializes the current object into SNBT format based on the specified protocol version.
+    /// Serializes the current component into SNBT format.
     /// </summary>
-    /// <param name="protocolVersion">Specifies the version of the protocol to ensure compatibility during serialization.</param>
     /// <returns>Returns the serialized data in SNBT format.</returns>
     public string SerializeSnbt()
     {
