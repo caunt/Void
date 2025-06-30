@@ -1,11 +1,11 @@
 ---
 title: Features
-description: Explore Void proxy supported and features.
+description: Explore the features supported by the Void proxy.
 sidebar:
   order: 1
 ---
 
-This page provides an overview of the features supported or planned to implement by Void proxy.
+This page provides an overview of the features supported or planned to be implemented by the Void proxy.
 
 ## Minecraft
 
@@ -38,9 +38,9 @@ This page provides an overview of the features supported or planned to implement
 
 :::tip[Online (Private Key)]
 A new type of [**forwarding**](/forwardings/online) being developed.  
-It allows to play through the proxy on servers that are configured with online mode.  
-Server must safely share its own private key, so proxy can provide API to plugins.  
-If no key provided, you still can play through proxy, but API will be very limited.
+It allows you to play through the proxy on servers that are configured with online mode.
+The server must safely share its private key so the proxy can provide an API to plugins.
+If no key is provided, you can still play through the proxy, but the API will be very limited.
 :::
 
 ### Mod Loaders
@@ -53,6 +53,6 @@ If no key provided, you still can play through proxy, but API will be very limit
 | LiteLoader | &#x2705; | &#x274C;  | &#x274C; |
 
 ## Other Games
-Currently Minecraft is the only game supported by Void proxy.  
-We are planning to add support for other games in the future.  
-However, they might work already, but are limited to TCP protocol.
+Currently, Minecraft is the only game supported by the Void proxy.
+We are planning to add support for other games in the future.
+However, they might already work but are limited to the TCP protocol.
