@@ -1,6 +1,6 @@
 ---
 title: Serializers
-description: Learn about serializes in Void.
+description: Learn about serializers in Void.
 ---
 
 Serializers are used to convert structured data between different formats. 
@@ -22,7 +22,7 @@ Helpful to convert Json or Snbt to Nbt and vice versa.
   - Converts **[Nbt](/developing-plugins/nbt) to [Snbt](/developing-plugins/nbt/#snbt)** or **[Snbt](/developing-plugins/nbt/#snbt) to [Nbt](/developing-plugins/nbt)**.
 
 :::caution[Prefer deserializing from Snbt]
-Json is not recommended because it's properties types conversion is guessed by bounds of the value.  
+Json is not recommended because its properties' type conversion is guessed by bounds of the value.  
 
 ```json
 {
@@ -31,7 +31,7 @@ Json is not recommended because it's properties types conversion is guessed by b
 ```
 This 'value' number does not specify if it is a byte, short, int or long. So in deserialization time, parser checks if it fits in byte, short, int or long, and uses the first Nbt Tag Type that fits.
 
-On other hand, Snbt specifies concrete type of the value. 
+On the other hand, Snbt specifies concrete type of the value. 
 ```json
 {
 	value: 1b

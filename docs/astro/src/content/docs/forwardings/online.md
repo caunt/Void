@@ -8,12 +8,12 @@ sidebar:
 Online (Private Key) forwarding is a type of forwarding player data developed by [**Void**](https://github.com/caunt/Void).
 
 :::tip
-This forwarding is the hardest to setup, but does not break official Mojang authentication and enables Minecraft Encryption with the server.
+This forwarding is the hardest to set up, but does not break official Mojang authentication and enables Minecraft Encryption with the server.
 :::
 
 :::note[Mods]
-Online (Private Key) forwarding is not supported by mod loaders, and currently have no community implementations.  
-However, there is [**examples**](https://github.com/caunt/Void/blob/main/src/Servers/Bukkit/src/main/java/net/caunt/thevoid/EntryPoint.java) on how to enable it with **any** minecraft server, including modded.
+Online (Private Key) forwarding is not supported by mod loaders, and currently has no community implementations.  
+However, there are [**examples**](https://github.com/caunt/Void/blob/main/src/Servers/Bukkit/src/main/java/net/caunt/thevoid/EntryPoint.java) on how to enable it with **any** Minecraft server, including modded.
 :::
 
 :::caution[Limitations]
@@ -22,7 +22,7 @@ However, there is [**examples**](https://github.com/caunt/Void/blob/main/src/Ser
 :::
 
 ## Configuration
-Since currently it has no community implementation, you have to set up it manually by creating a Void plugin and Minecraft plugin, mod or Java agent. 
+Since currently it has no community implementation, you have to set it up manually by creating a Void plugin and Minecraft plugin, mod or Java agent. 
 
 First of all, you have to retrieve server's private key used to authenticate and encrypt network data.  
 

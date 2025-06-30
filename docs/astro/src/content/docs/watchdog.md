@@ -3,14 +3,14 @@ title: Watchdog
 description: Learn how to enable and use the Watchdog feature in Void.
 ---
 
-The Watchdog feature in Void is designed to monitor the health of the Void Proxy and schedule restart if required. 
+The Watchdog feature in Void is designed to monitor the health of the Void Proxy and schedule a restart if required. 
 This is particularly useful for long-running processes or when running Void in a production environment.
 
 ## Enable Watchdog
 Watchdog is disabled by default. To enable it, you need to set the `Enabled` setting in the [**configuration file**](/configuration/in-file#watchdog) to `true`.
 
 ## Health Check
-`/health` endpoint is used to check the health of the Void Proxy.`
+`/health` endpoint is used to check the health of the Void Proxy.
 
 ```bash
 $ curl http://localhost:80/health
@@ -27,7 +27,7 @@ OK
 - STOPPING: The Void Proxy is shutting down.
 
 Status Code `200 OK` may be in any combination of above responses.   
-It is just meaning that the Void Proxy is still running and healthy.
+It just means that the Void Proxy is still running and healthy.
 
 ## Bound Check
 `/bound` endpoint is used to check if the Void Proxy is bound and accepting incoming connections.

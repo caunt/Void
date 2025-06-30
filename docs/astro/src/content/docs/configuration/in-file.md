@@ -5,7 +5,7 @@ sidebar:
   order: 0
 ---
 
-File configurations are main way of configuration.
+File configurations are the main way of configuration.
 However many options can be overridden in runtime using the API in Plugins.
 
 ## Proxy
