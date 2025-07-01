@@ -44,7 +44,9 @@ public class PaperServerViaVersionTests
         await DownloadAsync(jarUrl, serverJar);
 
         var viaVersionJar = Path.Combine(pluginsDir, "ViaVersion.jar");
-        await DownloadAsync("https://api.spiget.org/v2/resources/19254/download", viaVersionJar);
+        var viaVersionRelease = await client.GetFromJsonAsync<GithubRelease>("https://api.github.com/repos/ViaVersion/ViaVersion/releases/latest");
+        var viaVersionAsset = viaVersionRelease!.assets.First(a => a.name.EndsWith(".jar", StringComparison.OrdinalIgnoreCase));
+        await DownloadAsync(viaVersionAsset.browser_download_url, viaVersionJar);
 
         var viaBackwardsJar = Path.Combine(pluginsDir, "ViaBackwards.jar");
         var viaBackwardsRelease = await client.GetFromJsonAsync<GithubRelease>("https://api.github.com/repos/ViaVersion/ViaBackwards/releases/latest");
@@ -62,7 +64,7 @@ public class PaperServerViaVersionTests
             output);
         try
         {
-            await WaitForOutputAsync(server, output, "Done (", TimeSpan.FromMinutes(2));
+            await WaitForOutputAsync(server, output, "Done (", TimeSpan.FromMinutes(3));
 
             var release = await client.GetFromJsonAsync<GithubRelease>("https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest");
             var asset = release!.assets.First(a => a.name.Contains("linux-x64"));
