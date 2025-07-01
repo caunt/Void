@@ -47,7 +47,9 @@ public class PaperServerViaVersionTests
         await DownloadAsync("https://api.spiget.org/v2/resources/19254/download", viaVersionJar);
 
         var viaBackwardsJar = Path.Combine(pluginsDir, "ViaBackwards.jar");
-        await DownloadAsync("https://api.spiget.org/v2/resources/27448/download", viaBackwardsJar);
+        var viaBackwardsRelease = await client.GetFromJsonAsync<GithubRelease>("https://api.github.com/repos/ViaVersion/ViaBackwards/releases/latest");
+        var viaBackwardsAsset = viaBackwardsRelease!.assets.First(a => a.name.EndsWith(".jar", StringComparison.OrdinalIgnoreCase));
+        await DownloadAsync(viaBackwardsAsset.browser_download_url, viaBackwardsJar);
 
         await File.WriteAllTextAsync(Path.Combine(dir, "eula.txt"), "eula=true\n");
         await File.WriteAllTextAsync(Path.Combine(dir, "server.properties"), "online-mode=false\n");
