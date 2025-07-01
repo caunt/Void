@@ -46,6 +46,9 @@ public class PaperServerViaVersionTests
         var viaVersionJar = Path.Combine(pluginsDir, "ViaVersion.jar");
         await DownloadAsync("https://api.spiget.org/v2/resources/19254/download", viaVersionJar);
 
+        var viaBackwardsJar = Path.Combine(pluginsDir, "ViaBackwards.jar");
+        await DownloadAsync("https://api.spiget.org/v2/resources/27448/download", viaBackwardsJar);
+
         await File.WriteAllTextAsync(Path.Combine(dir, "eula.txt"), "eula=true\n");
         await File.WriteAllTextAsync(Path.Combine(dir, "server.properties"), "online-mode=false\n");
 
