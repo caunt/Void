@@ -7,6 +7,7 @@ using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+#nullable enable
 using Xunit;
 
 namespace Void.Tests;
@@ -48,7 +49,7 @@ public class PaperServerViaVersionTests
         await File.WriteAllTextAsync(Path.Combine(dir, "eula.txt"), "eula=true\n");
         await File.WriteAllTextAsync(Path.Combine(dir, "server.properties"), "online-mode=false\n");
 
-        using var output = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        var output = new System.Collections.Concurrent.ConcurrentQueue<string>();
         using var server = StartProcess(
             "java",
             $"-Djava.net.preferIPv4Stack=true {GetJavaProxyArgs()} -jar {serverJar} --nogui",
