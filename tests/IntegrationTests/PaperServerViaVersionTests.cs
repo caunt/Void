@@ -16,6 +16,8 @@ public class PaperServerViaVersionTests
     [Fact]
     public async Task PaperServerAllowsOldClientAsync()
     {
+        Trace.Listeners.Add(new ConsoleTraceListener());
+
         using var client = new HttpClient();
         client.DefaultRequestHeaders.UserAgent.ParseAdd("VoidTest/1.0");
 
@@ -91,6 +93,7 @@ public class PaperServerViaVersionTests
             RedirectStandardError = true,
             UseShellExecute = false
         };
+
         void SetEnv(string name)
         {
             var value = Environment.GetEnvironmentVariable(name);
@@ -104,7 +107,19 @@ public class PaperServerViaVersionTests
         SetEnv("http_proxy");
         SetEnv("https_proxy");
         SetEnv("no_proxy");
-        return Process.Start(psi)!;
+
+        var process = Process.Start(psi)!;
+        Task.Run(async () =>
+        {
+            while (!process.HasExited)
+            {
+                var line = await process.StandardError.ReadLineAsync();
+                if (line == null)
+                    break;
+                Trace.WriteLine(line);
+            }
+        });
+        return process;
     }
 
     private static async Task WaitForOutputAsync(Process process, string text, TimeSpan timeout)
@@ -115,8 +130,12 @@ public class PaperServerViaVersionTests
             if (process.HasExited)
                 throw new Exception("Process exited before expected output");
             var line = await process.StandardOutput.ReadLineAsync();
-            if (line != null && line.Contains(text, StringComparison.OrdinalIgnoreCase))
-                return;
+            if (line != null)
+            {
+                Trace.WriteLine(line);
+                if (line.Contains(text, StringComparison.OrdinalIgnoreCase))
+                    return;
+            }
         }
         throw new TimeoutException($"Did not see '{text}' in output within {timeout}");
     }
