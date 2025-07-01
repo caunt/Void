@@ -48,13 +48,15 @@ public class PaperServerViaVersionTests
         await File.WriteAllTextAsync(Path.Combine(dir, "eula.txt"), "eula=true\n");
         await File.WriteAllTextAsync(Path.Combine(dir, "server.properties"), "online-mode=false\n");
 
+        using var output = new System.Collections.Concurrent.ConcurrentQueue<string>();
         using var server = StartProcess(
             "java",
             $"-Djava.net.preferIPv4Stack=true {GetJavaProxyArgs()} -jar {serverJar} --nogui",
-            dir);
+            dir,
+            output);
         try
         {
-            await WaitForOutputAsync(server, "Done", TimeSpan.FromMinutes(2));
+            await WaitForOutputAsync(server, output, "Done", TimeSpan.FromMinutes(2));
 
             var release = await client.GetFromJsonAsync<GithubRelease>("https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest");
             var asset = release!.assets.First(a => a.name.Contains("linux-x64"));
@@ -62,8 +64,8 @@ public class PaperServerViaVersionTests
             await DownloadAsync(asset.browser_download_url, mccPath);
             Process.Start("chmod", $"+x {mccPath}")!.WaitForExit();
 
-            using var mcc = StartProcess(mccPath, $"test - 127.0.0.1:25565 \"/send hello world\"", dir);
-            await WaitForOutputAsync(server, "hello world", TimeSpan.FromSeconds(30));
+            using var mcc = StartProcess(mccPath, $"test - 127.0.0.1:25565 \"/send hello world\"", dir, output);
+            await WaitForOutputAsync(server, output, "hello world", TimeSpan.FromSeconds(30));
         }
         finally
         {
@@ -84,7 +86,7 @@ public class PaperServerViaVersionTests
         }
     }
 
-    private static Process StartProcess(string file, string args, string working)
+    private static Process StartProcess(string file, string args, string working, System.Collections.Concurrent.ConcurrentQueue<string> output)
     {
         var psi = new ProcessStartInfo(file, args)
         {
@@ -116,26 +118,39 @@ public class PaperServerViaVersionTests
                 var line = await process.StandardError.ReadLineAsync();
                 if (line == null)
                     break;
+                output.Enqueue(line);
+                Trace.WriteLine(line);
+            }
+        });
+        Task.Run(async () =>
+        {
+            while (!process.HasExited)
+            {
+                var line = await process.StandardOutput.ReadLineAsync();
+                if (line == null)
+                    break;
+                output.Enqueue(line);
                 Trace.WriteLine(line);
             }
         });
         return process;
     }
 
-    private static async Task WaitForOutputAsync(Process process, string text, TimeSpan timeout)
+    private static async Task WaitForOutputAsync(Process process, System.Collections.Concurrent.ConcurrentQueue<string> output, string text, TimeSpan timeout)
     {
         using var cts = new CancellationTokenSource(timeout);
         while (!cts.IsCancellationRequested)
         {
-            if (process.HasExited)
-                throw new Exception("Process exited before expected output");
-            var line = await process.StandardOutput.ReadLineAsync();
-            if (line != null)
+            while (output.TryDequeue(out var line))
             {
-                Trace.WriteLine(line);
                 if (line.Contains(text, StringComparison.OrdinalIgnoreCase))
                     return;
             }
+
+            if (process.HasExited)
+                throw new Exception("Process exited before expected output");
+
+            await Task.Delay(100, cts.Token);
         }
         throw new TimeoutException($"Did not see '{text}' in output within {timeout}");
     }
