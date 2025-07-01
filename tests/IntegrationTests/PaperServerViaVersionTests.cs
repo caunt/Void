@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -22,45 +23,24 @@ public class PaperServerViaVersionTests
         using var client = new HttpClient();
         client.DefaultRequestHeaders.UserAgent.ParseAdd("VoidTest/1.0");
 
-        var versions = await client.GetFromJsonAsync<PaperProject>("https://api.papermc.io/v2/projects/paper");
-        var latestVersion = versions!.versions.Last();
-        var builds = await client.GetFromJsonAsync<PaperBuilds>($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}");
-        var latestBuild = builds!.builds.Last();
-        var jarUrl = $"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}/builds/{latestBuild}/downloads/paper-{latestVersion}-{latestBuild}.jar";
-
-        var dir = Path.Combine(Path.GetTempPath(), $"paper_test_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(dir);
-        var pluginsDir = Path.Combine(dir, "plugins");
+        await using var dir = new TempDir();
+        var pluginsDir = Path.Combine(dir.Path, "plugins");
         Directory.CreateDirectory(pluginsDir);
 
-        async Task DownloadAsync(string url, string path)
-        {
-            using var stream = await client.GetStreamAsync(url);
-            await using var fs = File.Create(path);
-            await stream.CopyToAsync(fs);
-        }
+        var serverJar = Path.Combine(dir.Path, "paper.jar");
+        await DownloadFileAsync(client, await GetLatestPaperJarUrlAsync(client), serverJar);
 
-        var serverJar = Path.Combine(dir, "paper.jar");
-        await DownloadAsync(jarUrl, serverJar);
+        await DownloadGithubReleaseAssetAsync(client, "ViaVersion/ViaVersion", a => a.name.EndsWith(".jar", StringComparison.OrdinalIgnoreCase), Path.Combine(pluginsDir, "ViaVersion.jar"));
+        await DownloadGithubReleaseAssetAsync(client, "ViaVersion/ViaBackwards", a => a.name.EndsWith(".jar", StringComparison.OrdinalIgnoreCase), Path.Combine(pluginsDir, "ViaBackwards.jar"));
 
-        var viaVersionJar = Path.Combine(pluginsDir, "ViaVersion.jar");
-        var viaVersionRelease = await client.GetFromJsonAsync<GithubRelease>("https://api.github.com/repos/ViaVersion/ViaVersion/releases/latest");
-        var viaVersionAsset = viaVersionRelease!.assets.First(a => a.name.EndsWith(".jar", StringComparison.OrdinalIgnoreCase));
-        await DownloadAsync(viaVersionAsset.browser_download_url, viaVersionJar);
+        await File.WriteAllTextAsync(Path.Combine(dir.Path, "eula.txt"), "eula=true\n");
+        await File.WriteAllTextAsync(Path.Combine(dir.Path, "server.properties"), "online-mode=false\n");
 
-        var viaBackwardsJar = Path.Combine(pluginsDir, "ViaBackwards.jar");
-        var viaBackwardsRelease = await client.GetFromJsonAsync<GithubRelease>("https://api.github.com/repos/ViaVersion/ViaBackwards/releases/latest");
-        var viaBackwardsAsset = viaBackwardsRelease!.assets.First(a => a.name.EndsWith(".jar", StringComparison.OrdinalIgnoreCase));
-        await DownloadAsync(viaBackwardsAsset.browser_download_url, viaBackwardsJar);
-
-        await File.WriteAllTextAsync(Path.Combine(dir, "eula.txt"), "eula=true\n");
-        await File.WriteAllTextAsync(Path.Combine(dir, "server.properties"), "online-mode=false\n");
-
-        var output = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        var output = new ConcurrentQueue<string>();
         using var server = StartProcess(
             "java",
             $"-Djava.net.preferIPv4Stack=true {GetJavaProxyArgs()} -jar {serverJar} --nogui",
-            dir,
+            dir.Path,
             output);
         try
         {
@@ -68,11 +48,11 @@ public class PaperServerViaVersionTests
 
             var release = await client.GetFromJsonAsync<GithubRelease>("https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest");
             var asset = release!.assets.First(a => a.name.Contains("linux-x64"));
-            var mccPath = Path.Combine(dir, "MCC");
-            await DownloadAsync(asset.browser_download_url, mccPath);
+            var mccPath = Path.Combine(dir.Path, "MCC");
+            await DownloadFileAsync(client, asset.browser_download_url, mccPath);
             Process.Start("chmod", $"+x {mccPath}")!.WaitForExit();
 
-            using var mcc = StartProcess(mccPath, $"test - 127.0.0.1:25565 \"hello world\"", dir, output);
+            using var mcc = StartProcess(mccPath, $"test - 127.0.0.1:25565 \"hello world\"", dir.Path, output);
             await WaitForOutputAsync(server, output, "<test> hello world", TimeSpan.FromSeconds(30));
         }
         finally
@@ -82,19 +62,10 @@ public class PaperServerViaVersionTests
                 server.Kill();
                 server.WaitForExit(10000);
             }
-
-            try
-            {
-                Directory.Delete(dir, true);
-            }
-            catch
-            {
-                // ignore cleanup failures
-            }
         }
     }
 
-    private static Process StartProcess(string file, string args, string working, System.Collections.Concurrent.ConcurrentQueue<string> output)
+    private static Process StartProcess(string file, string args, string working, ConcurrentQueue<string> output)
     {
         var psi = new ProcessStartInfo(file, args)
         {
@@ -144,7 +115,7 @@ public class PaperServerViaVersionTests
         return process;
     }
 
-    private static async Task WaitForOutputAsync(Process process, System.Collections.Concurrent.ConcurrentQueue<string> output, string text, TimeSpan timeout)
+    private static async Task WaitForOutputAsync(Process process, ConcurrentQueue<string> output, string text, TimeSpan timeout)
     {
         using var cts = new CancellationTokenSource(timeout);
         while (!cts.IsCancellationRequested)
@@ -184,6 +155,50 @@ public class PaperServerViaVersionTests
             return string.Empty;
 
         return $"-Dhttp.proxyHost={uri.Host} -Dhttp.proxyPort={uri.Port} -Dhttps.proxyHost={uri.Host} -Dhttps.proxyPort={uri.Port}";
+    }
+
+    private static async Task<string> GetLatestPaperJarUrlAsync(HttpClient client)
+    {
+        var versions = await client.GetFromJsonAsync<PaperProject>("https://api.papermc.io/v2/projects/paper");
+        var latestVersion = versions!.versions.Last();
+        var builds = await client.GetFromJsonAsync<PaperBuilds>($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}");
+        var latestBuild = builds!.builds.Last();
+        return $"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}/builds/{latestBuild}/downloads/paper-{latestVersion}-{latestBuild}.jar";
+    }
+
+    private static async Task DownloadGithubReleaseAssetAsync(HttpClient client, string repo, Func<GithubAsset, bool> match, string path)
+    {
+        var release = await client.GetFromJsonAsync<GithubRelease>($"https://api.github.com/repos/{repo}/releases/latest");
+        var assetUrl = release!.assets.First(match).browser_download_url;
+        await DownloadFileAsync(client, assetUrl, path);
+    }
+
+    private static async Task DownloadFileAsync(HttpClient client, string url, string path)
+    {
+        await using var fs = File.Create(path);
+        using var stream = await client.GetStreamAsync(url);
+        await stream.CopyToAsync(fs);
+    }
+
+    private sealed class TempDir : IAsyncDisposable
+    {
+        public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "paper_test_" + Guid.NewGuid().ToString("N"));
+
+        public TempDir() => Directory.CreateDirectory(Path);
+
+        public ValueTask DisposeAsync()
+        {
+            try
+            {
+                Directory.Delete(Path, true);
+            }
+            catch
+            {
+                // ignore cleanup failures
+            }
+
+            return ValueTask.CompletedTask;
+        }
     }
 
     private sealed record PaperProject(string[] versions);
