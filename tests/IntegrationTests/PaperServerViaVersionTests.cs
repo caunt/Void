@@ -50,7 +50,7 @@ public class PaperServerViaVersionTests
 
         using var server = StartProcess(
             "java",
-            $"-Djava.net.preferIPv4Stack=true -jar {serverJar} --nogui",
+            $"-Djava.net.preferIPv4Stack=true {GetJavaProxyArgs()} -jar {serverJar} --nogui",
             dir);
         try
         {
@@ -138,6 +138,29 @@ public class PaperServerViaVersionTests
             }
         }
         throw new TimeoutException($"Did not see '{text}' in output within {timeout}");
+    }
+
+    private static string GetJavaProxyArgs()
+    {
+        static string? GetProxyEnv()
+        {
+            foreach (var name in new[] { "HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy" })
+            {
+                var value = Environment.GetEnvironmentVariable(name);
+                if (!string.IsNullOrEmpty(value))
+                    return value;
+            }
+            return null;
+        }
+
+        var proxy = GetProxyEnv();
+        if (proxy is null)
+            return string.Empty;
+
+        if (!Uri.TryCreate(proxy, UriKind.Absolute, out var uri))
+            return string.Empty;
+
+        return $"-Dhttp.proxyHost={uri.Host} -Dhttp.proxyPort={uri.Port} -Dhttps.proxyHost={uri.Host} -Dhttps.proxyPort={uri.Port}";
     }
 
     private sealed record PaperProject(string[] versions);
