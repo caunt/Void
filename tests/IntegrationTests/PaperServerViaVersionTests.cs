@@ -57,7 +57,7 @@ public class PaperServerViaVersionTests
             output);
         try
         {
-            await WaitForOutputAsync(server, output, "Done", TimeSpan.FromMinutes(2));
+            await WaitForOutputAsync(server, output, "Done (", TimeSpan.FromMinutes(2));
 
             var release = await client.GetFromJsonAsync<GithubRelease>("https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest");
             var asset = release!.assets.First(a => a.name.Contains("linux-x64"));
@@ -65,8 +65,8 @@ public class PaperServerViaVersionTests
             await DownloadAsync(asset.browser_download_url, mccPath);
             Process.Start("chmod", $"+x {mccPath}")!.WaitForExit();
 
-            using var mcc = StartProcess(mccPath, $"test - 127.0.0.1:25565 \"/send hello world\"", dir, output);
-            await WaitForOutputAsync(server, output, "hello world", TimeSpan.FromSeconds(30));
+            using var mcc = StartProcess(mccPath, $"test - 127.0.0.1:25565 \"hello world\"", dir, output);
+            await WaitForOutputAsync(server, output, "<test> hello world", TimeSpan.FromSeconds(30));
         }
         finally
         {
