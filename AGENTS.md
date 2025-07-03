@@ -40,9 +40,13 @@ This repository is a .NET solution structured as follows:
 ## Coding conventions
 
 Follow the existing C# style rules:
-  - Use descriptive names (no single-letter variables)
-  - Insert a blank line before each if or foreach block
-  - Keep method signatures on single line
+  - Private fields prefixed with an underscore and method parameters use camelCase
+  - Braces sit on their own lines, with a blank line before loops and conditional statements
+  - Method signatures remain on a single line
+  - Identifier names are always fully descriptive and never abbreviated
+  - Async methods carry an Async suffix
+  - Pattern matching is favored over explicit casts
+  - nameof is used for parameter checks, logging, and exceptions
 
 ## Development
 
