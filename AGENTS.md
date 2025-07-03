@@ -7,7 +7,20 @@ This repository is a .NET solution structured as follows:
   - `Benchmarks/` – Benchmark projects.
   - `Debug/` – Debug harness and utilities.
   - `Minecraft/` – Minecraft specific libraries.
-  - `Platform/` – Main proxy entry point.
+  - `Platform/` – Main proxy entry point:
+    - `Commands/` – Handles parsing and executing player commands.
+    - `Configurations/` – Loads settings and serializes configuration files.
+    - `Console/` – Implements the interactive console service.
+    - `Crypto/` – Provides cryptographic utilities.
+    - `Events/` – Publishes and listens for internal events.
+    - `Extensions/` – Host builder helpers and other extensions.
+    - `Links/` – Manages connections to upstream servers.
+    - `Players/` – Tracks online players and sessions.
+    - `Plugins/` – Discovers plugins and resolves dependencies.
+    - `Properties/` – Application resources and launch settings.
+    - `Resources/` – Embedded default configuration files.
+    - `Servers/` – Maintains the list of backend servers.
+    - `Utils/` – Miscellaneous helper utilities.
   - `Playground/` – Sample playground app.
   - `Plugins/` – Built‑in plugins organized by feature:
     - `Common/` – Shared infrastructure and helpers for other plugins.
