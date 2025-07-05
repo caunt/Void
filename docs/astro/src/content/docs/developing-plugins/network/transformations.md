@@ -18,7 +18,7 @@ Instead, use transformations explained below.
 :::
 
 ## Conditional packet transformations
-Conditional packet transformations are easiest way to handle changes. However, they are likely to be tangled if packet changes are made very often. This may lead to a spaghetti code.
+Conditional packet transformations are the simplest way to handle changes, but they can become messy if the packet changes frequently.
 
 We will use previously defined [**Set Held Item (clientbound)**](/developing-plugins/network/packets#defining-packets) packet as an example.
 In this packet, changes were made from Minecraft version **1.21** to **1.21.2**.
@@ -59,9 +59,9 @@ public class SetHeldItemClientboundPacket : IMinecraftClientboundPacket<SetHeldI
 ```
 
 :::note
-These transformations are called **conditional** because they are defined with simple conditional operators.
+These transformations are called **conditional** because they use simple `if` checks.
 
-They are good until a packet being changed very often. Generally, we recommend to use such transformations for **no more than 2-3 versions of Minecraft**. After that point, they become unreadable to normal [human](https://en.wikipedia.org/wiki/Human).
+Use them only when the packet changes a few times (around 2–3 Minecraft versions). Beyond that, the code becomes hard to read.
 :::
 
 ## Flat packet transformations
