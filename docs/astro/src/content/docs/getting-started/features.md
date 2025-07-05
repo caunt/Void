@@ -37,10 +37,10 @@ This page provides an overview of the features supported or planned to be implem
 | [**Online (PK)**](/forwardings/online)                      | &#x2705;  | &#x2705; |
 
 :::tip[Online (Private Key)]
-A new type of [**forwarding**](/forwardings/online) being developed.  
-It allows you to play through the proxy on servers that are configured with online mode.
-The server must safely share its private key so the proxy can provide an API to plugins.
-If no key is provided, you can still play through the proxy, but the API will be very limited.
+Online (Private Key) is a new [**forwarding**](/forwardings/online) method.
+It lets you connect to servers using online mode.
+The server securely shares its private key so the proxy can expose an API to plugins.
+Without the key you can still play, but plugin features are limited.
 :::
 
 ### Mod Loaders
