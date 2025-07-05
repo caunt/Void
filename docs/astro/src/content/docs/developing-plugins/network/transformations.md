@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-When you have defined packet, it might be changed in future versions of Minecraft. There is two ways to handle this:
+When you have defined packet, it might be changed in future versions of Minecraft. There are two ways to handle this:
 - Define conditional packet transformation
 - Define flat packet transformation
 
