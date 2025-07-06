@@ -27,11 +27,7 @@ However, in most cases, you must apply `IEventListener` interface to your classe
 :::
 
 ## Async Events
-Most of the time, you will want to interact with players when receiving an event.
-Since the proxy is just network IO tool - such interactions are always implemented asynchronously, so you will need to make your listener asynchronous as well.
-Your method can inject `CancellationToken` for graceful player network lifetime handling by proxy.
-
-You do not need to think or worry about lifetime of cancellation tokens, just pass them down to `async` methods you call.
+Most player interactions happen asynchronously. Mark your event handlers `async` and accept a `CancellationToken` from the proxy. Pass this token to any async methods you call.
 ```csharp
 [Subscribe]
 public async ValueTask OnPlayerConnected(PlayerConnectedEvent @event, CancellationToken cancellationToken)
