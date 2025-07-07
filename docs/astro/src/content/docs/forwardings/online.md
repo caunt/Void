@@ -78,10 +78,7 @@ public final class EntryPoint extends JavaPlugin {
 Second step is to **securely** send the private key to your Void proxy plugin.
 
 :::caution[Security]
-Ensure that you have a very secure and encrypted way to pass that key, or at least configured firewall rules to prevent unauthorized access to server key.  
-This is **very important** step, as it can lead to **server compromise** if not done correctly.
-
-Prefer using community or official implementations of Online forwarding, when they become available.
+Send the private key only over a secure channel or behind a firewall. Failing to protect the key can compromise your server. When possible, use an official implementation.
 :::
 
 Last step is to pass that key to [**Void**](https://github.com/caunt/Void) when player is connecting to that server.  
