@@ -77,6 +77,52 @@ export default defineConfig({
                 }
             },
             {
+                tag: 'meta',
+                attrs: {
+                    name: 'description',
+                    content: 'Void is a cross-platform Minecraft proxy supporting all versions and mods.'
+                }
+            },
+            {
+                tag: 'meta',
+                attrs: {
+                    property: 'og:title',
+                    content: 'Void Proxy'
+                }
+            },
+            {
+                tag: 'meta',
+                attrs: {
+                    property: 'og:description',
+                    content: 'Void is a cross-platform Minecraft proxy supporting all versions and mods.'
+                }
+            },
+            {
+                tag: 'meta',
+                attrs: {
+                    name: 'twitter:card',
+                    content: 'summary_large_image'
+                }
+            },
+            {
+                tag: 'meta',
+                attrs: {
+                    name: 'twitter:title',
+                    content: 'Void Proxy'
+                }
+            },
+            {
+                tag: 'meta',
+                attrs: {
+                    name: 'twitter:description',
+                    content: 'Void is a cross-platform Minecraft proxy supporting all versions and mods.'
+                }
+            },
+            {
+                tag: 'link',
+                attrs: { rel: 'canonical', href: 'https://void.caunt.world' }
+            },
+            {
                 tag: 'link',
                 attrs: {
                     rel: 'apple-touch-icon',
