@@ -22,9 +22,9 @@ However, there are [**examples**](https://github.com/caunt/Void/blob/main/src/Se
 :::
 
 ## Configuration
-Since currently it has no community implementation, you have to set it up manually by creating a Void plugin and Minecraft plugin, mod or Java agent. 
+As there is no community implementation yet, you need a plugin on both the server and the proxy.
 
-First of all, you have to retrieve server's private key used to authenticate and encrypt network data.  
+First, obtain the server's private key that Minecraft uses for authentication and encryption.
 
 ```java
 // Plugin.java
@@ -75,14 +75,13 @@ public final class EntryPoint extends JavaPlugin {
 }
 ```
 
-Second step is to **securely** send the private key to your Void proxy plugin.
+Next, send the private key to your proxy plugin over a secure channel.
 
 :::caution[Security]
-Send the private key only over a secure channel or behind a firewall. Failing to protect the key can compromise your server. When possible, use an official implementation.
+Never expose the key publicly or you risk compromising the server.
 :::
 
-Last step is to pass that key to [**Void**](https://github.com/caunt/Void) when player is connecting to that server.  
-This key will be used to decrypt network traffic and provide protocol API to plugins.
+Finally, provide the key to [**Void**](https://github.com/caunt/Void) when the player connects so the proxy can decrypt traffic and offer its protocol API.
 
 Void will automatically search for the private key if `AuthenticationSide` is set to `Server`.
 
