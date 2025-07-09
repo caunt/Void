@@ -119,6 +119,34 @@ export default defineConfig({
                 }
             },
             {
+                tag: 'meta',
+                attrs: {
+                    name: 'keywords',
+                    content: 'minecraft proxy, open-source, cross-platform, velocity alternative, bungeecord replacement, plugin API, plugin development, server management, network optimization, high performance, low latency, scalable infrastructure, cross-version compatibility, bedrock support, java edition, kubernetes ready, docker ready, cloud deployment, secure networking, high availability, gaming proxy, Void'
+                }
+            },
+            {
+                tag: 'meta',
+                attrs: {
+                    property: 'og:url',
+                    content: 'https://void.caunt.world'
+                }
+            },
+            {
+                tag: 'meta',
+                attrs: {
+                    property: 'og:site_name',
+                    content: 'Void Proxy'
+                }
+            },
+            {
+                tag: 'meta',
+                attrs: {
+                    property: 'og:type',
+                    content: 'website'
+                }
+            },
+            {
                 tag: 'link',
                 attrs: { rel: 'canonical', href: 'https://void.caunt.world' }
             },
