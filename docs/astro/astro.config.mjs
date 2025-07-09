@@ -72,8 +72,22 @@ export default defineConfig({
             {
                 tag: 'meta',
                 attrs: {
+                    property: 'og:image:alt',
+                    content: 'Void Proxy logo'
+                }
+            },
+            {
+                tag: 'meta',
+                attrs: {
                     property: 'twitter:image',
                     content: '/logo-text-horizontal.1024x512.dark.png'
+                }
+            },
+            {
+                tag: 'meta',
+                attrs: {
+                    property: 'twitter:image:alt',
+                    content: 'Void Proxy logo'
                 }
             },
             {
