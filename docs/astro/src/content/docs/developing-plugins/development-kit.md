@@ -4,10 +4,10 @@ description: Learn how to use the Plugin Development Kit to create plugins for V
 ---
 
 Plugin Development Kit is a set of predefined configurations that simplifies the development process of plugins.
-It can be used with any msbuild-compatible IDE, such as Visual Studio or JetBrains Rider.
+It can be used with any MSBuild-compatible IDE, such as Visual Studio or JetBrains Rider.
 
 ## Prerequisites
-Void plugins are written with many modern .NET features, so you will need to ensure that you had experience with them or at least know what are you doing.
+Void plugins are written with many modern .NET features, so you will need to ensure that you had experience with them or at least know what you are doing.
 Some of them include:
 - Dependency Injection
 - Asynchronous Programming
@@ -35,14 +35,13 @@ With Visual Studio, you can set breakpoints in your code and use the **Debug** m
 
 ## Compiling
 1) Build the project with your IDE.
-2) Take the compiled dll from the **bin** folder.
-3) Do not use and do not include any other dlls from that directory. 
+2) Take the compiled DLL from the **bin** folder.
+3) Do not use and do not include any other DLLs from that directory.
 Your dependencies will be automatically resolved by the proxy in runtime.
 
 ## Dependencies
-Dependencies are automatically resolved in runtime in several ways and fallbacks. 
-Including nuget packages, local dlls, and looking in runtime.
+Dependencies are automatically resolved at runtime in several ways and fallbacks.
+Including NuGet packages, local DLLs, and looking at runtime.
 NuGet dependencies will be automatically downloaded and cached in the **packages** directory.
 
-## Distribution
-Share your ***.dll** file, without any other files from the **bin** directory.
+## DistributionShare your ***.dll** file, without any other files from the **bin** directory.
