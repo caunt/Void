@@ -119,6 +119,34 @@ export default defineConfig({
                 }
             },
             {
+                tag: 'meta',
+                attrs: {
+                    name: 'keywords',
+                    content: 'minecraft proxy, cross-platform, mods, plugin development, Void'
+                }
+            },
+            {
+                tag: 'meta',
+                attrs: {
+                    property: 'og:url',
+                    content: 'https://void.caunt.world'
+                }
+            },
+            {
+                tag: 'meta',
+                attrs: {
+                    property: 'og:site_name',
+                    content: 'Void Proxy'
+                }
+            },
+            {
+                tag: 'meta',
+                attrs: {
+                    property: 'og:type',
+                    content: 'website'
+                }
+            },
+            {
                 tag: 'link',
                 attrs: { rel: 'canonical', href: 'https://void.caunt.world' }
             },
