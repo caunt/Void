@@ -5,17 +5,16 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Void.Tests;
+namespace Void.Tests.Integration;
 
 public class PaperMcIntegrationTests
 {
     private static async Task DownloadFileAsync(HttpClient client, string url, string destination)
     {
-        await using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+        using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
         response.EnsureSuccessStatusCode();
         await using var fs = File.Create(destination);
         await response.Content.CopyToAsync(fs);
@@ -96,7 +95,7 @@ public class PaperMcIntegrationTests
     private static async Task<bool> WaitForOutputAsync(Process process, Func<string, bool> predicate, TimeSpan timeout)
     {
         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        void Handler(object? s, DataReceivedEventArgs e)
+        void Handler(object s, DataReceivedEventArgs e)
         {
             if (e.Data != null && predicate(e.Data))
                 tcs.TrySetResult(true);
@@ -148,8 +147,8 @@ public class PaperMcIntegrationTests
         var pluginsDir = Path.Combine(tempDir, "plugins");
         Directory.CreateDirectory(pluginsDir);
         var logs = new List<string>();
-        Process? server = null;
-        Process? mcc = null;
+        Process server = null;
+        Process mcc = null;
         try
         {
             var versionsJson = await client.GetStringAsync("https://api.papermc.io/v2/projects/paper");

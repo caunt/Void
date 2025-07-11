@@ -3,7 +3,7 @@ using System.Text.Json;
 using Void.Proxy.Utils;
 using Xunit;
 
-namespace Void.Tests;
+namespace Void.Tests.UtilsTests;
 
 public class JsonIpEndPointConverterTests
 {

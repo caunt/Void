@@ -1,8 +1,7 @@
-using System;
 using Void.Proxy.Utils;
 using Xunit;
 
-namespace Void.Tests;
+namespace Void.Tests.GuidTests;
 
 public class GuidHelperTests
 {
