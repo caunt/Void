@@ -94,15 +94,15 @@ public static class GuidHelper
     }
 }
 
-public class GuidConverter : JsonConverter<Guid>
+public sealed class GuidConverter : JsonConverter<Guid>
 {
     public override Guid Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return Guid.Parse(reader.GetString()!);
+        return reader.GetGuid();
     }
 
-    public override void Write(Utf8JsonWriter writer, Guid temperature, JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, Guid value, JsonSerializerOptions options)
     {
-        writer.WriteStringValue(temperature.ToString());
+        writer.WriteStringValue(value);
     }
 }
