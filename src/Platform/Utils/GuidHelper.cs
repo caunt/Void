@@ -9,15 +9,12 @@ namespace Void.Proxy.Utils;
 
 public static class GuidHelper
 {
-    private static readonly HashAlgorithm HashAlgorithm = MD5.Create();
-
     public static Guid FromStringHash(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
         var i128 = new Int128();
-
-        HashAlgorithm.TryComputeHash(Encoding.UTF8.GetBytes(text), i128.AsSpan(), out _);
+        MD5.HashData(Encoding.UTF8.GetBytes(text), i128.AsSpan());
 
         i128.version = (byte)((i128.version & 0x0f) | 0x30);
         i128.variant = (byte)((i128.variant & 0x3f) | 0x80);
