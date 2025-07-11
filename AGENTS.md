@@ -53,3 +53,11 @@ Follow the existing C# style rules:
 - Run `dotnet format` before committing any code changes.
 - After changing source code, run `dotnet build` from the repository root.
 - Conventional Commits are required for commit messages.
+
+## Protocol guidance
+
+When adding or modifying packet handling:
+
+- Reference <https://minecraft.wiki/w/Java_Edition_protocol/Packets> for the current protocol packet list and structures.
+- For previous or historical packet behavior, view the edit history of that page.
+- Check the `src/Plugins/ProtocolSupport` directory to see how existing packets are implemented and update them as necessary.
