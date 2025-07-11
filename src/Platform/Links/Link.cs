@@ -153,18 +153,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
                 if (cancelled)
                     continue;
             }
-            catch (StreamClosedException)
-            {
-                _stopReason = direction switch
-                {
-                    Direction.Serverbound => LinkStopReason.PlayerDisconnected, // source (player) disconnected
-                    Direction.Clientbound => LinkStopReason.ServerDisconnected, // source (server) disconnected
-                    _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
-                };
-
-                break;
-            }
-            catch (Exception exception) when (exception is TaskCanceledException or OperationCanceledException or ObjectDisposedException)
+            catch (Exception exception) when (exception is StreamClosedException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
             {
                 _stopReason = direction switch
                 {
@@ -189,18 +178,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
                 await events.ThrowAsync(new MessageSentEvent(sourceSide, Side.Proxy, destinationSide, direction, message, this, Player), cancellationToken);
             }
-            catch (StreamClosedException)
-            {
-                _stopReason = direction switch
-                {
-                    Direction.Serverbound => LinkStopReason.ServerDisconnected, // destination (server) disconnected
-                    Direction.Clientbound => LinkStopReason.PlayerDisconnected, // destination (player) disconnected
-                    _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
-                };
-
-                break;
-            }
-            catch (Exception exception) when (exception is TaskCanceledException or OperationCanceledException or ObjectDisposedException)
+            catch (Exception exception) when (exception is StreamClosedException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
             {
                 _stopReason = direction switch
                 {
