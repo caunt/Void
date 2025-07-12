@@ -6,16 +6,30 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using Octokit;
+using Void.Tests.Extensions;
 using Xunit;
+using ProductHeaderValue = Octokit.ProductHeaderValue;
 
 namespace Void.Tests.Integration;
 
 public class MinecraftTests : IDisposable
 {
-    private static readonly string _workingDirectory = Path.Combine(Path.GetTempPath(), "Void.Tests", "PaperMcIntegrationTests");
-    private static readonly string _pluginsDirectory = Path.Combine(_workingDirectory, "plugins");
+    private const string AppName = "Void.Tests";
+
+    private const string ViaVersionRepositoryOwnerName = "ViaVersion";
+    private const string ViaVersionRepositoryName = "ViaVersion";
+    private const string ViaBackwardsRepositoryName = "ViaBackwards";
+
+    private const string MinecraftConsoleClientRepositoryOwnerName = "MCCTeam";
+    private const string MinecraftConsoleClientRepositoryName = "Minecraft-Console-Client";
+
+    private static readonly GitHubClient _gitHubClient = new(new ProductHeaderValue(AppName));
+    private static readonly string _workingDirectory = Path.Combine(Path.GetTempPath(), AppName, "PaperMcIntegrationTests");
 
     private readonly HttpClient _client = new();
 
@@ -32,196 +46,101 @@ public class MinecraftTests : IDisposable
 
         if (!Directory.Exists(_workingDirectory))
             Directory.CreateDirectory(_workingDirectory);
-
-        if (!Directory.Exists(_pluginsDirectory))
-            Directory.CreateDirectory(_pluginsDirectory);
     }
 
     [Fact]
     public async Task MccConnectsPaperServer()
     {
-        var logs = new List<string>();
-        Process server = null;
-        Process mcc = null;
+        const string ExpectedText = "hello void!";
+
+        Process? server = null, client = null;
+        List<string> serverLogs = [], clientLogs = [];
 
         try
         {
-            var versionsJson = await _client.GetStringAsync("https://api.papermc.io/v2/projects/paper");
-            using var versions = JsonDocument.Parse(versionsJson);
-            var latestVersion = versions.RootElement.GetProperty("versions").EnumerateArray().Last().GetString();
+            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(60));
 
-            var buildsJson = await _client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}");
-            using var builds = JsonDocument.Parse(buildsJson);
-            var latestBuild = builds.RootElement.GetProperty("builds").EnumerateArray().Last().GetInt32();
+            var paperJarPath = await SetupPaperServerAsync(cancellationTokenSource.Token);
+            var minecraftConsoleClientExecutablePath = await SetupMinecraftConsoleClientAsync(cancellationTokenSource.Token);
 
-            var buildInfoJson = await _client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}/builds/{latestBuild}");
-            using var buildInfo = JsonDocument.Parse(buildInfoJson);
-            var jarName = buildInfo.RootElement.GetProperty("downloads").GetProperty("application").GetProperty("name").GetString();
+            server = StartApplication(paperJarPath);
+            client = StartApplication(minecraftConsoleClientExecutablePath, "void", "-", "localhost:25565", $"send {ExpectedText}");
 
-            var paperUrl = $"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}/builds/{latestBuild}/downloads/{jarName}";
-            var paperJar = Path.Combine(_workingDirectory, "paper.jar");
+            var serverTask = HandleOutputAsync(server, HandleServerConsole, cancellationTokenSource.Token);
+            var clientTask = HandleOutputAsync(client, HandleClientConsole, cancellationTokenSource.Token);
 
-            await DownloadFileAsync(paperUrl, paperJar);
+            await Task.WhenAny(serverTask, clientTask);
+            cancellationTokenSource.Cancel();
 
-            var viaVersion = await GetLatestGithubAssetUrl("ViaVersion", "ViaVersion", ".jar");
-            await DownloadFileAsync(viaVersion, Path.Combine(_pluginsDirectory, "ViaVersion.jar"));
+            try
+            {
+                await Task.WhenAll(serverTask, clientTask);
+            }
+            catch (IntegrationTestException exception)
+            {
+                Assert.Fail(exception.Message + $"\n\n\nServer logs:\n{string.Join("\n", serverLogs)}\n\n\nClient logs:\n{string.Join("\n", clientLogs)}");
+            }
 
-            var viaBackwards = await GetLatestGithubAssetUrl("ViaVersion", "ViaBackwards", ".jar");
-            await DownloadFileAsync(viaBackwards, Path.Combine(_pluginsDirectory, "ViaBackwards.jar"));
+            Assert.Contains(ExpectedText, serverLogs);
 
-            File.WriteAllText(Path.Combine(_workingDirectory, "eula.txt"), "eula=true");
-            File.WriteAllText(Path.Combine(_workingDirectory, "server.properties"), "server-port=25565\nonline-mode=false\n");
+            // Assert.True(ready, "Server failed to start in time");
+            // Assert.True(received, "Server did not log chat message");
 
-            server = StartJavaProcess(paperJar, _workingDirectory);
-            bool ready = await WaitForOutputAsync(server, l => l.Contains("Done") || l.Contains("Timings Reset"), TimeSpan.FromMinutes(3));
-            Assert.True(ready, "Server failed to start in time");
+            bool HandleServerConsole(string line)
+            {
+                serverLogs.Add(line);
 
-            var mccPath = Path.Combine(_workingDirectory, "MinecraftClient");
-            var mccUrl = await GetMccUrlAsync();
+                if (line.Contains("Done"))
+                    return true;
 
-            await DownloadFileAsync(mccUrl, mccPath);
+                return false;
+            }
 
-            if (!OperatingSystem.IsWindows())
-                File.SetUnixFileMode(mccPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+            bool HandleClientConsole(string line)
+            {
+                clientLogs.Add(line);
 
-            mcc = StartProcess(mccPath, "testuser - localhost:25565 \"chat hello world\"", _workingDirectory);
+                if (line.Contains("Cannot connect to the server : This version is not supported !"))
+                    throw new IntegrationTestException("Server / Client version mismatch");
 
-            bool received = await WaitForOutputAsync(server, l => l.Contains("hello world", StringComparison.OrdinalIgnoreCase), TimeSpan.FromSeconds(30));
-            Assert.True(received, "Server did not log chat message");
+                if (line.Contains("No connection could be made because the target machine actively refused it"))
+                    throw new IntegrationTestException("Server is not running or not reachable");
+
+                return false;
+            }
         }
         finally
         {
-            if (mcc != null && !mcc.HasExited)
-            {
-                mcc.Kill();
-                mcc.WaitForExit(5000);
-            }
-            if (server != null && !server.HasExited)
-            {
-                await server.StandardInput.WriteLineAsync("stop");
-                server.WaitForExit(10000);
+            if (client is { HasExited: false })
+                await client.ExitAsync();
 
-                if (!server.HasExited)
-                    server.Kill();
-            }
+            if (server is { HasExited: false })
+                await server.ExitAsync();
         }
     }
 
     public void Dispose()
     {
-        Directory.Delete(_pluginsDirectory, true);
         Directory.Delete(_workingDirectory, true);
-
         GC.SuppressFinalize(this);
     }
 
-    private async Task DownloadFileAsync(string url, string destination)
+    private static async Task HandleOutputAsync(Process process, Predicate<string> predicate, CancellationToken cancellationToken)
     {
-        using var response = await _client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-        response.EnsureSuccessStatusCode();
-
-        await using var fileStream = File.Create(destination);
-        await response.Content.CopyToAsync(fileStream);
-    }
-
-    private static void AddProxyArguments(List<string> args, ProcessStartInfo psi)
-    {
-        foreach (var key in new[] { "HTTP_PROXY", "http_proxy" })
-        {
-            var value = Environment.GetEnvironmentVariable(key);
-
-            if (string.IsNullOrWhiteSpace(value))
-                continue;
-
-            psi.Environment[key] = value;
-
-            if (!value.Contains("://"))
-                value = "http://" + value;
-
-            if (Uri.TryCreate(value, UriKind.Absolute, out var uri))
-            {
-                args.Add($"-Dhttp.proxyHost={uri.Host}");
-                args.Add($"-Dhttp.proxyPort={uri.Port}");
-
-                break;
-            }
-        }
-
-        foreach (var key in new[] { "HTTPS_PROXY", "https_proxy" })
-        {
-            var value = Environment.GetEnvironmentVariable(key);
-
-            if (string.IsNullOrWhiteSpace(value))
-                continue;
-
-            psi.Environment[key] = value;
-
-            if (!value.Contains("://"))
-                value = "http://" + value;
-
-            if (Uri.TryCreate(value, UriKind.Absolute, out var uri))
-            {
-                args.Add($"-Dhttps.proxyHost={uri.Host}");
-                args.Add($"-Dhttps.proxyPort={uri.Port}");
-
-                break;
-            }
-        }
-    }
-
-    private static Process StartJavaProcess(string jarPath, string workingDir)
-    {
-        var arguments = new List<string>();
-        var processStartInfo = new ProcessStartInfo("java")
-        {
-            WorkingDirectory = workingDir,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            RedirectStandardInput = true,
-            UseShellExecute = false
-        };
-
-        AddProxyArguments(arguments, processStartInfo);
-
-        arguments.Add("-jar");
-        arguments.Add(jarPath);
-        arguments.Add("--nogui");
-
-        foreach (var argument in arguments)
-            processStartInfo.ArgumentList.Add(argument);
-
-        return Process.Start(processStartInfo);
-    }
-
-    private static Process StartProcess(string fileName, string arguments, string workingDir)
-    {
-        var processStartInfo = new ProcessStartInfo(fileName, arguments)
-        {
-            WorkingDirectory = workingDir,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false
-        };
-
-        foreach (var environmentVariableName in new[] { "HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy" })
-        {
-            var environmentVariableValue = Environment.GetEnvironmentVariable(environmentVariableName);
-
-            if (!string.IsNullOrWhiteSpace(environmentVariableValue))
-                processStartInfo.Environment[environmentVariableName] = environmentVariableValue;
-        }
-
-        return Process.Start(processStartInfo);
-    }
-
-    private static async Task<bool> WaitForOutputAsync(Process process, Func<string, bool> predicate, TimeSpan timeout)
-    {
-        var taskCompletionSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var taskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var registration = cancellationToken.Register(() => taskCompletionSource.TrySetCanceled(cancellationToken), useSynchronizationContext: false);
 
         void Handler(object sender, DataReceivedEventArgs eventArgs)
         {
-            if (eventArgs.Data != null && predicate(eventArgs.Data))
-                taskCompletionSource.TrySetResult(true);
+            try
+            {
+                if (eventArgs.Data != null && predicate(eventArgs.Data))
+                    taskCompletionSource.SetResult();
+            }
+            catch (Exception exception)
+            {
+                taskCompletionSource.SetException(exception);
+            }
         }
 
         process.OutputDataReceived += Handler;
@@ -230,72 +149,181 @@ public class MinecraftTests : IDisposable
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
-        var completed = await Task.WhenAny(taskCompletionSource.Task, Task.Delay(timeout));
-
-        process.CancelOutputRead();
-        process.CancelErrorRead();
-
-        process.OutputDataReceived -= Handler;
-        process.ErrorDataReceived -= Handler;
-
-        return completed == taskCompletionSource.Task && taskCompletionSource.Task.Result;
-    }
-
-    private async Task<string> GetLatestGithubAssetUrl(string owner, string repo, string suffix)
-    {
-        var json = await _client.GetStringAsync($"https://api.github.com/repos/{owner}/{repo}/releases/latest");
-        using var document = JsonDocument.Parse(json);
-
-        foreach (var asset in document.RootElement.GetProperty("assets").EnumerateArray())
+        try
         {
-            var name = asset.GetProperty("name").GetString();
-
-            if (name != null && name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-                return asset.GetProperty("browser_download_url").GetString();
+            await taskCompletionSource.Task;
         }
+        finally
+        {
+            process.CancelOutputRead();
+            process.CancelErrorRead();
 
-        throw new InvalidOperationException("No asset found");
+            process.OutputDataReceived -= Handler;
+            process.ErrorDataReceived -= Handler;
+        }
     }
 
-    private static string GetMccAssetSuffix()
+    private static Process StartApplication(string fileName, params IEnumerable<string> userArguments)
     {
-        var architecture = RuntimeInformation.ProcessArchitecture switch
+        var arguments = new List<string>(userArguments);
+        var protocols = new string[] { "http", "https" };
+
+        var isJar = fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase);
+        var processStartInfo = new ProcessStartInfo(fileName: isJar ? "java" : fileName, arguments)
         {
-            Architecture.X64 => "x64",
-            Architecture.X86 => "x86",
-            Architecture.Arm => "arm",
-            Architecture.Arm64 => "arm64",
-            _ => throw new PlatformNotSupportedException("Unsupported architecture")
+            WorkingDirectory = Path.GetDirectoryName(Directory.GetCurrentDirectory()),
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            RedirectStandardInput = false,
+            UseShellExecute = false
         };
 
-        var operatingSystem = OperatingSystem.IsWindows() ? "win" :
-                 OperatingSystem.IsLinux() ? "linux" :
-                 OperatingSystem.IsMacOS() ? "osx" :
-                 throw new PlatformNotSupportedException("Unsupported OS");
-
-        var suffix = $"{operatingSystem}-{architecture}";
-
-        if (operatingSystem == "win")
-            suffix += ".exe";
-
-        return suffix;
-    }
-
-    private async Task<string> GetMccUrlAsync()
-    {
-        var json = await _client.GetStringAsync("https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest");
-        using var document = JsonDocument.Parse(json);
-
-        var suffix = GetMccAssetSuffix();
-
-        foreach (var asset in document.RootElement.GetProperty("assets").EnumerateArray())
+        foreach (var protocol in protocols)
         {
-            var name = asset.GetProperty("name").GetString();
+            var name = protocol + "_proxy";
+            var variants = new string[] { name, name.ToUpperInvariant() };
 
-            if (name != null && name.Contains(suffix, StringComparison.OrdinalIgnoreCase))
-                return asset.GetProperty("browser_download_url").GetString();
+            foreach (var variant in variants)
+            {
+                var candidate = Environment.GetEnvironmentVariable(variant);
+
+                if (string.IsNullOrWhiteSpace(candidate))
+                    continue;
+
+                processStartInfo.Environment[variant] = candidate;
+
+                if (!isJar)
+                    continue;
+
+                if (!candidate.Contains("://"))
+                    candidate = protocol + "://" + candidate;
+
+                if (!Uri.TryCreate(candidate, UriKind.Absolute, out var uri))
+                    continue;
+
+                arguments.Add($"-D{protocol}.proxyHost={uri.Host}");
+                arguments.Add($"-D{protocol}.proxyPort={uri.Port}");
+
+                break;
+            }
         }
 
-        throw new InvalidOperationException($"No {suffix} asset found");
+        if (isJar)
+        {
+            arguments.Add("-jar");
+            arguments.Add(fileName);
+            arguments.Add("--nogui");
+        }
+
+        return Process.Start(processStartInfo) ?? throw new IntegrationTestException($"Failed to start process for {fileName} with arguments: {string.Join(" ", arguments)}");
+    }
+
+    private async Task<string> SetupPaperServerAsync(CancellationToken cancellationToken)
+    {
+        var paperWoringDirectory = Path.Combine(_workingDirectory, "PaperServer");
+
+        if (!Directory.Exists(paperWoringDirectory))
+            Directory.CreateDirectory(paperWoringDirectory);
+
+        var versionsJson = await _client.GetStringAsync("https://api.papermc.io/v2/projects/paper", cancellationToken);
+        using var versions = JsonDocument.Parse(versionsJson);
+        var latestVersion = versions.RootElement.GetProperty("versions").EnumerateArray().Last().GetString();
+
+        var buildsJson = await _client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}", cancellationToken);
+        using var builds = JsonDocument.Parse(buildsJson);
+        var latestBuild = builds.RootElement.GetProperty("builds").EnumerateArray().Last().GetInt32();
+
+        var buildInfoJson = await _client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}/builds/{latestBuild}", cancellationToken);
+        using var buildInfo = JsonDocument.Parse(buildInfoJson);
+        var jarName = buildInfo.RootElement.GetProperty("downloads").GetProperty("application").GetProperty("name").GetString();
+
+        var paperUrl = $"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}/builds/{latestBuild}/downloads/{jarName}";
+        var paperJarPath = Path.Combine(paperWoringDirectory, "paper.jar");
+
+        await DownloadFileAsync(paperUrl, paperJarPath, cancellationToken);
+        await SetupCompatibilityPluginsAsync();
+
+        await File.WriteAllTextAsync(Path.Combine(paperWoringDirectory, "eula.txt"), "eula=true", cancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(paperWoringDirectory, "server.properties"), "server-port=25565\nonline-mode=false\n", cancellationToken);
+
+        return paperJarPath;
+
+        async Task SetupCompatibilityPluginsAsync()
+        {
+            var pluginsDirectory = Path.Combine(paperWoringDirectory, "plugins");
+
+            if (!Directory.Exists(pluginsDirectory))
+                Directory.CreateDirectory(pluginsDirectory);
+
+            var viaVersion = await GetGitHubRepositoryLatestReleaseAssetAsync(ViaVersionRepositoryOwnerName, ViaVersionRepositoryName, name => name.EndsWith(".jar"), cancellationToken);
+            await DownloadFileAsync(viaVersion, Path.Combine(pluginsDirectory, "ViaVersion.jar"), cancellationToken);
+
+            var viaBackwards = await GetGitHubRepositoryLatestReleaseAssetAsync(ViaVersionRepositoryOwnerName, ViaBackwardsRepositoryName, name => name.EndsWith(".jar"), cancellationToken);
+            await DownloadFileAsync(viaBackwards, Path.Combine(pluginsDirectory, "ViaBackwards.jar"), cancellationToken);
+        }
+    }
+
+    private async Task<string> SetupMinecraftConsoleClientAsync(CancellationToken cancellationToken)
+    {
+        var minecraftConsoleClientWorkingDirectory = Path.Combine(_workingDirectory, "MinecraftConsoleClient");
+
+        if (!Directory.Exists(minecraftConsoleClientWorkingDirectory))
+            Directory.CreateDirectory(minecraftConsoleClientWorkingDirectory);
+
+        var path = Path.Combine(minecraftConsoleClientWorkingDirectory, "client");
+        var url = await GetGitHubRepositoryLatestReleaseAssetAsync(MinecraftConsoleClientRepositoryOwnerName, MinecraftConsoleClientRepositoryName, name => name.EndsWith(GetMinecraftConsoleClientSuffix()), cancellationToken);
+
+        await DownloadFileAsync(url, path, cancellationToken);
+
+        if (!OperatingSystem.IsWindows())
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+        return path;
+
+        static string GetMinecraftConsoleClientSuffix()
+        {
+            var suffixBuilder = new StringBuilder();
+            var operatingSystem = OperatingSystem.IsWindows() ? "win" :
+                OperatingSystem.IsLinux() ? "linux" :
+                OperatingSystem.IsMacOS() ? "osx" :
+                throw new PlatformNotSupportedException("Unsupported OS");
+
+            suffixBuilder.Append(operatingSystem);
+            suffixBuilder.Append('-');
+            suffixBuilder.Append(RuntimeInformation.ProcessArchitecture switch
+            {
+                Architecture.X64 => "x64",
+                Architecture.X86 => "x86",
+                Architecture.Arm => "arm",
+                Architecture.Arm64 => "arm64",
+                _ => throw new PlatformNotSupportedException("Unsupported architecture")
+            });
+
+            if (operatingSystem == "win")
+                suffixBuilder.Append(".exe");
+
+            return suffixBuilder.ToString();
+        }
+    }
+
+    private async Task DownloadFileAsync(string url, string destination, CancellationToken cancellationToken)
+    {
+        using var response = await _client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        await using var fileStream = File.Create(destination);
+        await response.Content.CopyToAsync(fileStream, cancellationToken);
+    }
+
+    private static async Task<string> GetGitHubRepositoryLatestReleaseAssetAsync(string ownerName, string repositoryName, Predicate<string> assetFilter, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var latestRelease = await _gitHubClient.Repository.Release.GetLatest(ownerName, repositoryName);
+        var asset = latestRelease.Assets.FirstOrDefault(asset => assetFilter(asset.Name));
+
+        Assert.NotNull(asset);
+
+        return asset.BrowserDownloadUrl;
     }
 }
