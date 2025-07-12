@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using NuGet.Packaging;
 using Octokit;
 using Void.Tests.Extensions;
 using Xunit;
@@ -63,22 +64,27 @@ public class MinecraftTests : IDisposable
             var paperJarPath = await SetupPaperServerAsync(cancellationTokenSource.Token);
             var minecraftConsoleClientExecutablePath = await SetupMinecraftConsoleClientAsync(cancellationTokenSource.Token);
 
-            server = StartApplication(paperJarPath);
-            client = StartApplication(minecraftConsoleClientExecutablePath, "void", "-", "localhost:25565", $"send {ExpectedText}");
-
-            var serverTask = HandleOutputAsync(server, HandleServerConsole, cancellationTokenSource.Token);
-            var clientTask = HandleOutputAsync(client, HandleClientConsole, cancellationTokenSource.Token);
-
-            await Task.WhenAny(serverTask, clientTask);
-            cancellationTokenSource.Cancel();
+            var serverDoneTaskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            cancellationTokenSource.Token.Register(() => serverDoneTaskCompletionSource.TrySetCanceled(cancellationTokenSource.Token), useSynchronizationContext: false);
 
             try
             {
+                server = StartApplication(paperJarPath);
+                var serverTask = HandleOutputAsync(server, HandleServerConsole, cancellationTokenSource.Token);
+
+                await serverDoneTaskCompletionSource.Task;
+
+                client = StartApplication(minecraftConsoleClientExecutablePath, "void", "-", "localhost:25565", $"send {ExpectedText}");
+                var clientTask = HandleOutputAsync(client, HandleClientConsole, cancellationTokenSource.Token);
+
+                await Task.WhenAny(serverTask, clientTask);
+                cancellationTokenSource.Cancel();
+
                 await Task.WhenAll(serverTask, clientTask);
             }
-            catch (IntegrationTestException exception)
+            catch (Exception exception)
             {
-                Assert.Fail(exception.Message + $"\n\n\nServer logs:\n{string.Join("\n", serverLogs)}\n\n\nClient logs:\n{string.Join("\n", clientLogs)}");
+                Assert.Fail((exception is IntegrationTestException ? exception.Message : exception) + $"\n\n\nServer logs:\n{string.Join("\n", serverLogs)}\n\n\nClient logs:\n{string.Join("\n", clientLogs)}");
             }
 
             Assert.Contains(ExpectedText, serverLogs);
@@ -91,7 +97,7 @@ public class MinecraftTests : IDisposable
                 serverLogs.Add(line);
 
                 if (line.Contains("Done"))
-                    return true;
+                    serverDoneTaskCompletionSource.SetResult();
 
                 return false;
             }
@@ -105,6 +111,9 @@ public class MinecraftTests : IDisposable
 
                 if (line.Contains("No connection could be made because the target machine actively refused it"))
                     throw new IntegrationTestException("Server is not running or not reachable");
+
+                if (line.Contains("You need to agree to the EULA in order to run the server"))
+                    throw new IntegrationTestException("Server EULA not accepted");
 
                 return false;
             }
@@ -125,7 +134,7 @@ public class MinecraftTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private static async Task HandleOutputAsync(Process process, Predicate<string> predicate, CancellationToken cancellationToken)
+    private static async Task HandleOutputAsync(Process process, Func<string, bool> handler, CancellationToken cancellationToken)
     {
         var taskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var registration = cancellationToken.Register(() => taskCompletionSource.TrySetCanceled(cancellationToken), useSynchronizationContext: false);
@@ -134,7 +143,7 @@ public class MinecraftTests : IDisposable
         {
             try
             {
-                if (eventArgs.Data != null && predicate(eventArgs.Data))
+                if (eventArgs.Data != null && handler(eventArgs.Data))
                     taskCompletionSource.SetResult();
             }
             catch (Exception exception)
@@ -169,9 +178,9 @@ public class MinecraftTests : IDisposable
         var protocols = new string[] { "http", "https" };
 
         var isJar = fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase);
-        var processStartInfo = new ProcessStartInfo(fileName: isJar ? "java" : fileName, arguments)
+        var processStartInfo = new ProcessStartInfo(fileName: isJar ? "java" : fileName)
         {
-            WorkingDirectory = Path.GetDirectoryName(Directory.GetCurrentDirectory()),
+            WorkingDirectory = Path.GetDirectoryName(fileName),
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             RedirectStandardInput = false,
@@ -214,6 +223,8 @@ public class MinecraftTests : IDisposable
             arguments.Add(fileName);
             arguments.Add("--nogui");
         }
+
+        processStartInfo.ArgumentList.AddRange(arguments);
 
         return Process.Start(processStartInfo) ?? throw new IntegrationTestException($"Failed to start process for {fileName} with arguments: {string.Join(" ", arguments)}");
     }
