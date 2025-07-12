@@ -4,7 +4,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -92,22 +94,49 @@ public class PaperMcIntegrationTests
         return Process.Start(psi)!;
     }
 
-    private static async Task<bool> WaitForOutputAsync(Process process, Func<string, bool> predicate, TimeSpan timeout)
+    private static async Task<bool> WaitForOutputAsync(
+        Process process,
+        Func<string, bool> predicate,
+        TimeSpan timeout,
+        CancellationToken token = default)
     {
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+        linkedCts.CancelAfter(timeout);
+
         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        void Handler(object s, DataReceivedEventArgs e)
+
+        void CheckLine(string line)
         {
-            if (e.Data != null && predicate(e.Data))
+            if (predicate(line))
                 tcs.TrySetResult(true);
         }
-        process.OutputDataReceived += Handler;
-        process.ErrorDataReceived += Handler;
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeout));
-        process.OutputDataReceived -= Handler;
-        process.ErrorDataReceived -= Handler;
-        return completed == tcs.Task && tcs.Task.Result;
+
+        async Task ReadAsync(StreamReader reader)
+        {
+            try
+            {
+                while (!linkedCts.IsCancellationRequested)
+                {
+                    var line = await reader.ReadLineAsync();
+                    if (line == null)
+                        break;
+                    CheckLine(line);
+                }
+            }
+            catch (OperationCanceledException) { }
+        }
+
+        var outputTask = ReadAsync(process.StandardOutput);
+        var errorTask = ReadAsync(process.StandardError);
+
+        var completed = await Task.WhenAny(tcs.Task, outputTask, errorTask);
+        linkedCts.Cancel();
+        await Task.WhenAll(outputTask, errorTask);
+
+        if (!tcs.Task.IsCompleted)
+            tcs.TrySetResult(false);
+
+        return await tcs.Task;
     }
 
     private static async Task<string> GetLatestGithubAssetUrl(HttpClient client, string owner, string repo, string suffix)
@@ -123,17 +152,40 @@ public class PaperMcIntegrationTests
         throw new InvalidOperationException("No asset found");
     }
 
+    private static string GetMccAssetSuffix()
+    {
+        var arch = RuntimeInformation.ProcessArchitecture switch
+        {
+            Architecture.X64 => "x64",
+            Architecture.X86 => "x86",
+            Architecture.Arm => "arm",
+            Architecture.Arm64 => "arm64",
+            _ => throw new PlatformNotSupportedException("Unsupported architecture")
+        };
+
+        var os = OperatingSystem.IsWindows() ? "win" :
+                 OperatingSystem.IsLinux() ? "linux" :
+                 OperatingSystem.IsMacOS() ? "osx" :
+                 throw new PlatformNotSupportedException("Unsupported OS");
+
+        var suffix = $"{os}-{arch}";
+        if (os == "win")
+            suffix += ".exe";
+        return suffix;
+    }
+
     private static async Task<string> GetMccUrlAsync(HttpClient client)
     {
         var json = await client.GetStringAsync("https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest");
         using var doc = JsonDocument.Parse(json);
+        var suffix = GetMccAssetSuffix();
         foreach (var asset in doc.RootElement.GetProperty("assets").EnumerateArray())
         {
             var name = asset.GetProperty("name").GetString();
-            if (name != null && name.Contains("linux-x64"))
+            if (name != null && name.Contains(suffix, StringComparison.OrdinalIgnoreCase))
                 return asset.GetProperty("browser_download_url").GetString()!;
         }
-        throw new InvalidOperationException("No linux-x64 asset found");
+        throw new InvalidOperationException($"No {suffix} asset found");
     }
 
     [Fact]
@@ -173,18 +225,39 @@ public class PaperMcIntegrationTests
             File.WriteAllText(Path.Combine(tempDir, "server.properties"), "server-port=25565\nonline-mode=false\n");
 
             server = StartJavaProcess(paperJar, tempDir);
-            bool ready = await WaitForOutputAsync(server, l => l.Contains("Done") || l.Contains("Timings Reset"), TimeSpan.FromMinutes(3));
+            bool ready = await WaitForOutputAsync(server,
+                l => l.Contains("Done") || l.Contains("Timings Reset"),
+                TimeSpan.FromMinutes(3));
             Assert.True(ready, "Server failed to start in time");
 
             var mccPath = Path.Combine(tempDir, "MinecraftClient");
             var mccUrl = await GetMccUrlAsync(client);
             await DownloadFileAsync(client, mccUrl, mccPath);
-            File.SetUnixFileMode(mccPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(mccPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
             mcc = StartProcess(mccPath, "testuser - localhost:25565 \"chat hello world\"", tempDir);
 
-            bool received = await WaitForOutputAsync(server, l => l.Contains("hello world", StringComparison.OrdinalIgnoreCase), TimeSpan.FromSeconds(30));
-            Assert.True(received, "Server did not log chat message");
+            using var cts = new CancellationTokenSource();
+            var chatReceived = WaitForOutputAsync(
+                server,
+                l => l.Contains("hello world", StringComparison.OrdinalIgnoreCase),
+                TimeSpan.FromSeconds(30),
+                cts.Token);
+
+            var mccFailed = WaitForOutputAsync(
+                mcc,
+                l => l.Contains("Cannot connect to the server", StringComparison.OrdinalIgnoreCase),
+                TimeSpan.FromSeconds(30),
+                cts.Token);
+
+            var completed = await Task.WhenAny(chatReceived, mccFailed);
+            cts.Cancel();
+
+            if (completed == mccFailed && await mccFailed)
+                Assert.Fail("Minecraft Console Client failed to connect: version not supported");
+
+            Assert.True(await chatReceived, "Server did not log chat message");
         }
         finally
         {
