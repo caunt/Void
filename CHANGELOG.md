@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.5.4](https://github.com/caunt/Void/compare/v0.5.3...v0.5.4) (2025-07-12)
+
+
+### Features
+
+* add test project reference to solution ([9774e0b](https://github.com/caunt/Void/commit/9774e0bbc5a25ba60def3aca3d5ad63f6fa08397))
+* **docs:** expand SEO keywords ([8c07367](https://github.com/caunt/Void/commit/8c073672804d436133cbf1161e2f2d08354f189b))
+* **docs:** improve SEO metadata ([3a4684f](https://github.com/caunt/Void/commit/3a4684f89ad753488e651ad69008c3545fdd9809))
+
+
+### Bug Fixes
+
+* correct error message formatting ([0d4a8eb](https://github.com/caunt/Void/commit/0d4a8eb0650e4681abdcd55f2b99501d6635dade))
+* correct typos in code ([1559b90](https://github.com/caunt/Void/commit/1559b90919abab1d6f9ab63be20602e54dd34de3))
+* **docs:** correct grammar in features guide ([c2253de](https://github.com/caunt/Void/commit/c2253de3b39b5f5a676438c071898e0664048774))
+* **plugins:** use injected HttpClient directly ([841d677](https://github.com/caunt/Void/commit/841d67789cd9a6569750381d776ae2cc4b40fb61))
+* prioritize env var setting over in-file configuration ([15fa575](https://github.com/caunt/Void/commit/15fa5751154a287da2a0cb1a0448b6c2b0c99796))
+* simplify hash computation in GuidHelper ([1ea7f98](https://github.com/caunt/Void/commit/1ea7f98d591466f65e0597d005cf31a204c4f6e2))
+* **tests:** cancel process reads in PaperMC test ([1621686](https://github.com/caunt/Void/commit/16216865346e47b28a2bb0f09af30321fc69c508))
+
 ## [0.5.3](https://github.com/caunt/Void/compare/v0.5.2...v0.5.3) (2025-05-25)
 
 
