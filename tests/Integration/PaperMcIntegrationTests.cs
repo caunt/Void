@@ -106,6 +106,8 @@ public class PaperMcIntegrationTests
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeout));
+        process.CancelOutputRead();
+        process.CancelErrorRead();
         process.OutputDataReceived -= Handler;
         process.ErrorDataReceived -= Handler;
         return completed == tcs.Task && tcs.Task.Result;
