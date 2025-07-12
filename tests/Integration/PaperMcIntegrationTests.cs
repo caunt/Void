@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
@@ -105,6 +106,8 @@ public class PaperMcIntegrationTests
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeout));
+        process.CancelOutputRead();
+        process.CancelErrorRead();
         process.OutputDataReceived -= Handler;
         process.ErrorDataReceived -= Handler;
         return completed == tcs.Task && tcs.Task.Result;
@@ -123,17 +126,40 @@ public class PaperMcIntegrationTests
         throw new InvalidOperationException("No asset found");
     }
 
+    private static string GetMccAssetSuffix()
+    {
+        var arch = RuntimeInformation.ProcessArchitecture switch
+        {
+            Architecture.X64 => "x64",
+            Architecture.X86 => "x86",
+            Architecture.Arm => "arm",
+            Architecture.Arm64 => "arm64",
+            _ => throw new PlatformNotSupportedException("Unsupported architecture")
+        };
+
+        var os = OperatingSystem.IsWindows() ? "win" :
+                 OperatingSystem.IsLinux() ? "linux" :
+                 OperatingSystem.IsMacOS() ? "osx" :
+                 throw new PlatformNotSupportedException("Unsupported OS");
+
+        var suffix = $"{os}-{arch}";
+        if (os == "win")
+            suffix += ".exe";
+        return suffix;
+    }
+
     private static async Task<string> GetMccUrlAsync(HttpClient client)
     {
         var json = await client.GetStringAsync("https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest");
         using var doc = JsonDocument.Parse(json);
+        var suffix = GetMccAssetSuffix();
         foreach (var asset in doc.RootElement.GetProperty("assets").EnumerateArray())
         {
             var name = asset.GetProperty("name").GetString();
-            if (name != null && name.Contains("linux-x64"))
+            if (name != null && name.Contains(suffix, StringComparison.OrdinalIgnoreCase))
                 return asset.GetProperty("browser_download_url").GetString()!;
         }
-        throw new InvalidOperationException("No linux-x64 asset found");
+        throw new InvalidOperationException($"No {suffix} asset found");
     }
 
     [Fact]
@@ -179,7 +205,8 @@ public class PaperMcIntegrationTests
             var mccPath = Path.Combine(tempDir, "MinecraftClient");
             var mccUrl = await GetMccUrlAsync(client);
             await DownloadFileAsync(client, mccUrl, mccPath);
-            File.SetUnixFileMode(mccPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(mccPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
             mcc = StartProcess(mccPath, "testuser - localhost:25565 \"chat hello world\"", tempDir);
 
