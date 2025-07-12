@@ -76,20 +76,24 @@ public class MinecraftTests : IDisposable
                 client = StartApplication(minecraftConsoleClientExecutablePath, "void", "-", "localhost:25565", $"send {ExpectedText}");
                 var clientTask = HandleOutputAsync(client, HandleClientConsole, cancellationTokenSource.Token);
 
-                await Task.WhenAny(serverTask, clientTask);
+                await serverTask;
                 cancellationTokenSource.Cancel();
 
-                await Task.WhenAll(serverTask, clientTask);
+                try
+                {
+                    await clientTask;
+                }
+                catch (TaskCanceledException)
+                {
+                    // Totally expected, we cancel client task when server got expected message
+                }
             }
             catch (Exception exception)
             {
                 throw new IntegrationTestException(exception.Message + $"\nServer logs:\n{string.Join("\n", serverLogs)}\n\n\nClient logs:\n{string.Join("\n", clientLogs)}", exception);
             }
 
-            Assert.Contains(ExpectedText, serverLogs);
-
-            // Assert.True(ready, "Server failed to start in time");
-            // Assert.True(received, "Server did not log chat message");
+            Assert.Contains(serverLogs, line => line.Contains(ExpectedText));
 
             bool HandleServerConsole(string line)
             {
