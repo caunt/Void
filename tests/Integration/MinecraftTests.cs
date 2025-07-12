@@ -21,6 +21,7 @@ namespace Void.Tests.Integration;
 public class MinecraftTests : IDisposable
 {
     private const string AppName = "Void.Tests";
+    private const string ExpectedText = "hello void!";
 
     private const string ViaVersionRepositoryOwnerName = "ViaVersion";
     private const string ViaVersionRepositoryName = "ViaVersion";
@@ -52,8 +53,6 @@ public class MinecraftTests : IDisposable
     [Fact]
     public async Task MccConnectsPaperServer()
     {
-        const string ExpectedText = "hello void!";
-
         Process? server = null, client = null;
         List<string> serverLogs = [], clientLogs = [];
 
@@ -84,7 +83,7 @@ public class MinecraftTests : IDisposable
             }
             catch (Exception exception)
             {
-                Assert.Fail((exception is IntegrationTestException ? exception.Message : exception) + $"\n\n\nServer logs:\n{string.Join("\n", serverLogs)}\n\n\nClient logs:\n{string.Join("\n", clientLogs)}");
+                throw new IntegrationTestException(exception.Message + $"\nServer logs:\n{string.Join("\n", serverLogs)}\n\n\nClient logs:\n{string.Join("\n", clientLogs)}", exception);
             }
 
             Assert.Contains(ExpectedText, serverLogs);
@@ -96,8 +95,11 @@ public class MinecraftTests : IDisposable
             {
                 serverLogs.Add(line);
 
-                if (line.Contains("Done"))
+                if (line.Contains("Done") && line.Contains("For help, type \"help\""))
                     serverDoneTaskCompletionSource.SetResult();
+
+                if (line.Contains(ExpectedText))
+                    return true;
 
                 return false;
             }
@@ -288,6 +290,19 @@ public class MinecraftTests : IDisposable
 
         if (!OperatingSystem.IsWindows())
             File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+        await File.WriteAllTextAsync(Path.Combine(minecraftConsoleClientWorkingDirectory, "MinecraftClient.ini"), $"""
+            [Main.Advanced]
+            MinecraftVersion = "1.20.4"
+
+            [ChatBot.ScriptScheduler]
+            Enabled = true
+
+            [[ChatBot.ScriptScheduler.TaskList]]
+            Task_Name = "Task Name 1"
+            Trigger_On_Login = true
+            Action = "send {ExpectedText}"
+            """, cancellationToken);
 
         return path;
 
