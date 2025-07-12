@@ -54,7 +54,7 @@ jobs:
       - name: Build Platform
         run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ inputs.void-version }} ${{ matrix.parameters }} 
       - name: Test
-        run: dotnet test tests --runtime ${{ matrix.runtime }} --no-build --verbosity normal ${{ matrix.parameters }} 
+        run: dotnet test tests/Void.Tests.csproj --runtime ${{ matrix.runtime }} --no-build --verbosity normal ${{ matrix.parameters }} 
       - name: Publish
         run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained src/Platform --output artifacts --configuration Release --no-build /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ inputs.void-version }} ${{ matrix.parameters }} 
       - name: Save Artifact Suffix
