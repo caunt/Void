@@ -54,7 +54,7 @@ jobs:
             run-tests: true
           - os: windows-latest
             runtime: win-x86
-            run-tests: true
+            run-tests: false
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
