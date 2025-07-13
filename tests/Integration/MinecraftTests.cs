@@ -35,6 +35,12 @@ public class MinecraftTests : IDisposable
 
     private readonly HttpClient _client = new();
 
+    static MinecraftTests()
+    {
+        if (Environment.GetEnvironmentVariable("GITHUB_TOKEN") is { } token)
+            _gitHubClient.Credentials = new Credentials(token, AuthenticationType.Bearer);
+    }
+
     public MinecraftTests()
     {
         _client.DefaultRequestHeaders.UserAgent.ParseAdd("Void.Tests/1.0");
