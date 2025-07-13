@@ -43,25 +43,27 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Setup .NET
-        if: matrix.runtime != 'osx-x64' # skip for osx-x64, because we install it manually
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ inputs.dotnet-version }}
 
-        # actions/setup-dotnet has a bug, that installs arm64 .NET on x64 machines (https://github.com/actions/setup-dotnet/issues/524)
-        # fix was discussed many times, but always been ignored
-        # so we have to install macos-x64 dotnet manually
+      # actions/setup-dotnet has a bug, that installs arm64 .NET on x64 machines (https://github.com/actions/setup-dotnet/issues/524)
+      # fix was discussed many times, but always been ignored
+      # so we have to install dotnet manually
 
-      - name: Install .NET SDK for x64
-        if: matrix.runtime == 'osx-x64'
-        env:
-          DOTNET_ROOT_x64: $HOME/.dotnet/x64
+      # - name: Setup .NET
+      #   uses: actions/setup-dotnet@v4
+      #   with:
+      #     dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Install .NET SDK
+        shell: bash
         run: |
+          runtime="${{ matrix.runtime }}"
+          arch="${runtime##*-}"
+          
           curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
           chmod +x dotnet-install.sh
-          ./dotnet-install.sh  --version ${{ inputs.dotnet-version }} --architecture x64 --install-dir $DOTNET_ROOT_x64
-          echo "$DOTNET_ROOT_x64" >> $GITHUB_PATH
+
+          ./dotnet-install.sh --version ${{ inputs.dotnet-version }} --architecture "$arch"
+          echo "$install_dir" >> "$GITHUB_PATH"
 
       - name: Build
         # Do not include runtime here
