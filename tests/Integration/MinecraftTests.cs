@@ -6,6 +6,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.InteropServices;
+using System.IO.Compression;
+using System.Formats.Tar;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -68,18 +70,19 @@ public class MinecraftTests : IDisposable
 
             var paperJarPath = await SetupPaperServerAsync(cancellationTokenSource.Token);
             var minecraftConsoleClientExecutablePath = await SetupMinecraftConsoleClientAsync(cancellationTokenSource.Token);
+            var javaExecutablePath = await SetupJreAsync(cancellationTokenSource.Token);
 
             var serverDoneTaskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             cancellationTokenSource.Token.Register(() => serverDoneTaskCompletionSource.TrySetCanceled(cancellationTokenSource.Token), useSynchronizationContext: false);
 
             try
             {
-                server = StartApplication(paperJarPath);
+                server = StartApplication(paperJarPath, javaExecutablePath);
                 var serverTask = HandleOutputAsync(server, HandleServerConsole, cancellationTokenSource.Token);
 
                 await serverDoneTaskCompletionSource.Task;
 
-                client = StartApplication(minecraftConsoleClientExecutablePath, "void", "-", "localhost:25565", $"send {ExpectedText}");
+                client = StartApplication(minecraftConsoleClientExecutablePath, null, "void", "-", "localhost:25565", $"send {ExpectedText}");
                 var clientTask = HandleOutputAsync(client, HandleClientConsole, cancellationTokenSource.Token);
 
                 await serverTask;
@@ -187,13 +190,13 @@ public class MinecraftTests : IDisposable
         }
     }
 
-    private static Process StartApplication(string fileName, params IEnumerable<string> userArguments)
+    private static Process StartApplication(string fileName, string? javaExecutablePath = null, params string[] userArguments)
     {
         var arguments = new List<string>(userArguments);
         var protocols = new string[] { "http", "https" };
 
         var isJar = fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase);
-        var processStartInfo = new ProcessStartInfo(fileName: isJar ? "java" : fileName)
+        var processStartInfo = new ProcessStartInfo(fileName: isJar ? javaExecutablePath ?? "java" : fileName)
         {
             WorkingDirectory = Path.GetDirectoryName(fileName),
             RedirectStandardOutput = true,
@@ -364,5 +367,60 @@ public class MinecraftTests : IDisposable
         Assert.NotNull(asset);
 
         return asset.BrowserDownloadUrl;
+    }
+
+    private async Task<string> SetupJreAsync(CancellationToken cancellationToken)
+    {
+        var jreWorkingDirectory = Path.Combine(_workingDirectory, "jre21");
+        var javaExecutableName = OperatingSystem.IsWindows() ? "java.exe" : "java";
+        var existingJava = Directory.Exists(jreWorkingDirectory)
+            ? Directory.GetFiles(jreWorkingDirectory, javaExecutableName, SearchOption.AllDirectories).FirstOrDefault()
+            : null;
+
+        if (existingJava is not null)
+            return existingJava;
+
+        if (!Directory.Exists(jreWorkingDirectory))
+            Directory.CreateDirectory(jreWorkingDirectory);
+
+        var os = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsLinux() ? "linux" : OperatingSystem.IsMacOS() ? "mac" : throw new PlatformNotSupportedException("Unsupported OS");
+        var arch = RuntimeInformation.ProcessArchitecture switch
+        {
+            Architecture.X64 => "x64",
+            Architecture.X86 => "x86",
+            Architecture.Arm64 => "aarch64",
+            Architecture.Arm => "arm",
+            _ => throw new PlatformNotSupportedException("Unsupported architecture")
+        };
+        var extension = OperatingSystem.IsWindows() ? ".zip" : ".tar.gz";
+
+        var url = await GetGitHubRepositoryLatestReleaseAssetAsync(
+            "adoptium",
+            "temurin21-binaries",
+            name => name.Contains($"jre_{arch}_{os}", StringComparison.OrdinalIgnoreCase) && name.EndsWith(extension, StringComparison.OrdinalIgnoreCase),
+            cancellationToken);
+
+        var archivePath = Path.Combine(jreWorkingDirectory, Path.GetFileName(url));
+        await DownloadFileAsync(url, archivePath, cancellationToken);
+
+        if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            ZipFile.ExtractToDirectory(archivePath, jreWorkingDirectory);
+        }
+        else
+        {
+            await using var fileStream = File.OpenRead(archivePath);
+            using var gzip = new GZipStream(fileStream, CompressionMode.Decompress);
+            TarFile.ExtractToDirectory(gzip, jreWorkingDirectory, overwriteFiles: true);
+        }
+
+        var javaPath = Directory.GetFiles(jreWorkingDirectory, javaExecutableName, SearchOption.AllDirectories).FirstOrDefault();
+        if (javaPath is null)
+            throw new IntegrationTestException("Failed to locate downloaded Java runtime");
+
+        if (!OperatingSystem.IsWindows())
+            File.SetUnixFileMode(javaPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+        return javaPath;
     }
 }
