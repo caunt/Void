@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Tar;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.InteropServices;
-using System.IO.Compression;
-using System.Formats.Tar;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -259,7 +259,11 @@ public class MinecraftTests : IDisposable
             if (!Directory.Exists(jreWorkingDirectory))
                 Directory.CreateDirectory(jreWorkingDirectory);
 
-            var os = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsLinux() ? "linux" : OperatingSystem.IsMacOS() ? "mac" : throw new PlatformNotSupportedException("Unsupported OS");
+            var os = OperatingSystem.IsWindows() ? "windows"
+                : OperatingSystem.IsLinux() ? "linux"
+                : OperatingSystem.IsMacOS() ? "mac"
+                : throw new PlatformNotSupportedException("Unsupported OS");
+
             var arch = RuntimeInformation.ProcessArchitecture switch
             {
                 Architecture.X64 => "x64",
@@ -268,15 +272,16 @@ public class MinecraftTests : IDisposable
                 Architecture.Arm => "arm",
                 _ => throw new PlatformNotSupportedException("Unsupported architecture")
             };
-            var extension = OperatingSystem.IsWindows() ? ".zip" : ".tar.gz";
 
+            var extension = OperatingSystem.IsWindows() ? ".zip" : ".tar.gz";
             var url = await GetGitHubRepositoryLatestReleaseAssetAsync(
-                "adoptium",
-                "temurin21-binaries",
-                name => name.Contains($"jre_{arch}_{os}", StringComparison.OrdinalIgnoreCase) && name.EndsWith(extension, StringComparison.OrdinalIgnoreCase),
+                ownerName: "adoptium",
+                repositoryName: "temurin21-binaries",
+                assetFilter: name => name.Contains($"jre_{arch}_{os}", StringComparison.OrdinalIgnoreCase) && name.EndsWith(extension, StringComparison.OrdinalIgnoreCase),
                 cancellationToken);
 
             var archivePath = Path.Combine(jreWorkingDirectory, Path.GetFileName(url));
+
             await DownloadFileAsync(url, archivePath, cancellationToken);
 
             if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
@@ -290,14 +295,53 @@ public class MinecraftTests : IDisposable
                 TarFile.ExtractToDirectory(gzip, jreWorkingDirectory, overwriteFiles: true);
             }
 
-            var javaPath = Directory.GetFiles(jreWorkingDirectory, javaExecutableName, SearchOption.AllDirectories).FirstOrDefault();
-            if (javaPath is null)
+            var javaPath = Directory.GetFiles(jreWorkingDirectory, javaExecutableName, SearchOption.AllDirectories).FirstOrDefault() ??
                 throw new IntegrationTestException("Failed to locate downloaded Java runtime");
 
             if (!OperatingSystem.IsWindows())
                 File.SetUnixFileMode(javaPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
-            await ImportProxyCertificateAsync(javaPath);
+            var proxyCertificatePath = Environment.GetEnvironmentVariable("CODEX_PROXY_CERT");
+
+            if (!string.IsNullOrWhiteSpace(proxyCertificatePath) && File.Exists(proxyCertificatePath) && Path.GetDirectoryName(javaPath) is { } javaBiniariesPath && Directory.GetParent(javaBiniariesPath) is { } javaHomePath)
+            {
+                var keytool = Path.Combine(javaBiniariesPath, OperatingSystem.IsWindows() ? "keytool.exe" : "keytool");
+
+                if (File.Exists(keytool))
+                {
+                    var candidateKeystores = new[]
+                    {
+                        Path.Combine(javaHomePath.FullName, "lib", "security", "cacerts"),
+                        Path.Combine(javaHomePath.FullName, "jre", "lib", "security", "cacerts")
+                    };
+
+                    var keystore = candidateKeystores.FirstOrDefault(File.Exists);
+
+                    if (keystore is not null)
+                    {
+                        var startInfo = new ProcessStartInfo(keytool)
+                        {
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true
+                        };
+
+                        startInfo.ArgumentList.AddRange(
+                        [
+                            "-importcert",
+                            "-alias", "codexproxy",
+                            "-file", proxyCertificatePath,
+                            "-keystore", keystore,
+                            "-storepass", "changeit",
+                            "-noprompt"
+                        ]);
+
+                        using var process = Process.Start(startInfo);
+
+                        if (process is not null)
+                            await process.WaitForExitAsync(cancellationToken);
+                    }
+                }
+            }
 
             return javaPath;
         }
@@ -423,48 +467,5 @@ public class MinecraftTests : IDisposable
         Assert.NotNull(asset);
 
         return asset.BrowserDownloadUrl;
-    }
-
-    private static async Task ImportProxyCertificateAsync(string javaPath)
-    {
-        var proxyCert = Environment.GetEnvironmentVariable("CODEX_PROXY_CERT");
-        if (string.IsNullOrWhiteSpace(proxyCert) || !File.Exists(proxyCert))
-            return;
-
-        var javaBin = Path.GetDirectoryName(javaPath)!;
-        var keytool = Path.Combine(javaBin, OperatingSystem.IsWindows() ? "keytool.exe" : "keytool");
-        if (!File.Exists(keytool))
-            return;
-
-        var javaHome = Directory.GetParent(javaBin)!.FullName;
-        var candidateKeystores = new[]
-        {
-            Path.Combine(javaHome, "lib", "security", "cacerts"),
-            Path.Combine(javaHome, "jre", "lib", "security", "cacerts")
-        };
-
-        var keystore = candidateKeystores.FirstOrDefault(File.Exists);
-        if (keystore is null)
-            return;
-
-        var startInfo = new ProcessStartInfo(keytool)
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        startInfo.ArgumentList.AddRange(new[]
-        {
-            "-importcert",
-            "-alias", "codexproxy",
-            "-file", proxyCert,
-            "-keystore", keystore,
-            "-storepass", "changeit",
-            "-noprompt"
-        });
-
-        using var process = Process.Start(startInfo);
-        if (process is not null)
-            await process.WaitForExitAsync();
     }
 }
