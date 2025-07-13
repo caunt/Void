@@ -59,10 +59,19 @@ jobs:
           runtime="${{ matrix.runtime }}"
           arch="${runtime##*-}"
           
-          curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
-          chmod +x dotnet-install.sh
+          uname_out="$(uname -s)"
 
-          ./dotnet-install.sh --version ${{ inputs.dotnet-version }} --architecture "$arch"
+          if [[ "$uname_out" == MINGW* || "$uname_out" == CYGWIN* ]]; then
+            pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "
+              Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile dotnet-install.ps1;
+              .\dotnet-install.ps1 -Version '${{ inputs.dotnet-version }}' -Architecture '$arch'
+            "
+          else
+            curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
+            chmod +x dotnet-install.sh
+            ./dotnet-install.sh --version ${{ inputs.dotnet-version }} --architecture "$arch"
+          fi
+
           echo "$install_dir" >> "$GITHUB_PATH"
 
       - name: Build
