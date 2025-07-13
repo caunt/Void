@@ -4,6 +4,7 @@ using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Components.Text.Properties;
 using Void.Minecraft.Components.Text.Properties.Content;
+using Void.Minecraft.Nbt.Tags;
 using Void.Minecraft.Network;
 using Void.Minecraft.Profiles;
 using Xunit;
@@ -220,5 +221,38 @@ public class ReadMinecraftBufferExtensionsTests
 
         var read = buffer.ReadComponent(ProtocolVersion.MINECRAFT_1_20_2);
         Assert.Equal("hello", read.AsText);
+    }
+
+    [Fact]
+    public void ReadTag_RoundTripsCompound()
+    {
+        Span<byte> data = stackalloc byte[128];
+        var buffer = new BufferSpan(data);
+        var compound = new NbtCompound
+        {
+            ["name"] = new NbtString("value")
+        };
+
+        buffer.WriteTag(compound);
+        buffer.Position = 0;
+
+        var result = buffer.ReadTag();
+
+        Assert.Equal(compound.ToString(), result.ToString());
+    }
+
+    [Fact]
+    public void Read_ReadsExactBytesAndAdvances()
+    {
+        Span<byte> data = stackalloc byte[10];
+        var buffer = new BufferSpan(data);
+
+        buffer.Write([1, 2, 3, 4, 5]);
+        buffer.Position = 0;
+
+        var slice = buffer.Read(3);
+
+        Assert.Equal(new byte[] { 1, 2, 3 }, slice.ToArray());
+        Assert.Equal(3, buffer.Position);
     }
 }
