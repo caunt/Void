@@ -195,7 +195,7 @@ public class MinecraftTests : IDisposable
         var protocols = new string[] { "http", "https" };
 
         var isJar = fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase);
-        var processStartInfo = new ProcessStartInfo(fileName: isJar ? await SetupJreAsync(cancellationToken) : fileName)
+        var processStartInfo = new ProcessStartInfo(fileName: isJar ? await SetupJreAsync() : fileName)
         {
             WorkingDirectory = Path.GetDirectoryName(fileName),
             RedirectStandardOutput = true,
@@ -244,6 +244,63 @@ public class MinecraftTests : IDisposable
         processStartInfo.ArgumentList.AddRange(arguments);
 
         return Process.Start(processStartInfo) ?? throw new IntegrationTestException($"Failed to start process for {fileName} with arguments: {string.Join(" ", arguments)}");
+
+        async Task<string> SetupJreAsync()
+        {
+            var jreWorkingDirectory = Path.Combine(_workingDirectory, "jre21");
+            var javaExecutableName = OperatingSystem.IsWindows() ? "java.exe" : "java";
+            var existingJava = Directory.Exists(jreWorkingDirectory)
+                ? Directory.GetFiles(jreWorkingDirectory, javaExecutableName, SearchOption.AllDirectories).FirstOrDefault()
+                : null;
+
+            if (existingJava is not null)
+                return existingJava;
+
+            if (!Directory.Exists(jreWorkingDirectory))
+                Directory.CreateDirectory(jreWorkingDirectory);
+
+            var os = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsLinux() ? "linux" : OperatingSystem.IsMacOS() ? "mac" : throw new PlatformNotSupportedException("Unsupported OS");
+            var arch = RuntimeInformation.ProcessArchitecture switch
+            {
+                Architecture.X64 => "x64",
+                Architecture.X86 => "x86",
+                Architecture.Arm64 => "aarch64",
+                Architecture.Arm => "arm",
+                _ => throw new PlatformNotSupportedException("Unsupported architecture")
+            };
+            var extension = OperatingSystem.IsWindows() ? ".zip" : ".tar.gz";
+
+            var url = await GetGitHubRepositoryLatestReleaseAssetAsync(
+                "adoptium",
+                "temurin21-binaries",
+                name => name.Contains($"jre_{arch}_{os}", StringComparison.OrdinalIgnoreCase) && name.EndsWith(extension, StringComparison.OrdinalIgnoreCase),
+                cancellationToken);
+
+            var archivePath = Path.Combine(jreWorkingDirectory, Path.GetFileName(url));
+            await DownloadFileAsync(url, archivePath, cancellationToken);
+
+            if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            {
+                ZipFile.ExtractToDirectory(archivePath, jreWorkingDirectory);
+            }
+            else
+            {
+                await using var fileStream = File.OpenRead(archivePath);
+                using var gzip = new GZipStream(fileStream, CompressionMode.Decompress);
+                TarFile.ExtractToDirectory(gzip, jreWorkingDirectory, overwriteFiles: true);
+            }
+
+            var javaPath = Directory.GetFiles(jreWorkingDirectory, javaExecutableName, SearchOption.AllDirectories).FirstOrDefault();
+            if (javaPath is null)
+                throw new IntegrationTestException("Failed to locate downloaded Java runtime");
+
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(javaPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+            await ImportProxyCertificateAsync(javaPath);
+
+            return javaPath;
+        }
     }
 
     private async Task<string> SetupPaperServerAsync(CancellationToken cancellationToken)
@@ -368,62 +425,6 @@ public class MinecraftTests : IDisposable
         return asset.BrowserDownloadUrl;
     }
 
-    private async Task<string> SetupJreAsync(CancellationToken cancellationToken)
-    {
-        var jreWorkingDirectory = Path.Combine(_workingDirectory, "jre21");
-        var javaExecutableName = OperatingSystem.IsWindows() ? "java.exe" : "java";
-        var existingJava = Directory.Exists(jreWorkingDirectory)
-            ? Directory.GetFiles(jreWorkingDirectory, javaExecutableName, SearchOption.AllDirectories).FirstOrDefault()
-            : null;
-
-        if (existingJava is not null)
-            return existingJava;
-
-        if (!Directory.Exists(jreWorkingDirectory))
-            Directory.CreateDirectory(jreWorkingDirectory);
-
-        var os = OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsLinux() ? "linux" : OperatingSystem.IsMacOS() ? "mac" : throw new PlatformNotSupportedException("Unsupported OS");
-        var arch = RuntimeInformation.ProcessArchitecture switch
-        {
-            Architecture.X64 => "x64",
-            Architecture.X86 => "x86",
-            Architecture.Arm64 => "aarch64",
-            Architecture.Arm => "arm",
-            _ => throw new PlatformNotSupportedException("Unsupported architecture")
-        };
-        var extension = OperatingSystem.IsWindows() ? ".zip" : ".tar.gz";
-
-        var url = await GetGitHubRepositoryLatestReleaseAssetAsync(
-            "adoptium",
-            "temurin21-binaries",
-            name => name.Contains($"jre_{arch}_{os}", StringComparison.OrdinalIgnoreCase) && name.EndsWith(extension, StringComparison.OrdinalIgnoreCase),
-            cancellationToken);
-
-        var archivePath = Path.Combine(jreWorkingDirectory, Path.GetFileName(url));
-        await DownloadFileAsync(url, archivePath, cancellationToken);
-
-        if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-        {
-            ZipFile.ExtractToDirectory(archivePath, jreWorkingDirectory);
-        }
-        else
-        {
-            await using var fileStream = File.OpenRead(archivePath);
-            using var gzip = new GZipStream(fileStream, CompressionMode.Decompress);
-            TarFile.ExtractToDirectory(gzip, jreWorkingDirectory, overwriteFiles: true);
-        }
-
-        var javaPath = Directory.GetFiles(jreWorkingDirectory, javaExecutableName, SearchOption.AllDirectories).FirstOrDefault();
-        if (javaPath is null)
-            throw new IntegrationTestException("Failed to locate downloaded Java runtime");
-
-        if (!OperatingSystem.IsWindows())
-            File.SetUnixFileMode(javaPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
-
-        await ImportProxyCertificateAsync(javaPath);
-
-        return javaPath;
-    }
 
     private static async Task ImportProxyCertificateAsync(string javaPath)
     {
