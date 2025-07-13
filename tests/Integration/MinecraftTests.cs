@@ -248,10 +248,10 @@ public class MinecraftTests : IDisposable
 
     private async Task<string> SetupPaperServerAsync(CancellationToken cancellationToken)
     {
-        var paperWoringDirectory = Path.Combine(_workingDirectory, "PaperServer");
+        var paperWorkingDirectory = Path.Combine(_workingDirectory, "PaperServer");
 
-        if (!Directory.Exists(paperWoringDirectory))
-            Directory.CreateDirectory(paperWoringDirectory);
+        if (!Directory.Exists(paperWorkingDirectory))
+            Directory.CreateDirectory(paperWorkingDirectory);
 
         var versionsJson = await _client.GetStringAsync("https://api.papermc.io/v2/projects/paper", cancellationToken);
         using var versions = JsonDocument.Parse(versionsJson);
@@ -266,19 +266,19 @@ public class MinecraftTests : IDisposable
         var jarName = buildInfo.RootElement.GetProperty("downloads").GetProperty("application").GetProperty("name").GetString();
 
         var paperUrl = $"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}/builds/{latestBuild}/downloads/{jarName}";
-        var paperJarPath = Path.Combine(paperWoringDirectory, "paper.jar");
+        var paperJarPath = Path.Combine(paperWorkingDirectory, "paper.jar");
 
         await DownloadFileAsync(paperUrl, paperJarPath, cancellationToken);
         await SetupCompatibilityPluginsAsync();
 
-        await File.WriteAllTextAsync(Path.Combine(paperWoringDirectory, "eula.txt"), "eula=true", cancellationToken);
-        await File.WriteAllTextAsync(Path.Combine(paperWoringDirectory, "server.properties"), "server-port=25565\nonline-mode=false\n", cancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(paperWorkingDirectory, "eula.txt"), "eula=true", cancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(paperWorkingDirectory, "server.properties"), "server-port=25565\nonline-mode=false\n", cancellationToken);
 
         return paperJarPath;
 
         async Task SetupCompatibilityPluginsAsync()
         {
-            var pluginsDirectory = Path.Combine(paperWoringDirectory, "plugins");
+            var pluginsDirectory = Path.Combine(paperWorkingDirectory, "plugins");
 
             if (!Directory.Exists(pluginsDirectory))
                 Directory.CreateDirectory(pluginsDirectory);
