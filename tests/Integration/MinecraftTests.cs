@@ -40,7 +40,7 @@ public class MinecraftTests : IDisposable
     static MinecraftTests()
     {
         if (Environment.GetEnvironmentVariable("GITHUB_TOKEN") is { } token)
-            _gitHubClient.Credentials = new Credentials(token, AuthenticationType.Bearer);
+            _gitHubClient.Credentials = new Credentials(token);
     }
 
     public MinecraftTests()
