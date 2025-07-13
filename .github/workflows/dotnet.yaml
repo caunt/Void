@@ -11,6 +11,8 @@ on:
 jobs:
   publish:
     environment: void
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     strategy:
       matrix:
         include:
