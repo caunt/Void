@@ -59,20 +59,23 @@ jobs:
           runtime="${{ matrix.runtime }}"
           arch="${runtime##*-}"
           
+          install_directory="$HOME/.dotnet/$arch"
           uname_out="$(uname -s)"
 
           if [[ "$uname_out" == MINGW* || "$uname_out" == CYGWIN* ]]; then
             pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "
               Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile dotnet-install.ps1;
-              .\dotnet-install.ps1 -Version '${{ inputs.dotnet-version }}' -Architecture '$arch'
+              .\dotnet-install.ps1 -Version '${{ inputs.dotnet-version }}' -Architecture '$arch' -InstallDir '$install_directory'
             "
           else
             curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
             chmod +x dotnet-install.sh
-            ./dotnet-install.sh --version ${{ inputs.dotnet-version }} --architecture "$arch"
+            ./dotnet-install.sh --version ${{ inputs.dotnet-version }} --architecture "$arch" --install-dir "$install_directory"
           fi
 
-          echo "$install_dir" >> "$GITHUB_PATH"
+          echo "$install_directory" >> "$GITHUB_PATH"
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       - name: Build
         # Do not include runtime here
