@@ -420,6 +420,51 @@ public class MinecraftTests : IDisposable
         if (!OperatingSystem.IsWindows())
             File.SetUnixFileMode(javaPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
+        await ImportProxyCertificateAsync(javaPath);
+
         return javaPath;
+    }
+
+    private static async Task ImportProxyCertificateAsync(string javaPath)
+    {
+        var proxyCert = Environment.GetEnvironmentVariable("CODEX_PROXY_CERT");
+        if (string.IsNullOrWhiteSpace(proxyCert) || !File.Exists(proxyCert))
+            return;
+
+        var javaBin = Path.GetDirectoryName(javaPath)!;
+        var keytool = Path.Combine(javaBin, OperatingSystem.IsWindows() ? "keytool.exe" : "keytool");
+        if (!File.Exists(keytool))
+            return;
+
+        var javaHome = Directory.GetParent(javaBin)!.FullName;
+        var candidateKeystores = new[]
+        {
+            Path.Combine(javaHome, "lib", "security", "cacerts"),
+            Path.Combine(javaHome, "jre", "lib", "security", "cacerts")
+        };
+
+        var keystore = candidateKeystores.FirstOrDefault(File.Exists);
+        if (keystore is null)
+            return;
+
+        var startInfo = new ProcessStartInfo(keytool)
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+
+        startInfo.ArgumentList.AddRange(new[]
+        {
+            "-importcert",
+            "-alias", "codexproxy",
+            "-file", proxyCert,
+            "-keystore", keystore,
+            "-storepass", "changeit",
+            "-noprompt"
+        });
+
+        using var process = Process.Start(startInfo);
+        if (process is not null)
+            await process.WaitForExitAsync();
     }
 }
