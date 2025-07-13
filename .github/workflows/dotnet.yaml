@@ -17,19 +17,19 @@ jobs:
           - os: ubuntu-latest
             runtime: linux-arm
             run-tests: false
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm # ubuntu-latest
             runtime: linux-arm64
             run-tests: false
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm # ubuntu-latest
             runtime: linux-bionic-arm64
             run-tests: false
           - os: ubuntu-latest
             runtime: linux-bionic-x64
             run-tests: true
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm # ubuntu-latest
             runtime: linux-musl-arm
             run-tests: false
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm # ubuntu-latest
             runtime: linux-musl-arm64
             run-tests: false
           - os: ubuntu-latest
@@ -41,10 +41,10 @@ jobs:
           - os: macos-latest
             runtime: osx-arm64
             run-tests: true
-          - os: macos-latest
+          - os: macos-13 # macos-latest
             runtime: osx-x64
             run-tests: false
-          - os: windows-latest
+          - os: windows-11-arm # windows-latest
             runtime: win-arm64
             run-tests: false
           - os: windows-latest
@@ -56,40 +56,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-
-      # actions/setup-dotnet has a bug, that installs arm64 .NET on x64 machines (https://github.com/actions/setup-dotnet/issues/524)
-      # fix was discussed many times, but always been ignored
-      # so we have to install dotnet manually
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
-
-      # - name: Install .NET SDK
-      #   shell: bash
-      #   run: |
-      #     runtime="${{ matrix.runtime }}"
-      #     arch="${runtime##*-}"
-      #     
-      #     install_directory="$HOME/.dotnet/$arch"
-      #     uname_out="$(uname -s)"
-      # 
-      #     if [[ "$uname_out" == MINGW* || "$uname_out" == CYGWIN* ]]; then
-      #       pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "
-      #         Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile dotnet-install.ps1;
-      #         .\dotnet-install.ps1 -Version '${{ inputs.dotnet-version }}' -Architecture '$arch' -InstallDir '$install_directory'
-      #       "
-      #     else
-      #       curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
-      #       chmod +x dotnet-install.sh
-      #       ./dotnet-install.sh --version ${{ inputs.dotnet-version }} --architecture "$arch" --install-dir "$install_directory"
-      #     fi
-      # 
-      #     echo "$install_directory" >> "$GITHUB_PATH"
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-
       - name: Build
         # Do not include runtime here
         # error NETSDK1134: Building a solution with a specific RuntimeIdentifier is not supported. If you would like to publish for a single RID, specify the RID at the individual project level instead.
@@ -97,7 +67,7 @@ jobs:
       - name: Build Platform
         run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ inputs.void-version }} ${{ matrix.parameters }} 
       - name: Test
-        if: ${{ matrix.run-tests }} # GitHub Actions are only x64 for Ubuntu and Windows and only arm64 for macOS
+        if: ${{ matrix.run-tests }} # GitHub Actions are limited in runners architectures. Check http://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#standard-github-hosted-runners-for-public-repositories.
         run: dotnet test --runtime ${{ matrix.runtime }} --verbosity normal ${{ matrix.parameters }} 
       - name: Publish
         run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained src/Platform --output artifacts --configuration Release --no-build /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ inputs.void-version }} ${{ matrix.parameters }} 
