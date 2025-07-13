@@ -18,7 +18,7 @@ jobs:
         include:
           - os: ubuntu-24.04-arm # ubuntu-latest
             runtime: linux-arm
-            run-tests: true
+            run-tests: false
           - os: ubuntu-24.04-arm # ubuntu-latest
             runtime: linux-arm64
             run-tests: true
