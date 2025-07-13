@@ -70,19 +70,18 @@ public class MinecraftTests : IDisposable
 
             var paperJarPath = await SetupPaperServerAsync(cancellationTokenSource.Token);
             var minecraftConsoleClientExecutablePath = await SetupMinecraftConsoleClientAsync(cancellationTokenSource.Token);
-            var javaExecutablePath = await SetupJreAsync(cancellationTokenSource.Token);
 
             var serverDoneTaskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             cancellationTokenSource.Token.Register(() => serverDoneTaskCompletionSource.TrySetCanceled(cancellationTokenSource.Token), useSynchronizationContext: false);
 
             try
             {
-                server = StartApplication(paperJarPath, javaExecutablePath);
+                server = await StartApplicationAsync(paperJarPath, cancellationTokenSource.Token);
                 var serverTask = HandleOutputAsync(server, HandleServerConsole, cancellationTokenSource.Token);
 
                 await serverDoneTaskCompletionSource.Task;
 
-                client = StartApplication(minecraftConsoleClientExecutablePath, null, "void", "-", "localhost:25565", $"send {ExpectedText}");
+                client = await StartApplicationAsync(minecraftConsoleClientExecutablePath, cancellationTokenSource.Token, "void", "-", "localhost:25565", $"send {ExpectedText}");
                 var clientTask = HandleOutputAsync(client, HandleClientConsole, cancellationTokenSource.Token);
 
                 await serverTask;
@@ -190,13 +189,13 @@ public class MinecraftTests : IDisposable
         }
     }
 
-    private static Process StartApplication(string fileName, string? javaExecutablePath = null, params string[] userArguments)
+    private async Task<Process> StartApplicationAsync(string fileName, CancellationToken cancellationToken, params string[] userArguments)
     {
         var arguments = new List<string>(userArguments);
         var protocols = new string[] { "http", "https" };
 
         var isJar = fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase);
-        var processStartInfo = new ProcessStartInfo(fileName: isJar ? javaExecutablePath ?? "java" : fileName)
+        var processStartInfo = new ProcessStartInfo(fileName: isJar ? await SetupJreAsync(cancellationToken) : fileName)
         {
             WorkingDirectory = Path.GetDirectoryName(fileName),
             RedirectStandardOutput = true,
