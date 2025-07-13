@@ -21,7 +21,7 @@ jobs:
             run-tests: false
           - os: ubuntu-24.04-arm # ubuntu-latest
             runtime: linux-arm64
-            run-tests: false
+            run-tests: true
           - os: ubuntu-24.04-arm # ubuntu-latest
             runtime: linux-bionic-arm64
             run-tests: false
