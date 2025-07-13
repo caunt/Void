@@ -425,7 +425,6 @@ public class MinecraftTests : IDisposable
         return asset.BrowserDownloadUrl;
     }
 
-
     private static async Task ImportProxyCertificateAsync(string javaPath)
     {
         var proxyCert = Environment.GetEnvironmentVariable("CODEX_PROXY_CERT");
