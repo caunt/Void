@@ -105,6 +105,9 @@ public class MinecraftTests : IDisposable
             {
                 serverLogs.Add(line);
 
+                if (line.Contains("java.lang.UnsupportedClassVersionError"))
+                    throw new IntegrationTestException("Incompatible Java version for the server");
+
                 if (line.Contains("Done") && line.Contains("For help, type \"help\""))
                     serverDoneTaskCompletionSource.SetResult();
 
