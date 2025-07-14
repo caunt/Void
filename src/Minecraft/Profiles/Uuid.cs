@@ -30,6 +30,18 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
         return new Uuid(Guid.Parse(text));
     }
 
+    public static bool TryParse(string? text, out Uuid uuid)
+    {
+        if (Guid.TryParse(text, out var guid))
+        {
+            uuid = new Uuid(guid);
+            return true;
+        }
+
+        uuid = default;
+        return false;
+    }
+
     public static Uuid Parse(params int[] parts)
     {
         if (parts.Length is not 4)
