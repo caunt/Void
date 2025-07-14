@@ -106,4 +106,18 @@ public class UuidTests
         Assert.False(u1 != u2);
         Assert.Equal(0, u1.CompareTo(u2));
     }
+
+    [Theory]
+    [InlineData("11223344-5566-7788-99aa-bbccddeeff00", true)]
+    [InlineData("not-a-uuid", false)]
+    public void TryParse_ReturnsExpected(string text, bool expected)
+    {
+        var result = Uuid.TryParse(text, out var uuid);
+        Assert.Equal(expected, result);
+
+        if (expected)
+            Assert.Equal(Guid.Parse(text), uuid.AsGuid);
+        else
+            Assert.Equal(Uuid.Empty, uuid);
+    }
 }
