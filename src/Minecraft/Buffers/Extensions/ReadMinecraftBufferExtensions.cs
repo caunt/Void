@@ -287,7 +287,7 @@ public static class ReadMinecraftBufferExtensions
 
     private static long ReadVarLongCore<TBuffer>(ref TBuffer buffer) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
-        var result = 0;
+        long result = 0;
 
         byte read = 0;
         byte temp;
@@ -297,7 +297,7 @@ public static class ReadMinecraftBufferExtensions
             temp = buffer.ReadUnsignedByte();
             var value = temp & 0b01111111;
 
-            result |= value << 7 * read;
+            result |= (long)value << (7 * read);
             read++;
 
             if (read > 10)

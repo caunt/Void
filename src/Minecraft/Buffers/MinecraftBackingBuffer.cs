@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Data;
 using System.IO;
+using System.Buffers.Binary;
 using System.Text;
 using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Buffers.ReadOnly;
@@ -209,7 +210,7 @@ internal ref struct MinecraftBackingBuffer
 
     public int ReadVarInt()
     {
-        var result = 0;
+        int result = 0;
         byte read = 0;
 
         byte buffer;
@@ -217,7 +218,7 @@ internal ref struct MinecraftBackingBuffer
         {
             buffer = ReadUnsignedByte();
             var value = buffer & 0b01111111;
-            result |= value << 7 * read;
+            result |= value << (7 * read);
 
             read++;
             if (read > 5)
@@ -236,7 +237,7 @@ internal ref struct MinecraftBackingBuffer
 
     public long ReadVarLong()
     {
-        var result = 0;
+        long result = 0;
         byte read = 0;
 
         byte buffer;
@@ -244,7 +245,7 @@ internal ref struct MinecraftBackingBuffer
         {
             buffer = ReadUnsignedByte();
             var value = buffer & 0b01111111;
-            result |= value << 7 * read;
+            result |= (long)value << (7 * read);
 
             read++;
             if (read > 10)
@@ -414,12 +415,12 @@ internal ref struct MinecraftBackingBuffer
 
     public void WriteUuidAsIntArray(Uuid value)
     {
-        var span = value.AsGuid.ToByteArray().AsSpan();
+        var span = value.AsGuid.ToByteArray(true).AsSpan();
 
-        WriteInt(BitConverter.ToInt32(span[..4]));
-        WriteInt(BitConverter.ToInt32(span[4..8]));
-        WriteInt(BitConverter.ToInt32(span[8..12]));
-        WriteInt(BitConverter.ToInt32(span[12..16]));
+        WriteInt(BinaryPrimitives.ReadInt32BigEndian(span[..4]));
+        WriteInt(BinaryPrimitives.ReadInt32BigEndian(span[4..8]));
+        WriteInt(BinaryPrimitives.ReadInt32BigEndian(span[8..12]));
+        WriteInt(BinaryPrimitives.ReadInt32BigEndian(span[12..16]));
     }
 
     public string ReadString(int maxLength = 32767)
