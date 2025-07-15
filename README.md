@@ -34,4 +34,4 @@
 [**Supported Features**](https://void.caunt.world/getting-started/features/) :exclamation:
 
 ### **Developing Plugins:**
-Download :hammer_and_wrench: [**Plugin Development Kit**](https://github.com/caunt/Void/releases/latest/download/plugin-devkit.zip), look at the :page_facing_up: [**Documentation**](https://void.caunt.world/developing-plugins/development-kit/) and use :mag_right: [**Example Plugin**](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) as walkthrough to create a plugin.
+Download :hammer_and_wrench: [**Plugin Development Kit**](https://github.com/caunt/Void/releases/latest/download/plugin-devkit.zip), look at the :page_facing_up: [**Documentation**](https://void.caunt.world/developing-plugins/development-kit/) and use :mag_right: [**Example Plugin**](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) as a walkthrough to create a plugin.
