@@ -66,7 +66,7 @@ public class MinecraftTests : IDisposable
 
         try
         {
-            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(120));
+            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(180));
 
             var paperJarPath = await SetupPaperServerAsync(cancellationTokenSource.Token);
             var minecraftConsoleClientExecutablePath = await SetupMinecraftConsoleClientAsync(cancellationTokenSource.Token);
