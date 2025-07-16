@@ -23,7 +23,8 @@ public class MinecraftTests : MinecraftIntegrationTestBase
     [Fact]
     public async Task MccConnectsToPaperServer()
     {
-        await RunAsync();
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+        await RunAsync(cancellationTokenSource.Token);
     }
 
     protected override async Task<Process> StartServerAsync(CancellationToken cancellationToken)
@@ -34,7 +35,7 @@ public class MinecraftTests : MinecraftIntegrationTestBase
 
     protected override async Task<Process> StartClientAsync(CancellationToken cancellationToken)
     {
-        var clientPath = await SetupMinecraftConsoleClientAsync(cancellationToken, ExpectedText);
+        var clientPath = await SetupMinecraftConsoleClientAsync(ExpectedText, cancellationToken);
         return await StartApplicationAsync(clientPath, cancellationToken, "void", "-", "localhost:25565", $"send {ExpectedText}");
     }
 
@@ -83,7 +84,7 @@ public class MinecraftTests : MinecraftIntegrationTestBase
         }
     }
 
-    private async Task<string> SetupMinecraftConsoleClientAsync(CancellationToken cancellationToken, string expectedText)
+    private async Task<string> SetupMinecraftConsoleClientAsync(string expectedText, CancellationToken cancellationToken)
     {
         var minecraftConsoleClientWorkingDirectory = Path.Combine(WorkingDirectory, "MinecraftConsoleClient");
 
