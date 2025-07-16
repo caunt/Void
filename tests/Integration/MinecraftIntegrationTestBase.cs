@@ -44,13 +44,13 @@ public abstract class MinecraftIntegrationTestBase : IDisposable
 
     protected virtual string ExpectedText => "hello void!";
 
-    public async Task RunAsync()
+    public async Task RunAsync(CancellationToken cancellationToken = default)
     {
         Process? server = null, client = null;
         var serverLogs = new List<string>();
         var clientLogs = new List<string>();
 
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(180));
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var serverDoneTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         cts.Token.Register(() => serverDoneTcs.TrySetCanceled(cts.Token), useSynchronizationContext: false);
 
