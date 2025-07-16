@@ -303,9 +303,9 @@ public class MinecraftTests : IDisposable
 
             var proxyCertificatePath = Environment.GetEnvironmentVariable("CODEX_PROXY_CERT");
 
-            if (!string.IsNullOrWhiteSpace(proxyCertificatePath) && File.Exists(proxyCertificatePath) && Path.GetDirectoryName(javaPath) is { } javaBiniariesPath && Directory.GetParent(javaBiniariesPath) is { } javaHomePath)
+            if (!string.IsNullOrWhiteSpace(proxyCertificatePath) && File.Exists(proxyCertificatePath) && Path.GetDirectoryName(javaPath) is { } javaBinariesPath && Directory.GetParent(javaBinariesPath) is { } javaHomePath)
             {
-                var keytool = Path.Combine(javaBiniariesPath, OperatingSystem.IsWindows() ? "keytool.exe" : "keytool");
+                var keytool = Path.Combine(javaBinariesPath, OperatingSystem.IsWindows() ? "keytool.exe" : "keytool");
 
                 if (File.Exists(keytool))
                 {
