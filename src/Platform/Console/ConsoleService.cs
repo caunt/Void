@@ -27,14 +27,14 @@ public class ConsoleService(ILogger<ConsoleService> logger, ICommandService comm
 
     public async ValueTask HandleCommandsAsync(CancellationToken cancellationToken = default)
     {
-        if (_reader is null)
-            throw new InvalidOperationException($"ConsoleService is not set up. Call {nameof(Setup)}() before using this method.");
-
         if (!IsEnabled)
         {
             await Task.Delay(5_000, cancellationToken);
             return;
         }
+
+        if (_reader is null)
+            throw new InvalidOperationException($"ConsoleService is not set up. Call {nameof(Setup)}() before using this method.");
 
         var command = await _reader.ReadLineAsync(SuggestAsync, cancellationToken);
         logger.LogInformation("Proxy issued command: {command}", command);
