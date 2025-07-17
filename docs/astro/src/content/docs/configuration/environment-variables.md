@@ -6,7 +6,7 @@ sidebar:
 ---
 
 Environment variables make configuration in container environments easier.
-However, they might be used terminal directly as well.
+However, they might be used from the terminal directly as well.
 
 ## Plugins
 - `VOID_PLUGINS`
