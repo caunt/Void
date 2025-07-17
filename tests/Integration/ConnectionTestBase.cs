@@ -21,6 +21,7 @@ using ProductHeaderValue = Octokit.ProductHeaderValue;
 public abstract class ConnectionTestBase : IDisposable
 {
     private const string AppName = "Void.Tests";
+    private const int MaxReleasesToConsider = 3;
 
     private static readonly GitHubClient _gitHubClient = new(new ProductHeaderValue(AppName));
     protected static readonly string WorkingDirectory = Path.Combine(Path.GetTempPath(), AppName, "IntegrationTests");
@@ -302,11 +303,18 @@ public abstract class ConnectionTestBase : IDisposable
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var releases = await _gitHubClient.Repository.Release.GetAll(ownerName, repositoryName);
+        var options = new ApiOptions
+        {
+            PageSize = MaxReleasesToConsider,
+            PageCount = 1,
+            StartPage = 1
+        };
+
+        var releases = await _gitHubClient.Repository.Release.GetAll(ownerName, repositoryName, options);
 
         var asset = releases
             .OrderByDescending(release => release.CreatedAt)
-            .Take(3)
+            .Take(MaxReleasesToConsider)
             .SelectMany(release => release.Assets)
             .FirstOrDefault(asset => assetFilter(asset.Name));
 
