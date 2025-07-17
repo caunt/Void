@@ -95,7 +95,7 @@ public class SetHeldItemClientboundPacket : IMinecraftClientboundPacket<SetHeldI
 
 Now when we have latest implementation, we have to define changes that were made throughout the versions.
 
-In case of [**Set Held Item (clientbound)**](/developing-plugins/network/packets#defining-packets) packet, just one change were made - `slot` property type changed from `byte` to `varint`.
+In case of [**Set Held Item (clientbound)**](/developing-plugins/network/packets#defining-packets) packet, just one change was made - `slot` property type changed from `byte` to `varint`.
 ```csharp
 MinecraftPacketTransformationMapping[] Transformations { get; } = [
     new(ProtocolVersion.MINECRAFT_1_21, ProtocolVersion.MINECRAFT_1_21_2, wrapper =>
