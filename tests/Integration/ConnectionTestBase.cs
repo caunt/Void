@@ -314,7 +314,6 @@ public abstract class ConnectionTestBase : IDisposable
 
         var asset = releases
             .OrderByDescending(release => release.CreatedAt)
-            .Take(MaxReleasesToConsider)
             .SelectMany(release => release.Assets)
             .FirstOrDefault(asset => assetFilter(asset.Name));
 
