@@ -123,7 +123,7 @@ public class LinkService(ILogger<LinkService> logger, ISettings settings, IEvent
                 throw new InvalidOperationException($"Link {@event.Link} is not found");
         }
 
-        // IServer channel is no longed needed
+        // IServer channel is no longer needed
         @event.Link.ServerChannel.Close();
 
         if (!@event.Link.PlayerChannel.IsAlive)
