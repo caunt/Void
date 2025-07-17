@@ -20,7 +20,7 @@
 	</ItemGroup>
 	
 	<ItemGroup>
-		<ProjectReference Include="..\src\Minecraft\Void.Minecraft.csproj" />
-		<ProjectReference Include="..\src\Platform\Void.Proxy.csproj" />
+                <ProjectReference Include="..\Minecraft\Void.Minecraft.csproj" />
+                <ProjectReference Include="..\Platform\Void.Proxy.csproj" />
 	</ItemGroup>
 </Project>
