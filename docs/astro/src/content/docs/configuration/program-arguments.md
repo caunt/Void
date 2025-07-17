@@ -22,6 +22,7 @@ Options:
                                  https://nuget.example.com/v3/index.json or --repository
                                  https://username:password@nuget.example.com/v3/index.json].
   -p, --plugin <plugin>          Provides a path to the file, directory or url to load plugin.
+  --ignore-file-servers         Ignore servers specified in configuration files
   --version                      Show version information
   -?, -h, --help                 Show help and usage information
 ```
@@ -32,11 +33,15 @@ Options:
   Example: `./void-linux-x64 --plugin https://example.org/download/YourPlugin1.dll --plugin /home/YourPlugin2.dll`
 
 ## NuGet
-- `--repository`  
-  Allows you to specify additional NuGet repositories to use.  
+- `--repository`
+  Allows you to specify additional NuGet repositories to use.
   Example: `./void-linux-x64 --repository https://nuget.example.com/v3/index.json`
 
+## Servers
+- `--ignore-file-servers`
+  Ignore servers specified in configuration files.
+
 ## Version
-- `--version`  
-  Displays the current version of Void Proxy.  
+- `--version`
+  Displays the current version of Void Proxy.
   Example: `./void-linux-x64 --version`

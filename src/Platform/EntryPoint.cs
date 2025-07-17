@@ -107,6 +107,7 @@ public static class EntryPoint
 
         NuGetDependencyResolver.RegisterOptions(root);
         PluginService.RegisterOptions(root);
+        ServerService.RegisterOptions(root);
 
         root.SetHandler(async context => await MainHandlerAsync(logWriter, context, cancellationToken));
 
