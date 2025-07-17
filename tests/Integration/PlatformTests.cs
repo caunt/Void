@@ -10,7 +10,7 @@ namespace Void.Tests.Integration;
 public class PlatformTests
 {
     [Fact]
-    public async Task EntryPoint_RunsStopsSuccessfuly()
+    public async Task EntryPoint_RunsStopsSuccessfully()
     {
         var logs = new CollectingTextWriter();
 
