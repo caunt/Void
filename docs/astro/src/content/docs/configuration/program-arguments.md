@@ -22,6 +22,7 @@ Options:
                                  https://nuget.example.com/v3/index.json or --repository
                                  https://username:password@nuget.example.com/v3/index.json].
   -p, --plugin <plugin>          Provides a path to the file, directory or url to load plugin.
+  --server <server>             Registers an additional server in format <host>:<port>
   --ignore-file-servers         Ignore servers specified in configuration files
   --version                      Show version information
   -?, -h, --help                 Show help and usage information
@@ -38,8 +39,11 @@ Options:
   Example: `./void-linux-x64 --repository https://nuget.example.com/v3/index.json`
 
 ## Servers
+- `--server`
+  Registers an additional server in format `<host>:<port>`.
 - `--ignore-file-servers`
   Ignore servers specified in configuration files.
+  Example: `./void-linux-x64 --server 127.0.0.1:25565`
 
 ## Version
 - `--version`
