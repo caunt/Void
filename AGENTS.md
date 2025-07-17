@@ -53,6 +53,9 @@ Follow the existing C# style rules:
 - Run `dotnet format` before committing any code changes.
 - After changing source code, run `dotnet build` from the repository root.
 - Conventional Commits are required for commit messages.
+- Use the `fix` or `feat` type only when your changes modify the proxy code in
+  `./src`. For documentation, CI, or other unrelated updates, choose a more
+  appropriate type such as `docs` or `chore`.
 - Append a [gitmoji](https://gitmoji.dev/specification) after the commit scope,
   e.g., `feat(api): ✨ add new endpoint`.
 - Pull request titles should follow the same Conventional Commits format.
