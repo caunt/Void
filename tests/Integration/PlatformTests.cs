@@ -15,7 +15,7 @@ public class PlatformTests
         var logs = new CollectingTextWriter();
 
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await EntryPoint.RunAsync(cancellationToken: cancellationTokenSource.Token);
+        var exitCode = await EntryPoint.RunAsync(logWriter: logs, cancellationToken: cancellationTokenSource.Token);
 
         Assert.Equal(0, exitCode);
 
