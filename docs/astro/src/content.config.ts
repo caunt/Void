@@ -9,10 +9,23 @@ export const collections = {
     }),
     releases: defineCollection({
         loader: async () => {
-            const response = await fetch("https://api.github.com/repos/caunt/Void/releases");
+            const headers: Record<string, string> = {};
+            const token = process.env.GITHUB_TOKEN;
+            if (token) {
+                headers["Authorization"] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(
+                "https://api.github.com/repos/caunt/Void/releases",
+                { headers }
+            );
             const data = await response.json();
 
-            data.forEach((item : any) => {
+            if (!Array.isArray(data)) {
+                throw new Error("Unexpected response from GitHub Releases API");
+            }
+
+            data.forEach((item: any) => {
                 item.id = item.id.toString();
             });
 
