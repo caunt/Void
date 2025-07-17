@@ -40,10 +40,10 @@ Options:
 
 ## Servers
 - `--server`
-  Registers an additional server in format `<host>:<port>`. This option can be used multiple times.
+  Registers an additional server in format `<host>:<port>` where port is between `1` and `65535`. IPv6 addresses must be enclosed in square brackets. This option can be used multiple times.
 - `--ignore-file-servers`
   Ignore servers specified in configuration files.
-  Example: `./void-linux-x64 --server 127.0.0.1:25565 --server example.com:25566`
+  Example: `./void-linux-x64 --server 127.0.0.1:25565 --server [2001:db8::1]:25565`
 
 ## Version
 - `--version`
