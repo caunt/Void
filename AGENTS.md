@@ -53,6 +53,8 @@ Follow the existing C# style rules:
 - Run `dotnet format` before committing any code changes.
 - After changing source code, run `dotnet build` from the repository root.
 - Conventional Commits are required for commit messages.
+- Append a [gitmoji](https://gitmoji.dev/specification) after the commit scope,
+  e.g., `feat(api): ✨ add new endpoint`.
 - Never modify `CHANGELOG.md`; it is generated automatically by `release-please` from commit history.
 
 ## Protocol guidance
