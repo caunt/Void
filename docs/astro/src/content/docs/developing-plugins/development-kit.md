@@ -44,4 +44,5 @@ Dependencies are automatically resolved at runtime in several ways and fallbacks
 Including NuGet packages, local DLLs, and looking at runtime.
 NuGet dependencies will be automatically downloaded and cached in the **packages** directory.
 
-## DistributionShare your ***.dll** file, without any other files from the **bin** directory.
+## Distribution
+Share your ***.dll** file, without any other files from the **bin** directory.
