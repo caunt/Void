@@ -19,7 +19,7 @@ public class MySingletonService
 
 ## Example Registration
 ```csharp
-public class MyPlugin(IDependencyService services) : IPlugin
+public class MyPlugin(IDependencyService dependencies) : IPlugin
 {
     [Subscribe]
     public void OnPluginLoading(PluginLoadingEvent @event)
