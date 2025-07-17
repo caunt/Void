@@ -17,6 +17,8 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Install, build, and upload documentation site
         uses: withastro/action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           path: docs/astro
 #       - name: Validate links
