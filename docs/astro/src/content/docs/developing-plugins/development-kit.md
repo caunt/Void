@@ -7,7 +7,7 @@ Plugin Development Kit is a set of predefined configurations that simplifies the
 It can be used with any MSBuild-compatible IDE, such as Visual Studio or JetBrains Rider.
 
 ## Prerequisites
-Void plugins are written with many modern .NET features, so you will need to ensure that you had experience with them or at least know what you are doing.
+Void plugins are written with many modern .NET features, so you will need to ensure that you have experience with them or at least know what you are doing.
 Some of them include:
 - Dependency Injection
 - Asynchronous Programming
