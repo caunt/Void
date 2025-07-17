@@ -11,7 +11,7 @@ public static class HostingExtensions
         return services
             .AddSingleton<ISettings>(services =>
             {
-                return services.GetRequiredService<IConfigurationService>().GetAsync<Settings>().AsTask().Result;
+                return services.GetRequiredService<IConfigurationService>().GetAsync<Settings>().AsTask().GetAwaiter().GetResult();
             })
             .Configure<HostOptions>(options =>
             {
