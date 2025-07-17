@@ -40,10 +40,10 @@ Options:
 
 ## Servers
 - `--server`
-  Registers an additional server in format `<host>:<port>`.
+  Registers an additional server in format `<host>:<port>`. This option can be used multiple times.
 - `--ignore-file-servers`
   Ignore servers specified in configuration files.
-  Example: `./void-linux-x64 --server 127.0.0.1:25565`
+  Example: `./void-linux-x64 --server 127.0.0.1:25565 --server example.com:25566`
 
 ## Version
 - `--version`

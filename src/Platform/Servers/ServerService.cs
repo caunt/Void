@@ -29,6 +29,8 @@ public class ServerService(ISettings settings, ILinkService links, InvocationCon
         if (servers == null)
             yield break;
 
+        var index = 1;
+
         foreach (var argument in servers)
         {
             if (string.IsNullOrWhiteSpace(argument))
@@ -42,7 +44,7 @@ public class ServerService(ISettings settings, ILinkService links, InvocationCon
             if (!int.TryParse(parts[1], out var port))
                 continue;
 
-            yield return new Server(string.Empty, parts[0], port);
+            yield return new Server($"args-server-{index++}", parts[0], port);
         }
     }
 }
