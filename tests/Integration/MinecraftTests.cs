@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Void.Proxy;
 using Xunit;
 
 namespace Void.Tests.Integration;
@@ -19,6 +20,17 @@ public class MinecraftTests : MinecraftIntegrationTestBase
 
     private const string MinecraftConsoleClientRepositoryOwnerName = "MCCTeam";
     private const string MinecraftConsoleClientRepositoryName = "Minecraft-Console-Client";
+
+    [Fact]
+    public async Task TestAsync()
+    {
+        var logs = new CollectingTextWriter();
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var exitCode = await EntryPoint.RunAsync(logWriter: logs, cancellationToken: cancellationTokenSource.Token);
+
+        Assert.Equal(0, exitCode);
+    }
 
     [Fact]
     public async Task MccConnectsToPaperServer()

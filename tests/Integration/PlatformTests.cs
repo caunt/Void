@@ -12,7 +12,7 @@ public class PlatformTests
     public async Task EntryPoint_RunsStopsSuccessfuly()
     {
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await EntryPoint.RunAsync(cancellationTokenSource.Token);
+        var exitCode = await EntryPoint.RunAsync(cancellationToken: cancellationTokenSource.Token);
 
         Assert.Equal(0, exitCode);
     }
