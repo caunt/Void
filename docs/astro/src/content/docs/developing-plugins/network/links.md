@@ -36,5 +36,5 @@ public void OnCreateLink(CreateLinkEvent @event)
 }
 ```
 
-All the job for [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) implementation is to forward [**packets (messages)**](/developing-plugins/network/packets) from player channel to server channel and vice versa.
+The job of an [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) implementation is to forward [**packets (messages)**](/developing-plugins/network/packets) from the player channel to the server channel and vice versa.
 If you want to replace the default implementation, follow [**this example**](https://github.com/caunt/Void/blob/main/src/Platform/Links/Link.cs).
