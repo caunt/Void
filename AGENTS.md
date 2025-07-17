@@ -55,6 +55,7 @@ Follow the existing C# style rules:
 - Conventional Commits are required for commit messages.
 - Append a [gitmoji](https://gitmoji.dev/specification) after the commit scope,
   e.g., `feat(api): ✨ add new endpoint`.
+- Pull request titles should follow the same Conventional Commits format.
 - Never modify `CHANGELOG.md`; it is generated automatically by `release-please` from commit history.
 
 ## Protocol guidance
