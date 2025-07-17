@@ -1,30 +1,18 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Formats.Tar;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using NuGet.Packaging;
-using Octokit;
-using Void.Tests.Extensions;
 using Xunit;
-using ProductHeaderValue = Octokit.ProductHeaderValue;
 
 namespace Void.Tests.Integration;
 
-public class MinecraftTests : IDisposable
+public class MinecraftTests : MinecraftIntegrationTestBase
 {
-    private const string AppName = "Void.Tests";
-    private const string ExpectedText = "hello void!";
-
     private const string ViaVersionRepositoryOwnerName = "ViaVersion";
     private const string ViaVersionRepositoryName = "ViaVersion";
     private const string ViaBackwardsRepositoryName = "ViaBackwards";
@@ -32,324 +20,28 @@ public class MinecraftTests : IDisposable
     private const string MinecraftConsoleClientRepositoryOwnerName = "MCCTeam";
     private const string MinecraftConsoleClientRepositoryName = "Minecraft-Console-Client";
 
-    private static readonly GitHubClient _gitHubClient = new(new ProductHeaderValue(AppName));
-    private static readonly string _workingDirectory = Path.Combine(Path.GetTempPath(), AppName, "PaperMcIntegrationTests");
-
-    private readonly HttpClient _client = new();
-
-    static MinecraftTests()
-    {
-        if (Environment.GetEnvironmentVariable("GITHUB_TOKEN") is { } token)
-            _gitHubClient.Credentials = new Credentials(token);
-    }
-
-    public MinecraftTests()
-    {
-        _client.DefaultRequestHeaders.UserAgent.ParseAdd("Void.Tests/1.0");
-
-        // Disable caching to ensure we always get the latest data
-        _client.DefaultRequestHeaders.Pragma.ParseAdd("no-cache");
-        _client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue
-        {
-            NoCache = true
-        };
-
-        if (!Directory.Exists(_workingDirectory))
-            Directory.CreateDirectory(_workingDirectory);
-    }
-
     [Fact]
-    public async Task MccConnectsPaperServer()
+    public async Task MccConnectsToPaperServer()
     {
-        Process? server = null, client = null;
-        List<string> serverLogs = [], clientLogs = [];
-
-        try
-        {
-            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(180));
-
-            var paperJarPath = await SetupPaperServerAsync(cancellationTokenSource.Token);
-            var minecraftConsoleClientExecutablePath = await SetupMinecraftConsoleClientAsync(cancellationTokenSource.Token);
-
-            var serverDoneTaskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            cancellationTokenSource.Token.Register(() => serverDoneTaskCompletionSource.TrySetCanceled(cancellationTokenSource.Token), useSynchronizationContext: false);
-
-            try
-            {
-                server = await StartApplicationAsync(paperJarPath, cancellationTokenSource.Token);
-                var serverTask = HandleOutputAsync(server, HandleServerConsole, cancellationTokenSource.Token);
-
-                await serverDoneTaskCompletionSource.Task;
-
-                client = await StartApplicationAsync(minecraftConsoleClientExecutablePath, cancellationTokenSource.Token, "void", "-", "localhost:25565", $"send {ExpectedText}");
-                var clientTask = HandleOutputAsync(client, HandleClientConsole, cancellationTokenSource.Token);
-
-                await serverTask;
-                cancellationTokenSource.Cancel();
-
-                try
-                {
-                    await clientTask;
-                }
-                catch (TaskCanceledException)
-                {
-                    // Totally expected, we cancel client task when server got expected message
-                }
-            }
-            catch (Exception exception)
-            {
-                throw new IntegrationTestException(exception.Message + $"\nServer logs:\n{string.Join("\n", serverLogs)}\n\n\nClient logs:\n{string.Join("\n", clientLogs)}", exception);
-            }
-
-            Assert.Contains(serverLogs, line => line.Contains(ExpectedText));
-
-            bool HandleServerConsole(string line)
-            {
-                serverLogs.Add(line);
-
-                if (line.Contains("java.lang.UnsupportedClassVersionError"))
-                    throw new IntegrationTestException("Incompatible Java version for the server");
-
-                if (line.Contains("Done") && line.Contains("For help, type \"help\""))
-                    serverDoneTaskCompletionSource.SetResult();
-
-                if (line.Contains(ExpectedText))
-                    return true;
-
-                return false;
-            }
-
-            bool HandleClientConsole(string line)
-            {
-                clientLogs.Add(line);
-
-                if (line.Contains("Cannot connect to the server : This version is not supported !"))
-                    throw new IntegrationTestException("Server / Client version mismatch");
-
-                if (line.Contains("No connection could be made because the target machine actively refused it"))
-                    throw new IntegrationTestException("Server is not running or not reachable");
-
-                if (line.Contains("You need to agree to the EULA in order to run the server"))
-                    throw new IntegrationTestException("Server EULA not accepted");
-
-                return false;
-            }
-        }
-        finally
-        {
-            if (client is { HasExited: false })
-                await client.ExitAsync();
-
-            if (server is { HasExited: false })
-                await server.ExitAsync();
-        }
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+        await RunAsync(cancellationTokenSource.Token);
     }
 
-    public void Dispose()
+    protected override async Task<Process> StartServerAsync(CancellationToken cancellationToken)
     {
-        Directory.Delete(_workingDirectory, true);
-        GC.SuppressFinalize(this);
+        var paperJarPath = await SetupPaperServerAsync(cancellationToken);
+        return await StartApplicationAsync(paperJarPath, cancellationToken);
     }
 
-    private static async Task HandleOutputAsync(Process process, Func<string, bool> handler, CancellationToken cancellationToken)
+    protected override async Task<Process> StartClientAsync(CancellationToken cancellationToken)
     {
-        var taskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var registration = cancellationToken.Register(() => taskCompletionSource.TrySetCanceled(cancellationToken), useSynchronizationContext: false);
-
-        void Handler(object sender, DataReceivedEventArgs eventArgs)
-        {
-            try
-            {
-                if (eventArgs.Data != null && handler(eventArgs.Data))
-                    taskCompletionSource.SetResult();
-            }
-            catch (Exception exception)
-            {
-                taskCompletionSource.SetException(exception);
-            }
-        }
-
-        process.OutputDataReceived += Handler;
-        process.ErrorDataReceived += Handler;
-
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-
-        try
-        {
-            await taskCompletionSource.Task;
-        }
-        finally
-        {
-            process.CancelOutputRead();
-            process.CancelErrorRead();
-
-            process.OutputDataReceived -= Handler;
-            process.ErrorDataReceived -= Handler;
-        }
-    }
-
-    private async Task<Process> StartApplicationAsync(string fileName, CancellationToken cancellationToken, params string[] userArguments)
-    {
-        var arguments = new List<string>(userArguments);
-        var protocols = new string[] { "http", "https" };
-
-        var isJar = fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase);
-        var processStartInfo = new ProcessStartInfo(fileName: isJar ? await SetupJreAsync() : fileName)
-        {
-            WorkingDirectory = Path.GetDirectoryName(fileName),
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            RedirectStandardInput = false,
-            UseShellExecute = false
-        };
-
-        foreach (var protocol in protocols)
-        {
-            var name = protocol + "_proxy";
-            var variants = new string[] { name, name.ToUpperInvariant() };
-
-            foreach (var variant in variants)
-            {
-                var candidate = Environment.GetEnvironmentVariable(variant);
-
-                if (string.IsNullOrWhiteSpace(candidate))
-                    continue;
-
-                processStartInfo.Environment[variant] = candidate;
-
-                if (!isJar)
-                    continue;
-
-                if (!candidate.Contains("://"))
-                    candidate = protocol + "://" + candidate;
-
-                if (!Uri.TryCreate(candidate, UriKind.Absolute, out var uri))
-                    continue;
-
-                arguments.Add($"-D{protocol}.proxyHost={uri.Host}");
-                arguments.Add($"-D{protocol}.proxyPort={uri.Port}");
-
-                break;
-            }
-        }
-
-        if (isJar)
-        {
-            arguments.Add("-jar");
-            arguments.Add(fileName);
-            arguments.Add("--nogui");
-        }
-
-        processStartInfo.ArgumentList.AddRange(arguments);
-
-        return Process.Start(processStartInfo) ?? throw new IntegrationTestException($"Failed to start process for {fileName} with arguments: {string.Join(" ", arguments)}");
-
-        async Task<string> SetupJreAsync()
-        {
-            var jreWorkingDirectory = Path.Combine(_workingDirectory, "jre21");
-            var javaExecutableName = OperatingSystem.IsWindows() ? "java.exe" : "java";
-            var existingJava = Directory.Exists(jreWorkingDirectory)
-                ? Directory.GetFiles(jreWorkingDirectory, javaExecutableName, SearchOption.AllDirectories).FirstOrDefault()
-                : null;
-
-            if (existingJava is not null)
-                return existingJava;
-
-            if (!Directory.Exists(jreWorkingDirectory))
-                Directory.CreateDirectory(jreWorkingDirectory);
-
-            var os = OperatingSystem.IsWindows() ? "windows"
-                : OperatingSystem.IsLinux() ? "linux"
-                : OperatingSystem.IsMacOS() ? "mac"
-                : throw new PlatformNotSupportedException("Unsupported OS");
-
-            var arch = RuntimeInformation.ProcessArchitecture switch
-            {
-                Architecture.X64 => "x64",
-                Architecture.X86 => "x86",
-                Architecture.Arm64 => "aarch64",
-                Architecture.Arm => "arm",
-                _ => throw new PlatformNotSupportedException("Unsupported architecture")
-            };
-
-            var extension = OperatingSystem.IsWindows() ? ".zip" : ".tar.gz";
-            var url = await GetGitHubRepositoryLatestReleaseAssetAsync(
-                ownerName: "adoptium",
-                repositoryName: "temurin21-binaries",
-                assetFilter: name => name.Contains($"jre_{arch}_{os}", StringComparison.OrdinalIgnoreCase) && name.EndsWith(extension, StringComparison.OrdinalIgnoreCase),
-                cancellationToken);
-
-            var archivePath = Path.Combine(jreWorkingDirectory, Path.GetFileName(url));
-
-            await DownloadFileAsync(url, archivePath, cancellationToken);
-
-            if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-            {
-                ZipFile.ExtractToDirectory(archivePath, jreWorkingDirectory);
-            }
-            else
-            {
-                await using var fileStream = File.OpenRead(archivePath);
-                using var gzip = new GZipStream(fileStream, CompressionMode.Decompress);
-                TarFile.ExtractToDirectory(gzip, jreWorkingDirectory, overwriteFiles: true);
-            }
-
-            var javaPath = Directory.GetFiles(jreWorkingDirectory, javaExecutableName, SearchOption.AllDirectories).FirstOrDefault() ??
-                throw new IntegrationTestException("Failed to locate downloaded Java runtime");
-
-            if (!OperatingSystem.IsWindows())
-                File.SetUnixFileMode(javaPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
-
-            var proxyCertificatePath = Environment.GetEnvironmentVariable("CODEX_PROXY_CERT");
-
-            if (!string.IsNullOrWhiteSpace(proxyCertificatePath) && File.Exists(proxyCertificatePath) && Path.GetDirectoryName(javaPath) is { } javaBinariesPath && Directory.GetParent(javaBinariesPath) is { } javaHomePath)
-            {
-                var keytool = Path.Combine(javaBinariesPath, OperatingSystem.IsWindows() ? "keytool.exe" : "keytool");
-
-                if (File.Exists(keytool))
-                {
-                    var candidateKeystores = new[]
-                    {
-                        Path.Combine(javaHomePath.FullName, "lib", "security", "cacerts"),
-                        Path.Combine(javaHomePath.FullName, "jre", "lib", "security", "cacerts")
-                    };
-
-                    var keystore = candidateKeystores.FirstOrDefault(File.Exists);
-
-                    if (keystore is not null)
-                    {
-                        var startInfo = new ProcessStartInfo(keytool)
-                        {
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true
-                        };
-
-                        startInfo.ArgumentList.AddRange(
-                        [
-                            "-importcert",
-                            "-alias", "codexproxy",
-                            "-file", proxyCertificatePath,
-                            "-keystore", keystore,
-                            "-storepass", "changeit",
-                            "-noprompt"
-                        ]);
-
-                        using var process = Process.Start(startInfo);
-
-                        if (process is not null)
-                            await process.WaitForExitAsync(cancellationToken);
-                    }
-                }
-            }
-
-            return javaPath;
-        }
+        var clientPath = await SetupMinecraftConsoleClientAsync(ExpectedText, cancellationToken);
+        return await StartApplicationAsync(clientPath, cancellationToken, "void", "-", "localhost:25565", $"send {ExpectedText}");
     }
 
     private async Task<string> SetupPaperServerAsync(CancellationToken cancellationToken)
     {
-        var paperWorkingDirectory = Path.Combine(_workingDirectory, "PaperServer");
+        var paperWorkingDirectory = Path.Combine(WorkingDirectory, "PaperServer");
 
         if (!Directory.Exists(paperWorkingDirectory))
             Directory.CreateDirectory(paperWorkingDirectory);
@@ -392,9 +84,9 @@ public class MinecraftTests : IDisposable
         }
     }
 
-    private async Task<string> SetupMinecraftConsoleClientAsync(CancellationToken cancellationToken)
+    private async Task<string> SetupMinecraftConsoleClientAsync(string expectedText, CancellationToken cancellationToken)
     {
-        var minecraftConsoleClientWorkingDirectory = Path.Combine(_workingDirectory, "MinecraftConsoleClient");
+        var minecraftConsoleClientWorkingDirectory = Path.Combine(WorkingDirectory, "MinecraftConsoleClient");
 
         if (!Directory.Exists(minecraftConsoleClientWorkingDirectory))
             Directory.CreateDirectory(minecraftConsoleClientWorkingDirectory);
@@ -417,7 +109,7 @@ public class MinecraftTests : IDisposable
             [[ChatBot.ScriptScheduler.TaskList]]
             Task_Name = "Task Name 1"
             Trigger_On_Login = true
-            Action = "send {ExpectedText}"
+            Action = "send {expectedText}"
             """, cancellationToken);
 
         return path;
@@ -446,26 +138,5 @@ public class MinecraftTests : IDisposable
 
             return suffixBuilder.ToString();
         }
-    }
-
-    private async Task DownloadFileAsync(string url, string destination, CancellationToken cancellationToken)
-    {
-        using var response = await _client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        await using var fileStream = File.Create(destination);
-        await response.Content.CopyToAsync(fileStream, cancellationToken);
-    }
-
-    private static async Task<string> GetGitHubRepositoryLatestReleaseAssetAsync(string ownerName, string repositoryName, Predicate<string> assetFilter, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var latestRelease = await _gitHubClient.Repository.Release.GetLatest(ownerName, repositoryName);
-        var asset = latestRelease.Assets.FirstOrDefault(asset => assetFilter(asset.Name));
-
-        Assert.NotNull(asset);
-
-        return asset.BrowserDownloadUrl;
     }
 }
