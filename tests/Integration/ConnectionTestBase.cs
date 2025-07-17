@@ -302,8 +302,13 @@ public abstract class ConnectionTestBase : IDisposable
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var latestRelease = await _gitHubClient.Repository.Release.GetLatest(ownerName, repositoryName);
-        var asset = latestRelease.Assets.FirstOrDefault(asset => assetFilter(asset.Name));
+        var releases = await _gitHubClient.Repository.Release.GetAll(ownerName, repositoryName);
+
+        var asset = releases
+            .OrderByDescending(release => release.CreatedAt)
+            .Take(3)
+            .SelectMany(release => release.Assets)
+            .FirstOrDefault(asset => assetFilter(asset.Name));
 
         Assert.NotNull(asset);
 
