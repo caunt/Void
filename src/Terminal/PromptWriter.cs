@@ -90,7 +90,7 @@ public class PromptWriter(PromptReader reader, StreamWriter writer) : TextWriter
     private int GetBufferLines(int length = 0)
     {
         // This width is not safe when the console is resized.
-        var width = reader.Width;
+        var width = PromptReader.Width;
 
         if (length is 0)
             length = reader.Buffer.Length + reader.Prompt.Length;

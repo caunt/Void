@@ -51,13 +51,13 @@ public static class EntryPoint
         Log.Logger = configuration.CreateLogger();
     }
 
-    public static async Task<int> RunAsync(CancellationToken cancellationToken = default, params string[] args)
+    public static async Task<int> RunAsync(TextWriter? logWriter = null, CancellationToken cancellationToken = default, params string[] args)
     {
         try
         {
-            return await BuildCommandLine(cancellationToken)
+            return await BuildCommandLine(logWriter, cancellationToken)
                 .UseDefaults()
-                .UseHost(SetupHost)
+                .UseHost(builder => SetupHost(builder, logWriter))
                 .Build()
                 .InvokeAsync(args);
         }
@@ -69,10 +69,10 @@ public static class EntryPoint
 
     private static async Task<int> Main(string[] args)
     {
-        return await RunAsync(default, args);
+        return await RunAsync(logWriter: null, cancellationToken: default, args);
     }
 
-    private static void SetupHost(IHostBuilder builder)
+    private static void SetupHost(IHostBuilder builder, TextWriter? logWriter)
     {
         builder
             .UseServiceProviderFactory(new DryIocServiceProviderFactory(new Container(Rules.MicrosoftDependencyInjectionRules)))
@@ -82,6 +82,7 @@ public static class EntryPoint
                 .AddJsonOptions()
                 .AddHttpClient()
                 .AddSettings()
+                .AddSingleton(new ConsoleRedirectConfiguration(logWriter))
                 .AddSingletonAndListen<ICryptoService, RsaCryptoService>()
                 .AddSingletonAndListen<IEventService, EventService>()
                 .AddSingletonAndListen<IPluginService, PluginService>()
@@ -100,19 +101,19 @@ public static class EntryPoint
                 .AddHostedService(services => (Platform)services.GetRequiredService<IProxy>()));
     }
 
-    private static CommandLineBuilder BuildCommandLine(CancellationToken cancellationToken)
+    private static CommandLineBuilder BuildCommandLine(TextWriter? logWriter, CancellationToken cancellationToken)
     {
         var root = new RootCommand("Runs the proxy");
 
         NuGetDependencyResolver.RegisterOptions(root);
         PluginService.RegisterOptions(root);
 
-        root.SetHandler(context => MainHandler(context, cancellationToken));
+        root.SetHandler(async context => await MainHandlerAsync(logWriter, context, cancellationToken));
 
         return new CommandLineBuilder(root);
     }
 
-    private static async Task MainHandler(InvocationContext context, CancellationToken cancellationToken)
+    private static async Task MainHandlerAsync(TextWriter? logWriter, InvocationContext context, CancellationToken cancellationToken)
     {
         var host = context.GetHost();
 
@@ -121,8 +122,6 @@ public static class EntryPoint
 
         var token = lifetime.ApplicationStopping;
         using var registration = cancellationToken.Register(lifetime.StopApplication);
-
-        console.Setup();
 
         try
         {

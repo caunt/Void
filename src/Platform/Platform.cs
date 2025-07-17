@@ -4,6 +4,7 @@ using System.Reflection;
 using Serilog.Core;
 using Serilog.Events;
 using Void.Proxy.Api;
+using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Players;
@@ -15,6 +16,7 @@ namespace Void.Proxy;
 
 public class Platform(
     ILogger<Platform> logger,
+    IConsoleService console,
     IPluginService plugins,
     IEventService events,
     IPlayerService players,
@@ -99,6 +101,8 @@ public class Platform(
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        console.Setup();
+
 #if RELEASE
         LoggingLevelSwitch.MinimumLevel = (LogEventLevel)settings.LogLevel;
 #else

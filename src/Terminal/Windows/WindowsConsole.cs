@@ -25,6 +25,9 @@ public static partial class WindowsConsole
 
     public static bool TryEnableVirtualTerminalProcessing()
     {
+        if (Console.IsOutputRedirected)
+            return true;
+
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             return true;
 

@@ -6,20 +6,18 @@ using SystemConsole = System.Console;
 
 namespace Void.Proxy.Console;
 
-public class ConsoleService(ILogger<ConsoleService> logger, ICommandService commands) : IConsoleService
+public class ConsoleService(ILogger<ConsoleService> logger, ConsoleRedirectConfiguration consoleRedirectConfiguration, ICommandService commands) : IConsoleService
 {
     public static bool IsEnabled => !SystemConsole.IsInputRedirected && !SystemConsole.IsOutputRedirected;
 
-    private PromptReader? _reader;
+    private readonly PromptReader _reader = new();
 
     public void Setup()
     {
+        SystemConsole.SetOut(consoleRedirectConfiguration.TextWriter ?? _reader.TextWriter);
+
         if (!IsEnabled)
             return;
-
-        _reader ??= new();
-
-        SystemConsole.SetOut(_reader.TextWriter);
 
         _reader.ResetStyle();
         _reader.HideCursor();
