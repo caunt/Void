@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace Void.Tests.Integration;
+namespace Void.Tests.Streams;
 
 public class CollectingTextWriter : TextWriter
 {
