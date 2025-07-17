@@ -54,7 +54,7 @@ public class MySingletonService : IEventListener
 Just like with other services, you should apply `IEventListener` interface to your scoped service class.
 However, listening to events in scoped services is a bit different.
 Scoped events are filtered by the player context, so you will only receive events that are relevant to the player that owns the service.
-All other types of events will be not be filtered, since they are not scoped.
+All other types of events will not be filtered, since they are not scoped.
 Scoped events filter can be disabled by applying `bypassScopedFilter: true` to the `Subscribe` attribute.
 ```csharp
 public class MyScopedService(IPlayerContext context, ILogger logger) : IEventListener
