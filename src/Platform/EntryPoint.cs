@@ -51,11 +51,11 @@ public static class EntryPoint
         Log.Logger = configuration.CreateLogger();
     }
 
-    public static async Task<int> RunAsync(params string[] args)
+    public static async Task<int> RunAsync(CancellationToken cancellationToken = default, params string[] args)
     {
         try
         {
-            return await BuildCommandLine()
+            return await BuildCommandLine(cancellationToken)
                 .UseDefaults()
                 .UseHost(SetupHost)
                 .Build()
@@ -69,7 +69,7 @@ public static class EntryPoint
 
     private static async Task<int> Main(string[] args)
     {
-        return await RunAsync(args);
+        return await RunAsync(default, args);
     }
 
     private static void SetupHost(IHostBuilder builder)
@@ -100,24 +100,27 @@ public static class EntryPoint
                 .AddHostedService(services => (Platform)services.GetRequiredService<IProxy>()));
     }
 
-    private static CommandLineBuilder BuildCommandLine()
+    private static CommandLineBuilder BuildCommandLine(CancellationToken cancellationToken)
     {
         var root = new RootCommand("Runs the proxy");
 
         NuGetDependencyResolver.RegisterOptions(root);
         PluginService.RegisterOptions(root);
 
-        root.SetHandler(ReadCommands);
+        root.SetHandler(context => MainHandler(context, cancellationToken));
 
         return new CommandLineBuilder(root);
     }
 
-    private static async Task ReadCommands(InvocationContext context)
+    private static async Task MainHandler(InvocationContext context, CancellationToken cancellationToken)
     {
         var host = context.GetHost();
+
         var console = host.Services.GetRequiredService<IConsoleService>();
         var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+
         var token = lifetime.ApplicationStopping;
+        using var registration = cancellationToken.Register(lifetime.StopApplication);
 
         console.Setup();
 
