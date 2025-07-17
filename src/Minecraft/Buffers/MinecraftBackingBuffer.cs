@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Data;
 using System.IO;
-using System.Buffers.Binary;
 using System.Text;
 using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Buffers.ReadOnly;

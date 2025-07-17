@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Reflection;
 using Nito.AsyncEx;
 using Nito.Disposables.Internals;
-using System.Net.Http;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
@@ -156,7 +155,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
                 return LoadContainer(Path.GetFileName(fileName), stream);
             })
             .WhenAll()
-            .ContinueWith(task => task.Result.SelectMany(plugins => plugins));
+            .ContinueWith(task => task.Result.SelectMany(plugins => plugins), cancellationToken);
     }
 
     public async ValueTask LoadPluginsAsync(IEnumerable<Type> plugins, CancellationToken cancellationToken = default)

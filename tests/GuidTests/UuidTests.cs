@@ -21,20 +21,20 @@ public class UuidTests
     public void Parse_IntArray_ParsesCorrectly()
     {
         int[] parts =
-        {
+        [
             0x11223344,
             0x55667788,
             unchecked((int)0x99aabbcc),
             unchecked((int)0xddeeff00)
-        };
+        ];
         var uuid = Uuid.Parse(parts);
         byte[] expected =
-        {
+        [
             0x44, 0x33, 0x22, 0x11,
             0x66, 0x55, 0x88, 0x77,
             0x99, 0xaa, 0xbb, 0xcc,
             0xdd, 0xee, 0xff, 0x00
-        };
+        ];
         Assert.Equal(new Guid(expected), uuid.AsGuid);
     }
 
