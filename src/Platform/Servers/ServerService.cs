@@ -1,12 +1,13 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using Microsoft.Extensions.Logging;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Servers;
 using Void.Proxy.Api.Settings;
 
 namespace Void.Proxy.Servers;
 
-public class ServerService(ISettings settings, ILinkService links, InvocationContext context) : IServerService
+public class ServerService(ILogger<ServerService> logger, ISettings settings, ILinkService links, InvocationContext context) : IServerService
 {
     private static readonly Option<bool> _ignoreFileServersOption = new("--ignore-file-servers", description: "Ignore servers specified in configuration files");
     private static readonly Option<string[]> _serversOption = new("--server", description: "Registers an additional server in format <host>:<port>");
@@ -34,17 +35,27 @@ public class ServerService(ISettings settings, ILinkService links, InvocationCon
         foreach (var argument in servers)
         {
             if (string.IsNullOrWhiteSpace(argument))
+            {
+                logger.LogWarning("Invalid server {Server}", argument);
                 continue;
+            }
 
-            var parts = argument.Split(':', 2);
-
-            if (parts.Length != 2)
+            if (!Uri.TryCreate($"tcp://{argument}", UriKind.Absolute, out var uri))
+            {
+                logger.LogWarning("Invalid server {Server}", argument);
                 continue;
+            }
 
-            if (!int.TryParse(parts[1], out var port))
+            var port = uri.Port;
+            var host = uri.Host;
+
+            if (port is < 1 or > 65535 || string.IsNullOrWhiteSpace(host))
+            {
+                logger.LogWarning("Invalid server {Server}", argument);
                 continue;
+            }
 
-            yield return new Server($"args-server-{index++}", parts[0], port);
+            yield return new Server($"args-server-{index++}", host, port);
         }
     }
 }
