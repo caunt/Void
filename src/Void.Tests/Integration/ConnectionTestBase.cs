@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using Octokit;
 using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
+using Void.Tests.Integration.Interfaces;
 using Xunit;
 using ProductHeaderValue = Octokit.ProductHeaderValue;
 
@@ -24,9 +25,12 @@ public abstract class ConnectionTestBase : IDisposable
     private const int MaxReleasesToConsider = 3;
 
     private static readonly GitHubClient _gitHubClient = new(new ProductHeaderValue(AppName));
-    protected static readonly string WorkingDirectory = Path.Combine(Path.GetTempPath(), AppName, "IntegrationTests");
+    internal static readonly string WorkingDirectory = Path.Combine(Path.GetTempPath(), AppName, "IntegrationTests");
 
     protected readonly HttpClient _client = new();
+    internal HttpClient Client => _client;
+    private readonly IIntegrationServer _server;
+    private readonly IIntegrationClient _clientImpl;
 
     static ConnectionTestBase()
     {
@@ -34,8 +38,11 @@ public abstract class ConnectionTestBase : IDisposable
             _gitHubClient.Credentials = new Credentials(token);
     }
 
-    protected ConnectionTestBase()
+    internal ConnectionTestBase(IIntegrationServer server, IIntegrationClient client)
     {
+        _server = server;
+        _clientImpl = client;
+
         _client.DefaultRequestHeaders.UserAgent.ParseAdd("Void.Tests/1.0");
         _client.DefaultRequestHeaders.Pragma.ParseAdd("no-cache");
         _client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
@@ -127,10 +134,13 @@ public abstract class ConnectionTestBase : IDisposable
         }
     }
 
-    protected abstract Task<Process> StartServerAsync(CancellationToken cancellationToken);
-    protected abstract Task<Process> StartClientAsync(CancellationToken cancellationToken);
+    protected virtual Task<Process> StartServerAsync(CancellationToken cancellationToken)
+        => _server.StartAsync(this, cancellationToken);
 
-    protected async Task<Process> StartApplicationAsync(string fileName, CancellationToken cancellationToken, params string[] userArguments)
+    protected virtual Task<Process> StartClientAsync(CancellationToken cancellationToken)
+        => _clientImpl.StartAsync(this, cancellationToken);
+
+    internal async Task<Process> StartApplicationAsync(string fileName, CancellationToken cancellationToken, params string[] userArguments)
     {
         var arguments = new List<string>(userArguments);
         var protocols = new string[] { "http", "https" };
@@ -290,7 +300,7 @@ public abstract class ConnectionTestBase : IDisposable
         }
     }
 
-    protected async Task DownloadFileAsync(string url, string destination, CancellationToken cancellationToken)
+    internal async Task DownloadFileAsync(string url, string destination, CancellationToken cancellationToken)
     {
         using var response = await _client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -299,7 +309,7 @@ public abstract class ConnectionTestBase : IDisposable
         await response.Content.CopyToAsync(fileStream, cancellationToken);
     }
 
-    protected static async Task<string> GetGitHubRepositoryLatestReleaseAssetAsync(string ownerName, string repositoryName, Predicate<string> assetFilter, CancellationToken cancellationToken)
+    internal static async Task<string> GetGitHubRepositoryLatestReleaseAssetAsync(string ownerName, string repositoryName, Predicate<string> assetFilter, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
