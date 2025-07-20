@@ -23,6 +23,7 @@ Options:
                                  https://username:password@nuget.example.com/v3/index.json].
   -p, --plugin <plugin>          Provides a path to the file, directory or url to load plugin.
   --server <server>             Registers an additional server in format <host>:<port>
+--port <port>                Overrides the listening port
   --ignore-file-servers         Ignore servers specified in configuration files
   --version                      Show version information
   -?, -h, --help                 Show help and usage information
@@ -44,6 +45,11 @@ Options:
 - `--ignore-file-servers`
   Ignore servers specified in configuration files.
   Example: `./void-linux-x64 --server 127.0.0.1:25565 --server [2001:db8::1]:25565`
+## Port
+- `--port`
+  Overrides the listening port for the proxy.
+  Example: `./void-linux-x64 --port 25570`
+
 
 ## Version
 - `--version`

@@ -1,4 +1,7 @@
-﻿using System.Diagnostics;
+﻿using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Reflection;
 using Serilog.Core;
@@ -21,11 +24,20 @@ public class Platform(
     IEventService events,
     IPlayerService players,
     ISettings settings,
-    IHostApplicationLifetime hostApplicationLifetime) : IProxy, IHostedService
+    IHostApplicationLifetime hostApplicationLifetime,
+    InvocationContext context) : IProxy, IHostedService
 {
     public static readonly LoggingLevelSwitch LoggingLevelSwitch = new();
+    private static readonly Option<int> _portOption = new("--port", description: "Overrides the listening port");
+
+    public static void RegisterOptions(Command command)
+    {
+        command.AddOption(_portOption);
+    }
 
     private Task? _backgroundTask;
+    private readonly InvocationContext _context = context;
+    private readonly int _port = context.ParseResult.HasOption(_portOption) ? context.ParseResult.GetValueForOption(_portOption) : settings.Port;
     private TcpListener? _listener;
 
     public ProxyStatus Status
@@ -58,7 +70,7 @@ public class Platform(
                 if (exception.SocketErrorCode is not SocketError.AddressAlreadyInUse)
                     throw;
 
-                logger.LogError("Address {Address}:{Port} already in use by another process. Retrying in 5 seconds ...", settings.Address, settings.Port);
+                logger.LogError("Address {Address}:{Port} already in use by another process. Retrying in 5 seconds ...", settings.Address, _port);
                 await Task.Delay(5_000, cancellationToken);
             }
         }
@@ -120,11 +132,11 @@ public class Platform(
         await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
 
         logger.LogInformation("Starting connection listener");
-        _listener = new TcpListener(settings.Address, settings.Port);
+        _listener = new TcpListener(settings.Address, _port);
         _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
         await StartAcceptingConnectionsAsync(cancellationToken);
 
-        logger.LogInformation("Connection listener started on address {Address}:{Port}", settings.Address, settings.Port);
+        logger.LogInformation("Connection listener started on address {Address}:{Port}", settings.Address, _port);
 
         _backgroundTask = ExecuteAsync(hostApplicationLifetime.ApplicationStopping).ContinueWith(backgroundTask =>
         {
