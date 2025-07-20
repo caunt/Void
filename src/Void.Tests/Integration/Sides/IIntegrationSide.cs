@@ -11,5 +11,5 @@ public interface IIntegrationSide : IAsyncDisposable
     public IEnumerable<string> Logs { get; }
 
     public Task RunAsync(CancellationToken cancellationToken);
-    public Task SetupAsync(HttpClient client, CancellationToken cancellationToken = default);
+    public Task SetupAsync(string workingDirectory, HttpClient client, CancellationToken cancellationToken = default);
 }

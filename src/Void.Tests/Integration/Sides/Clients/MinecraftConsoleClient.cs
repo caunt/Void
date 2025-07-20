@@ -9,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
-using Void.Tests.Integration.Connections;
 
 public class MinecraftConsoleClient(string sendText, string address) : IntegrationSideBase, IIntegrationClient
 {
@@ -31,15 +30,15 @@ public class MinecraftConsoleClient(string sendText, string address) : Integrati
         await HandleOutputAsync(HandleConsole, cancellationToken);
     }
 
-    public override async Task SetupAsync(HttpClient client, CancellationToken cancellationToken = default)
+    public override async Task SetupAsync(string workingDirectory, HttpClient client, CancellationToken cancellationToken = default)
     {
-        var workingDirectory = Path.Combine(ConnectionTestBase.WorkingDirectory, "MinecraftConsoleClient");
+        workingDirectory = Path.Combine(workingDirectory, "MinecraftConsoleClient");
 
         if (!Directory.Exists(workingDirectory))
             Directory.CreateDirectory(workingDirectory);
 
         var path = Path.Combine(workingDirectory, "client");
-        var url = await ConnectionTestBase.GetGitHubRepositoryLatestReleaseAssetAsync(RepositoryOwnerName, RepositoryName, name => name.EndsWith(GetMinecraftConsoleClientSuffix()), cancellationToken);
+        var url = await GetGitHubRepositoryLatestReleaseAssetAsync(RepositoryOwnerName, RepositoryName, name => name.EndsWith(GetMinecraftConsoleClientSuffix()), cancellationToken);
 
         await client.DownloadFileAsync(url, path, cancellationToken);
 
