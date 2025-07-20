@@ -13,47 +13,40 @@ using Void.Tests.Integration.Sides.Servers;
 public abstract class ConnectionTestBase : IDisposable
 {
     private static readonly string WorkingDirectory = Path.Combine(Path.GetTempPath(), $"{nameof(Tests)}", "IntegrationTests");
-    protected readonly HttpClient _client = new();
+    protected readonly HttpClient _httpClient = new();
 
     public ConnectionTestBase()
     {
-        _client.DefaultRequestHeaders.UserAgent.ParseAdd("Void.Tests/1.0");
-        _client.DefaultRequestHeaders.Pragma.ParseAdd("no-cache");
-        _client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
+        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Void.Tests/1.0");
+        _httpClient.DefaultRequestHeaders.Pragma.ParseAdd("no-cache");
+        _httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
 
         if (!Directory.Exists(WorkingDirectory))
             Directory.CreateDirectory(WorkingDirectory);
     }
 
-
     public async Task ExecuteAsync(IIntegrationServer server, IIntegrationClient client, CancellationToken cancellationToken = default)
     {
-        await Task.WhenAll(server.SetupAsync(WorkingDirectory, _client, cancellationToken), client.SetupAsync(WorkingDirectory, _client, cancellationToken));
+        await Task.WhenAll(
+            server.SetupAsync(WorkingDirectory, _httpClient, cancellationToken),
+            client.SetupAsync(WorkingDirectory, _httpClient, cancellationToken));
 
         Task serverTask, clientTask;
 
         try
         {
+            // Start the server
             serverTask = server.RunAsync(cancellationToken);
             var completedServerTask = await Task.WhenAny(serverTask, server.ServerLoadingTask);
 
             if (completedServerTask == serverTask)
                 await serverTask; // Rethrow server exceptions
 
-            clientTask = server.RunAsync(cancellationToken);
+            // Start the client (that will automatically send the message to server)
+            clientTask = client.RunAsync(cancellationToken);
+
+            // Wait for the server to exit (it will exit when it receive expected message)
             await serverTask;
-
-            // Completion
-            await clientTask;
-
-            // try
-            // {
-            //     await clientTask;
-            // }
-            // catch (TaskCanceledException)
-            // {
-            //     // Expected when cancelling after server received expected message
-            // }
         }
         catch (Exception exception)
         {
@@ -63,9 +56,9 @@ public abstract class ConnectionTestBase : IDisposable
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
+
         if (Directory.Exists(WorkingDirectory))
             Directory.Delete(WorkingDirectory, true);
-
-        GC.SuppressFinalize(this);
     }
 }
