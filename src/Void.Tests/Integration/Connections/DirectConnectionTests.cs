@@ -14,10 +14,11 @@ public class DirectConnectionTests : ConnectionTestBase
     [Fact]
     public async Task MccConnectsToPaperServer()
     {
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+
         await using var paper = new PaperServer(ExpectedText);
         await using var mcc = new MinecraftConsoleClient(ExpectedText, "localhost:25565");
 
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
         await ExecuteAsync(paper, mcc, cancellationTokenSource.Token);
 
         Assert.Contains(paper.Logs, line => line.Contains(ExpectedText));

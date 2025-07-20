@@ -2,23 +2,37 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Octokit;
 using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
+using Xunit;
 
 namespace Void.Tests.Integration.Sides;
 
-public abstract class IntegrationSideBase(string? jreBinaryPath = null) : IIntegrationSide
+public abstract class IntegrationSideBase : IIntegrationSide
 {
+    private const int MaxGitHubReleasesToConsider = 3;
+    private static readonly GitHubClient _gitHubClient = new(new ProductHeaderValue($"{nameof(Void)}.{nameof(Tests)}"));
+
+    protected string? _jreBinaryPath;
+
     protected Process? _process;
     protected readonly List<string> _logs = [];
 
     public IEnumerable<string> Logs => _logs;
 
+    static IntegrationSideBase()
+    {
+        if (Environment.GetEnvironmentVariable("GITHUB_TOKEN") is { } token)
+            _gitHubClient.Credentials = new Credentials(token);
+    }
+
     public abstract Task RunAsync(CancellationToken cancellationToken);
-    public abstract Task SetupAsync(HttpClient client, CancellationToken cancellationToken = default);
+    public abstract Task SetupAsync(string workingDirectory, HttpClient client, CancellationToken cancellationToken = default);
 
     public void StartApplication(string fileName, params string[] userArguments)
     {
@@ -26,7 +40,7 @@ public abstract class IntegrationSideBase(string? jreBinaryPath = null) : IInteg
         var protocols = new string[] { "http", "https" };
 
         var isJar = fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase);
-        var processStartInfo = new ProcessStartInfo(fileName: isJar ? (File.Exists(jreBinaryPath) ? jreBinaryPath : throw new IntegrationTestException("JRE is not installed")) : fileName)
+        var processStartInfo = new ProcessStartInfo(fileName: isJar ? (File.Exists(_jreBinaryPath) ? _jreBinaryPath : throw new IntegrationTestException("JRE is not installed")) : fileName)
         {
             WorkingDirectory = Path.GetDirectoryName(fileName),
             RedirectStandardOutput = true,
@@ -134,5 +148,28 @@ public abstract class IntegrationSideBase(string? jreBinaryPath = null) : IInteg
             _process.OutputDataReceived -= Handler;
             _process.ErrorDataReceived -= Handler;
         }
+    }
+
+    protected async Task<string> GetGitHubRepositoryLatestReleaseAssetAsync(string ownerName, string repositoryName, Predicate<string> assetFilter, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var options = new ApiOptions
+        {
+            PageSize = MaxGitHubReleasesToConsider,
+            PageCount = 1,
+            StartPage = 1
+        };
+
+        var releases = await _gitHubClient.Repository.Release.GetAll(ownerName, repositoryName, options);
+
+        var asset = releases
+            .OrderByDescending(release => release.CreatedAt)
+            .SelectMany(release => release.Assets)
+            .FirstOrDefault(asset => assetFilter(asset.Name));
+
+        Assert.NotNull(asset);
+
+        return asset.BrowserDownloadUrl;
     }
 }
