@@ -42,10 +42,10 @@ public abstract class ConnectionTestBase : IDisposable
             if (completedServerTask == serverTask)
                 await serverTask; // Rethrow server exceptions
 
-            // Start the client (that will automatically send the message to server)
+            // Start the client (which automatically sends the message to the server)
             clientTask = client.RunAsync(cancellationToken);
 
-            // Wait for the server to exit (it will exit when it receive expected message)
+            // Wait for the server to exit (it will exit when it receives the expected message)
             await serverTask;
         }
         catch (Exception exception)
