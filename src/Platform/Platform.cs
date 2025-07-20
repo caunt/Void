@@ -2,6 +2,7 @@
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
+using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using Serilog.Core;
@@ -28,16 +29,13 @@ public class Platform(
     InvocationContext context) : IProxy, IHostedService
 {
     public static readonly LoggingLevelSwitch LoggingLevelSwitch = new();
-    private static readonly Option<int> _portOption = new("--port", description: "Overrides the listening port");
+    private static readonly Option<int> _portOption = new("--port", description: "Sets the listening port");
+    private static readonly Option<string> _interfaceOption = new("--interface", description: "Sets the listening network interface");
 
-    public static void RegisterOptions(Command command)
-    {
-        command.AddOption(_portOption);
-    }
+    private readonly IPAddress _interface = context.ParseResult.GetValueForOption(_interfaceOption) is { } value ? IPAddress.Parse(value) : settings.Address;
+    private readonly int _port = context.ParseResult.HasOption(_portOption) ? context.ParseResult.GetValueForOption(_portOption) : settings.Port;
 
     private Task? _backgroundTask;
-    private readonly InvocationContext _context = context;
-    private readonly int _port = context.ParseResult.HasOption(_portOption) ? context.ParseResult.GetValueForOption(_portOption) : settings.Port;
     private TcpListener? _listener;
 
     public ProxyStatus Status
@@ -70,7 +68,7 @@ public class Platform(
                 if (exception.SocketErrorCode is not SocketError.AddressAlreadyInUse)
                     throw;
 
-                logger.LogError("Address {Address}:{Port} already in use by another process. Retrying in 5 seconds ...", settings.Address, _port);
+                logger.LogError("Address {Address}:{Port} already in use by another process. Retrying in 5 seconds ...", _interface, _port);
                 await Task.Delay(5_000, cancellationToken);
             }
         }
@@ -132,11 +130,11 @@ public class Platform(
         await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
 
         logger.LogInformation("Starting connection listener");
-        _listener = new TcpListener(settings.Address, _port);
+        _listener = new TcpListener(_interface, _port);
         _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
         await StartAcceptingConnectionsAsync(cancellationToken);
 
-        logger.LogInformation("Connection listener started on address {Address}:{Port}", settings.Address, _port);
+        logger.LogInformation("Connection listener started on address {Address}:{Port}", _interface, _port);
 
         _backgroundTask = ExecuteAsync(hostApplicationLifetime.ApplicationStopping).ContinueWith(backgroundTask =>
         {
@@ -175,6 +173,12 @@ public class Platform(
         await plugins.UnloadContainersAsync(cancellationToken);
 
         logger.LogInformation("Proxy stopped!");
+    }
+
+    public static void RegisterOptions(Command command)
+    {
+        command.AddOption(_interfaceOption);
+        command.AddOption(_portOption);
     }
 
     private async Task ExecuteAsync(CancellationToken cancellationToken)
