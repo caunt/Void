@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Void.Tests.Exceptions;
 using Void.Tests.Integration.Sides.Clients;
 using Void.Tests.Integration.Sides.Servers;
-using Void.Tests.Integration.Sides;
 
 public abstract class ConnectionTestBase : IDisposable
 {
@@ -55,34 +54,6 @@ public abstract class ConnectionTestBase : IDisposable
         }
     }
 
-    public async Task ExecuteAsync(IIntegrationServer server, IIntegrationSide proxy, IIntegrationClient client, CancellationToken cancellationToken = default)
-    {
-        await Task.WhenAll(
-            server.SetupAsync(WorkingDirectory, _httpClient, cancellationToken),
-            proxy.SetupAsync(WorkingDirectory, _httpClient, cancellationToken),
-            client.SetupAsync(WorkingDirectory, _httpClient, cancellationToken));
-
-        Task serverTask, proxyTask, clientTask;
-
-        try
-        {
-            serverTask = server.RunAsync(cancellationToken);
-            var completedServerTask = await Task.WhenAny(serverTask, server.ServerLoadingTask);
-
-            if (completedServerTask == serverTask)
-                await serverTask;
-
-            proxyTask = proxy.RunAsync(cancellationToken);
-
-            clientTask = client.RunAsync(cancellationToken);
-
-            await serverTask;
-        }
-        catch (Exception exception)
-        {
-            throw new IntegrationTestException(exception.Message + $"\nServer logs:\n{string.Join("\n", server.Logs)}\n\nProxy logs:\n{string.Join("\n", proxy.Logs)}\n\nClient logs:\n{string.Join("\n", client.Logs)}", exception);
-        }
-    }
 
     public void Dispose()
     {
