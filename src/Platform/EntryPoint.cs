@@ -42,10 +42,16 @@ public static class EntryPoint
     {
         System.Console.Title = nameof(Void);
         Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+    }
 
+    private static void ConfigureLogging()
+    {
         var configuration = new LoggerConfiguration();
+
         configuration.Enrich.FromLogContext();
+
         configuration.MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch);
+
         configuration.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}");
 
         Log.Logger = configuration.CreateLogger();
@@ -53,6 +59,7 @@ public static class EntryPoint
 
     public static async Task<int> RunAsync(TextWriter? logWriter = null, CancellationToken cancellationToken = default, params string[] args)
     {
+        ConfigureLogging();
         try
         {
             return await BuildCommandLine(logWriter, cancellationToken)
