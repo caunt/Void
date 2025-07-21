@@ -15,5 +15,5 @@
   <Project Path="src\Plugins\Essentials\Void.Proxy.Plugins.Essentials.csproj" />
   <Project Path="src\Plugins\Watchdog\Void.Proxy.Plugins.Watchdog.csproj" />
   <Project Path="src\Terminal\Void.Terminal.csproj" />
-  <Project Path="src\Void.Tests\Void.Tests.csproj" />
+  <Project Path="src\Tests\Void.Tests.csproj" />
 </Solution>
