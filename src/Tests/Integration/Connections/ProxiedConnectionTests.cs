@@ -21,7 +21,10 @@ public class ProxiedConnectionTests : ConnectionTestBase
         await using var proxy = new ProxyPlatform("localhost:25565", 25566, true);
         await using var mcc = new MinecraftConsoleClient(ExpectedText, "localhost:25566");
 
-        await ExecuteAsync(paper, proxy, mcc, cancellationTokenSource.Token);
+        var proxyTask = proxy.RunAsync(cancellationTokenSource.Token);
+        await ExecuteAsync(paper, mcc, cancellationTokenSource.Token);
+        cancellationTokenSource.Cancel();
+        await proxyTask;
 
         Assert.Contains(paper.Logs, line => line.Contains(ExpectedText));
     }
