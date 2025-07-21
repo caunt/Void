@@ -286,6 +286,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
         logger.LogInformation("Unloaded {ContextName} {Count} plugin(s)", name, count);
 
-        _containers.RemoveAll(reference => !reference.IsAlive);
+        using (var _ = await _lock.LockAsync(cancellationToken))
+            _containers.RemoveAll(reference => !reference.IsAlive);
     }
 }
