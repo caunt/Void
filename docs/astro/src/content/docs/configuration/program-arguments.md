@@ -25,6 +25,7 @@ Options:
   --server <server>              Registers an additional server in format <host>:<port>
   --interface <address>          Overrides the listening network interface
   --port <port>                  Overrides the listening port
+  --offline                      Disables Mojang authentication
   --ignore-file-servers          Ignore servers specified in configuration files
   --version                      Show version information
   -?, -h, --help                 Show help and usage information
@@ -54,6 +55,9 @@ Options:
 - `--port`
   Overrides the listening port for the proxy.
   Example: `./void-linux-x64 --port 25570`
+- `--offline`
+  Disables Mojang authentication.
+  Example: `./void-linux-x64 --offline`
 
 ## Version
 - `--version`

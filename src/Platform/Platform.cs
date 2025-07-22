@@ -31,9 +31,11 @@ public class Platform(
     public static readonly LoggingLevelSwitch LoggingLevelSwitch = new();
     private static readonly Option<int> _portOption = new("--port", description: "Sets the listening port");
     private static readonly Option<string> _interfaceOption = new("--interface", description: "Sets the listening network interface");
+    private static readonly Option<bool> _offlineOption = new("--offline", description: "Disables Mojang authentication");
 
     private readonly IPAddress _interface = context.ParseResult.GetValueForOption(_interfaceOption) is { } value ? IPAddress.Parse(value) : settings.Address;
     private readonly int _port = context.ParseResult.HasOption(_portOption) ? context.ParseResult.GetValueForOption(_portOption) : settings.Port;
+    private readonly bool _offline = context.ParseResult.HasOption(_offlineOption) ? context.ParseResult.GetValueForOption(_offlineOption) : settings.Offline;
 
     private Task? _backgroundTask;
     private TcpListener? _listener;
@@ -47,6 +49,8 @@ public class Platform(
             field = value;
         }
     }
+
+    public bool Offline => _offline;
 
     public async ValueTask StartAcceptingConnectionsAsync(CancellationToken cancellationToken)
     {
@@ -179,6 +183,7 @@ public class Platform(
     {
         command.AddOption(_interfaceOption);
         command.AddOption(_portOption);
+        command.AddOption(_offlineOption);
     }
 
     private async Task ExecuteAsync(CancellationToken cancellationToken)

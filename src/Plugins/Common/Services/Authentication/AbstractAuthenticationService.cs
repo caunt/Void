@@ -14,6 +14,8 @@ using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins.Dependencies;
+using Void.Proxy.Api.Settings;
+using Void.Minecraft.Profiles;
 using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Mojang;
@@ -174,7 +176,19 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         if (!player.IsMinecraft)
             return false;
 
-        var mojang = player.Context.Services.GetRequiredService<IMojangService>();
+        var services = player.Context.Services;
+        var settings = services.GetRequiredService<ISettings>();
+
+        if (settings.Offline)
+        {
+            if (player.Profile is not { } current)
+                return false;
+
+            player.Profile = current with { Id = current.Id == default ? Uuid.Offline(current.Username) : current.Id };
+            return true;
+        }
+
+        var mojang = services.GetRequiredService<IMojangService>();
 
         if (await mojang.VerifyAsync(player, cancellationToken) is not { } onlineProfile)
             return false;

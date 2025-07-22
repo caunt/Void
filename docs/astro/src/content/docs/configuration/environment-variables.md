@@ -28,6 +28,10 @@ However, they might be used from the terminal directly as well.
   Defines the Mojang session server to use.  
   Example: `https://sessionserver.mojang.com/session/minecraft/hasJoined`
 
-- `VOID_MOJANG_PREVENT_PROXY_CONNECTIONS`  
-  Tells Mojang to disallow player proxy connections.  
+- `VOID_MOJANG_PREVENT_PROXY_CONNECTIONS`
+  Tells Mojang to disallow player proxy connections.
+  Example: `true`
+
+- `VOID_OFFLINE`
+  Disables Mojang authentication.
   Example: `true`

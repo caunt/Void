@@ -27,6 +27,9 @@ KickTimeout = 10000
 # Logging level (valid values are Trace, Debug, Information, Warning, Error, Critical)
 LogLevel = "Information"
 
+# When true, players are not authenticated with Mojang
+Offline = false
+
 # Predefined list of servers. 
 # Players will be connected to the first one, if not specified otherwise from plugins.
 Servers = [

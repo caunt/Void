@@ -7,11 +7,12 @@ using Void.Minecraft.Players.Extensions;
 using Void.Minecraft.Profiles;
 using Void.Proxy.Api.Crypto;
 using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Settings;
 using Void.Proxy.Plugins.Common.Crypto;
 
 namespace Void.Proxy.Plugins.Common.Mojang;
 
-public class MojangService(ICryptoService crypto) : IMojangService
+public class MojangService(ICryptoService crypto, ISettings settings) : IMojangService
 {
     private static readonly HttpClient Client = new();
     private static readonly string SessionServer = Environment.GetEnvironmentVariable("VOID_MOJANG_SESSIONSERVER") ?? "https://sessionserver.mojang.com/session/minecraft/hasJoined";
@@ -19,6 +20,9 @@ public class MojangService(ICryptoService crypto) : IMojangService
 
     public async ValueTask<GameProfile?> VerifyAsync(IPlayer player, CancellationToken cancellationToken = default)
     {
+        if (settings.Offline)
+            return player.Profile is { } offlineProfile ? offlineProfile : null;
+
         if (player.Profile is not { } profile)
             throw new ArgumentNullException(nameof(player), "Player profile should be set in order to verify his session");
 
