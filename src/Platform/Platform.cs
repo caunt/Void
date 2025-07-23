@@ -130,7 +130,7 @@ public class Platform(
             settings.Offline = offlineVariable;
 
         if (context.ParseResult.GetValueForOption(_offlineOption) is { } option && option)
-            settings.Offline = offlineVariable;
+            settings.Offline = option;
 
         if (settings.Offline)
             logger.LogWarning("Offline mode is enabled. Players will be able to connect without Mojang authorization.");
