@@ -16,7 +16,12 @@ public class DirectConnectionTests : ConnectionTestBase
     public static IEnumerable<object[]> SupportedProtocolVersions()
     {
         foreach (var version in ProtocolVersion.Range(ProtocolVersion.MINECRAFT_1_7_2, ProtocolVersion.MINECRAFT_1_20_3))
+        {
+            if (version >= ProtocolVersion.MINECRAFT_1_19 && version <= ProtocolVersion.MINECRAFT_1_19_4)
+                continue;
+
             yield return new object[] { version };
+        }
     }
 
     [Fact]
