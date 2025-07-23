@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Void.Minecraft.Network;
 using Void.Tests.Integration.Sides.Clients;
 using Void.Tests.Integration.Sides.Servers;
 using Xunit;
@@ -17,7 +18,7 @@ public class DirectConnectionTests : ConnectionTestBase
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
 
         await using var paper = new PaperServer(ExpectedText);
-        await using var mcc = new MinecraftConsoleClient(ExpectedText, "localhost:25565");
+        await using var mcc = new MinecraftConsoleClient(ExpectedText, "localhost:25565", ProtocolVersion.MINECRAFT_1_20_3);
 
         await ExecuteAsync(paper, mcc, cancellationTokenSource.Token);
 
