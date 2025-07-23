@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Octokit;
@@ -31,16 +30,13 @@ public abstract class IntegrationSideBase : IIntegrationSide
             _gitHubClient.Credentials = new Credentials(token);
     }
 
-    public abstract Task RunAsync(CancellationToken cancellationToken);
-    public abstract Task SetupAsync(string workingDirectory, HttpClient client, CancellationToken cancellationToken = default);
-
     public void StartApplication(string fileName, params string[] userArguments)
     {
         if (_process is { HasExited: false })
             throw new IntegrationTestException($"Process for {fileName} is already running.");
 
         var arguments = new List<string>(userArguments);
-        var protocols = new string[] { "http", "https" };
+        var protocols = new[] { "http", "https" };
 
         var isJar = fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase);
         var processStartInfo = new ProcessStartInfo(fileName: isJar ? (File.Exists(_jreBinaryPath) ? _jreBinaryPath : throw new IntegrationTestException("JRE is not installed")) : fileName)
@@ -55,7 +51,7 @@ public abstract class IntegrationSideBase : IIntegrationSide
         foreach (var protocol in protocols)
         {
             var name = protocol + "_proxy";
-            var variants = new string[] { name, name.ToUpperInvariant() };
+            var variants = new[] { name, name.ToUpperInvariant() };
 
             foreach (var variant in variants)
             {
@@ -92,7 +88,13 @@ public abstract class IntegrationSideBase : IIntegrationSide
         foreach (var argument in arguments)
             processStartInfo.ArgumentList.Add(argument);
 
-        _process = Process.Start(processStartInfo) ?? throw new IntegrationTestException($"Failed to start process for {fileName} with arguments: {string.Join(" ", arguments)}");
+        _process = Process.Start(processStartInfo) ?? throw new IntegrationTestException($"Failed to start process for {fileName} with arguments: {string.Join(' ', arguments)}");
+
+        _process.OutputDataReceived += OnDataReceived;
+        _process.ErrorDataReceived += OnDataReceived;
+
+        _process.BeginOutputReadLine();
+        _process.BeginErrorReadLine();
     }
 
     public async ValueTask DisposeAsync()
@@ -103,9 +105,15 @@ public abstract class IntegrationSideBase : IIntegrationSide
             return;
 
         await _process.ExitAsync();
+
+        _process.CancelOutputRead();
+        _process.CancelErrorRead();
+
+        _process.OutputDataReceived -= OnDataReceived;
+        _process.ErrorDataReceived -= OnDataReceived;
     }
 
-    protected async Task HandleOutputAsync(Func<string, bool> handler, CancellationToken cancellationToken)
+    protected async Task ReceiveOutputAsync(Func<string, bool> handler, CancellationToken cancellationToken)
     {
         if (_process is null)
             throw new InvalidOperationException("Application is not started.");
@@ -113,18 +121,15 @@ public abstract class IntegrationSideBase : IIntegrationSide
         var taskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var registration = cancellationToken.Register(() => taskCompletionSource.TrySetCanceled(cancellationToken), useSynchronizationContext: false);
 
-        void Handler(object sender, DataReceivedEventArgs eventArgs)
+        void OnProcessExited(object? sender, EventArgs eventArgs) => taskCompletionSource.TrySetCanceled(cancellationToken);
+        void OnDataReceived(object sender, DataReceivedEventArgs eventArgs)
         {
             try
             {
-                if (eventArgs.Data != null)
+                if (eventArgs.Data is not null)
                 {
-                    _logs.Add(eventArgs.Data);
-
-                    if (!handler(eventArgs.Data))
-                        return;
-
-                    taskCompletionSource.SetResult();
+                    if (handler(eventArgs.Data))
+                        taskCompletionSource.SetResult();
                 }
             }
             catch (Exception exception)
@@ -133,11 +138,9 @@ public abstract class IntegrationSideBase : IIntegrationSide
             }
         }
 
-        _process.OutputDataReceived += Handler;
-        _process.ErrorDataReceived += Handler;
-
-        _process.BeginOutputReadLine();
-        _process.BeginErrorReadLine();
+        _process.OutputDataReceived += OnDataReceived;
+        _process.ErrorDataReceived += OnDataReceived;
+        _process.Exited += OnProcessExited;
 
         try
         {
@@ -145,15 +148,13 @@ public abstract class IntegrationSideBase : IIntegrationSide
         }
         finally
         {
-            _process.CancelOutputRead();
-            _process.CancelErrorRead();
-
-            _process.OutputDataReceived -= Handler;
-            _process.ErrorDataReceived -= Handler;
+            _process.OutputDataReceived -= OnDataReceived;
+            _process.ErrorDataReceived -= OnDataReceived;
+            _process.Exited -= OnProcessExited;
         }
     }
 
-    protected async Task<string> GetGitHubRepositoryLatestReleaseAssetAsync(string ownerName, string repositoryName, Predicate<string> assetFilter, CancellationToken cancellationToken)
+    protected static async Task<string> GetGitHubRepositoryLatestReleaseAssetAsync(string ownerName, string repositoryName, Predicate<string> assetFilter, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -174,5 +175,11 @@ public abstract class IntegrationSideBase : IIntegrationSide
         Assert.NotNull(asset);
 
         return asset.BrowserDownloadUrl;
+    }
+
+    private void OnDataReceived(object? sender, DataReceivedEventArgs eventArgs)
+    {
+        if (eventArgs.Data is not null)
+            _logs.Add(eventArgs.Data);
     }
 }

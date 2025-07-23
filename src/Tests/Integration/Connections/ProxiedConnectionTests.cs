@@ -9,24 +9,45 @@ using Xunit;
 
 namespace Void.Tests.Integration.Connections;
 
-public class ProxiedConnectionTests : ConnectionTestBase
+public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture fixture) : IClassFixture<ProxiedConnectionTests.PaperVoidMccFixture>
 {
     private const string ExpectedText = "hello void!";
 
     [Fact]
     public async Task MccConnectsToPaperServerThroughProxy()
     {
+        var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
 
-        await using var paper = new PaperServer(ExpectedText);
-        await using var proxy = new VoidProxy(address: "localhost:25565", port: 25566);
-        await using var mcc = new MinecraftConsoleClient(ExpectedText, address: "localhost:25566", ProtocolVersion.MINECRAFT_1_20_3);
+        await fixture.Client.SendTextMessageAsync("localhost:25566", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
+        await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
-        var proxyTask = proxy.RunAsync(cancellationTokenSource.Token);
-        await ExecuteAsync(paper, mcc, cancellationTokenSource.Token);
-        cancellationTokenSource.Cancel();
-        await proxyTask;
+        Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
+    }
 
-        Assert.Contains(paper.Logs, line => line.Contains(ExpectedText));
+    public class PaperVoidMccFixture : ConnectionTestBase, IAsyncLifetime
+    {
+        public PaperVoidMccFixture() : base(nameof(ProxiedConnectionTests))
+        {
+        }
+
+        public PaperServer Server { get; private set; } = null!;
+        public VoidProxy Proxy { get; private set; } = null!;
+        public MinecraftConsoleClient Client { get; private set; } = null!;
+
+        public async Task InitializeAsync()
+        {
+            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+
+            Server = await PaperServer.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
+            Proxy = await VoidProxy.CreateAsync(targetServer: "localhost:25565", proxyPort: 25566, cancellationToken: cancellationTokenSource.Token);
+            Client = await MinecraftConsoleClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
+        }
+
+        public async Task DisposeAsync()
+        {
+            await Client.DisposeAsync();
+            await Server.DisposeAsync();
+        }
     }
 }

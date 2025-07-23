@@ -2,33 +2,37 @@ namespace Void.Tests.Integration.Sides.Proxies;
 
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Proxy;
-using Void.Tests.Integration.Sides;
 using Void.Tests.Streams;
 
-public class VoidProxy(string address, int port, bool ignoreFileServers = true, bool offlineMode = true) : IIntegrationSide
+public class VoidProxy : IIntegrationSide
 {
-    private readonly CancellationTokenSource cancellationTokenSource = new();
-    private readonly CollectingTextWriter _logs = new();
+    private readonly CollectingTextWriter _logWriter;
+    private readonly Task _task;
+    private readonly CancellationTokenSource _cancellationTokenSource;
 
-    public IEnumerable<string> Logs => _logs.Lines;
+    public IEnumerable<string> Logs => _logWriter.Lines;
 
-    public Task SetupAsync(string workingDirectory, HttpClient client, CancellationToken cancellationToken = default)
+    private VoidProxy(CollectingTextWriter logWriter, Task task, CancellationTokenSource cancellationTokenSource)
     {
-        return Task.CompletedTask;
+        _logWriter = logWriter;
+        _task = task;
+        _cancellationTokenSource = cancellationTokenSource;
     }
 
-    public async Task RunAsync(CancellationToken cancellationToken)
+    public static Task<VoidProxy> CreateAsync(string targetServer, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
     {
+        var logWriter = new CollectingTextWriter();
+        var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
         cancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationTokenSource.Token, cancellationToken).Token;
 
         var args = new List<string>
         {
-            "--server", address,
-            "--port", port.ToString()
+            "--server", targetServer,
+            "--port", proxyPort.ToString()
         };
 
         if (ignoreFileServers)
@@ -37,12 +41,14 @@ public class VoidProxy(string address, int port, bool ignoreFileServers = true, 
         if (offlineMode)
             args.Add("--offline");
 
-        await EntryPoint.RunAsync(logWriter: _logs, cancellationToken: cancellationToken, args: [.. args]);
+        return Task.FromResult(new VoidProxy(logWriter, EntryPoint.RunAsync(logWriter: logWriter, cancellationToken: cancellationToken, args: [.. args]), cancellationTokenSource));
     }
 
     public async ValueTask DisposeAsync()
     {
         GC.SuppressFinalize(this);
-        await cancellationTokenSource.CancelAsync();
+
+        await _cancellationTokenSource.CancelAsync();
+        await _task;
     }
 }
