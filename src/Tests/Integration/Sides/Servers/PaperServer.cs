@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
 
-public class PaperServer(string expectedText) : IntegrationSideBase, IIntegrationServer
+public class PaperServer(string expectedText, PaperPlugins plugins = PaperPlugins.All) : IntegrationSideBase, IIntegrationServer
 {
     private const string ViaVersionRepositoryOwnerName = "ViaVersion";
     private const string ViaVersionRepositoryName = "ViaVersion";
@@ -80,11 +80,17 @@ public class PaperServer(string expectedText) : IntegrationSideBase, IIntegratio
             if (!Directory.Exists(pluginsDirectory))
                 Directory.CreateDirectory(pluginsDirectory);
 
-            var viaVersion = await GetGitHubRepositoryLatestReleaseAssetAsync(ViaVersionRepositoryOwnerName, ViaVersionRepositoryName, name => name.EndsWith(".jar"), cancellationToken);
-            await client.DownloadFileAsync(viaVersion, Path.Combine(pluginsDirectory, "ViaVersion.jar"), cancellationToken);
+            if (plugins.HasFlag(PaperPlugins.ViaVersion))
+            {
+                var viaVersion = await GetGitHubRepositoryLatestReleaseAssetAsync(ViaVersionRepositoryOwnerName, ViaVersionRepositoryName, name => name.EndsWith(".jar"), cancellationToken);
+                await client.DownloadFileAsync(viaVersion, Path.Combine(pluginsDirectory, "ViaVersion.jar"), cancellationToken);
+            }
 
-            var viaBackwards = await GetGitHubRepositoryLatestReleaseAssetAsync(ViaVersionRepositoryOwnerName, ViaBackwardsRepositoryName, name => name.EndsWith(".jar"), cancellationToken);
-            await client.DownloadFileAsync(viaBackwards, Path.Combine(pluginsDirectory, "ViaBackwards.jar"), cancellationToken);
+            if (plugins.HasFlag(PaperPlugins.ViaBackwards))
+            {
+                var viaBackwards = await GetGitHubRepositoryLatestReleaseAssetAsync(ViaVersionRepositoryOwnerName, ViaBackwardsRepositoryName, name => name.EndsWith(".jar"), cancellationToken);
+                await client.DownloadFileAsync(viaBackwards, Path.Combine(pluginsDirectory, "ViaBackwards.jar"), cancellationToken);
+            }
         }
     }
 
