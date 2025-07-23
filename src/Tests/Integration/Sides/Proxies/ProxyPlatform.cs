@@ -9,7 +9,7 @@ using Void.Proxy;
 using Void.Tests.Integration.Sides;
 using Void.Tests.Streams;
 
-public class ProxyPlatform(string serverAddress, int port, bool ignoreFileServers = true, bool offlineMode = true) : IIntegrationSide
+public class ProxyPlatform(string address, int port, bool ignoreFileServers = true, bool offlineMode = true) : IIntegrationSide
 {
     private readonly CancellationTokenSource cancellationTokenSource = new();
     private readonly CollectingTextWriter _logs = new();
@@ -27,14 +27,14 @@ public class ProxyPlatform(string serverAddress, int port, bool ignoreFileServer
 
         var args = new List<string>
         {
-            "--server", serverAddress,
+            "--server", address,
             "--port", port.ToString()
         };
 
         if (ignoreFileServers)
             args.Add("--ignore-file-servers");
 
-        if (ignoreFileServers)
+        if (offlineMode)
             args.Add("--offline");
 
         await EntryPoint.RunAsync(logWriter: _logs, cancellationToken: cancellationToken, args: [.. args]);
