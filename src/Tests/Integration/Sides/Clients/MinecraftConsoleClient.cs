@@ -11,7 +11,7 @@ using Void.Minecraft.Network;
 using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
 
-public class MinecraftConsoleClient(string sendText, string address, ProtocolVersion? protocolVersion = null) : IntegrationSideBase, IIntegrationClient
+public class MinecraftConsoleClient(string sendText, string address, ProtocolVersion protocolVersion) : IntegrationSideBase, IIntegrationClient
 {
     private const string RepositoryOwnerName = "MCCTeam";
     private const string RepositoryName = "Minecraft-Console-Client";
@@ -49,7 +49,7 @@ public class MinecraftConsoleClient(string sendText, string address, ProtocolVer
 
         await File.WriteAllTextAsync(Path.Combine(workingDirectory, "MinecraftClient.ini"), $"""
             [Main.Advanced]
-            MinecraftVersion = "{(protocolVersion ?? ProtocolVersion.MINECRAFT_1_20_3).GetMostRecentSupportedVersion()}"
+            MinecraftVersion = "{protocolVersion.GetMostRecentSupportedVersion()}"
 
             [ChatBot.ScriptScheduler]
             Enabled = true
