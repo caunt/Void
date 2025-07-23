@@ -261,7 +261,7 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
             var value when value == ProtocolVersion.MINECRAFT_1_20_3 => value.Names[1], // paper skipped 1.20.3
             var value when value == ProtocolVersion.MINECRAFT_1_18 => value.Names[1], // paper skipped 1.18
             var value when value == ProtocolVersion.MINECRAFT_1_8 => value.Names[8], // paper first release is 1.8.8
-            var value => value.GetVersionIntroducedIn()
+            var value => value.VersionIntroducedIn
         };
     }
 }

@@ -55,7 +55,7 @@ public class MinecraftConsoleClient(string sendText, string address, ProtocolVer
 
         await File.WriteAllTextAsync(Path.Combine(workingDirectory, "MinecraftClient.ini"), $"""
             [Main.Advanced]
-            MinecraftVersion = "{protocolVersion.GetMostRecentSupportedVersion()}"
+            MinecraftVersion = "{protocolVersion.MostRecentSupportedVersion}"
 
             [ChatBot.ScriptScheduler]
             Enabled = true

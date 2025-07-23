@@ -69,6 +69,9 @@ public class ProtocolVersion : IComparable
 
     public int Version { get; }
     public string[] Names { get; }
+    public string VersionIntroducedIn => Names[0];
+    public string MostRecentSupportedVersion => Names[^1];
+    public IEnumerable<string> VersionsSupportedBy => Names.AsReadOnly();
 
     public int CompareTo(object? obj)
     {
@@ -78,6 +81,11 @@ public class ProtocolVersion : IComparable
             ProtocolVersion otherVersion => CompareTo(otherVersion),
             _ => throw new ArgumentException($"Object is not a {nameof(ProtocolVersion)}")
         };
+    }
+
+    public int CompareTo(ProtocolVersion? other)
+    {
+        return other is null ? 1 : Version.CompareTo(other.Version); // null is considered greater than non-null
     }
 
     public static ProtocolVersion Get(int version)
@@ -112,26 +120,6 @@ public class ProtocolVersion : IComparable
     public static ProtocolVersion Max(ProtocolVersion version1, ProtocolVersion version2)
     {
         return version1 > version2 ? version1 : version2;
-    }
-
-    public string GetVersionIntroducedIn()
-    {
-        return Names[0];
-    }
-
-    public string GetMostRecentSupportedVersion()
-    {
-        return Names[^1];
-    }
-
-    public IEnumerable<string> GetVersionsSupportedBy()
-    {
-        return Names.AsReadOnly();
-    }
-
-    public int CompareTo(ProtocolVersion? other)
-    {
-        return other is null ? 1 : Version.CompareTo(other.Version); // null is considered greater than non-null
     }
 
     public static bool operator >(ProtocolVersion left, ProtocolVersion right)
@@ -199,6 +187,6 @@ public class ProtocolVersion : IComparable
 
     public override string ToString()
     {
-        return GetVersionIntroducedIn();
+        return VersionIntroducedIn;
     }
 }
