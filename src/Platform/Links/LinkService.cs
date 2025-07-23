@@ -11,12 +11,11 @@ using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Servers;
-using Void.Proxy.Api.Settings;
 using Void.Proxy.Players.Extensions;
 
 namespace Void.Proxy.Links;
 
-public class LinkService(ILogger<LinkService> logger, ISettings settings, IEventService events, IHostApplicationLifetime hostApplicationLifetime) : ILinkService, IEventListener
+public class LinkService(ILogger<LinkService> logger, IServerService servers, IEventService events, IHostApplicationLifetime hostApplicationLifetime) : ILinkService, IEventListener
 {
     private readonly List<ILink> _links = [];
     private readonly AsyncLock _lock = new();
@@ -27,7 +26,7 @@ public class LinkService(ILogger<LinkService> logger, ISettings settings, IEvent
     {
         logger.LogTrace("Looking for a server for {Player} player", player);
 
-        var server = await events.ThrowWithResultAsync(new PlayerSearchServerEvent(player.Unwrap()), cancellationToken) ?? settings.Servers.First();
+        var server = await events.ThrowWithResultAsync(new PlayerSearchServerEvent(player.Unwrap()), cancellationToken) ?? servers.All.First();
 
         return await ConnectAsync(player, server, cancellationToken);
     }
