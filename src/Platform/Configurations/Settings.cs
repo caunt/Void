@@ -14,7 +14,7 @@ public record Settings : ISettings
     public int CompressionThreshold { get; init; } = 256;
     public int KickTimeout { get; init; } = 10_000;
     public LogLevel LogLevel { get; init; } = LogLevel.Information;
-    public bool Offline { get; init; } = false;
+    public bool Offline { get; set; } = false;
     public List<Server> Servers { get; init; } =
     [
         new("lobby", "127.0.0.1", 25566),
@@ -23,6 +23,5 @@ public record Settings : ISettings
     ];
 
     IPAddress ISettings.Address => IPAddress.Parse(Address);
-    bool ISettings.Offline => Offline;
     IEnumerable<IServer> ISettings.Servers => Servers;
 }

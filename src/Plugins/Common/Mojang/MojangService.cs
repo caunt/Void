@@ -2,33 +2,30 @@
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using Microsoft.Extensions.DependencyInjection;
-using System.CommandLine.Invocation;
-using Void.Proxy.Api.Settings;
 using Void.Minecraft.Mojang;
-using Void.Proxy;
 using Void.Minecraft.Players.Extensions;
 using Void.Minecraft.Profiles;
 using Void.Proxy.Api.Crypto;
 using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Settings;
 using Void.Proxy.Plugins.Common.Crypto;
 
 namespace Void.Proxy.Plugins.Common.Mojang;
 
-public class MojangService(ICryptoService crypto, ISettings settings, InvocationContext context) : IMojangService
+public class MojangService(ICryptoService crypto, ISettings settings) : IMojangService
 {
     private static readonly HttpClient Client = new();
     private static readonly string SessionServer = Environment.GetEnvironmentVariable("VOID_MOJANG_SESSIONSERVER") ?? "https://sessionserver.mojang.com/session/minecraft/hasJoined";
     private static readonly bool PreventProxyConnections = bool.TryParse(Environment.GetEnvironmentVariable("VOID_MOJANG_PREVENT_PROXY_CONNECTIONS"), out var value) && value;
-    private readonly bool _offline = settings.Offline
-        || (bool.TryParse(Environment.GetEnvironmentVariable("VOID_OFFLINE"), out var env) && env)
-        || context.ParseResult.GetValueForOption(Platform.OfflineOption);
+
+    public bool Offline => bool.TryParse(Environment.GetEnvironmentVariable("VOID_OFFLINE"), out var offlineVariable) ? offlineVariable : settings.Offline;
 
     public async ValueTask<GameProfile?> VerifyAsync(IPlayer player, CancellationToken cancellationToken = default)
     {
         if (player.Profile is not { } profile)
             throw new ArgumentNullException(nameof(player), "Player profile should be set in order to verify his session");
 
-        if (_offline)
+        if (Offline)
             return new GameProfile(profile.Username, Uuid.Offline(profile.Username));
 
         var sharedSecret = player.Context.Services.GetRequiredService<ITokenHolder>().Get(TokenType.SharedSecret);
