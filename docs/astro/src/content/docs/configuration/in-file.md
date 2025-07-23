@@ -24,6 +24,9 @@ CompressionThreshold = 256
 # General per player timeout for many operations (in milliseconds)
 KickTimeout = 10000
 
+# Allow players to connect without Mojang authorization
+Offline = false
+
 # Logging level (valid values are Trace, Debug, Information, Warning, Error, Critical)
 LogLevel = "Information"
 

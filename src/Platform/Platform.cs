@@ -31,6 +31,7 @@ public class Platform(
     public static readonly LoggingLevelSwitch LoggingLevelSwitch = new();
     private static readonly Option<int> _portOption = new("--port", description: "Sets the listening port");
     private static readonly Option<string> _interfaceOption = new("--interface", description: "Sets the listening network interface");
+    public static readonly Option<bool> OfflineOption = new("--offline", description: "Allows players to connect without Mojang authorization");
 
     private readonly IPAddress _interface = context.ParseResult.GetValueForOption(_interfaceOption) is { } value ? IPAddress.Parse(value) : settings.Address;
     private readonly int _port = context.ParseResult.HasOption(_portOption) ? context.ParseResult.GetValueForOption(_portOption) : settings.Port;
@@ -179,6 +180,7 @@ public class Platform(
     {
         command.AddOption(_interfaceOption);
         command.AddOption(_portOption);
+        command.AddOption(OfflineOption);
     }
 
     private async Task ExecuteAsync(CancellationToken cancellationToken)
