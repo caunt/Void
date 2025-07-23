@@ -22,7 +22,7 @@ public abstract class IntegrationSideBase : IIntegrationSide
     protected Process? _process;
     protected readonly List<string> _logs = [];
 
-    public IEnumerable<string> Logs => _logs;
+    public IEnumerable<string> Logs => [.. _logs];
 
     static IntegrationSideBase()
     {
