@@ -18,14 +18,12 @@ public class MojangService(ICryptoService crypto, ISettings settings) : IMojangS
     private static readonly string SessionServer = Environment.GetEnvironmentVariable("VOID_MOJANG_SESSIONSERVER") ?? "https://sessionserver.mojang.com/session/minecraft/hasJoined";
     private static readonly bool PreventProxyConnections = bool.TryParse(Environment.GetEnvironmentVariable("VOID_MOJANG_PREVENT_PROXY_CONNECTIONS"), out var value) && value;
 
-    public bool Offline => bool.TryParse(Environment.GetEnvironmentVariable("VOID_OFFLINE"), out var offlineVariable) ? offlineVariable : settings.Offline;
-
     public async ValueTask<GameProfile?> VerifyAsync(IPlayer player, CancellationToken cancellationToken = default)
     {
         if (player.Profile is not { } profile)
             throw new ArgumentNullException(nameof(player), "Player profile should be set in order to verify his session");
 
-        if (Offline)
+        if (settings.Offline)
             return new GameProfile(profile.Username, Uuid.Offline(profile.Username));
 
         var sharedSecret = player.Context.Services.GetRequiredService<ITokenHolder>().Get(TokenType.SharedSecret);
