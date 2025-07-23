@@ -94,9 +94,6 @@ public class MinecraftConsoleClient(string sendText, string address) : Integrati
         if (line.Contains("No connection could be made because the target machine actively refused it"))
             throw new IntegrationTestException("Server is not running or not reachable");
 
-        if (line.Contains("You need to agree to the EULA in order to run the server"))
-            throw new IntegrationTestException("Server EULA not accepted");
-
         if (line.Contains("Failed to check session"))
             throw new IntegrationTestException("Server is running in online mode");
 
