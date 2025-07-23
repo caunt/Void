@@ -14,42 +14,31 @@ using System.Threading.Tasks;
 using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
 
-public class PaperServer(string expectedText, PaperPlugins plugins = PaperPlugins.All) : IntegrationSideBase, IIntegrationServer
+public class PaperServer : IntegrationSideBase
 {
     private const string ViaVersionRepositoryOwnerName = "ViaVersion";
     private const string ViaVersionRepositoryName = "ViaVersion";
     private const string ViaBackwardsRepositoryName = "ViaBackwards";
     private const string ViaRewindRepositoryName = "ViaRewind";
 
-    private string? _binaryPath;
-    private TaskCompletionSource? _serverDoneTaskCompletionSource;
+    private readonly string _binaryPath;
 
-    public Task ServerLoadingTask => _serverDoneTaskCompletionSource?.Task ?? Task.CompletedTask;
-
-    public override async Task RunAsync(CancellationToken cancellationToken)
+    private PaperServer(string binaryPath, string jreBinaryBath)
     {
-        if (string.IsNullOrWhiteSpace(_binaryPath))
-            throw new InvalidOperationException("Binary path is not set. Call SetupAsync first.");
-
-        _serverDoneTaskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        cancellationToken.Register(() => _serverDoneTaskCompletionSource.TrySetCanceled(cancellationToken));
+        _binaryPath = binaryPath;
+        _jreBinaryPath = jreBinaryBath;
 
         StartApplication(_binaryPath);
-
-        if (_process is not { HasExited: false })
-            throw new IntegrationTestException("Failed to start Paper server.");
-
-        await HandleOutputAsync(HandleConsole, cancellationToken);
     }
 
-    public override async Task SetupAsync(string workingDirectory, HttpClient client, CancellationToken cancellationToken = default)
+    public static async Task<PaperServer> CreateAsync(string workingDirectory, HttpClient client, PaperPlugins plugins = PaperPlugins.All, CancellationToken cancellationToken = default)
     {
         workingDirectory = Path.Combine(workingDirectory, "PaperServer");
 
         if (!Directory.Exists(workingDirectory))
             Directory.CreateDirectory(workingDirectory);
 
-        await SetupJreAsync(workingDirectory, client, cancellationToken);
+        var jreBinaryPath = await SetupJreAsync(workingDirectory, client, cancellationToken);
 
         var versionsJson = await client.GetStringAsync("https://api.papermc.io/v2/projects/paper", cancellationToken);
         using var versions = JsonDocument.Parse(versionsJson);
@@ -67,41 +56,29 @@ public class PaperServer(string expectedText, PaperPlugins plugins = PaperPlugin
         var paperJarPath = Path.Combine(workingDirectory, "paper.jar");
 
         await client.DownloadFileAsync(paperUrl, paperJarPath, cancellationToken);
-        await SetupCompatibilityPluginsAsync(cancellationToken);
+        await SetupCompatibilityPluginsAsync(workingDirectory, client, plugins, cancellationToken);
 
         await File.WriteAllTextAsync(Path.Combine(workingDirectory, "eula.txt"), "eula=true", cancellationToken);
         await File.WriteAllTextAsync(Path.Combine(workingDirectory, "server.properties"), "server-port=25565\nonline-mode=false\n", cancellationToken);
 
-        _binaryPath = paperJarPath;
+        var instance = new PaperServer(paperJarPath, jreBinaryPath);
+        await instance.ExpectTextAsync("For help, type \"help\"", lookupHistory: true, cancellationToken);
 
-        async Task SetupCompatibilityPluginsAsync(CancellationToken cancellationToken)
-        {
-            var pluginsDirectory = Path.Combine(workingDirectory, "plugins");
-
-            if (!Directory.Exists(pluginsDirectory))
-                Directory.CreateDirectory(pluginsDirectory);
-
-            if (plugins.HasFlag(PaperPlugins.ViaVersion))
-            {
-                var viaVersion = await GetGitHubRepositoryLatestReleaseAssetAsync(ViaVersionRepositoryOwnerName, ViaVersionRepositoryName, name => name.EndsWith(".jar"), cancellationToken);
-                await client.DownloadFileAsync(viaVersion, Path.Combine(pluginsDirectory, "ViaVersion.jar"), cancellationToken);
-            }
-
-            if (plugins.HasFlag(PaperPlugins.ViaBackwards))
-            {
-                var viaBackwards = await GetGitHubRepositoryLatestReleaseAssetAsync(ViaVersionRepositoryOwnerName, ViaBackwardsRepositoryName, name => name.EndsWith(".jar"), cancellationToken);
-                await client.DownloadFileAsync(viaBackwards, Path.Combine(pluginsDirectory, "ViaBackwards.jar"), cancellationToken);
-            }
-
-            if (plugins.HasFlag(PaperPlugins.ViaRewind))
-            {
-                var viaRewind = await GetGitHubRepositoryLatestReleaseAssetAsync(ViaVersionRepositoryOwnerName, ViaRewindRepositoryName, name => name.EndsWith(".jar"), cancellationToken);
-                await client.DownloadFileAsync(viaRewind, Path.Combine(pluginsDirectory, "ViaRewind.jar"), cancellationToken);
-            }
-        }
+        return instance;
     }
 
-    private bool HandleConsole(string line)
+    public async Task ExpectTextAsync(string text, bool lookupHistory = true, CancellationToken cancellationToken = default)
+    {
+        if (_process is not { HasExited: false })
+            throw new IntegrationTestException("Failed to start Paper server.");
+
+        if (lookupHistory && Logs.Any(log => log.Contains(text)))
+            return;
+
+        await ReceiveOutputAsync(line => HandleConsole(line, text), cancellationToken);
+    }
+
+    private static bool HandleConsole(string line, string expectedText)
     {
         if (line.Contains("java.lang.UnsupportedClassVersionError"))
             throw new IntegrationTestException("Incompatible Java version for the server");
@@ -109,16 +86,39 @@ public class PaperServer(string expectedText, PaperPlugins plugins = PaperPlugin
         if (line.Contains("You need to agree to the EULA in order to run the server"))
             throw new IntegrationTestException("Server EULA not accepted");
 
-        if (line.Contains("Done") && line.Contains("For help, type \"help\""))
-            _serverDoneTaskCompletionSource?.SetResult();
-
         if (line.Contains(expectedText))
             return true;
 
         return false;
     }
 
-    private async Task SetupJreAsync(string workingDirectory, HttpClient client, CancellationToken cancellationToken)
+    private static async Task SetupCompatibilityPluginsAsync(string workingDirectory, HttpClient client, PaperPlugins plugins, CancellationToken cancellationToken)
+    {
+        var pluginsDirectory = Path.Combine(workingDirectory, "plugins");
+
+        if (!Directory.Exists(pluginsDirectory))
+            Directory.CreateDirectory(pluginsDirectory);
+
+        if (plugins.HasFlag(PaperPlugins.ViaVersion))
+        {
+            var viaVersion = await GetGitHubRepositoryLatestReleaseAssetAsync(ViaVersionRepositoryOwnerName, ViaVersionRepositoryName, name => name.EndsWith(".jar"), cancellationToken);
+            await client.DownloadFileAsync(viaVersion, Path.Combine(pluginsDirectory, "ViaVersion.jar"), cancellationToken);
+        }
+
+        if (plugins.HasFlag(PaperPlugins.ViaBackwards))
+        {
+            var viaBackwards = await GetGitHubRepositoryLatestReleaseAssetAsync(ViaVersionRepositoryOwnerName, ViaBackwardsRepositoryName, name => name.EndsWith(".jar"), cancellationToken);
+            await client.DownloadFileAsync(viaBackwards, Path.Combine(pluginsDirectory, "ViaBackwards.jar"), cancellationToken);
+        }
+
+        if (plugins.HasFlag(PaperPlugins.ViaRewind))
+        {
+            var viaRewind = await GetGitHubRepositoryLatestReleaseAssetAsync(ViaVersionRepositoryOwnerName, ViaRewindRepositoryName, name => name.EndsWith(".jar"), cancellationToken);
+            await client.DownloadFileAsync(viaRewind, Path.Combine(pluginsDirectory, "ViaRewind.jar"), cancellationToken);
+        }
+    }
+
+    private static async Task<string> SetupJreAsync(string workingDirectory, HttpClient client, CancellationToken cancellationToken)
     {
         var jreWorkingDirectory = Path.Combine(workingDirectory, "jre21");
         var javaExecutableName = OperatingSystem.IsWindows() ? "java.exe" : "java";
@@ -220,6 +220,6 @@ public class PaperServer(string expectedText, PaperPlugins plugins = PaperPlugin
             existingJava = javaPath;
         }
 
-        _jreBinaryPath = existingJava;
+        return existingJava;
     }
 }
