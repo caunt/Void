@@ -8,5 +8,6 @@ public enum PaperPlugins
     None = 0,
     ViaVersion = 1,
     ViaBackwards = 2,
-    All = ViaVersion | ViaBackwards
+    ViaRewind = 4,
+    All = ViaVersion | ViaBackwards | ViaRewind
 }

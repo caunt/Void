@@ -19,6 +19,7 @@ public class PaperServer(string expectedText, PaperPlugins plugins = PaperPlugin
     private const string ViaVersionRepositoryOwnerName = "ViaVersion";
     private const string ViaVersionRepositoryName = "ViaVersion";
     private const string ViaBackwardsRepositoryName = "ViaBackwards";
+    private const string ViaRewindRepositoryName = "ViaRewind";
 
     private string? _binaryPath;
     private TaskCompletionSource? _serverDoneTaskCompletionSource;
@@ -90,6 +91,12 @@ public class PaperServer(string expectedText, PaperPlugins plugins = PaperPlugin
             {
                 var viaBackwards = await GetGitHubRepositoryLatestReleaseAssetAsync(ViaVersionRepositoryOwnerName, ViaBackwardsRepositoryName, name => name.EndsWith(".jar"), cancellationToken);
                 await client.DownloadFileAsync(viaBackwards, Path.Combine(pluginsDirectory, "ViaBackwards.jar"), cancellationToken);
+            }
+
+            if (plugins.HasFlag(PaperPlugins.ViaRewind))
+            {
+                var viaRewind = await GetGitHubRepositoryLatestReleaseAssetAsync(ViaVersionRepositoryOwnerName, ViaRewindRepositoryName, name => name.EndsWith(".jar"), cancellationToken);
+                await client.DownloadFileAsync(viaRewind, Path.Combine(pluginsDirectory, "ViaRewind.jar"), cancellationToken);
             }
         }
     }
