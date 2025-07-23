@@ -46,7 +46,9 @@ public abstract class ConnectionTestBase : IDisposable
             clientTask = client.RunAsync(cancellationToken);
 
             // Wait for the server to exit (it will exit when it receives the expected message)
-            await serverTask;
+            // If client completes first, it means it got exception
+            var completedTask = await Task.WhenAny(serverTask, clientTask);
+            await completedTask;
         }
         catch (Exception exception)
         {
