@@ -32,7 +32,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
 
-        await fixture.Client.SendTextMessageAsync("localhost:25565", protocolVersion, expectedText, cancellationTokenSource.Token);
+        await fixture.Client.SendTextMessageAsync("localhost:25566", protocolVersion, expectedText, cancellationTokenSource.Token);
         await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
         Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
