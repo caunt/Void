@@ -4,6 +4,7 @@ using Void.Proxy.Api.Crypto;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network.Messages;
+using Void.Proxy.Api.Settings;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Services.Encryption;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
@@ -11,7 +12,7 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbo
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Encryption;
 
-public class EncryptionService(IEventService events, ICryptoService crypto) : AbstractEncryptionService(events, crypto)
+public class EncryptionService(IEventService events, ICryptoService crypto, ISettings settings) : AbstractEncryptionService(events, crypto, settings)
 {
     protected override bool IsSupportedVersion(ProtocolVersion protocolVersion)
     {

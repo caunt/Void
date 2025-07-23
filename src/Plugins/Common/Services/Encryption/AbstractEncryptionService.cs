@@ -11,6 +11,7 @@ using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Messages;
 using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Settings;
 using Void.Proxy.Plugins.Common.Crypto;
 using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Network.Streams.Encryption;
@@ -19,7 +20,7 @@ using Void.Proxy.Plugins.Common.Network.Streams.Transparent;
 
 namespace Void.Proxy.Plugins.Common.Services.Encryption;
 
-public abstract class AbstractEncryptionService(IEventService events, ICryptoService crypto) : IPluginCommonService
+public abstract class AbstractEncryptionService(IEventService events, ICryptoService crypto, ISettings settings) : IPluginCommonService
 {
     [Subscribe(PostOrder.First)]
     public async ValueTask OnMessageSent(MessageSentEvent @event, CancellationToken cancellationToken)
@@ -63,6 +64,12 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
 
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
+
+        if (settings.Offline)
+        {
+            @event.Result = true;
+            return;
+        }
 
         var tokens = @event.Player.Context.Services.GetRequiredService<ITokenHolder>();
         tokens.Store(TokenType.VerifyToken, BitConverter.GetBytes(Random.Shared.Next()));
