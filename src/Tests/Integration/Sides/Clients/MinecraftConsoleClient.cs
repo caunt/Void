@@ -37,7 +37,8 @@ public class MinecraftConsoleClient(string sendText, string address) : Integrati
         if (!Directory.Exists(workingDirectory))
             Directory.CreateDirectory(workingDirectory);
 
-        var path = Path.Combine(workingDirectory, "client");
+        var clientFileName = OperatingSystem.IsWindows() ? "client.exe" : "client";
+        var path = Path.Combine(workingDirectory, clientFileName);
         var url = await GetGitHubRepositoryLatestReleaseAssetAsync(RepositoryOwnerName, RepositoryName, name => name.EndsWith(GetMinecraftConsoleClientSuffix()), cancellationToken);
 
         await client.DownloadFileAsync(url, path, cancellationToken);
