@@ -93,6 +93,9 @@ public class PaperServer(string expectedText) : IntegrationSideBase, IIntegratio
         if (line.Contains("java.lang.UnsupportedClassVersionError"))
             throw new IntegrationTestException("Incompatible Java version for the server");
 
+        if (line.Contains("You need to agree to the EULA in order to run the server"))
+            throw new IntegrationTestException("Server EULA not accepted");
+
         if (line.Contains("Done") && line.Contains("For help, type \"help\""))
             _serverDoneTaskCompletionSource?.SetResult();
 
