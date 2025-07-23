@@ -26,6 +26,7 @@ Options:
   --interface <address>          Overrides the listening network interface
   --port <port>                  Overrides the listening port
   --ignore-file-servers          Ignore servers specified in configuration files
+  --offline                      Allows players to connect without Mojang authorization
   --version                      Show version information
   -?, -h, --help                 Show help and usage information
 ```
@@ -54,6 +55,11 @@ Options:
 - `--port`
   Overrides the listening port for the proxy.
   Example: `./void-linux-x64 --port 25570`
+
+## Authentication
+- `--offline`
+  Allows players to connect without Mojang authorization.
+  Example: `./void-linux-x64 --offline`
 
 ## Version
 - `--version`

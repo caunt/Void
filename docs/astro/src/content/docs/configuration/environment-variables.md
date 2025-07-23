@@ -19,8 +19,13 @@ However, they might be used from the terminal directly as well.
   Example: `https://api.nuget.org/v3/index.json;https://nuget.void.dev/v3/index.json`
 
 ## Watchdog
-- `VOID_WATCHDOG_ENABLE`  
+- `VOID_WATCHDOG_ENABLE`
   Enables the watchdog.
+  Example: `true`
+
+## Proxy
+- `VOID_OFFLINE`
+  Allows players to connect without Mojang authorization.
   Example: `true`
 
 ## Mojang

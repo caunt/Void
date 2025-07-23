@@ -46,6 +46,8 @@ spec:
           value: "https://example.org/download/YourPlugin1.dll"
         - name: VOID_WATCHDOG_ENABLE
           value: "true"
+        - name: VOID_OFFLINE
+          value: "true"
 ```
 
 ## Configuring Void in Containers
