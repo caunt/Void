@@ -2,6 +2,7 @@ namespace Void.Tests.Integration.Sides.Clients;
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 using Void.Minecraft.Network;
 using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
+using Xunit;
 
 public class MinecraftConsoleClient(string sendText, string address, ProtocolVersion protocolVersion) : IntegrationSideBase, IIntegrationClient
 {
@@ -17,6 +19,10 @@ public class MinecraftConsoleClient(string sendText, string address, ProtocolVer
     private const string RepositoryName = "Minecraft-Console-Client";
 
     private string? _binaryPath;
+
+    public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion
+                .Range(ProtocolVersion.MINECRAFT_1_7_2, ProtocolVersion.MINECRAFT_1_20_3)
+                .Where(version => version < ProtocolVersion.MINECRAFT_1_19 || version > ProtocolVersion.MINECRAFT_1_19_4)];
 
     public override async Task RunAsync(CancellationToken cancellationToken)
     {
