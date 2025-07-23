@@ -63,5 +63,7 @@ public abstract class ConnectionTestBase : IDisposable
 
         if (Directory.Exists(WorkingDirectory))
             Directory.Delete(WorkingDirectory, true);
+
+        _httpClient.Dispose();
     }
 }
