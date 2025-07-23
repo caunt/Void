@@ -11,7 +11,7 @@ namespace Void.Tests.Integration.Connections;
 
 public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture fixture) : IClassFixture<ProxiedConnectionTests.PaperVoidMccFixture>
 {
-    private const string ExpectedText = "hello void!";
+    private const string ExpectedText = "hello proxied void!";
 
     [Fact]
     public async Task MccConnectsToPaperServerThroughProxy()
@@ -20,6 +20,19 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
 
         await fixture.Client.SendTextMessageAsync("localhost:25566", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
+        await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
+
+        Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
+    }
+
+    [Theory]
+    [MemberData(nameof(MinecraftConsoleClient.SupportedVersions), MemberType = typeof(MinecraftConsoleClient))]
+    public async Task MccConnectsToPaperServerThroughProxy_WithProtocolVersion(ProtocolVersion protocolVersion)
+    {
+        var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+
+        await fixture.Client.SendTextMessageAsync("localhost:25565", protocolVersion, expectedText, cancellationTokenSource.Token);
         await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
         Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
