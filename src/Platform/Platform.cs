@@ -126,9 +126,9 @@ public class Platform(
 
         logger.LogTrace("Working directory is {Path}", Directory.GetCurrentDirectory());
 
-        if (context.ParseResult.GetValueForOption(_offlineOption) is { } option)
+        if (context.ParseResult.GetValueForOption(_offlineOption) is { } option && option)
         {
-            settings.Offline = option;
+            settings.Offline = true;
             logger.LogWarning("Offline mode is enabled. Players will be able to connect without Mojang authorization.");
         }
 
