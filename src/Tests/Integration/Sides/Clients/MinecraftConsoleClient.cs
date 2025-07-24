@@ -95,6 +95,9 @@ public class MinecraftConsoleClient : IntegrationSideBase
         if (line.Contains("Failed to check session"))
             throw new IntegrationTestException("Server is running in online mode");
 
+        if (line.Contains("Disconnected by Server"))
+            throw new IntegrationTestException("Disconnected by server - might be internal Proxy or Server exception");
+
         if (line.Contains("joined the game"))
             return true;
 
