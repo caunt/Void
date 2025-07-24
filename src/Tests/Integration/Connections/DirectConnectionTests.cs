@@ -16,7 +16,7 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
     public async Task MccConnectsToPaperServer()
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
         await fixture.Client.SendTextMessageAsync("localhost:25565", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
         await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
@@ -29,7 +29,7 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
     public async Task MccConnectsToPaperServer_WithProtocolVersion(ProtocolVersion protocolVersion)
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
         await fixture.Client.SendTextMessageAsync("localhost:25565", protocolVersion, expectedText, cancellationTokenSource.Token);
         await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
