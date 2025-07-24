@@ -374,7 +374,6 @@ public static class ComponentJsonTransformers
     {
         if (node is JsonObject root)
         {
-            // Replace the "show_achievement" action with "show_text"
             if (root["hoverEvent"] is JsonObject hoverEvent)
             {
                 if (hoverEvent["value"] is { } value)
@@ -383,7 +382,10 @@ public static class ComponentJsonTransformers
                     {
                         if (action.GetValue<string>() is "show_achievement" or "show_entity" or "show_item")
                         {
-                            hoverEvent["value"] = new JsonObject { ["text"] = JsonSerializer.SerializeToNode(value) };
+                            if (value is JsonObject valueAsObject && valueAsObject.ContainsKey("text"))
+                                hoverEvent["value"] = value; // Minecraft Console Clients sends JsonObject as value
+                            else
+                                hoverEvent["value"] = new JsonObject { ["text"] = JsonSerializer.SerializeToNode(value) }; // Vanilla behavior
                         }
                     }
                 }
