@@ -17,7 +17,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
     public async Task MccConnectsToPaperServerThroughProxy()
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
         await fixture.Client.SendTextMessageAsync("localhost:25566", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
         await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
@@ -30,7 +30,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
     public async Task MccConnectsToPaperServerThroughProxy_WithProtocolVersion(ProtocolVersion protocolVersion)
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
         await fixture.Client.SendTextMessageAsync("localhost:25566", protocolVersion, expectedText, cancellationTokenSource.Token);
         await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
