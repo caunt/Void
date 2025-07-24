@@ -75,13 +75,15 @@ public class MinecraftConsoleClient : IntegrationSideBase
         if (_process is not { HasExited: false })
             throw new IntegrationTestException("Failed to start Minecraft Console Client.");
 
-        await consoleTask; // Ends when HandleConsole returns true
-        await Task.Delay(3_000, cancellationToken); // Since there is no way to ensure client sent the message, so just give it a few seconds to go
-
-        await _process.ExitAsync(entireProcessTree: true, cancellationToken);
-
-        if (consoleTask.IsFaulted)
-            throw new IntegrationTestException($"{nameof(MinecraftConsoleClient)} faulted", consoleTask.Exception);
+        try
+        {
+            await consoleTask; // Ends when HandleConsole returns true
+            await Task.Delay(3_000, cancellationToken); // Since there is no way to ensure client sent the message, so just give it a few seconds to go
+        }
+        finally
+        {
+            await _process.ExitAsync(entireProcessTree: true, cancellationToken);
+        }
     }
 
     private bool HandleConsole(string line)
