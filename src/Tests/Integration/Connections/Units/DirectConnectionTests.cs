@@ -17,7 +17,7 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
     public async Task MccConnectsToPaperServer()
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
 
         await LoggedExecutorAsync(async () =>
         {
@@ -33,7 +33,7 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
     public async Task MccConnectsToPaperServer_WithProtocolVersion(ProtocolVersion protocolVersion)
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
 
         await LoggedExecutorAsync(async () =>
         {
@@ -55,7 +55,7 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
 
         public async Task InitializeAsync()
         {
-            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+            using var cancellationTokenSource = new CancellationTokenSource(Timeout);
 
             Server = await PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: cancellationTokenSource.Token);
             Client = await MinecraftConsoleClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
