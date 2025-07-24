@@ -23,8 +23,7 @@ public class MinecraftConsoleClient : IntegrationSideBase
 
     public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion
                 .Range(ProtocolVersion.MINECRAFT_1_20_3, ProtocolVersion.MINECRAFT_1_7_2)
-                .Except([ProtocolVersion.MINECRAFT_1_19]) // MCC 1.19 doesn't send chat messages
-                .Reverse()];
+                .Except([ProtocolVersion.MINECRAFT_1_19])]; // MCC 1.19 doesn't send chat messages
 
     private MinecraftConsoleClient(string workingDirectory, string binaryPath)
     {
