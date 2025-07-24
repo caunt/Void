@@ -87,7 +87,7 @@ public class MinecraftConsoleClient : IntegrationSideBase
         try
         {
             await consoleTask; // Ends when HandleConsole returns true
-            await Task.Delay(6_000, cancellationToken); // Since there is no way to ensure client sent the message, so just give it a few seconds to go
+            await Task.Delay(15_000, cancellationToken); // Since there is no way to ensure client sent the message, so just give it a few seconds to go
         }
         finally
         {
