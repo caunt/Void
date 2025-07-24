@@ -8,7 +8,9 @@ namespace Void.Tests.Integration.Connections;
 
 public class ConnectionUnitBase
 {
-    public async Task LoggedExecutorAsync(Func<Task> function, params IIntegrationSide[] sides)
+    public TimeSpan Timeout { get; } = TimeSpan.FromSeconds(60);
+
+    public static async Task LoggedExecutorAsync(Func<Task> function, params IIntegrationSide[] sides)
     {
         try
         {

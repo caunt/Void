@@ -19,7 +19,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
     public async Task MccConnectsToPaperServerThroughProxy()
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
 
         await LoggedExecutorAsync(async () =>
         {
@@ -35,7 +35,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
     public async Task MccConnectsToPaperServerThroughProxy_WithProtocolVersion(ProtocolVersion protocolVersion)
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
 
         await LoggedExecutorAsync(async () =>
         {
@@ -58,7 +58,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
 
         public async Task InitializeAsync()
         {
-            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+            using var cancellationTokenSource = new CancellationTokenSource(Timeout);
 
             Server = await PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: cancellationTokenSource.Token);
             Proxy = await VoidProxy.CreateAsync(targetServer: $"localhost:{ServerPort}", proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
