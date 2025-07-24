@@ -59,7 +59,13 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
 
         public async Task DisposeAsync()
         {
+            if (Client is not null)
             await Client.DisposeAsync();
+
+            if (Proxy is not null)
+                await Proxy.DisposeAsync();
+
+            if (Server is not null)
             await Server.DisposeAsync();
         }
     }

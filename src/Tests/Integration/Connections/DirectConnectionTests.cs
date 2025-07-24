@@ -56,8 +56,11 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
 
         public async Task DisposeAsync()
         {
-            await Client.DisposeAsync();
-            await Server.DisposeAsync();
+            if (Client is not null)
+                await Client.DisposeAsync();
+
+            if (Server is not null)
+                await Server.DisposeAsync();
         }
     }
 }
