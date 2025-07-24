@@ -10,6 +10,7 @@ namespace Void.Tests.Integration.Connections;
 
 public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture) : IClassFixture<DirectConnectionTests.PaperMccFixture>
 {
+    private const int ServerPort = 25000;
     private const string ExpectedText = "hello void!";
 
     [Fact]
@@ -18,7 +19,7 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
-        await fixture.Client.SendTextMessageAsync("localhost:25565", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
+        await fixture.Client.SendTextMessageAsync($"localhost:{ServerPort}", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
         await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
         Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
@@ -31,7 +32,7 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
-        await fixture.Client.SendTextMessageAsync("localhost:25565", protocolVersion, expectedText, cancellationTokenSource.Token);
+        await fixture.Client.SendTextMessageAsync($"localhost:{ServerPort}", protocolVersion, expectedText, cancellationTokenSource.Token);
         await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
         Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
@@ -50,7 +51,7 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
         {
             using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
 
-            Server = await PaperServer.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
+            Server = await PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: cancellationTokenSource.Token);
             Client = await MinecraftConsoleClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
         }
 

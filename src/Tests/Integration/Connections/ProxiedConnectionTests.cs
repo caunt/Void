@@ -11,6 +11,8 @@ namespace Void.Tests.Integration.Connections;
 
 public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture fixture) : IClassFixture<ProxiedConnectionTests.PaperVoidMccFixture>
 {
+    private const int ProxyPort = 35000;
+    private const int ServerPort = 35001;
     private const string ExpectedText = "hello proxied void!";
 
     [Fact]
@@ -19,7 +21,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
-        await fixture.Client.SendTextMessageAsync("localhost:25566", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
+        await fixture.Client.SendTextMessageAsync($"localhost:{ProxyPort}", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
         await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
         Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
@@ -32,7 +34,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
-        await fixture.Client.SendTextMessageAsync("localhost:25566", protocolVersion, expectedText, cancellationTokenSource.Token);
+        await fixture.Client.SendTextMessageAsync($"localhost:{ProxyPort}", protocolVersion, expectedText, cancellationTokenSource.Token);
         await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
         Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
@@ -52,21 +54,21 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
         {
             using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(3));
 
-            Server = await PaperServer.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
-            Proxy = await VoidProxy.CreateAsync(targetServer: "localhost:25565", proxyPort: 25566, cancellationToken: cancellationTokenSource.Token);
+            Server = await PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: cancellationTokenSource.Token);
+            Proxy = await VoidProxy.CreateAsync(targetServer: $"localhost:{ServerPort}", proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
             Client = await MinecraftConsoleClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
         }
 
         public async Task DisposeAsync()
         {
             if (Client is not null)
-            await Client.DisposeAsync();
+                await Client.DisposeAsync();
 
             if (Proxy is not null)
                 await Proxy.DisposeAsync();
 
             if (Server is not null)
-            await Server.DisposeAsync();
+                await Server.DisposeAsync();
         }
     }
 }
