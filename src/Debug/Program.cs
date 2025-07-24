@@ -1,15 +1,15 @@
 ﻿using System.Net.Sockets;
-using System.Reflection;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using MCStatus;
 using Nito.AsyncEx;
 using Void.Minecraft.Network;
+using Void.Proxy;
 
 if (OperatingSystem.IsWindows())
     Console.Clear();
 
-var version = ProtocolVersion.MINECRAFT_1_21_5;
+var version = ProtocolVersion.MINECRAFT_1_20_2;
 var count = 1;
 
 if (args.Length is 1 && int.TryParse(args[0], out var value))
@@ -19,19 +19,6 @@ Console.WriteLine(@$"Starting {count} minecraft container(s)");
 await StartDockerEnvironmentAsync(version, count);
 
 return;
-
-async ValueTask RunEntryPointAsync()
-{
-    var assembly = typeof(Void.Proxy.Platform).Assembly;
-    var programType = assembly.GetType(nameof(Program));
-    var mainMethod = programType?.GetMethod("<Main>", BindingFlags.Static | BindingFlags.NonPublic);
-    var invocationResult = mainMethod?.Invoke(null, [Array.Empty<string>()]);
-
-    if (invocationResult is not Task task)
-        return;
-
-    await task;
-}
 
 async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count = 3, string type = "PAPER", CancellationToken cancellationToken = default)
 {
@@ -239,7 +226,7 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
 
     try
     {
-        await RunEntryPointAsync();
+        await EntryPoint.RunAsync(cancellationToken: cancellationToken);
     }
     finally
     {
