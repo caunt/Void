@@ -131,8 +131,7 @@ public static class ComponentNbtTransformers
         var property = wrapper.Read<NbtProperty>();
         var tag = Downgrade_v1_21_5_to_v1_21_4(property.AsNbtTag);
 
-        property = NbtProperty.FromNbtTag(tag);
-        wrapper.Write(property);
+        wrapper.Write(NamedNbtProperty.FromNbtTag(tag));
     }
 
     public static void Passthrough_v1_20_3_to_v1_20_2(IMinecraftBinaryPacketWrapper wrapper)
@@ -175,11 +174,10 @@ public static class ComponentNbtTransformers
     #region Upgrade
     public static void Passthrough_v1_21_4_to_v1_21_5(IMinecraftBinaryPacketWrapper wrapper)
     {
-        var property = wrapper.Read<NbtProperty>();
+        var property = wrapper.Read<NamedNbtProperty>();
         var tag = Upgrade_v1_21_4_to_v1_21_5(property.AsNbtTag);
 
-        property = NbtProperty.FromNbtTag(tag);
-        wrapper.Write(property);
+        wrapper.Write(NbtProperty.FromNbtTag(tag));
     }
 
     public static void Passthrough_v1_20_2_to_v1_20_3(IMinecraftBinaryPacketWrapper wrapper)
