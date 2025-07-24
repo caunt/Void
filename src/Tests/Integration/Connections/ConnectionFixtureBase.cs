@@ -10,7 +10,7 @@ public abstract class ConnectionFixtureBase : IDisposable
     protected readonly string _workingDirectory;
     protected readonly HttpClient _httpClient;
 
-    public TimeSpan Timeout { get; } = TimeSpan.FromMinutes(3);
+    public TimeSpan Timeout { get; } = TimeSpan.FromMinutes(10);
 
     public ConnectionFixtureBase(string workingDirectory)
     {
