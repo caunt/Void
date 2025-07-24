@@ -6,9 +6,9 @@ using Void.Tests.Integration.Sides.Clients;
 using Void.Tests.Integration.Sides.Servers;
 using Xunit;
 
-namespace Void.Tests.Integration.Connections;
+namespace Void.Tests.Integration.Connections.Units;
 
-public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture) : IClassFixture<DirectConnectionTests.PaperMccFixture>
+public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture) : ConnectionUnitBase, IClassFixture<DirectConnectionTests.PaperMccFixture>
 {
     private const int ServerPort = 25000;
     private const string ExpectedText = "hello void!";
@@ -19,10 +19,13 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
-        await fixture.Client.SendTextMessageAsync($"localhost:{ServerPort}", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
-        await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
+        await LoggedExecutorAsync(async () =>
+        {
+            await fixture.Client.SendTextMessageAsync($"localhost:{ServerPort}", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
+            await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
-        Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
+            Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
+        }, fixture.Client, fixture.Server);
     }
 
     [Theory]
@@ -32,13 +35,16 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
-        await fixture.Client.SendTextMessageAsync($"localhost:{ServerPort}", protocolVersion, expectedText, cancellationTokenSource.Token);
-        await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
+        await LoggedExecutorAsync(async () =>
+        {
+            await fixture.Client.SendTextMessageAsync($"localhost:{ServerPort}", protocolVersion, expectedText, cancellationTokenSource.Token);
+            await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
-        Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
+            Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
+        }, fixture.Client, fixture.Server);
     }
 
-    public class PaperMccFixture : ConnectionTestBase, IAsyncLifetime
+    public class PaperMccFixture : ConnectionFixtureBase, IAsyncLifetime
     {
         public PaperMccFixture() : base(nameof(DirectConnectionTests))
         {
