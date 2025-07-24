@@ -636,7 +636,6 @@ public static class ComponentNbtTransformers
     {
         if (tag is NbtCompound root)
         {
-            // Replace the "show_achievement" action with "show_text"
             if (root["hoverEvent"] is NbtCompound hoverEvent)
             {
                 if (hoverEvent["value"] is { } value)
@@ -645,7 +644,10 @@ public static class ComponentNbtTransformers
                     {
                         if (action.Value is "show_achievement" or "show_entity" or "show_item")
                         {
-                            hoverEvent["value"] = new NbtCompound { ["text"] = value };
+                            if (value is NbtCompound valueAsCompound && valueAsCompound.ContainsKey("text"))
+                                hoverEvent["value"] = value; // Minecraft Console Clients sends NbtCompound as value
+                            else
+                                hoverEvent["value"] = new NbtCompound { ["text"] = value }; // Vanilla behavior
                         }
                     }
                 }
