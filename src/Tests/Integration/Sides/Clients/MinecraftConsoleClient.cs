@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Nito.AsyncEx;
 using Void.Minecraft.Network;
 using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
@@ -20,6 +21,7 @@ public class MinecraftConsoleClient : IntegrationSideBase
 
     private readonly string _workingDirectory;
     private readonly string _binaryPath;
+    private AsyncLock _lock = new();
 
     public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion
                 .Range(ProtocolVersion.MINECRAFT_1_20_3, ProtocolVersion.MINECRAFT_1_7_2)
@@ -52,6 +54,8 @@ public class MinecraftConsoleClient : IntegrationSideBase
 
     public async Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
     {
+        using var disposable = await _lock.LockAsync(cancellationToken);
+
         if (string.IsNullOrWhiteSpace(_binaryPath))
             throw new InvalidOperationException("Binary path is not set. Call SetupAsync first.");
 
