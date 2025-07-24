@@ -55,7 +55,12 @@ public class MinecraftConsoleClient : IntegrationSideBase
         if (string.IsNullOrWhiteSpace(_binaryPath))
             throw new InvalidOperationException("Binary path is not set. Call SetupAsync first.");
 
-        await File.WriteAllTextAsync(Path.Combine(_workingDirectory, "MinecraftClient.ini"), $"""
+        var configurationPath = Path.Combine(_workingDirectory, "MinecraftClient.ini");
+
+        if (File.Exists(configurationPath))
+            File.Delete(configurationPath);
+
+        await File.WriteAllTextAsync(configurationPath, $"""
             [Main.Advanced]
             MinecraftVersion = "{protocolVersion.MostRecentSupportedVersion}"
 
