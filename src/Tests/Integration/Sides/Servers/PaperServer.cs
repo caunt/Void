@@ -31,7 +31,7 @@ public class PaperServer : IntegrationSideBase
         StartApplication(_binaryPath);
     }
 
-    public static async Task<PaperServer> CreateAsync(string workingDirectory, HttpClient client, PaperPlugins plugins = PaperPlugins.All, CancellationToken cancellationToken = default)
+    public static async Task<PaperServer> CreateAsync(string workingDirectory, HttpClient client, int port = 25565, PaperPlugins plugins = PaperPlugins.All, CancellationToken cancellationToken = default)
     {
         workingDirectory = Path.Combine(workingDirectory, "PaperServer");
 
@@ -59,7 +59,7 @@ public class PaperServer : IntegrationSideBase
         await SetupCompatibilityPluginsAsync(workingDirectory, client, plugins, cancellationToken);
 
         await File.WriteAllTextAsync(Path.Combine(workingDirectory, "eula.txt"), "eula=true", cancellationToken);
-        await File.WriteAllTextAsync(Path.Combine(workingDirectory, "server.properties"), "server-port=25565\nonline-mode=false\n", cancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(workingDirectory, "server.properties"), $"server-port={port}\nonline-mode=false\n", cancellationToken);
 
         var instance = new PaperServer(paperJarPath, jreBinaryPath);
         await instance.ExpectTextAsync("For help, type \"help\"", lookupHistory: true, cancellationToken);
