@@ -1,10 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Tar;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Nito.AsyncEx;
 using Octokit;
 using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
@@ -15,6 +20,8 @@ namespace Void.Tests.Integration.Sides;
 public abstract class IntegrationSideBase : IIntegrationSide
 {
     private const int MaxGitHubReleasesToConsider = 3;
+
+    private static readonly AsyncLock _lock = new();
     private static readonly GitHubClient _gitHubClient = new(new ProductHeaderValue($"{nameof(Void)}.{nameof(Tests)}"));
 
     protected string? _jreBinaryPath;
@@ -30,7 +37,7 @@ public abstract class IntegrationSideBase : IIntegrationSide
             _gitHubClient.Credentials = new Credentials(token);
     }
 
-    public void StartApplication(string fileName, params string[] userArguments)
+    public void StartApplication(string fileName, bool hasInput = false, params string[] userArguments)
     {
         if (_process is { HasExited: false })
             throw new IntegrationTestException($"Process for {fileName} is already running.");
@@ -46,7 +53,7 @@ public abstract class IntegrationSideBase : IIntegrationSide
             WorkingDirectory = Path.GetDirectoryName(fileName),
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-            RedirectStandardInput = false,
+            RedirectStandardInput = hasInput,
             UseShellExecute = false
         };
 
@@ -115,7 +122,7 @@ public abstract class IntegrationSideBase : IIntegrationSide
         _process.ErrorDataReceived -= OnDataReceived;
     }
 
-    protected async Task ReceiveOutputAsync(Func<string, bool> handler, CancellationToken cancellationToken)
+    protected async Task ReceiveOutputAsync(Func<string, bool> handler, CancellationToken cancellationToken = default)
     {
         if (_process is null)
             throw new InvalidOperationException("Application is not started.");
@@ -157,7 +164,114 @@ public abstract class IntegrationSideBase : IIntegrationSide
         }
     }
 
-    protected static async Task<string> GetGitHubRepositoryLatestReleaseAssetAsync(string ownerName, string repositoryName, Predicate<string> assetFilter, CancellationToken cancellationToken)
+    protected static async Task<string> SetupJreAsync(string workingDirectory, HttpClient client, CancellationToken cancellationToken = default)
+    {
+        using var disposable = await _lock.LockAsync(cancellationToken);
+
+        var jreWorkingDirectory = Path.Combine(workingDirectory, "jre21");
+        var javaExecutableName = OperatingSystem.IsWindows() ? "java.exe" : "java";
+        var existingJava = Directory.Exists(jreWorkingDirectory)
+            ? Directory.GetFiles(jreWorkingDirectory, javaExecutableName, SearchOption.AllDirectories).FirstOrDefault()
+            : null;
+
+        if (existingJava is null)
+        {
+
+            if (!Directory.Exists(jreWorkingDirectory))
+                Directory.CreateDirectory(jreWorkingDirectory);
+
+            var os = OperatingSystem.IsWindows() ? "windows"
+                : OperatingSystem.IsLinux() ? "linux"
+                : OperatingSystem.IsMacOS() ? "mac"
+                : throw new PlatformNotSupportedException("Unsupported OS");
+
+            var arch = RuntimeInformation.ProcessArchitecture switch
+            {
+                Architecture.X64 => "x64",
+                Architecture.X86 => "x86",
+                Architecture.Arm64 => "aarch64",
+                Architecture.Arm => "arm",
+                _ => throw new PlatformNotSupportedException("Unsupported architecture")
+            };
+
+            var extension = OperatingSystem.IsWindows() ? ".zip" : ".tar.gz";
+            var url = await GetGitHubRepositoryLatestReleaseAssetAsync(
+                ownerName: "adoptium",
+                repositoryName: "temurin21-binaries",
+                assetFilter: name => name.Contains($"jre_{arch}_{os}", StringComparison.OrdinalIgnoreCase) && name.EndsWith(extension, StringComparison.OrdinalIgnoreCase),
+                cancellationToken);
+
+            var archivePath = Path.Combine(jreWorkingDirectory, Path.GetFileName(url));
+
+            await client.DownloadFileAsync(url, archivePath, cancellationToken);
+
+            if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            {
+                ZipFile.ExtractToDirectory(archivePath, jreWorkingDirectory);
+            }
+            else
+            {
+                await using var fileStream = File.OpenRead(archivePath);
+                using var gzip = new GZipStream(fileStream, CompressionMode.Decompress);
+                TarFile.ExtractToDirectory(gzip, jreWorkingDirectory, overwriteFiles: true);
+            }
+
+            var javaPath = Directory.GetFiles(jreWorkingDirectory, javaExecutableName, SearchOption.AllDirectories).FirstOrDefault() ??
+                throw new IntegrationTestException("Failed to locate downloaded Java runtime");
+
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(javaPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+            var proxyCertificatePath = Environment.GetEnvironmentVariable("CODEX_PROXY_CERT");
+
+            if (!string.IsNullOrWhiteSpace(proxyCertificatePath) && File.Exists(proxyCertificatePath) && Path.GetDirectoryName(javaPath) is { } javaBinariesPath && Directory.GetParent(javaBinariesPath) is { } javaHomePath)
+            {
+                var keytool = Path.Combine(javaBinariesPath, OperatingSystem.IsWindows() ? "keytool.exe" : "keytool");
+
+                if (File.Exists(keytool))
+                {
+                    var candidateKeystores = new[]
+                    {
+                        Path.Combine(javaHomePath.FullName, "lib", "security", "cacerts"),
+                        Path.Combine(javaHomePath.FullName, "jre", "lib", "security", "cacerts")
+                    };
+
+                    var keystore = candidateKeystores.FirstOrDefault(File.Exists);
+
+                    if (keystore is not null)
+                    {
+                        var startInfo = new ProcessStartInfo(keytool)
+                        {
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true
+                        };
+
+                        startInfo.ArgumentList.Add("-importcert");
+                        startInfo.ArgumentList.Add("-alias");
+                        startInfo.ArgumentList.Add("codexproxy");
+                        startInfo.ArgumentList.Add("-file");
+                        startInfo.ArgumentList.Add(proxyCertificatePath);
+                        startInfo.ArgumentList.Add("-keystore");
+                        startInfo.ArgumentList.Add(keystore);
+                        startInfo.ArgumentList.Add("-storepass");
+                        startInfo.ArgumentList.Add("changeit");
+                        startInfo.ArgumentList.Add("-noprompt");
+
+                        using var process = Process.Start(startInfo);
+
+                        if (process is not null)
+                            await process.WaitForExitAsync(cancellationToken);
+                    }
+                }
+            }
+
+            existingJava = javaPath;
+        }
+
+        return existingJava;
+    }
+
+    protected static async Task<string> GetGitHubRepositoryLatestReleaseAssetAsync(string ownerName, string repositoryName, Predicate<string> assetFilter, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 

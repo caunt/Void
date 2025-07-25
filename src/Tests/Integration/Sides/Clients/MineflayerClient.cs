@@ -69,7 +69,7 @@ public class MineflayerClient : IntegrationSideBase
 
     public async Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
     {
-        StartApplication(_nodePath, _scriptPath, address, protocolVersion.MostRecentSupportedVersion, text);
+        StartApplication(_nodePath, hasInput: false, _scriptPath, address, protocolVersion.MostRecentSupportedVersion, text);
 
         var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
 
