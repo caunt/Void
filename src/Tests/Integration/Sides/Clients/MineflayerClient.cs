@@ -18,7 +18,6 @@ using Xunit;
 
 public class MineflayerClient : IntegrationSideBase
 {
-    private readonly string _workingDirectory;
     private readonly string _nodePath;
     private readonly string _scriptPath;
 
@@ -26,9 +25,8 @@ public class MineflayerClient : IntegrationSideBase
                 .Range(ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_8)
                 .Except([ProtocolVersion.MINECRAFT_1_21_2])]; // Mineflayer 1.21.2 sends invalid join game packet
 
-    private MineflayerClient(string workingDirectory, string nodePath, string scriptPath)
+    private MineflayerClient(string nodePath, string scriptPath)
     {
-        _workingDirectory = workingDirectory;
         _nodePath = nodePath;
         _scriptPath = scriptPath;
     }
@@ -66,7 +64,7 @@ public class MineflayerClient : IntegrationSideBase
         if (!OperatingSystem.IsWindows())
             File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
-        return new(workingDirectory, nodePath, scriptPath);
+        return new(nodePath, scriptPath);
     }
 
     public async Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
