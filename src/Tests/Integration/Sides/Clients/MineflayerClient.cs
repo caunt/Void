@@ -165,6 +165,10 @@ public class MineflayerClient : IntegrationSideBase
     private static async Task InstallMineflayerAsync(string nodePath, string workingDirectory, CancellationToken cancellationToken)
     {
         var nodeRoot = Path.GetDirectoryName(nodePath) ?? throw new IntegrationTestException("Invalid Node path");
+
+        if (nodeRoot.EndsWith("bin"))
+            nodeRoot = Path.GetDirectoryName(nodeRoot) ?? throw new IntegrationTestException("Invalid Node path");
+
         var npmCli = Path.Combine(nodeRoot, "lib", "node_modules", "npm", "bin", "npm-cli.js");
 
         if (!File.Exists(npmCli))
