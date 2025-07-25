@@ -7,8 +7,6 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Network;
@@ -23,16 +21,14 @@ public class HeadlessMcClient : IntegrationSideBase
     private const string RepositoryOwnerName = "3arthqu4ke";
     private const string RepositoryName = "HeadlessMC";
 
-    private readonly string _workingDirectory;
     private readonly string _launcherPath;
 
-    public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [
-        .. ProtocolVersion.Range(ProtocolVersion.MINECRAFT_1_21_5, ProtocolVersion.MINECRAFT_1_7_2)
+    public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion
+        .Range(ProtocolVersion.MINECRAFT_1_21_5, ProtocolVersion.MINECRAFT_1_7_2)
     ];
 
-    private HeadlessMcClient(string workingDirectory, string launcherPath, string jrePath)
+    private HeadlessMcClient(string launcherPath, string jrePath)
     {
-        _workingDirectory = workingDirectory;
         _launcherPath = launcherPath;
         _jreBinaryPath = jrePath;
     }
@@ -47,7 +43,7 @@ public class HeadlessMcClient : IntegrationSideBase
         var jrePath = await SetupJreAsync(workingDirectory, client, cancellationToken);
         var launcherPath = await DownloadLauncherAsync(workingDirectory, client, cancellationToken);
 
-        return new HeadlessMcClient(workingDirectory, launcherPath, jrePath);
+        return new HeadlessMcClient(launcherPath, jrePath);
     }
 
     public async Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
@@ -68,7 +64,9 @@ public class HeadlessMcClient : IntegrationSideBase
         {
             await ReceiveOutputAsync(line => line.Contains("joined the game"), cancellationToken);
             await SendCommandAsync($"msg {text}", cancellationToken);
+
             await Task.Delay(5000, cancellationToken);
+
             await SendCommandAsync("quit", cancellationToken);
             await _process.ExitAsync(entireProcessTree: true, cancellationToken);
         }
@@ -137,13 +135,16 @@ public class HeadlessMcClient : IntegrationSideBase
             startInfo.ArgumentList.Add(argument);
 
         _process = Process.Start(startInfo) ?? throw new IntegrationTestException($"Failed to start process for {fileName}");
+
         void Handler(object? _, DataReceivedEventArgs e)
         {
             if (e.Data is not null)
                 _logs.Add(e.Data);
         }
+
         _process.OutputDataReceived += Handler;
         _process.ErrorDataReceived += Handler;
+
         _process.BeginOutputReadLine();
         _process.BeginErrorReadLine();
     }
@@ -154,7 +155,7 @@ public class HeadlessMcClient : IntegrationSideBase
             throw new IntegrationTestException("Process standard input is not available");
 
         await _process.StandardInput.WriteLineAsync(command.AsMemory(), cancellationToken);
-        await _process.StandardInput.FlushAsync();
+        await _process.StandardInput.FlushAsync(cancellationToken);
     }
 
     private static async Task<string> DownloadLauncherAsync(string workingDirectory, HttpClient client, CancellationToken cancellationToken)
@@ -169,6 +170,7 @@ public class HeadlessMcClient : IntegrationSideBase
     {
         var jreWorkingDirectory = Path.Combine(workingDirectory, "jre21");
         var javaExecutableName = OperatingSystem.IsWindows() ? "java.exe" : "java";
+
         var existingJava = Directory.Exists(jreWorkingDirectory)
             ? Directory.GetFiles(jreWorkingDirectory, javaExecutableName, SearchOption.AllDirectories).FirstOrDefault()
             : null;
