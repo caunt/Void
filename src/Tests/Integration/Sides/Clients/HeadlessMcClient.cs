@@ -37,9 +37,9 @@ public class HeadlessMcClient : IntegrationSideBase
         if (!Directory.Exists(workingDirectory))
             Directory.CreateDirectory(workingDirectory);
 
-        var url = await GetGitHubRepositoryLatestReleaseAssetAsync(RepositoryOwnerName, RepositoryName, name => name.StartsWith("headlessmc-launcher") && name.EndsWith(".jar"), cancellationToken);
+        var url = await GetGitHubRepositoryLatestReleaseAssetAsync(RepositoryOwnerName, RepositoryName, name => name.StartsWith("headlessmc-launcher-wrapper") && name.EndsWith(".jar"), cancellationToken);
 
-        var launcherPath = Path.Combine(workingDirectory, "headlessmc-launcher.jar");
+        var launcherPath = Path.Combine(workingDirectory, "headlessmc-launcher-wrapper.jar");
         await client.DownloadFileAsync(url, launcherPath, cancellationToken);
 
         return new HeadlessMcClient(launcherPath, jreBinaryPath);
