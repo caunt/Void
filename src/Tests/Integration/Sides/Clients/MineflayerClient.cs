@@ -22,10 +22,7 @@ public class MineflayerClient : IntegrationSideBase
     private readonly string _nodePath;
     private readonly string _scriptPath;
 
-    public static TheoryData<ProtocolVersion> SupportedVersions { get; } = new()
-    {
-        ProtocolVersion.MINECRAFT_1_20_3
-    };
+    public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion.Range(ProtocolVersion.MINECRAFT_1_20_3, ProtocolVersion.MINECRAFT_1_8)];
 
     private MineflayerClient(string workingDirectory, string nodePath, string scriptPath)
     {
@@ -52,7 +49,7 @@ public class MineflayerClient : IntegrationSideBase
     {
         StartApplication(_nodePath, _scriptPath, address, protocolVersion.MostRecentSupportedVersion, text);
 
-        var consoleTask = ReceiveOutputAsync(line => line.Contains("spawn"), cancellationToken);
+        var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
 
         if (_process is not { HasExited: false })
             throw new IntegrationTestException("Failed to start Mineflayer bot.");
@@ -67,6 +64,20 @@ public class MineflayerClient : IntegrationSideBase
             if (_process is { HasExited: false })
                 await _process.ExitAsync(entireProcessTree: true, cancellationToken);
         }
+    }
+
+    private static bool HandleConsole(string line)
+    {
+        if (line.StartsWith("ERROR:"))
+            throw new IntegrationTestException(line);
+
+        if (line.StartsWith("KICK:"))
+            throw new IntegrationTestException(line);
+
+        if (line.Contains("spawn"))
+            return true;
+
+        return false;
     }
 
     private static async Task<string> SetupNodeAsync(string workingDirectory, HttpClient client, CancellationToken cancellationToken)
@@ -127,7 +138,9 @@ public class MineflayerClient : IntegrationSideBase
 
     private static async Task InstallMineflayerAsync(string nodePath, string workingDirectory, CancellationToken cancellationToken)
     {
-        var nodeRoot = Directory.GetParent(Path.GetDirectoryName(nodePath)!)!.FullName;
+        var nodeDirectoryName = Path.GetDirectoryName(nodePath) ?? throw new IntegrationTestException("Invalid Node path");
+        var nodeRootDirectory = Directory.GetParent(nodeDirectoryName) ?? throw new IntegrationTestException("Failed to resolve Node root");
+        var nodeRoot = nodeRootDirectory.FullName;
         var npmCli = Path.Combine(nodeRoot, "lib", "node_modules", "npm", "bin", "npm-cli.js");
 
         await RunProcessAsync(nodePath, [npmCli, "init", "-y"], workingDirectory, cancellationToken);

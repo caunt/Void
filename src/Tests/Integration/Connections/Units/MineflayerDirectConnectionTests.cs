@@ -11,7 +11,7 @@ namespace Void.Tests.Integration.Connections.Units;
 public class MineflayerDirectConnectionTests(MineflayerDirectConnectionTests.PaperMineflayerFixture fixture) : ConnectionUnitBase, IClassFixture<MineflayerDirectConnectionTests.PaperMineflayerFixture>
 {
     private const int ServerPort = 26000;
-    private const string ExpectedText = "hello mineflayer!";
+    private const string ExpectedText = "hello void!";
 
     [Fact]
     public async Task MineflayerConnectsToPaperServer()
@@ -19,13 +19,16 @@ public class MineflayerDirectConnectionTests(MineflayerDirectConnectionTests.Pap
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(Timeout);
 
+        var client = fixture.Client ?? throw new InvalidOperationException("Client not initialized");
+        var server = fixture.Server ?? throw new InvalidOperationException("Server not initialized");
+
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.Client.SendTextMessageAsync($"localhost:{ServerPort}", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
-            await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
+            await client.SendTextMessageAsync($"localhost:{ServerPort}", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
+            await server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
-            Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
-        }, fixture.Client, fixture.Server);
+            Assert.Contains(server.Logs, line => line.Contains(expectedText));
+        }, client, server);
     }
 
     [Theory]
@@ -35,13 +38,16 @@ public class MineflayerDirectConnectionTests(MineflayerDirectConnectionTests.Pap
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(Timeout);
 
+        var client = fixture.Client ?? throw new InvalidOperationException("Client not initialized");
+        var server = fixture.Server ?? throw new InvalidOperationException("Server not initialized");
+
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.Client.SendTextMessageAsync($"localhost:{ServerPort}", protocolVersion, expectedText, cancellationTokenSource.Token);
-            await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
+            await client.SendTextMessageAsync($"localhost:{ServerPort}", protocolVersion, expectedText, cancellationTokenSource.Token);
+            await server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
-            Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
-        }, fixture.Client, fixture.Server);
+            Assert.Contains(server.Logs, line => line.Contains(expectedText));
+        }, client, server);
     }
 
     public class PaperMineflayerFixture : ConnectionFixtureBase, IAsyncLifetime
@@ -50,8 +56,8 @@ public class MineflayerDirectConnectionTests(MineflayerDirectConnectionTests.Pap
         {
         }
 
-        public PaperServer Server { get; private set; } = null!;
-        public MineflayerClient Client { get; private set; } = null!;
+        public PaperServer? Server { get; private set; }
+        public MineflayerClient? Client { get; private set; }
 
         public async Task InitializeAsync()
         {
