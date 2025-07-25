@@ -77,16 +77,44 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
         }, fixture.MineflayerClient, fixture.VoidProxy, fixture.PaperServer);
     }
 
+    [Fact]
+    public async Task HeadlessMcConnectsToPaperServerThroughProxy()
+    {
+        var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
+        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
+        await LoggedExecutorAsync(async () =>
+        {
+            await fixture.HeadlessMcClient.SendTextMessageAsync($"localhost:{ProxyPort}", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
+            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
+            Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
+        }, fixture.HeadlessMcClient, fixture.VoidProxy, fixture.PaperServer);
+    }
+
+    [Theory]
+    [MemberData(nameof(HeadlessMcClient.SupportedVersions), MemberType = typeof(HeadlessMcClient))]
+    public async Task HeadlessMcConnectsToPaperServerThroughProxy_WithProtocolVersion(ProtocolVersion protocolVersion)
+    {
+        var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
+        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
+        await LoggedExecutorAsync(async () =>
+        {
+            await fixture.HeadlessMcClient.SendTextMessageAsync($"localhost:{ProxyPort}", protocolVersion, expectedText, cancellationTokenSource.Token);
+            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
+            Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
+        }, fixture.HeadlessMcClient, fixture.VoidProxy, fixture.PaperServer);
+    }
+
     public class PaperVoidMccFixture : ConnectionFixtureBase, IAsyncLifetime
     {
         public PaperVoidMccFixture() : base(nameof(ProxiedConnectionTests))
         {
         }
 
-        public PaperServer PaperServer { get; private set; } = null!;
-        public VoidProxy VoidProxy { get; private set; } = null!;
         public MinecraftConsoleClient MinecraftConsoleClient { get; private set; } = null!;
         public MineflayerClient MineflayerClient { get; private set; } = null!;
+        public HeadlessMcClient HeadlessMcClient { get; private set; } = null!;
+        public PaperServer PaperServer { get; private set; } = null!;
+        public VoidProxy VoidProxy { get; private set; } = null!;
 
         public async Task InitializeAsync()
         {
@@ -94,6 +122,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
 
             MinecraftConsoleClient = await MinecraftConsoleClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
             MineflayerClient = await MineflayerClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
+            HeadlessMcClient = await HeadlessMcClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
             PaperServer = await PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: cancellationTokenSource.Token);
             VoidProxy = await VoidProxy.CreateAsync(targetServer: $"localhost:{ServerPort}", proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
         }
@@ -105,6 +134,9 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
 
             if (MineflayerClient is not null)
                 await MineflayerClient.DisposeAsync();
+
+            if (HeadlessMcClient is not null)
+                await HeadlessMcClient.DisposeAsync();
 
             if (PaperServer is not null)
                 await PaperServer.DisposeAsync();
