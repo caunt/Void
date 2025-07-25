@@ -37,6 +37,7 @@ Follow the existing C# style rules:
 - Async methods carry an `Async` suffix.
 - Pattern matching is preferred over explicit casts.
 - `nameof` is used for parameter checks, logging, and exceptions.
+- Never use the null-forgiving `!` operator to silence possible null reference warnings.
 
 ## Development
 
