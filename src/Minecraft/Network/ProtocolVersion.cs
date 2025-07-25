@@ -187,6 +187,6 @@ public class ProtocolVersion : IComparable
 
     public override string ToString()
     {
-        return VersionIntroducedIn;
+        return Names.Length is 1 ? Names[0] : $"[{string.Join(",", Names)}]";
     }
 }
