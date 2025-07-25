@@ -44,8 +44,7 @@ public abstract class IntegrationSideBase : IIntegrationSide
 
         _logs.Clear();
 
-        var arguments = new List<string>(userArguments);
-        var protocols = new[] { "http", "https" };
+        var arguments = new List<string>(userArguments.Length);
 
         var isJar = fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase);
         var processStartInfo = new ProcessStartInfo(fileName: isJar ? (File.Exists(_jreBinaryPath) ? _jreBinaryPath : throw new IntegrationTestException("JRE is not installed")) : fileName)
@@ -57,7 +56,7 @@ public abstract class IntegrationSideBase : IIntegrationSide
             UseShellExecute = false
         };
 
-        foreach (var protocol in protocols)
+        foreach (var protocol in new[] { "http", "https" })
         {
             var name = protocol + "_proxy";
             var variants = new[] { name, name.ToUpperInvariant() };
@@ -93,6 +92,8 @@ public abstract class IntegrationSideBase : IIntegrationSide
             arguments.Add(fileName);
             arguments.Add("--nogui");
         }
+
+        arguments.AddRange(userArguments);
 
         foreach (var argument in arguments)
             processStartInfo.ArgumentList.Add(argument);
