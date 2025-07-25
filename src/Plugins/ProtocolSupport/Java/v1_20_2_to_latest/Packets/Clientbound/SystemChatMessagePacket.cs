@@ -9,6 +9,7 @@ namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clie
 public class SystemChatMessagePacket : IMinecraftClientboundPacket<SystemChatMessagePacket>
 {
     public static MinecraftPacketTransformationMapping[] Transformations { get; } = [
+        // Not working since 1.20.2 (including)
         // TODO - upgrade packet here, not rely on protocolVersion below
         //
         // new(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.MINECRAFT_1_20_3, wrapper =>
