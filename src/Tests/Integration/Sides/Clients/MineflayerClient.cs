@@ -78,7 +78,7 @@ public class MineflayerClient : IntegrationSideBase
         if (line.StartsWith("KICK:"))
             throw new IntegrationTestException(line);
 
-        if (line.Contains("spawn"))
+        if (line.Contains("end"))
             return true;
 
         return false;
@@ -162,14 +162,15 @@ const port = parseInt(portStr ?? '25565', 10);
 const bot = mineflayer.createBot({ host, port, username: 'void', version });
 
 bot.on('spawn', () => {
-    console.log('spawn');
     bot.chat(text);
-    setTimeout(() => bot.end(), 1000);
+    setTimeout(() => {
+        console.log('end');
+        bot.end();
+    }, 5000);
 });
 
 bot.on('kicked', reason => console.error('KICK:' + reason));
 bot.on('error', err => console.error('ERROR:' + err.message));
-bot.on('end', () => console.log('end'));
 """, cancellationToken);
         if (!OperatingSystem.IsWindows())
             File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
