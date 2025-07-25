@@ -56,9 +56,6 @@ public class HeadlessMcClient : IntegrationSideBase
             "-specifics",
             $"--game-args \"--quickPlayMultiplayer {address}\"");
 
-        if (_process is not { HasExited: false })
-            throw new IntegrationTestException("Failed to start HeadlessMC.");
-
         try
         {
             await ExpectTextAsync("joined the game", lookupHistory: true, cancellationToken);
@@ -67,7 +64,9 @@ public class HeadlessMcClient : IntegrationSideBase
             await Task.Delay(5000, cancellationToken);
 
             await WriteInputAsync("quit", cancellationToken);
-            await _process.ExitAsync(entireProcessTree: true, cancellationToken);
+
+            if (_process is { HasExited: false })
+                await _process.ExitAsync(entireProcessTree: true, cancellationToken);
         }
         finally
         {
