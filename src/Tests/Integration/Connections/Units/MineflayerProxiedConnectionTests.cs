@@ -21,17 +21,13 @@ public class MineflayerProxiedConnectionTests(MineflayerProxiedConnectionTests.P
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(Timeout);
 
-        var client = fixture.Client ?? throw new InvalidOperationException("Client not initialized");
-        var proxy = fixture.Proxy ?? throw new InvalidOperationException("Proxy not initialized");
-        var server = fixture.Server ?? throw new InvalidOperationException("Server not initialized");
-
         await LoggedExecutorAsync(async () =>
         {
-            await client.SendTextMessageAsync($"localhost:{ProxyPort}", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
-            await server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
+            await fixture.Client.SendTextMessageAsync($"localhost:{ProxyPort}", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
+            await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
-            Assert.Contains(server.Logs, line => line.Contains(expectedText));
-        }, client, proxy, server);
+            Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
+        }, fixture.Client, fixture.Proxy, fixture.Server);
     }
 
     [Theory]
@@ -41,17 +37,13 @@ public class MineflayerProxiedConnectionTests(MineflayerProxiedConnectionTests.P
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(Timeout);
 
-        var client = fixture.Client ?? throw new InvalidOperationException("Client not initialized");
-        var proxy = fixture.Proxy ?? throw new InvalidOperationException("Proxy not initialized");
-        var server = fixture.Server ?? throw new InvalidOperationException("Server not initialized");
-
         await LoggedExecutorAsync(async () =>
         {
-            await client.SendTextMessageAsync($"localhost:{ProxyPort}", protocolVersion, expectedText, cancellationTokenSource.Token);
-            await server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
+            await fixture.Client.SendTextMessageAsync($"localhost:{ProxyPort}", protocolVersion, expectedText, cancellationTokenSource.Token);
+            await fixture.Server.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
-            Assert.Contains(server.Logs, line => line.Contains(expectedText));
-        }, client, proxy, server);
+            Assert.Contains(fixture.Server.Logs, line => line.Contains(expectedText));
+        }, fixture.Client, fixture.Proxy, fixture.Server);
     }
 
     public class PaperVoidMineflayerFixture : ConnectionFixtureBase, IAsyncLifetime
@@ -60,9 +52,9 @@ public class MineflayerProxiedConnectionTests(MineflayerProxiedConnectionTests.P
         {
         }
 
-        public PaperServer? Server { get; private set; }
-        public VoidProxy? Proxy { get; private set; }
-        public MineflayerClient? Client { get; private set; }
+        public PaperServer Server { get; private set; } = null!;
+        public VoidProxy Proxy { get; private set; } = null!;
+        public MineflayerClient Client { get; private set; } = null!;
 
         public async Task InitializeAsync()
         {
