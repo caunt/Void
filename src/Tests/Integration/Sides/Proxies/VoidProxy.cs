@@ -2,6 +2,7 @@ namespace Void.Tests.Integration.Sides.Proxies;
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Proxy;
@@ -22,7 +23,7 @@ public class VoidProxy : IIntegrationSide
         _cancellationTokenSource = cancellationTokenSource;
     }
 
-    public static Task<VoidProxy> CreateAsync(string targetServer, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
+    public static async Task<VoidProxy> CreateAsync(string targetServer, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
     {
         var logWriter = new CollectingTextWriter();
         var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -41,7 +42,13 @@ public class VoidProxy : IIntegrationSide
         if (offlineMode)
             args.Add("--offline");
 
-        return Task.FromResult(new VoidProxy(logWriter, EntryPoint.RunAsync(logWriter: logWriter, cancellationToken: cancellationToken, args: [.. args]), cancellationTokenSource));
+        var task = EntryPoint.RunAsync(logWriter: logWriter, cancellationToken: cancellationToken, args: [.. args]);
+
+        // Wait for the proxy to start, because it takes some time to listen on the port
+        while (logWriter.Lines.All(line => !line.Contains("Proxy started")))
+            await Task.Delay(1_000, cancellationToken);
+
+        return new VoidProxy(logWriter, task, cancellationTokenSource);
     }
 
     public async ValueTask DisposeAsync()
