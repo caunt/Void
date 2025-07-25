@@ -22,11 +22,9 @@ public class MineflayerClient : IntegrationSideBase
     private readonly string _nodePath;
     private readonly string _scriptPath;
 
-    public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [
-        .. ProtocolVersion
-            .Range(ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_8)
-            .Except([ProtocolVersion.MINECRAFT_1_21_2])
-    ];
+    public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion
+                .Range(ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_8)
+                .Except([ProtocolVersion.MINECRAFT_1_21_2])]; // Mineflayer 1.21.2 sends invalid join game packet
 
     private MineflayerClient(string workingDirectory, string nodePath, string scriptPath)
     {
@@ -44,7 +42,29 @@ public class MineflayerClient : IntegrationSideBase
 
         var nodePath = await SetupNodeAsync(workingDirectory, client, cancellationToken);
         await InstallMineflayerAsync(nodePath, workingDirectory, cancellationToken);
-        var scriptPath = await WriteBotScriptAsync(workingDirectory, cancellationToken);
+
+        var scriptPath = Path.Combine(workingDirectory, "bot.js");
+        await File.WriteAllTextAsync(scriptPath, """
+            const mineflayer = require('mineflayer');
+            const [address, version, text] = process.argv.slice(2);
+            const [host, portString] = address.split(':');
+            const port = parseInt(portString ?? '25565', 10);
+            const bot = mineflayer.createBot({ host, port, username: 'void', version });
+
+            bot.on('spawn', () => {
+                bot.chat(text);
+                setTimeout(() => {
+                    console.log('end');
+                    bot.end();
+                }, 5000);
+            });
+
+            bot.on('kicked', reason => console.error('KICK:' + reason));
+            bot.on('error', err => console.error('ERROR:' + err.message));
+            """, cancellationToken);
+
+        if (!OperatingSystem.IsWindows())
+            File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
         return new(workingDirectory, nodePath, scriptPath);
     }
@@ -88,6 +108,7 @@ public class MineflayerClient : IntegrationSideBase
     {
         var nodeDirectory = Path.Combine(workingDirectory, "node");
         var nodeExecutableName = OperatingSystem.IsWindows() ? "node.exe" : "node";
+
         var existingNode = Directory.Exists(nodeDirectory)
             ? Directory.GetFiles(nodeDirectory, nodeExecutableName, SearchOption.AllDirectories).FirstOrDefault()
             : null;
@@ -99,6 +120,7 @@ public class MineflayerClient : IntegrationSideBase
 
             var indexJson = await client.GetStringAsync("https://nodejs.org/dist/index.json", cancellationToken);
             using var index = JsonDocument.Parse(indexJson);
+
             var ltsVersion = index.RootElement.EnumerateArray()
                 .First(element => element.TryGetProperty("lts", out var lts) && lts.ValueKind != JsonValueKind.False)
                 .GetProperty("version").GetString();
@@ -142,69 +164,42 @@ public class MineflayerClient : IntegrationSideBase
 
     private static async Task InstallMineflayerAsync(string nodePath, string workingDirectory, CancellationToken cancellationToken)
     {
-        var nodeDirectoryName = Path.GetDirectoryName(nodePath) ?? throw new IntegrationTestException("Invalid Node path");
-        var nodeRootDirectory = Directory.GetParent(nodeDirectoryName) ?? throw new IntegrationTestException("Failed to resolve Node root");
-        var nodeRoot = nodeRootDirectory.FullName;
+        var nodeRoot = Path.GetDirectoryName(nodePath) ?? throw new IntegrationTestException("Invalid Node path");
         var npmCli = Path.Combine(nodeRoot, "lib", "node_modules", "npm", "bin", "npm-cli.js");
+
         if (!File.Exists(npmCli))
             npmCli = Path.Combine(nodeRoot, "node_modules", "npm", "bin", "npm-cli.js");
 
-        await RunProcessAsync(nodePath, [npmCli, "init", "-y"], workingDirectory, cancellationToken);
-        await RunProcessAsync(nodePath, [npmCli, "install", "mineflayer"], workingDirectory, cancellationToken);
-    }
+        await RunNpmAsync(npmCli, "init", "-y");
+        await RunNpmAsync(npmCli, "install", "mineflayer");
 
-    private static async Task<string> WriteBotScriptAsync(string workingDirectory, CancellationToken cancellationToken)
-    {
-        var scriptPath = Path.Combine(workingDirectory, "bot.js");
-        await File.WriteAllTextAsync(scriptPath, """
-const mineflayer = require('mineflayer');
-const [address, version, text] = process.argv.slice(2);
-const [host, portStr] = address.split(':');
-const port = parseInt(portStr ?? '25565', 10);
-const bot = mineflayer.createBot({ host, port, username: 'void', version });
-
-bot.on('spawn', () => {
-    bot.chat(text);
-    setTimeout(() => {
-        console.log('end');
-        bot.end();
-    }, 5000);
-});
-
-bot.on('kicked', reason => console.error('KICK:' + reason));
-bot.on('error', err => console.error('ERROR:' + err.message));
-""", cancellationToken);
-        if (!OperatingSystem.IsWindows())
-            File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
-        return scriptPath;
-    }
-
-    private static async Task RunProcessAsync(string fileName, string[] arguments, string workingDirectory, CancellationToken cancellationToken)
-    {
-        var startInfo = new ProcessStartInfo(fileName)
+        async Task RunNpmAsync(params string[] arguments)
         {
-            WorkingDirectory = workingDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
+            var startInfo = new ProcessStartInfo(nodePath)
+            {
+                WorkingDirectory = workingDirectory,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
 
-        foreach (var arg in arguments)
-            startInfo.ArgumentList.Add(arg);
+            foreach (var argument in arguments)
+                startInfo.ArgumentList.Add(argument);
 
-        using var process = Process.Start(startInfo) ?? throw new IntegrationTestException($"Failed to start {fileName}");
+            using var process = Process.Start(startInfo) ?? throw new IntegrationTestException($"Failed to start NPM at {nodePath}");
 
-        var stdOutTask = process.StandardOutput.ReadToEndAsync();
-        var stdErrTask = process.StandardError.ReadToEndAsync();
+            var stdOutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+            var stdErrTask = process.StandardError.ReadToEndAsync(cancellationToken);
 
-        await process.WaitForExitAsync(cancellationToken);
+            await process.WaitForExitAsync(cancellationToken);
 
-        var stdOut = await stdOutTask;
-        var stdErr = await stdErrTask;
+            var stdOut = await stdOutTask;
+            var stdErr = await stdErrTask;
 
-        if (process.ExitCode != 0)
-        {
-            var logs = $"STDOUT:\n{stdOut}\nSTDERR:\n{stdErr}";
-            throw new IntegrationTestException($"Process {fileName} exited with code {process.ExitCode}\n{logs}");
+            if (process.ExitCode != 0)
+            {
+                var logs = $"STDOUT:\n{stdOut}\nSTDERR:\n{stdErr}";
+                throw new IntegrationTestException($"NPM at {nodePath} exited with code {process.ExitCode}\n{logs}");
+            }
         }
     }
 }
