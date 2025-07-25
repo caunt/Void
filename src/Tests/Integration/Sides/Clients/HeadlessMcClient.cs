@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,21 +47,21 @@ public class HeadlessMcClient : IntegrationSideBase
 
     public async Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
     {
-        StartApplication(_launcherPath, hasInput: true,
-            "launch",
-            $"vanilla:{protocolVersion.MostRecentSupportedVersion}",
-            "-lwjgl",
-            "-offline",
+        StartApplication(_launcherPath, hasInput: false,
+            "--command",
+            $"launch {protocolVersion.MostRecentSupportedVersion} " +
+            "-lwjgl " +
+            "-offline " +
+            "-paulscode " +
             "-specifics",
-            "--game-args",
-            $"--quickPlayMultiplayer {address}");
+            $"--game-args \"--quickPlayMultiplayer {address}\"");
 
         if (_process is not { HasExited: false })
             throw new IntegrationTestException("Failed to start HeadlessMC.");
 
         try
         {
-            await ReceiveOutputAsync(line => line.Contains("joined the game"), cancellationToken);
+            await ExpectTextAsync("joined the game", lookupHistory: true, cancellationToken);
             await WriteInputAsync($"msg {text}", cancellationToken);
 
             await Task.Delay(5000, cancellationToken);
@@ -73,6 +74,28 @@ public class HeadlessMcClient : IntegrationSideBase
             if (_process is { HasExited: false })
                 await _process.ExitAsync(entireProcessTree: true, cancellationToken);
         }
+    }
+
+    public async Task ExpectTextAsync(string text, bool lookupHistory = true, CancellationToken cancellationToken = default)
+    {
+        if (_process is not { HasExited: false })
+            throw new IntegrationTestException($"Failed to start {nameof(HeadlessMcClient)}.");
+
+        if (lookupHistory && Logs.Any(log => log.Contains(text)))
+            return;
+
+        await ReceiveOutputAsync(line => HandleConsole(line, text), cancellationToken);
+    }
+
+    private static bool HandleConsole(string line, string expectedText)
+    {
+        if (line.Contains("java.lang.ClassNotFoundException"))
+            throw new IntegrationTestException($"Failed to launch HeadlessMC ({line}).");
+
+        if (line.Contains(expectedText))
+            return true;
+
+        return false;
     }
 
     private async Task WriteInputAsync(string command, CancellationToken cancellationToken)
