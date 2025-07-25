@@ -77,7 +77,7 @@ public class MinecraftConsoleClient : IntegrationSideBase
             Action = "send {text}"
             """, cancellationToken);
 
-        StartApplication(_binaryPath, "void", "-", address, $"send {text}");
+        StartApplication(_binaryPath, nameof(MinecraftConsoleClient), "-", address, $"send {text}");
 
         var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
 

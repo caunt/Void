@@ -42,12 +42,12 @@ public class MineflayerClient : IntegrationSideBase
         await InstallMineflayerAsync(nodePath, workingDirectory, cancellationToken);
 
         var scriptPath = Path.Combine(workingDirectory, "bot.js");
-        await File.WriteAllTextAsync(scriptPath, """
+        await File.WriteAllTextAsync(scriptPath, $$"""
             const mineflayer = require('mineflayer');
             const [address, version, text] = process.argv.slice(2);
             const [host, portString] = address.split(':');
             const port = parseInt(portString ?? '25565', 10);
-            const bot = mineflayer.createBot({ host, port, username: 'void', version });
+            const bot = mineflayer.createBot({ host, port, username: '{{nameof(MineflayerClient)}}', version });
 
             bot.on('spawn', () => {
                 bot.chat(text);
