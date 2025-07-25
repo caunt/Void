@@ -21,6 +21,7 @@ on:
 jobs:
   semver:
     uses: ./.github/workflows/version.yaml
+    secrets: inherit
     with:
       dotnet-version: ${{ github.event.inputs.dotnet-version }}
 
