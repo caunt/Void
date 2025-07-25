@@ -189,9 +189,19 @@ bot.on('end', () => console.log('end'));
             startInfo.ArgumentList.Add(arg);
 
         using var process = Process.Start(startInfo) ?? throw new IntegrationTestException($"Failed to start {fileName}");
+
+        var stdOutTask = process.StandardOutput.ReadToEndAsync();
+        var stdErrTask = process.StandardError.ReadToEndAsync();
+
         await process.WaitForExitAsync(cancellationToken);
 
+        var stdOut = await stdOutTask;
+        var stdErr = await stdErrTask;
+
         if (process.ExitCode != 0)
-            throw new IntegrationTestException($"Process {fileName} exited with code {process.ExitCode}");
+        {
+            var logs = $"STDOUT:\n{stdOut}\nSTDERR:\n{stdErr}";
+            throw new IntegrationTestException($"Process {fileName} exited with code {process.ExitCode}\n{logs}");
+        }
     }
 }
