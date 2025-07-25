@@ -35,6 +35,8 @@ public abstract class IntegrationSideBase : IIntegrationSide
         if (_process is { HasExited: false })
             throw new IntegrationTestException($"Process for {fileName} is already running.");
 
+        _logs.Clear();
+
         var arguments = new List<string>(userArguments);
         var protocols = new[] { "http", "https" };
 
