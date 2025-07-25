@@ -146,6 +146,8 @@ public class MineflayerClient : IntegrationSideBase
         var nodeRootDirectory = Directory.GetParent(nodeDirectoryName) ?? throw new IntegrationTestException("Failed to resolve Node root");
         var nodeRoot = nodeRootDirectory.FullName;
         var npmCli = Path.Combine(nodeRoot, "lib", "node_modules", "npm", "bin", "npm-cli.js");
+        if (!File.Exists(npmCli))
+            npmCli = Path.Combine(nodeRoot, "node_modules", "npm", "bin", "npm-cli.js");
 
         await RunProcessAsync(nodePath, [npmCli, "init", "-y"], workingDirectory, cancellationToken);
         await RunProcessAsync(nodePath, [npmCli, "install", "mineflayer"], workingDirectory, cancellationToken);
