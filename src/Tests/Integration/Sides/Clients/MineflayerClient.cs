@@ -24,7 +24,7 @@ public class MineflayerClient : IntegrationSideBase
 
     public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [
         .. ProtocolVersion
-            .Range(ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_7_6)
+            .Range(ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_8)
             .Except([ProtocolVersion.MINECRAFT_1_21_2])
     ];
 
