@@ -136,7 +136,8 @@ public abstract class IntegrationSideBase : IIntegrationSide
             }
             catch (Exception exception)
             {
-                taskCompletionSource.SetException(exception);
+                if (!taskCompletionSource.TrySetException(exception))
+                    Console.WriteLine($"Failed to set exception for task completion source in {nameof(IntegrationSideBase)}.{nameof(ReceiveOutputAsync)}: {exception}");
             }
         }
 
