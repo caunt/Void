@@ -47,18 +47,20 @@ public class HeadlessMcClient : IntegrationSideBase
 
     public async Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
     {
-        StartApplication(_launcherPath, hasInput: false,
+        StartApplication(_launcherPath, hasInput: true,
             "--command",
             $"launch {protocolVersion.MostRecentSupportedVersion} " +
             "-lwjgl " +
             "-offline " +
             "-paulscode " +
-            "-specifics",
-            $"--game-args \"--quickPlayMultiplayer {address}\"");
+            "-specifics");
+        await ExpectTextAsync("HeadlessMc Runtime initialized.", lookupHistory: true, cancellationToken);
+
+        await WriteInputAsync($"connect {address}", cancellationToken);
+        await ExpectTextAsync("joined the game", lookupHistory: true, cancellationToken);
 
         try
         {
-            await ExpectTextAsync("joined the game", lookupHistory: true, cancellationToken);
             await WriteInputAsync($"msg {text}", cancellationToken);
 
             await Task.Delay(5000, cancellationToken);
