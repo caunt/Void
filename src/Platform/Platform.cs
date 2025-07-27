@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using Microsoft.Extensions.Logging;
 using Serilog.Core;
 using Serilog.Events;
 using Void.Proxy.Api;
@@ -33,6 +34,7 @@ public class Platform(
     private static readonly Option<int> _portOption = new("--port", description: "Sets the listening port");
     private static readonly Option<string> _interfaceOption = new("--interface", description: "Sets the listening network interface");
     private static readonly Option<bool> _offlineOption = new("--offline", description: "Allows players to connect without Mojang authorization");
+    private static readonly Option<LogLevel> _loggingOption = new("--logging", description: "Sets the logging level");
 
     private readonly IPAddress _interface = context.ParseResult.GetValueForOption(_interfaceOption) is { } value ? IPAddress.Parse(value) : settings.Address;
     private readonly int _port = context.ParseResult.HasOption(_portOption) ? context.ParseResult.GetValueForOption(_portOption) : settings.Port;
@@ -121,6 +123,9 @@ public class Platform(
         LoggingLevelSwitch.MinimumLevel = LogEventLevel.Debug;
 #endif
 
+        if (context.ParseResult.GetValueForOption(_loggingOption) is { } level)
+            LoggingLevelSwitch.MinimumLevel = (LogEventLevel)level;
+
         logger.LogInformation("Starting {Name} {Version} proxy", nameof(Void), "v" + GetType().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion);
         var startTime = Stopwatch.GetTimestamp();
 
@@ -191,6 +196,7 @@ public class Platform(
         command.AddOption(_interfaceOption);
         command.AddOption(_portOption);
         command.AddOption(_offlineOption);
+        command.AddOption(_loggingOption);
     }
 
     private async Task ExecuteAsync(CancellationToken cancellationToken)

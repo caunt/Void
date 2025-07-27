@@ -27,6 +27,7 @@ Options:
   --port <port>                  Overrides the listening port
   --ignore-file-servers          Ignore servers specified in configuration files
   --offline                      Allows players to connect without Mojang authorization
+  --logging <level>              Sets the logging level
   --version                      Show version information
   -?, -h, --help                 Show help and usage information
 ```
@@ -60,6 +61,11 @@ Options:
 - `--offline`
   Allows players to connect without Mojang authorization.
   Example: `./void-linux-x64 --offline`
+
+## Logging
+- `--logging`
+  Sets the logging level. Valid values are Trace, Debug, Information, Warning, Error and Critical.
+  Example: `./void-linux-x64 --logging Debug`
 
 ## Version
 - `--version`
