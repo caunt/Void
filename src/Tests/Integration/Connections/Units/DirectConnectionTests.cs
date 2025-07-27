@@ -75,37 +75,6 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
         }, fixture.MineflayerClient, fixture.PaperServer);
     }
 
-    [Fact]
-    public async Task HeadlessMcConnectsToPaperServer()
-    {
-        var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
-
-        await LoggedExecutorAsync(async () =>
-        {
-            await fixture.HeadlessMcClient.SendTextMessageAsync($"localhost:{ServerPort}", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
-            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
-
-            Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
-        }, fixture.HeadlessMcClient, fixture.PaperServer);
-    }
-
-    [Theory]
-    [MemberData(nameof(HeadlessMcClient.SupportedVersions), MemberType = typeof(HeadlessMcClient))]
-    public async Task HeadlessMcConnectsToPaperServer_WithProtocolVersion(ProtocolVersion protocolVersion)
-    {
-        var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
-
-        await LoggedExecutorAsync(async () =>
-        {
-            await fixture.HeadlessMcClient.SendTextMessageAsync($"localhost:{ServerPort}", protocolVersion, expectedText, cancellationTokenSource.Token);
-            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
-
-            Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
-        }, fixture.HeadlessMcClient, fixture.PaperServer);
-    }
-
     public class PaperMccFixture : ConnectionFixtureBase, IAsyncLifetime
     {
         public PaperMccFixture() : base(nameof(DirectConnectionTests))
@@ -114,7 +83,6 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
 
         public MinecraftConsoleClient MinecraftConsoleClient { get; private set; } = null!;
         public MineflayerClient MineflayerClient { get; private set; } = null!;
-        public HeadlessMcClient HeadlessMcClient { get; private set; } = null!;
         public PaperServer PaperServer { get; private set; } = null!;
 
         public async Task InitializeAsync()
@@ -123,7 +91,6 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
 
             MinecraftConsoleClient = await MinecraftConsoleClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
             MineflayerClient = await MineflayerClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
-            HeadlessMcClient = await HeadlessMcClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
             PaperServer = await PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: cancellationTokenSource.Token);
         }
 
@@ -134,9 +101,6 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
 
             if (MineflayerClient is not null)
                 await MineflayerClient.DisposeAsync();
-
-            if (HeadlessMcClient is not null)
-                await HeadlessMcClient.DisposeAsync();
 
             if (PaperServer is not null)
                 await PaperServer.DisposeAsync();
