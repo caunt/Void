@@ -35,3 +35,23 @@
 
 ### **Developing Plugins:**
 Download :hammer_and_wrench: [**Plugin Development Kit**](https://github.com/caunt/Void/releases/latest/download/plugin-devkit.zip), look at the :page_facing_up: [**Documentation**](https://void.caunt.world/developing-plugins/development-kit/) and use :mag_right: [**Example Plugin**](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) as a walkthrough to create a plugin.
+
+<h5>
+  <div align="center">
+    <a href="https://t.me/mcVoidProxy">
+      <br>
+      :globe_with_meridians: News in Telegram
+      <br>
+      <img width="221" height="223" alt="Telegram Channel" src="https://github.com/user-attachments/assets/837c1969-9511-4d51-98c2-2d2b3e58a481" />
+    </a>
+  </div>
+  
+  <div align="center">
+    <a href="https://t.me/mcvoidproxyforum">
+      <br>
+      :globe_with_meridians: Discuss in Telegram
+      <br>
+      <img width="221" height="223" alt="image" src="https://github.com/user-attachments/assets/2fb48274-bc08-4544-80a9-aac3fb809ee1" />
+    </a>
+  </div>
+</h1>
