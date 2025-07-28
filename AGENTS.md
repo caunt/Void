@@ -48,6 +48,7 @@ Follow the existing C# style rules:
 - Use the `fix` or `feat` type only when your changes modify the proxy code in `./src`. For documentation, CI, or other unrelated updates, choose a more appropriate type such as `docs` or `chore`.
 - Append a [gitmoji](https://gitmoji.dev/specification) after the commit scope, e.g., `feat(api): ✨ add new endpoint`.
 - Pull request titles should follow the same Conventional Commits format.
+- Commit descriptions must state the reason for the change, describe its behavior, and note any consequences. Provide as much reasoning as possible while staying concise.
 - Never modify `CHANGELOG.md`; it is generated automatically by `release-please` from commit history.
 
 ## Protocol guidance
