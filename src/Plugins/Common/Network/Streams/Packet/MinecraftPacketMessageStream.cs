@@ -236,7 +236,7 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
         else
         {
             if (!TryGetPacketId(packet, out var id))
-                throw new InvalidOperationException($"{packet} is not registered:\n{Registries.PrintPackets()}");
+                throw new InvalidOperationException($"{packet} is not registered for writing:\n{Registries.PrintPackets()}");
 
             EncodeVarInt(stream, id);
 
