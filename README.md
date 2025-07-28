@@ -1,24 +1,13 @@
-<h1 align="center">
-  <a href="https://hub.docker.com/r/caunt/void/tags">
-    <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/caunt/void">
-  </a>
-  <a href="https://github.com/caunt/Void/issues">
-    <img alt="GitHub Issues or Pull Requests" src="https://img.shields.io/github/issues/caunt/void">
-  </a>
-  <a href="https://github.com/caunt/Void/actions">
-    <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/caunt/void/main.yaml">
-  </a>
-  <a href="https://www.nuget.org/packages/Void.Proxy.Api/">
-    <img alt="NuGet Downloads" src="https://img.shields.io/nuget/dt/void.proxy.api?label=nuget%20void.proxy.api">
-  </a>
-  <a href="https://www.nuget.org/packages/Void.Minecraft/">
-    <img alt="NuGet Downloads" src="https://img.shields.io/nuget/dt/void.minecraft?label=nuget%20void.minecraft">
-  </a>
+
+<div align="center" id="toc">
+  <a href="https://hub.docker.com/r/caunt/void/tags"><img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/caunt/void"></a>
+  <a href="https://github.com/caunt/Void/issues"><img alt="GitHub Issues or Pull Requests" src="https://img.shields.io/github/issues/caunt/void"></a>
+  <a href="https://github.com/caunt/Void/actions"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/caunt/void/main.yaml"></a>
+  <a href="https://www.nuget.org/packages/Void.Proxy.Api/"><img alt="NuGet Downloads" src="https://img.shields.io/nuget/dt/void.proxy.api?label=nuget%20void.proxy.api"></a>
+  <a href="https://www.nuget.org/packages/Void.Minecraft/"><img alt="NuGet Downloads" src="https://img.shields.io/nuget/dt/void.minecraft?label=nuget%20void.minecraft"></a>
   <br>
-  <a href="https://void.caunt.world/">
-    <img alt="Greetings!" width="400" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/astro/public/logo-text-horizontal.svg">
-  </a>
-</h1>
+  <a href="https://void.caunt.world/"><img alt="Greetings!" width="400" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/astro/public/logo-text-horizontal.svg"></a>
+</div>
 
 <div align="center" id="toc">
   <ul style="list-style: none">
@@ -45,7 +34,7 @@ Download :hammer_and_wrench: [**Plugin Development Kit**](https://github.com/cau
   <br>
   :globe_with_meridians: 
   <a href="https://t.me/mcVoidProxy">
-    News in Telegram
+    <strong>News in Telegram</strong>
     <br>
     <img width="221" height="223" alt="Telegram Channel" src="https://github.com/user-attachments/assets/837c1969-9511-4d51-98c2-2d2b3e58a481" />
   </a>
@@ -55,7 +44,7 @@ Download :hammer_and_wrench: [**Plugin Development Kit**](https://github.com/cau
   <br>
   :globe_with_meridians: 
   <a href="https://t.me/mcvoidproxyforum">
-    Discuss in Telegram
+    <strong>Discuss in Telegram</strong>
     <br>
     <img width="221" height="223" alt="image" src="https://github.com/user-attachments/assets/2fb48274-bc08-4544-80a9-aac3fb809ee1" />
   </a>
