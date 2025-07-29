@@ -17,10 +17,10 @@ public class PaperServer : IntegrationSideBase
 
     private readonly string _binaryPath;
 
-    private PaperServer(string binaryPath, string jreBinaryBath)
+    private PaperServer(string binaryPath, string jreBinaryPath)
     {
         _binaryPath = binaryPath;
-        _jreBinaryPath = jreBinaryBath;
+        _jreBinaryPath = jreBinaryPath;
 
         StartApplication(_binaryPath, hasInput: false);
     }
