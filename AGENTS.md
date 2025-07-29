@@ -4,27 +4,27 @@
 
 This repository is a .NET solution composed of the following sections:
 
-- **src** — all production code, including:
-  - **Api** — API abstractions.
-  - **Benchmarks** — benchmark projects.
-  - **Debug** — debug harness and utilities.
-  - **Minecraft** — Minecraft-specific libraries.
-  - **Platform** — main proxy entry point.
-  - **Playground** — sample playground app.
-  - **Plugins** — built-in plugins organized by feature:
-    - **Common** — shared infrastructure and helpers for other plugins.
-    - **Essentials** — debugging and moderation tools.
-    - **ForwardingSupport** — server forwarding protocol support (e.g., Velocity).
-    - **ModsSupport** — modded client integrations such as Forge.
-    - **ProtocolSupport** — compatibility with multiple protocol versions.
-    - **Watchdog** — HTTP service that monitors proxy health.
-    - **ExamplePlugin** — minimal API sample plugin.
-  - **Servers** — server implementation integrations such as Bukkit.
-  - **Terminal** — terminal UI for proxy console.
-- **tests** — xUnit test projects.
-- **docs** — documentation site built with Astro.
-- **pdk** — plugin development kit example.
-- **Void.slnx** — solution file referencing all projects.
+- src — all production code, including:
+  - Api — API abstractions.
+  - Benchmarks — benchmark projects.
+  - Debug — debug harness and utilities.
+  - Minecraft — Minecraft-specific libraries.
+  - Platform — main proxy entry point.
+  - Playground — sample playground app.
+  - Plugins — built-in plugins organized by feature:
+    - Common — shared infrastructure and helpers for other plugins.
+    - Essentials — debugging and moderation tools.
+    - ForwardingSupport — server forwarding protocol support (e.g., Velocity).
+    - ModsSupport — modded client integrations such as Forge.
+    - ProtocolSupport — compatibility with multiple protocol versions.
+    - Watchdog — HTTP service that monitors proxy health.
+    - ExamplePlugin — minimal API sample plugin.
+  - Servers — server implementation integrations such as Bukkit.
+  - Terminal — terminal UI for proxy console.
+- tests — xUnit test projects.
+- docs — documentation site built with Astro.
+- pdk — plugin development kit example.
+- Void.slnx — solution file referencing all projects.
 
 ## Coding conventions
 
