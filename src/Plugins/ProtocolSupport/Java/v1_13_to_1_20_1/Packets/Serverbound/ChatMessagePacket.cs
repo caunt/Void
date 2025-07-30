@@ -15,8 +15,10 @@ public class ChatMessagePacket : IMinecraftServerboundPacket<ChatMessagePacket>
 
     public static ChatMessagePacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        var a = new ChatMessagePacket { Text = buffer.ReadString() };
-        return a;
+        return new ChatMessagePacket
+        {
+            Text = buffer.ReadString()
+        };
     }
 
     public void Dispose()
