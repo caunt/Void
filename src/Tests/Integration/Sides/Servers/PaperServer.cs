@@ -1,4 +1,3 @@
-namespace Void.Tests.Integration.Sides.Servers;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -7,6 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
+
+namespace Void.Tests.Integration.Sides.Servers;
 
 public class PaperServer : IntegrationSideBase
 {
