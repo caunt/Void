@@ -69,7 +69,7 @@ public class MySettings
 }
 ```
 
-Also you can set custom name for the configuration file with `RootConfiguration` attribute.
+You can also set a custom name for the configuration file with the `RootConfiguration` attribute.
 ```csharp
 [RootConfiguration("settings")]
 public class MySettings
