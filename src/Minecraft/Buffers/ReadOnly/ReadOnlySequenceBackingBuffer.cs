@@ -103,7 +103,7 @@ internal ref struct ReadOnlySequenceBackingBuffer
     public ReadOnlySpan<byte> Slice(long length)
     {
         if (_sequence.Length < Position + length)
-            throw new IndexOutOfRangeException($"Cannot slice {length} bytes from sequence with length {_sequence.Length}, and current position {Position}. Only {_sequence.Length - Position} bytes is available to slice.");
+            throw new IndexOutOfRangeException($"Cannot slice {length} bytes from sequence with length {_sequence.Length}, and current position {Position}. Only {_sequence.Length - Position} bytes are available to slice.");
 
         if (_currentBlock.Length < _blockPosition + length)
         {
