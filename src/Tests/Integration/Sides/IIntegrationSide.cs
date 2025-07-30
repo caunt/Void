@@ -6,4 +6,6 @@ namespace Void.Tests.Integration.Sides;
 public interface IIntegrationSide : IAsyncDisposable
 {
     public IEnumerable<string> Logs { get; }
+
+    public void ClearLogs();
 }
