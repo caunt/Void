@@ -12,6 +12,9 @@ public class ConnectionUnitBase
 
     public static async Task LoggedExecutorAsync(Func<Task> function, params IIntegrationSide[] sides)
     {
+        foreach (var side in sides)
+            side.ClearLogs();
+
         try
         {
             await function();

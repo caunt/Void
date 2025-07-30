@@ -15,6 +15,11 @@ public class CollectingTextWriter : TextWriter
 
     public IEnumerable<string> Lines => Text.Split(["\r\n", "\n"], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
+    public void Clear()
+    {
+        builder.Clear();
+    }
+
     public override void Write(char value)
     {
         builder.Append(value);
