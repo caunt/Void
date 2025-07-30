@@ -14,6 +14,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-24.04-arm # ubuntu-latest
@@ -68,11 +69,8 @@ jobs:
         run: dotnet build --configuration Release /p:Version=${{ inputs.void-version }} ${{ matrix.parameters }}
       - name: Build Platform
         run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ inputs.void-version }} ${{ matrix.parameters }} 
-      - name: Test
-        if: ${{ matrix.run-tests }} # GitHub Actions are limited in runners architectures. Check http://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#standard-github-hosted-runners-for-public-repositories.
-        run: dotnet test --runtime ${{ matrix.runtime }} --verbosity normal ${{ matrix.parameters }} 
       - name: Publish
-        run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained src/Platform --output artifacts --configuration Release --no-build /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ inputs.void-version }} ${{ matrix.parameters }} 
+        run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained src/Platform --output artifacts --configuration Release --no-build /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ inputs.void-version }} ${{ matrix.parameters }}
       - name: Save Artifact Suffix
         id: get_suffix
         shell: bash
@@ -87,3 +85,6 @@ jobs:
           path: artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
           compression-level: 9
           if-no-files-found: error
+      - name: Test
+        if: ${{ matrix.run-tests }} # GitHub Actions are limited in runners architectures. Check http://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#standard-github-hosted-runners-for-public-repositories.
+        run: dotnet test --runtime ${{ matrix.runtime }} --verbosity normal ${{ matrix.parameters }}

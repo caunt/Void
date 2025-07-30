@@ -31,6 +31,11 @@ public abstract class IntegrationSideBase : IIntegrationSide
 
     public IEnumerable<string> Logs => [.. _logs];
 
+    public void ClearLogs()
+    {
+        _logs.Clear();
+    }
+
     static IntegrationSideBase()
     {
         if (Environment.GetEnvironmentVariable("GITHUB_TOKEN") is { } token)

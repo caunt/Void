@@ -14,6 +14,20 @@ To run Void in a Docker container, use following example command:
 docker run --name void --network host --rm caunt/void:dev
 ```
 
+You can pass additional [program arguments](/configuration/program-arguments/) to customize servers and network settings:
+
+```bash
+docker run --name void --network host --rm caunt/void:dev \
+  --ignore-file-servers \
+  --server mc.example.com:25566 \
+  --port 25565 \
+  --interface 0.0.0.0
+```
+
+:::tip[Offline Mode]
+Add `--offline` to allow players to connect without Mojang authorization.
+:::
+
 ## Running Void in Kubernetes
 To run Void in a Kubernetes cluster, follow this example `Deployment` manifest:
 ```yaml

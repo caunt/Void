@@ -52,7 +52,7 @@ class MyService(ICommandService commands) : ICommandSource
 ```
 
 ## Command suggestions
-You can request suggestions for a command with CompleteAsync method.
+You can request suggestions for a command with the `CompleteAsync` method.
 ```csharp
 class MyService(ICommandService commands) : ICommandSource
 {
