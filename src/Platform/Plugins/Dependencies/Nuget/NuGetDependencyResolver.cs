@@ -298,7 +298,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             if (!identity.HasVersion)
                 continue;
 
-            if (identity.Version.CompareTo(identity.Version) < 0)
+            if (identity.Version.CompareTo(result.Version) <= 0)
                 continue;
 
             if (assemblyVersion is null)
