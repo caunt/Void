@@ -51,7 +51,7 @@ internal ref struct MinecraftBackingBuffer
             BufferType.Span => _spanBackingBuffer.Position < _spanBackingBuffer.Length,
             BufferType.ReadOnlySpan => _readOnlySpanBackingBuffer.Position < _readOnlySpanBackingBuffer.Length,
             BufferType.ReadOnlySequence => _readOnlySequenceBackingBuffer.Position < _readOnlySequenceBackingBuffer.Length,
-            BufferType.MemoryStream => _memoryStreamBackingBuffer.Position < _readOnlySequenceBackingBuffer.Length,
+            BufferType.MemoryStream => _memoryStreamBackingBuffer.Position < _memoryStreamBackingBuffer.Length,
             _ => throw new NotSupportedException(_bufferType.ToString())
         };
     }
