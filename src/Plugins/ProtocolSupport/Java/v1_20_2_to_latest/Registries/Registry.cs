@@ -107,7 +107,8 @@ public static class Registry
             [
                 new MinecraftPacketIdMapping(0x04, Plugin.SupportedVersions.First()),
                 new MinecraftPacketIdMapping(0x05, ProtocolVersion.MINECRAFT_1_20_5),
-                new MinecraftPacketIdMapping(0x06, ProtocolVersion.MINECRAFT_1_21_2)
+                new MinecraftPacketIdMapping(0x06, ProtocolVersion.MINECRAFT_1_21_2),
+                new MinecraftPacketIdMapping(0x07, ProtocolVersion.MINECRAFT_1_21_6)
             ],
             typeof(SignedChatCommandPacket)
         },
@@ -116,7 +117,8 @@ public static class Registry
                 new MinecraftPacketIdMapping(0x14, Plugin.SupportedVersions.First()),
                 new MinecraftPacketIdMapping(0x15, ProtocolVersion.MINECRAFT_1_20_3),
                 new MinecraftPacketIdMapping(0x18, ProtocolVersion.MINECRAFT_1_20_5),
-                new MinecraftPacketIdMapping(0x1A, ProtocolVersion.MINECRAFT_1_21_2)
+                new MinecraftPacketIdMapping(0x1A, ProtocolVersion.MINECRAFT_1_21_2),
+                new MinecraftPacketIdMapping(0x1B, ProtocolVersion.MINECRAFT_1_21_6)
             ],
             typeof(KeepAliveResponsePacket)
         },
@@ -124,7 +126,8 @@ public static class Registry
             [
                 new MinecraftPacketIdMapping(0x0B, Plugin.SupportedVersions.First()),
                 new MinecraftPacketIdMapping(0x0C, ProtocolVersion.MINECRAFT_1_20_5),
-                new MinecraftPacketIdMapping(0x0E, ProtocolVersion.MINECRAFT_1_21_4)
+                new MinecraftPacketIdMapping(0x0E, ProtocolVersion.MINECRAFT_1_21_2),
+                new MinecraftPacketIdMapping(0x0F, ProtocolVersion.MINECRAFT_1_21_6)
             ],
             typeof(AcknowledgeConfigurationPacket)
         }
