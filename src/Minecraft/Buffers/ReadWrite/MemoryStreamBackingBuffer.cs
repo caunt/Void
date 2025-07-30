@@ -32,19 +32,9 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
 
     public readonly void WriteUnsignedShort(ushort value)
     {
-        // TODO may be unsafe stackalloc?
-        var block = ArrayPool<byte>.Shared.Rent(2);
-        var span = block.AsSpan(0, 2);
-
-        try
-        {
-            BinaryPrimitives.WriteUInt16BigEndian(span, value);
-            memoryStream.Write(span);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(block);
-        }
+        Span<byte> buffer = stackalloc byte[2];
+        BinaryPrimitives.WriteUInt16BigEndian(buffer, value);
+        memoryStream.Write(buffer);
     }
 
     public readonly short ReadShort()
@@ -54,19 +44,9 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
 
     public readonly void WriteShort(short value)
     {
-        // TODO may be unsafe stackalloc?
-        var block = ArrayPool<byte>.Shared.Rent(2);
-        var span = block.AsSpan(0, 2);
-
-        try
-        {
-            BinaryPrimitives.WriteInt16BigEndian(span, value);
-            memoryStream.Write(span);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(block);
-        }
+        Span<byte> buffer = stackalloc byte[2];
+        BinaryPrimitives.WriteInt16BigEndian(buffer, value);
+        memoryStream.Write(buffer);
     }
 
     public readonly int ReadInt()
@@ -76,19 +56,9 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
 
     public readonly void WriteInt(int value)
     {
-        // TODO may be unsafe stackalloc?
-        var block = ArrayPool<byte>.Shared.Rent(4);
-        var span = block.AsSpan(0, 4);
-
-        try
-        {
-            BinaryPrimitives.WriteInt32BigEndian(span, value);
-            memoryStream.Write(span);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(block);
-        }
+        Span<byte> buffer = stackalloc byte[4];
+        BinaryPrimitives.WriteInt32BigEndian(buffer, value);
+        memoryStream.Write(buffer);
     }
 
     public readonly float ReadFloat()
@@ -98,19 +68,9 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
 
     public readonly void WriteFloat(float value)
     {
-        // TODO may be unsafe stackalloc?
-        var block = ArrayPool<byte>.Shared.Rent(4);
-        var span = block.AsSpan(0, 4);
-
-        try
-        {
-            BinaryPrimitives.WriteSingleBigEndian(span, value);
-            memoryStream.Write(span);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(block);
-        }
+        Span<byte> buffer = stackalloc byte[4];
+        BinaryPrimitives.WriteSingleBigEndian(buffer, value);
+        memoryStream.Write(buffer);
     }
 
 
@@ -121,19 +81,9 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
 
     public readonly void WriteDouble(double value)
     {
-        // TODO may be unsafe stackalloc?
-        var block = ArrayPool<byte>.Shared.Rent(8);
-        var span = block.AsSpan(0, 8);
-
-        try
-        {
-            BinaryPrimitives.WriteDoubleBigEndian(span, value);
-            memoryStream.Write(span);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(block);
-        }
+        Span<byte> buffer = stackalloc byte[8];
+        BinaryPrimitives.WriteDoubleBigEndian(buffer, value);
+        memoryStream.Write(buffer);
     }
 
     public readonly long ReadLong()
@@ -143,19 +93,9 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
 
     public readonly void WriteLong(long value)
     {
-        // TODO may be unsafe stackalloc?
-        var block = ArrayPool<byte>.Shared.Rent(8);
-        var span = block.AsSpan(0, 8);
-
-        try
-        {
-            BinaryPrimitives.WriteInt64BigEndian(span, value);
-            memoryStream.Write(span);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(block);
-        }
+        Span<byte> buffer = stackalloc byte[8];
+        BinaryPrimitives.WriteInt64BigEndian(buffer, value);
+        memoryStream.Write(buffer);
     }
 
     public readonly void Seek(long offset, SeekOrigin origin)
