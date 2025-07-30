@@ -141,7 +141,7 @@ public class SimpleMinecraftChannel(IMessageStreamBase head) : INetworkChannel
                 await stream.WriteMessageAsync(message as CompleteBinaryMessage ?? throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(CompleteBinaryMessage)}."), cancellationToken);
                 break;
             case IBufferedMessageStream stream:
-                await stream.WriteAsMessageAsync(message as BufferedBinaryMessage ?? throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(CompleteBinaryMessage)}."), cancellationToken);
+                await stream.WriteAsMessageAsync(message as BufferedBinaryMessage ?? throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(BufferedBinaryMessage)}."), cancellationToken);
                 break;
             default:
                 throw new InvalidOperationException($"{head.GetType()} cannot be used to write messages");
