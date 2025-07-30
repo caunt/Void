@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Void.Minecraft.Events;
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
@@ -27,6 +28,9 @@ public static class PlayerExtensions
 
     public static async ValueTask SetPhaseAsync(this IPlayer player, Side side, Phase phase, INetworkChannel channel, CancellationToken cancellationToken)
     {
+        var logger = player.GetLogger();
+        logger.LogTrace("Setting {Side} phase to {Phase}", side, phase);
+
         if (side is Side.Client)
             player.Phase = phase;
 
