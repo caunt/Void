@@ -6,7 +6,7 @@ namespace Void.Benchmarks.Streams;
 internal class MinecraftMemoryStream : INetworkStream
 {
     private readonly MemoryStream _memoryStream = new();
-    public NetworkStream BaseStream => null!;
+    public NetworkStream BaseStream => throw new NotSupportedException();
     public bool CanRead => true;
     public bool CanWrite => true;
     public bool IsAlive => true;
