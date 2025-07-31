@@ -44,18 +44,15 @@ public static class EntryPoint
         Directory.SetCurrentDirectory(AppContext.BaseDirectory);
     }
 
-    private static void ConfigureLogging()
+    private static async Task<int> Main(string[] args)
     {
-        Log.Logger = new LoggerConfiguration()
-            .Enrich.FromLogContext()
-            .MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch)
-            .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}")
-            .CreateLogger();
+        return await RunAsync(logWriter: null, cancellationToken: default, args);
     }
 
     public static async Task<int> RunAsync(TextWriter? logWriter = null, CancellationToken cancellationToken = default, params string[] args)
     {
         ConfigureLogging();
+
         try
         {
             return await BuildCommandLine(logWriter, cancellationToken)
@@ -68,40 +65,44 @@ public static class EntryPoint
         {
             Log.CloseAndFlush();
         }
-    }
 
-    private static async Task<int> Main(string[] args)
-    {
-        return await RunAsync(logWriter: null, cancellationToken: default, args);
-    }
+        static void ConfigureLogging()
+        {
+            Log.Logger = new LoggerConfiguration()
+                .Enrich.FromLogContext()
+                .MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch)
+                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}")
+                .CreateLogger();
+        }
 
-    private static void SetupHost(IHostBuilder builder, TextWriter? logWriter)
-    {
-        builder
-            .UseServiceProviderFactory(new DryIocServiceProviderFactory(new Container(Rules.MicrosoftDependencyInjectionRules)))
-            .UseConsoleLifetime(options => options.SuppressStatusMessages = true)
-            .ConfigureServices(services => services
-                .AddSerilog()
-                .AddJsonOptions()
-                .AddHttpClient()
-                .AddSettings()
-                .AddSingleton(new ConsoleRedirectConfiguration(logWriter))
-                .AddSingletonAndListen<ICryptoService, RsaCryptoService>()
-                .AddSingletonAndListen<IEventService, EventService>()
-                .AddSingletonAndListen<IPluginService, PluginService>()
-                .AddSingletonAndListen<IPlayerService, PlayerService>()
-                .AddSingletonAndListen<IServerService, ServerService>()
-                .AddSingletonAndListen<ILinkService, LinkService>()
-                .AddSingletonAndListen<IConsoleService, ConsoleService>()
-                .AddSingletonAndListen<ICommandService, CommandService>()
-                .AddSingletonAndListen<IConfigurationService, ConfigurationService>()
-                .AddSingletonAndListen<IDependencyService, DependencyService>()
-                .AddSingletonAndListen<IProxy, Platform>()
-                .AddSingleton<IFileDependencyResolver, FileDependencyResolver>(FileDependencyResolver.Factory)
-                .AddSingleton<INuGetDependencyResolver, NuGetDependencyResolver>()
-                .AddSingleton<IEmbeddedDependencyResolver, EmbeddedDependencyResolver>()
-                .AddHostedService(services => services.GetRequiredService<IConfigurationService>())
-                .AddHostedService(services => (Platform)services.GetRequiredService<IProxy>()));
+        static void SetupHost(IHostBuilder builder, TextWriter? logWriter)
+        {
+            builder
+                .UseServiceProviderFactory(new DryIocServiceProviderFactory(new Container(Rules.MicrosoftDependencyInjectionRules)))
+                .UseConsoleLifetime(options => options.SuppressStatusMessages = true)
+                .ConfigureServices(services => services
+                    .AddSerilog()
+                    .AddJsonOptions()
+                    .AddHttpClient()
+                    .AddSettings()
+                    .AddSingleton(new ConsoleRedirectConfiguration(logWriter))
+                    .AddSingletonAndListen<ICryptoService, RsaCryptoService>()
+                    .AddSingletonAndListen<IEventService, EventService>()
+                    .AddSingletonAndListen<IPluginService, PluginService>()
+                    .AddSingletonAndListen<IPlayerService, PlayerService>()
+                    .AddSingletonAndListen<IServerService, ServerService>()
+                    .AddSingletonAndListen<ILinkService, LinkService>()
+                    .AddSingletonAndListen<IConsoleService, ConsoleService>()
+                    .AddSingletonAndListen<ICommandService, CommandService>()
+                    .AddSingletonAndListen<IConfigurationService, ConfigurationService>()
+                    .AddSingletonAndListen<IDependencyService, DependencyService>()
+                    .AddSingletonAndListen<IProxy, Platform>()
+                    .AddSingleton<IFileDependencyResolver, FileDependencyResolver>(FileDependencyResolver.Factory)
+                    .AddSingleton<INuGetDependencyResolver, NuGetDependencyResolver>()
+                    .AddSingleton<IEmbeddedDependencyResolver, EmbeddedDependencyResolver>()
+                    .AddHostedService(services => services.GetRequiredService<IConfigurationService>())
+                    .AddHostedService(services => (Platform)services.GetRequiredService<IProxy>()));
+        }
     }
 
     private static CommandLineBuilder BuildCommandLine(TextWriter? logWriter, CancellationToken cancellationToken)
