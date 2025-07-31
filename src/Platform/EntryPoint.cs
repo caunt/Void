@@ -46,7 +46,7 @@ public static class EntryPoint
 
     private static async Task<int> Main(string[] args)
     {
-        return await RunAsync(logWriter: null, cancellationToken: default, args);
+        return await RunAsync(logWriter: null, cancellationToken: default, [.. args]);
     }
 
     public static async Task<int> RunAsync(TextWriter? logWriter = null, CancellationToken cancellationToken = default, params string[] args)
