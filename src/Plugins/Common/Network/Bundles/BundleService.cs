@@ -18,7 +18,7 @@ public class BundleService : IBundleService
     {
         if (IsActivated)
         {
-            _taskCompletionSource!.SetResult();
+            _taskCompletionSource?.SetResult();
         }
         else
         {
