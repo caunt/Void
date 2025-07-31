@@ -67,6 +67,11 @@ public class MinecraftConsoleClient : IntegrationSideBase
         await File.WriteAllTextAsync(configurationPath, $"""
             [Main.Advanced]
             MinecraftVersion = "{protocolVersion.MostRecentSupportedVersion}"
+            ExitOnFailure = true
+
+            [ChatBot.AutoRelog]
+            Enabled = true
+            Retries = 3  
 
             [ChatBot.ScriptScheduler]
             Enabled = true
@@ -108,6 +113,12 @@ public class MinecraftConsoleClient : IntegrationSideBase
 
         if (line.Contains("Disconnected by Server"))
             throw new IntegrationTestException("Disconnected by server - might be internal Proxy or Server exception");
+
+        if (line.Contains("Initialization failed"))
+            throw new IntegrationTestException("Failed to initialize Minecraft Console Client");
+
+        if (line.Contains("Login failed"))
+            throw new IntegrationTestException("Login failed");
 
         if (line.Contains("joined the game"))
             return true;
