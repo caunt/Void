@@ -243,7 +243,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
         await _containers
             .Select(reference => reference.Context.Name)
             .WhereNotNull()
-            .Select(name => UnloadContainerAsync(name, cancellationToken))
+            .Select(async name => await UnloadContainerAsync(name, cancellationToken))
             .WhenAll();
     }
 
