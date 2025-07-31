@@ -156,7 +156,8 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
                         logger.LogTrace("Registering {Type} event listener method {Name}", listener, method.Name);
                         SubscribeAttribute.SanityChecks(method);
 
-                        var attribute = method.GetCustomAttribute<SubscribeAttribute>()!;
+                        var attribute = method.GetCustomAttribute<SubscribeAttribute>()
+                                         ?? throw new InvalidOperationException($"Method {method.Name} does not define {nameof(SubscribeAttribute)}.");
                         _entries.Add(new Entry(listener, method, attribute.Order, attribute.BypassScopedFilter, cancellationToken));
                     }
 
