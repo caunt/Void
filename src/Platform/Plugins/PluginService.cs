@@ -25,7 +25,9 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
     public IEnumerable<IPlugin> All => _containers.SelectMany(container => container.Plugins);
 
-    public IEnumerable<string> Containers => _containers.Select(container => container.Context.Name!);
+    public IEnumerable<string> Containers => _containers
+        .Select(container => container.Context.Name)
+        .WhereNotNull();
 
     public static void RegisterOptions(Command command)
     {
@@ -238,7 +240,11 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
     public async ValueTask UnloadContainersAsync(CancellationToken cancellationToken = default)
     {
         logger.LogInformation("Unloading all plugins");
-        await _containers.Select(async reference => await UnloadContainerAsync(reference.Context.Name!, cancellationToken)).WhenAll();
+        await _containers
+            .Select(reference => reference.Context.Name)
+            .WhereNotNull()
+            .Select(name => UnloadContainerAsync(name, cancellationToken))
+            .WhenAll();
     }
 
     public async ValueTask UnloadContainerAsync(string name, CancellationToken cancellationToken = default)
