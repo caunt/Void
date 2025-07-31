@@ -69,9 +69,12 @@ public class MinecraftConsoleClient : IntegrationSideBase
             MinecraftVersion = "{protocolVersion.MostRecentSupportedVersion}"
             ExitOnFailure = true
 
+            [Logging]
+            DebugMessages = true
+
             [ChatBot.AutoRelog]
             Enabled = true
-            Retries = 3  
+            Retries = 3
 
             [ChatBot.ScriptScheduler]
             Enabled = true
