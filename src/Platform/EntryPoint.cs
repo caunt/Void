@@ -55,7 +55,7 @@ public static class EntryPoint
 
         try
         {
-            return await BuildCommandLine(logWriter, cancellationToken)
+            return await BuildCommandLine(cancellationToken)
                 .UseDefaults()
                 .UseHost(builder => SetupHost(builder, logWriter))
                 .Build()
@@ -105,7 +105,7 @@ public static class EntryPoint
         }
     }
 
-    private static CommandLineBuilder BuildCommandLine(TextWriter? logWriter, CancellationToken cancellationToken)
+    private static CommandLineBuilder BuildCommandLine(CancellationToken cancellationToken)
     {
         var root = new RootCommand("Runs the proxy");
 
@@ -114,12 +114,12 @@ public static class EntryPoint
         ServerService.RegisterOptions(root);
         Platform.RegisterOptions(root);
 
-        root.SetHandler(async context => await MainHandlerAsync(logWriter, context, cancellationToken));
+        root.SetHandler(async context => await MainHandlerAsync(context, cancellationToken));
 
         return new CommandLineBuilder(root);
     }
 
-    private static async Task MainHandlerAsync(TextWriter? logWriter, InvocationContext context, CancellationToken cancellationToken)
+    private static async Task MainHandlerAsync(InvocationContext context, CancellationToken cancellationToken)
     {
         var host = context.GetHost();
 
