@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 
 namespace Void.Tests.Streams;
 
 public class CollectingTextWriter : TextWriter
 {
-    private readonly StringBuilder builder = new();
-    private readonly object _lock = new();
+    private readonly StringBuilder _builder = new();
+    private readonly Lock _lock = new();
 
     public override Encoding Encoding { get; } = Encoding.UTF8;
 
@@ -16,8 +17,8 @@ public class CollectingTextWriter : TextWriter
     {
         get
         {
-            lock (_lock)
-                return builder.ToString();
+            using var _ = _lock.EnterScope();
+            return _builder.ToString();
         }
     }
 
@@ -32,28 +33,28 @@ public class CollectingTextWriter : TextWriter
 
     public void Clear()
     {
-        lock (_lock)
-            builder.Clear();
+        using var _ = _lock.EnterScope();
+        _builder.Clear();
     }
 
     public override void Write(char value)
     {
-        lock (_lock)
-            builder.Append(value);
+        using var _ = _lock.EnterScope();
+        _builder.Append(value);
     }
 
     public override void Write(string? value)
     {
         if (value != null)
         {
-            lock (_lock)
-                builder.Append(value);
+            using var _ = _lock.EnterScope();
+            _builder.Append(value);
         }
     }
 
     public override void Write(char[] buffer, int index, int count)
     {
-        lock (_lock)
-            builder.Append(buffer, index, count);
+        using var _ = _lock.EnterScope();
+        _builder.Append(buffer, index, count);
     }
 }
