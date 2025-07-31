@@ -18,18 +18,18 @@ public class LoginStartPacket : IMinecraftServerboundPacket<LoginStartPacket>
         {
             if (protocolVersion < ProtocolVersion.MINECRAFT_1_19_3)
             {
-                var hasSignatureData = Key is not null;
+                var hasSignatureData = Key is IdentifiedKey key;
                 buffer.WriteBoolean(hasSignatureData);
 
                 if (hasSignatureData)
                 {
-                    buffer.WriteLong(Key!.ExpiresAt);
+                    buffer.WriteLong(key.ExpiresAt);
 
-                    buffer.WriteVarInt(Key.PublicKey.Length);
-                    buffer.Write(Key.PublicKey);
+                    buffer.WriteVarInt(key.PublicKey.Length);
+                    buffer.Write(key.PublicKey);
 
-                    buffer.WriteVarInt(Key.Signature.Length);
-                    buffer.Write(Key.Signature);
+                    buffer.WriteVarInt(key.Signature.Length);
+                    buffer.Write(key.Signature);
                 }
             }
 
