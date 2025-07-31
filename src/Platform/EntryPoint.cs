@@ -46,15 +46,11 @@ public static class EntryPoint
 
     private static void ConfigureLogging()
     {
-        var configuration = new LoggerConfiguration();
-
-        configuration.Enrich.FromLogContext();
-
-        configuration.MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch);
-
-        configuration.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}");
-
-        Log.Logger = configuration.CreateLogger();
+        Log.Logger = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch)
+            .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}")
+            .CreateLogger();
     }
 
     public static async Task<int> RunAsync(TextWriter? logWriter = null, CancellationToken cancellationToken = default, params string[] args)
