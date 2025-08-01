@@ -64,7 +64,7 @@ public class SimpleNetworkStream(NetworkStream baseStream) : INetworkStream
                 _nextBuffer = Memory<byte>.Empty;
                 baseStream.ReadExactly(span[length..]);
             }
-            catch (Exception exception) when (exception is EndOfStreamException || exception is IOException { InnerException: SocketException })
+            catch (Exception exception) when (exception is EndOfStreamException or IOException { InnerException: SocketException } or ObjectDisposedException)
             {
                 throw new StreamClosedException();
             }
@@ -87,7 +87,7 @@ public class SimpleNetworkStream(NetworkStream baseStream) : INetworkStream
                 _nextBuffer = Memory<byte>.Empty;
                 await baseStream.ReadExactlyAsync(memory[length..], cancellationToken);
             }
-            catch (Exception exception) when (exception is EndOfStreamException || exception is IOException { InnerException: SocketException })
+            catch (Exception exception) when (exception is EndOfStreamException or IOException { InnerException: SocketException } or ObjectDisposedException)
             {
                 throw new StreamClosedException();
             }
@@ -100,7 +100,7 @@ public class SimpleNetworkStream(NetworkStream baseStream) : INetworkStream
         {
             baseStream.Write(span);
         }
-        catch (Exception exception) when (exception is EndOfStreamException || exception is IOException { InnerException: SocketException })
+        catch (Exception exception) when (exception is EndOfStreamException or IOException { InnerException: SocketException } or ObjectDisposedException)
         {
             throw new StreamClosedException();
         }
@@ -112,7 +112,7 @@ public class SimpleNetworkStream(NetworkStream baseStream) : INetworkStream
         {
             await baseStream.WriteAsync(memory, cancellationToken);
         }
-        catch (Exception exception) when (exception is EndOfStreamException || exception is IOException { InnerException: SocketException })
+        catch (Exception exception) when (exception is EndOfStreamException or IOException { InnerException: SocketException } or ObjectDisposedException)
         {
             throw new StreamClosedException();
         }

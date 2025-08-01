@@ -56,7 +56,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
         _playerToServerTask = ExecuteAsync(PlayerChannel, ServerChannel, Direction.Serverbound, _ctsPlayerToServer.Token, _ctsPlayerToServerForce.Token);
         _serverToPlayerTask = ExecuteAsync(ServerChannel, PlayerChannel, Direction.Clientbound, _ctsServerToPlayer.Token, _ctsServerToPlayerForce.Token);
 
-        _onStoppingTask = Task.WhenAll(_playerToServerTask, _serverToPlayerTask).ContinueWith(task => OnStopped(task, cancellationToken).CatchExceptions(logger, $"{nameof(LinkStoppedEvent)} caused exception(s)"));
+        _onStoppingTask = Task.WhenAll(_playerToServerTask, _serverToPlayerTask).ContinueWith(task => OnStoppedAsync(task, cancellationToken).CatchExceptions(logger, $"{nameof(LinkStoppedEvent)} caused exception(s)"));
 
         logger.LogTrace("Started forwarding {Link} traffic", this);
         await events.ThrowAsync(new LinkStartedEvent(this, Player), cancellationToken);
@@ -252,7 +252,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
         return await Task.WhenAny(timeout, task) == timeout;
     }
 
-    private async Task OnStopped(Task task, CancellationToken cancellationToken)
+    private async Task OnStoppedAsync(Task task, CancellationToken cancellationToken)
     {
         await task;
 
