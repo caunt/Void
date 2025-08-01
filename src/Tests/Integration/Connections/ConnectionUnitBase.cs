@@ -12,9 +12,6 @@ public class ConnectionUnitBase
 
     public static async Task LoggedExecutorAsync(Func<Task> function, params IIntegrationSide[] sides)
     {
-        foreach (var side in sides)
-            side.ClearLogs();
-
         try
         {
             await function();
@@ -22,6 +19,11 @@ public class ConnectionUnitBase
         catch (Exception exception)
         {
             throw new IntegrationTestException($"{string.Join("\n\n\n", sides.Select(side => $"{side} logs:\n{string.Join("\n", side.Logs)}"))}", exception);
+        }
+        finally
+        {
+            foreach (var side in sides)
+                side.ClearLogs();
         }
     }
 }
