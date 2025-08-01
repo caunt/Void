@@ -398,7 +398,7 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
                 {
                     // Try using a parameterless constructor first
                     var ctor = type.GetConstructor(Type.EmptyTypes);
-                    collectionInstance = ctor is not null ? ctor.Invoke(null) : Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType))!;
+                    collectionInstance = ctor is not null ? ctor.Invoke(null) : Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType)) ?? throw new InvalidOperationException($"Unable to create instance of type {type.FullName}");
                 }
 
                 // Find an "Add" method on the concrete type.
