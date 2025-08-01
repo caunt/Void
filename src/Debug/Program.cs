@@ -9,7 +9,7 @@ using Void.Proxy;
 if (OperatingSystem.IsWindows())
     Console.Clear();
 
-var version = ProtocolVersion.MINECRAFT_1_20_2;
+var version = ProtocolVersion.Latest;
 var count = 1;
 
 if (args.Length is 1 && int.TryParse(args[0], out var value))
