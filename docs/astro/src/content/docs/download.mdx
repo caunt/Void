@@ -99,6 +99,7 @@ Downloads: {releases.reduce((acc, entry) => acc + entry.data.assets.reduce((acc,
                 <br/>
                 <Badge text={`Downloads: ${entry.data.assets.reduce((acc, asset) => acc + asset.download_count, 0)}`} variant="note" />
                 <br/>
+                <br/>
                 {latest && <Markdown content={wrapUnderSummary(entry.data.body.split('\n').slice(3).join('\n').replaceAll('###', '#####'), '#####')} />}
                 <Tabs syncKey="_key">
                     {platforms.map(platform => {
