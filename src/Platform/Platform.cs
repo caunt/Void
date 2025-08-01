@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
-using Microsoft.Extensions.Logging;
 using Serilog.Core;
 using Serilog.Events;
 using Void.Proxy.Api;
@@ -123,8 +122,8 @@ public class Platform(
         LoggingLevelSwitch.MinimumLevel = LogEventLevel.Debug;
 #endif
 
-        if (context.ParseResult.GetValueForOption(_loggingOption) is { } level)
-            LoggingLevelSwitch.MinimumLevel = (LogEventLevel)level;
+        if (context.ParseResult.HasOption(_loggingOption))
+            LoggingLevelSwitch.MinimumLevel = (LogEventLevel)context.ParseResult.GetValueForOption(_loggingOption);
 
         logger.LogInformation("Starting {Name} {Version} proxy", nameof(Void), "v" + GetType().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion);
         var startTime = Stopwatch.GetTimestamp();
