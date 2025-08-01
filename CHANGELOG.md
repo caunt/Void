@@ -1,5 +1,91 @@
 # Changelog
 
+## [0.5.4](https://github.com/caunt/Void/compare/v0.5.3...v0.5.4) (2025-08-01)
+
+
+### Features
+
+* add cancellation support to entry point ([e68e37b](https://github.com/caunt/Void/commit/e68e37b350be559ba17b76b7de5e790fc7adecb8))
+* add test project reference to solution ([9774e0b](https://github.com/caunt/Void/commit/9774e0bbc5a25ba60def3aca3d5ad63f6fa08397))
+* add TryParse for Uuid ([caf19c6](https://github.com/caunt/Void/commit/caf19c6310f8510c72c51323cd9dd94c737c6d9c))
+* allow specifying custom log writer ([7a77295](https://github.com/caunt/Void/commit/7a77295ce73f4a64a5bc130533db0e31554ac2fa))
+* **auth:** ✨ add offline mode ([6c856fc](https://github.com/caunt/Void/commit/6c856fce5dec082c8360055d4112fd2b9de086a4))
+* **docs:** expand SEO keywords ([8c07367](https://github.com/caunt/Void/commit/8c073672804d436133cbf1161e2f2d08354f189b))
+* **docs:** improve SEO metadata ([3a4684f](https://github.com/caunt/Void/commit/3a4684f89ad753488e651ad69008c3545fdd9809))
+* **encryption:** ✨ add support for offline mode ([c1afcd6](https://github.com/caunt/Void/commit/c1afcd68356d31fc856fe675bbdbfa5d7fada0ca))
+* **platform:** ✨ add interface CLI option ([10746b5](https://github.com/caunt/Void/commit/10746b5711bfc3c850499ad13c0e2ea72f593661))
+* **platform:** ✨ add logging level option ([032b3f8](https://github.com/caunt/Void/commit/032b3f8a6883e5be85b166996cc0fe491b8209a6))
+* **platform:** ✨ add port CLI option ([2ff4089](https://github.com/caunt/Void/commit/2ff40896f93326d7a08fa0e90565d7f9e05408ce))
+* **platform:** ✨ add server CLI option ([1901aff](https://github.com/caunt/Void/commit/1901aff9176ae0ab37f18995548d6cc01372d6f3))
+* **platform:** ✨ name CLI servers sequentially ([b852e5e](https://github.com/caunt/Void/commit/b852e5ed6ed7869ea2a10daad963179545052868))
+* **platform:** add ignore-file-servers option ([3aa41c2](https://github.com/caunt/Void/commit/3aa41c24ef91c42ae72ba48ae5c61ca8a1048dd7))
+* **protocol:** ✨ add new protocol versions ([e1a76ec](https://github.com/caunt/Void/commit/e1a76ec9f22bbb296847eb25284a60eee4282e8a))
+* **protocol:** ✨ improve string representation of names ([3bedd1a](https://github.com/caunt/Void/commit/3bedd1ab70eb432d50fbe36c5275583789c47e7c))
+* **registry:** ✨ update mappings for new protocol versions ([9776ccb](https://github.com/caunt/Void/commit/9776ccb2a44e3bf22e395fc7048b079be310ae1b))
+* **servers:** ✨ validate server arguments ([2690724](https://github.com/caunt/Void/commit/269072471796309eaebc11f3c0e17ae425a8b1d8))
+* **tests:** ♻️ reset integration logs before each run ([563a2da](https://github.com/caunt/Void/commit/563a2da7c99bbd51b769cd6cb6904cdd78805f25))
+* **tests:** use JRE 21 for Minecraft integration ([e165115](https://github.com/caunt/Void/commit/e1651159dc57d383999e32f930d70aefc02b280a))
+
+
+### Bug Fixes
+
+* add to RunAsync cancellation support ([db1fc77](https://github.com/caunt/Void/commit/db1fc7724be7e57b6a684762f5b8a8071f8457ac))
+* **benchmarks:** 🐛 remove null-forgiving operator ([8dd5cb7](https://github.com/caunt/Void/commit/8dd5cb790efca1d00cf80d9c279adfdef8a8bf3c))
+* **buffers:** 🐛 correct memory stream length comparison ([4a631b1](https://github.com/caunt/Void/commit/4a631b1d982581438dbafa07bc5a0341a2d838dd))
+* **ci:** set GitHub token for test steps ([5d62062](https://github.com/caunt/Void/commit/5d620622239e9d037a383d51b1a0e5342c8f112a))
+* **common-network:** 🐛 handle disposed stream ([4503d70](https://github.com/caunt/Void/commit/4503d70745c817e889bffb14522dfc999d719fd5))
+* **common:** 🐛 correct invalid cast message ([bbe7748](https://github.com/caunt/Void/commit/bbe7748c90b885dc13ca2061254ddd1bc4fc1852))
+* **common:** 🛠️ remove null-forgiving operator ([2ca845e](https://github.com/caunt/Void/commit/2ca845e67a45ae78f74af4ac53bcf9dc38b8bd02))
+* **components:** ♻️ write nbt as unnamed after 1.21.5 ([aead5bf](https://github.com/caunt/Void/commit/aead5bf3d3784193e48c7203b9463e58578ef63a))
+* correct error message formatting ([0d4a8eb](https://github.com/caunt/Void/commit/0d4a8eb0650e4681abdcd55f2b99501d6635dade))
+* correct java binaries variable name ([ba487cd](https://github.com/caunt/Void/commit/ba487cd68ff5c0ebc33e8969c47a8cc4a3b00d98))
+* correct typos in code ([1559b90](https://github.com/caunt/Void/commit/1559b90919abab1d6f9ab63be20602e54dd34de3))
+* correct VarLong and UUID int array handling ([c4d6e83](https://github.com/caunt/Void/commit/c4d6e833587b48cca71b06cf18205f017779540f))
+* **dependencies:** 🔧 update dependencies ([470135e](https://github.com/caunt/Void/commit/470135eb5c0f9feae9a3d860a83fb38fae4618e4))
+* **docs:** 📝 separate distribution header ([06a1ff0](https://github.com/caunt/Void/commit/06a1ff02f3bf9789b17eded54b4c0e7687e7efe1))
+* **docs:** 🔒 authenticate release fetch ([1fe57ab](https://github.com/caunt/Void/commit/1fe57ab1e48802c44131a5e8532cf107930d8748))
+* **docs:** correct grammar in features guide ([c2253de](https://github.com/caunt/Void/commit/c2253de3b39b5f5a676438c071898e0664048774))
+* encapsulate entry point logic in EntryPoint class ([850971c](https://github.com/caunt/Void/commit/850971c80c5ac25e61045bafefdcf978a6db5864))
+* **errors:** 🐛 clarify packet registration error message ([0425a60](https://github.com/caunt/Void/commit/0425a60d46562bd9ff0814fb41d6206f370d50fc))
+* **events:** 🐛 remove null forgiving operator ([9761b49](https://github.com/caunt/Void/commit/9761b49bdd91469b0fa97af8c43d59eb9c0ad2d4))
+* improve console input/output handling ([61d2219](https://github.com/caunt/Void/commit/61d22190b821192a9f183f338517bef5e1162e58))
+* **links:** 🐛 correct comment typo ([9e8e34f](https://github.com/caunt/Void/commit/9e8e34fcc66633d4f4cf435564c4dcc54452f94a))
+* **logging:** 🔧 enhance connection log details ([661c9bf](https://github.com/caunt/Void/commit/661c9bfff5e81e002b0912d804f95f650b514ac8))
+* **logging:** 🔧 improve logging level assignment ([2ad7cfb](https://github.com/caunt/Void/commit/2ad7cfb922b33331bab8db30e593a60ba4e94289))
+* **minecraft:** 🐛 correct float array color precision ([4ba0d4a](https://github.com/caunt/Void/commit/4ba0d4a59fc14260523067811c25ef0491cf2c3c))
+* **minecraft:** 🐛 correct grammar in slice exception message ([8b1f1d0](https://github.com/caunt/Void/commit/8b1f1d0dd7986dc30285aae9fb2cbc50bad230bb))
+* **mojang:** 🔧 update offline status handling ([825ebca](https://github.com/caunt/Void/commit/825ebca25c1ebf878072acbe21bbfdafe8d00f77))
+* **nuget:** 🐛 select newer versions correctly ([e7fc187](https://github.com/caunt/Void/commit/e7fc187a1c046211acfbbe46bd8041f9377f8292))
+* **packets:** 📝 temporary disable SystemChatMessagePacket transformations ([e86db88](https://github.com/caunt/Void/commit/e86db88499afdd6f52e2a8ff09eb70a89faa4db7))
+* **platform:** ♻️ reinitialize logger for each run ([47e2a0b](https://github.com/caunt/Void/commit/47e2a0bd1950dde5a92c8489f9b374928f587215))
+* **platform:** ♻️ update offline mode configuration ([3acbd40](https://github.com/caunt/Void/commit/3acbd40885d723a8cc4b5bd5634e8a56a2e2d3bc))
+* **platform:** 🔧 use offline mode CLI option value ([0fb47cf](https://github.com/caunt/Void/commit/0fb47cfde640cb2483a132aa6bb4abc0c03a783d))
+* **platform:** 🔨 avoid null-forgiving operator ([8b1ba03](https://github.com/caunt/Void/commit/8b1ba033dd520aad79781d2f46c3352e64222217))
+* **plugin:** 🐛 make linq callback async ([1bbbdfc](https://github.com/caunt/Void/commit/1bbbdfc88f79a2970ada027af3d5dbaa497012e4))
+* **plugins:** 🐛 remove braces for single-line lock ([8eec7ef](https://github.com/caunt/Void/commit/8eec7efc0a011a13333c31eb7e34a44cba91878d))
+* **plugins:** 🩹 remove null-forgiving operator usage ([fff0888](https://github.com/caunt/Void/commit/fff0888db4e2a0673dde284f3239911c4c7fa369))
+* **plugins:** use injected HttpClient directly ([841d677](https://github.com/caunt/Void/commit/841d67789cd9a6569750381d776ae2cc4b40fb61))
+* prioritize env var setting over in-file configuration ([15fa575](https://github.com/caunt/Void/commit/15fa5751154a287da2a0cb1a0448b6c2b0c99796))
+* **protocol:** ✨ update string representation of versions ([41a4d71](https://github.com/caunt/Void/commit/41a4d71ca602017f73dde1007068e84916407591))
+* **protocol:** 🔧 update signature data handling ([ac953bc](https://github.com/caunt/Void/commit/ac953bcca23b0c3ca51ba2b4365f4bfda75484a9))
+* **protocolsupport:** remove null forgiving operator from login packet \U0001F4DD ([cc7135c](https://github.com/caunt/Void/commit/cc7135cf6ea91d96ebdee33a1ab018c037056c88))
+* **registry:** 🐛 correct varlong property encoding ([111f1bf](https://github.com/caunt/Void/commit/111f1bf1636185994a70b309440ef1c05baa344c))
+* **servers:** 🔧 fix --ignore-file-servers option usage ([9b5d814](https://github.com/caunt/Void/commit/9b5d81419eb4c95ea20f546b6067b20c02bdf3ea))
+* **settings:** 🔧 update Offline property for runtime use ([07be838](https://github.com/caunt/Void/commit/07be838181a3abc3fbb47f3e3db4fc5a6d7c2c6b))
+* simplify hash computation in GuidHelper ([1ea7f98](https://github.com/caunt/Void/commit/1ea7f98d591466f65e0597d005cf31a204c4f6e2))
+* **terminal:** 🩹 remove unsupported constructor ([c81855c](https://github.com/caunt/Void/commit/c81855cb6d39359760b401e750f5c184b7355f4b))
+* **tests:** ♻️ use interactive HeadlessMC ([4e446b1](https://github.com/caunt/Void/commit/4e446b18b5c371395941dea5dc5328c47db19099))
+* **tests:** cancel process reads in PaperMC test ([1621686](https://github.com/caunt/Void/commit/16216865346e47b28a2bb0f09af30321fc69c508))
+* **tests:** correct paper working directory variable ([3311808](https://github.com/caunt/Void/commit/3311808f97c562db0c4af95b4cfcd4e416ae8ca1))
+* **tests:** import MITM certificate for portable JRE ([5790d36](https://github.com/caunt/Void/commit/5790d36bc78087b408442aa7c0b56fc87a501718))
+* **transformers:** ✨ update hoverEvent processing to support Minecraft Console Client behavior ([304ce72](https://github.com/caunt/Void/commit/304ce72ce320b5b0fdb1c039328a21296b5d1b9f))
+* wait readiness first ([9c6e52c](https://github.com/caunt/Void/commit/9c6e52cb753d0d1f746db83616e60be6d03fee31))
+
+
+### Performance Improvements
+
+* **buffers:** ♻️ use stackalloc for primitive writes ([b313cd3](https://github.com/caunt/Void/commit/b313cd37adadd61125abb875a58f398a9488ee40))
+
 ## [0.5.3](https://github.com/caunt/Void/compare/v0.5.2...v0.5.3) (2025-05-25)
 
 
