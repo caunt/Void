@@ -10,7 +10,7 @@ public static class ManualStreamExtensions
         var numRead = 0;
         var result = 0;
         byte read;
-        byte[] buffer = [0];
+        Span<byte> buffer = stackalloc byte[1];
 
         do
         {
