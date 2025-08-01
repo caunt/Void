@@ -15,7 +15,7 @@ public record BinaryProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<Binar
 
     public static BinaryProperty Read(ref MinecraftBuffer buffer)
     {
-        return FromStream(new MemoryStream(buffer.ReadToEnd().ToArray()));
+        return new BinaryProperty(buffer.ReadToEnd().ToArray());
     }
 
     public void Write(ref MinecraftBuffer buffer)
