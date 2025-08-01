@@ -35,6 +35,44 @@ export const formatFileSize = bytes => {
 
     return `${size.toFixed(1)} ${units[unitIndex]}`
 }
+export const wrapUnderSummary = (markdown, headerMarker) => {
+  const esc = headerMarker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const regex = new RegExp(`^${esc}\\s+(.*)`)
+  const out = []
+
+  let title = '', buffer = []
+
+  const flush = () => {
+    out.push(
+        `<details>
+        <summary>${title}</summary>
+
+        ${buffer.join('\n')}
+        </details>`
+    )
+  }
+
+  for (const line of markdown.split(/\r?\n/)) {
+    const match = regex.exec(line)
+
+    if (match) {
+      if (title) 
+        flush()
+
+      title = match[1]
+      buffer = []
+    } else if (title) {
+      buffer.push(line)
+    } else {
+      out.push(line)
+    }
+  }
+
+  if (title) 
+    flush()
+  
+  return out.join('\n')
+}
 
 <Aside type="tip" title="Thanks for choosing Void">
 ****  
@@ -60,7 +98,8 @@ Downloads: {releases.reduce((acc, entry) => acc + entry.data.assets.reduce((acc,
                 <Badge text={`Release Date: ${new Date(entry.data.published_at).toLocaleDateString()}`} variant="success" />
                 <br/>
                 <Badge text={`Downloads: ${entry.data.assets.reduce((acc, asset) => acc + asset.download_count, 0)}`} variant="note" />
-                {latest && <Markdown content={entry.data.body.split('\n').slice(3).join('\n').replace('#', '###')} />}
+                <br/>
+                {latest && <Markdown content={wrapUnderSummary(entry.data.body.split('\n').slice(3).join('\n').replaceAll('###', '#####'), '#####')} />}
                 <Tabs syncKey="_key">
                     {platforms.map(platform => {
                         const cards = entry.data.assets
