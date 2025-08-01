@@ -83,10 +83,10 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
         {
         }
 
-        public MinecraftConsoleClient MinecraftConsoleClient { get; private set; } = null!;
-        public MineflayerClient MineflayerClient { get; private set; } = null!;
-        public PaperServer PaperServer { get; private set; } = null!;
-        public VoidProxy VoidProxy { get; private set; } = null!;
+        public MinecraftConsoleClient MinecraftConsoleClient { get => field ?? throw new InvalidOperationException($"{nameof(MinecraftConsoleClient)} is not initialized."); set; }
+        public MineflayerClient MineflayerClient { get => field ?? throw new InvalidOperationException($"{nameof(MineflayerClient)} is not initialized."); set; }
+        public PaperServer PaperServer { get => field ?? throw new InvalidOperationException($"{nameof(PaperServer)} is not initialized."); set; }
+        public VoidProxy VoidProxy { get => field ?? throw new InvalidOperationException($"{nameof(VoidProxy)} is not initialized."); set; }
 
         public async Task InitializeAsync()
         {
