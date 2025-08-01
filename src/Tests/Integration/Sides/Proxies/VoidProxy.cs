@@ -39,7 +39,7 @@ public class VoidProxy : IIntegrationSide
         {
             "--server", targetServer,
             "--port", proxyPort.ToString(),
-            "--logging", "Trace"
+            "--logging", "Debug" // Trace
         };
 
         if (ignoreFileServers)
