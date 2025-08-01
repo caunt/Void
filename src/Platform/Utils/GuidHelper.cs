@@ -78,7 +78,7 @@ public static class GuidHelper
         [FieldOffset(8)] public int c;
         [FieldOffset(12)] public int d;
 
-        [FieldOffset(0)] private byte start;
+        [FieldOffset(0)] private byte _start;
 
         [FieldOffset(7)] public byte version;
         [FieldOffset(8)] public byte variant;
@@ -86,7 +86,7 @@ public static class GuidHelper
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<byte> AsSpan()
         {
-            return MemoryMarshal.CreateSpan(ref start, 16);
+            return MemoryMarshal.CreateSpan(ref _start, 16);
         }
     }
 }
