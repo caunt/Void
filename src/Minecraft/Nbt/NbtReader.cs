@@ -7,6 +7,8 @@ namespace Void.Minecraft.Nbt;
 
 public class NbtReader(Stream stream, FormatOptions options, bool leaveOpen = false) : TagReader(stream, options, leaveOpen)
 {
+    private static readonly FieldInfo? _tagNameField = typeof(Tag).GetField($"<{nameof(Tag.Name)}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+
     public new CompoundTag ReadCompound(bool named = true)
     {
         var compoundTag = new CompoundTag(named ? ReadUTF8String() : null);
@@ -23,10 +25,7 @@ public class NbtReader(Stream stream, FormatOptions options, bool leaveOpen = fa
             // 1.21.4 send empty string tag name with empty value for achievements
             // 1.21.5 send new line characters in chat with empty tag name
             if (string.IsNullOrWhiteSpace(tag.Name))
-            {
-                var field = typeof(Tag).GetField($"<{nameof(tag.Name)}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
-                field?.SetValue(tag, "text");
-            }
+                _tagNameField?.SetValue(tag, "text");
 
             compoundTag.Add(tag);
         }
