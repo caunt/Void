@@ -12,11 +12,6 @@ public class PromptWriter(PromptReader reader, StreamWriter writer) : TextWriter
         throw new NotSupportedException("Virtual terminal processing is not supported.");
     }
 
-    private PromptWriter() : this(null!, null!)
-    {
-        throw new NotSupportedException("This constructor is not supported.");
-    }
-
     public override Encoding Encoding => writer.Encoding;
 
     public override void Write(string? value)
