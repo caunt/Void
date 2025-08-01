@@ -1,5 +1,3 @@
-namespace Void.Tests.Integration.Sides.Clients;
-
 using System;
 using System.IO;
 using System.Linq;
@@ -14,6 +12,8 @@ using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
 using Xunit;
 
+namespace Void.Tests.Integration.Sides.Clients;
+
 public class MinecraftConsoleClient : IntegrationSideBase
 {
     private const string RepositoryOwnerName = "MCCTeam";
@@ -21,7 +21,7 @@ public class MinecraftConsoleClient : IntegrationSideBase
 
     private readonly string _workingDirectory;
     private readonly string _binaryPath;
-    private AsyncLock _lock = new();
+    private readonly AsyncLock _lock = new();
 
     public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion
                 .Range(ProtocolVersion.MINECRAFT_1_20_3, ProtocolVersion.MINECRAFT_1_7_2)
@@ -68,24 +68,24 @@ public class MinecraftConsoleClient : IntegrationSideBase
             [Main.Advanced]
             MinecraftVersion = "{protocolVersion.MostRecentSupportedVersion}"
             ExitOnFailure = true
-
+            
             [Logging]
             DebugMessages = true
-
+            
             [ChatBot.AutoRelog]
             Enabled = true
             Retries = 3
-
+            
             [ChatBot.ScriptScheduler]
             Enabled = true
-
+            
             [[ChatBot.ScriptScheduler.TaskList]]
             Task_Name = "Task Name 1"
             Trigger_On_Login = true
             Action = "send {text}"
             """, cancellationToken);
 
-        StartApplication(_binaryPath, hasInput: false, nameof(MinecraftConsoleClient), "-", address, $"send {text}");
+        StartApplication(_binaryPath, hasInput: false, nameof(MinecraftConsoleClient)[..16], "-", address, $"send {text}");
 
         var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
 
