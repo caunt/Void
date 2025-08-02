@@ -87,4 +87,6 @@ jobs:
           if-no-files-found: error
       - name: Test
         if: ${{ matrix.run-tests }} # GitHub Actions are limited in runners architectures. Check http://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#standard-github-hosted-runners-for-public-repositories.
-        run: VOID_INTEGRATION_PROXIED_TESTS_ENABLED=true dotnet test --runtime ${{ matrix.runtime }} --verbosity minimal ${{ matrix.parameters }}
+        env:
+          VOID_INTEGRATION_PROXIED_TESTS_ENABLED: true
+        run: dotnet test --runtime ${{ matrix.runtime }} --verbosity minimal ${{ matrix.parameters }}
