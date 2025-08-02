@@ -81,7 +81,8 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
                 new(0x2C, ProtocolVersion.MINECRAFT_1_20_3),
                 new(0x2F, ProtocolVersion.MINECRAFT_1_20_5),
                 new(0x31, ProtocolVersion.MINECRAFT_1_21_2),
-                new(0x33, ProtocolVersion.MINECRAFT_1_21_4)
+                new(0x33, ProtocolVersion.MINECRAFT_1_21_4),
+                new(0x34, ProtocolVersion.MINECRAFT_1_21_6)
             ]);
 
             player.RegisterPacket<SetHeldItemClientboundPacket>([
