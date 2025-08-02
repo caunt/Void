@@ -32,7 +32,7 @@ public class MyScopedService(IPlayerContext context)
 ```
 
 ## Manually Creating Text Components
-You can also create text components manually. This is useful if you want to create a more complex message with multiple components or custom behaviour.
+You can also create text components manually. This is useful if you want to create a more complex message with multiple components or custom behavior.
 ```csharp
 public class MyScopedService(IPlayerContext context)
 {
