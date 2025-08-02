@@ -23,7 +23,7 @@ public class PaperServer : IntegrationSideBase
         _binaryPath = binaryPath;
         _jreBinaryPath = jreBinaryPath;
 
-        StartApplication(_binaryPath, hasInput: false, "-Dpaper.playerconnection.keepalive=60");
+        StartApplication(_binaryPath, hasInput: false, "-Dpaper.playerconnection.keepalive=120");
     }
 
     public static async Task<PaperServer> CreateAsync(string workingDirectory, HttpClient client, int port = 25565, PaperPlugins plugins = PaperPlugins.All, CancellationToken cancellationToken = default)
