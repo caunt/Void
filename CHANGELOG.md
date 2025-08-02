@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.5.5](https://github.com/caunt/Void/compare/v0.5.4...v0.5.5) (2025-08-02)
+
+
+### Features
+
+* **example-plugin:** ✨ add packet mappings for new protocol version ([cefc6ff](https://github.com/caunt/Void/commit/cefc6ff91148beec31fbde21181b7305b430ac9e))
+
+
+### Bug Fixes
+
+* **protocolsupport:** 🐛 clarify dimension info exception ([0a38d71](https://github.com/caunt/Void/commit/0a38d712c4d2969fbba1a974e388cb52407dbd72))
+
+
+### Performance Improvements
+
+* **binary-property:** 🚀 avoid unnecessary MemoryStream ([8a9bfc5](https://github.com/caunt/Void/commit/8a9bfc5dbda15f1be25b4f1ad322367559f0d1eb))
+* **encryption:** ⚡ avoid allocating byte array in VerifyToken ([14f87f9](https://github.com/caunt/Void/commit/14f87f9ef59bc3bfaf414a38425b7cc35dcd47d0))
+* **minecraft:** ♻️ stack allocate verification buffer ([97307d0](https://github.com/caunt/Void/commit/97307d0e33463df02a69a84e3bf49ae897e3e68c))
+* **nbt:** ♻ optimize reflection lookup ([490302b](https://github.com/caunt/Void/commit/490302b952e820598c5a523c94f8f21151ff7f16))
+* **plugins:** ⚡ reduce varint read allocation ([7a665e7](https://github.com/caunt/Void/commit/7a665e76ab4a0080445f8ddbcb242e4bca4b0dca))
+
 ## [0.5.4](https://github.com/caunt/Void/compare/v0.5.3...v0.5.4) (2025-08-01)
 
 
