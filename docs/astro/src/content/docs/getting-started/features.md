@@ -18,7 +18,7 @@ This page provides an overview of the features supported or planned to be implem
 ### Game Versions
 | Game Version         | Proxying | Redirects | API      | WIP      |
 | :------------------- | :------: | :------:  | :------: | :------: |
-| Java 1.7.2 - 1.21.5  | &#x2705; | &#x2705;  | &#x2705; | &#x2705; |
+| Java 1.7.2 - 1.21.8  | &#x2705; | &#x2705;  | &#x2705; | &#x2705; |
 | Java 1.0.0 - 1.7.1   | &#x2705; | &#x274C;  | &#x274C; | &#x274C; |
 | Java Beta            | &#x2705; | &#x274C;  | &#x274C; | &#x274C; |
 | Java Alpha           | &#x2705; | &#x274C;  | &#x274C; | &#x274C; |
