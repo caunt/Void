@@ -139,18 +139,16 @@ export const wrapUnderSummary = (markdown, headerMarker) => {
         ****
         These builds may contain new features, bug fixes, or other changes that have not yet been thoroughly tested.
         </Aside>
-        {builds.runs.filter(run => run.artifacts.length > 0).map((entry, index) => { 
+        {builds.runs.filter(run => run.artifacts.length > 0 && run.conclusion).map((entry, index) => { 
             return (
                 <Card title={`Build #${entry.run_number}`} icon={entry.conclusion === "success" ? "seti:github" : "warning"}>
                     <Badge text={`Build Date: ${new Date(entry.updated_at).toLocaleString().replace(',', '')}`} variant="note" />
                     <br/>
                     <Badge text={`Branch: ${entry.head_branch}`} variant="note" />
                     <br/>
-                    <Badge text={entry.display_title} variant="tip" />
-                    <br/>
                     <Badge text={`Status: ${entry.conclusion}`} variant={entry.conclusion === "success" ? entry.conclusion : "caution"} />
                     <br/>
-                    <br/>
+                    <strong><a href={entry.html_url}>{entry.display_title}</a></strong>
                     <Tabs syncKey="_key">
                         {platforms.filter(platform => platform.id !== "pdk").map(platform => {
                             const cards = entry.artifacts
