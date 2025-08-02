@@ -20,7 +20,7 @@ namespace Void.Proxy.Plugins.ExamplePlugin.Services;
 // Example Chat configuration class.
 public class ChatSettings
 {
-    public string WelcomeMessage { get; set; } = $"Welcome to the %SERVER% server!";
+    public string WelcomeMessage { get; set; } = "Welcome to the %SERVER% server!";
 }
 
 // Here you can use DI to inject any service API you want to use.
