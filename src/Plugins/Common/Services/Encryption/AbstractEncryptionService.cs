@@ -109,7 +109,7 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
             return identifiedKey.VerifyDataSignature(encrypted, [.. original, .. saltBytes]);
         }
 
-        var decrypted = new byte[encrypted.Length];
+        Span<byte> decrypted = stackalloc byte[encrypted.Length];
 
         if (!crypto.Instance.TryDecrypt(encrypted, decrypted, RSAEncryptionPadding.Pkcs1, out var length))
             return false;
@@ -117,7 +117,7 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
         if (original.Length != length)
             return false;
 
-        if (!original.SequenceEqual(decrypted.AsSpan(0, length)))
+        if (!original.SequenceEqual(decrypted[..length]))
             return false;
 
         return true;
