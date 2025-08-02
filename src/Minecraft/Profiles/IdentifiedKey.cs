@@ -72,7 +72,7 @@ public record IdentifiedKey(IdentifiedKeyRevision Revision, long ExpiresAt, byte
             if (guid == default)
                 return false;
 
-            var verify = new byte[PublicKey.Length + 24].AsSpan();
+            Span<byte> verify = stackalloc byte[PublicKey.Length + 24];
             var buffer = new MinecraftBuffer(verify);
             buffer.WriteUuid(uuid);
             buffer.WriteLong(ExpiresAt);
