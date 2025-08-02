@@ -26,49 +26,45 @@ public class ChatSettings
 // Here you can use DI to inject any service API you want to use.
 public class ChatService(ILogger<ChatService> logger, IConfigurationService configs, ICommandService commands) : IEventListener
 {
-    // Save settings instance locally, it is safe and will be updated in place if changes are made on disk.
+    // This instance will be updated in place if changes are made on disk.
     private ChatSettings? _settings;
 
     [Subscribe]
     public async ValueTask OnProxyStarting(ProxyStartingEvent @event, CancellationToken cancellationToken)
     {
-        // Configurations can be loaded once, and any changes made to them will be automatically saved to disk. 
-        // Vice versa, any changes made to the configuration file on disk will be automatically loaded into the instance.
-        // You do not need to worry about saving or loading the configuration manually.
+        // Once configuration loaded, any changes made to them will be automatically saved to disk. 
+        // Vice versa, any changes made to the configuration file on disk will be automatically loaded into that instance.
+        // You do not need to worry about saving or loading the configuration manually, it is done implicitly.
         _settings = await configs.GetAsync<ChatSettings>(cancellationToken);
     }
 
     [Subscribe]
     public async ValueTask OnPhaseChanged(PhaseChangedEvent @event, CancellationToken cancellationToken)
     {
-        // Send message only when the connection is in the Play phase on the client side.
+        // Continue only when the connection is in the Play phase on the Client side.
         if (@event is not { Phase: Phase.Play, Side: Side.Client })
             return;
-
-        // Link is a connection between player and server.
-        // If player is being redirected to another server, another link will be created.
 
         // Only if player has active link to the server.
         if (!@event.Player.TryGetLink(out var link))
             return;
 
-        // If settings are not loaded, do nothing. Practically impossible, but just in case.
+        // If settings are not loaded, do nothing. Practically impossible, but just in case, always do null-checks.
         if (_settings is null)
             return;
 
-        // Replace placeholder in the message with the server name
         var message = _settings.WelcomeMessage.Replace("%SERVER%", link.Server.Name);
 
         await @event.Player.SendChatMessageAsync(message, cancellationToken);
     }
 
-    // Registering commands and interaction with scoped services.
+    // In this example we will register a "/slot" command and interact with scoped service.
     [Subscribe]
     public void OnPluginLoading(PluginLoadingEvent @event)
     {
         // This event is fired when any plugin is being loaded
 
-        // Skip all other plugins load events except ours
+        // Skip all other plugins load events except our plugin
         if (@event.Plugin != this)
             return;
 
@@ -90,11 +86,19 @@ public class ChatService(ILogger<ChatService> logger, IConfigurationService conf
                 return 1;
             }
 
-            // You can resolve scoped services manually from player context
-            var inventory = player.Context.Services.GetRequiredService<InventoryService>();
-            var result = await inventory.ChangeSlotAsync(context, cancellationToken);
+            // Arguments are optional
+            if (!context.TryGetArgument<int>("index", out var slot))
+            {
+                // If slot argument is not provided, we will use random one
+                slot = Random.Shared.Next(0, 9);
+            }
 
-            return result;
+            // Resolve scoped services manually from player context
+            var inventory = player.Context.Services.GetRequiredService<InventoryService>();
+
+            await inventory.ChangeSlotAsync(slot, cancellationToken);
+
+            return 0;
         }
     }
 }

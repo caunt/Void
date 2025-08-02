@@ -9,9 +9,9 @@ using Void.Proxy.Plugins.ExamplePlugin.Services;
 
 namespace Void.Proxy.Plugins.ExamplePlugin;
 
-// Implementing IPlugin makes class an entry point to your plugin
-// Constructor arguments are used to inject many API services implemented by proxy and other plugins
-// See ../Services/ directory for more examples
+// Implementing IPlugin makes class an entry point to your plugin.
+// Constructor arguments are used to inject any API services implemented by proxy and other plugins.
+// See ../Services/ directory for more examples.
 public class ExamplePlugin(ILogger logger, IDependencyService dependencies) : IPlugin
 {
     public string Name => nameof(ExamplePlugin);
@@ -21,7 +21,7 @@ public class ExamplePlugin(ILogger logger, IDependencyService dependencies) : IP
     {
         // This event is fired when any plugin is being loaded
 
-        // Skip all other plugins load events except ours
+        // Skip all other plugins load events except our plugin
         if (@event.Plugin != this)
             return;
 
