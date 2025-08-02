@@ -5,8 +5,15 @@ on:
     branches: ["main"]
 
 jobs:
+  semver:
+    uses: ./.github/workflows/version.yaml
+    secrets: inherit
+    with:
+      release-please: false
+
   build:
+    needs: semver
     uses: ./.github/workflows/dotnet.yaml
     with:
-      dotnet-version: '10.0.100-preview.6.25358.103'
-      void-version: '0.0.0'
+      dotnet-version: ${{ needs.semver.outputs.dotnet-version }}
+      void-version: ${{ needs.semver.outputs.void-version }}
