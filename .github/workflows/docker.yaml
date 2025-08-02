@@ -55,6 +55,7 @@ jobs:
             /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
             /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
             /p:ContainerBaseImage='"${{ matrix.container_base_image }}"' \
+            /p:EnableCompressionInSingleFile=true \
             /p:Version=${{ inputs.void-version }}
 
   push:
@@ -101,4 +102,5 @@ jobs:
             /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
             /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
             /p:ContainerBaseImage='"${{ matrix.container_base_image }}"' \
+            /p:EnableCompressionInSingleFile=true \
             /p:Version=${{ inputs.void-version }}
