@@ -18,7 +18,7 @@ public class BuiltInExceptions : IBuiltInExceptionProvider
     public DynamicCommandExceptionType ReaderInvalidInt { get; } = new(value => new LiteralMessage("Invalid integer '" + value + "'"));
     public SimpleCommandExceptionType ReaderExpectedInt { get; } = new(new LiteralMessage("Expected integer"));
     public DynamicCommandExceptionType ReaderInvalidLong { get; } = new(value => new LiteralMessage("Invalid long '" + value + "'"));
-    public SimpleCommandExceptionType ReaderExpectedLong { get; } = new((new LiteralMessage("Expected long")));
+    public SimpleCommandExceptionType ReaderExpectedLong { get; } = new(new LiteralMessage("Expected long"));
     public DynamicCommandExceptionType ReaderInvalidDouble { get; } = new(value => new LiteralMessage("Invalid double '" + value + "'"));
     public SimpleCommandExceptionType ReaderExpectedDouble { get; } = new(new LiteralMessage("Expected double"));
     public DynamicCommandExceptionType ReaderInvalidFloat { get; } = new(value => new LiteralMessage("Invalid float '" + value + "'"));

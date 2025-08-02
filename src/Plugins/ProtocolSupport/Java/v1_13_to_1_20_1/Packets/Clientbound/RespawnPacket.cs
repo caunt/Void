@@ -44,7 +44,7 @@ public class RespawnPacket : IMinecraftClientboundPacket<RespawnPacket>
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16)
         {
             if (DimensionInfo is null)
-                throw new Exception("DimensionInfo was not set");
+                throw new InvalidOperationException($"{nameof(DimensionInfo)} was not set.");
 
             if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16_2 && protocolVersion < ProtocolVersion.MINECRAFT_1_19)
             {
@@ -75,7 +75,7 @@ public class RespawnPacket : IMinecraftClientboundPacket<RespawnPacket>
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_16)
         {
             if (DimensionInfo is null)
-                throw new Exception("DimensionInfo was not set");
+                throw new InvalidOperationException($"{nameof(DimensionInfo)} was not set.");
 
             buffer.WriteUnsignedByte((byte)PreviousGamemode);
             buffer.WriteBoolean(DimensionInfo.IsDebugType);
