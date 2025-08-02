@@ -68,6 +68,10 @@ Follow the existing C# style rules:
 
 When adding or modifying packet handling:
 
-- Reference <https://minecraft.wiki/w/Java_Edition_protocol/Packets> for the current protocol packet list and structures.
-- For previous or historical packet behavior, view the edit history of that page.
+- Identify the Minecraft version whose packets require updates.
+- Look up the release date of the next minor update (for example, if targeting 1.21, note that 1.21.1 released on August 8, 2024).
+- Open the [Java Edition protocol/Packets](https://minecraft.wiki/w/Java_Edition_protocol/Packets?action=history&limit=500) page and view its revision history.
+- Select the last revision made before that next update's release date (for 1.21, use the August 5, 2024 revision).
+- Use that snapshot as your reference when altering the target version's protocol.
+- For sub-versions, repeat this process using the next sub-version's release date and its preceding revision.
 - Check the `src/Plugins/ProtocolSupport` directory to see how existing packets are implemented and update them as necessary.
