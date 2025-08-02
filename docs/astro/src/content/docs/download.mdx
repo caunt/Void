@@ -1,4 +1,4 @@
----
+﻿---
 title: Download
 description: Download the Void Proxy.
 template: splash
@@ -9,6 +9,8 @@ import { Markdown } from 'astro-remote';
 import { getCollection } from 'astro:content';
 
 export const releases = await getCollection('releases');
+export const workflows = await getCollection('workflows');
+export const builds = workflows.find(entry => entry.data.path.includes('main')).data;
 export const platforms = [
     { "id": "windows",      "title": "Windows",         "pattern": "-win-",          "icon": "seti:windows" },
     { "id": "linux",        "title": "Linux",           "pattern": "-linux-",        "icon": "linux"        },
@@ -74,57 +76,103 @@ export const wrapUnderSummary = (markdown, headerMarker) => {
   return out.join('\n')
 }
 
-<Aside type="tip" title="Thanks for choosing Void">
-****  
-Releases: {releases.length}  
-Downloads: {releases.reduce((acc, entry) => acc + entry.data.assets.reduce((acc, asset) => acc + asset.download_count, 0), 0).toLocaleString()}
-</Aside>
+<Tabs>
+    <TabItem label="Releases" icon="star">
+        <Aside type="tip" title="Thanks for choosing Void">
+        ****
+        Releases: {releases.length}  
+        Downloads: {releases.reduce((acc, entry) => acc + entry.data.assets.reduce((acc, asset) => acc + asset.download_count, 0), 0).toLocaleString()}
+        </Aside>
 
-### Platforms
+        ### Platforms
 
-| OS - Arch       | X64      | ARM64    | ARM      | X86      |
-|:---------------:|:--------:|:--------:|:--------:|:--------:|
-| Linux           | &#x2705; | &#x2705; | &#x2705; | &#x274C; |
-| Linux (Alpine)  | &#x2705; | &#x2705; | &#x2705; | &#x274C; |
-| Linux (Android) | &#x2705; | &#x2705; | &#x274C; | &#x274C; |
-| macOS           | &#x2705; | &#x2705; | &#x274C; | &#x274C; |
-| Windows         | &#x2705; | &#x2705; | &#x274C; | &#x2705; |
+        | OS - Arch       | X64      | ARM64    | ARM      | X86      |
+        |:---------------:|:--------:|:--------:|:--------:|:--------:|
+        | Linux           | &#x2705; | &#x2705; | &#x2705; | &#x274C; |
+        | Linux (Alpine)  | &#x2705; | &#x2705; | &#x2705; | &#x274C; |
+        | Linux (Android) | &#x2705; | &#x2705; | &#x274C; | &#x274C; |
+        | macOS           | &#x2705; | &#x2705; | &#x274C; | &#x274C; |
+        | Windows         | &#x2705; | &#x2705; | &#x274C; | &#x2705; |
 
-{releases.map((entry, index) => {
-    const latest = index === 0
-    return (
-        <>
-            <Card title={latest ? `Latest (${entry.data.name})` : entry.data.name} icon={latest ? "star" : "seti:css"}>
-                <Badge text={`Release Date: ${new Date(entry.data.published_at).toLocaleDateString()}`} variant="success" />
-                <br/>
-                <Badge text={`Downloads: ${entry.data.assets.reduce((acc, asset) => acc + asset.download_count, 0)}`} variant="note" />
-                <br/>
-                <br/>
-                {latest && <Markdown content={wrapUnderSummary(entry.data.body.split('\n').slice(3).join('\n').replaceAll('###', '#####'), '#####')} />}
-                <Tabs syncKey="_key">
-                    {platforms.map(platform => {
-                        const cards = entry.data.assets
-                            .filter(asset => assetFilter(asset, platform))
-                            .sort((a, b) => b.download_count - a.download_count)
-                            .map(asset => (
-                                <LinkCard
-                                    title={`Download ${asset.name}`}
-                                    href={asset.browser_download_url}
-                                    description={`Downloads: ${asset.download_count} Size: ${formatFileSize(asset.size)}`}
-                                />
-                            ))
+        {releases.map((entry, index) => {
+            const latest = index === 0
+            return (
+                <>
+                    <Card title={latest ? `Latest (${entry.data.name})` : entry.data.name} icon={latest ? "star" : "seti:css"}>
+                        <Badge text={`Release Date: ${new Date(entry.data.published_at).toLocaleDateString()}`} variant="success" />
+                        <br/>
+                        <Badge text={`Downloads: ${entry.data.assets.reduce((acc, asset) => acc + asset.download_count, 0)}`} variant="note" />
+                        <br/>
+                        <br/>
+                        {latest && <Markdown content={wrapUnderSummary(entry.data.body.split('\n').slice(3).join('\n').replaceAll('###', '#####'), '#####')} />}
+                        <Tabs syncKey="_key">
+                            {platforms.map(platform => {
+                                const cards = entry.data.assets
+                                    .filter(asset => assetFilter(asset, platform))
+                                    .sort((a, b) => b.download_count - a.download_count)
+                                    .map(asset => (
+                                        <LinkCard
+                                            title={`Download ${asset.name}`}
+                                            href={asset.browser_download_url}
+                                            description={`Downloads: ${asset.download_count} Size: ${formatFileSize(asset.size)}`}
+                                        />
+                                    ))
 
-                        return (
-                            <TabItem key={platform.id} label={platform.title} icon={platform.icon}>
-                                {latest ? cards : <CardGrid>{cards}</CardGrid>}
-                            </TabItem>
-                        )
-                      })}
-                </Tabs>
-            </Card>
+                                return (
+                                    <TabItem key={platform.id} label={platform.title} icon={platform.icon}>
+                                        {latest ? cards : <CardGrid>{cards}</CardGrid>}
+                                    </TabItem>
+                                )
+                              })}
+                        </Tabs>
+                    </Card>
 
-            {latest && <Aside title="Historical Versions" type="note">The following historical versions are no longer supported.</Aside>}
-        </>
-        )
-    }
-)}
+                    {latest && <Aside title="Historical Versions" type="note">The following historical versions are no longer supported.</Aside>}
+                </>
+                )
+            }
+        )}
+    </TabItem>
+
+    <TabItem label="Development Builds" icon="puzzle">
+        <Aside type="caution" title="These builds are unstable">
+        ****
+        These builds may contain new features, bug fixes, or other changes that have not yet been thoroughly tested.
+        </Aside>
+        {builds.runs.filter(run => run.artifacts.length > 0).map((entry, index) => { 
+            return (
+                <Card title={`Build #${entry.run_number}`} icon={entry.conclusion === "success" ? "seti:github" : "warning"}>
+                    <Badge text={`Build Date: ${new Date(entry.updated_at).toLocaleString().replace(',', '')}`} variant="note" />
+                    <br/>
+                    <Badge text={`Branch: ${entry.head_branch}`} variant="note" />
+                    <br/>
+                    <Badge text={entry.display_title} variant="tip" />
+                    <br/>
+                    <Badge text={`Status: ${entry.conclusion}`} variant={entry.conclusion === "success" ? entry.conclusion : "caution"} />
+                    <br/>
+                    <br/>
+                    <Tabs syncKey="_key">
+                        {platforms.filter(platform => platform.id !== "pdk").map(platform => {
+                            const cards = entry.artifacts
+                                .filter(asset => !asset.expired)
+                                .filter(asset => assetFilter(asset, platform))
+                                .map(asset => (
+                                    <LinkCard
+                                        title={`Download ${asset.name}.zip`}
+                                        href={`https://nightly.link/caunt/Void/actions/artifacts/${asset.id}.zip`}
+                                        description={`Size: ${formatFileSize(asset.size_in_bytes)}`}
+                                    />
+                                ))
+
+                            return (
+                                <TabItem key={platform.id} label={platform.title} icon={platform.icon}>
+                                    <CardGrid>{cards}</CardGrid>
+                                </TabItem>
+                            )
+                            })}
+                    </Tabs>
+                </Card>
+            )
+        })}
+    </TabItem>
+</Tabs>
