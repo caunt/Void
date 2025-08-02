@@ -18,56 +18,79 @@ Usage:
   void-win-x64 [options]
 
 Options:
-  -r, --repository <repository>  Provides a URI to NuGet repository [--repository
-                                 https://nuget.example.com/v3/index.json or --repository
-                                 https://username:password@nuget.example.com/v3/index.json].
-  -p, --plugin <plugin>          Provides a path to the file, directory or url to load plugin.
-  --server <server>              Registers an additional server in format <host>:<port>
-  --interface <address>          Overrides the listening network interface
-  --port <port>                  Overrides the listening port
-  --ignore-file-servers          Ignore servers specified in configuration files
-  --offline                      Allows players to connect without Mojang authorization
-  --logging <level>              Sets the logging level
-  --version                      Show version information
-  -?, -h, --help                 Show help and usage information
+  -r, --repository <repository>                                    Provides a URI to NuGet repository [--repository
+                                                                   https://nuget.example.com/v3/index.json or --repository
+                                                                   https://username:password@nuget.example.com/v3/index.json].
+  -p, --plugin <plugin>                                            Provides a path to the file, directory or url to load plugin.
+  --ignore-file-servers                                            Ignore servers specified in configuration files
+  --server <server>                                                Registers an additional server in format <host>:<port>
+  --interface <interface>                                          Sets the listening network interface
+  --port <port>                                                    Sets the listening port
+  --offline                                                        Allows players to connect without Mojang authorization
+  --logging <Critical|Debug|Error|Information|None|Trace|Warning>  Sets the logging level
+  --version                                                        Show version information
+  -?, -h, --help                                                   Show help and usage information
 ```
+
+## Authentication
+- `--offline`  
+  Allows players to connect without Mojang authorization.
+
+  ```bash title="Example Usage"
+  ./void-linux-x64 --offline
+  ```
+
+## Network
+- `--interface`  
+  Overrides the listening network interface.
+- `--port`  
+  Overrides the listening port for the proxy.
+
+  ```bash title="Example Usage"
+  ./void-linux-x64 \
+    --interface 0.0.0.0 \
+    --port 25565 \
+  ```
+
+## Servers
+- `--server`  
+  Registers an server in format `<host>:<port>` where port is between `1` and `65535`. IPv6 addresses must be enclosed in square brackets.
+- `--ignore-file-servers`  
+  Ignore servers specified in configuration files.
+
+  ```bash title="Example Usage"
+  ./void-linux-x64 \
+    --ignore-file-servers \
+    --server 127.0.0.1:25565 \
+    --server [2001:db8::1]:25565
+  ```
 
 ## Plugins
 - `--plugin`  
-  Allows you to specify additional plugins to load.  
-  Example: `./void-linux-x64 --plugin https://example.org/download/YourPlugin1.dll --plugin /home/YourPlugin2.dll`
+  Allows you to specify plugins to load.
+- `--repository`  
+  Allows you to specify NuGet repositories to resolve plugin dependencies.
 
-## NuGet
-- `--repository`
-  Allows you to specify additional NuGet repositories to use.
-  Example: `./void-linux-x64 --repository https://nuget.example.com/v3/index.json`
-
-## Servers
-- `--server`
-  Registers an additional server in format `<host>:<port>` where port is between `1` and `65535`. IPv6 addresses must be enclosed in square brackets. This option can be used multiple times.
-- `--ignore-file-servers`
-  Ignore servers specified in configuration files.
-  Example: `./void-linux-x64 --server 127.0.0.1:25565 --server [2001:db8::1]:25565`
-
-## Network
-- `--interface`
-  Overrides the listening network interface.
-  Example: `./void-linux-x64 --interface 0.0.0.0`
-- `--port`
-  Overrides the listening port for the proxy.
-  Example: `./void-linux-x64 --port 25570`
-
-## Authentication
-- `--offline`
-  Allows players to connect without Mojang authorization.
-  Example: `./void-linux-x64 --offline`
+  ```bash title="Example Usage"
+  ./void-linux-x64 \
+    --plugin https://example.org/download/YourPlugin1.dll \
+    --plugin /home/YourPlugin2.dll \
+    --repository https://nuget.example.com/v3/index.json
+  ```
 
 ## Logging
-- `--logging`
+- `--logging`  
   Sets the logging level. Valid values are Trace, Debug, Information, Warning, Error and Critical.
-  Example: `./void-linux-x64 --logging Debug`
+  Example: `./void-linux-x64 `
+
+  ```bash title="Example Usage"
+  ./void-linux-x64 --logging Debug
+  ```
 
 ## Version
-- `--version`
+- `--version`  
   Displays the current version of Void Proxy.
-  Example: `./void-linux-x64 --version`
+
+  ```bash title="Example"
+  ./void-linux-x64 --version
+  ```
