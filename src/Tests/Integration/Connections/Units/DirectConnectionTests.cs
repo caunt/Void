@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Network;
+using Void.Tests.Integration;
 using Void.Tests.Integration.Sides.Clients;
 using Void.Tests.Integration.Sides.Servers;
 using Xunit;
@@ -13,7 +14,7 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
     private const int ServerPort = 25000;
     private const string ExpectedText = "hello void!";
 
-    [Fact]
+    [DirectFact]
     public async Task MccConnectsToPaperServer()
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
@@ -28,7 +29,7 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
         }, fixture.MinecraftConsoleClient, fixture.PaperServer);
     }
 
-    [Theory]
+    [DirectTheory]
     [MemberData(nameof(MinecraftConsoleClient.SupportedVersions), MemberType = typeof(MinecraftConsoleClient))]
     public async Task MccConnectsToPaperServer_WithProtocolVersion(ProtocolVersion protocolVersion)
     {
@@ -44,7 +45,7 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
         }, fixture.MinecraftConsoleClient, fixture.PaperServer);
     }
 
-    [Fact]
+    [DirectFact]
     public async Task MineflayerConnectsToPaperServer()
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
@@ -59,7 +60,7 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
         }, fixture.MineflayerClient, fixture.PaperServer);
     }
 
-    [Theory]
+    [DirectTheory]
     [MemberData(nameof(MineflayerClient.SupportedVersions), MemberType = typeof(MineflayerClient))]
     public async Task MineflayerConnectsToPaperServer_WithProtocolVersion(ProtocolVersion protocolVersion)
     {

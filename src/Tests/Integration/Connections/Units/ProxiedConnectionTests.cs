@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Network;
+using Void.Tests.Integration;
 using Void.Tests.Integration.Sides.Clients;
 using Void.Tests.Integration.Sides.Proxies;
 using Void.Tests.Integration.Sides.Servers;
@@ -15,7 +16,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
     private const int ServerPort = 35001;
     private const string ExpectedText = "hello proxied void!";
 
-    [Fact]
+    [ProxiedFact]
     public async Task MccConnectsToPaperServerThroughProxy()
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
@@ -30,7 +31,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
         }, fixture.MinecraftConsoleClient, fixture.VoidProxy, fixture.PaperServer);
     }
 
-    [Theory]
+    [ProxiedTheory]
     [MemberData(nameof(MinecraftConsoleClient.SupportedVersions), MemberType = typeof(MinecraftConsoleClient))]
     public async Task MccConnectsToPaperServerThroughProxy_WithProtocolVersion(ProtocolVersion protocolVersion)
     {
@@ -46,7 +47,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
         }, fixture.MinecraftConsoleClient, fixture.VoidProxy, fixture.PaperServer);
     }
 
-    [Fact]
+    [ProxiedFact]
     public async Task MineflayerConnectsToPaperServerThroughProxy()
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
@@ -61,7 +62,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
         }, fixture.MineflayerClient, fixture.VoidProxy, fixture.PaperServer);
     }
 
-    [Theory]
+    [ProxiedTheory]
     [MemberData(nameof(MineflayerClient.SupportedVersions), MemberType = typeof(MineflayerClient))]
     public async Task MineflayerConnectsToPaperServerThroughProxy_WithProtocolVersion(ProtocolVersion protocolVersion)
     {
