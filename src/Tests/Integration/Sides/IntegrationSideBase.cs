@@ -52,13 +52,13 @@ public abstract class IntegrationSideBase : IIntegrationSide
         var arguments = new List<string>(userArguments.Length);
 
         var isJar = fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase);
-        var jvmArguments = Array.Empty<string>();
-        var jarArguments = userArguments;
+        var jvmArguments = Enumerable.Empty<string>();
+        var jarArguments = userArguments.AsEnumerable();
 
         if (isJar)
         {
-            jvmArguments = userArguments.Where(argument => argument.StartsWith("-D", StringComparison.Ordinal)).ToArray();
-            jarArguments = userArguments.Where(argument => !argument.StartsWith("-D", StringComparison.Ordinal)).ToArray();
+            jvmArguments = userArguments.Where(argument => argument.StartsWith("-D", StringComparison.Ordinal));
+            jarArguments = userArguments.Except(jvmArguments);
         }
 
         var processStartInfo = new ProcessStartInfo(fileName: isJar ? (File.Exists(_jreBinaryPath) ? _jreBinaryPath : throw new IntegrationTestException("JRE is not installed")) : fileName)
