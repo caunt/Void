@@ -4,6 +4,10 @@ on:
       dotnet-version:
         type: string
         required: false
+      release-please:
+        type: boolean
+        required: false
+        default: true
     outputs:
       dotnet-version:
         description: "Generated .NET Version"
@@ -42,6 +46,7 @@ jobs:
           echo "result=${base}+${sha}" >> $GITHUB_OUTPUT
 
   release-please:
+    if: ${{ inputs.release-please }}
     environment: void
     runs-on: ubuntu-latest
     outputs:
