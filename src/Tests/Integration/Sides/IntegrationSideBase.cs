@@ -52,6 +52,15 @@ public abstract class IntegrationSideBase : IIntegrationSide
         var arguments = new List<string>(userArguments.Length);
 
         var isJar = fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase);
+        var jvmArguments = Array.Empty<string>();
+        var jarArguments = userArguments;
+
+        if (isJar)
+        {
+            jvmArguments = userArguments.Where(argument => argument.StartsWith("-D", StringComparison.Ordinal)).ToArray();
+            jarArguments = userArguments.Where(argument => !argument.StartsWith("-D", StringComparison.Ordinal)).ToArray();
+        }
+
         var processStartInfo = new ProcessStartInfo(fileName: isJar ? (File.Exists(_jreBinaryPath) ? _jreBinaryPath : throw new IntegrationTestException("JRE is not installed")) : fileName)
         {
             WorkingDirectory = Path.GetDirectoryName(fileName),
@@ -93,12 +102,16 @@ public abstract class IntegrationSideBase : IIntegrationSide
 
         if (isJar)
         {
+            arguments.AddRange(jvmArguments);
             arguments.Add("-jar");
             arguments.Add(fileName);
             arguments.Add("--nogui");
+            arguments.AddRange(jarArguments);
         }
-
-        arguments.AddRange(userArguments);
+        else
+        {
+            arguments.AddRange(userArguments);
+        }
 
         foreach (var argument in arguments)
             processStartInfo.ArgumentList.Add(argument);
