@@ -49,7 +49,7 @@ Options:
   ```bash title="Example Usage"
   ./void-linux-x64 \
     --interface 0.0.0.0 \
-    --port 25565 \
+    --port 25565
   ```
 
 ## Servers
