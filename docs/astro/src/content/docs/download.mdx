@@ -75,6 +75,74 @@ export const wrapUnderSummary = (markdown, headerMarker) => {
   
   return out.join('\n')
 }
+export const renderRelease = (entry, latest) => 
+(
+    <Card title={latest ? `Latest (${entry.data.name})` : entry.data.name} icon={latest ? "star" : "seti:css"}>
+        <Badge text={`Release Date: ${new Date(entry.data.published_at).toLocaleDateString()}`} variant="success" />
+        <br/>
+        <Badge text={`Downloads: ${entry.data.assets.reduce((acc, asset) => acc + asset.download_count, 0)}`} variant="note" />
+        <br/>
+        <br/>
+        {latest && <Markdown content={wrapUnderSummary(entry.data.body.split('\n').slice(3).join('\n').replaceAll('###', '#####'), '#####')} />}
+        <Tabs syncKey="_key">
+            {platforms.map(platform => {
+                const cards = entry.data.assets
+                    .filter(asset => assetFilter(asset, platform))
+                    .sort((a, b) => b.download_count - a.download_count)
+                    .map(asset => (
+                        <LinkCard
+                            title={`Download ${asset.name}`}
+                            href={asset.browser_download_url}
+                            description={`Downloads: ${asset.download_count} Size: ${formatFileSize(asset.size)}`}
+                        />
+                    ))
+
+                return (
+                    <TabItem key={platform.id} label={platform.title} icon={platform.icon}>
+                        {latest ? cards : <CardGrid>{cards}</CardGrid>}
+                    </TabItem>
+                )
+                })}
+        </Tabs>
+    </Card>
+)
+export const renderBuild = (entry) => 
+(
+    <Card title={`Build #${entry.run_number}`} icon="seti:github">
+        <Badge text={`Build Date: ${new Date(entry.updated_at).toLocaleString().replace(',', '')}`} variant="success" />
+        <br/>
+        <Badge text={`Branch: ${entry.head_branch}`} variant="note" />
+        <br/>
+        <br/>
+        <strong><a href={entry.html_url}>{entry.display_title}</a></strong>
+        <br/>
+        <br/>
+        <details>
+            <summary>Downloads</summary>
+
+            <Tabs syncKey="_key">
+                {platforms.filter(platform => platform.id !== "pdk").map(platform => {
+                    const cards = entry.artifacts
+                        .filter(asset => !asset.expired)
+                        .filter(asset => assetFilter(asset, platform))
+                        .map(asset => (
+                            <LinkCard
+                                title={`Download ${asset.name}.zip`}
+                                href={`https://nightly.link/caunt/Void/actions/artifacts/${asset.id}.zip`}
+                                description={`Size: ${formatFileSize(asset.size_in_bytes)}`}
+                            />
+                        ))
+
+                    return (
+                        <TabItem key={platform.id} label={platform.title} icon={platform.icon}>
+                            <CardGrid>{cards}</CardGrid>
+                        </TabItem>
+                    )
+                    })}
+            </Tabs>
+        </details>
+    </Card>
+)
 
 <Tabs>
     <TabItem label="Releases" icon="star">
@@ -94,44 +162,18 @@ export const wrapUnderSummary = (markdown, headerMarker) => {
         | macOS           | &#x2705; | &#x2705; | &#x274C; | &#x274C; |
         | Windows         | &#x2705; | &#x2705; | &#x274C; | &#x2705; |
 
-        {releases.map((entry, index) => {
-            const latest = index === 0
-            return (
-                <>
-                    <Card title={latest ? `Latest (${entry.data.name})` : entry.data.name} icon={latest ? "star" : "seti:css"}>
-                        <Badge text={`Release Date: ${new Date(entry.data.published_at).toLocaleDateString()}`} variant="success" />
-                        <br/>
-                        <Badge text={`Downloads: ${entry.data.assets.reduce((acc, asset) => acc + asset.download_count, 0)}`} variant="note" />
-                        <br/>
-                        <br/>
-                        {latest && <Markdown content={wrapUnderSummary(entry.data.body.split('\n').slice(3).join('\n').replaceAll('###', '#####'), '#####')} />}
-                        <Tabs syncKey="_key">
-                            {platforms.map(platform => {
-                                const cards = entry.data.assets
-                                    .filter(asset => assetFilter(asset, platform))
-                                    .sort((a, b) => b.download_count - a.download_count)
-                                    .map(asset => (
-                                        <LinkCard
-                                            title={`Download ${asset.name}`}
-                                            href={asset.browser_download_url}
-                                            description={`Downloads: ${asset.download_count} Size: ${formatFileSize(asset.size)}`}
-                                        />
-                                    ))
+        {releases.slice(0, 1).map(entry => renderRelease(entry, true))}
 
-                                return (
-                                    <TabItem key={platform.id} label={platform.title} icon={platform.icon}>
-                                        {latest ? cards : <CardGrid>{cards}</CardGrid>}
-                                    </TabItem>
-                                )
-                              })}
-                        </Tabs>
-                    </Card>
 
-                    {latest && <Aside title="Historical Versions" type="note">The following historical versions are no longer supported.</Aside>}
-                </>
-                )
-            }
-        )}
+        <details>
+            <summary>
+                Browse Releases
+            </summary>
+            
+            <Aside title="Historical Versions" type="note">These versions are no longer supported.</Aside>
+            
+            {releases.slice(1).map(entry => renderRelease(entry, false))}
+        </details>
     </TabItem>
 
     <TabItem label="Development Builds" icon="puzzle">
@@ -139,38 +181,7 @@ export const wrapUnderSummary = (markdown, headerMarker) => {
         ****
         These builds may contain new features, bug fixes, or other changes that have not yet been thoroughly tested.
         </Aside>
-        {builds.runs.filter(run => run.artifacts.length > 0 && run.conclusion).map((entry, index) => { 
-            return (
-                <Card title={`Build #${entry.run_number}`} icon={entry.conclusion === "success" ? "seti:github" : "warning"}>
-                    <Badge text={`Build Date: ${new Date(entry.updated_at).toLocaleString().replace(',', '')}`} variant="note" />
-                    <br/>
-                    <Badge text={`Branch: ${entry.head_branch}`} variant="note" />
-                    <br/>
-                    <Badge text={`Status: ${entry.conclusion}`} variant={entry.conclusion === "success" ? entry.conclusion : "caution"} />
-                    <br/>
-                    <strong><a href={entry.html_url}>{entry.display_title}</a></strong>
-                    <Tabs syncKey="_key">
-                        {platforms.filter(platform => platform.id !== "pdk").map(platform => {
-                            const cards = entry.artifacts
-                                .filter(asset => !asset.expired)
-                                .filter(asset => assetFilter(asset, platform))
-                                .map(asset => (
-                                    <LinkCard
-                                        title={`Download ${asset.name}.zip`}
-                                        href={`https://nightly.link/caunt/Void/actions/artifacts/${asset.id}.zip`}
-                                        description={`Size: ${formatFileSize(asset.size_in_bytes)}`}
-                                    />
-                                ))
 
-                            return (
-                                <TabItem key={platform.id} label={platform.title} icon={platform.icon}>
-                                    <CardGrid>{cards}</CardGrid>
-                                </TabItem>
-                            )
-                            })}
-                    </Tabs>
-                </Card>
-            )
-        })}
+        {builds.runs.filter(run => run.artifacts.length > 0 && run.conclusion === "success").map(renderBuild)}
     </TabItem>
 </Tabs>
