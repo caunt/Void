@@ -294,7 +294,7 @@ public static class WriteMinecraftBufferExtensions
     private static void WriteStringCore<TBuffer>(ref TBuffer buffer, string value) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
         var byteCount = Encoding.UTF8.GetByteCount(value);
-        Span<byte> bytes = byteCount <= 1024 ? stackalloc byte[byteCount] : new byte[byteCount];
+        Span<byte> bytes = stackalloc byte[byteCount];
         Encoding.UTF8.GetBytes(value, bytes);
 
         buffer.WriteVarInt(byteCount);
