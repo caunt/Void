@@ -33,9 +33,15 @@ public class SignedChatCommandPacket : IMinecraftServerboundPacket<SignedChatCom
 
         buffer.WriteVarInt(MessageCount);
 
-        var array = new byte[DivFloor];
-        Acknowledged.CopyTo(array, 0);
-        buffer.Write(array);
+        Span<byte> acknowledgedBytes = stackalloc byte[DivFloor];
+
+        for (var i = 0; i < WindowSize; i++)
+        {
+            if (Acknowledged.Get(i))
+                acknowledgedBytes[i / 8] |= (byte)(1 << (i % 8));
+        }
+
+        buffer.Write(acknowledgedBytes);
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_21_5)
             buffer.WriteUnsignedByte(0); // always 0, no Checksum
