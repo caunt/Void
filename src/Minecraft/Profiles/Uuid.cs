@@ -89,8 +89,12 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
 
     public static Uuid FromLongs(long mostSig, long leastSig)
     {
-        var mostSigBytes = BitConverter.GetBytes(mostSig);
-        var leastSigBytes = BitConverter.GetBytes(leastSig);
+        Span<byte> bytes = stackalloc byte[16];
+        var mostSigBytes = bytes[..8];
+        var leastSigBytes = bytes[8..];
+
+        BinaryPrimitives.WriteInt64LittleEndian(mostSigBytes, mostSig);
+        BinaryPrimitives.WriteInt64LittleEndian(leastSigBytes, leastSig);
 
         return new Uuid(new Guid([
             mostSigBytes[4],
