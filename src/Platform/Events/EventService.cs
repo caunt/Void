@@ -11,7 +11,18 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
 {
     private readonly List<Entry> _entries = [];
 
-    public IEnumerable<IEventListener> Listeners => [.. _entries.Select(entry => entry.Listener)];
+    public IEnumerable<IEventListener> Listeners
+    {
+        get
+        {
+            var listeners = new IEventListener[_entries.Count];
+
+            for (var i = 0; i < _entries.Count; i++)
+                listeners[i] = _entries[i].Listener;
+
+            return listeners;
+        }
+    }
 
     public async ValueTask ThrowAsync<T>(CancellationToken cancellationToken = default) where T : IEvent, new()
     {
