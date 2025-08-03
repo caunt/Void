@@ -12,7 +12,8 @@ public class BufferMemoryTests
     {
         var memory = new BufferMemory(stackalloc byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }.ToArray());
         var slice = memory.Slice(2, 5);
-        Assert.Equal(new byte[] { 2, 3, 4, 5, 6 }, slice.Span.Access(0, 5).ToArray());
+        Span<byte> expected = stackalloc byte[] { 2, 3, 4, 5, 6 };
+        Assert.True(slice.Span.Access(0, 5).SequenceEqual(expected));
     }
 
     [Fact]
