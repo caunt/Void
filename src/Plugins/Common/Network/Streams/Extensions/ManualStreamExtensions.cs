@@ -54,7 +54,7 @@ public static class ManualStreamExtensions
     public static void WriteVarInt(this IManualStream stream, int value)
     {
         var unsigned = (uint)value;
-        var buffer = ArrayPool<byte>.Shared.Rent(5);
+        Span<byte> buffer = stackalloc byte[5];
         var idx = 0;
 
         do
@@ -69,8 +69,7 @@ public static class ManualStreamExtensions
             buffer[idx++] = temp;
         } while (unsigned != 0);
 
-        stream.Write(buffer.AsSpan(0, idx));
-        ArrayPool<byte>.Shared.Return(buffer);
+        stream.Write(buffer[..idx]);
     }
 
     public static async ValueTask WriteVarIntAsync(this IManualStream stream, int value, CancellationToken cancellationToken = default)
