@@ -453,7 +453,9 @@ internal ref struct MinecraftBackingBuffer
             case BufferType.ReadOnlySpan or BufferType.ReadOnlySequence:
                 throw new ReadOnlyException();
             case BufferType.MemoryStream:
-                _memoryStreamBackingBuffer.Write(Encoding.UTF8.GetBytes(value));
+                Span<byte> utf8 = stackalloc byte[length];
+                Encoding.UTF8.GetBytes(value, utf8);
+                _memoryStreamBackingBuffer.Write(utf8);
                 break;
             default:
                 throw new NotSupportedException(_bufferType.ToString());
