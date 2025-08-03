@@ -232,7 +232,7 @@ internal ref struct MinecraftBackingBuffer
     {
         Span<byte> buffer = stackalloc byte[5];
         var length = value.AsVarInt(buffer);
-        Write(buffer[..length].ToArray());
+        Write(buffer[..length]);
     }
 
     public long ReadVarLong()
