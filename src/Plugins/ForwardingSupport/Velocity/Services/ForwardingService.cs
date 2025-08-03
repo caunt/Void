@@ -90,7 +90,10 @@ public class ForwardingService(IPlayerContext context, ILogger logger, Settings 
         }
 
         var forwardingData = buffer.Access(0, buffer.Position);
-        var signature = HMACSHA256.HashData(Encoding.UTF8.GetBytes(settings.Secret), forwardingData);
+        var secretLength = Encoding.UTF8.GetByteCount(settings.Secret);
+        Span<byte> secretBytes = stackalloc byte[secretLength];
+        Encoding.UTF8.GetBytes(settings.Secret, secretBytes);
+        var signature = HMACSHA256.HashData(secretBytes, forwardingData);
 
         @event.Cancel();
         await @event.Link.SendPacketAsync(new LoginPluginResponsePacket { Data = [.. signature, .. forwardingData], MessageId = packet.MessageId, Successful = true }, cancellationToken);
