@@ -196,7 +196,7 @@ export default defineConfig({
             },
             {
                 tag: 'script',
-                attrs: { 'is:inline': '', async: '', src: `https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}` }
+                attrs: { 'is:inline': '', async: true, src: `https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}` }
             },
             {
                 tag: 'script',
