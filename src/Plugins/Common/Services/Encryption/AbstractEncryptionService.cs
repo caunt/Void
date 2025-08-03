@@ -101,10 +101,11 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
 
         if (player.IdentifiedKey is { } identifiedKey)
         {
-            var saltBytes = BitConverter.GetBytes(salt);
+            Span<byte> saltBytes = stackalloc byte[sizeof(long)];
+            BitConverter.TryWriteBytes(saltBytes, salt);
 
             if (BitConverter.IsLittleEndian)
-                Array.Reverse(saltBytes);
+                saltBytes.Reverse();
 
             return identifiedKey.VerifyDataSignature(encrypted, [.. original, .. saltBytes]);
         }
