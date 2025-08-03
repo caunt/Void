@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using Void.Minecraft.Buffers;
 
 namespace Void.Minecraft.Network.Registries.Transformations.Properties;
@@ -10,11 +9,14 @@ public record LongProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<LongPro
 
     public static LongProperty FromPrimitive(long value)
     {
-        using var stream = new MemoryStream();
-        var buffer = new MinecraftBuffer(stream);
+        Span<byte> span = stackalloc byte[8];
+        var buffer = new MinecraftBuffer(span);
         buffer.WriteLong(value);
 
-        return new LongProperty(stream.ToArray());
+        var array = GC.AllocateUninitializedArray<byte>(8);
+        span.CopyTo(array);
+
+        return new LongProperty(array);
     }
     public static LongProperty Read(ref MinecraftBuffer buffer)
     {
