@@ -23,7 +23,7 @@ public record CommandContext(
 
     public CommandContext CopyFor(ICommandSource source)
     {
-        if (Source?.Equals(source) ?? false)
+        if (Source.Equals(source))
             return this;
 
         return new CommandContext(source, Input, Arguments, Executor, RootNode, Nodes, Range, Child, RedirectModifier, Forks);
