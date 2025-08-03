@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -24,28 +25,29 @@ public static class GuidHelper
 
     public static Guid FromLongs(long mostSig, long leastSig)
     {
-        var mostSigBytes = BitConverter.GetBytes(mostSig);
-        var leastSigBytes = BitConverter.GetBytes(leastSig);
+        Span<byte> bytes = stackalloc byte[16];
+        BinaryPrimitives.WriteInt64LittleEndian(bytes[..8], mostSig);
+        BinaryPrimitives.WriteInt64LittleEndian(bytes[8..], leastSig);
 
         Span<byte> guidBytes =
             //Is there a better way??
             [
-                mostSigBytes[4],
-                mostSigBytes[5],
-                mostSigBytes[6],
-                mostSigBytes[7],
-                mostSigBytes[2],
-                mostSigBytes[3],
-                mostSigBytes[0],
-                mostSigBytes[1],
-                leastSigBytes[7],
-                leastSigBytes[6],
-                leastSigBytes[5],
-                leastSigBytes[4],
-                leastSigBytes[3],
-                leastSigBytes[2],
-                leastSigBytes[1],
-                leastSigBytes[0]
+                bytes[4],
+                bytes[5],
+                bytes[6],
+                bytes[7],
+                bytes[2],
+                bytes[3],
+                bytes[0],
+                bytes[1],
+                bytes[15],
+                bytes[14],
+                bytes[13],
+                bytes[12],
+                bytes[11],
+                bytes[10],
+                bytes[9],
+                bytes[8]
             ];
 
         return new Guid(guidBytes);
