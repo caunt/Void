@@ -26,7 +26,6 @@ public interface IProxy
     /// <remarks>If <paramref name="waitOnlinePlayers"/> is set to <see langword="true"/>, the proxy will
     /// wait until all players have disconnected. Use this option to ensure a graceful shutdown when active player
     /// sessions are present.</remarks>
-    /// <param name="waitOnlinePlayers">A value indicating whether to wait for all online players to disconnect before stopping the server.  <see
-    /// langword="true"/> to wait for players to disconnect; otherwise, <see langword="false"/>.</param>
+    /// <param name="waitOnlinePlayers">A value indicating whether to wait for all online players to disconnect before stopping the server. <see langword="true"/> to wait for players to disconnect; otherwise, <see langword="false"/>.</param>
     public void Stop(bool waitOnlinePlayers = false);
 }
