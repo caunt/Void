@@ -205,7 +205,8 @@ public class ReadMinecraftBufferExtensionsTests
 
         var remaining = buffer.ReadToEnd();
 
-        Assert.Equal(new byte[] { 2, 3, 4, 5 }, remaining.ToArray());
+        Span<byte> expected = stackalloc byte[] { 2, 3, 4, 5 };
+        Assert.True(remaining.SequenceEqual(expected));
         Assert.Equal(5, buffer.Position);
     }
 
