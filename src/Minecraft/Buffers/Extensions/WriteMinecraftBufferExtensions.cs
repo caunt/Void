@@ -283,7 +283,8 @@ public static class WriteMinecraftBufferExtensions
 
     private static void WriteUuidAsIntArrayCore<TBuffer>(ref TBuffer buffer, Uuid value) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
-        var span = value.AsGuid.ToByteArray(true).AsSpan();
+        Span<byte> span = stackalloc byte[16];
+        value.AsGuid.TryWriteBytes(span, true, out _);
 
         buffer.WriteInt(BinaryPrimitives.ReadInt32BigEndian(span[..4]));
         buffer.WriteInt(BinaryPrimitives.ReadInt32BigEndian(span[4..8]));
