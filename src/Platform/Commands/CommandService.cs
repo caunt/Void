@@ -66,7 +66,13 @@ public class CommandService(IEventService events) : ICommandService, IEventListe
     public async ValueTask<string[]> CompleteAsync(string input, ICommandSource source, CancellationToken cancellationToken = default)
     {
         var suggestions = await _dispatcher.SuggestAsync(input, source, cancellationToken);
-        return [.. suggestions.All.Select(suggestion => suggestion.Text)];
+
+        var result = new string[suggestions.All.Count];
+
+        for (var i = 0; i < suggestions.All.Count; i++)
+            result[i] = suggestions.All[i].Text;
+
+        return result;
     }
 
     private void ClearByAssembly(Assembly assembly)
