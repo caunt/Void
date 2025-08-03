@@ -16,7 +16,18 @@ public class JsonIpEndPointConverter : JsonConverter<IPEndPoint>
             throw new InvalidDataException();
 
         Span<char> charData = stackalloc char[53];
-        var count = Encoding.UTF8.GetChars(reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan, charData);
+        int count;
+
+        if (reader.HasValueSequence)
+        {
+            Span<byte> bytes = stackalloc byte[(int)reader.ValueSequence.Length];
+            reader.ValueSequence.CopyTo(bytes);
+            count = Encoding.UTF8.GetChars(bytes, charData);
+        }
+        else
+        {
+            count = Encoding.UTF8.GetChars(reader.ValueSpan, charData);
+        }
 
         var addressLength = count;
         var lastColonPos = charData.LastIndexOf(':');
