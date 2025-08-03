@@ -398,7 +398,10 @@ internal ref struct MinecraftBackingBuffer
 
     public void WriteUuid(Uuid value)
     {
-        Write(value.AsGuid == Guid.Empty ? new byte[16] : value.AsGuid.ToByteArray(true));
+        Span<byte> data = stackalloc byte[16];
+        _ = value.AsGuid.TryWriteBytes(data, bigEndian: true, out _);
+
+        Write(data);
     }
 
     public Uuid ReadUuidAsIntArray()
@@ -553,7 +556,7 @@ internal ref struct MinecraftBackingBuffer
         };
     }
 
-    public void Write(ReadOnlySpan<byte> data)
+    public void Write(scoped ReadOnlySpan<byte> data)
     {
         switch (_bufferType)
         {

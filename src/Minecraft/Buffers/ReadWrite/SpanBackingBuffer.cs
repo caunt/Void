@@ -122,7 +122,7 @@ internal ref struct SpanBackingBuffer(Span<byte> span)
         return Slice(length);
     }
 
-    public void Write(ReadOnlySpan<byte> data)
+    public void Write(scoped ReadOnlySpan<byte> data)
     {
         if (_block.Length < Position + data.Length)
             throw new InternalBufferOverflowException($"Buffer length with max {_block.Length} at position {Position} attempted to write {data.Length} bytes");
