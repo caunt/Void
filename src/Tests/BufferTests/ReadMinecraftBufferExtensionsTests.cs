@@ -253,7 +253,8 @@ public class ReadMinecraftBufferExtensionsTests
 
         var slice = buffer.Read(3);
 
-        Assert.Equal(new byte[] { 1, 2, 3 }, slice.ToArray());
+        Span<byte> expected = stackalloc byte[] { 1, 2, 3 };
+        Assert.True(slice.SequenceEqual(expected));
         Assert.Equal(3, buffer.Position);
     }
 }
