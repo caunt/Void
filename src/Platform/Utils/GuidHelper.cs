@@ -15,7 +15,10 @@ public static class GuidHelper
         ArgumentNullException.ThrowIfNull(text);
 
         var i128 = new Int128();
-        MD5.HashData(Encoding.UTF8.GetBytes(text), i128.AsSpan());
+        var byteCount = Encoding.UTF8.GetByteCount(text);
+        Span<byte> utf8Bytes = stackalloc byte[byteCount];
+        Encoding.UTF8.GetBytes(text, utf8Bytes);
+        MD5.HashData(utf8Bytes, i128.AsSpan());
 
         i128.version = (byte)((i128.version & 0x0f) | 0x30);
         i128.variant = (byte)((i128.variant & 0x3f) | 0x80);
