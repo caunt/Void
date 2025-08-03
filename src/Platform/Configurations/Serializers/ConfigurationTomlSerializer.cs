@@ -438,7 +438,7 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
                 throw new InvalidOperationException($"Cannot serialize interface {type.Name}");
 
             if (type.IsAbstract)
-                throw new InvalidOperationException($"Cannot serialize serialize {type.Name}");
+                throw new InvalidOperationException($"Cannot serialize {type.Name}");
 
             // Assume the "primary" constructor is the one with the most parameters.
             // (Records typically have one primary constructor.)
