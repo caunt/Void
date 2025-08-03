@@ -232,8 +232,8 @@ public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
 
         buffer.WriteUnsignedByte((byte)MaxPlayers);
 
-        if (LevelType == null)
-            throw new Exception("No level type specified.");
+        if (LevelType is null)
+            throw new InvalidOperationException($"{nameof(LevelType)} was not set.");
 
         buffer.WriteString(LevelType);
 
