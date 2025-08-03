@@ -45,7 +45,7 @@ public class UuidTests
     [InlineData(0xF0, 3)]
     public void GetVariant_ReturnsExpected(byte variant, int expected)
     {
-        var bytes = new byte[16];
+        Span<byte> bytes = stackalloc byte[16];
         bytes[8] = variant;
         var uuid = new Uuid(new Guid(bytes));
         Assert.Equal(expected, uuid.GetVariant());
