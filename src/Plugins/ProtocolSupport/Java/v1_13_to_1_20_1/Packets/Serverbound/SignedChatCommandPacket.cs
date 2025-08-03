@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
@@ -34,9 +35,17 @@ public class SignedChatCommandPacket : IMinecraftServerboundPacket<SignedChatCom
 
         buffer.WriteVarInt(MessageCount);
 
-        var array = new byte[DivFloor];
-        Acknowledged.CopyTo(array, 0);
-        buffer.Write(array);
+        Span<byte> array = stackalloc byte[DivFloor];
+        array.Clear();
+
+        for (var i = 0; i < Acknowledged.Length; i++)
+        {
+            if (Acknowledged[i])
+                array[i / 8] |= (byte)(1 << (i % 8));
+        }
+
+        for (var i = 0; i < array.Length; i++)
+            buffer.WriteUnsignedByte(array[i]);
     }
 
     public static SignedChatCommandPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
