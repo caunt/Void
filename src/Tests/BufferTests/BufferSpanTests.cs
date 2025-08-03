@@ -95,7 +95,8 @@ public class BufferSpanTests
         Span<byte> source = stackalloc byte[] { 0, 1, 2, 3, 4 };
         var span = new BufferSpan(source);
         span.Position = 2;
-        Assert.Equal(new byte[] { 2, 3 }, span.Access(2).ToArray());
+        Span<byte> expected = stackalloc byte[] { 2, 3 };
+        Assert.True(span.Access(2).SequenceEqual(expected));
     }
 
     [Fact]
