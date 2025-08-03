@@ -10,7 +10,7 @@ public class BufferMemoryTests
     [Fact]
     public void Slice_ReturnsExpectedMemory()
     {
-        var memory = new BufferMemory(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 });
+        var memory = new BufferMemory(stackalloc byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }.ToArray());
         var slice = memory.Slice(2, 5);
         Assert.Equal(new byte[] { 2, 3, 4, 5, 6 }, slice.Span.Access(0, 5).ToArray());
     }
