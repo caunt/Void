@@ -60,7 +60,9 @@ public record IdentifiedKey(IdentifiedKeyRevision Revision, long ExpiresAt, byte
         if (Revision == IdentifiedKeyRevision.GenericV1Revision)
         {
             var publicKeyText = $"-----BEGIN RSA PUBLIC KEY-----\n{Convert.ToBase64String(PublicKey, Base64FormattingOptions.InsertLineBreaks)}\n-----END RSA PUBLIC KEY-----\n";
-            var verify = Encoding.ASCII.GetBytes(ExpiresAt + publicKeyText.Replace("\r", string.Empty));
+            var verifyText = ExpiresAt + publicKeyText.Replace("\r", string.Empty);
+            Span<byte> verify = stackalloc byte[Encoding.ASCII.GetByteCount(verifyText)];
+            Encoding.ASCII.GetBytes(verifyText, verify);
 
             using var rsa = RSA.Create();
             rsa.ImportSubjectPublicKeyInfo(YggdrasilSessionPublicKey, out _);
