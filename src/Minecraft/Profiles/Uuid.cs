@@ -50,7 +50,8 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
 
         Span<byte> m0Bytes = stackalloc byte[4]; // m0: first 4 bytes (little-endian)
         BinaryPrimitives.WriteInt32LittleEndian(m0Bytes, parts[0]);
-        var m1Bytes = BitConverter.GetBytes(parts[1]); // m1: next 4 bytes
+        Span<byte> m1Bytes = stackalloc byte[4]; // m1: next 4 bytes
+        BinaryPrimitives.WriteInt32LittleEndian(m1Bytes, parts[1]);
         var l0Bytes = BitConverter.GetBytes(parts[2]); // l0: third int
         var l1Bytes = BitConverter.GetBytes(parts[3]); // l1: fourth int
 
