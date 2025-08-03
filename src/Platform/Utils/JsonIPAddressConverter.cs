@@ -15,7 +15,18 @@ public class JsonIpAddressConverter : JsonConverter<IPAddress>
             throw new InvalidDataException();
 
         Span<char> charData = stackalloc char[45];
-        var count = Encoding.UTF8.GetChars(reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan, charData);
+        int count;
+
+        if (reader.HasValueSequence)
+        {
+            Span<byte> bytes = stackalloc byte[45];
+            reader.ValueSequence.CopyTo(bytes);
+            count = Encoding.UTF8.GetChars(bytes[..(int)reader.ValueSequence.Length], charData);
+        }
+        else
+        {
+            count = Encoding.UTF8.GetChars(reader.ValueSpan, charData);
+        }
 
         return !IPAddress.TryParse(charData[..count], out var value) ? throw new InvalidDataException() : value;
     }
