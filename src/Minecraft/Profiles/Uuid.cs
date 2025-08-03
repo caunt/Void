@@ -126,7 +126,10 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
         ArgumentNullException.ThrowIfNull(name);
 
         var i128 = new Int128();
-        MD5.TryHashData(Encoding.UTF8.GetBytes($"OfflinePlayer:{name}"), i128.AsSpan(), out _);
+        var text = $"OfflinePlayer:{name}";
+        Span<byte> textBytes = stackalloc byte[Encoding.UTF8.GetByteCount(text)];
+        Encoding.UTF8.GetBytes(text, textBytes);
+        MD5.TryHashData(textBytes, i128.AsSpan(), out _);
 
         i128.version = (byte)(i128.version & 0x0f | 0x30);
         i128.variant = (byte)(i128.variant & 0x3f | 0x80);
