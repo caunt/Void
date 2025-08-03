@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -47,7 +48,8 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
         if (parts.Length is not 4)
             throw new ArgumentException("Arguments size should be 4", nameof(parts));
 
-        var m0Bytes = BitConverter.GetBytes(parts[0]); // m0: first 4 bytes (little-endian)
+        Span<byte> m0Bytes = stackalloc byte[4]; // m0: first 4 bytes (little-endian)
+        BinaryPrimitives.WriteInt32LittleEndian(m0Bytes, parts[0]);
         var m1Bytes = BitConverter.GetBytes(parts[1]); // m1: next 4 bytes
         var l0Bytes = BitConverter.GetBytes(parts[2]); // l0: third int
         var l1Bytes = BitConverter.GetBytes(parts[3]); // l1: fourth int
