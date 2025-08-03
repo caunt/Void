@@ -27,7 +27,12 @@ public class MojangService(ICryptoService crypto, ISettings settings) : IMojangS
             return new GameProfile(profile.Username, Uuid.Offline(profile.Username));
 
         var sharedSecret = player.Context.Services.GetRequiredService<ITokenHolder>().Get(TokenType.SharedSecret);
-        var serverId = SHA1.HashData([.. sharedSecret.Span, .. crypto.Instance.ExportSubjectPublicKeyInfo()]);
+        var publicKey = crypto.Instance.ExportSubjectPublicKeyInfo();
+        var sharedSecretSpan = sharedSecret.Span;
+        Span<byte> buffer = stackalloc byte[sharedSecretSpan.Length + publicKey.Length];
+        sharedSecretSpan.CopyTo(buffer);
+        publicKey.CopyTo(buffer[sharedSecretSpan.Length..]);
+        var serverId = SHA1.HashData(buffer);
         var negative = (serverId[0] & 0x80) == 0x80;
 
         if (negative)

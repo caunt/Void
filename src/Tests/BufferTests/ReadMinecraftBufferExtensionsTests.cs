@@ -201,12 +201,13 @@ public class ReadMinecraftBufferExtensionsTests
     {
         Span<byte> data = stackalloc byte[] { 1, 2, 3, 4, 5 };
         var buffer = new BufferSpan(data);
+      
         buffer.Position = 1;
 
         var remaining = buffer.ReadToEnd();
-
-        ReadOnlySpan<byte> expected = stackalloc byte[] { 2, 3, 4, 5 };
-        Assert.True(expected.SequenceEqual(remaining));
+        Span<byte> expected = stackalloc byte[] { 2, 3, 4, 5 };
+      
+        Assert.True(remaining.SequenceEqual(expected));
         Assert.Equal(5, buffer.Position);
     }
 

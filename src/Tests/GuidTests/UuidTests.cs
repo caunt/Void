@@ -28,13 +28,13 @@ public class UuidTests
             unchecked((int)0xddeeff00)
         ];
         var uuid = Uuid.Parse(parts);
-        byte[] expected =
-        [
+        Span<byte> expected = stackalloc byte[]
+        {
             0x44, 0x33, 0x22, 0x11,
             0x66, 0x55, 0x88, 0x77,
             0x99, 0xaa, 0xbb, 0xcc,
             0xdd, 0xee, 0xff, 0x00
-        ];
+        };
         Assert.Equal(new Guid(expected), uuid.AsGuid);
     }
 
