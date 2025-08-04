@@ -19,7 +19,7 @@ public class MinecraftPacketIdPluginsRegistry : IMinecraftPacketIdPluginsRegistr
     public IMinecraftPacketIdRegistry Get(IPlugin plugin)
     {
         if (ProtocolVersion is null)
-            throw new InvalidOperationException("Protocol version is not set yet");
+            throw new InvalidOperationException($"{nameof(ProtocolVersion)} is not set yet");
 
         if (!_map.TryGetValue(plugin, out var registry))
         {
