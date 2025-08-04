@@ -4,6 +4,9 @@ namespace Void.Terminal;
 
 public static partial class WindowsConsole
 {
+    private const int StdOutputHandle = -11;
+    private const int EnableVirtualTerminalProcessing = 0x4;
+
     private static partial class NativeMethods
     {
         private const string Kernel32 = "kernel32.dll";
@@ -33,13 +36,13 @@ public static partial class WindowsConsole
 
         try
         {
-            var handle = NativeMethods.GetStdHandle(-11);
+            var handle = NativeMethods.GetStdHandle(StdOutputHandle);
 
             NativeMethods.GetConsoleMode(handle, out var mode);
-            NativeMethods.SetConsoleMode(handle, mode | 0x4);
+            NativeMethods.SetConsoleMode(handle, mode | EnableVirtualTerminalProcessing);
             NativeMethods.GetConsoleMode(handle, out mode);
 
-            return (mode & 0x4) == 0x4;
+            return (mode & EnableVirtualTerminalProcessing) == EnableVirtualTerminalProcessing;
         }
         catch (DllNotFoundException)
         {
