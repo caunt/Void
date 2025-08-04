@@ -6,6 +6,8 @@ namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clien
 
 public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
 {
+    private const int HardcoreBit = 0x08;
+
     public required int EntityId { get; set; }
     public required short Gamemode { get; set; }
     public required int Dimension { get; set; }
@@ -29,8 +31,8 @@ public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
     {
         var entityId = buffer.ReadInt();
         var gamemode = (short)buffer.ReadUnsignedByte();
-        var isHardcore = (gamemode & 0x08) != 0;
-        gamemode &= ~0x08;
+        var isHardcore = (gamemode & HardcoreBit) != 0;
+        gamemode &= ~HardcoreBit;
 
         var dimension = protocolVersion < ProtocolVersion.MINECRAFT_1_9_1 ?
             buffer.ReadUnsignedByte() :
@@ -60,7 +62,7 @@ public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
     private void EncodeLegacy(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         buffer.WriteInt(EntityId);
-        buffer.WriteUnsignedByte((byte)(IsHardcore ? Gamemode | 0x8 : Gamemode));
+        buffer.WriteUnsignedByte((byte)(IsHardcore ? Gamemode | HardcoreBit : Gamemode));
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_9_1)
             buffer.WriteInt(Dimension);
