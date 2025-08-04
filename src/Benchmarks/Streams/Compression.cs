@@ -21,6 +21,7 @@ public class Compression
     private readonly IonicZlibCompressionMessageStream _ionicZlibStream = new() { BaseStream = new MinecraftMemoryStream(), CompressionThreshold = 256 };
     private readonly SharpZipLibCompressionMessageStream _sharpZipLibStream = new() { BaseStream = new MinecraftMemoryStream(), CompressionThreshold = 256 };
     private byte[] _buffer = [];
+    private const int IterationCount = 1000;
 
     [Params(32, 1024)] public int BufferSize { get; set; }
 
@@ -77,7 +78,7 @@ public class Compression
     [Benchmark]
     public async ValueTask SharpZipLib_Write()
     {
-        for (var i = 0; i < 1000; i++)
+        for (var i = 0; i < IterationCount; i++)
         {
             var stream = MemoryStreamManager.GetStream();
             stream.Write(_buffer);
@@ -93,7 +94,7 @@ public class Compression
         var sharpZipLibMemoryStream = (MinecraftMemoryStream)(_sharpZipLibStream.BaseStream ?? throw new InvalidOperationException("Base stream is null."));
         sharpZipLibMemoryStream.Reset();
 
-        for (var i = 0; i < 1000; i++)
+        for (var i = 0; i < IterationCount; i++)
         {
             _ = await _sharpZipLibStream.ReadMessageAsync();
         }
@@ -102,7 +103,7 @@ public class Compression
     [Benchmark]
     public async ValueTask IonicZlib_Write()
     {
-        for (var i = 0; i < 1000; i++)
+        for (var i = 0; i < IterationCount; i++)
         {
             var stream = MemoryStreamManager.GetStream();
             stream.Write(_buffer);
@@ -118,7 +119,7 @@ public class Compression
         var ionicZlibMemoryStream = (MinecraftMemoryStream)(_ionicZlibStream.BaseStream ?? throw new InvalidOperationException("Base stream is null."));
         ionicZlibMemoryStream.Reset();
 
-        for (var i = 0; i < 1000; i++)
+        for (var i = 0; i < IterationCount; i++)
         {
             _ = await _ionicZlibStream.ReadMessageAsync();
         }
