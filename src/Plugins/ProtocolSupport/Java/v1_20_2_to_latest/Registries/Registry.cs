@@ -100,7 +100,8 @@ public static class Registry
         {
             [
                 new MinecraftPacketIdMapping(0x04, ProtocolVersion.MINECRAFT_1_20_5),
-                new MinecraftPacketIdMapping(0x05, ProtocolVersion.MINECRAFT_1_21_2)
+                new MinecraftPacketIdMapping(0x05, ProtocolVersion.MINECRAFT_1_21_2),
+                new MinecraftPacketIdMapping(0x06, ProtocolVersion.MINECRAFT_1_21_6)
             ], typeof(ChatCommandPacket)
         },
         {
