@@ -243,7 +243,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
     public override string ToString()
     {
-        return Player + " <=> " + Server;
+        return $"{Player} <=> {Server}";
     }
 
     private static async ValueTask<bool> WaitWithTimeout(Task task, int milliseconds = 5000)
