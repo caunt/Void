@@ -32,11 +32,12 @@ public class MojangService(ICryptoService crypto, ISettings settings) : IMojangS
         Span<byte> buffer = stackalloc byte[sharedSecretSpan.Length + publicKey.Length];
         sharedSecretSpan.CopyTo(buffer);
         publicKey.CopyTo(buffer[sharedSecretSpan.Length..]);
-        var serverId = SHA1.HashData(buffer);
+        Span<byte> serverId = stackalloc byte[SHA1.HashSizeInBytes];
+        SHA1.HashData(buffer, serverId);
         var negative = (serverId[0] & 0x80) == 0x80;
 
         if (negative)
-            serverId = TwosComplement(serverId);
+            TwosComplement(serverId);
 
         var serverIdComplement = Convert.ToHexString(serverId).TrimStart('0');
 
@@ -64,7 +65,7 @@ public class MojangService(ICryptoService crypto, ISettings settings) : IMojangS
         return key.AddUuid(onlineProfile.Id) ? onlineProfile : null;
     }
 
-    private static byte[] TwosComplement(byte[] data)
+    private static void TwosComplement(Span<byte> data)
     {
         var carry = true;
 
@@ -78,7 +79,5 @@ public class MojangService(ICryptoService crypto, ISettings settings) : IMojangS
             carry = data[i] == 0xFF;
             data[i]++;
         }
-
-        return data;
     }
 }
