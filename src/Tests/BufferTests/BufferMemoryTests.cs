@@ -24,7 +24,9 @@ public class BufferMemoryTests
 
         var slice = memory.Slice(0, data.Length);
 
-        Assert.Equal(data, slice.Span.Access(0, data.Length).ToArray());
+        Span<byte> actual = stackalloc byte[data.Length];
+        slice.Span.Access(0, data.Length).CopyTo(actual);
+        Assert.True(actual.SequenceEqual(data));
     }
 
     [Fact]
