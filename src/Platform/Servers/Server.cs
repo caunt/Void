@@ -8,6 +8,6 @@ public record Server(string Name, string Host, int Port) : IServer
 
     public override string ToString()
     {
-        return string.IsNullOrWhiteSpace(Name) ? Host + ":" + Port : Name;
+        return string.IsNullOrWhiteSpace(Name) ? $"{Host}:{Port}" : Name;
     }
 }
