@@ -93,10 +93,11 @@ public class ForwardingService(IPlayerContext context, ILogger logger, Settings 
         var secretLength = Encoding.UTF8.GetByteCount(settings.Secret);
         Span<byte> secretBytes = stackalloc byte[secretLength];
         Encoding.UTF8.GetBytes(settings.Secret, secretBytes);
-        var signature = HMACSHA256.HashData(secretBytes, forwardingData);
+        Span<byte> signature = stackalloc byte[32];
+        HMACSHA256.TryHashData(secretBytes, forwardingData, signature, out var written);
 
         @event.Cancel();
-        await @event.Link.SendPacketAsync(new LoginPluginResponsePacket { Data = [.. signature, .. forwardingData], MessageId = packet.MessageId, Successful = true }, cancellationToken);
+        await @event.Link.SendPacketAsync(new LoginPluginResponsePacket { Data = [.. signature[..written], .. forwardingData], MessageId = packet.MessageId, Successful = true }, cancellationToken);
     }
 
     private ForwardingVersion FindForwardingVersion(ForwardingVersion requested)
