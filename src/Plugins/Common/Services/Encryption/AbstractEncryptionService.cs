@@ -107,7 +107,11 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
             if (BitConverter.IsLittleEndian)
                 saltBytes.Reverse();
 
-            return identifiedKey.VerifyDataSignature(encrypted, [.. original, .. saltBytes]);
+            Span<byte> combined = stackalloc byte[original.Length + saltBytes.Length];
+            original.CopyTo(combined);
+            saltBytes.CopyTo(combined[original.Length..]);
+
+            return identifiedKey.VerifyDataSignature(encrypted, combined);
         }
 
         Span<byte> decrypted = stackalloc byte[encrypted.Length];
