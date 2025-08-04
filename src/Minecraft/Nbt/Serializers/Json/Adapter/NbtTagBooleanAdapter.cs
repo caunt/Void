@@ -9,6 +9,6 @@ public class NbtTagBooleanAdapter
     {
         JsonTokenType.True => new NbtByte(1),
         JsonTokenType.False => new NbtByte(0),
-        _ => throw new JsonException($"\"{reader.GetString()}\" is not a boolean.")
+        _ => throw new JsonException($"{reader.TokenType} is not a boolean.")
     };
 }
