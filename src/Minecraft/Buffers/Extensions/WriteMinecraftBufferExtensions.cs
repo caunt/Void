@@ -312,7 +312,7 @@ public static class WriteMinecraftBufferExtensions
             return;
 
         if (string.IsNullOrWhiteSpace(value.Signature))
-            throw new InvalidDataException("Signature is null or whitespace, but IsSigned set to true");
+            throw new InvalidDataException($"{nameof(value.Signature)} is null or whitespace, but {nameof(value.IsSigned)} set to true");
 
         buffer.WriteString(value.Signature);
     }
