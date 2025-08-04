@@ -20,6 +20,10 @@ Run the executable
 ./void-linux-x64 [optional arguments]
 ```
 
+## Docker
+
+Prefer containers? See the [Containers](/containers/) guide for Docker and Kubernetes deployments.
+
 ## Android
 
 Run the [**Termux**](https://play.google.com/store/apps/details?id=com.termux) or any other terminal emulator.

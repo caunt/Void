@@ -5,8 +5,10 @@ sidebar:
   order: 1
 ---
 
-Void provides docker images for running in a container.  
+Void provides docker images for running in a container.
 See the [Void Docker Hub](https://hub.docker.com/r/caunt/void/tags) for all available images.
+
+For running Void directly on your host, refer to the [Running](/getting-started/running/) guide.
 
 ## Running Void in a Docker
 To run Void in a Docker container, use following example command:
