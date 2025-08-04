@@ -21,7 +21,7 @@ public static class TaskExtensions
                 }
                 catch (TaskCanceledException exception)
                 {
-                    logger.LogError("{Message} (Canceled)\n{Exception}\n{StackTrace}", message, exception.StackTrace, stackTrace);
+                    logger.LogError("{Message} (Canceled)\n{Exception}\n{StackTrace}", message, exception, stackTrace);
                 }
             }
 
