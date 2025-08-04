@@ -168,7 +168,7 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
 
         var createContainerParameters = new CreateContainerParameters
         {
-            Image = imageName + ":" + imageTag,
+            Image = $"{imageName}:{imageTag}",
             Name = name,
             Env = variables,
             OpenStdin = true,
