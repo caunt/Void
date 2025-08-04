@@ -76,3 +76,5 @@ When adding or modifying packet handling:
 - Use that snapshot as your reference when altering the target version's protocol.
 - For sub-versions, repeat this process using the next sub-version's release date and its preceding revision.
 - Check the `src/Plugins/ProtocolSupport` directory to see how existing packets are implemented and update them as necessary.
+- Base any protocol modifications on verified information from that official reference; avoid speculation.
+- When communicating protocol-related changes, quote the relevant text and provide links to the exact protocol revision so reviewers can validate your reasoning.
