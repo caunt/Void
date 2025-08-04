@@ -87,7 +87,14 @@ public class SignedChatCommandPacket : IMinecraftServerboundPacket<SignedChatCom
 
         static BitArray DecodeAcknowledged(ref MinecraftBuffer buffer)
         {
-            return new BitArray(buffer.Read(DivFloor).ToArray());
+            Span<byte> data = stackalloc byte[DivFloor];
+            buffer.Read(DivFloor).CopyTo(data);
+            var result = new BitArray(WindowSize);
+
+            for (var i = 0; i < WindowSize; i++)
+                result[i] = (data[i / 8] & (1 << (i % 8))) != 0;
+
+            return result;
         }
     }
 
