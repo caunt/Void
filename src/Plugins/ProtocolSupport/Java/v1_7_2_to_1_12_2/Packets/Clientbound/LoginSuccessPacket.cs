@@ -7,6 +7,8 @@ namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clien
 
 public class LoginSuccessPacket : IMinecraftClientboundPacket<LoginSuccessPacket>
 {
+    private const int UuidStringLength = 36;
+
     public required GameProfile GameProfile { get; set; }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
@@ -23,7 +25,7 @@ public class LoginSuccessPacket : IMinecraftClientboundPacket<LoginSuccessPacket
 
     public static LoginSuccessPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        var uuid = Uuid.Parse(buffer.ReadString(36));
+        var uuid = Uuid.Parse(buffer.ReadString(UuidStringLength));
         var name = buffer.ReadString();
 
         return new LoginSuccessPacket { GameProfile = new GameProfile(name, uuid) };
