@@ -17,7 +17,7 @@ public class NbtCompoundJsonConverter : JsonConverter<NbtCompound>
                 break;
 
             if (reader.TokenType is not JsonTokenType.PropertyName)
-                throw new JsonException("Expected property name token.");
+                throw new JsonException($"Expected {nameof(JsonTokenType.PropertyName)} token.");
 
             var propertyName = reader.GetString() ?? throw new JsonException("Expected property name, but got null.");
 
