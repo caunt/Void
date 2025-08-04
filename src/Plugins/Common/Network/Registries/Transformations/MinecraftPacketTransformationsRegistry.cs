@@ -61,8 +61,8 @@ public class MinecraftPacketTransformationsRegistry : IMinecraftPacketTransforma
                     mappingsToUpgrade.Add(mapping);
             }
 
-            mappingsToUpgrade.Sort((a, b) => a.From > b.From ? 1 : -1);
-            mappingsToDowngrade.Sort((a, b) => a.From > b.From ? -1 : 1);
+            mappingsToUpgrade.Sort((a, b) => a.From.CompareTo(b.From));
+            mappingsToDowngrade.Sort((a, b) => b.From.CompareTo(a.From));
 
             var upgradeTransformers = mappingsToUpgrade.Select(i => i.Transformation);
             var downgradeTransformers = mappingsToDowngrade.Select(i => i.Transformation);
