@@ -82,7 +82,7 @@ public class SimpleMinecraftChannel(IMessageStreamBase head) : INetworkChannel
         }
         else
         {
-            throw new InvalidOperationException($"Cannot remove {value} stream with unset BaseStream");
+            throw new InvalidOperationException($"Cannot remove {value} stream with unset {nameof(value.BaseStream)}");
         }
     }
 
