@@ -94,7 +94,11 @@ public class ForwardingService(IPlayerContext context, ILogger logger, Settings 
         Span<byte> secretBytes = stackalloc byte[secretLength];
         Encoding.UTF8.GetBytes(settings.Secret, secretBytes);
         Span<byte> signature = stackalloc byte[32];
-        HMACSHA256.TryHashData(secretBytes, forwardingData, signature, out var written);
+
+        if (!HMACSHA256.TryHashData(secretBytes, forwardingData, signature, out var written))
+        {
+            throw new InvalidOperationException("Failed to compute HMAC signature.");
+        }
 
         @event.Cancel();
         await @event.Link.SendPacketAsync(new LoginPluginResponsePacket { Data = [.. signature[..written], .. forwardingData], MessageId = packet.MessageId, Successful = true }, cancellationToken);
