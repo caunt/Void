@@ -104,7 +104,7 @@ public abstract record NbtTag
     public static long Parse<T>(ReadOnlyMemory<byte> data, out T result, bool readName = false, NbtFormatOptions formatOptions = NbtFormatOptions.Java) where T : NbtTag
     {
         if (!MemoryMarshal.TryGetArray(data, out var segment) || segment.Array is null)
-            throw new Exception("Cannot get array segment from memory");
+            throw new ArgumentException("Cannot get array segment from data", nameof(data));
 
         using var stream = new MemoryStream(segment.Array);
         var reader = new NbtReader(stream, (FormatOptions)formatOptions);
