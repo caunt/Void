@@ -51,7 +51,7 @@ public class ChannelService(IEventService events) : AbstractChannelService(event
         if (@event.Message is not EncryptionResponsePacket)
             return;
 
-        // if encryption forced channel to remove packet stream, resume reading with what has left
+        // if encryption forced channel to remove packet stream, resume reading with what is left
         if (!@event.Link.PlayerChannel.TryGet<MinecraftPacketMessageStream>(out _))
             @event.Link.PlayerChannel.Resume();
     }
