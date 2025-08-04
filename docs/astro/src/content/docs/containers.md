@@ -11,13 +11,13 @@ See the [Void Docker Hub](https://hub.docker.com/r/caunt/void/tags) for all avai
 ## Running Void in a Docker
 To run Void in a Docker container, use following example command:
 ```bash
-docker run --name void --network host --rm caunt/void:dev
+docker run --name void --network host --pull=always --rm caunt/void:dev
 ```
 
 You can pass additional [program arguments](/configuration/program-arguments/) to customize servers and network settings:
 
 ```bash
-docker run --name void --network host --rm caunt/void:dev \
+docker run --name void --network host --pull=always --rm caunt/void:dev \
   --ignore-file-servers \
   --server mc.example.com:25566 \
   --port 25565 \
