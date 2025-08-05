@@ -70,7 +70,7 @@ public record TextColor(byte Red, byte Green, byte Blue)
             }
             else
             {
-                throw new ArgumentException($"Invalid hex color string: {span}");
+                throw new ArgumentException($"Invalid hex color string: {span}", nameof(value));
             }
         }
 
@@ -82,7 +82,7 @@ public record TextColor(byte Red, byte Green, byte Blue)
             }
         }
 
-        throw new ArgumentException($"Invalid color string: {span}");
+        throw new ArgumentException($"Invalid color string: {span}", nameof(value));
     }
 
     public override string ToString() => Name;
