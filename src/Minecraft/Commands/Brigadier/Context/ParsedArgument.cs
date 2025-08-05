@@ -10,5 +10,5 @@ public interface IParsedArgument
 public record ParsedArgument<TType>(int Start, int End, TType Result) : IParsedArgument
 {
     public StringRange Range { get; } = new(Start, End);
-    public object GenericResult => Result ?? throw new InvalidOperationException("Result is null");
+    public object GenericResult => Result ?? throw new InvalidOperationException($"{nameof(Result)} is null");
 }
