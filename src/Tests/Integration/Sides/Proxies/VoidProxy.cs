@@ -32,8 +32,7 @@ public class VoidProxy : IIntegrationSide
     {
         var logWriter = new CollectingTextWriter();
         var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
-        cancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationTokenSource.Token, cancellationToken).Token;
+        cancellationToken = cancellationTokenSource.Token;
 
         var args = new List<string>
         {
