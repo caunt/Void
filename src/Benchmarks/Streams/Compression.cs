@@ -91,7 +91,7 @@ public class Compression
     [Benchmark]
     public async ValueTask SharpZipLib_Read()
     {
-        var sharpZipLibMemoryStream = (MinecraftMemoryStream)(_sharpZipLibStream.BaseStream ?? throw new InvalidOperationException("Base stream is null."));
+        var sharpZipLibMemoryStream = (MinecraftMemoryStream)(_sharpZipLibStream.BaseStream ?? throw new InvalidOperationException($"{nameof(_sharpZipLibStream.BaseStream)} is null."));
         sharpZipLibMemoryStream.Reset();
 
         for (var i = 0; i < IterationCount; i++)
