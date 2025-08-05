@@ -63,7 +63,7 @@ public class Compression
     public void IterationSetup()
     {
         var sharpZipLibMemoryStream = (MinecraftMemoryStream)(_sharpZipLibStream.BaseStream ?? throw new InvalidOperationException($"{nameof(_sharpZipLibStream.BaseStream)} is null."));
-        var ionicZlibMemoryStream = (MinecraftMemoryStream)(_ionicZlibStream.BaseStream ?? throw new InvalidOperationException("Base stream is null."));
+        var ionicZlibMemoryStream = (MinecraftMemoryStream)(_ionicZlibStream.BaseStream ?? throw new InvalidOperationException($"{nameof(_ionicZlibStream.BaseStream)} is null."));
 
         sharpZipLibMemoryStream.Reset(0);
         ionicZlibMemoryStream.Reset(0);
