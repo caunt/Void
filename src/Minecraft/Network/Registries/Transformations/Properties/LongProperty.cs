@@ -9,12 +9,10 @@ public record LongProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<LongPro
 
     public static LongProperty FromPrimitive(long value)
     {
-        Span<byte> span = stackalloc byte[8];
+        var array = GC.AllocateUninitializedArray<byte>(8);
+        var span = array.AsSpan();
         var buffer = new MinecraftBuffer(span);
         buffer.WriteLong(value);
-
-        var array = GC.AllocateUninitializedArray<byte>(8);
-        span.CopyTo(array);
 
         return new LongProperty(array);
     }
