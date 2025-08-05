@@ -32,7 +32,7 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleRedirectConfi
         }
 
         if (_reader is null)
-            throw new InvalidOperationException($"ConsoleService is not set up. Call {nameof(Setup)}() before using this method.");
+            throw new InvalidOperationException($"{nameof(ConsoleService)} is not set up. Call {nameof(Setup)}() before using this method.");
 
         var command = await _reader.ReadLineAsync(SuggestAsync, cancellationToken);
         logger.LogInformation("Proxy issued command: {command}", command);
