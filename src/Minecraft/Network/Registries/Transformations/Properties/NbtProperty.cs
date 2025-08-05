@@ -15,7 +15,7 @@ public record NbtProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<NbtPrope
         var buffer = new MinecraftBuffer(stream);
         buffer.WriteTag(value);
 
-        return new NbtProperty(stream.ToArray());
+        return new NbtProperty(stream.GetBuffer().AsMemory(0, (int)stream.Length));
     }
 
     public static NbtProperty Read(ref MinecraftBuffer buffer)
