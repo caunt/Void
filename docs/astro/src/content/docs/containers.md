@@ -66,6 +66,7 @@ spec:
         - name: VOID_OFFLINE
           value: "true"
 ```
+
 ## Configuring Void in Containers
 Use [**environment variables**](/configuration/environment-variables/) or [**mount volumes**](/configuration/in-file/) to configure Void.
 
