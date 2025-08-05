@@ -19,7 +19,7 @@ public class RootCommandNode() : CommandNode(requirement: EmptyRequirement, redi
 
     public override IArgumentBuilder<CommandNode> CreateBuilder()
     {
-        throw new InvalidOperationException("Cannot convert root into a builder");
+        throw new InvalidOperationException($"Cannot convert {nameof(RootCommandNode)} into a builder");
     }
 
     public override bool IsValidInput(string input)
