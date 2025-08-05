@@ -4,7 +4,7 @@ public class BuiltInExceptions : IBuiltInExceptionProvider
 {
     public Dynamic2CommandExceptionType DoubleTooSmall { get; } = new((found, min) => new LiteralMessage($"Double must not be less than {min}, found {found}"));
     public Dynamic2CommandExceptionType DoubleTooBig { get; } = new((found, max) => new LiteralMessage($"Double must not be more than {max}, found {found}"));
-    public Dynamic2CommandExceptionType FloatTooSmall { get; } = new((found, min) => new LiteralMessage("Float must not be less than " + min + ", found " + found));
+    public Dynamic2CommandExceptionType FloatTooSmall { get; } = new((found, min) => new LiteralMessage($"Float must not be less than {min}, found {found}"));
     public Dynamic2CommandExceptionType FloatTooBig { get; } = new((found, max) => new LiteralMessage("Float must not be more than " + max + ", found " + found));
     public Dynamic2CommandExceptionType IntegerTooSmall { get; } = new((found, min) => new LiteralMessage("Integer must not be less than " + min + ", found " + found));
     public Dynamic2CommandExceptionType IntegerTooBig { get; } = new((found, max) => new LiteralMessage("Integer must not be more than " + max + ", found " + found));
