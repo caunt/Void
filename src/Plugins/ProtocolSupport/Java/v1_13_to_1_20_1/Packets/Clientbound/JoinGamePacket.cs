@@ -250,7 +250,7 @@ public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
     private void Encode116Up(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         if (DimensionInfo is null)
-            throw new Exception("DimensionInfo was not set");
+            throw new Exception($"{nameof(DimensionInfo)} was not set");
 
         buffer.WriteInt(EntityId);
 
