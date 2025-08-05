@@ -10,7 +10,7 @@ public interface IPacketProperty
     public virtual TCastValue As<TCastValue>() where TCastValue : IPacketProperty
     {
         if (this is not TCastValue value)
-            throw new InvalidCastException($"Property value {this} cannot be casted to {typeof(TCastValue)}");
+            throw new InvalidCastException($"Property value {this} cannot be cast to {typeof(TCastValue)}");
 
         return value;
     }
