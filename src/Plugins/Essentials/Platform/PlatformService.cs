@@ -49,7 +49,7 @@ public class PlatformService(ILogger<PlatformService> logger, IHostApplicationLi
 
         if (context.Source is IPlayer player)
         {
-            await player.SendChatMessageAsync("Loaded plugins: " + names, cancellationToken);
+            await player.SendChatMessageAsync($"Loaded plugins: {names}", cancellationToken);
         }
         else
         {
