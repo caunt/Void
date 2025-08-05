@@ -17,7 +17,7 @@ public class NbtTagJsonConverter : JsonConverter<NbtTag>
         JsonTokenType.True or JsonTokenType.False => NbtTagBooleanAdapter.DeserializeBoolean(ref reader),
         JsonTokenType.Null => new NbtCompound(),
         var value => throw new NotSupportedException(value.ToString())
-    } ?? throw new JsonException("One of json converters returned null in read method.");
+    } ?? throw new JsonException("One of JSON converters returned null in read method.");
 
     public override void Write(Utf8JsonWriter writer, NbtTag tag, JsonSerializerOptions options)
     {
