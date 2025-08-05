@@ -65,7 +65,7 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
             else if (Uri.TryCreate(variable, UriKind.Absolute, out var url))
             {
                 var name = url.LocalPath;
-                logger.LogTrace("Found {Name} local plugin", name);
+                logger.LogTrace("Found {Name} remote plugin", name);
 
                 using var response = await httpClient.GetAsync(url);
                 await using var stream = response.Content.ReadAsStream();
