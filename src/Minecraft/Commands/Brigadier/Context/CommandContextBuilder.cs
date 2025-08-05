@@ -95,7 +95,7 @@ public class CommandContextBuilder
     public CommandContext Build(string input)
     {
         if (Source is null)
-            throw new InvalidOperationException("Can't build command context without source");
+            throw new InvalidOperationException($"Can't build command context without {nameof(Source)}");
 
         return new(Source, input, Arguments, Command, RootNode, Nodes, Range, Child?.Build(input), RedirectModifier, IsFork);
     }
