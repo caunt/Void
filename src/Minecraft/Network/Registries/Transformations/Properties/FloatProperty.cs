@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using Void.Minecraft.Buffers;
 
 namespace Void.Minecraft.Network.Registries.Transformations.Properties;
@@ -10,11 +9,11 @@ public record FloatProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<FloatP
 
     public static FloatProperty FromPrimitive(float value)
     {
-        using var stream = new MemoryStream();
-        var buffer = new MinecraftBuffer(stream);
+        var bytes = new byte[4];
+        var buffer = new MinecraftBuffer(bytes);
         buffer.WriteFloat(value);
 
-        return new FloatProperty(stream.ToArray());
+        return new FloatProperty(bytes);
     }
 
     public static FloatProperty Read(ref MinecraftBuffer buffer)
