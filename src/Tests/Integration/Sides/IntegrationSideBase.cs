@@ -72,7 +72,7 @@ public abstract class IntegrationSideBase : IIntegrationSide
 
         foreach (var protocol in new[] { "http", "https" })
         {
-            var name = protocol + "_proxy";
+            var name = $"{protocol}_proxy";
             var variants = new[] { name, name.ToUpperInvariant() };
 
             foreach (var variant in variants)
