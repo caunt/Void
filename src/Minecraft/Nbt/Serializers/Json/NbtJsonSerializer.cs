@@ -33,7 +33,7 @@ public static class NbtJsonSerializer
 
     public static JsonNode Serialize(NbtTag tag)
     {
-        return JsonSerializer.SerializeToNode(tag, Options) ?? throw new JsonException("Nbt cannot be serialized to json.");
+        return JsonSerializer.SerializeToNode(tag, Options) ?? throw new JsonException("Nbt cannot be serialized to JSON.");
     }
 
     public static NbtTag Deserialize(string value)
@@ -46,7 +46,7 @@ public static class NbtJsonSerializer
         }
         catch (JsonException)
         {
-            // ignore, not a json
+            // ignore, not JSON
         }
 
         if (node is null)
@@ -57,6 +57,6 @@ public static class NbtJsonSerializer
 
     public static NbtTag Deserialize(JsonNode node)
     {
-        return JsonSerializer.Deserialize<NbtTag>(node, Options) ?? throw new JsonException("Nbt cannot be deserialized from json.");
+        return JsonSerializer.Deserialize<NbtTag>(node, Options) ?? throw new JsonException("Nbt cannot be deserialized from JSON.");
     }
 }
