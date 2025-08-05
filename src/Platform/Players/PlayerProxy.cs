@@ -19,7 +19,7 @@ public class PlayerProxy(IPlayer player) : IPlayer
     public void Replace(IPlayer player)
     {
         if (Client != player.Client)
-            throw new InvalidOperationException($"Player {Source} and {player} have different tcp clients");
+            throw new InvalidOperationException($"Player {Source} and {player} have different TCP clients");
 
         Source = player;
     }
