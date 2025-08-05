@@ -49,7 +49,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
         cancellationToken.ThrowIfCancellationRequested();
 
         if (this is { _playerToServerTask: not null } or { _serverToPlayerTask: not null })
-            throw new InvalidOperationException("Link was already started");
+            throw new InvalidOperationException($"{nameof(Link)} was already started");
 
         await events.ThrowAsync(new LinkStartingEvent(this, Player), cancellationToken);
 
