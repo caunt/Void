@@ -2,7 +2,7 @@
 
 namespace Void.Minecraft.Commands.Brigadier.Builder;
 
-public class LiteralArgumentBuilder(string Literal) : ArgumentBuilder<LiteralArgumentBuilder, LiteralCommandNode>
+public class LiteralArgumentBuilder(string literal) : ArgumentBuilder<LiteralArgumentBuilder, LiteralCommandNode>
 {
     public static LiteralArgumentBuilder Create(string value)
     {
@@ -11,7 +11,7 @@ public class LiteralArgumentBuilder(string Literal) : ArgumentBuilder<LiteralArg
 
     public override LiteralCommandNode Build()
     {
-        var result = new LiteralCommandNode(Literal, Executor, Requirement, RedirectTarget, RedirectModifier, IsForks);
+        var result = new LiteralCommandNode(literal, Executor, Requirement, RedirectTarget, RedirectModifier, IsForks);
 
         foreach (var argument in Arguments)
             result.AddChild(argument);
