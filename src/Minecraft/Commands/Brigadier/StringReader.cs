@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 using Void.Minecraft.Commands.Brigadier.Exceptions;
 
 namespace Void.Minecraft.Commands.Brigadier;
@@ -71,12 +72,12 @@ public class StringReader(string source, int cursor = 0) : IImmutableStringReade
         while (CanRead && IsAllowedNumber(Peek))
             Skip();
 
-        var number = Source[start..Cursor];
+        var span = Source.AsSpan(start, Cursor - start);
 
-        if (number.Length is 0)
+        if (span.Length is 0)
             throw CommandSyntaxException.BuiltInExceptions.ReaderExpectedInt.CreateWithContext(this);
 
-        if (int.TryParse(number, out var result))
+        if (int.TryParse(span, out var result))
             return result;
 
         Cursor = start;
