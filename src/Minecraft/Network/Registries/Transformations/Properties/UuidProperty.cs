@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Profiles;
 
@@ -13,11 +12,11 @@ public record UuidProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<UuidPro
 
     public static UuidProperty FromUuid(Uuid value)
     {
-        using var stream = new MemoryStream();
-        var buffer = new MinecraftBuffer(stream);
+        var bytes = new byte[16];
+        var buffer = new MinecraftBuffer(bytes.AsSpan());
         buffer.WriteUuid(value);
 
-        return new UuidProperty(stream.ToArray());
+        return new UuidProperty(bytes);
     }
 
     public static UuidProperty Read(ref MinecraftBuffer buffer)
