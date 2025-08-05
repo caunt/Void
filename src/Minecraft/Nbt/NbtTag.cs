@@ -86,11 +86,11 @@ public abstract record NbtTag
 
     public static NbtTag Parse(string data)
     {
-        var trimmed = data.TrimStart();
+        ReadOnlySpan<char> span = data.AsSpan().TrimStart();
 
-        if (trimmed.StartsWith('{'))
+        if (!span.IsEmpty && span[0] == '{')
             return StringNbt.Parse(data);
-        else if (trimmed.StartsWith('['))
+        else if (!span.IsEmpty && span[0] == '[')
             return StringNbt.ParseList(data);
         else
             throw new FormatException($"Only NbtCompound and NbtList can be parsed from Snbt. Provided value: {data}");
