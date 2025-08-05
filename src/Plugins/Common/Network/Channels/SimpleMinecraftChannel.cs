@@ -52,7 +52,7 @@ public class SimpleMinecraftChannel(IMessageStreamBase head) : INetworkChannel
         before.BaseStream = stream;
     }
 
-    public void Remove<T>() where T : class, IMessageStream, new()
+    public void Remove<T>() where T : class, IMessageStream
     {
         Remove(Get<T>());
     }
