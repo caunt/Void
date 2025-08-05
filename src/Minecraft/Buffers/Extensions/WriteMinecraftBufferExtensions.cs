@@ -232,7 +232,7 @@ public static class WriteMinecraftBufferExtensions
     /// </summary>
     /// <typeparam name="TBuffer">The type parameter represents a structure that can be used as a buffer for writing data.</typeparam>
     /// <param name="buffer">The buffer is a reference to the structure that will receive the data from the stream.</param>
-    /// <param name="data">The stream provides the data source that will be written into the buffer.</param>
+    /// <param name="value">The stream provides the data source that will be written into the buffer.</param>
     public static void Write<TBuffer>(ref this TBuffer buffer, Stream value)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>
