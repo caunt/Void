@@ -125,7 +125,7 @@ public class Platform(
         if (context.ParseResult.HasOption(_loggingOption))
             LoggingLevelSwitch.MinimumLevel = (LogEventLevel)context.ParseResult.GetValueForOption(_loggingOption);
 
-        logger.LogInformation("Starting {Name} {Version} proxy", nameof(Void), "v" + GetType().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion);
+        logger.LogInformation("Starting {Name} {Version} proxy", nameof(Void), $"v{GetType().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion}");
         var startTime = Stopwatch.GetTimestamp();
 
         logger.LogTrace("Working directory is {Path}", Directory.GetCurrentDirectory());
