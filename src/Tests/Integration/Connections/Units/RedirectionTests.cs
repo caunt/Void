@@ -77,8 +77,8 @@ public class RedirectionTests(RedirectionTests.PaperVoidClientsFixture fixture) 
 
             MinecraftConsoleClient = await MinecraftConsoleClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
             MineflayerClient = await MineflayerClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
-            PaperServer1 = await PaperServer.CreateAsync(_workingDirectory, _httpClient, port: FirstServerPort, cancellationToken: cancellationTokenSource.Token);
-            PaperServer2 = await PaperServer.CreateAsync(_workingDirectory, _httpClient, port: SecondServerPort, cancellationToken: cancellationTokenSource.Token);
+            PaperServer1 = await PaperServer.CreateAsync(_workingDirectory, _httpClient, name: FirstServerName, port: FirstServerPort, cancellationToken: cancellationTokenSource.Token);
+            PaperServer2 = await PaperServer.CreateAsync(_workingDirectory, _httpClient, name: SecondServerName, port: SecondServerPort, cancellationToken: cancellationTokenSource.Token);
             VoidProxy = await VoidProxy.CreateAsync(targetServers: [ $"localhost:{FirstServerPort}", $"localhost:{SecondServerPort}" ], proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
         }
 
