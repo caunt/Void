@@ -121,7 +121,7 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
 
         if (moduleBuilder is null)
         {
-            var name = type.FullName + "TomletMappedByVoidAssembly";
+            var name = $"{type.FullName}TomletMappedByVoidAssembly";
             var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name), AssemblyBuilderAccess.Run);
 
             moduleBuilder = assemblyBuilder.DefineDynamicModule(name);
