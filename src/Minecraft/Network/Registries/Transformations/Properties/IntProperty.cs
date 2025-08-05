@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using Void.Minecraft.Buffers;
 
 namespace Void.Minecraft.Network.Registries.Transformations.Properties;
@@ -10,11 +9,11 @@ public record IntProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<IntPrope
 
     public static IntProperty FromPrimitive(int value)
     {
-        using var stream = new MemoryStream();
-        var buffer = new MinecraftBuffer(stream);
+        Span<byte> span = stackalloc byte[4];
+        var buffer = new MinecraftBuffer(span);
         buffer.WriteInt(value);
 
-        return new IntProperty(stream.ToArray());
+        return new IntProperty(span.ToArray());
     }
 
     public static IntProperty Read(ref MinecraftBuffer buffer)
