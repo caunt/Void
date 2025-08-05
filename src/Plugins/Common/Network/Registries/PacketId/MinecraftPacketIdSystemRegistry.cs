@@ -33,7 +33,7 @@ public class MinecraftPacketIdSystemRegistry : IMinecraftPacketIdSystemRegistry
     public void ReplacePackets(Operation operation, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings)
     {
         if (ProtocolVersion is null)
-            throw new InvalidOperationException("Protocol version is not set yet");
+            throw new InvalidOperationException($"{nameof(ProtocolVersion)} is not set yet");
 
         switch (operation)
         {
@@ -55,7 +55,7 @@ public class MinecraftPacketIdSystemRegistry : IMinecraftPacketIdSystemRegistry
     public void AddPackets(Operation operation, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings)
     {
         if (ProtocolVersion is null)
-            throw new InvalidOperationException("Protocol version is not set yet");
+            throw new InvalidOperationException($"{nameof(ProtocolVersion)} is not set yet");
 
         switch (operation)
         {
