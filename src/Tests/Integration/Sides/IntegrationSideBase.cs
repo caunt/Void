@@ -88,7 +88,7 @@ public abstract class IntegrationSideBase : IIntegrationSide
                     continue;
 
                 if (!candidate.Contains("://"))
-                    candidate = protocol + "://" + candidate;
+                    candidate = $"{protocol}://{candidate}";
 
                 if (!Uri.TryCreate(candidate, UriKind.Absolute, out var uri))
                     continue;
