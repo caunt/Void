@@ -57,7 +57,7 @@ public class MinecraftConsoleClient : IntegrationSideBase
         using var disposable = await _lock.LockAsync(cancellationToken);
 
         if (string.IsNullOrWhiteSpace(_binaryPath))
-            throw new InvalidOperationException("Binary path is not set. Call SetupAsync first.");
+            throw new InvalidOperationException($"Binary path is not set. Call {nameof(CreateAsync)} first.");
 
         var configurationPath = Path.Combine(_workingDirectory, "MinecraftClient.ini");
 
