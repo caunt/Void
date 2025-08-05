@@ -13,6 +13,7 @@ jobs:
     environment: void
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      COMMIT_MESSAGE: ${{ github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message }}
     strategy:
       fail-fast: false
       matrix:
@@ -86,7 +87,7 @@ jobs:
           compression-level: 9
           if-no-files-found: error
       - name: Test
-        if: ${{ matrix.run-tests }} # GitHub Actions are limited in runners architectures. Check http://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#standard-github-hosted-runners-for-public-repositories.
+        if: ${{ matrix.run-tests && !startsWith(env.COMMIT_MESSAGE, 'revert') && !startsWith(env.COMMIT_MESSAGE, 'docs') && !startsWith(env.COMMIT_MESSAGE, 'style') && !startsWith(env.COMMIT_MESSAGE, 'chore') && !startsWith(env.COMMIT_MESSAGE, 'refactor') && !startsWith(env.COMMIT_MESSAGE, 'build') && !startsWith(env.COMMIT_MESSAGE, 'ci') }} # GitHub Actions are limited in runners architectures. Check http://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#standard-github-hosted-runners-for-public-repositories.
         env:
           VOID_INTEGRATION_PROXIED_TESTS_ENABLED: true
         run: dotnet test --runtime ${{ matrix.runtime }} --verbosity minimal ${{ matrix.parameters }}
