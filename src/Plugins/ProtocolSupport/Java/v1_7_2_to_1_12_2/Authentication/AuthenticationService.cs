@@ -65,7 +65,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
             return;
 
         if (link.Player.Profile is not { } profile)
-            throw new InvalidOperationException("Player should be identified before admitting");
+            throw new InvalidOperationException($"{nameof(link.Player)} should be identified before admitting");
 
         await link.SendPacketAsync(new LoginSuccessPacket
         {
