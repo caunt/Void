@@ -66,9 +66,6 @@ spec:
         - name: VOID_OFFLINE
           value: "true"
 ```
-
-The `imagePullPolicy: Always` line ensures Kubernetes pulls the container image if a newer version is available.
-
 ## Configuring Void in Containers
 Use [**environment variables**](/configuration/environment-variables/) or [**mount volumes**](/configuration/in-file/) to configure Void.
 
