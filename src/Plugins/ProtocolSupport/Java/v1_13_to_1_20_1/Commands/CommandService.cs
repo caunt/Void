@@ -27,7 +27,7 @@ public class CommandService(ILogger<CommandService> logger, IEventService events
             return false;
 
         if (!command.StartsWith('/'))
-            command = "/" + command;
+            command = $"/{command}";
 
         await player.GetLink().SendPacketAsync(new ChatMessagePacket { Text = command }, cancellationToken);
         return true;
