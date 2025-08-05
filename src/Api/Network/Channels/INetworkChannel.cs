@@ -61,7 +61,7 @@ public interface INetworkChannel : IDisposable, IAsyncDisposable
     /// <summary>
     /// Removes a stream of type <typeparamref name="T"/> from the pipeline.
     /// </summary>
-    public void Remove<T>() where T : class, IMessageStream, new();
+    public void Remove<T>() where T : class, IMessageStream;
 
     /// <summary>
     /// Removes the specified <paramref name="stream"/> from the pipeline.
