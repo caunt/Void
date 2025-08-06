@@ -28,8 +28,8 @@ jobs:
       - name: Approve PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr review ${{ github.event.pull_request.number }} --approve
+        run: gh pr review ${{ github.event.pull_request.number }} --approve --repo ${{ github.repository }}
       - name: Rebase and Merge
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr merge ${{ github.event.pull_request.number }} --rebase --delete-branch
+        run: gh pr merge ${{ github.event.pull_request.number }} --rebase --delete-branch --repo ${{ github.repository }}
