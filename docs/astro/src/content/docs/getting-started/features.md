@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-This page provides an overview of the features supported or planned to be implemented by the Void proxy.
+Here's a quick look at what the Void proxy already supports and what's planned for the future.
 
 ## Minecraft
 
