@@ -1,4 +1,3 @@
-
 <div align="center" id="toc">
   <a href="https://hub.docker.com/r/caunt/void/tags"><img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/caunt/void"></a>
   <a href="https://github.com/caunt/Void/issues"><img alt="GitHub Issues or Pull Requests" src="https://img.shields.io/github/issues/caunt/void"></a>
@@ -12,15 +11,14 @@
 <div align="center" id="toc">
   <ul style="list-style: none">
     <summary>
-      <h1>:star: Minecraft proxy for all versions and every mod.</h1>
+      <h1>:star: Minecraft Proxy for Modded servers.</h1>
     </summary>
   </ul>
 </div>
 
 ### :floppy_disk: **Download:**
-:green_circle: [**Stable Development Builds**](https://void.caunt.world/download/)  
-:yellow_circle: [**Unstable Daily Builds**](https://github.com/caunt/Void/actions)  
-:whale: [**Run in Docker**](https://void.caunt.world/containers/)
+:+1: [**Latest Release**](https://void.caunt.world/download/)  
+:whale: [**Run with Docker**](https://void.caunt.world/containers/)
 
 ### **Getting Started:**
 [**Running Guide**](https://void.caunt.world/getting-started/running/)  
