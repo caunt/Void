@@ -17,3 +17,19 @@ jobs:
     with:
       dotnet-version: ${{ needs.semver.outputs.dotnet-version }}
       void-version: ${{ needs.semver.outputs.void-version }}
+  merge:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Approve PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr review ${{ github.event.pull_request.number }} --approve
+      - name: Rebase and Merge
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge ${{ github.event.pull_request.number }} --rebase --delete-branch
