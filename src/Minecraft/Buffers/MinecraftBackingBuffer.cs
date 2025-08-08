@@ -418,7 +418,8 @@ internal ref struct MinecraftBackingBuffer
 
     public void WriteUuidAsIntArray(Uuid value)
     {
-        var span = value.AsGuid.ToByteArray(true).AsSpan();
+        Span<byte> span = stackalloc byte[16];
+        _ = value.AsGuid.TryWriteBytes(span, bigEndian: true, out _);
 
         WriteInt(BinaryPrimitives.ReadInt32BigEndian(span[..4]));
         WriteInt(BinaryPrimitives.ReadInt32BigEndian(span[4..8]));
