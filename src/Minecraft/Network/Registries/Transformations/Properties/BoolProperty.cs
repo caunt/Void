@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using Void.Minecraft.Buffers;
 
 namespace Void.Minecraft.Network.Registries.Transformations.Properties;
@@ -10,11 +9,11 @@ public record BoolProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<BoolPro
 
     public static BoolProperty FromPrimitive(bool value)
     {
-        using var stream = new MemoryStream();
-        var buffer = new MinecraftBuffer(stream);
+        Span<byte> data = stackalloc byte[1];
+        var buffer = new MinecraftBuffer(data);
         buffer.WriteBoolean(value);
 
-        return new BoolProperty(stream.ToArray());
+        return new BoolProperty(data.ToArray());
     }
 
     public static BoolProperty Read(ref MinecraftBuffer buffer)
