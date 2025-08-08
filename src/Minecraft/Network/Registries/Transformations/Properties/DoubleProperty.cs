@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using Void.Minecraft.Buffers;
 
 namespace Void.Minecraft.Network.Registries.Transformations.Properties;
@@ -10,11 +9,10 @@ public record DoubleProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<Doubl
 
     public static DoubleProperty FromPrimitive(double value)
     {
-        using var stream = new MemoryStream();
-        var buffer = new MinecraftBuffer(stream);
+        Span<byte> bytes = stackalloc byte[sizeof(double)];
+        var buffer = new MinecraftBuffer(bytes);
         buffer.WriteDouble(value);
-
-        return new DoubleProperty(stream.ToArray());
+        return new DoubleProperty(bytes.ToArray());
     }
 
     public static DoubleProperty Read(ref MinecraftBuffer buffer)
