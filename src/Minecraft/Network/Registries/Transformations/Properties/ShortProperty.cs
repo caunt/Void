@@ -1,5 +1,5 @@
 using System;
-using System.IO;
+using System.Buffers.Binary;
 using Void.Minecraft.Buffers;
 
 namespace Void.Minecraft.Network.Registries.Transformations.Properties;
@@ -10,11 +10,10 @@ public record ShortProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<ShortP
 
     public static ShortProperty FromPrimitive(short value)
     {
-        using var stream = new MemoryStream();
-        var buffer = new MinecraftBuffer(stream);
-        buffer.WriteShort(value);
+        Span<byte> bytes = stackalloc byte[sizeof(short)];
+        BinaryPrimitives.WriteInt16BigEndian(bytes, value);
 
-        return new ShortProperty(stream.ToArray());
+        return new ShortProperty(bytes.ToArray());
     }
 
     public static ShortProperty Read(ref MinecraftBuffer buffer)
