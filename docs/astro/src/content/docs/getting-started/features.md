@@ -10,10 +10,10 @@ Here's a quick look at what the Void proxy already supports and what's planned f
 ## Minecraft
 
 #### Terms
-**Proxying** is a support for playing through proxy.  
-**Redirects** is a support for player redirections between servers.  
-**API** is a support for Services API in Plugins (Chat, Commands, Events, Content, Packets)  
-**WIP** is a Work In Progress.
+- **Proxying** lets you play through the proxy.
+- **Redirects** move players between servers.
+- **API** exposes the Services API to plugins (Chat, Commands, Events, Content, Packets).
+- **WIP** marks a feature still under development.
 
 ### Game Versions
 | Game Version         | Proxying | Redirects | API      | WIP      |
