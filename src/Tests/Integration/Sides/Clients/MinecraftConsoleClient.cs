@@ -103,6 +103,51 @@ public class MinecraftConsoleClient : IntegrationSideBase
         }
     }
 
+    public async Task RedirectBetweenServersAsync(string address, ProtocolVersion protocolVersion, string firstServerName, string secondServerName, CancellationToken cancellationToken = default)
+    {
+        using var disposable = await _lock.LockAsync(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(_binaryPath))
+            throw new InvalidOperationException("Binary path is not set. Call SetupAsync first.");
+
+        var configurationPath = Path.Combine(_workingDirectory, "MinecraftClient.ini");
+
+        if (File.Exists(configurationPath))
+            File.Delete(configurationPath);
+
+        await File.WriteAllTextAsync(configurationPath, $"""
+            [Main.Advanced]
+            MinecraftVersion = "{protocolVersion.MostRecentSupportedVersion}"
+            ExitOnFailure = true
+
+            [Logging]
+            DebugMessages = true
+
+            [ChatBot.AutoRelog]
+            Enabled = true
+            Retries = 3
+            """, cancellationToken);
+
+        StartApplication(_binaryPath, hasInput: true, nameof(MinecraftConsoleClient)[..16], "-", address);
+
+        var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
+
+        if (_process is not { HasExited: false, StandardInput: { } input })
+            throw new IntegrationTestException("Failed to start Minecraft Console Client.");
+
+        await consoleTask;
+
+        input.WriteLine($"send /server {secondServerName}");
+        await Task.Delay(5_000, cancellationToken);
+
+        input.WriteLine($"send /server {firstServerName}");
+        await Task.Delay(5_000, cancellationToken);
+
+        input.WriteLine("exit");
+
+        await _process.ExitAsync(entireProcessTree: true, cancellationToken);
+    }
+
     private bool HandleConsole(string line)
     {
         if (line.Contains("Cannot connect to the server : This version is not supported !"))
