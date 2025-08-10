@@ -5,7 +5,7 @@ const { lang, entry } = Astro.locals.starlightRoute;
 let commit;
 if (entry?.filePath) {
     try {
-        const result = execSync(`git log -1 --format=%h|%H|%an|%cI ${entry.filePath}`).toString().trim();
+        const result = execSync(`git log -1 --format='%h|%H|%an|%cI' -- "${entry.filePath}"`).toString().trim();
         const [shortHash, fullHash, author, isoDate] = result.split('|');
         commit = { shortHash, fullHash, author, date: new Date(isoDate), iso: isoDate };
     } catch {}
