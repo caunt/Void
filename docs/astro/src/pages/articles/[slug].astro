@@ -15,5 +15,8 @@ const { Content, headings } = await article.render();
 ---
 
 <StarlightPage frontmatter={article.data} headings={headings}>
+  <style is:global>
+    header { display: none; }
+  </style>
   <Content />
 </StarlightPage>
