@@ -270,9 +270,14 @@ export default defineConfig({
         changefreq: 'daily',
         priority: 1,
         serialize(item) {
-            const lastmod = routeLastmod.get(new URL(item.url).pathname)
-            if (lastmod) item.lastmod = lastmod
-            return item
+            const pathname = new URL(item.url).pathname;
+            const lookup = pathname.endsWith('/') ? pathname : pathname + '/';
+            const lastmod = routeLastmod.get(lookup);
+
+            if (lastmod)
+                item.lastmod = lastmod.toISOString();
+
+            return item;
         }
     })]
 });
