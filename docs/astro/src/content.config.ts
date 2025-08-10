@@ -1,4 +1,4 @@
-import { defineCollection } from 'astro:content';
+import { defineCollection, z } from 'astro:content';
 import { docsLoader } from '@astrojs/starlight/loaders';
 import { docsSchema } from '@astrojs/starlight/schema';
 
@@ -87,5 +87,13 @@ export const collections = {
 
             return results;
         }
+    }),
+    articles: defineCollection({
+        schema: z.object({
+            title: z.string(),
+            description: z.string(),
+            author: z.string(),
+            pubDate: z.date()
+        })
     })
 };
