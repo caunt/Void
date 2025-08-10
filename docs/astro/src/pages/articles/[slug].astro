@@ -14,6 +14,6 @@ const { article } = Astro.props;
 const { Content, headings } = await article.render();
 ---
 
-<StarlightPage frontmatter={{ ...article.data, template: 'splash' }} headings={headings}>
+<StarlightPage frontmatter={{ ...article.data, template: 'splash', pagefind: { weight: 0.5 } }} headings={headings}>
   <Content />
 </StarlightPage>
