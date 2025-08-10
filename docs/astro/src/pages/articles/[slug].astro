@@ -14,9 +14,6 @@ const { article } = Astro.props;
 const { Content, headings } = await article.render();
 ---
 
-<StarlightPage frontmatter={article.data} headings={headings}>
-  <style is:global>
-    header { display: none; }
-  </style>
+<StarlightPage frontmatter={{ ...article.data, sidebar: false }} headings={headings}>
   <Content />
 </StarlightPage>
