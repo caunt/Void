@@ -12,8 +12,10 @@ export async function getStaticPaths() {
 
 const { article } = Astro.props;
 const { Content, headings } = await article.render();
+const formattedPubDate = article.data.pubDate.toLocaleDateString();
 ---
 
 <StarlightPage frontmatter={{ ...article.data, template: 'splash' }} pagefind={{ weight: 0.2 }} headings={headings}>
+  <p>{article.data.author} — <time datetime={article.data.pubDate.toISOString()}>{formattedPubDate}</time></p>
   <Content />
 </StarlightPage>
