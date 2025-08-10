@@ -1,0 +1,23 @@
+---
+import { execSync } from 'node:child_process';
+
+const { lang, entry } = Astro.locals.starlightRoute;
+let commit;
+if (entry?.filePath) {
+    try {
+        const result = execSync(`git log -1 --format=%h|%H|%an|%cI ${entry.filePath}`).toString().trim();
+        const [shortHash, fullHash, author, isoDate] = result.split('|');
+        commit = { shortHash, fullHash, author, date: new Date(isoDate), iso: isoDate };
+    } catch {}
+}
+const repoUrl = 'https://github.com/caunt/void';
+---
+{commit && (
+    <p>
+        {Astro.locals.t('page.lastUpdated')}{' '}
+        <time datetime={commit.iso}>
+            {commit.date.toLocaleDateString(lang, { dateStyle: 'medium', timeZone: 'UTC' })}
+        </time>{' '}
+        by {commit.author} (<a href={`${repoUrl}/commit/${commit.fullHash}`}>{commit.shortHash}</a>)
+    </p>
+)}
