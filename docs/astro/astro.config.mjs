@@ -25,13 +25,18 @@ function collect(dir, route = '') {
 
             collect(path.join(dir, entry.name), nextRoute)
         } else if (entry.isFile() && /\.mdx?$/.test(entry.name)) {
+            const fullPath = path.join(dir, entry.name)
+            const name = entry.name.replace(/\.mdx?$/, '')
+            const lookup = name === 'index' ? route : path.posix.join(route, name)
+            const urlPath = lookup ? '/' + lookup + '/' : '/'
+
             try {
-                const iso = execSync(`git log -1 --format=%cI "${path.join(dir, entry.name)}"`).toString().trim()
-                const name = entry.name.replace(/\.mdx?$/, '')
-                const lookup = name === 'index' ? route : path.posix.join(route, name)
-                const urlPath = lookup ? '/' + lookup + '/' : '/'
+                const iso = execSync(`git log -1 --format=%cI "${fullPath}"`).toString().trim()
                 routeLastmod.set(urlPath, new Date(iso))
-            } catch {}
+            } catch {
+                const { mtime } = fs.statSync(fullPath)
+                routeLastmod.set(urlPath, mtime)
+            }
         }
     }
 }
