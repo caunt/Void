@@ -5,43 +5,10 @@ import sitemap from '@astrojs/sitemap';
 
 import { ExpressiveCodeTheme } from '@astrojs/starlight/expressive-code'
 import fs from 'node:fs'
-import { execSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
-import path from 'node:path'
-
 import starlightLinksValidator from 'starlight-links-validator'
+import { routeLastmod } from './last-updated.js'
 
 const googleAnalyticsId = 'G-3KT5D46L8T'
-
-const contentRoot = fileURLToPath(new URL('./src/content', import.meta.url))
-const routeLastmod = new Map()
-
-function collect(dir, route = '') {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        if (entry.isDirectory()) {
-            const nextRoute = route === '' && entry.name === 'docs'
-                ? route
-                : path.posix.join(route, entry.name)
-
-            collect(path.join(dir, entry.name), nextRoute)
-        } else if (entry.isFile() && /\.mdx?$/.test(entry.name)) {
-            const fullPath = path.join(dir, entry.name)
-            const name = entry.name.replace(/\.mdx?$/, '')
-            const lookup = name === 'index' ? route : path.posix.join(route, name)
-            const urlPath = lookup ? '/' + lookup + '/' : '/'
-
-            try {
-                const iso = execSync(`git log -1 --format=%cI "${fullPath}"`).toString().trim()
-                routeLastmod.set(urlPath, new Date(iso))
-            } catch {
-                const { mtime } = fs.statSync(fullPath)
-                routeLastmod.set(urlPath, mtime)
-            }
-        }
-    }
-}
-
-collect(contentRoot)
 
 // https://astro.build/config
 export default defineConfig({
@@ -283,10 +250,10 @@ export default defineConfig({
         serialize(item) {
             const pathname = new URL(item.url).pathname;
             const lookup = pathname.endsWith('/') ? pathname : pathname + '/';
-            const lastmod = routeLastmod.get(lookup);
+            const commit = routeLastmod.get(lookup);
 
-            if (lastmod)
-                item.lastmod = lastmod.toISOString();
+            if (commit)
+                item.lastmod = commit.date.toISOString();
 
             return item;
         }
