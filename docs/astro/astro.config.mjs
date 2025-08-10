@@ -253,6 +253,9 @@ export default defineConfig({
             baseUrl: 'https://github.com/caunt/void/edit/main/docs/astro'
         },
         lastUpdated: true,
+        components: {
+            LastUpdated: './src/components/LastUpdated.astro'
+        },
         expressiveCode: {
             themes: [ExpressiveCodeTheme.fromJSONString(fs.readFileSync(new URL(`./themes/visual-studio-2019-dark.jsonc`, import.meta.url), 'utf-8'))],
             tabWidth: 4
