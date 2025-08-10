@@ -23,7 +23,9 @@ function collect(dir, route = '') {
         } else if (entry.isFile() && /\.mdx?$/.test(entry.name)) {
             try {
                 const iso = execSync(`git log -1 --format=%cI "${path.join(dir, entry.name)}"`).toString().trim()
-                const urlPath = '/' + path.posix.join(route, entry.name.replace(/\.mdx?$/, '')) + '/'
+                const name = entry.name.replace(/\.mdx?$/, '')
+                const lookup = name === 'index' ? route : path.posix.join(route, name)
+                const urlPath = lookup ? '/' + lookup + '/' : '/'
                 routeLastmod.set(urlPath, new Date(iso))
             } catch {}
         }
