@@ -1,11 +1,14 @@
 ---
 import { execSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { relative } from 'node:path';
 
 const { lang, entry } = Astro.locals.starlightRoute;
 let commit;
 if (entry?.filePath) {
     try {
-        const result = execSync(`git log -1 --format='%h|%H|%an|%cI' -- "${entry.filePath}"`).toString().trim();
+        const filePath = relative(process.cwd(), fileURLToPath(entry.filePath));
+        const result = execSync(`git log -1 --format='%h|%H|%an|%cI' -- "${filePath}"`).toString().trim();
         const [shortHash, fullHash, author, isoDate] = result.split('|');
         commit = { shortHash, fullHash, author, date: new Date(isoDate), iso: isoDate };
     } catch {}
