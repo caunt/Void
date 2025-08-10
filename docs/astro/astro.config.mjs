@@ -5,10 +5,32 @@ import sitemap from '@astrojs/sitemap';
 
 import { ExpressiveCodeTheme } from '@astrojs/starlight/expressive-code'
 import fs from 'node:fs'
+import { execSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 
 import starlightLinksValidator from 'starlight-links-validator'
 
 const googleAnalyticsId = 'G-3KT5D46L8T'
+
+const contentRoot = fileURLToPath(new URL('./src/content', import.meta.url))
+const routeLastmod = new Map()
+
+function collect(dir, route = '') {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isDirectory()) {
+            collect(path.join(dir, entry.name), path.posix.join(route, entry.name))
+        } else if (entry.isFile() && /\.mdx?$/.test(entry.name)) {
+            try {
+                const iso = execSync(`git log -1 --format=%cI "${path.join(dir, entry.name)}"`).toString().trim()
+                const urlPath = '/' + path.posix.join(route, entry.name.replace(/\.mdx?$/, '')) + '/'
+                routeLastmod.set(urlPath, new Date(iso))
+            } catch {}
+        }
+    }
+}
+
+collect(contentRoot)
 
 // https://astro.build/config
 export default defineConfig({
@@ -244,6 +266,10 @@ export default defineConfig({
     }), sitemap({
         changefreq: 'daily',
         priority: 1,
-        lastmod: new Date()
+        serialize(item) {
+            const lastmod = routeLastmod.get(new URL(item.url).pathname)
+            if (lastmod) item.lastmod = lastmod
+            return item
+        }
     })]
 });
