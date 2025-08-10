@@ -19,7 +19,11 @@ const routeLastmod = new Map()
 function collect(dir, route = '') {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
         if (entry.isDirectory()) {
-            collect(path.join(dir, entry.name), path.posix.join(route, entry.name))
+            const nextRoute = route === '' && entry.name === 'docs'
+                ? route
+                : path.posix.join(route, entry.name)
+
+            collect(path.join(dir, entry.name), nextRoute)
         } else if (entry.isFile() && /\.mdx?$/.test(entry.name)) {
             try {
                 const iso = execSync(`git log -1 --format=%cI "${path.join(dir, entry.name)}"`).toString().trim()
