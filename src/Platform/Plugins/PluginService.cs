@@ -67,9 +67,24 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
                 var name = url.LocalPath;
                 logger.LogTrace("Found {Name} remote plugin", name);
 
-                using var response = await httpClient.GetAsync(url);
-                await using var stream = response.Content.ReadAsStream();
-                return LoadContainer(name, stream);
+                try
+                {
+                    using var response = await httpClient.GetAsync(url, cancellationToken);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        logger.LogWarning("Remote plugin {Name} couldn't be loaded: {StatusCode}", name, response.StatusCode);
+                        return null;
+                    }
+
+                    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                    return LoadContainer(name, stream);
+                }
+                catch (Exception exception)
+                {
+                    logger.LogWarning(exception, "Remote plugin {Name} couldn't be loaded", name);
+                    return null;
+                }
             }
             else
             {
@@ -192,19 +207,28 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
     public IEnumerable<Type> LoadContainer(string name, Stream stream, bool ignoreEmpty = false)
     {
         logger.LogTrace("Loading {Name} plugins", name);
-        var context = dependencies.CreateInstance<PluginAssemblyLoadContext>(default, name, stream, _containers.AsReadOnly());
 
-        var plugins = GetPlugins(context.PluginAssembly);
-
-        if (!plugins.Any())
+        try
         {
-            logger.Log(ignoreEmpty ? LogLevel.Trace : LogLevel.Warning, "Plugin {ContextName} has no IPlugin implementations", context.Name);
+            var context = dependencies.CreateInstance<PluginAssemblyLoadContext>(default, name, stream, _containers.AsReadOnly());
+
+            var plugins = GetPlugins(context.PluginAssembly);
+
+            if (!plugins.Any())
+            {
+                logger.Log(ignoreEmpty ? LogLevel.Trace : LogLevel.Warning, "Plugin {ContextName} has no IPlugin implementations", context.Name);
+                return plugins;
+            }
+
+            _containers.Add(new WeakPluginContainer(context));
+
             return plugins;
         }
-
-        _containers.Add(new WeakPluginContainer(context));
-
-        return plugins;
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Plugin {Name} couldn't be loaded", name);
+            return [];
+        }
     }
 
     public IEnumerable<Type> GetPlugins(Assembly assembly)
