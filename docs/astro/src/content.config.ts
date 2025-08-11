@@ -87,13 +87,5 @@ export const collections = {
 
             return results;
         }
-    }),
-    articles: defineCollection({
-        schema: z.object({
-            title: z.string(),
-            description: z.string(),
-            author: z.string(),
-            pubDate: z.date()
-        })
     })
 };
