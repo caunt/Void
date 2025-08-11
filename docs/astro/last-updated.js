@@ -23,6 +23,7 @@ function collect(dir, route = '') {
             const result = execSync(`git log -1 --format='%h|%H|%an|%cI' -- "${fullPath}"`, { cwd: repoRoot }).toString().trim();
             const [shortHash, fullHash, author, isoDate] = result.split('|');
             routeLastmod.set(urlPath, { shortHash, fullHash, author, date: new Date(isoDate), iso: isoDate });
+            console.log(`[last-updated] ${urlPath}: ${isoDate}`);
         }
     }
 }
