@@ -3,6 +3,8 @@ title: How to Set Up Void Minecraft Proxy in Docker for Modded & Vanilla Servers
 description: Learn how to run the Void Minecraft Proxy in Docker with a clean, fast setup for both modded and vanilla servers, plus tips for plugins, forwarding, and smooth production use.
 author: Vitalii Kotenko
 pubDate: 2025-08-10
+template: splash
+pagefind: false
 ---
 
 # Setting up Minecraft Proxy — Void (In Docker)
