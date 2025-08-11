@@ -20,7 +20,7 @@ Instead, use transformations explained below.
 ## Conditional packet transformations
 Conditional packet transformations are the simplest way to handle changes, but they can become messy if the packet changes frequently.
 
-We will use previously defined [**Set Held Item (clientbound)**](/developing-plugins/network/packets#defining-packets) packet as an example.
+We will use previously defined [**Set Held Item (clientbound)**](/docs/developing-plugins/network/packets#defining-packets) packet as an example.
 In this packet, changes were made from Minecraft version **1.21** to **1.21.2**.
 In version **1.21**, the slot was defined as `byte`, but in version **1.21.2** it was changed to `varint`.
 ```csharp
@@ -95,7 +95,7 @@ public class SetHeldItemClientboundPacket : IMinecraftClientboundPacket<SetHeldI
 
 Now when we have latest implementation, we have to define changes that were made throughout the versions.
 
-In case of [**Set Held Item (clientbound)**](/developing-plugins/network/packets#defining-packets) packet, just one change was made - `slot` property type changed from `byte` to `varint`.
+In case of [**Set Held Item (clientbound)**](/docs/developing-plugins/network/packets#defining-packets) packet, just one change was made - `slot` property type changed from `byte` to `varint`.
 ```csharp
 MinecraftPacketTransformationMapping[] Transformations { get; } = [
     new(ProtocolVersion.MINECRAFT_1_21, ProtocolVersion.MINECRAFT_1_21_2, wrapper =>
@@ -140,7 +140,7 @@ public void OnPhaseChanged(PhaseChangedEvent @event)
 }
 ```
 
-Now the Void proxy can use your defined transformations to transform packets to version that is used by the player. If player is playing on version **1.21**, proxy will upgrade packet to your latest (**1.21.2**) version and pass it to the [**Events System**](/developing-plugins/events/listening-to-events/). When plugin is sending packet to the player playing old version, proxy will downgrade packet to **1.21** and send it to the player.
+Now the Void proxy can use your defined transformations to transform packets to version that is used by the player. If player is playing on version **1.21**, proxy will upgrade packet to your latest (**1.21.2**) version and pass it to the [**Events System**](/docs/developing-plugins/events/listening-to-events/). When plugin is sending packet to the player playing old version, proxy will downgrade packet to **1.21** and send it to the player.
 
 :::tip
 Keep defining flat transformations from one version to another when packet is changing. You have to **define only changed versions** and **skip versions without changes**. When `slot` property will be changed by Mojang to `long` type, define another two transformations - **upgrading** and **downgrading**. Reading `varint` / writing `long` for upgrade, and reading `long` / writing `varint` for downgrade.

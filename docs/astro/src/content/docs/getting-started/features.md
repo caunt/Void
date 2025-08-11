@@ -31,13 +31,13 @@ Here's a quick look at what the Void proxy already supports and what's planned f
 ### Forwardings
 | Forwarding                                                  | Supported | WIP      |
 | :---------------------------------------------------------- | :------:  | :------: |
-| [**None (Offline)**](/forwardings/forwarding-overview)      | &#x2705;  | &#x2705; |
-| [**Legacy (Bungee)**](/forwardings/legacy)                  | &#x274C;  | &#x2705; |
-| [**Modern (Velocity)**](/forwardings/modern)                | &#x2705;  | &#x2705; |
-| [**Online (PK)**](/forwardings/online)                      | &#x2705;  | &#x2705; |
+| [**None (Offline)**](/docs/forwardings/forwarding-overview)      | &#x2705;  | &#x2705; |
+| [**Legacy (Bungee)**](/docs/forwardings/legacy)                  | &#x274C;  | &#x2705; |
+| [**Modern (Velocity)**](/docs/forwardings/modern)                | &#x2705;  | &#x2705; |
+| [**Online (PK)**](/docs/forwardings/online)                      | &#x2705;  | &#x2705; |
 
 :::tip[Online (Private Key)]
-Online (Private Key) is a new [**forwarding**](/forwardings/online) method.
+Online (Private Key) is a new [**forwarding**](/docs/forwardings/online) method.
 It lets you connect to servers using online mode.
 The server securely shares its private key so the proxy can expose an API to plugins.
 Without the key you can still play, but plugin features are limited.
