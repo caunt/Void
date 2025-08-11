@@ -228,7 +228,7 @@ export default defineConfig({
             }
         ],
         editLink: {
-            baseUrl: 'https://github.com/caunt/void/edit/main/docs/astro'
+            baseUrl: 'https://github.com/caunt/Void/edit/main/docs/astro'
         },
         lastUpdated: true,
         components: {

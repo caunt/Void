@@ -27,25 +27,32 @@ export function getLatestCommit(route: string): Commit | null {
     return commit;
 }
 
-function collect(directory: string, route = '') {
+function collect(directory: string) {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
         if (entry.isDirectory()) {
-            const nextRoute = route === '' && entry.name === 'docs'
-                ? route
-                : path.posix.join(route, entry.name);
-
-            collect(path.join(directory, entry.name), nextRoute);
+            collect(path.join(directory, entry.name));
         } else if (entry.isFile() && /\.mdx?$/.test(entry.name)) {
             const fullPath = path.join(directory, entry.name);
-            const name = entry.name.replace(/\.mdx?$/, '');
-            const lookup = name === 'index' ? route : path.posix.join(route, name);
-            const urlPath = lookup ? '/' + lookup + '/' : '/';
+            const relativePath = path.relative(contentRoot, fullPath);
 
+            let posix = relativePath.replace(/\.mdx?$/, '').split(path.sep).join('/');
+
+            if (posix.startsWith('docs/'))
+                posix = posix.slice(5);
+
+            if (posix === 'index')
+                posix = '';
+            else if (posix.endsWith('/index'))
+                posix = posix.slice(0, -('/index'.length));
+
+            const urlPath = posix ? '/' + posix + '/' : '/';
             const result = execFileSync('git', ['log', '-1', '--format=%h|%H|%an|%cI', '--', fullPath], { cwd: repoRoot }).toString().trim();
             const [shortHash, fullHash, author, isoDate] = result.split('|');
+
             timeTable.set(urlPath, { shortHash, fullHash, author, date: new Date(isoDate) });
+            console.log(`[update-time] Commit for ${urlPath}: ${isoDate}`);
         }
     }
 }
 
-collect(contentRoot);
+collect(contentRoot)
