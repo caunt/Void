@@ -1,11 +1,9 @@
 import fs from 'node:fs';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, '..', '..');
-const contentRoot = path.join(__dirname, 'src', 'content');
+const repoRoot = path.resolve(process.cwd(), '..', '..');
+const contentRoot = path.resolve(process.cwd(), 'src', 'content');
 export const routeLastmod = new Map();
 
 function collect(dir, route = '') {
