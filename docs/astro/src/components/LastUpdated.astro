@@ -1,16 +1,19 @@
 ---
-import { routeLastmod } from '../../last-updated.js';
+import { getLatestCommit } from '../update-time.ts';
+const { lang, lastUpdated } = Astro.locals.starlightRoute;
 
-const { lang } = Astro.locals.starlightRoute;
-const commit = routeLastmod.get(Astro.url.pathname);
-const repoUrl = 'https://github.com/caunt/void';
+const commit = getLatestCommit(Astro.url.pathname);
+const repoUrl = 'https://github.com/caunt/Void';
 ---
-{commit && (
+
+{lastUpdated && commit && (
     <p>
         {Astro.locals.t('page.lastUpdated')}{' '}
-        <time datetime={commit.iso}>
+
+        <time datetime={commit.date.toISOString()}>
             {commit.date.toLocaleDateString(lang, { dateStyle: 'medium', timeZone: 'UTC' })}
         </time>{' '}
+
         by {commit.author} (<a href={`${repoUrl}/commit/${commit.fullHash}`}>{commit.shortHash}</a>)
     </p>
 )}

@@ -6,7 +6,7 @@ import sitemap from '@astrojs/sitemap';
 import { ExpressiveCodeTheme } from '@astrojs/starlight/expressive-code'
 import fs from 'node:fs'
 import starlightLinksValidator from 'starlight-links-validator'
-import { routeLastmod } from './last-updated.js'
+import { getLatestCommit } from './src/update-time.ts';
 
 const googleAnalyticsId = 'G-3KT5D46L8T'
 
@@ -247,15 +247,6 @@ export default defineConfig({
     }), sitemap({
         changefreq: 'daily',
         priority: 1,
-        serialize(item) {
-            const pathname = new URL(item.url).pathname;
-            const lookup = pathname.endsWith('/') ? pathname : pathname + '/';
-            const commit = routeLastmod.get(lookup);
-
-            if (commit)
-                item.lastmod = commit.date.toISOString();
-
-            return item;
-        }
+        serialize: sitemapItem => ({ ...sitemapItem, lastmod: getLatestCommit(sitemapItem.url)?.date.toISOString() })
     })]
 });
