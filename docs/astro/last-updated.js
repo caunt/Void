@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
 const repoRoot = path.resolve(process.cwd(), '..', '..');
@@ -20,7 +20,7 @@ function collect(dir, route = '') {
             const lookup = name === 'index' ? route : path.posix.join(route, name);
             const urlPath = lookup ? '/' + lookup + '/' : '/';
 
-            const result = execSync(`git log -1 --format='%h|%H|%an|%cI' -- "${fullPath}"`, { cwd: repoRoot }).toString().trim();
+            const result = execFileSync('git', ['log', '-1', '--format=%h|%H|%an|%cI', '--', fullPath], { cwd: repoRoot }).toString().trim();
             const [shortHash, fullHash, author, isoDate] = result.split('|');
             routeLastmod.set(urlPath, { shortHash, fullHash, author, date: new Date(isoDate), iso: isoDate });
             console.log(`[last-updated] ${urlPath}: ${isoDate}`);
