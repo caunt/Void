@@ -1,8 +1,11 @@
 import fs from 'node:fs';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const contentRoot = path.resolve(process.cwd(), 'src', 'content');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(__dirname, '..', '..');
+const contentRoot = path.join(__dirname, 'src', 'content');
 export const routeLastmod = new Map();
 
 function collect(dir, route = '') {
@@ -20,7 +23,7 @@ function collect(dir, route = '') {
             const urlPath = lookup ? '/' + lookup + '/' : '/';
 
             try {
-                const result = execSync(`git log -1 --format='%h|%H|%an|%cI' -- "${fullPath}"`).toString().trim();
+                const result = execSync(`git log -1 --format='%h|%H|%an|%cI' -- "${fullPath}"`, { cwd: repoRoot }).toString().trim();
                 const [shortHash, fullHash, author, isoDate] = result.split('|');
                 routeLastmod.set(urlPath, { shortHash, fullHash, author, date: new Date(isoDate), iso: isoDate });
             } catch {
