@@ -18,11 +18,11 @@
 
 ### :floppy_disk: **Download:**
 :+1: [**Latest Release**](https://void.caunt.world/download/)  
-:whale: [**Run with Docker**](https://void.caunt.world/containers/)
+:whale: [**Run with Docker**](https://void.caunt.world/docs/containers/)
 
 ### **Getting Started:**
-[**Running Guide**](https://void.caunt.world/getting-started/running/)  
-[**Supported Features**](https://void.caunt.world/getting-started/features/) :exclamation:
+[**Running Guide**](https://void.caunt.world/docs/getting-started/running/)  
+[**Supported Features**](https://void.caunt.world/docs/getting-started/features/) :exclamation:
 
 ### **Developing Plugins:**
 Download :hammer_and_wrench: [**Plugin Development Kit**](https://github.com/caunt/Void/releases/latest/download/plugin-devkit.zip), look at the :page_facing_up: [**Documentation**](https://void.caunt.world/developing-plugins/development-kit/) and use :mag_right: [**Example Plugin**](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) as a walkthrough to create a plugin.
