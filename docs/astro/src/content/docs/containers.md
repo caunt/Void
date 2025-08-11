@@ -8,7 +8,7 @@ sidebar:
 Void provides docker images for running in a container.
 See the [Void Docker Hub](https://hub.docker.com/r/caunt/void/tags) for all available images.
 
-For running Void directly on your host, refer to the [Running](/getting-started/running/) guide.
+For running Void directly on your host, refer to the [Running](/docs/getting-started/running/) guide.
 
 ## Running Void in a Docker
 To run Void in a Docker container, use following example command:
@@ -16,7 +16,7 @@ To run Void in a Docker container, use following example command:
 docker run --name void --network host --pull=always --rm caunt/void:dev
 ```
 
-You can pass additional [program arguments](/configuration/program-arguments/) to customize servers and network settings:
+You can pass additional [program arguments](/docs/configuration/program-arguments/) to customize servers and network settings:
 
 ```bash
 docker run --name void --network host --pull=always --rm caunt/void:dev \
@@ -68,7 +68,7 @@ spec:
 ```
 
 ## Configuring Void in Containers
-Use [**environment variables**](/configuration/environment-variables/) or [**mount volumes**](/configuration/in-file/) to configure Void.
+Use [**environment variables**](/docs/configuration/environment-variables/) or [**mount volumes**](/docs/configuration/in-file/) to configure Void.
 
 
 ## Image Tags
