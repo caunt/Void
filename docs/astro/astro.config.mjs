@@ -19,47 +19,47 @@ export default defineConfig({
         sidebar: [
             {
                 label: 'Getting Started',
-                autogenerate: { directory: 'getting-started' }
+                autogenerate: { directory: 'docs/getting-started' }
             },
             {
                 label: 'Configuration',
-                autogenerate: { directory: 'configuration' }
+                autogenerate: { directory: 'docs/configuration' }
             },
             {
                 label: 'Forwarding',
-                autogenerate: { directory: 'forwardings' }
+                autogenerate: { directory: 'docs/forwardings' }
             },
-            { slug: 'containers' },
-            { slug: 'watchdog' },
+            { slug: 'docs/containers' },
+            { slug: 'docs/watchdog' },
             {
                 label: 'Developing Plugins',
                 items: [
-                    { slug: 'developing-plugins/development-kit' },
+                    { slug: 'docs/developing-plugins/development-kit' },
                     {
                         label: 'Events',
                         collapsed: true,
-                        autogenerate: { directory: 'developing-plugins/events' }
+                        autogenerate: { directory: 'docs/developing-plugins/events' }
                     },
                     {
                         label: 'Services',
                         collapsed: true,
-                        autogenerate: { directory: 'developing-plugins/services' }
+                        autogenerate: { directory: 'docs/developing-plugins/services' }
                     },
-                    { slug: 'developing-plugins/commands' },
-                    { slug: 'developing-plugins/text-formatting' },
-                    { slug: 'developing-plugins/nbt' },
-                    { slug: 'developing-plugins/configuration' },
+                    { slug: 'docs/developing-plugins/commands' },
+                    { slug: 'docs/developing-plugins/text-formatting' },
+                    { slug: 'docs/developing-plugins/nbt' },
+                    { slug: 'docs/developing-plugins/configuration' },
                     {
                         label: 'Network',
                         collapsed: true,
                         badge: { text: 'expert', variant: 'danger' },
-                        autogenerate: { directory: 'developing-plugins/network' }
+                        autogenerate: { directory: 'docs/developing-plugins/network' }
                     },
-                    { slug: 'developing-plugins/serializers' }
+                    { slug: 'docs/developing-plugins/serializers' }
                 ],
             },
-            { slug: 'faq' },
-            { slug: 'troubleshooting' }
+            { slug: 'docs/faq' },
+            { slug: 'docs/troubleshooting' }
         ],
         head: [
             {
