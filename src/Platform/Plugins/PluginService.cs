@@ -64,8 +64,25 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
             }
             else if (Uri.TryCreate(variable, UriKind.Absolute, out var url))
             {
-                var name = url.LocalPath;
-                logger.LogTrace("Found {Name} remote plugin", name);
+                if (url.IsFile)
+                {
+                    var name = Path.GetFileName(url.LocalPath);
+                    logger.LogTrace("Found {Name} local plugin", name);
+
+                    try
+                    {
+                        await using var stream = File.OpenRead(url.LocalPath);
+                        return LoadContainer(name, stream);
+                    }
+                    catch (Exception exception)
+                    {
+                        logger.LogWarning(exception, "Local plugin {Name} couldn't be loaded", name);
+                        return null;
+                    }
+                }
+
+                var remoteName = url.LocalPath;
+                logger.LogTrace("Found {Name} remote plugin", remoteName);
 
                 try
                 {
@@ -73,16 +90,16 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
                     if (!response.IsSuccessStatusCode)
                     {
-                        logger.LogWarning("Remote plugin {Name} couldn't be loaded: {StatusCode}", name, response.StatusCode);
+                        logger.LogWarning("Remote plugin {Name} couldn't be loaded: {StatusCode}", remoteName, response.StatusCode);
                         return null;
                     }
 
                     await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                    return LoadContainer(name, stream);
+                    return LoadContainer(remoteName, stream);
                 }
                 catch (Exception exception)
                 {
-                    logger.LogWarning(exception, "Remote plugin {Name} couldn't be loaded", name);
+                    logger.LogWarning(exception, "Remote plugin {Name} couldn't be loaded", remoteName);
                     return null;
                 }
             }
