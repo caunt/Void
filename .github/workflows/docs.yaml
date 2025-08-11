@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Install, build, and upload documentation site
