@@ -13,6 +13,7 @@ const googleAnalyticsId = 'G-3KT5D46L8T'
 // https://astro.build/config
 export default defineConfig({
     site: 'https://void.caunt.world',
+    base: 'landing',
     integrations: [starlight({
         title: 'Void',
         social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/caunt/void' }],
