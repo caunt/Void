@@ -26,7 +26,7 @@ public class MyPlugin(IDependencyService dependencies) : IPlugin
     {
         // This event is fired when any plugin is being loaded
 
-        // Skip all other plugins load events except ours
+        // Skip all other plugin load events except ours
         if (@event.Plugin != this)
             return;
 
