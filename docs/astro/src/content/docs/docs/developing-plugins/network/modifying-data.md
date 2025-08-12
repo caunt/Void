@@ -8,7 +8,7 @@ sidebar:
 After you have [**defined your packets**](/docs/developing-plugins/network/packets), you can modify, cancel or build and send them manually.
 
 :::note
-Void allows modifying packets in-place only for [**ILink**](/docs/developing-plugins/network/links) implementer.
+Void allows modifying packets in-place only for [**ILink**](/docs/developing-plugins/network/links) implementers.
 
 However, you can still manipulate [**packets**](/docs/developing-plugins/network/packets) by canceling them and sending a modified copy manually.
 In this page, we will proceed with this approach.
