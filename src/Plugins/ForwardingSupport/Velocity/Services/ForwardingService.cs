@@ -56,7 +56,7 @@ public class ForwardingService(IPlayerContext context, ILogger logger, Settings 
         var remoteEndPoint = context.Player.RemoteEndPoint.AsSpan();
         var colonIndex = remoteEndPoint.IndexOf(':');
 
-        buffer.WriteString((colonIndex >= 0 ? remoteEndPoint[..colonIndex] : remoteEndPoint).ToString());
+        buffer.WriteString(colonIndex >= 0 ? remoteEndPoint[..colonIndex] : remoteEndPoint);
 
         if (context.Player.Profile is not { } profile)
         {
