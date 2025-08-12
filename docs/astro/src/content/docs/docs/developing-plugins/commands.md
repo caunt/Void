@@ -3,7 +3,7 @@ title: Commands
 description: Learn how to define and listen to commands.
 ---
 
-Commands help user or administrator to interact with the proxy and plugins. 
+Commands help users and administrators interact with the proxy and plugins.
 
 ## Defining a command
 Inject `ICommandService` service to begin working with commands.  
@@ -59,7 +59,7 @@ class MyService(ICommandService commands) : ICommandSource
     public async ValueTask SuggestCommandAsync(CancellationToken cancellationToken)
     {
         ICommandSource commandSource = this;
-        string command = "hel";
+        string command = "he";
         
         var variants = await commands.CompleteAsync(command, commandSource, cancellationToken);
         // variants value is string[] { "hello" }
