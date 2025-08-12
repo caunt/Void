@@ -25,7 +25,7 @@ However, they might be used from the terminal directly as well.
 
 ## Proxy
 - `VOID_OFFLINE`
-  Allows players to connect without Mojang authorization.
+  Allows players to connect without Mojang authentication.
   Example: `true`
 
 ## Mojang
