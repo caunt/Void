@@ -23,5 +23,5 @@ Velocity forwarding is not supported by mod loaders, however community has creat
 :::
 
 ## Configuration
-To configure the Velocity forwarding, you need to set up 'Secret' key on both proxy and servers sides.
+To configure the Velocity forwarding, you need to set up a 'Secret' key on both the proxy and server sides.
 Check the [**In-file configuration**](/docs/configuration/in-file/#modern-velocity) for more details.
