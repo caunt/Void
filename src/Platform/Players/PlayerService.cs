@@ -12,6 +12,7 @@ using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Api.Settings;
 using Void.Proxy.Players.Extensions;
+using ZLinq;
 
 namespace Void.Proxy.Players;
 
@@ -72,7 +73,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
     {
         using var sync = await _lock.LockAsync(cancellationToken);
 
-        var proxy = _players.FirstOrDefault(proxy => proxy == player || proxy.Source == player) ??
+        var proxy = _players.AsValueEnumerable().FirstOrDefault(proxy => proxy == player || proxy.Source == player) ??
             throw new InvalidOperationException($"Player {player} not found");
 
         proxy.Replace(upgradedPlayer);
@@ -87,7 +88,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
     {
         logger.LogTrace("Kicking player {Player}", player);
 
-        if (!All.Contains(player))
+        if (!_players.AsValueEnumerable().Select(proxy => proxy.Source).Contains(player))
             return;
 
         var channel = await player.GetChannelAsync(cancellationToken);

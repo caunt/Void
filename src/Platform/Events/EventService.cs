@@ -4,6 +4,7 @@ using Nito.Disposables.Internals;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Plugins.Dependencies;
+using ZLinq;
 
 namespace Void.Proxy.Events;
 
@@ -59,7 +60,7 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
 
         while (true)
         {
-            var toInvoke = entriesNotSafe
+            var toInvoke = entriesNotSafe.AsValueEnumerable()
                 .Where(entry => entry.IsCompatible(eventType))
                 .Where(entry => alreadyInvoked.All(invokedEntry => invokedEntry.Listener != entry.Listener || invokedEntry.Method != entry.Method))
                 .Where(alreadyInvoked.Add)
