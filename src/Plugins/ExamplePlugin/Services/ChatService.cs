@@ -89,7 +89,7 @@ public class ChatService(ILogger<ChatService> logger, IConfigurationService conf
             // Arguments are optional
             if (!context.TryGetArgument<int>("index", out var slot))
             {
-                // If slot argument is not provided, we will use random one
+                // If slot argument is not provided, we will use a random one
                 slot = Random.Shared.Next(0, 9);
             }
 
