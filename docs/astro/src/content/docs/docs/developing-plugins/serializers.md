@@ -18,7 +18,7 @@ Prefer using [**`Serialize` methods**](/docs/developing-plugins/text-formatting/
 Helpful to convert Json or Snbt to Nbt and vice versa.  
 - `NbtJsonSerializer` 
   - Converts **[Nbt](/docs/developing-plugins/nbt) to Json** or **Json to [Nbt](/docs/developing-plugins/nbt)**.
-- `NbtStringSerializer` - 
+- `NbtStringSerializer`
   - Converts **[Nbt](/docs/developing-plugins/nbt) to [Snbt](/docs/developing-plugins/nbt/#snbt)** or **[Snbt](/docs/developing-plugins/nbt/#snbt) to [Nbt](/docs/developing-plugins/nbt)**.
 
 :::caution[Prefer deserializing from Snbt]
