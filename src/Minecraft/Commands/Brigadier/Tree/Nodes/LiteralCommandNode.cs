@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Commands.Brigadier.Builder;
@@ -61,7 +62,7 @@ public class LiteralCommandNode(string literal, CommandExecutor? executor, Comma
         {
             var end = start + Literal.Length;
 
-            if (reader.Source[start..end] == Literal)
+            if (reader.Source.AsSpan(start, Literal.Length).Equals(Literal, StringComparison.Ordinal))
             {
                 reader.Cursor = end;
 
