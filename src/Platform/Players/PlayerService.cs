@@ -12,6 +12,7 @@ using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Api.Settings;
 using Void.Proxy.Players.Extensions;
+using ZLinq;
 
 namespace Void.Proxy.Players;
 
@@ -20,7 +21,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
     private readonly AsyncLock _lock = new();
     private readonly List<PlayerProxy> _players = [];
 
-    public IEnumerable<IPlayer> All => _players.Select(proxy => proxy.Source);
+    public IEnumerable<IPlayer> All => _players.AsValueEnumerable().Select(proxy => proxy.Source).ToArray();
 
     public void ForEach(Action<IPlayer> action)
     {

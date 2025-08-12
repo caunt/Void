@@ -11,6 +11,7 @@ using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Plugins.Dependencies.Extensions;
 using Void.Proxy.Utils;
+using ZLinq;
 
 namespace Void.Proxy.Plugins.Dependencies;
 
@@ -31,7 +32,10 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
         var assembly = @event.Plugin.GetType().Assembly;
 
         var events = container.GetRequiredService<IEventService>();
-        events.UnregisterListeners(events.Listeners.Where(listener => listener.GetType().Assembly == assembly));
+        var listeners = events.Listeners.AsValueEnumerable()
+            .Where(listener => listener.GetType().Assembly == assembly)
+            .ToArray();
+        events.UnregisterListeners(listeners);
 
         if (_assemblyContainers.Remove(assembly, out var pluginContainer))
         {

@@ -8,6 +8,7 @@ using Tomlet.Models;
 using Void.Proxy.Api.Configurations.Attributes;
 using Void.Proxy.Api.Configurations.Exceptions;
 using Void.Proxy.Api.Configurations.Serializer;
+using ZLinq;
 
 namespace Void.Proxy.Configurations.Serializers;
 
@@ -145,7 +146,7 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
         {
             var genericDefinition = type.GetGenericTypeDefinition();
             var genericArguments = type.GetGenericArguments();
-            var mappedArguments = genericArguments.Select(argument => MapTomlType(argument, moduleBuilder, cache)).ToArray();
+            var mappedArguments = genericArguments.AsValueEnumerable().Select(argument => MapTomlType(argument, moduleBuilder, cache)).ToArray();
 
             // If any generic argument was mapped to a different type, rebuild the generic type.
             for (int i = 0; i < genericArguments.Length; i++)
@@ -447,7 +448,7 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
 
             // Prepare the arguments array by iterating over the parameters.
             var parameters = constructor.GetParameters();
-            var args = parameters.Select(parameter =>
+            var args = parameters.AsValueEnumerable().Select(parameter =>
             {
                 // If a default value is present, use it.
                 if (parameter.HasDefaultValue && parameter.DefaultValue is not null)
@@ -462,9 +463,9 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
                     return null;
 
                 return CreateEmptyInstance(parameter.ParameterType);
-            });
+            }).ToArray();
 
-            return constructor.Invoke([.. args]);
+            return constructor.Invoke(args);
         }
 
         static void CopyValues(Type type, object instance, object? values)

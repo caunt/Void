@@ -14,6 +14,7 @@ using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using Void.Proxy.Api.Plugins.Dependencies;
+using ZLinq;
 
 namespace Void.Proxy.Plugins.Dependencies.Nuget;
 
@@ -104,7 +105,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                 return null;
             }
 
-            var identities = availableVersions.Select(version => new PackageIdentity(assemblyName.Name, NuGetVersion.Parse(version)));
+            var identities = availableVersions.AsValueEnumerable().Select(version => new PackageIdentity(assemblyName.Name, NuGetVersion.Parse(version))).ToArray();
             var identity = SelectBestNuGetPackageVersion(identities, assemblyName.Version);
 
             if (identity == null)
@@ -143,7 +144,10 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     {
         try
         {
-            var environmentVariableRepositories = UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";"));
+            var environmentVariableRepositories = UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "")
+                .AsValueEnumerable()
+                .Select(repo => repo.Replace(@"\;", ";"))
+                .ToArray();
             var repositories = environmentVariableRepositories.Concat(_repositories.Concat(context.ParseResult.GetValueForOption(_repositoriesOption) ?? []))
                 .Select(source =>
                 {
@@ -261,7 +265,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             return null;
 
         var packages = await GetNuGetPackageVersionAsync(repository, assemblyName.Name, cancellationToken);
-        var best = SelectBestNuGetPackageVersion(packages.Select(package => package.Identity), assemblyName.Version);
+        var best = SelectBestNuGetPackageVersion(packages.AsValueEnumerable().Select(package => package.Identity).ToArray(), assemblyName.Version);
 
         return best;
     }
@@ -275,7 +279,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         foreach (var packageSearchResult in packageSearchResults)
         {
             var packages = await GetNuGetPackageVersionAsync(repository, packageSearchResult.Identity.Id, cancellationToken);
-            var best = SelectBestNuGetPackageVersion(packages.Select(package => package.Identity), assemblyName.Version);
+            var best = SelectBestNuGetPackageVersion(packages.AsValueEnumerable().Select(package => package.Identity).ToArray(), assemblyName.Version);
 
             return best;
         }

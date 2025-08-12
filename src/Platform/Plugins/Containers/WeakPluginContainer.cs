@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Context;
+using ZLinq;
 
 namespace Void.Proxy.Plugins.Containers;
 
@@ -17,7 +18,7 @@ public class WeakPluginContainer
     public WeakPluginContainer(PluginAssemblyLoadContext context, params IPlugin[] plugins)
     {
         Context = context;
-        _references = [.. plugins.Select(plugin => new WeakReference<IPlugin>(plugin, true))];
+        _references = [.. plugins.AsValueEnumerable().Select(plugin => new WeakReference<IPlugin>(plugin, true))];
     }
 
     public void Add(IPlugin plugin)
