@@ -11,7 +11,6 @@ namespace Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 
 public class LiteralCommandNode(string literal, CommandExecutor? executor, CommandRequirement? requirement, CommandNode? redirectTarget, RedirectModifier? redirectModifier, bool isForks) : CommandNode(executor, requirement, redirectTarget, redirectModifier, isForks)
 {
-    private readonly string _literalLowerCase = literal.ToLower();
 
     public string Literal { get; } = literal;
     public override string Name => Literal;
@@ -34,7 +33,7 @@ public class LiteralCommandNode(string literal, CommandExecutor? executor, Comma
 
     public override async ValueTask<Suggestions> ListSuggestionsAsync(CommandContext context, SuggestionsBuilder builder, CancellationToken cancellationToken)
     {
-        if (_literalLowerCase.StartsWith(builder.RemainingLowerCase))
+        if (Literal.StartsWith(builder.Remaining, StringComparison.OrdinalIgnoreCase))
             return await builder.Suggest(Literal).BuildAsync(cancellationToken);
         else
             return Suggestions.Empty;
