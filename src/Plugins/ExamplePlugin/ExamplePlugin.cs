@@ -21,7 +21,7 @@ public class ExamplePlugin(ILogger logger, IDependencyService dependencies) : IP
     {
         // This event is fired when any plugin is being loaded
 
-        // Skip all other plugins load events except our plugin
+        // Skip all other plugin load events except our plugin
         if (@event.Plugin != this)
             return;
 
