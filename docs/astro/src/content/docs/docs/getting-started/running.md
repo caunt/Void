@@ -28,15 +28,15 @@ Prefer containers? See the [Containers](/docs/containers/) guide for Docker and 
 
 Run the [**Termux**](https://play.google.com/store/apps/details?id=com.termux) or any other terminal emulator.
 
-Follow instructions for Linux, but use "bionic" version of binary.
+Follow the instructions for Linux, but use the "bionic" version of the binary.
 
 ## Alpine
 
-Follow instructions for Linux, but use "musl" version of binary.
+Follow the instructions for Linux, but use the "musl" version of the binary.
 
 ## macOS
 
-Follow instructions for Linux, but use "osx" version of binary.
+Follow the instructions for Linux, but use the "osx" version of the binary.
 
 ## Windows
 
