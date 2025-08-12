@@ -254,7 +254,7 @@ public class AesCfb8BufferedStream : RecyclableStream, IBufferedMessageStream
             var current = (byte)(buffer[0] ^ input[idx]);
             output[idx] = current;
 
-            Buffer.BlockCopy(_writeStreamIv, 1, _writeStreamIv, 0, BlockSize - 1);
+            _writeStreamIv.AsSpan(1, BlockSize - 1).CopyTo(_writeStreamIv);
             _writeStreamIv[BlockSize - 1] = current;
         }
     }
@@ -269,7 +269,7 @@ public class AesCfb8BufferedStream : RecyclableStream, IBufferedMessageStream
             var current = (byte)(buffer[0] ^ input[idx]);
             output[idx] = current;
 
-            Buffer.BlockCopy(_readStreamIv, 1, _readStreamIv, 0, BlockSize - 1);
+            _readStreamIv.AsSpan(1, BlockSize - 1).CopyTo(_readStreamIv);
             _readStreamIv[BlockSize - 1] = input[idx];
         }
     }
