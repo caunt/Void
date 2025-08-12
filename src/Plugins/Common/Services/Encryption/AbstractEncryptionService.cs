@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Buffers.Binary;
+using System.Security.Cryptography;
 using Microsoft.Extensions.DependencyInjection;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
@@ -102,10 +103,7 @@ public abstract class AbstractEncryptionService(IEventService events, ICryptoSer
         if (player.IdentifiedKey is { } identifiedKey)
         {
             Span<byte> saltBytes = stackalloc byte[sizeof(long)];
-            BitConverter.TryWriteBytes(saltBytes, salt);
-
-            if (BitConverter.IsLittleEndian)
-                saltBytes.Reverse();
+            BinaryPrimitives.WriteInt64BigEndian(saltBytes, salt);
 
             Span<byte> combined = stackalloc byte[original.Length + saltBytes.Length];
             original.CopyTo(combined);
