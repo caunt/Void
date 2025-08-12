@@ -9,7 +9,7 @@ sidebar:
 This forwarding is currently not implemented in Void.
 :::
 
-BungeeCord also known as Legacy forwarding is a type of forwarding player data developed by [SpigotMC](https://github.com/SpigotMC/BungeeCord).
+BungeeCord, also known as Legacy forwarding, is a type of forwarding player data developed by [SpigotMC](https://github.com/SpigotMC/BungeeCord).
 
 :::tip
 It is the easiest way to pass player's information from proxy to server in Handshake packet, supported by many server implementations.
