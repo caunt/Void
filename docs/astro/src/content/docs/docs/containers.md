@@ -10,8 +10,8 @@ See the [Void Docker Hub](https://hub.docker.com/r/caunt/void/tags) for all avai
 
 For running Void directly on your host, refer to the [Running](/docs/getting-started/running/) guide.
 
-## Running Void in a Docker
-To run Void in a Docker container, use following example command:
+## Running Void in Docker
+To run Void in a Docker container, use the following example command:
 ```bash
 docker run --name void --network host --pull=always --rm caunt/void:dev
 ```
