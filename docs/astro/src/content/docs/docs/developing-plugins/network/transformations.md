@@ -93,7 +93,7 @@ public class SetHeldItemClientboundPacket : IMinecraftClientboundPacket<SetHeldI
 }
 ```
 
-Now when we have latest implementation, we have to define changes that were made throughout the versions.
+Now that we have the latest implementation, we need to define the changes that were made across versions.
 
 In case of [**Set Held Item (clientbound)**](/docs/developing-plugins/network/packets#defining-packets) packet, just one change was made - `slot` property type changed from `byte` to `varint`.
 ```csharp
