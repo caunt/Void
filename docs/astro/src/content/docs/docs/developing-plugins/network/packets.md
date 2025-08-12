@@ -8,8 +8,8 @@ sidebar:
 Minecraft Packets [**(called Messages in Void)**](https://github.com/caunt/Void/blob/main/src/Minecraft/Network/Messages/Packets/IMinecraftPacket.cs#L7) describe the data that is sent between the player and server.
 These messages contain information about player actions, world events, and other game mechanics.
 
-Typically, you describe existing packets in game, so you can read, modify, or cancel them.  
-However you are not limited to this, you can also define your own packets for your own minecraft mod or plugin.
+Typically, you describe existing packets in game, so you can read, modify, or cancel them.
+However you are not limited to this, you can also define your own packets for your own Minecraft mod or plugin.
 
 Packets can be defined with `IMinecraftClientboundPacket<TPacket>` or `IMinecraftServerboundPacket<TPacket>` interface. If your packet is same for both client and server, you can use `IMinecraftPacket<TPacket>` interface.
 
@@ -49,7 +49,7 @@ public class SetHeldItemClientboundPacket : IMinecraftClientboundPacket<SetHeldI
 
 ## Registering Packets
 Before receiving or sending packets, you need to register them specifying packet ids for each game protocol version.
-Packets registrations are made for each game phase, so you need to register them in the correct phase. Common phases are `Handshake`, `Login`, `Configuration` and `Play`.
+Packet registrations are made for each game phase, so you need to register them in the correct phase. Common phases are `Handshake`, `Login`, `Configuration` and `Play`.
 ```csharp
 [Subscribe]
 public void OnPhaseChanged(PhaseChangedEvent @event)
@@ -68,7 +68,7 @@ public void OnPhaseChanged(PhaseChangedEvent @event)
 ```
 
 :::note
-ProtocolVersion's are specified in 'starting from' context.
+ProtocolVersions are specified in 'starting from' context.
 So the 0x4F packet id for `ProtocolVersion.MINECRAFT_1_20_2` means that this packet id is used starting from that version included and up to next version in this mapping definition excluded - `ProtocolVersion.MINECRAFT_1_20_3`, so basically just one 1.20.2 version.
 :::
 
