@@ -18,6 +18,27 @@ public class ServerRedirectionTests(ServerRedirectionTests.MultiServerFixture fi
     private const int Server2Port = 36002;
     private const string ExpectedText = "hello multi-server void!";
 
+    // Override timeout for multi-server tests as they take longer
+    public new TimeSpan Timeout { get; } = TimeSpan.FromMinutes(5);
+
+    [ProxiedFact]
+    public async Task BasicMultiServerSetup_ConnectsToFirstServer()
+    {
+        var testMessage = $"{ExpectedText} basic setup test #{Random.Shared.Next()}";
+        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
+
+        await LoggedExecutorAsync(async () =>
+        {
+            // Connect to proxy (should route to first server by default)
+            await fixture.MinecraftConsoleClient.SendTextMessageAsync($"localhost:{ProxyPort}", ProtocolVersion.MINECRAFT_1_20_3, testMessage, cancellationTokenSource.Token);
+            
+            // Verify client is connected to server1 (first server in the list)
+            await fixture.PaperServer1.ExpectTextAsync(testMessage, lookupHistory: true, cancellationTokenSource.Token);
+            Assert.Contains(fixture.PaperServer1.Logs, line => line.Contains(testMessage));
+
+        }, fixture.MinecraftConsoleClient, fixture.VoidProxy, fixture.PaperServer1, fixture.PaperServer2);
+    }
+
     [ProxiedFact]
     public async Task MccRedirectsBetweenServers()
     {
@@ -136,6 +157,31 @@ public class ServerRedirectionTests(ServerRedirectionTests.MultiServerFixture fi
             Assert.Contains(fixture.PaperServer2.Logs, line => line.Contains(testMessage2));
 
         }, fixture.MineflayerClient, fixture.VoidProxy, fixture.PaperServer1, fixture.PaperServer2);
+    }
+
+    [ProxiedFact]
+    public async Task ServerRedirection_InvalidServerName_StaysOnCurrentServer()
+    {
+        var testMessage1 = $"{ExpectedText} invalid server test #{Random.Shared.Next()}";
+        var testMessage2 = $"{ExpectedText} still on original server test #{Random.Shared.Next()}";
+        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
+
+        await LoggedExecutorAsync(async () =>
+        {
+            // Connect to proxy and send initial message to server1
+            await fixture.MinecraftConsoleClient.SendTextMessageAsync($"localhost:{ProxyPort}", ProtocolVersion.MINECRAFT_1_20_3, testMessage1, cancellationTokenSource.Token);
+            await fixture.PaperServer1.ExpectTextAsync(testMessage1, lookupHistory: true, cancellationTokenSource.Token);
+            Assert.Contains(fixture.PaperServer1.Logs, line => line.Contains(testMessage1));
+
+            // Try to redirect to non-existent server
+            await fixture.MinecraftConsoleClient.SendCommandAsync($"localhost:{ProxyPort}", ProtocolVersion.MINECRAFT_1_20_3, "/server nonexistent-server", TimeSpan.FromSeconds(5), cancellationTokenSource.Token);
+            
+            // Send message to verify we're still on server1 (redirection should have failed)
+            await fixture.MinecraftConsoleClient.SendTextMessageAsync($"localhost:{ProxyPort}", ProtocolVersion.MINECRAFT_1_20_3, testMessage2, cancellationTokenSource.Token);
+            await fixture.PaperServer1.ExpectTextAsync(testMessage2, lookupHistory: true, cancellationTokenSource.Token);
+            Assert.Contains(fixture.PaperServer1.Logs, line => line.Contains(testMessage2));
+
+        }, fixture.MinecraftConsoleClient, fixture.VoidProxy, fixture.PaperServer1, fixture.PaperServer2);
     }
 
     public class MultiServerFixture : ConnectionFixtureBase, IAsyncLifetime
