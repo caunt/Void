@@ -3,7 +3,7 @@ title: NBT
 description: Learn how to work with NBT (Named Binary Tags).
 ---
 
-[**NBT (Named Binary Tags)**](https://minecraft.wiki/w/NBT_format) is a binary format used by Minecraft to store data. It is commonly used for transferring chunks data, items data, and other game-related information over the network. In this section, we will explore how to work with NBT in your plugins.
+[**NBT (Named Binary Tags)**](https://minecraft.wiki/w/NBT_format) is a binary format used by Minecraft to store data. It is commonly used for transferring chunk data, item data, and other game-related information over the network. In this section, we will explore how to work with NBT in your plugins.
 
 ## Example Compound Tag
 ```csharp
@@ -65,17 +65,17 @@ var stream = tag.AsStream();
 var bytes = stream.ToArray();
 ```
 
-## Snbt
-Snbt is a human-readable format for NBT data.
-[Read more about Snbt](https://minecraft.wiki/w/NBT_format#SNBT_format).
+## SNBT
+SNBT is a human-readable format for NBT data.
+[Read more about SNBT](https://minecraft.wiki/w/NBT_format#SNBT_format).
 
-### Converting Nbt to Snbt
+### Converting NBT to SNBT
 ```csharp
 var tag = new NbtCompound { ["key"] = new NbtString("value") };
 Console.WriteLine(tag.ToString()); // Output: {key:"value"}
 ```
 
-### Converting Snbt to Nbt
+### Converting SNBT to NBT
 ```csharp
 var snbt = "{key:\"value\"}";
 var tag = NbtTag.Parse(snbt);
