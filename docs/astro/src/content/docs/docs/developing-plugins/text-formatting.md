@@ -4,7 +4,7 @@ description: Learn how to work with text components.
 ---
 
 Most of the places where you send a text value to Minecraft, it accepts [**text components**](https://minecraft.wiki/w/Text_component_format). This includes chat messages, titles, action bars, and more.  
-With text Components, you can create rich text messages with formatting, colors and events.
+With text components, you can create rich text messages with formatting, colors and events.
 
 ## Basic Usage
 Likely you have already used text components in your plugin with `SendChatMessageAsync`.
@@ -20,7 +20,7 @@ public class MyScopedService(IPlayerContext context)
 ```
 
 ## Formatting Codes
-It is easy to format text with the minecraft [formatting codes](https://minecraft.fandom.com/wiki/Formatting_codes) using the & symbol.
+It is easy to format text with the Minecraft [formatting codes](https://minecraft.fandom.com/wiki/Formatting_codes) using the & symbol.
 ```csharp
 public class MyScopedService(IPlayerContext context)
 {
