@@ -62,7 +62,7 @@ public record TextColor(byte Red, byte Green, byte Blue)
     public static TextColor FromString(string value)
     {
         var span = value.AsSpan();
-        if (value.StartsWith('#') && value.Length == 7)
+        if (span.Length == 7 && span[0] == '#')
         {
             if (byte.TryParse(span[1..3], NumberStyles.HexNumber, null, out var red) && byte.TryParse(span[3..5], NumberStyles.HexNumber, null, out var green) && byte.TryParse(span[5..7], NumberStyles.HexNumber, null, out var blue))
             {
