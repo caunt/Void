@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Commands.Brigadier.Context;
@@ -33,7 +34,7 @@ public record BoolArgumentType : IArgumentType<bool>
     {
         foreach (var example in Examples)
         {
-            if (example.StartsWith(builder.RemainingLowerCase))
+            if (example.StartsWith(builder.Remaining, StringComparison.OrdinalIgnoreCase))
                 builder.Suggest(example);
         }
 
