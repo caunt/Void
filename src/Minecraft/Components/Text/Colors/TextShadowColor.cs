@@ -21,7 +21,7 @@ public record TextShadowColor(byte Alpha, byte Red, byte Green, byte Blue)
     public static TextShadowColor FromString(string value)
     {
         var span = value.AsSpan();
-        if (value.StartsWith('#') && value.Length == 9)
+        if (span.Length == 9 && span[0] == '#')
         {
             if (byte.TryParse(span[1..3], NumberStyles.HexNumber, null, out var red) && byte.TryParse(span[3..5], NumberStyles.HexNumber, null, out var green) && byte.TryParse(span[5..7], NumberStyles.HexNumber, null, out var blue) && byte.TryParse(span[7..9], NumberStyles.HexNumber, null, out var alpha))
             {
