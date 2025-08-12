@@ -10,7 +10,7 @@ However, they might be used from the terminal directly as well.
 
 ## Plugins
 - `VOID_PLUGINS`
-  Defines the list of URL's or Path's to load plugins from.  
+  Defines the list of URLs or paths to load plugins from.
   Example: `https://example.org/download/YourPlugin1.dll;/home/YourPlugin2.dll`
  
 ## NuGet
