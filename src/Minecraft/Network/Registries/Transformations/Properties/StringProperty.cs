@@ -14,7 +14,7 @@ public record StringProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<Strin
         var buffer = new MinecraftBuffer(stream);
         buffer.WriteString(value);
 
-        return new StringProperty(stream.ToArray());
+        return new StringProperty(stream.GetBuffer().AsMemory(0, (int)stream.Length));
     }
 
     public static StringProperty Read(ref MinecraftBuffer buffer)
