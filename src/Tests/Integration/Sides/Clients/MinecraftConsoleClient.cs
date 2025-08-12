@@ -54,6 +54,11 @@ public class MinecraftConsoleClient : IntegrationSideBase
 
     public async Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
     {
+        await SendCommandAsync(address, protocolVersion, text, TimeSpan.FromSeconds(15), cancellationToken);
+    }
+
+    public async Task SendCommandAsync(string address, ProtocolVersion protocolVersion, string command, TimeSpan waitTime, CancellationToken cancellationToken = default)
+    {
         using var disposable = await _lock.LockAsync(cancellationToken);
 
         if (string.IsNullOrWhiteSpace(_binaryPath))
@@ -82,10 +87,10 @@ public class MinecraftConsoleClient : IntegrationSideBase
             [[ChatBot.ScriptScheduler.TaskList]]
             Task_Name = "Task Name 1"
             Trigger_On_Login = true
-            Action = "send {text}"
+            Action = "send {command}"
             """, cancellationToken);
 
-        StartApplication(_binaryPath, hasInput: false, nameof(MinecraftConsoleClient)[..16], "-", address, $"send {text}");
+        StartApplication(_binaryPath, hasInput: false, nameof(MinecraftConsoleClient)[..16], "-", address, $"send {command}");
 
         var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
 
@@ -95,7 +100,7 @@ public class MinecraftConsoleClient : IntegrationSideBase
         try
         {
             await consoleTask; // Ends when HandleConsole returns true
-            await Task.Delay(15_000, cancellationToken); // Since there is no way to ensure client sent the message, so just give it a few seconds to go
+            await Task.Delay(waitTime, cancellationToken); // Wait for command execution
         }
         finally
         {
