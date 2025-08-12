@@ -10,11 +10,11 @@ public record VarLongProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<VarL
 
     public static VarLongProperty FromPrimitive(long value)
     {
-        using var stream = new MemoryStream();
-        var buffer = new MinecraftBuffer(stream);
+        Span<byte> bytes = stackalloc byte[10];
+        var buffer = new MinecraftBuffer(bytes);
         buffer.WriteVarLong(value);
 
-        return new VarLongProperty(stream.ToArray());
+        return new VarLongProperty(bytes[..(int)buffer.Position].ToArray());
     }
 
     public static VarLongProperty Read(ref MinecraftBuffer buffer)
