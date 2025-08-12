@@ -65,7 +65,7 @@ Read more in [**Modern (Velocity)**](/docs/forwardings/modern) forwarding.
 # Enables Velocity forwarding
 Enabled = true
 
-# The secret key (should be same as on backend server)
+# The secret key (should be the same as on the backend server)
 Secret = "YourSecretKeyHere"
 ```
 
