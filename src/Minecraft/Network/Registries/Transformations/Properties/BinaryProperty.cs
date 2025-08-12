@@ -10,6 +10,9 @@ public record BinaryProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<Binar
 
     public static BinaryProperty FromStream(MemoryStream value)
     {
+        if (value.TryGetBuffer(out var segment))
+            return new BinaryProperty(segment.AsMemory());
+
         return new BinaryProperty(value.ToArray());
     }
 
