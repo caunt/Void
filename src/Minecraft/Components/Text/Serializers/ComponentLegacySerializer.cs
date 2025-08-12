@@ -39,7 +39,7 @@ public static class ComponentLegacySerializer
                 KeybindContent content => content.Value,
                 SelectorContent content => content.Value,
                 TranslatableContent content => content.Translate, // skipped child component
-                ScoreContent content => string.Join(':', [content.Name, content.Objective]),
+                ScoreContent content => string.Concat(content.Name, ":", content.Objective),
                 NbtContent content => string.Join(':', [content.Source, content.Path, content.Interpret, content.Block, content.Entity, content.Storage]),  // skipped child component
                 var content => content.ToString()
             };
