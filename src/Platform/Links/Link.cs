@@ -256,7 +256,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
     {
         await task;
 
-        // do not wait completion as this may start initiating new ILink instance
+        // do not wait for completion as this may start initiating a new ILink instance
         await events.ThrowAsync(new LinkStoppedEvent(this, Player, _stopReason ?? throw new LinkInternalException("Stopped reason is unset")), cancellationToken);
     }
 }
