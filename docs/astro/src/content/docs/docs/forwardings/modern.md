@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-Velocity also known as Modern forwarding is a type of forwarding player data developed by [PaperMC](https://docs.papermc.io/velocity/player-information-forwarding/).
+Velocity, also known as Modern forwarding, is a type of forwarding player data developed by [PaperMC](https://docs.papermc.io/velocity/player-information-forwarding/).
 
 :::tip
 It is a secure way to pass player's information from proxy to server, supported by many server implementations.
