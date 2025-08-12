@@ -116,7 +116,7 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         if (!link.Player.IsMinecraft)
             return AuthenticationResult.Authenticated;
 
-        // Server channel might be closed very early, skip authentication, ILink should stop itself as soon as its executes
+        // Server channel might be closed very early, skip authentication, ILink should stop itself as soon as it executes
         if (!link.ServerChannel.IsAlive)
             return AuthenticationResult.Authenticated;
 
