@@ -26,7 +26,7 @@ Press **F5** to run the project. This will start the Void Proxy with your plugin
 
 ## Debugging
 :::caution
-Debugging currently is not supported by JetBrains Rider.
+Debugging is currently not supported by JetBrains Rider.
 Proxy is distributed with PublishSingleFile=true flag, which makes Rider unable to attach debugger to the process.
 See [Rider Debugging](https://www.jetbrains.com/help/rider/Debugging_Code.html) for more details.
 :::
@@ -37,11 +37,11 @@ With Visual Studio, you can set breakpoints in your code and use the **Debug** m
 1) Build the project with your IDE.
 2) Take the compiled DLL from the **bin** folder.
 3) Do not use and do not include any other DLLs from that directory.
-Your dependencies will be automatically resolved by the proxy in runtime.
+Your dependencies will be automatically resolved by the proxy at runtime.
 
 ## Dependencies
-Dependencies are automatically resolved at runtime in several ways and fallbacks.
-Including NuGet packages, local DLLs, and looking at runtime.
+Dependencies are automatically resolved at runtime using several fallback mechanisms.
+This includes NuGet packages, local DLLs, and runtime lookups.
 NuGet dependencies will be automatically downloaded and cached in the **packages** directory.
 
 ## Distribution
