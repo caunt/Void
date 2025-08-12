@@ -54,7 +54,7 @@ Options:
 
 ## Servers
 - `--server`  
-  Registers an server in format `<host>:<port>` where port is between `1` and `65535`. IPv6 addresses must be enclosed in square brackets.
+  Registers a server in format `<host>:<port>` where the port is between `1` and `65535`. IPv6 addresses must be enclosed in square brackets.
 - `--ignore-file-servers`  
   Ignore servers specified in configuration files.
 
