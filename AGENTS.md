@@ -46,6 +46,7 @@ Follow the existing C# style rules:
 - Be patient with long-running tests and avoid aborting them early; some may take several minutes to complete.
 - After changing source code, run `dotnet build` from the repository root.
 - Conventional Commits are required for commit messages.
+- Commit messages must include a scope after the type, e.g., `docs(readme): ...`.
 - Use only the following Conventional Commit types:
   - `feat` — Features
   - `fix` — Bug Fixes
@@ -59,7 +60,7 @@ Follow the existing C# style rules:
   - `test` — Tests
   - `build` — Build System
   - `ci` — Continuous Integration
-- Include in the commit description a brief note about any observable behavior change.
+- Commit descriptions are required and must include a brief note about any observable behavior change.
 - Use the `fix` or `feat` type only when your changes modify the proxy code in `./src`. For documentation, CI, or other unrelated updates, choose a more appropriate type such as `docs` or `chore`.
 - Append a [gitmoji](https://gitmoji.dev/specification) after the commit scope, e.g., `feat(api): ✨ add new endpoint`.
 - Pull request titles should follow the same Conventional Commits format.
