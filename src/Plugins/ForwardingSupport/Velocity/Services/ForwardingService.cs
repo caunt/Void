@@ -52,7 +52,11 @@ public class ForwardingService(IPlayerContext context, ILogger logger, Settings 
         var buffer = new BufferSpan(stackalloc byte[2048]);
 
         buffer.WriteVarInt((int)actualVersion);
-        buffer.WriteString(context.Player.RemoteEndPoint.Split(':')[0]);
+
+        var remoteEndPoint = context.Player.RemoteEndPoint.AsSpan();
+        var colonIndex = remoteEndPoint.IndexOf(':');
+
+        buffer.WriteString((colonIndex >= 0 ? remoteEndPoint[..colonIndex] : remoteEndPoint).ToString());
 
         if (context.Player.Profile is not { } profile)
         {
