@@ -100,7 +100,7 @@ public class PlayerPositionService(IPlayerContext context) : IEventListener
     [Subscribe]
     public void OnMessageReceived(MessageReceivedEvent @event)
     {
-        // This code is pure example.
+        // This code is a pure example.
         // If you need player positions, make sure to implement this packet yourself.
 
         if (@event.Message is not PlayerPositionPacket packet)
