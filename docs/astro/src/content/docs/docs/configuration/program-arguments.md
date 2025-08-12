@@ -79,9 +79,8 @@ Options:
   ```
 
 ## Logging
-- `--logging`  
+- `--logging`
   Sets the logging level. Valid values are Trace, Debug, Information, Warning, Error and Critical.
-  Example: `./void-linux-x64 `
 
   ```bash title="Example Usage"
   ./void-linux-x64 --logging Debug
