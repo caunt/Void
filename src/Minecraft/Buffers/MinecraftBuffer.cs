@@ -179,7 +179,7 @@ public ref struct MinecraftBuffer
         return _backingBuffer.ReadString(maxLength);
     }
 
-    public void WriteString(string value)
+    public void WriteString(ReadOnlySpan<char> value)
     {
         _backingBuffer.WriteString(value);
     }

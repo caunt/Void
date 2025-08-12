@@ -161,8 +161,8 @@ public static class WriteMinecraftBufferExtensions
     /// </summary>
     /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface for Minecraft.</typeparam>
     /// <param name="buffer">This parameter is a reference to the buffer where the string will be written.</param>
-    /// <param name="value">This parameter is the string that will be written to the buffer.</param>
-    public static void WriteString<TBuffer>(ref this TBuffer buffer, string value)
+    /// <param name="value">The characters that will be written to the buffer.</param>
+    public static void WriteString<TBuffer>(ref this TBuffer buffer, ReadOnlySpan<char> value)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>
         WriteStringCore(ref buffer, value);
@@ -292,7 +292,7 @@ public static class WriteMinecraftBufferExtensions
         buffer.WriteInt(BinaryPrimitives.ReadInt32BigEndian(span[12..16]));
     }
 
-    private static void WriteStringCore<TBuffer>(ref TBuffer buffer, string value) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    private static void WriteStringCore<TBuffer>(ref TBuffer buffer, ReadOnlySpan<char> value) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
         var byteCount = Encoding.UTF8.GetByteCount(value);
         Span<byte> bytes = stackalloc byte[byteCount];

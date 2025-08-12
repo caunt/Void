@@ -440,7 +440,7 @@ internal ref struct MinecraftBackingBuffer
         return value;
     }
 
-    public void WriteString(string value)
+    public void WriteString(ReadOnlySpan<char> value)
     {
         var length = Encoding.UTF8.GetByteCount(value);
         WriteVarInt(length);
