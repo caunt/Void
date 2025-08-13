@@ -22,7 +22,7 @@ Run the executable
 
 ## Docker
 
-Prefer containers? See the [Containers](/docs/containers/) guide for Docker and Kubernetes deployments.
+Prefer containers? See the [**Containers**](/docs/containers/) guide for Docker and Kubernetes deployments.
 
 ## Android
 
