@@ -15,7 +15,10 @@ export default defineConfig({
     site: 'https://void.caunt.world',
     integrations: [starlight({
         title: 'Void',
-        social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/caunt/void' }],
+        social: [
+            { icon: 'telegram', label: 'Telegram', href: 'https://t.me/mcVoidProxy' },
+            { icon: 'github', label: 'GitHub', href: 'https://github.com/caunt/void' }
+        ],
         sidebar: [
             {
                 label: 'Getting Started',
