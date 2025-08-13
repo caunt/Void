@@ -3,6 +3,7 @@ title: "Void on Kubernetes: the setup I wish I’d had from day one"
 description: Production-ready guide for running Void proxy on Kubernetes with health checks, graceful rollouts, and plugin management.
 template: splash
 pagefind: false
+editUrl: false
 ---
 
 # Void on Kubernetes: the setup I wish I’d had from day one
