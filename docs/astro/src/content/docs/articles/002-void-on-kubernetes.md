@@ -19,7 +19,7 @@ What follows is the exact layout I run in production. It’s simple, repeatable,
 Void is a .NET proxy that speaks to your backend Paper/Purpur/Fabric servers and presents a single TCP entry point for players. It exposes two important ports:
 
 * **25565/TCP** for Minecraft traffic.
-* **80/TCP** for a tiny HTTP control surface I’ll call the *watchdog*. It answers health, bound-state, and graceful control requests.
+* **80/TCP** for a tiny HTTP control surface I’ll call the [**watchdog**](/docs/watchdog). It answers health, bound-state, and graceful control requests.
 
 There are a few knobs I use every day:
 
