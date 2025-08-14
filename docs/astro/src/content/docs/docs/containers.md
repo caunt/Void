@@ -27,7 +27,7 @@ docker run --name void --network host --pull=always --rm caunt/void:dev \
 ```
 
 :::tip[Offline Mode]
-Add `--offline` to allow players to connect without Mojang authentication.
+Add [**--offline**](/docs/configuration/program-arguments/) to allow players to connect without Mojang authentication.
 :::
 
 ## Running Void in Kubernetes
