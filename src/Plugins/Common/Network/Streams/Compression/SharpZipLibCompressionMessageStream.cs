@@ -248,7 +248,7 @@ public class SharpZipLibCompressionMessageStream : RecyclableStream, ICompleteMe
                     _compressor.SetInput(chunkArray, 0, chunkLength);
 
                     while (!_compressor.IsNeedingInput && _compressor.Deflate(buffer) is var compressedLength and not 0)
-                        stream.Write(buffer, 0, compressedLength);
+                        stream.Write(buffer.AsSpan(0, compressedLength));
                 }
                 finally
                 {
