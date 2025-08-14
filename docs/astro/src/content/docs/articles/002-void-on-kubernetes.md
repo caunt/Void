@@ -193,7 +193,7 @@ Want to test a single plugin quickly? Pass `--plugin` as an arg alongside the en
 
 Void can register servers from config files or via `--server`. In clusters, using `--server` keeps boot deterministic because you don’t wait on config materialization. I usually point it at a Service that fronts a Paper or Purpur Deployment.
 
-If you use Velocity-style modern forwarding, enable it in the configuration file once and match the secret on backends. I keep the file inside the image during build time when I need it, but it’s equally fine to set that once in a golden image and forget about it—there’s nothing dynamic there.
+If you use Velocity-style modern forwarding, enable it in the [**configuration file**](/docs/configuration/in-file/) once and match the secret on backends. I keep the file inside the image during build time when I need it, but it’s equally fine to set that once in a golden image and forget about it—there’s nothing dynamic there.
 
 If you run in offline mode for testing, `VOID_OFFLINE=true` makes that a one-line toggle. In public, flip it off. Simple switches save mistakes.
 
