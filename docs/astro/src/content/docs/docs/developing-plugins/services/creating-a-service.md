@@ -28,7 +28,7 @@ dependencies.Register(services =>
     services.AddTransient<ExampleTransientService>();
 });
 ```
-Your services will be automatically activated (instantiated) and subscribed to events, if not delayed explicitly.
+Your services will be automatically activated (instantiated) and subscribed to [**events**](/docs/developing-plugins/events/listening-to-events), if not delayed explicitly.
 You can delay your services activation, by providing `activate: false` parameter to the registration method:
 ```csharp
 dependencies.Register(services =>
