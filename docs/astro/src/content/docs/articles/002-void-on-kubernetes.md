@@ -181,7 +181,7 @@ You’ll see `OK` when the proxy is up, `PAUSED` if you’ve paused it, or `STOP
 
 ## Plugins, but keep the image clean
 
-I keep the container immutable and let Void fetch plugins at boot. The trick is the `VOID_PLUGINS` variable. It accepts a semicolon- or comma‑separated list of URLs or local paths. I point it at a stable, versioned URL (an object store bucket, a Git release asset, or a simple HTTPS endpoint). When I ship a new plugin build, I update the URL in the Deployment and roll.
+I keep the [**container**](/docs/containers/) immutable and let Void fetch plugins at boot. The trick is the `VOID_PLUGINS` variable. It accepts a semicolon- or comma‑separated list of URLs or local paths. I point it at a stable, versioned URL (an object store bucket, a Git release asset, or a simple HTTPS endpoint). When I ship a new plugin build, I update the URL in the Deployment and roll.
 
 If your plugin pulls dependencies from NuGet, you can also set `VOID_NUGET_REPOSITORIES` so the resolver knows where to look. If your feed requires credentials, publish via a preauthenticated URL or an internal feed, then rotate credentials upstream. Keep the pod surface small.
 
