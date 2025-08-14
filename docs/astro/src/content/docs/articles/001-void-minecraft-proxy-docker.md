@@ -16,7 +16,7 @@ Let me walk you through exactly how I run Void in [**Docker**](/docs/containers/
 
 ## Why Void for a Docker-friendly proxy
 
-I like proxies that don’t fight me. Void boots fast, has sensible flags, and plays nicely with both legacy and modern [**forwarding models**](/docs/forwardings/forwarding-overview). It’s comfortable in a container, which means fewer moving parts on the host and easier rollbacks. Most importantly, it behaves the same on my laptop and on the node in the rack.
+I like proxies that don’t fight me. Void boots fast, has sensible flags, and plays nicely with both legacy and modern [**forwarding models**](/docs/forwardings/forwarding-overview). It’s comfortable in a [**container**](/docs/containers/), which means fewer moving parts on the host and easier rollbacks. Most importantly, it behaves the same on my laptop and on the node in the rack.
 
 If you’re running modded servers, you know the routine: weird handshakes, changing headers, and that one forge build that decides it’s special. Void handles the chaos without turning your launch script into a novella.
 
