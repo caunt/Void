@@ -4,7 +4,7 @@ description: Learn how to enable and use the Watchdog feature in Void.
 ---
 
 The Watchdog feature in Void is designed to monitor the health of the Void Proxy and schedule a restart if required. 
-This is particularly useful for long-running processes or when running Void in a production environment.
+This is particularly useful for long-running processes or when running Void in a [**production environment**](/docs/containers/).
 
 ## Enable Watchdog
 Watchdog is disabled by default. To enable it, you need to set the `Enabled` setting in the [**configuration file**](/docs/configuration/in-file#watchdog) to `true`.
