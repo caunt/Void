@@ -79,7 +79,7 @@ docker run --network host --rm caunt/void:dev \
 
 ## Forwarding models and common pitfalls
 
-Void supports both legacy and modern forwarding. Just make sure your backend’s forwarding setting matches the proxy. Mismatches are the main cause of timeouts right after login.
+Void supports both legacy and [**modern forwarding**](/docs/forwardings/modern). Just make sure your backend’s forwarding setting matches the proxy. Mismatches are the main cause of timeouts right after login.
 
 ---
 
