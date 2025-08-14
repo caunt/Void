@@ -4,7 +4,7 @@ description: Learn types of Player Events.
 ---
 
 The very first event that is triggered when a player connects to the server.
-It is used to create a new player instance and set up the player context with scoped services.
+It is used to create a new player instance and set up the player context with [**scoped services**](/docs/developing-plugins/services/scoped).
 Do not change the `Result` property of this event until you are very sure what you are doing.
 You can use this event to modify the player instance implementation.
 ```csharp
