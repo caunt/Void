@@ -10,7 +10,7 @@ editUrl: false
 
 When I first pointed my server traffic through **Void**, I expected a weekend of tinkering and a long night of regrets. What I got instead was a clean, predictable setup that took minutes, felt modern, and frankly made me a little smug. If you’ve been juggling Velocity/Bungee-era rituals, or you’re running a modded network and want something that speaks fluent .NET and plain English, this is the path I wish I’d taken sooner.
 
-Let me walk you through exactly how I run Void in [**Docker**](/docs/containers/), why I chose the flags I did, and a few real‑world notes from putting it behind production traffic.
+Let me walk you through exactly how I run Void in [**Docker**](/docs/containers/), why I chose the [**flags**](/docs/configuration/program-arguments/) I did, and a few real‑world notes from putting it behind production traffic.
 
 ---
 
