@@ -13,7 +13,7 @@ Some of them include:
 - Asynchronous Programming
 - [**Event-Driven Programming**](/docs/developing-plugins/events/listening-to-events/)
 - Stack-allocating and Memory Management
-- Serialization and Deserialization of data
+- [**Serialization and Deserialization of data**](/docs/developing-plugins/serializers/)
 - Network Packets and Protocols
 
 ## Installation
