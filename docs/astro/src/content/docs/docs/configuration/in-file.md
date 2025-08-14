@@ -55,7 +55,7 @@ Port = 80
 ```
 
 ## Forwarding
-Forwarding helps to forward player data (IP, UUID, Skin, etc.) to the backend server.
+[**Forwarding**](/docs/forwardings/forwarding-overview) helps to forward player data (IP, UUID, Skin, etc.) to the backend server.
 
 ### Modern (Velocity)
 Read more in [**Modern (Velocity)**](/docs/forwardings/modern) forwarding.
