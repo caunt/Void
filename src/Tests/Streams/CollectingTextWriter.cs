@@ -27,7 +27,8 @@ public class CollectingTextWriter : TextWriter
         get
         {
             var text = Text;
-            return text.Split(["\r\n", "\n"], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in text.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+                yield return line.TrimEnd('\r');
         }
     }
 
