@@ -55,8 +55,8 @@ Options:
 ## Servers
 - `--server`  
   Registers a server in format `<host>:<port>` where the port is between `1` and `65535`. IPv6 addresses must be enclosed in square brackets.
-- `--ignore-file-servers`  
-  Ignore servers specified in configuration files.
+- `--ignore-file-servers`
+  Ignore servers specified in [**configuration files**](/docs/configuration/in-file).
 
   ```bash title="Example Usage"
   ./void-linux-x64 \
