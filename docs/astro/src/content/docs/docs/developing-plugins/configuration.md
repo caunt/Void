@@ -3,7 +3,7 @@ title: Configuration
 description: Learn how to define configuration for your plugin.
 ---
 
-Void exposes a configuration API that allows you to define in-file configuration options for your plugin. 
+Void exposes a configuration API that allows you to define [**in-file configuration**](/docs/configuration/in-file) options for your plugin.
 
 ## Defining Configuration
 To define configuration for your plugin, create any class with any parameters and default values.
