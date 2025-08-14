@@ -14,7 +14,7 @@ Some of them include:
 - [**Event-Driven Programming**](/docs/developing-plugins/events/listening-to-events/)
 - Stack-allocating and Memory Management
 - [**Serialization and Deserialization of data**](/docs/developing-plugins/serializers/)
-- Network Packets and Protocols
+- [**Network Packets**](/docs/developing-plugins/network/packets/) and Protocols
 
 ## Installation
 1) [**Download**](https://github.com/caunt/Void/releases/latest/download/plugin-devkit.zip) the latest **Plugin Development Kit**.
