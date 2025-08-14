@@ -288,7 +288,7 @@ I tag images carefully (`latest` for stable, separate channels for development).
 * **Pod is “ready” but players can’t join**: check `/bound`. If it’s `503`, the socket isn’t accepting yet—investigate port collisions or security policies. Your Service might also be pointing at the wrong `targetPort`.
 * **Liveness keeps restarting the pod**: if `/health` flaps under load, look at CPU limits first. Then check GC pressure. Increase memory limit by a notch and retest.
 * **Rolling restart still kicked players**: confirm that `preStop` executed. If your node was evicted hard, the lifecycle hook may not run; consider PodDisruptionBudgets to avoid simultaneous evictions.
-* **Plugins didn’t load**: verify URLs and that the container has egress. If dependencies are private, set `VOID_NUGET_REPOSITORIES` to reachable feeds.
+* **Plugins didn’t load**: verify URLs and that the [**container**](/docs/containers/) has egress. If dependencies are private, set `VOID_NUGET_REPOSITORIES` to reachable feeds.
 
 ---
 
