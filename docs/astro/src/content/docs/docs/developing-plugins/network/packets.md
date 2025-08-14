@@ -8,7 +8,7 @@ sidebar:
 Minecraft Packets [**(called Messages in Void)**](https://github.com/caunt/Void/blob/main/src/Minecraft/Network/Messages/Packets/IMinecraftPacket.cs#L7) describe the data that is sent between the player and server.
 These messages contain information about player actions, world events, and other game mechanics.
 
-Typically, you describe existing packets in game, so you can read, modify, or cancel them.
+Typically, you describe existing packets in game, so you can read, [**modify**](/docs/developing-plugins/network/modifying-data), or cancel them.
 However you are not limited to this, you can also define your own packets for your own Minecraft mod or plugin.
 
 Packets can be defined with `IMinecraftClientboundPacket<TPacket>` or `IMinecraftServerboundPacket<TPacket>` interface. If your packet is same for both client and server, you can use `IMinecraftPacket<TPacket>` interface.
