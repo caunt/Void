@@ -12,7 +12,7 @@ Here's a quick look at what the Void proxy already supports and what's planned f
 #### Terms
 - **Proxying** lets you play through the proxy.
 - **Redirects** move players between servers.
-- **API** exposes the Services API to plugins (Chat, [**Commands**](/docs/developing-plugins/commands), Events, Content, [**Packets**](/docs/developing-plugins/network/packets)).
+- **API** exposes the Services API to plugins (Chat, [**Commands**](/docs/developing-plugins/commands), [**Events**](/docs/developing-plugins/events/listening-to-events), Content, [**Packets**](/docs/developing-plugins/network/packets)).
 - **WIP** marks a feature still under development.
 
 ### Game Versions
