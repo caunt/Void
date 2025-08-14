@@ -225,7 +225,7 @@ If you want to steer certain regions to specific pods, add multiple `Service` ob
 
 Most HTTP ingress controllers won’t help for raw TCP Minecraft traffic unless they support TCP services. If you already run something like NGINX Ingress or Traefik with TCP routing enabled, point it at `void-proxy`. Otherwise, a direct `LoadBalancer` on the Service keeps the path short and avoids head‑of‑line quirks.
 
-For the control plane, I keep the watchdog on a ClusterIP Service and reach it from inside the cluster. If you want remote control for a small team, put an authentication layer in front of it and publish it over HTTPS with your reverse proxy of choice. Keep the attack surface tiny.
+For the control plane, I keep the [**watchdog**](/docs/watchdog) on a ClusterIP Service and reach it from inside the cluster. If you want remote control for a small team, put an authentication layer in front of it and publish it over HTTPS with your reverse proxy of choice. Keep the attack surface tiny.
 
 ---
 
