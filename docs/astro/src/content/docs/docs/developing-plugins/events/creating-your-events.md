@@ -38,7 +38,7 @@ public record MyEvent(string SomeValue) : IEventWithResult<bool>
 ## Scoped Event
 Your event can be scoped to a specific player. You can do this by implementing the `IScopedEvent` interface.
 With this interface you are required to specify the Player to which this event is scoped.
-This event will be filtered across scoped listeners and passed to all non-scoped listeners.
+This event will be filtered across [**scoped listeners**](/docs/developing-plugins/services/scoped) and passed to all non-scoped listeners.
 However, scoped listeners can still receive that event out of their scope, by applying `bypassScopedFilter: true` to the `Subscribe` attribute.
 ```csharp
 public record MyEvent(IPlayer Player, string SomeValue) : IScopedEvent;
