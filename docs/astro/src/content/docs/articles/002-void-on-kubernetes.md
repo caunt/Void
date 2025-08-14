@@ -8,7 +8,7 @@ editUrl: false
 
 # Void on Kubernetes: the setup I wish I’d had from day one
 
-I moved my Minecraft network to Kubernetes for the same reason most of us do: fewer snowflake boxes, easier rollbacks, and boringly reliable updates. The missing piece was a proxy that didn’t need hand-holding. Void got there for me. It’s lightweight, fast to boot, and it exposes a tiny HTTP control plane that plays nicely with probes and scripts. Once I wired it into a Deployment, the rest felt… calm.
+I moved my Minecraft network to Kubernetes for the same reason most of us do: fewer snowflake boxes, easier rollbacks, and boringly reliable updates. The missing piece was a proxy that didn’t need hand-holding. Void got there for me. It’s lightweight, fast to boot, and it exposes a tiny [**HTTP control plane**](/docs/watchdog) that plays nicely with probes and scripts. Once I wired it into a Deployment, the rest felt… calm.
 
 What follows is the exact layout I run in production. It’s simple, repeatable, and friendly to clusters of any size. If you’ve been juggling sidecars, shell hacks, or awkward restarts, this will feel refreshingly straightforward.
 
