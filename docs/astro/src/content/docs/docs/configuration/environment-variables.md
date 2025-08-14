@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-Environment variables make configuration in container environments easier.
+Environment variables make configuration in [**container environments**](/docs/containers/) easier.
 However, they might be used from the terminal directly as well.
 
 ## Plugins
