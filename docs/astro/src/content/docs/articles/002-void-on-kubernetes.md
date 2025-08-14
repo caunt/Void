@@ -24,7 +24,7 @@ Void is a .NET proxy that speaks to your backend Paper/Purpur/Fabric servers and
 There are a few knobs I use every day:
 
 * Program arguments like `--server`, `--port`, `--interface`, and `--plugin`.
-* Environment variables for container-friendly config, including `VOID_PLUGINS`, `VOID_WATCHDOG_ENABLE`, and `VOID_OFFLINE`.
+* [**Environment variables**](/docs/configuration/environment-variables/) for container-friendly config, including `VOID_PLUGINS`, `VOID_WATCHDOG_ENABLE`, and `VOID_OFFLINE`.
 * File config remains available if you prefer, but I keep the container immutable and do overrides via args and env.
 
 That’s the gist. Now let’s put it into a Deployment that ships.
