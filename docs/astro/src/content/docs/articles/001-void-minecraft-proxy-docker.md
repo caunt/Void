@@ -32,7 +32,7 @@ A few ground rules I follow: stateless by default, no mounting config volumes un
 
 ## Building the actual run command
 
-Once I’ve decided my backend target and public entry port, I start Void with the essential flags in a single `docker run` line. I skip clutter and only include what matters: backend address, interface, port, and any relevant toggles like `--ignore-file-servers`.
+Once I’ve decided my backend target and public entry port, I start Void with the essential [**flags**](/docs/configuration/program-arguments/) in a single `docker run` line. I skip clutter and only include what matters: backend address, interface, port, and any relevant toggles like `--ignore-file-servers`.
 
 Example with one backend:
 
