@@ -11,7 +11,7 @@ Void plugins are written with many modern .NET features, so you will need to ens
 Some of them include:
 - Dependency Injection
 - Asynchronous Programming
-- Event-Driven Programming
+- [**Event-Driven Programming**](/docs/developing-plugins/events/listening-to-events/)
 - Stack-allocating and Memory Management
 - Serialization and Deserialization of data
 - Network Packets and Protocols
