@@ -20,7 +20,7 @@ However, they might be used from the terminal directly as well.
 
 ## Watchdog
 - `VOID_WATCHDOG_ENABLE`
-  Enables the watchdog.
+  Enables the [**watchdog**](/docs/watchdog).
   Example: `true`
 
 ## Proxy
