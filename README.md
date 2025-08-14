@@ -11,7 +11,7 @@
 <div align="center" id="toc">
   <ul style="list-style: none">
     <summary>
-      <h1>:star: Minecraft Proxy for Modded servers.</h1>
+      <h1>:star: Minecraft Proxy for Modded Servers</h1>
     </summary>
   </ul>
 </div>
