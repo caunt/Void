@@ -91,12 +91,12 @@ public class StringReader(string source, int cursor = 0) : IImmutableStringReade
         while (CanRead && IsAllowedNumber(Peek))
             Skip();
 
-        var number = Source[start..Cursor];
+        var span = Source.AsSpan(start, Cursor - start);
 
-        if (number.Length is 0)
+        if (span.Length is 0)
             throw CommandSyntaxException.BuiltInExceptions.ReaderExpectedLong.CreateWithContext(this);
 
-        if (long.TryParse(number, out var result))
+        if (long.TryParse(span, out var result))
             return result;
 
         Cursor = start;
