@@ -52,7 +52,7 @@ public class MySingletonService : IEventListener
 
 ## Listening to events in Scoped services
 Just like with other services, you should apply `IEventListener` interface to your scoped service class.
-However, listening to events in scoped services is a bit different.
+However, listening to events in [**scoped services**](/docs/developing-plugins/services/scoped) is a bit different.
 Scoped events are filtered by the player context, so you will only receive events that are relevant to the player that owns the service.
 All other types of events will not be filtered, since they are not scoped.
 Scoped events filter can be disabled by applying `bypassScopedFilter: true` to the `Subscribe` attribute.
