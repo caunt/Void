@@ -24,7 +24,7 @@ If you’re running modded servers, you know the routine: weird handshakes, chan
 
 ## My mental model: one clean container, one clear port
 
-I keep Void as a single ephemeral container that owns the public port and forwards to whatever backend I declare. That’s it. No sidecars. No mystery env sprawl. If I want to swap configurations or try a different plugin, I kill and run again.
+I keep Void as a single ephemeral [**container**](/docs/containers/) that owns the public port and forwards to whatever backend I declare. That’s it. No sidecars. No mystery env sprawl. If I want to swap configurations or try a different plugin, I kill and run again.
 
 A few ground rules I follow: stateless by default, no mounting [**config volumes**](/docs/configuration/in-file/) unless I must, and host networking when I want port handling to be predictable.
 
