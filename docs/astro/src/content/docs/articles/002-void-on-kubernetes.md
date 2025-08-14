@@ -231,7 +231,7 @@ For the control plane, I keep the [**watchdog**](/docs/watchdog) on a ClusterIP 
 
 ## Observability that fits in your head
 
-The watchdog answers a handful of HTTP calls:
+The [**watchdog**](/docs/watchdog) answers a handful of HTTP calls:
 
 * `GET /health` tells you if the process is healthy.
 * `GET /bound` tells you if player sockets are being accepted.
