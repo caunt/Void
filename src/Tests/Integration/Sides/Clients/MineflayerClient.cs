@@ -1,6 +1,7 @@
 namespace Void.Tests.Integration.Sides.Clients;
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Tar;
 using System.IO;
@@ -43,20 +44,36 @@ public class MineflayerClient : IntegrationSideBase
         var scriptPath = Path.Combine(workingDirectory, "bot.js");
         await File.WriteAllTextAsync(scriptPath, $$"""
             const mineflayer = require('mineflayer');
-            const [address, version, text] = process.argv.slice(2);
+            const [address, version, ...actions] = process.argv.slice(2);
             const [host, portString] = address.split(':');
             const port = parseInt(portString ?? '25565', 10);
             const bot = mineflayer.createBot({ host, port, username: '{{nameof(MineflayerClient)}}', version });
 
             bot.on('spawn', () => {
-                bot.chat(text);
-                setTimeout(() => {
-                    console.log('end');
-                    bot.end();
-                }, 5000);
+                let index = 0;
+
+                const runNext = () => {
+                    if (index >= actions.length) {
+                        console.log('end');
+                        bot.end();
+                        return;
+                    }
+
+                    bot.chat(actions[index++]);
+
+                    if (index >= actions.length) {
+                        setTimeout(() => {
+                            console.log('end');
+                            bot.end();
+                        }, 5000);
+                    } else {
+                        setTimeout(runNext, 5000);
+                    }
+                };
+
+                runNext();
             });
 
-            bot.on('kicked', reason => console.error('KICK:' + reason));
             bot.on('error', err => console.error('ERROR:' + err.message));
             """, cancellationToken);
 
@@ -68,7 +85,22 @@ public class MineflayerClient : IntegrationSideBase
 
     public async Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
     {
-        StartApplication(_nodePath, hasInput: false, _scriptPath, address, protocolVersion.MostRecentSupportedVersion, text);
+        await SendActionsAsync(address, protocolVersion, new[] { text }, cancellationToken);
+    }
+
+    public async Task SendActionsAsync(string address, ProtocolVersion protocolVersion, IEnumerable<string> actions, CancellationToken cancellationToken = default)
+    {
+        var actionArray = actions.ToArray();
+        var arguments = new List<string>(actionArray.Length + 3)
+        {
+            _scriptPath,
+            address,
+            protocolVersion.MostRecentSupportedVersion
+        };
+
+        arguments.AddRange(actionArray);
+
+        StartApplication(_nodePath, hasInput: false, arguments.ToArray());
 
         var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
 
