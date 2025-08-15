@@ -87,6 +87,59 @@ public class MineflayerClient : IntegrationSideBase
         }
     }
 
+    public async Task SendServerSwitchMessagesAsync(string address, ProtocolVersion protocolVersion, string server1, string server2, string text1, string text2, string text3, CancellationToken cancellationToken = default)
+    {
+        var workingDirectory = Path.GetDirectoryName(_scriptPath) ?? throw new IntegrationTestException("Invalid script path");
+        var scriptPath = Path.Combine(workingDirectory, "switch.js");
+
+        await File.WriteAllTextAsync(scriptPath, $$"""
+            const mineflayer = require('mineflayer');
+            const [address, version, server1, server2, text1, text2, text3] = process.argv.slice(2);
+            const [host, portString] = address.split(':');
+            const port = parseInt(portString ?? '25565', 10);
+            const bot = mineflayer.createBot({ host, port, username: '{{nameof(MineflayerClient)}}', version });
+            function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+            bot.on('spawn', async () => {
+                await delay(5000);
+                bot.chat(text1);
+                await delay(5000);
+                bot.chat(`/server ${server2}`);
+                await delay(5000);
+                bot.chat(text2);
+                await delay(5000);
+                bot.chat(`/server ${server1}`);
+                await delay(5000);
+                bot.chat(text3);
+                await delay(5000);
+                console.log('end');
+                bot.end();
+            });
+            bot.on('kicked', reason => console.error('KICK:' + reason));
+            bot.on('error', err => console.error('ERROR:' + err.message));
+            """, cancellationToken);
+
+        if (!OperatingSystem.IsWindows())
+            File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+        StartApplication(_nodePath, hasInput: false, scriptPath, address, protocolVersion.MostRecentSupportedVersion, server1, server2, text1, text2, text3);
+
+        var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
+
+        if (_process is not { HasExited: false })
+            throw new IntegrationTestException("Failed to start Mineflayer bot.");
+
+        try
+        {
+            await consoleTask;
+            await _process.ExitAsync(entireProcessTree: true, cancellationToken);
+        }
+        finally
+        {
+            if (_process is { HasExited: false })
+                await _process.ExitAsync(entireProcessTree: true, cancellationToken);
+        }
+    }
+
     private static bool HandleConsole(string line)
     {
         if (line.StartsWith("ERROR:"))
