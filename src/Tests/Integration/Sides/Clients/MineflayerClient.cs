@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Formats.Tar;
 using System.IO;
 using System.IO.Compression;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
@@ -43,17 +44,27 @@ public class MineflayerClient : IntegrationSideBase
         var scriptPath = Path.Combine(workingDirectory, "bot.js");
         await File.WriteAllTextAsync(scriptPath, $$"""
             const mineflayer = require('mineflayer');
-            const [address, version, text] = process.argv.slice(2);
+            const [address, version, ...texts] = process.argv.slice(2);
             const [host, portString] = address.split(':');
             const port = parseInt(portString ?? '25565', 10);
             const bot = mineflayer.createBot({ host, port, username: '{{nameof(MineflayerClient)}}', version });
 
             bot.on('spawn', () => {
-                bot.chat(text);
-                setTimeout(() => {
-                    console.log('end');
-                    bot.end();
-                }, 5000);
+                let index = 0;
+                const sendNext = () => {
+                    if (index >= texts.length) {
+                        setTimeout(() => {
+                            console.log('end');
+                            bot.end();
+                        }, 5000);
+                        return;
+                    }
+
+                    bot.chat(texts[index++]);
+                    setTimeout(sendNext, 2000);
+                };
+
+                sendNext();
             });
 
             bot.on('kicked', reason => console.error('KICK:' + reason));
@@ -66,9 +77,12 @@ public class MineflayerClient : IntegrationSideBase
         return new(nodePath, scriptPath);
     }
 
-    public async Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
+    public async Task SendTextMessagesAsync(string address, ProtocolVersion protocolVersion, IEnumerable<string> texts, CancellationToken cancellationToken = default)
     {
-        StartApplication(_nodePath, hasInput: false, _scriptPath, address, protocolVersion.MostRecentSupportedVersion, text);
+        var args = new List<string> { _scriptPath, address, protocolVersion.MostRecentSupportedVersion };
+        args.AddRange(texts);
+
+        StartApplication(_nodePath, hasInput: false, args.ToArray());
 
         var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
 
@@ -86,6 +100,9 @@ public class MineflayerClient : IntegrationSideBase
                 await _process.ExitAsync(entireProcessTree: true, cancellationToken);
         }
     }
+
+    public Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
+        => SendTextMessagesAsync(address, protocolVersion, [text], cancellationToken);
 
     private static bool HandleConsole(string line)
     {
