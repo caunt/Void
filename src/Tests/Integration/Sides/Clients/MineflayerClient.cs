@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Void.Minecraft.Network;
 using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
@@ -43,13 +44,16 @@ public class MineflayerClient : IntegrationSideBase
         var scriptPath = Path.Combine(workingDirectory, "bot.js");
         await File.WriteAllTextAsync(scriptPath, $$"""
             const mineflayer = require('mineflayer');
-            const [address, version, text] = process.argv.slice(2);
+            const [address, version, ...texts] = process.argv.slice(2);
             const [host, portString] = address.split(':');
             const port = parseInt(portString ?? '25565', 10);
             const bot = mineflayer.createBot({ host, port, username: '{{nameof(MineflayerClient)}}', version });
 
-            bot.on('spawn', () => {
-                bot.chat(text);
+            bot.on('spawn', async () => {
+                for (const text of texts) {
+                    bot.chat(text);
+                    await new Promise(resolve => setTimeout(resolve, text.startsWith('/server') ? 5000 : 1000));
+                }
                 setTimeout(() => {
                     console.log('end');
                     bot.end();
@@ -66,9 +70,12 @@ public class MineflayerClient : IntegrationSideBase
         return new(nodePath, scriptPath);
     }
 
-    public async Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
+    public Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
+        => SendTextMessagesAsync(address, protocolVersion, [text], cancellationToken);
+
+    public async Task SendTextMessagesAsync(string address, ProtocolVersion protocolVersion, IEnumerable<string> texts, CancellationToken cancellationToken = default)
     {
-        StartApplication(_nodePath, hasInput: false, _scriptPath, address, protocolVersion.MostRecentSupportedVersion, text);
+        StartApplication(_nodePath, hasInput: false, [_scriptPath, address, protocolVersion.MostRecentSupportedVersion, ..texts]);
 
         var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
 
