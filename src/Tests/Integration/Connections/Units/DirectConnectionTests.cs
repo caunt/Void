@@ -92,7 +92,7 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
 
             MinecraftConsoleClient = await MinecraftConsoleClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
             MineflayerClient = await MineflayerClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
-            PaperServer = await PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: cancellationTokenSource.Token);
+            PaperServer = await PaperServer.CreateAsync(_workingDirectory, _httpClient, instanceName: nameof(PaperServer), port: ServerPort, cancellationToken: cancellationTokenSource.Token);
         }
 
         public async Task DisposeAsync()
