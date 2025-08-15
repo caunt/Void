@@ -35,7 +35,17 @@ public class ServerService(ILogger<ServerService> logger, ISettings settings, In
                 continue;
             }
 
-            if (!Uri.TryCreate($"tcp://{argument}", UriKind.Absolute, out var uri))
+            var name = $"args-server-{index++}";
+            var endpoint = argument;
+
+            if (argument.Contains('='))
+            {
+                var split = argument.Split('=', 2);
+                name = split[0];
+                endpoint = split[1];
+            }
+
+            if (!Uri.TryCreate($"tcp://{endpoint}", UriKind.Absolute, out var uri))
             {
                 logger.LogWarning("Invalid server {Server}", argument);
                 continue;
@@ -50,7 +60,7 @@ public class ServerService(ILogger<ServerService> logger, ISettings settings, In
                 continue;
             }
 
-            yield return new Server($"args-server-{index++}", host, port);
+            yield return new Server(name, host, port);
         }
     }
 }
