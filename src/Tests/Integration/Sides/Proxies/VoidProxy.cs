@@ -28,18 +28,29 @@ public class VoidProxy : IIntegrationSide
         _cancellationTokenSource = cancellationTokenSource;
     }
 
-    public static async Task<VoidProxy> CreateAsync(string targetServer, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
+    public static Task<VoidProxy> CreateAsync(string targetServer, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
+    {
+        return CreateAsync([targetServer], proxyPort, ignoreFileServers, offlineMode, cancellationToken);
+    }
+
+    public static async Task<VoidProxy> CreateAsync(IEnumerable<string> targetServers, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
     {
         var logWriter = new CollectingTextWriter();
         var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cancellationToken = cancellationTokenSource.Token;
 
-        var args = new List<string>
+        var args = new List<string>();
+
+        foreach (var server in targetServers)
         {
-            "--server", targetServer,
-            "--port", proxyPort.ToString(),
-            "--logging", "Debug" // Trace
-        };
+            args.Add("--server");
+            args.Add(server);
+        }
+
+        args.Add("--port");
+        args.Add(proxyPort.ToString());
+        args.Add("--logging");
+        args.Add("Debug"); // Trace
 
         if (ignoreFileServers)
             args.Add("--ignore-file-servers");
