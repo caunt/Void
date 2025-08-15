@@ -26,11 +26,11 @@ public class PaperServer : IntegrationSideBase
         StartApplication(_binaryPath, hasInput: false, "-Dpaper.playerconnection.keepalive=120");
     }
 
-    public static async Task<PaperServer> CreateAsync(string workingDirectory, HttpClient client, int port = 25565, PaperPlugins plugins = PaperPlugins.All, CancellationToken cancellationToken = default)
+    public static async Task<PaperServer> CreateAsync(string workingDirectory, HttpClient client, string instanceName = "PaperServer", int port = 25565, PaperPlugins plugins = PaperPlugins.All, CancellationToken cancellationToken = default)
     {
         var jreBinaryPath = await SetupJreAsync(workingDirectory, client, cancellationToken);
 
-        workingDirectory = Path.Combine(workingDirectory, "PaperServer");
+        workingDirectory = Path.Combine(workingDirectory, instanceName);
 
         if (!Directory.Exists(workingDirectory))
             Directory.CreateDirectory(workingDirectory);

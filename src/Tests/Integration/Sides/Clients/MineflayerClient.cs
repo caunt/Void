@@ -2,6 +2,7 @@ namespace Void.Tests.Integration.Sides.Clients;
 
 using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.Formats.Tar;
 using System.IO;
 using System.IO.Compression;
@@ -43,17 +44,22 @@ public class MineflayerClient : IntegrationSideBase
         var scriptPath = Path.Combine(workingDirectory, "bot.js");
         await File.WriteAllTextAsync(scriptPath, $$"""
             const mineflayer = require('mineflayer');
-            const [address, version, text] = process.argv.slice(2);
+            const [address, version, ...messages] = process.argv.slice(2);
             const [host, portString] = address.split(':');
             const port = parseInt(portString ?? '25565', 10);
             const bot = mineflayer.createBot({ host, port, username: '{{nameof(MineflayerClient)}}', version });
 
             bot.on('spawn', () => {
-                bot.chat(text);
+                let delay = 0;
+                for (const message of messages) {
+                    setTimeout(() => bot.chat(message), delay);
+                    delay += 5000;
+                }
+
                 setTimeout(() => {
                     console.log('end');
                     bot.end();
-                }, 5000);
+                }, delay + 5000);
             });
 
             bot.on('kicked', reason => console.error('KICK:' + reason));
@@ -66,9 +72,14 @@ public class MineflayerClient : IntegrationSideBase
         return new(nodePath, scriptPath);
     }
 
-    public async Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
+    public Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default) =>
+        SendTextMessagesAsync(address, protocolVersion, [text], cancellationToken);
+
+    public async Task SendTextMessagesAsync(string address, ProtocolVersion protocolVersion, IEnumerable<string> messages, CancellationToken cancellationToken = default)
     {
-        StartApplication(_nodePath, hasInput: false, _scriptPath, address, protocolVersion.MostRecentSupportedVersion, text);
+        var messagesArray = messages.ToArray();
+
+        StartApplication(_nodePath, hasInput: false, [ _scriptPath, address, protocolVersion.MostRecentSupportedVersion, ..messagesArray ]);
 
         var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
 
