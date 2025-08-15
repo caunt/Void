@@ -1,16 +1,17 @@
 namespace Void.Tests.Integration.Sides.Clients;
 
 using System;
-using System.Diagnostics;
-using System.Formats.Tar;
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
-using System.Net.Http;
-using System.Runtime.InteropServices;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Formats.Tar;
+    using System.IO;
+    using System.IO.Compression;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Runtime.InteropServices;
+    using System.Text.Json;
+    using System.Threading;
+    using System.Threading.Tasks;
 using Void.Minecraft.Network;
 using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
@@ -43,17 +44,21 @@ public class MineflayerClient : IntegrationSideBase
         var scriptPath = Path.Combine(workingDirectory, "bot.js");
         await File.WriteAllTextAsync(scriptPath, $$"""
             const mineflayer = require('mineflayer');
-            const [address, version, text] = process.argv.slice(2);
+            const [address, version, ...messages] = process.argv.slice(2);
             const [host, portString] = address.split(':');
             const port = parseInt(portString ?? '25565', 10);
             const bot = mineflayer.createBot({ host, port, username: '{{nameof(MineflayerClient)}}', version });
 
             bot.on('spawn', () => {
-                bot.chat(text);
+                const delay = 2000;
+                messages.forEach((msg, index) => {
+                    setTimeout(() => bot.chat(msg), (index + 1) * delay);
+                });
+
                 setTimeout(() => {
                     console.log('end');
                     bot.end();
-                }, 5000);
+                }, messages.length * delay + 5000);
             });
 
             bot.on('kicked', reason => console.error('KICK:' + reason));
@@ -66,9 +71,17 @@ public class MineflayerClient : IntegrationSideBase
         return new(nodePath, scriptPath);
     }
 
-    public async Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
+    public Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
     {
-        StartApplication(_nodePath, hasInput: false, _scriptPath, address, protocolVersion.MostRecentSupportedVersion, text);
+        return SendMessagesAsync(address, protocolVersion, [text], cancellationToken);
+    }
+
+    public async Task SendMessagesAsync(string address, ProtocolVersion protocolVersion, IEnumerable<string> messages, CancellationToken cancellationToken = default)
+    {
+        var arguments = new List<string> { _scriptPath, address, protocolVersion.MostRecentSupportedVersion };
+        arguments.AddRange(messages);
+
+        StartApplication(_nodePath, hasInput: false, [.. arguments]);
 
         var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
 
@@ -172,7 +185,7 @@ public class MineflayerClient : IntegrationSideBase
             npmCli = Path.Combine(nodeRoot, "node_modules", "npm", "bin", "npm-cli.js");
 
         await RunNpmAsync(npmCli, "init", "-y");
-        await RunNpmAsync(npmCli, "install", "mineflayer");
+        await RunNpmAsync(npmCli, "install", "mineflayer", "encoding");
 
         async Task RunNpmAsync(params string[] arguments)
         {
