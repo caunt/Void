@@ -26,11 +26,11 @@ public class PaperServer : IntegrationSideBase
         StartApplication(_binaryPath, hasInput: false, "-Dpaper.playerconnection.keepalive=120");
     }
 
-    public static async Task<PaperServer> CreateAsync(string workingDirectory, HttpClient client, int port = 25565, PaperPlugins plugins = PaperPlugins.All, CancellationToken cancellationToken = default)
+    public static async Task<PaperServer> CreateAsync(string workingDirectory, HttpClient client, string instanceName = nameof(PaperServer), string? version = null, int port = 25565, PaperPlugins plugins = PaperPlugins.All, CancellationToken cancellationToken = default)
     {
         var jreBinaryPath = await SetupJreAsync(workingDirectory, client, cancellationToken);
 
-        workingDirectory = Path.Combine(workingDirectory, "PaperServer");
+        workingDirectory = Path.Combine(workingDirectory, instanceName);
 
         if (!Directory.Exists(workingDirectory))
             Directory.CreateDirectory(workingDirectory);
@@ -38,16 +38,17 @@ public class PaperServer : IntegrationSideBase
         var versionsJson = await client.GetStringAsync("https://api.papermc.io/v2/projects/paper", cancellationToken);
         using var versions = JsonDocument.Parse(versionsJson);
         var latestVersion = versions.RootElement.GetProperty("versions").EnumerateArray().Last().GetString();
+        version ??= latestVersion;
 
-        var buildsJson = await client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}", cancellationToken);
+        var buildsJson = await client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{version}", cancellationToken);
         using var builds = JsonDocument.Parse(buildsJson);
         var latestBuild = builds.RootElement.GetProperty("builds").EnumerateArray().Last().GetInt32();
 
-        var buildInfoJson = await client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}/builds/{latestBuild}", cancellationToken);
+        var buildInfoJson = await client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{version}/builds/{latestBuild}", cancellationToken);
         using var buildInfo = JsonDocument.Parse(buildInfoJson);
         var jarName = buildInfo.RootElement.GetProperty("downloads").GetProperty("application").GetProperty("name").GetString();
 
-        var paperUrl = $"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}/builds/{latestBuild}/downloads/{jarName}";
+        var paperUrl = $"https://api.papermc.io/v2/projects/paper/versions/{version}/builds/{latestBuild}/downloads/{jarName}";
         var paperJarPath = Path.Combine(workingDirectory, "paper.jar");
 
         await client.DownloadFileAsync(paperUrl, paperJarPath, cancellationToken);
