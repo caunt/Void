@@ -87,6 +87,54 @@ public class MineflayerClient : IntegrationSideBase
         }
     }
 
+    public async Task SwitchServersAsync(string address, ProtocolVersion protocolVersion, string firstServer, string secondServer, CancellationToken cancellationToken = default)
+    {
+        var scriptDirectory = Path.GetDirectoryName(_scriptPath);
+
+        if (scriptDirectory is null)
+            throw new IntegrationTestException("Invalid script path");
+
+        var switchScriptPath = Path.Combine(scriptDirectory, "switch-servers.js");
+        await File.WriteAllTextAsync(switchScriptPath, $$"""
+            const mineflayer = require('mineflayer');
+            const [address, version, first, second] = process.argv.slice(2);
+            const [host, portString] = address.split(':');
+            const port = parseInt(portString ?? '25565', 10);
+            const bot = mineflayer.createBot({ host, port, username: '{{nameof(MineflayerClient)}}', version });
+            bot.on('spawn', () => {
+                setTimeout(() => bot.chat('/server ' + first), 2000);
+                setTimeout(() => bot.chat('/server ' + second), 12000);
+                setTimeout(() => {
+                    console.log('end');
+                    bot.end();
+                }, 20000);
+            });
+            bot.on('kicked', reason => console.error('KICK:' + reason));
+            bot.on('error', err => console.error('ERROR:' + err.message));
+            """, cancellationToken);
+
+        if (!OperatingSystem.IsWindows())
+            File.SetUnixFileMode(switchScriptPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+        StartApplication(_nodePath, hasInput: false, switchScriptPath, address, protocolVersion.MostRecentSupportedVersion, firstServer, secondServer);
+
+        var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
+
+        if (_process is not { HasExited: false })
+            throw new IntegrationTestException("Failed to start Mineflayer bot.");
+
+        try
+        {
+            await consoleTask;
+            await _process.ExitAsync(entireProcessTree: true, cancellationToken);
+        }
+        finally
+        {
+            if (_process is { HasExited: false })
+                await _process.ExitAsync(entireProcessTree: true, cancellationToken);
+        }
+    }
+
     private static bool HandleConsole(string line)
     {
         if (line.StartsWith("ERROR:"))
