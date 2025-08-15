@@ -87,6 +87,60 @@ public class MineflayerClient : IntegrationSideBase
         }
     }
 
+    public async Task SwitchServersAsync(string address, ProtocolVersion protocolVersion, string firstServer, string secondServer, string firstMessage, string secondMessage, string thirdMessage, CancellationToken cancellationToken = default)
+    {
+        var workingDirectory = Path.GetDirectoryName(_scriptPath) ?? throw new IntegrationTestException("Invalid script path");
+        var scriptPath = Path.Combine(workingDirectory, "switch.js");
+        await File.WriteAllTextAsync(scriptPath, $$"""
+            const mineflayer = require('mineflayer');
+            const [address, version, firstServer, secondServer, firstMessage, secondMessage, thirdMessage] = process.argv.slice(2);
+            const [host, portString] = address.split(':');
+            const port = parseInt(portString ?? '25565', 10);
+            const bot = mineflayer.createBot({ host, port, username: '{{nameof(MineflayerClient)}}', version });
+
+            bot.on('spawn', () => {
+                bot.chat(firstMessage);
+                setTimeout(() => {
+                    bot.chat(`/server ${secondServer}`);
+                    setTimeout(() => {
+                        bot.chat(secondMessage);
+                        setTimeout(() => {
+                            bot.chat(`/server ${firstServer}`);
+                            setTimeout(() => {
+                                bot.chat(thirdMessage);
+                                setTimeout(() => { console.log('end'); bot.end(); }, 5000);
+                            }, 5000);
+                        }, 1000);
+                    }, 5000);
+                }, 1000);
+            });
+
+            bot.on('kicked', reason => console.error('KICK:' + reason));
+            bot.on('error', err => console.error('ERROR:' + err.message));
+            """, cancellationToken);
+
+        if (!OperatingSystem.IsWindows())
+            File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+        StartApplication(_nodePath, hasInput: false, scriptPath, address, protocolVersion.MostRecentSupportedVersion, firstServer, secondServer, firstMessage, secondMessage, thirdMessage);
+
+        var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
+
+        if (_process is not { HasExited: false })
+            throw new IntegrationTestException("Failed to start Mineflayer bot.");
+
+        try
+        {
+            await consoleTask;
+            await _process.ExitAsync(entireProcessTree: true, cancellationToken);
+        }
+        finally
+        {
+            if (_process is { HasExited: false })
+                await _process.ExitAsync(entireProcessTree: true, cancellationToken);
+        }
+    }
+
     private static bool HandleConsole(string line)
     {
         if (line.StartsWith("ERROR:"))
