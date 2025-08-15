@@ -20,14 +20,16 @@ public class MineflayerClient : IntegrationSideBase
 {
     private readonly string _nodePath;
     private readonly string _scriptPath;
+    private readonly string _switchServersScriptPath;
 
     public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion
                 .Range(ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_8)];
 
-    private MineflayerClient(string nodePath, string scriptPath)
+    private MineflayerClient(string nodePath, string scriptPath, string switchServersScriptPath)
     {
         _nodePath = nodePath;
         _scriptPath = scriptPath;
+        _switchServersScriptPath = switchServersScriptPath;
     }
 
     public static async Task<MineflayerClient> CreateAsync(string workingDirectory, HttpClient client, CancellationToken cancellationToken = default)
@@ -60,15 +62,68 @@ public class MineflayerClient : IntegrationSideBase
             bot.on('error', err => console.error('ERROR:' + err.message));
             """, cancellationToken);
 
-        if (!OperatingSystem.IsWindows())
-            File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        var switchServersScriptPath = Path.Combine(workingDirectory, "switch.js");
+        await File.WriteAllTextAsync(switchServersScriptPath, $$"""
+            const mineflayer = require('mineflayer');
+            const [address, version, server2, server1, text1, text2, text3] = process.argv.slice(2);
+            const [host, portString] = address.split(':');
+            const port = parseInt(portString ?? '25565', 10);
+            const bot = mineflayer.createBot({ host, port, username: '{{nameof(MineflayerClient)}}', version });
 
-        return new(nodePath, scriptPath);
+            bot.on('spawn', () => {
+                bot.chat(text1);
+                setTimeout(() => {
+                    bot.chat(`/server ${server2}`);
+                    setTimeout(() => {
+                        bot.chat(text2);
+                        setTimeout(() => {
+                            bot.chat(`/server ${server1}`);
+                            setTimeout(() => {
+                                bot.chat(text3);
+                                setTimeout(() => { console.log('end'); bot.end(); }, 5000);
+                            }, 5000);
+                        }, 5000);
+                    }, 5000);
+                }, 5000);
+            });
+
+            bot.on('kicked', reason => console.error('KICK:' + reason));
+            bot.on('error', err => console.error('ERROR:' + err.message));
+            """, cancellationToken);
+
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+            File.SetUnixFileMode(switchServersScriptPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        }
+
+        return new(nodePath, scriptPath, switchServersScriptPath);
     }
 
     public async Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
     {
         StartApplication(_nodePath, hasInput: false, _scriptPath, address, protocolVersion.MostRecentSupportedVersion, text);
+
+        var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
+
+        if (_process is not { HasExited: false })
+            throw new IntegrationTestException("Failed to start Mineflayer bot.");
+
+        try
+        {
+            await consoleTask;
+            await _process.ExitAsync(entireProcessTree: true, cancellationToken);
+        }
+        finally
+        {
+            if (_process is { HasExited: false })
+                await _process.ExitAsync(entireProcessTree: true, cancellationToken);
+        }
+    }
+
+    public async Task SwitchServersAsync(string address, ProtocolVersion protocolVersion, string server1Name, string server2Name, string text1, string text2, string text3, CancellationToken cancellationToken = default)
+    {
+        StartApplication(_nodePath, hasInput: false, _switchServersScriptPath, address, protocolVersion.MostRecentSupportedVersion, server2Name, server1Name, text1, text2, text3);
 
         var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
 

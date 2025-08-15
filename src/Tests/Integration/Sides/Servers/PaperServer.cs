@@ -26,18 +26,23 @@ public class PaperServer : IntegrationSideBase
         StartApplication(_binaryPath, hasInput: false, "-Dpaper.playerconnection.keepalive=120");
     }
 
-    public static async Task<PaperServer> CreateAsync(string workingDirectory, HttpClient client, int port = 25565, PaperPlugins plugins = PaperPlugins.All, CancellationToken cancellationToken = default)
+    public static async Task<PaperServer> CreateAsync(string workingDirectory, HttpClient client, string instanceName = "PaperServer", int port = 25565, PaperPlugins plugins = PaperPlugins.All, string? version = null, CancellationToken cancellationToken = default)
     {
         var jreBinaryPath = await SetupJreAsync(workingDirectory, client, cancellationToken);
 
-        workingDirectory = Path.Combine(workingDirectory, "PaperServer");
+        workingDirectory = Path.Combine(workingDirectory, instanceName);
 
         if (!Directory.Exists(workingDirectory))
             Directory.CreateDirectory(workingDirectory);
 
-        var versionsJson = await client.GetStringAsync("https://api.papermc.io/v2/projects/paper", cancellationToken);
-        using var versions = JsonDocument.Parse(versionsJson);
-        var latestVersion = versions.RootElement.GetProperty("versions").EnumerateArray().Last().GetString();
+        var latestVersion = version;
+
+        if (string.IsNullOrWhiteSpace(latestVersion))
+        {
+            var versionsJson = await client.GetStringAsync("https://api.papermc.io/v2/projects/paper", cancellationToken);
+            using var versions = JsonDocument.Parse(versionsJson);
+            latestVersion = versions.RootElement.GetProperty("versions").EnumerateArray().Last().GetString();
+        }
 
         var buildsJson = await client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}", cancellationToken);
         using var builds = JsonDocument.Parse(buildsJson);
