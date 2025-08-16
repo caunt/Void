@@ -59,10 +59,17 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
         {
             using var cancellationTokenSource = new CancellationTokenSource(Timeout);
 
-            MineflayerClient = await MineflayerClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
-            PaperServer1 = await PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server1Port, instanceName: "server1", cancellationToken: cancellationTokenSource.Token);
-            PaperServer2 = await PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server2Port, instanceName: "server2", cancellationToken: cancellationTokenSource.Token);
-            VoidProxy = await VoidProxy.CreateAsync(new[] { $"localhost:{Server1Port}", $"localhost:{Server2Port}" }, proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
+            var mineflayerClientTask = MineflayerClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
+            var paperServer1Task = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server1Port, instanceName: "server1", cancellationToken: cancellationTokenSource.Token);
+            var paperServer2Task = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server2Port, instanceName: "server2", cancellationToken: cancellationTokenSource.Token);
+            var voidProxyTask = VoidProxy.CreateAsync(new[] { $"localhost:{Server1Port}", $"localhost:{Server2Port}" }, proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
+
+            await Task.WhenAll(mineflayerClientTask, paperServer1Task, paperServer2Task, voidProxyTask);
+
+            MineflayerClient = mineflayerClientTask.Result;
+            PaperServer1 = paperServer1Task.Result;
+            PaperServer2 = paperServer2Task.Result;
+            VoidProxy = voidProxyTask.Result;
         }
 
         public async Task DisposeAsync()
