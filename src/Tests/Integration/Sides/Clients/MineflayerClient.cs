@@ -49,9 +49,10 @@ public class MineflayerClient : IntegrationSideBase
             const port = parseInt(portString ?? '25565', 10);
             const bot = mineflayer.createBot({ host, port, username: '{{nameof(MineflayerClient)}}', version });
 
-            const waitForMessage = () => new Promise(resolve => {
+            const waitFor = (text) => new Promise(resolve => {
                 const timer = setTimeout(resolve, 1000);
-                bot.once('message', () => {
+                const eventName = text.startsWith('/') ? 'spawn' : 'message';
+                bot.once(eventName, () => {
                     clearTimeout(timer);
                     resolve();
                 });
@@ -60,7 +61,7 @@ public class MineflayerClient : IntegrationSideBase
             bot.on('spawn', async () => {
                 for (const text of texts) {
                     bot.chat(text);
-                    await waitForMessage();
+                    await waitFor(text);
                 }
 
                 console.log('end');
