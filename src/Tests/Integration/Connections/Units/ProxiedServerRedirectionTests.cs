@@ -38,7 +38,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
                 cancellationTokenSource.Token);
 
             Assert.Contains(fixture.VoidProxy.Logs, line => line.Contains("connected to args-server-2"));
-            Assert.True(fixture.VoidProxy.Logs.Count(line => line.Contains("connected to args-server-1")) >= 2);
+            Assert.True(fixture.VoidProxy.Logs.Count(line => line.Contains("connected to args-server-1")) is 2);
         }, fixture.MineflayerClient, fixture.VoidProxy, fixture.PaperServer1, fixture.PaperServer2);
     }
 
@@ -61,8 +61,6 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
             var paperServer1Task = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server1Port, instanceName: "server1", cancellationToken: cancellationTokenSource.Token);
             var paperServer2Task = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server2Port, instanceName: "server2", cancellationToken: cancellationTokenSource.Token);
             var voidProxyTask = VoidProxy.CreateAsync([$"localhost:{Server1Port}", $"localhost:{Server2Port}"], proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
-
-            await Task.WhenAll(mineflayerClientTask, paperServer1Task, paperServer2Task, voidProxyTask);
 
             MineflayerClient = await mineflayerClientTask;
             PaperServer1 = await paperServer1Task;
