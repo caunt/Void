@@ -49,18 +49,24 @@ public class MineflayerClient : IntegrationSideBase
             const port = parseInt(portString ?? '25565', 10);
             const bot = mineflayer.createBot({ host, port, username: '{{nameof(MineflayerClient)}}', version });
 
+            const waitForMessage = () => new Promise(resolve => {
+                const timer = setTimeout(resolve, 1000);
+                bot.once('message', () => {
+                    clearTimeout(timer);
+                    resolve();
+                });
+            });
+
             bot.on('spawn', async () => {
                 for (const text of texts) {
                     bot.chat(text);
-                    await new Promise(r => setTimeout(r, 2000));
+                    await waitForMessage();
                 }
 
-                setTimeout(() => {
-                    bot.end();
-                }, 5000);
+                console.log('end');
+                bot.end();
             });
 
-            bot.on('end', () => console.log('end'));
             bot.on('error', err => console.error('ERROR:' + err.message));
             """, cancellationToken);
 
