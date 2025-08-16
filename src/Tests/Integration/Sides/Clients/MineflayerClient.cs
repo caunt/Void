@@ -48,9 +48,10 @@ public class MineflayerClient : IntegrationSideBase
             const [host, portString] = address.split(':');
             const port = parseInt(portString ?? '25565', 10);
             const bot = mineflayer.createBot({ host, port, username: '{{nameof(MineflayerClient)}}', version });
+            const WAIT_FOR_TIMEOUT_MS = 16_000;
 
             const waitFor = (text) => new Promise(resolve => {
-                const timer = setTimeout(resolve, 1000);
+                const timer = setTimeout(resolve, WAIT_FOR_TIMEOUT_MS);
                 const eventName = text.startsWith('/') ? 'spawn' : 'message';
                 bot.once(eventName, () => {
                     clearTimeout(timer);
