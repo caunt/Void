@@ -59,7 +59,7 @@ public class MineflayerClient : IntegrationSideBase
                 });
             });
 
-            bot.on('spawn', async () => {
+            bot.once('spawn', async () => {
                 for (const text of texts) {
                     bot.chat(text);
                     await waitFor(text);
