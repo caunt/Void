@@ -29,7 +29,9 @@ public class VoidProxy : IIntegrationSide
     }
 
     public static Task<VoidProxy> CreateAsync(string targetServer, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
-        => CreateAsync(new[] { targetServer }, proxyPort, ignoreFileServers, offlineMode, cancellationToken);
+    {
+        return CreateAsync([targetServer], proxyPort, ignoreFileServers, offlineMode, cancellationToken);
+    }
 
     public static async Task<VoidProxy> CreateAsync(IEnumerable<string> targetServers, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
     {
