@@ -64,10 +64,10 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
 
             await Task.WhenAll(mineflayerClientTask, paperServer1Task, paperServer2Task, voidProxyTask);
 
-            MineflayerClient = mineflayerClientTask.Result;
-            PaperServer1 = paperServer1Task.Result;
-            PaperServer2 = paperServer2Task.Result;
-            VoidProxy = voidProxyTask.Result;
+            MineflayerClient = await mineflayerClientTask;
+            PaperServer1 = await paperServer1Task;
+            PaperServer2 = await paperServer2Task;
+            VoidProxy = await voidProxyTask;
         }
 
         public async Task DisposeAsync()
