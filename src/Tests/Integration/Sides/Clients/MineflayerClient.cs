@@ -79,14 +79,13 @@ public class MineflayerClient : IntegrationSideBase
     }
 
     public Task SendTextMessageAsync(string address, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
-        => SendTextMessagesAsync(address, protocolVersion, new[] { text }, cancellationToken);
+    {
+        return SendTextMessagesAsync(address, protocolVersion, [text], cancellationToken);
+    }
 
     public async Task SendTextMessagesAsync(string address, ProtocolVersion protocolVersion, IEnumerable<string> texts, CancellationToken cancellationToken = default)
     {
-        var args = new List<string> { _scriptPath, address, protocolVersion.MostRecentSupportedVersion };
-        args.AddRange(texts);
-
-        StartApplication(_nodePath, hasInput: false, args.ToArray());
+        StartApplication(_nodePath, hasInput: false, [_scriptPath, address, protocolVersion.MostRecentSupportedVersion, .. texts]);
 
         var consoleTask = ReceiveOutputAsync(HandleConsole, cancellationToken);
 

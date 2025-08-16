@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Network;
-using Void.Tests.Integration;
 using Void.Tests.Integration.Sides.Clients;
 using Void.Tests.Integration.Sides.Proxies;
 using Void.Tests.Integration.Sides.Servers;
@@ -30,13 +29,12 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
             await fixture.MineflayerClient.SendTextMessagesAsync(
                 $"localhost:{ProxyPort}",
                 ProtocolVersion.MINECRAFT_1_21_4,
-                new[]
-                {
+                [
                     server1First,
                     "/server args-server-2",
                     server2Text,
                     "/server args-server-1"
-                },
+                ],
                 cancellationTokenSource.Token);
 
             Assert.Contains(fixture.VoidProxy.Logs, line => line.Contains("connected to args-server-2"));
@@ -62,7 +60,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
             var mineflayerClientTask = MineflayerClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
             var paperServer1Task = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server1Port, instanceName: "server1", cancellationToken: cancellationTokenSource.Token);
             var paperServer2Task = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server2Port, instanceName: "server2", cancellationToken: cancellationTokenSource.Token);
-            var voidProxyTask = VoidProxy.CreateAsync(new[] { $"localhost:{Server1Port}", $"localhost:{Server2Port}" }, proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
+            var voidProxyTask = VoidProxy.CreateAsync([$"localhost:{Server1Port}", $"localhost:{Server2Port}"], proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
 
             await Task.WhenAll(mineflayerClientTask, paperServer1Task, paperServer2Task, voidProxyTask);
 
