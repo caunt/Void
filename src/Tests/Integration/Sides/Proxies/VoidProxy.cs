@@ -58,8 +58,17 @@ public class VoidProxy : IIntegrationSide
         var task = EntryPoint.RunAsync(logWriter: logWriter, cancellationToken: cancellationToken, args: [.. args]);
 
         // Wait for the proxy to start, because it takes some time to listen on the port
-        while (logWriter.Lines.All(line => !line.Contains("Proxy started")))
-            await Task.Delay(1_000, cancellationToken);
+
+        try
+        {
+            while (logWriter.Lines.All(line => !line.Contains("Proxy started")))
+                await Task.Delay(1_000, cancellationToken);
+        }
+        catch
+        {
+            Console.WriteLine(logWriter.Text);
+            throw;
+        }
 
         return new VoidProxy(logWriter, task, cancellationTokenSource);
     }
