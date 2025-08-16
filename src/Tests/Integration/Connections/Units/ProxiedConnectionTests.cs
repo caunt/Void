@@ -2,7 +2,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Network;
-using Void.Tests.Integration;
 using Void.Tests.Integration.Sides.Clients;
 using Void.Tests.Integration.Sides.Proxies;
 using Void.Tests.Integration.Sides.Servers;
@@ -10,7 +9,7 @@ using Xunit;
 
 namespace Void.Tests.Integration.Connections.Units;
 
-public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture fixture) : ConnectionUnitBase, IClassFixture<ProxiedConnectionTests.PaperVoidMccFixture>
+public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : ConnectionUnitBase, IClassFixture<ProxiedConnectionTests.Fixture>
 {
     private const int ProxyPort = 35000;
     private const int ServerPort = 35001;
@@ -78,9 +77,9 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.PaperVoidMccFixture f
         }, fixture.MineflayerClient, fixture.VoidProxy, fixture.PaperServer);
     }
 
-    public class PaperVoidMccFixture : ConnectionFixtureBase, IAsyncLifetime
+    public class Fixture : ConnectionFixtureBase, IAsyncLifetime
     {
-        public PaperVoidMccFixture() : base(nameof(ProxiedConnectionTests))
+        public Fixture() : base(nameof(ProxiedConnectionTests))
         {
         }
 
