@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Void.Proxy;
 using Void.Tests.Streams;
+using Xunit;
 
 public class VoidProxy : IIntegrationSide
 {
@@ -66,10 +67,9 @@ public class VoidProxy : IIntegrationSide
             while (logWriter.Lines.All(line => !line.Contains("Proxy started")))
                 await Task.Delay(1_000, cancellationToken);
         }
-        catch
+        catch (Exception exception)
         {
-            Console.WriteLine(logWriter.Text);
-            throw;
+            Assert.Fail($"{nameof(VoidProxy)} failed to start. Logs: {logWriter.Text}\n{exception}");
         }
 
         return new VoidProxy(logWriter, task, cancellationTokenSource);
