@@ -2,14 +2,13 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Network;
-using Void.Tests.Integration;
 using Void.Tests.Integration.Sides.Clients;
 using Void.Tests.Integration.Sides.Servers;
 using Xunit;
 
 namespace Void.Tests.Integration.Connections.Units;
 
-public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture) : ConnectionUnitBase, IClassFixture<DirectConnectionTests.PaperMccFixture>
+public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : ConnectionUnitBase, IClassFixture<DirectConnectionTests.Fixture>
 {
     private const int ServerPort = 25000;
     private const string ExpectedText = "hello void!";
@@ -76,9 +75,9 @@ public class DirectConnectionTests(DirectConnectionTests.PaperMccFixture fixture
         }, fixture.MineflayerClient, fixture.PaperServer);
     }
 
-    public class PaperMccFixture : ConnectionFixtureBase, IAsyncLifetime
+    public class Fixture : ConnectionFixtureBase, IAsyncLifetime
     {
-        public PaperMccFixture() : base(nameof(DirectConnectionTests))
+        public Fixture() : base(nameof(DirectConnectionTests))
         {
         }
 
