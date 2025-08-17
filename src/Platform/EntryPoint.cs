@@ -15,6 +15,7 @@ using Void.Proxy.Api.Crypto;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Logging;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
@@ -26,6 +27,7 @@ using Void.Proxy.Crypto;
 using Void.Proxy.Events;
 using Void.Proxy.Extensions;
 using Void.Proxy.Links;
+using Void.Proxy.Logging;
 using Void.Proxy.Players;
 using Void.Proxy.Plugins;
 using Void.Proxy.Plugins.Dependencies;
@@ -70,26 +72,20 @@ public static class EntryPoint
         if (options.WorkingDirectory.Equals(RunOptions.Default.WorkingDirectory, StringComparison.OrdinalIgnoreCase))
             Directory.SetCurrentDirectory(options.WorkingDirectory);
 
-        var logger = ConfigureLogging(options.LogWriter);
+        var loggingLevelSwitch = new LoggingLevelSwitch();
+        using var logger = ConfigureLogging(loggingLevelSwitch, options.LogWriter);
 
-        try
-        {
-            return await BuildCommandLine(cancellationToken)
-                .UseDefaults()
-                .UseHost(builder => SetupHost(builder, logger, options))
-                .Build()
-                .InvokeAsync(options.Arguments);
-        }
-        finally
-        {
-            logger.Dispose();
-        }
+        return await BuildCommandLine(cancellationToken)
+            .UseDefaults()
+            .UseHost(builder => SetupHost(builder, loggingLevelSwitch, logger, options))
+            .Build()
+            .InvokeAsync(options.Arguments);
 
-        static Logger ConfigureLogging(TextWriter? logWriter)
+        static Logger ConfigureLogging(LoggingLevelSwitch loggingLevelSwitch, TextWriter? logWriter)
         {
             var configuration = new LoggerConfiguration()
                 .Enrich.FromLogContext()
-                .MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch);
+                .MinimumLevel.ControlledBy(loggingLevelSwitch);
 
             const string template = "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}";
 
@@ -101,7 +97,7 @@ public static class EntryPoint
             return configuration.CreateLogger();
         }
 
-        static void SetupHost(IHostBuilder builder, Logger logger, RunOptions options)
+        static void SetupHost(IHostBuilder builder, LoggingLevelSwitch loggingLevelSwitch, Logger logger, RunOptions options)
         {
             builder
                 .UseServiceProviderFactory(new DryIocServiceProviderFactory(new Container(Rules.MicrosoftDependencyInjectionRules)))
@@ -111,7 +107,9 @@ public static class EntryPoint
                     .AddJsonOptions()
                     .AddHttpClient()
                     .AddSettings()
+                    .AddSingleton(loggingLevelSwitch)
                     .AddSingleton(new ConsoleConfiguration(options.LogWriter is null))
+                    .AddSingleton<ILogLevelSwitch, LogLevelSwitch>()
                     .AddSingleton<IRunOptions>(options)
                     .AddSingletonAndListen<ICryptoService, RsaCryptoService>()
                     .AddSingletonAndListen<IEventService, EventService>()
