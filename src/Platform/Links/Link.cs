@@ -74,6 +74,8 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
     public async ValueTask DisposeAsync()
     {
+        _stopReason ??= LinkStopReason.Requested;
+
         await DisposeClientboundAsync();
         await DisposeServerboundAsync();
 
@@ -155,7 +157,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             }
             catch (Exception exception) when (exception is StreamClosedException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
             {
-                _stopReason = direction switch
+                _stopReason ??= direction switch
                 {
                     Direction.Serverbound => LinkStopReason.PlayerDisconnected, // source (player) disconnected
                     Direction.Clientbound => LinkStopReason.ServerDisconnected, // source (server) disconnected
@@ -180,7 +182,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             }
             catch (Exception exception) when (exception is StreamClosedException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
             {
-                _stopReason = direction switch
+                _stopReason ??= direction switch
                 {
                     Direction.Serverbound => LinkStopReason.ServerDisconnected, // destination (server) disconnected
                     Direction.Clientbound => LinkStopReason.PlayerDisconnected, // destination (player) disconnected
