@@ -58,7 +58,6 @@ public class MineflayerClient : IntegrationSideBase
                     resolve();
                 }, WAIT_FOR_TIMEOUT_MS);
             
-                const eventName = text.startsWith('/') ? 'spawn' : 'message';
                 bot.once(eventName, () => {
                     clearTimeout(timer);
                     resolve();
