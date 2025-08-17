@@ -14,7 +14,10 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleRedirectConfi
 
     public void Setup()
     {
-        SystemConsole.SetOut(consoleRedirectConfiguration.TextWriter ?? _reader.TextWriter);
+        if (consoleRedirectConfiguration.TextWriter is not null)
+            return;
+
+        SystemConsole.SetOut(_reader.TextWriter);
 
         if (!IsEnabled)
             return;
@@ -25,7 +28,7 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleRedirectConfi
 
     public async ValueTask HandleCommandsAsync(CancellationToken cancellationToken = default)
     {
-        if (!IsEnabled)
+        if (consoleRedirectConfiguration.TextWriter is not null || !IsEnabled)
         {
             await Task.Delay(5_000, cancellationToken);
             return;

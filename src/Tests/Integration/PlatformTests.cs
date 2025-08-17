@@ -50,4 +50,25 @@ public class PlatformTests
         Assert.Contains(logs.Lines, line => line.Contains("Connection listener started"));
         Assert.Contains(logs.Lines, line => line.Contains("127.0.0.1"));
     }
+
+    [Fact]
+    public async Task EntryPoint_RunsConcurrently()
+    {
+        var logs1 = new CollectingTextWriter();
+        var logs2 = new CollectingTextWriter();
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var task1 = EntryPoint.RunAsync(logWriter: logs1, cancellationToken: cancellationTokenSource.Token, args: ["--port", "50002"]);
+        var task2 = EntryPoint.RunAsync(logWriter: logs2, cancellationToken: cancellationTokenSource.Token, args: ["--port", "50003"]);
+
+        var exitCodes = await Task.WhenAll(task1, task2);
+
+        Assert.Equal(0, exitCodes[0]);
+        Assert.Equal(0, exitCodes[1]);
+
+        Assert.Contains(logs1.Lines, line => line.Contains("Hosting started"));
+        Assert.Contains(logs1.Lines, line => line.Contains("Hosting stopped"));
+        Assert.Contains(logs2.Lines, line => line.Contains("Hosting started"));
+        Assert.Contains(logs2.Lines, line => line.Contains("Hosting stopped"));
+    }
 }
