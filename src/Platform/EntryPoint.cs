@@ -53,8 +53,6 @@ public static class EntryPoint
     private static async Task<int> Main(string[] args)
     {
         var options = new RunOptions { Arguments = args };
-        Directory.SetCurrentDirectory(options.WorkingDirectory);
-
         return await RunAsync(options);
     }
 
@@ -65,6 +63,9 @@ public static class EntryPoint
 
     public static async Task<int> RunAsync(RunOptions options, CancellationToken cancellationToken = default)
     {
+        if (options.WorkingDirectory.Equals(RunOptions.Default.WorkingDirectory, StringComparison.OrdinalIgnoreCase))
+            Directory.SetCurrentDirectory(options.WorkingDirectory);
+
         var logger = ConfigureLogging(options.LogWriter);
 
         try
