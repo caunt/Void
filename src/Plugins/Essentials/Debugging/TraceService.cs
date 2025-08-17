@@ -10,7 +10,7 @@ namespace Void.Proxy.Plugins.Essentials.Debugging;
 
 public class TraceService(ILogger<TraceService> logger) : IEventListener
 {
-    [Subscribe]
+    [Subscribe(PostOrder.First)]
     public void OnMessageReceived(MessageReceivedEvent @event)
     {
         switch (@event.Message)
@@ -30,7 +30,7 @@ public class TraceService(ILogger<TraceService> logger) : IEventListener
         }
     }
 
-    [Subscribe]
+    [Subscribe(PostOrder.First)]
     public void OnMessageSent(MessageSentEvent @event)
     {
         switch (@event.Message)
