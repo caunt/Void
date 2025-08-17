@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.Loader;
+using Void.Proxy.Api;
 using Void.Proxy.Api.Plugins.Dependencies;
 
 namespace Void.Proxy.Plugins.Dependencies.File;
@@ -8,7 +9,8 @@ public class FileDependencyResolver(AssemblyDependencyResolver resolver) : IFile
 {
     public static FileDependencyResolver Factory(IServiceProvider provider)
     {
-        return ActivatorUtilities.CreateInstance<FileDependencyResolver>(provider, new AssemblyDependencyResolver(Directory.GetCurrentDirectory()));
+        var runOptions = provider.GetRequiredService<IRunOptions>();
+        return ActivatorUtilities.CreateInstance<FileDependencyResolver>(provider, new AssemblyDependencyResolver(runOptions.WorkingDirectory));
     }
 
     public Assembly? Resolve(AssemblyLoadContext context, AssemblyName assemblyName)

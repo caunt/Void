@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Channels;
 using System.Timers;
+using Void.Proxy.Api;
 using Void.Proxy.Api.Configurations;
 using Void.Proxy.Api.Configurations.Attributes;
 using Void.Proxy.Api.Configurations.Exceptions;
@@ -15,10 +16,9 @@ using Timer = System.Timers.Timer;
 
 namespace Void.Proxy.Configurations;
 
-public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginService plugins) : BackgroundService, IConfigurationService, IEventListener
+public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginService plugins, IRunOptions runOptions) : BackgroundService, IConfigurationService, IEventListener
 {
-    private const string ConfigurationsPath = "configs";
-
+    private readonly string _configurationsPath = Path.Combine(runOptions.WorkingDirectory, "configs");
     private readonly ConfigurationTomlSerializer _serializer = new();
     private readonly ConcurrentDictionary<string, object> _configurations = [];
     private readonly ConcurrentDictionary<string, DateTime> _updatesCooldown = [];
@@ -101,7 +101,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         {
             Filter = "*.*",
             NotifyFilter = NotifyFilters.LastWrite,
-            Path = ConfigurationsPath,
+            Path = _configurationsPath,
             IncludeSubdirectories = true,
             EnableRaisingEvents = true
         };
@@ -223,9 +223,13 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         var pluginName = GetPluginNameFromConfiguration(configurationType);
         var fileNameBuilder = new StringBuilder();
 
-        if (!IsRoot(configurationType))
+        if (IsRootConfiguration(configurationType))
         {
-            fileNameBuilder.Append(ConfigurationsPath);
+            fileNameBuilder.Append(runOptions.WorkingDirectory);
+        }
+        else
+        {
+            fileNameBuilder.Append(_configurationsPath);
             fileNameBuilder.Append(Path.DirectorySeparatorChar);
 
             if (!string.IsNullOrWhiteSpace(pluginName))
@@ -257,7 +261,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         };
     }
 
-    private static bool IsRoot(Type configurationType)
+    private static bool IsRootConfiguration(Type configurationType)
     {
         return configurationType.GetCustomAttribute<RootConfigurationAttribute>() is not null;
     }
@@ -268,7 +272,12 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         return plugin?.Name;
     }
 
-    private void EnsureConfigurationsPathExists(string path = ConfigurationsPath)
+    private void EnsureConfigurationsPathExists()
+    {
+        EnsureConfigurationsPathExists(_configurationsPath);
+    }
+
+    private void EnsureConfigurationsPathExists(string path)
     {
         if (Directory.Exists(path))
             return;
