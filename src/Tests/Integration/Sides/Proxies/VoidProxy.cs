@@ -2,6 +2,7 @@ namespace Void.Tests.Integration.Sides.Proxies;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,13 +30,19 @@ public class VoidProxy : IIntegrationSide
         _cancellationTokenSource = cancellationTokenSource;
     }
 
-    public static Task<VoidProxy> CreateAsync(string targetServer, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
+    public static Task<VoidProxy> CreateAsync(string workingDirectory, string targetServer, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, string? instanceName = null, CancellationToken cancellationToken = default)
     {
-        return CreateAsync([targetServer], proxyPort, ignoreFileServers, offlineMode, cancellationToken);
+        return CreateAsync(workingDirectory, [targetServer], proxyPort, ignoreFileServers, offlineMode, instanceName, cancellationToken);
     }
 
-    public static async Task<VoidProxy> CreateAsync(IEnumerable<string> targetServers, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
+    public static async Task<VoidProxy> CreateAsync(string workingDirectory, IEnumerable<string> targetServers, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, string? instanceName = null, CancellationToken cancellationToken = default)
     {
+        instanceName ??= nameof(VoidProxy);
+        workingDirectory = Path.Combine(workingDirectory, instanceName);
+
+        if (!Directory.Exists(workingDirectory))
+            Directory.CreateDirectory(workingDirectory);
+
         var logWriter = new CollectingTextWriter();
         var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cancellationToken = cancellationTokenSource.Token;
@@ -58,7 +65,7 @@ public class VoidProxy : IIntegrationSide
         if (offlineMode)
             args.Add("--offline");
 
-        var task = EntryPoint.RunAsync(logWriter: logWriter, cancellationToken: cancellationToken, args: [.. args]);
+        var task = EntryPoint.RunAsync(logWriter: logWriter, cancellationToken: cancellationToken, workingDirectory: workingDirectory, args: [.. args]);
 
         // Wait for the proxy to start, because it takes some time to listen on the port
 

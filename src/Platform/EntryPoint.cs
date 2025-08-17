@@ -47,11 +47,19 @@ public static class EntryPoint
 
     private static async Task<int> Main(string[] args)
     {
-        return await RunAsync(logWriter: null, cancellationToken: default, [.. args]);
+        return await RunAsync(logWriter: null, cancellationToken: default, args: [.. args]);
     }
 
-    public static async Task<int> RunAsync(TextWriter? logWriter = null, CancellationToken cancellationToken = default, params string[] args)
+    public static async Task<int> RunAsync(TextWriter? logWriter = null, CancellationToken cancellationToken = default, string? workingDirectory = null, params string[] args)
     {
+        if (!string.IsNullOrWhiteSpace(workingDirectory))
+        {
+            if (!Directory.Exists(workingDirectory))
+                Directory.CreateDirectory(workingDirectory);
+
+            Directory.SetCurrentDirectory(workingDirectory);
+        }
+
         var logger = ConfigureLogging(logWriter);
 
         try
