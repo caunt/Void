@@ -30,7 +30,7 @@ public class TraceService(ILogger<TraceService> logger) : IEventListener
         }
     }
 
-    [Subscribe(PostOrder.First)]
+    [Subscribe(PostOrder.Last)]
     public void OnMessageSent(MessageSentEvent @event)
     {
         switch (@event.Message)
