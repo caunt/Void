@@ -69,7 +69,7 @@ public class VoidProxy : IIntegrationSide
         }
         catch (Exception exception)
         {
-            Assert.Fail($"{nameof(VoidProxy)} failed to start. Logs: {logWriter.Text}\n{exception}");
+            Assert.Fail($"{nameof(VoidProxy)} failed to start. Logs:\n{logWriter.Text}\n{exception}");
         }
 
         return new VoidProxy(logWriter, task, cancellationTokenSource);
