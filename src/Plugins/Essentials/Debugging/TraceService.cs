@@ -24,9 +24,10 @@ public class TraceService(ILogger<TraceService> logger) : IEventListener
             case IMinecraftPacket minecraftPacket:
                 logger.LogTrace("Received packet {Packet} from {Side} {PlayerOrServer}", minecraftPacket, @event.From, @event.From.FromLink(@event.Link));
                 return;
+            default:
+                logger.LogTrace("Received packet {Packet}", @event.Message);
+                break;
         }
-
-        logger.LogTrace("Received packet {Packet}", @event.Message);
     }
 
     [Subscribe]
@@ -43,8 +44,9 @@ public class TraceService(ILogger<TraceService> logger) : IEventListener
             case IMinecraftPacket minecraftPacket:
                 logger.LogTrace("Sent packet {Packet} to {Direction} {PlayerOrServer}", minecraftPacket, @event.To, @event.To.FromLink(@event.Link));
                 return;
+            default:
+                logger.LogTrace("Sent packet {Packet}", @event.Message);
+                break;
         }
-
-        logger.LogTrace("Sent packet {Packet}", @event.Message);
     }
 }
