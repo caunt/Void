@@ -145,6 +145,9 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
         if (@event.Reason is LinkStopReason.PlayerDisconnected)
             await events.ThrowAsync(new PlayerDisconnectedEvent(@event.Player), cancellationToken);
 
+        if (@event.Reason is not LinkStopReason.ServerDisconnected)
+            return;
+
         if (!@event.Link.PlayerChannel.IsAlive)
             return;
 
