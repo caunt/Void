@@ -18,7 +18,7 @@ public class ConnectionUnitBase
         }
         catch (Exception exception)
         {
-            throw new IntegrationTestException($"{string.Join("\n\n\n", sides.Select(side => $"{side} logs:\n{string.Join("\n", side.Logs)}"))}", exception);
+            throw new IntegrationTestException($"{exception}\nLogs:\n\n\n{string.Join("\n\n\n", sides.Select(side => $"{side} logs:\n{string.Join("\n", side.Logs)}"))}");
         }
         finally
         {
