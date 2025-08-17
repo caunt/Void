@@ -17,10 +17,17 @@ public class PlatformTests
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var exitCode = await EntryPoint.RunAsync(new EntryPoint.RunOptions { LogWriter = logs, WorkingDirectory = nameof(EntryPoint_RunsStopsSuccessfully) }, cancellationTokenSource.Token);
 
-        Assert.Equal(0, exitCode);
+        try
+        {
+            Assert.Equal(0, exitCode);
 
-        Assert.Contains(logs.Lines, line => line.Contains("Hosting started"));
-        Assert.Contains(logs.Lines, line => line.Contains("Hosting stopped"));
+            Assert.Contains(logs.Lines, line => line.Contains("Hosting started"));
+            Assert.Contains(logs.Lines, line => line.Contains("Hosting stopped"));
+        }
+        catch (Exception exception)
+        {
+            Assert.Fail($"{nameof(EntryPoint)} failed to run or stop successfully.\n{exception}\nLogs:\n{logs.Text}");
+        }
     }
 
     [Fact]
@@ -31,10 +38,17 @@ public class PlatformTests
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var exitCode = await EntryPoint.RunAsync(new EntryPoint.RunOptions { LogWriter = logs, Arguments = ["--port", "50000"], WorkingDirectory = nameof(EntryPoint_UsesPortOption) }, cancellationTokenSource.Token);
 
-        Assert.Equal(0, exitCode);
+        try
+        {
+            Assert.Equal(0, exitCode);
 
-        Assert.Contains(logs.Lines, line => line.Contains("Connection listener started"));
-        Assert.Contains(logs.Lines, line => line.Contains("50000"));
+            Assert.Contains(logs.Lines, line => line.Contains("Connection listener started"));
+            Assert.Contains(logs.Lines, line => line.Contains("50000"));
+        }
+        catch (Exception exception)
+        {
+            Assert.Fail($"{nameof(EntryPoint)} failed to run or stop successfully.\n{exception}\nLogs:\n{logs.Text}");
+        }
     }
 
     [Fact]
@@ -45,9 +59,16 @@ public class PlatformTests
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var exitCode = await EntryPoint.RunAsync(new EntryPoint.RunOptions { LogWriter = logs, Arguments = ["--interface", "127.0.0.1"], WorkingDirectory = nameof(EntryPoint_UsesInterfaceOption) }, cancellationTokenSource.Token);
 
-        Assert.Equal(0, exitCode);
+        try
+        {
+            Assert.Equal(0, exitCode);
 
-        Assert.Contains(logs.Lines, line => line.Contains("Connection listener started"));
-        Assert.Contains(logs.Lines, line => line.Contains("127.0.0.1"));
+            Assert.Contains(logs.Lines, line => line.Contains("Connection listener started"));
+            Assert.Contains(logs.Lines, line => line.Contains("127.0.0.1"));
+        }
+        catch (Exception exception)
+        {
+            Assert.Fail($"{nameof(EntryPoint)} failed to run or stop successfully.\n{exception}\nLogs:\n{logs.Text}");
+        }
     }
 }
