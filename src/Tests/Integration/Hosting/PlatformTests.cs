@@ -15,7 +15,7 @@ public class PlatformTests
         var logs = new CollectingTextWriter();
 
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await EntryPoint.RunAsync(new EntryPoint.RunOptions { LogWriter = logs }, cancellationTokenSource.Token);
+        var exitCode = await EntryPoint.RunAsync(new EntryPoint.RunOptions { LogWriter = logs, WorkingDirectory = nameof(EntryPoint_RunsStopsSuccessfully) }, cancellationTokenSource.Token);
 
         Assert.Equal(0, exitCode);
 
@@ -29,7 +29,7 @@ public class PlatformTests
         var logs = new CollectingTextWriter();
 
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await EntryPoint.RunAsync(new EntryPoint.RunOptions { LogWriter = logs, Arguments = ["--port", "50000"] }, cancellationTokenSource.Token);
+        var exitCode = await EntryPoint.RunAsync(new EntryPoint.RunOptions { LogWriter = logs, Arguments = ["--port", "50000"], WorkingDirectory = nameof(EntryPoint_UsesPortOption) }, cancellationTokenSource.Token);
 
         Assert.Equal(0, exitCode);
 
@@ -43,7 +43,7 @@ public class PlatformTests
         var logs = new CollectingTextWriter();
 
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await EntryPoint.RunAsync(new EntryPoint.RunOptions { LogWriter = logs, Arguments = ["--interface", "127.0.0.1"] }, cancellationTokenSource.Token);
+        var exitCode = await EntryPoint.RunAsync(new EntryPoint.RunOptions { LogWriter = logs, Arguments = ["--interface", "127.0.0.1"], WorkingDirectory = nameof(EntryPoint_UsesInterfaceOption) }, cancellationTokenSource.Token);
 
         Assert.Equal(0, exitCode);
 
