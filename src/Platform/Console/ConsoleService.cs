@@ -6,7 +6,7 @@ using SystemConsole = System.Console;
 
 namespace Void.Proxy.Console;
 
-public class ConsoleService(ILogger<ConsoleService> logger, ConsoleRedirectConfiguration consoleRedirectConfiguration, ICommandService commands) : IConsoleService
+public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration consoleRedirectConfiguration, ICommandService commands) : IConsoleService
 {
     public static bool IsEnabled => !SystemConsole.IsInputRedirected && !SystemConsole.IsOutputRedirected;
 
@@ -14,7 +14,7 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleRedirectConfi
 
     public void Setup()
     {
-        if (consoleRedirectConfiguration.TextWriter is not null)
+        if (!consoleRedirectConfiguration.HasTerminal)
             return;
 
         SystemConsole.SetOut(_reader.TextWriter);
@@ -28,7 +28,7 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleRedirectConfi
 
     public async ValueTask HandleCommandsAsync(CancellationToken cancellationToken = default)
     {
-        if (!IsEnabled)
+        if (!consoleRedirectConfiguration.HasTerminal || !IsEnabled)
         {
             await Task.Delay(5_000, cancellationToken);
             return;

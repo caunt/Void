@@ -39,28 +39,41 @@ namespace Void.Proxy;
 
 public static class EntryPoint
 {
-    static EntryPoint()
+    public record RunOptions : IRunOptions
     {
-        System.Console.Title = nameof(Void);
-        Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+        public static RunOptions Default { get; } = new();
+
+        public string WorkingDirectory { get; init; } = AppContext.BaseDirectory;
+        public string[] Arguments { get; init; } = [];
+        public TextWriter? LogWriter { get; init; } = null;
     }
+
+    static EntryPoint() => System.Console.Title = nameof(Void);
 
     private static async Task<int> Main(string[] args)
     {
-        return await RunAsync(logWriter: null, cancellationToken: default, [.. args]);
+        var options = new RunOptions { Arguments = args };
+        Directory.SetCurrentDirectory(options.WorkingDirectory);
+
+        return await RunAsync(options);
     }
 
-    public static async Task<int> RunAsync(TextWriter? logWriter = null, CancellationToken cancellationToken = default, params string[] args)
+    public static async Task<int> RunAsync(CancellationToken cancellationToken = default)
     {
-        var logger = ConfigureLogging(logWriter);
+        return await RunAsync(RunOptions.Default, cancellationToken);
+    }
+
+    public static async Task<int> RunAsync(RunOptions options, CancellationToken cancellationToken = default)
+    {
+        var logger = ConfigureLogging(options.LogWriter);
 
         try
         {
             return await BuildCommandLine(cancellationToken)
                 .UseDefaults()
-                .UseHost(builder => SetupHost(builder, logger, logWriter))
+                .UseHost(builder => SetupHost(builder, logger, options))
                 .Build()
-                .InvokeAsync(args);
+                .InvokeAsync(options.Arguments);
         }
         finally
         {
@@ -83,7 +96,7 @@ public static class EntryPoint
             return configuration.CreateLogger();
         }
 
-        static void SetupHost(IHostBuilder builder, Logger logger, TextWriter? logWriter)
+        static void SetupHost(IHostBuilder builder, Logger logger, RunOptions options)
         {
             builder
                 .UseServiceProviderFactory(new DryIocServiceProviderFactory(new Container(Rules.MicrosoftDependencyInjectionRules)))
@@ -93,7 +106,8 @@ public static class EntryPoint
                     .AddJsonOptions()
                     .AddHttpClient()
                     .AddSettings()
-                    .AddSingleton(new ConsoleRedirectConfiguration(logWriter))
+                    .AddSingleton(new ConsoleConfiguration(options.LogWriter is null))
+                    .AddSingleton<IRunOptions>(options)
                     .AddSingletonAndListen<ICryptoService, RsaCryptoService>()
                     .AddSingletonAndListen<IEventService, EventService>()
                     .AddSingletonAndListen<IPluginService, PluginService>()
