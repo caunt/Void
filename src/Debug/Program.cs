@@ -226,7 +226,7 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
 
     try
     {
-        await EntryPoint.RunAsync(cancellationToken: cancellationToken);
+        await EntryPoint.RunAsync(cancellationToken);
     }
     finally
     {

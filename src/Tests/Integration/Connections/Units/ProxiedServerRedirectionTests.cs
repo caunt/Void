@@ -58,9 +58,9 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
             using var cancellationTokenSource = new CancellationTokenSource(Timeout);
 
             var mineflayerClientTask = MineflayerClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
-            var paperServer1Task = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server1Port, instanceName: "server1", cancellationToken: cancellationTokenSource.Token);
-            var paperServer2Task = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server2Port, instanceName: "server2", cancellationToken: cancellationTokenSource.Token);
-            var voidProxyTask = VoidProxy.CreateAsync([$"localhost:{Server1Port}", $"localhost:{Server2Port}"], proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
+            var paperServer1Task = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server1Port, name: "server1", cancellationToken: cancellationTokenSource.Token);
+            var paperServer2Task = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server2Port, name: "server2", cancellationToken: cancellationTokenSource.Token);
+            var voidProxyTask = VoidProxy.CreateAsync(_workingDirectory, [$"localhost:{Server1Port}", $"localhost:{Server2Port}"], proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
 
             MineflayerClient = await mineflayerClientTask;
             PaperServer1 = await paperServer1Task;
