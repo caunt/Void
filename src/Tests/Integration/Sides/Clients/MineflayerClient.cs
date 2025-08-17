@@ -75,6 +75,7 @@ public class MineflayerClient : IntegrationSideBase
             });
 
             bot.on('error', err => console.error('ERROR: ' + err.message));
+            bot.on('kicked', reason => console.error('KICK: ' + reason));
             """, cancellationToken);
 
         if (!OperatingSystem.IsWindows())
@@ -111,7 +112,7 @@ public class MineflayerClient : IntegrationSideBase
 
     private static bool HandleConsole(string line)
     {
-        if (line.StartsWith("ERROR:"))
+        if (line.StartsWith("ERROR:") || line.StartsWith("KICK:"))
             throw new IntegrationTestException(line);
 
         if (line.Contains("end"))
