@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 using Void.Tests.Exceptions;
 using Void.Tests.Integration.Sides;
 
-namespace Void.Tests.Integration.Connections;
+namespace Void.Tests.Integration.Base;
 
-public class ConnectionUnitBase
+public class IntegrationUnitBase
 {
     public TimeSpan Timeout { get; } = TimeSpan.FromSeconds(60);
 

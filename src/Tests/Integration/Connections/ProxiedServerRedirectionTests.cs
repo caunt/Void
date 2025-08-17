@@ -3,14 +3,15 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Network;
+using Void.Tests.Integration.Base;
 using Void.Tests.Integration.Sides.Clients;
 using Void.Tests.Integration.Sides.Proxies;
 using Void.Tests.Integration.Sides.Servers;
 using Xunit;
 
-namespace Void.Tests.Integration.Connections.Units;
+namespace Void.Tests.Integration.Connections;
 
-public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture fixture) : ConnectionUnitBase, IClassFixture<ProxiedServerRedirectionTests.Fixture>
+public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture fixture) : IntegrationUnitBase, IClassFixture<ProxiedServerRedirectionTests.Fixture>
 {
     private const int ProxyPort = 36000;
     private const int Server1Port = 36001;
@@ -42,7 +43,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
         }, fixture.MineflayerClient, fixture.VoidProxy, fixture.PaperServer1, fixture.PaperServer2);
     }
 
-    public class Fixture : ConnectionFixtureBase, IAsyncLifetime
+    public class Fixture : IntegrationFixtureBase, IAsyncLifetime
     {
         public Fixture() : base(nameof(ProxiedServerRedirectionTests))
         {
