@@ -97,7 +97,7 @@ export default defineConfig({
                 tag: 'meta',
                 attrs: {
                     name: 'description',
-                    content: 'Void is a cross-platform Minecraft proxy supporting all versions and mods.'
+                    content: 'Void is a Minecraft Proxy for Modded Servers.'
                 }
             },
             {
