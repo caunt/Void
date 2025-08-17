@@ -3,6 +3,7 @@ namespace Void.Tests.Integration.Sides.Proxies;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Proxy;
@@ -14,6 +15,7 @@ public class VoidProxy : IIntegrationSide
     private readonly CollectingTextWriter _logWriter;
     private readonly Task _task;
     private readonly CancellationTokenSource _cancellationTokenSource;
+    private readonly string _previousDirectory;
 
     public IEnumerable<string> Logs => _logWriter.Lines;
 
@@ -22,23 +24,33 @@ public class VoidProxy : IIntegrationSide
         _logWriter.Clear();
     }
 
-    private VoidProxy(CollectingTextWriter logWriter, Task task, CancellationTokenSource cancellationTokenSource)
+    private VoidProxy(CollectingTextWriter logWriter, Task task, CancellationTokenSource cancellationTokenSource, string previousDirectory)
     {
         _logWriter = logWriter;
         _task = task;
         _cancellationTokenSource = cancellationTokenSource;
+        _previousDirectory = previousDirectory;
     }
 
-    public static Task<VoidProxy> CreateAsync(string targetServer, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
+    public static Task<VoidProxy> CreateAsync(string targetServer, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, string? instanceName = null, CancellationToken cancellationToken = default)
     {
-        return CreateAsync([targetServer], proxyPort, ignoreFileServers, offlineMode, cancellationToken);
+        return CreateAsync([targetServer], proxyPort, ignoreFileServers, offlineMode, instanceName, cancellationToken);
     }
 
-    public static async Task<VoidProxy> CreateAsync(IEnumerable<string> targetServers, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
+    public static async Task<VoidProxy> CreateAsync(IEnumerable<string> targetServers, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, string? instanceName = null, CancellationToken cancellationToken = default)
     {
         var logWriter = new CollectingTextWriter();
         var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cancellationToken = cancellationTokenSource.Token;
+
+        instanceName ??= nameof(VoidProxy);
+        var workingDirectory = Path.Combine(AppContext.BaseDirectory, instanceName);
+
+        if (!Directory.Exists(workingDirectory))
+            Directory.CreateDirectory(workingDirectory);
+
+        var previousDirectory = Directory.GetCurrentDirectory();
+        Directory.SetCurrentDirectory(workingDirectory);
 
         var args = new List<string>
         {
@@ -72,7 +84,7 @@ public class VoidProxy : IIntegrationSide
             Assert.Fail($"{nameof(VoidProxy)} failed to start. Logs:\n{logWriter.Text}\n{exception}");
         }
 
-        return new VoidProxy(logWriter, task, cancellationTokenSource);
+        return new VoidProxy(logWriter, task, cancellationTokenSource, previousDirectory);
     }
 
     public async ValueTask DisposeAsync()
@@ -81,5 +93,7 @@ public class VoidProxy : IIntegrationSide
 
         await _cancellationTokenSource.CancelAsync();
         await _task;
+
+        Directory.SetCurrentDirectory(_previousDirectory);
     }
 }
