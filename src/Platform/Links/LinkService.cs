@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 using Nito.AsyncEx;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
@@ -104,6 +105,11 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
         else
         {
             await link.StartAsync(cancellationToken);
+            await Task.Yield();
+
+            if (!link.IsAlive)
+                return ConnectionResult.NotConnected;
+
             logger.LogInformation("Player {Player} connected to {Server} ({ProtocolVersion})", unwrappedPlayer, link.Server, unwrappedPlayer.ProtocolVersion);
 
             return ConnectionResult.Connected;
