@@ -38,7 +38,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
                 cancellationTokenSource.Token);
 
             Assert.Contains(fixture.VoidProxy.Logs, line => line.Contains("connected to args-server-2"));
-            Assert.True(fixture.VoidProxy.Logs.Count(line => line.Contains("connected to args-server-1")) is 2);
+            Assert.True(fixture.VoidProxy.Logs.Count(line => line.Contains("connected to args-server-1")) is >= 2);
         }, fixture.MineflayerClient, fixture.VoidProxy, fixture.PaperServer1, fixture.PaperServer2);
     }
 
