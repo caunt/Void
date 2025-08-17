@@ -63,6 +63,10 @@ public static class EntryPoint
 
     public static async Task<int> RunAsync(RunOptions options, CancellationToken cancellationToken = default)
     {
+        // If you set custom working directory, you are responsible for everyone to follow it.
+        // We are using the default working directory for only normal runs.
+        // This was done to allow Tests to not conflict when running in parallel.
+
         if (options.WorkingDirectory.Equals(RunOptions.Default.WorkingDirectory, StringComparison.OrdinalIgnoreCase))
             Directory.SetCurrentDirectory(options.WorkingDirectory);
 
