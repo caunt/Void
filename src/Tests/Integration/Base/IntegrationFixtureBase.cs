@@ -1,18 +1,18 @@
-namespace Void.Tests.Integration.Connections;
+namespace Void.Tests.Integration.Base;
 
 using System;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 
-public abstract class ConnectionFixtureBase : IDisposable
+public abstract class IntegrationFixtureBase : IDisposable
 {
     protected readonly string _workingDirectory;
     protected readonly HttpClient _httpClient;
 
     public TimeSpan Timeout { get; } = TimeSpan.FromMinutes(10);
 
-    public ConnectionFixtureBase(string workingDirectory)
+    public IntegrationFixtureBase(string workingDirectory)
     {
         _httpClient = new();
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Void.Tests/1.0");

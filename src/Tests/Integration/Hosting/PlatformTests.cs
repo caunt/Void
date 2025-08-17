@@ -5,7 +5,7 @@ using Void.Proxy;
 using Void.Tests.Streams;
 using Xunit;
 
-namespace Void.Tests.Integration;
+namespace Void.Tests.Integration.Hosting;
 
 public class PlatformTests
 {
