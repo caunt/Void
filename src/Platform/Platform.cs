@@ -5,12 +5,11 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
-using Serilog.Core;
-using Serilog.Events;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Logging;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins;
@@ -20,6 +19,7 @@ namespace Void.Proxy;
 
 public class Platform(
     ILogger<Platform> logger,
+    ILogLevelSwitch logLevelSwitch,
     IRunOptions runOptions,
     IConsoleService console,
     IPluginService plugins,
@@ -29,8 +29,6 @@ public class Platform(
     IHostApplicationLifetime hostApplicationLifetime,
     InvocationContext context) : IProxy, IHostedService
 {
-    public static readonly LoggingLevelSwitch LoggingLevelSwitch = new();
-
     private static readonly Option<int> _portOption = new("--port", description: "Sets the listening port");
     private static readonly Option<string> _interfaceOption = new("--interface", description: "Sets the listening network interface");
     private static readonly Option<bool> _offlineOption = new("--offline", description: "Allows players to connect without Mojang authorization");
@@ -118,13 +116,13 @@ public class Platform(
         console.Setup();
 
 #if RELEASE
-        LoggingLevelSwitch.MinimumLevel = (LogEventLevel)settings.LogLevel;
+        logLevelSwitch.Level = settings.LogLevel;
 #else
-        LoggingLevelSwitch.MinimumLevel = LogEventLevel.Debug;
+        logLevelSwitch.Level = LogLevel.Debug;
 #endif
 
         if (context.ParseResult.HasOption(_loggingOption))
-            LoggingLevelSwitch.MinimumLevel = (LogEventLevel)context.ParseResult.GetValueForOption(_loggingOption);
+            logLevelSwitch.Level = context.ParseResult.GetValueForOption(_loggingOption);
 
         logger.LogInformation("Starting {Name} {Version} proxy", nameof(Void), $"v{GetType().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion}");
         var startTime = Stopwatch.GetTimestamp();
