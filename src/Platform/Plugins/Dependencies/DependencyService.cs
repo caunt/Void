@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using DryIoc;
+using Void.Proxy.Api;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Proxy;
@@ -14,15 +15,15 @@ using Void.Proxy.Utils;
 
 namespace Void.Proxy.Plugins.Dependencies;
 
-public class DependencyService(ILogger<DependencyService> logger, IContainer container) : IDependencyService
+public class DependencyService(ILogger<DependencyService> logger, IRunOptions runOptions, IContainer container) : IDependencyService
 {
     private readonly Dictionary<Assembly, IContainer> _assemblyContainers = [];
     private readonly Dictionary<Assembly, Dictionary<int, IContainer>> _assemblyPlayerContainers = [];
 
     [Subscribe]
-    public static async ValueTask OnProxyStopping(ProxyStoppingEvent _, CancellationToken cancellationToken)
+    public async ValueTask OnProxyStopping(ProxyStoppingEvent _, CancellationToken cancellationToken)
     {
-        await System.IO.File.WriteAllTextAsync("containers.dot", await DryIocTracker.ToGraphStringAsync(), cancellationToken);
+        await System.IO.File.WriteAllTextAsync(Path.Combine(runOptions.WorkingDirectory, "containers.dot"), await DryIocTracker.ToGraphStringAsync(), cancellationToken);
     }
 
     [Subscribe(PostOrder.First)]

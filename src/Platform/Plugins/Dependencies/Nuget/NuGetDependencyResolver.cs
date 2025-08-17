@@ -13,11 +13,12 @@ using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
+using Void.Proxy.Api;
 using Void.Proxy.Api.Plugins.Dependencies;
 
 namespace Void.Proxy.Plugins.Dependencies.Nuget;
 
-public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, InvocationContext context) : INuGetDependencyResolver
+public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IRunOptions runOptions, InvocationContext context) : INuGetDependencyResolver
 {
     private static readonly Option<string[]> _repositoriesOption = new(["--repository", "-r"], "Provides a URI to NuGet repository [--repository https://nuget.example.com/v3/index.json or --repository https://username:password@nuget.example.com/v3/index.json].");
     private static readonly string FrameworkName = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName
@@ -25,8 +26,8 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
     private static readonly SourceRepository DefaultRepository = Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
     private static readonly SourceCacheContext Cache = new();
-    private static readonly string PackagesPath = Path.Combine(Directory.GetCurrentDirectory(), SettingsUtility.DefaultGlobalPackagesFolderPath);
 
+    private readonly string PackagesPath = Path.Combine(runOptions.WorkingDirectory, SettingsUtility.DefaultGlobalPackagesFolderPath);
     private readonly NuGet.Common.ILogger _nugetLogger = new NuGetLogger(logger);
     private readonly HashSet<string> _repositories = [];
 

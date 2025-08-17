@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Nito.AsyncEx;
 using Nito.Disposables.Internals;
+using Void.Proxy.Api;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
@@ -14,7 +15,7 @@ using Void.Proxy.Plugins.Context;
 
 namespace Void.Proxy.Plugins;
 
-public class PluginService(ILogger<PluginService> logger, IEventService events, IDependencyService dependencies, InvocationContext context, HttpClient httpClient) : IPluginService
+public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions, IEventService events, IDependencyService dependencies, InvocationContext context, HttpClient httpClient) : IPluginService
 {
     private static readonly Option<string[]> _pluginsOption = new(["--plugin", "-p"], "Provides a path to the file, directory or URL to load plugin.");
 
@@ -50,6 +51,9 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
     {
         var plugins = await GetArgumentsPlugins().Concat(GetVariablesPlugins()).Select(async variable =>
         {
+            if (!Path.IsPathRooted(variable))
+                variable = Path.Combine(runOptions.WorkingDirectory, variable);
+
             if (File.Exists(variable))
             {
                 var name = Path.GetFileName(variable);
@@ -157,6 +161,9 @@ public class PluginService(ILogger<PluginService> logger, IEventService events, 
 
     public async ValueTask LoadDirectoryPluginsAsync(string path = "plugins", CancellationToken cancellationToken = default)
     {
+        if (!Path.IsPathRooted(path))
+            path = Path.Combine(runOptions.WorkingDirectory, path);
+
         var pluginsDirectoryInfo = new DirectoryInfo(path);
 
         if (!pluginsDirectoryInfo.Exists)

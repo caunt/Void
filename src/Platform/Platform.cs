@@ -20,6 +20,7 @@ namespace Void.Proxy;
 
 public class Platform(
     ILogger<Platform> logger,
+    IRunOptions runOptions,
     IConsoleService console,
     IPluginService plugins,
     IEventService events,
@@ -128,7 +129,7 @@ public class Platform(
         logger.LogInformation("Starting {Name} {Version} proxy", nameof(Void), $"v{GetType().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion}");
         var startTime = Stopwatch.GetTimestamp();
 
-        logger.LogTrace("Working directory is {Path}", Directory.GetCurrentDirectory());
+        logger.LogTrace("Working directory is {Path}", runOptions.WorkingDirectory);
 
         if (bool.TryParse(Environment.GetEnvironmentVariable("VOID_OFFLINE"), out var offlineVariable))
             settings.Offline = offlineVariable;
