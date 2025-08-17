@@ -6,6 +6,7 @@ using System.CommandLine.Parsing;
 using DryIoc;
 using DryIoc.Microsoft.DependencyInjection;
 using Serilog;
+using Serilog.Core;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Configurations;
@@ -32,6 +33,7 @@ using Void.Proxy.Plugins.Dependencies.Embedded;
 using Void.Proxy.Plugins.Dependencies.Extensions;
 using Void.Proxy.Plugins.Dependencies.File;
 using Void.Proxy.Plugins.Dependencies.Nuget;
+using Void.Proxy.Logging;
 using Void.Proxy.Servers;
 
 namespace Void.Proxy;
@@ -51,37 +53,34 @@ public static class EntryPoint
 
     public static async Task<int> RunAsync(TextWriter? logWriter = null, CancellationToken cancellationToken = default, params string[] args)
     {
-        ConfigureLogging();
+        using var logger = CreateLogger(logWriter);
 
-        try
-        {
-            return await BuildCommandLine(cancellationToken)
-                .UseDefaults()
-                .UseHost(builder => SetupHost(builder, logWriter))
-                .Build()
-                .InvokeAsync(args);
-        }
-        finally
-        {
-            Log.CloseAndFlush();
-        }
+        return await BuildCommandLine(cancellationToken)
+            .UseDefaults()
+            .UseHost(builder => SetupHost(builder, logger, logWriter))
+            .Build()
+            .InvokeAsync(args);
 
-        static void ConfigureLogging()
+        static Logger CreateLogger(TextWriter? logWriter)
         {
-            Log.Logger = new LoggerConfiguration()
+            var loggerConfiguration = new LoggerConfiguration()
                 .Enrich.FromLogContext()
                 .MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch)
-                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}")
-                .CreateLogger();
+                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}");
+
+            if (logWriter is not null)
+                loggerConfiguration = loggerConfiguration.WriteTo.Sink(new TextWriterSink(logWriter));
+
+            return loggerConfiguration.CreateLogger();
         }
 
-        static void SetupHost(IHostBuilder builder, TextWriter? logWriter)
+        static void SetupHost(IHostBuilder builder, Logger logger, TextWriter? logWriter)
         {
             builder
                 .UseServiceProviderFactory(new DryIocServiceProviderFactory(new Container(Rules.MicrosoftDependencyInjectionRules)))
                 .UseConsoleLifetime(options => options.SuppressStatusMessages = true)
                 .ConfigureServices(services => services
-                    .AddSerilog()
+                    .AddSerilog(logger, dispose: false)
                     .AddJsonOptions()
                     .AddHttpClient()
                     .AddSettings()

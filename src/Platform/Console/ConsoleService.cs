@@ -14,7 +14,8 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleRedirectConfi
 
     public void Setup()
     {
-        SystemConsole.SetOut(consoleRedirectConfiguration.TextWriter ?? _reader.TextWriter);
+        if (consoleRedirectConfiguration.TextWriter is null)
+            SystemConsole.SetOut(_reader.TextWriter);
 
         if (!IsEnabled)
             return;
