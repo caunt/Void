@@ -141,9 +141,16 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
     [Subscribe]
     public async ValueTask OnLinkStopped(LinkStoppedEvent @event, CancellationToken cancellationToken)
     {
-        // All other reasons should throw player disconnected event themselves
+        // Reconnect only if server disconnected unexpectedly
+
         if (@event.Reason is LinkStopReason.PlayerDisconnected)
+        {
             await events.ThrowAsync(new PlayerDisconnectedEvent(@event.Player), cancellationToken);
+            return;
+        }
+
+        if (@event.Reason is not LinkStopReason.ServerDisconnected and not LinkStopReason.InternalException)
+            return;
 
         if (!@event.Link.PlayerChannel.IsAlive)
             return;
