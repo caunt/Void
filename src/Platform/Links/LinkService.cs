@@ -125,9 +125,8 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
         // IServer channel is no longer needed
         @event.Link.ServerChannel.Close();
 
-        if (!@event.Link.PlayerChannel.IsAlive)
-            @event.Link.PlayerChannel.Close();
-        else if (!await @event.Player.IsProtocolSupportedAsync(cancellationToken))
+        if (@event.Reason is LinkStopReason.PlayerDisconnected ||
+            !await @event.Player.IsProtocolSupportedAsync(cancellationToken))
             @event.Link.PlayerChannel.Close();
 
         logger.LogTrace("Stopped forwarding {Link} traffic", @event.Link);
