@@ -43,7 +43,15 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
         var unwrappedPlayer = player.Unwrap();
 
         if (TryGetLink(unwrappedPlayer, out var link))
+        {
+            if (link.Server == server)
+            {
+                logger.LogTrace("Player {Player} is already connected to {Server}", unwrappedPlayer, server);
+                return ConnectionResult.Connected;
+            }
+
             await link.StopAsync(cancellationToken);
+        }
 
         logger.LogTrace("Connecting {Player} player to a {Server} server", unwrappedPlayer, server);
 
