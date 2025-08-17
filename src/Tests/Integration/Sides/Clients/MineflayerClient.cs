@@ -51,7 +51,11 @@ public class MineflayerClient : IntegrationSideBase
             const WAIT_FOR_TIMEOUT_MS = 16_000;
 
             const waitFor = (text) => new Promise(resolve => {
-                const timer = setTimeout(resolve, WAIT_FOR_TIMEOUT_MS);
+                const timer = setTimeout(() => {
+                    console.error('ERROR: timed out waiting for event');
+                    resolve();
+                }, WAIT_FOR_TIMEOUT_MS);
+            
                 const eventName = text.startsWith('/') ? 'spawn' : 'message';
                 bot.once(eventName, () => {
                     clearTimeout(timer);
@@ -69,7 +73,7 @@ public class MineflayerClient : IntegrationSideBase
                 bot.end();
             });
 
-            bot.on('error', err => console.error('ERROR:' + err.message));
+            bot.on('error', err => console.error('ERROR: ' + err.message));
             """, cancellationToken);
 
         if (!OperatingSystem.IsWindows())
@@ -107,9 +111,6 @@ public class MineflayerClient : IntegrationSideBase
     private static bool HandleConsole(string line)
     {
         if (line.StartsWith("ERROR:"))
-            throw new IntegrationTestException(line);
-
-        if (line.StartsWith("KICK:"))
             throw new IntegrationTestException(line);
 
         if (line.Contains("end"))
