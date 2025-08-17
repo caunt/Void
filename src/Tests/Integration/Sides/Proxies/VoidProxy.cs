@@ -2,7 +2,9 @@ namespace Void.Tests.Integration.Sides.Proxies;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Proxy;
@@ -29,13 +31,22 @@ public class VoidProxy : IIntegrationSide
         _cancellationTokenSource = cancellationTokenSource;
     }
 
-    public static Task<VoidProxy> CreateAsync(string targetServer, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
+    public static Task<VoidProxy> CreateAsync(string workingDirectory, string targetServer, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, string? instanceName = null, CancellationToken cancellationToken = default)
     {
-        return CreateAsync([targetServer], proxyPort, ignoreFileServers, offlineMode, cancellationToken);
+        return CreateAsync(workingDirectory, [targetServer], proxyPort, ignoreFileServers, offlineMode, instanceName, cancellationToken);
     }
 
-    public static async Task<VoidProxy> CreateAsync(IEnumerable<string> targetServers, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
+    public static async Task<VoidProxy> CreateAsync(string workingDirectory, IEnumerable<string> targetServers, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, string? instanceName = null, CancellationToken cancellationToken = default)
     {
+        instanceName ??= nameof(VoidProxy);
+        workingDirectory = Path.Combine(workingDirectory, instanceName);
+
+        if (!Directory.Exists(workingDirectory))
+            Directory.CreateDirectory(workingDirectory);
+
+        RuntimeHelpers.RunClassConstructor(typeof(EntryPoint).TypeHandle);
+        Directory.SetCurrentDirectory(workingDirectory);
+
         var logWriter = new CollectingTextWriter();
         var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cancellationToken = cancellationTokenSource.Token;
