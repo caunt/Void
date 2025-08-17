@@ -329,7 +329,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer con
                     }
 
                     return null;
-                });
+                }, setup: Setup.With(preventDisposal: true));
             }));
 
         container.Track("App Root Container");
