@@ -57,6 +57,7 @@
 		<PackageReference Include="Samboy063.Tomlet" Version="6.1.0" />
 		<PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
 		<PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+		<PackageReference Include="Serilog.Sinks.TextWriter" Version="3.0.0" />
 		<PackageReference Include="System.CommandLine.Hosting" Version="0.4.0-alpha.22272.1" />
 		<PackageReference Include="ZLinq" Version="1.5.2" />
 	</ItemGroup>
