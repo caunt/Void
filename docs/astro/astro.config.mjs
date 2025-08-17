@@ -69,7 +69,7 @@ export default defineConfig({
                 tag: 'meta',
                 attrs: {
                     property: 'og:image',
-                    content: '/logo-text-horizontal.1024x512.dark.png'
+                    content: 'https://void.caunt.world/logo-text-horizontal.1024x512.dark.png'
                 }
             },
             {
@@ -83,7 +83,7 @@ export default defineConfig({
                 tag: 'meta',
                 attrs: {
                     property: 'twitter:image',
-                    content: '/logo-text-horizontal.1024x512.dark.png'
+                    content: 'https://void.caunt.world/logo-text-horizontal.1024x512.dark.png'
                 }
             },
             {
@@ -145,13 +145,6 @@ export default defineConfig({
             {
                 tag: 'meta',
                 attrs: {
-                    property: 'og:url',
-                    content: 'https://void.caunt.world'
-                }
-            },
-            {
-                tag: 'meta',
-                attrs: {
                     property: 'og:site_name',
                     content: 'Void Proxy'
                 }
@@ -162,10 +155,6 @@ export default defineConfig({
                     property: 'og:type',
                     content: 'website'
                 }
-            },
-            {
-                tag: 'link',
-                attrs: { rel: 'canonical', href: 'https://void.caunt.world' }
             },
             {
                 tag: 'link',
