@@ -51,7 +51,7 @@ public static class EntryPoint
 
     public static async Task<int> RunAsync(TextWriter? logWriter = null, CancellationToken cancellationToken = default, params string[] args)
     {
-        ConfigureLogging();
+        ConfigureLogging(logWriter);
 
         try
         {
@@ -66,13 +66,22 @@ public static class EntryPoint
             Log.CloseAndFlush();
         }
 
-        static void ConfigureLogging()
+        static void ConfigureLogging(TextWriter? logWriter)
         {
-            Log.Logger = new LoggerConfiguration()
+            var configuration = new LoggerConfiguration()
                 .Enrich.FromLogContext()
-                .MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch)
-                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}")
-                .CreateLogger();
+                .MinimumLevel.ControlledBy(Platform.LoggingLevelSwitch);
+
+            if (logWriter is not null)
+            {
+                configuration = configuration.WriteTo.TextWriter(logWriter, outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}");
+            }
+            else
+            {
+                configuration = configuration.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}");
+            }
+
+            Log.Logger = configuration.CreateLogger();
         }
 
         static void SetupHost(IHostBuilder builder, TextWriter? logWriter)
