@@ -45,7 +45,11 @@ public static class EntryPoint
     {
         public static RunOptions Default { get; } = new();
 
-        public string WorkingDirectory { get; init; } = AppContext.BaseDirectory;
+        public string WorkingDirectory
+        {
+            get;
+            init => field = Path.EndsInDirectorySeparator(field) ? field : field + Path.DirectorySeparatorChar;
+        } = AppContext.BaseDirectory;
         public string[] Arguments { get; init; } = [];
         public TextWriter? LogWriter { get; init; } = null;
     }
