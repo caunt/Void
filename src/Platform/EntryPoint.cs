@@ -89,7 +89,7 @@ public static class EntryPoint
                 .UseServiceProviderFactory(new DryIocServiceProviderFactory(new Container(Rules.MicrosoftDependencyInjectionRules)))
                 .UseConsoleLifetime(options => options.SuppressStatusMessages = true)
                 .ConfigureServices(services => services
-                    .AddLogging(logging => logging.AddSerilog(logger, dispose: false))
+                    .AddSerilog(logger, dispose: false)
                     .AddJsonOptions()
                     .AddHttpClient()
                     .AddSettings()
