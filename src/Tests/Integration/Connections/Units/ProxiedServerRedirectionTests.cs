@@ -48,10 +48,15 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
         {
         }
 
-        public MineflayerClient MineflayerClient { get => field ?? throw new InvalidOperationException($"{nameof(MineflayerClient)} is not initialized."); set; }
-        public PaperServer PaperServer1 { get => field ?? throw new InvalidOperationException($"{nameof(PaperServer1)} is not initialized."); set; }
-        public PaperServer PaperServer2 { get => field ?? throw new InvalidOperationException($"{nameof(PaperServer2)} is not initialized."); set; }
-        public VoidProxy VoidProxy { get => field ?? throw new InvalidOperationException($"{nameof(VoidProxy)} is not initialized."); set; }
+        private MineflayerClient? _mineflayerClient;
+        private PaperServer? _paperServer1;
+        private PaperServer? _paperServer2;
+        private VoidProxy? _voidProxy;
+
+        public MineflayerClient MineflayerClient => _mineflayerClient ?? throw new InvalidOperationException($"{nameof(MineflayerClient)} is not initialized.");
+        public PaperServer PaperServer1 => _paperServer1 ?? throw new InvalidOperationException($"{nameof(PaperServer1)} is not initialized.");
+        public PaperServer PaperServer2 => _paperServer2 ?? throw new InvalidOperationException($"{nameof(PaperServer2)} is not initialized.");
+        public VoidProxy VoidProxy => _voidProxy ?? throw new InvalidOperationException($"{nameof(VoidProxy)} is not initialized.");
 
         public async Task InitializeAsync()
         {
@@ -62,25 +67,25 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
             var paperServer2Task = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server2Port, instanceName: "server2", cancellationToken: cancellationTokenSource.Token);
             var voidProxyTask = VoidProxy.CreateAsync([$"localhost:{Server1Port}", $"localhost:{Server2Port}"], proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
 
-            MineflayerClient = await mineflayerClientTask;
-            PaperServer1 = await paperServer1Task;
-            PaperServer2 = await paperServer2Task;
-            VoidProxy = await voidProxyTask;
+            _mineflayerClient = await mineflayerClientTask;
+            _paperServer1 = await paperServer1Task;
+            _paperServer2 = await paperServer2Task;
+            _voidProxy = await voidProxyTask;
         }
 
         public async Task DisposeAsync()
         {
-            if (MineflayerClient is not null)
-                await MineflayerClient.DisposeAsync();
+            if (_mineflayerClient is not null)
+                await _mineflayerClient.DisposeAsync();
 
-            if (PaperServer1 is not null)
-                await PaperServer1.DisposeAsync();
+            if (_paperServer1 is not null)
+                await _paperServer1.DisposeAsync();
 
-            if (PaperServer2 is not null)
-                await PaperServer2.DisposeAsync();
+            if (_paperServer2 is not null)
+                await _paperServer2.DisposeAsync();
 
-            if (VoidProxy is not null)
-                await VoidProxy.DisposeAsync();
+            if (_voidProxy is not null)
+                await _voidProxy.DisposeAsync();
         }
     }
 }
