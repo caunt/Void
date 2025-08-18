@@ -51,17 +51,24 @@ public class MineflayerClient : IntegrationSideBase
             const WAIT_FOR_TIMEOUT_MS = 16_000;
 
             const waitFor = (text) => new Promise(resolve => {
-                const eventName = text.startsWith('/') ? 'respawn' : 'message';
+                const events = text.startsWith('/') ? ['spawn', 'respawn'] : ['message'];
 
                 const timer = setTimeout(() => {
-                    console.error('ERROR: timed out waiting for event', eventName, 'with text', text);
+                    console.error('ERROR: timed out waiting for events', events.join(' or '), 'with text', text);
                     resolve();
                 }, WAIT_FOR_TIMEOUT_MS);
-            
-                bot.once(eventName, () => {
+
+                const listener = () => {
                     clearTimeout(timer);
+
+                    for (const event of events)
+                        bot.off(event, listener);
+
                     resolve();
-                });
+                };
+
+                for (const event of events)
+                    bot.on(event, listener);
             });
 
             bot.once('spawn', async () => {
