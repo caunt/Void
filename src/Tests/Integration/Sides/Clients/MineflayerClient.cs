@@ -54,7 +54,7 @@ public class MineflayerClient : IntegrationSideBase
                 const events = text.startsWith('/') ? ['spawn', 'respawn'] : ['message'];
 
                 const timer = setTimeout(() => {
-                    console.error(`[${new Date().toLocaleTimeString()}] ERROR: timed out waiting for events`, events.join(' or '), 'with text', text);
+                    console.error(`ERROR: [${new Date().toLocaleTimeString()}] timed out waiting for events`, events.join(' or '), 'with text', text);
                     resolve();
                 }, WAIT_FOR_TIMEOUT_MS);
 
@@ -63,7 +63,8 @@ public class MineflayerClient : IntegrationSideBase
 
                     for (const event of events)
                         bot.off(event, listener);
-
+            
+                    console.error(`[${new Date().toLocaleTimeString()}] resolve`);
                     resolve();
                 };
 
