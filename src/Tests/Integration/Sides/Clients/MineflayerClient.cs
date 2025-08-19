@@ -79,7 +79,6 @@ public class MineflayerClient : IntegrationSideBase
                         bot.once('respawn', () => console.log(`[${new Date().toLocaleTimeString()}] respawned`));
                     }
 
-                    await new Promise(resolve => setTimeout(resolve, WAIT_FOR_TIMEOUT_MS));
                     bot.chat(text);
                     console.log(`[${new Date().toLocaleTimeString()}] sent:`, text);
                     await waitFor(text);
