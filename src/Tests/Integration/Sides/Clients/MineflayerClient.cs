@@ -58,8 +58,9 @@ public class MineflayerClient : IntegrationSideBase
                     resolve();
                 }, WAIT_FOR_TIMEOUT_MS);
 
-                bot.once(event, () => {
+                bot.once(event, async () => {
                     clearTimeout(timer);
+                    if (event === 'login') await new Promise(r => setTimeout(r, 10 * 1000));
                     resolve();
                 });
             });
