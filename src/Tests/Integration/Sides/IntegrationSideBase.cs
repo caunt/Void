@@ -19,6 +19,7 @@ namespace Void.Tests.Integration.Sides;
 public abstract class IntegrationSideBase : IIntegrationSide
 {
     private const int MaxGitHubReleasesToConsider = 3;
+    private const int MaxGitHubReleaseRetries = 5;
 
     private static readonly AsyncLock _lock = new();
     private static readonly GitHubClient _gitHubClient = new(new ProductHeaderValue($"{nameof(Void)}.{nameof(Tests)}"));
@@ -300,17 +301,29 @@ public abstract class IntegrationSideBase : IIntegrationSide
             StartPage = 1
         };
 
-        var releases = await _gitHubClient.Repository.Release.GetAll(ownerName, repositoryName, options);
-        var asset = releases
-            .OrderByDescending(release => release.CreatedAt)
-            .SelectMany(release => release.Assets)
-            .FirstOrDefault(asset => assetFilter(asset.Name))
-            ??
-            throw new IntegrationTestException(
-                $"No suitable asset found in the latest {MaxGitHubReleasesToConsider} releases of {ownerName}/{repositoryName}.\n" +
-                $"Available assets: {string.Join(", ", releases.SelectMany(release => release.Assets).Select(asset => asset.Name))}");
+        var retries = MaxGitHubReleaseRetries;
 
-        return asset.BrowserDownloadUrl;
+        while (--retries > 0)
+        {
+            using var disposable = await _lock.LockAsync(cancellationToken);
+
+            var releases = await _gitHubClient.Repository.Release.GetAll(ownerName, repositoryName, options);
+
+            if (releases.Count is 0)
+                throw new IntegrationTestException($"No releases found for {ownerName}/{repositoryName}.");
+
+            var asset = releases
+                .OrderByDescending(release => release.CreatedAt)
+                .SelectMany(release => release.Assets)
+                .FirstOrDefault(asset => assetFilter(asset.Name));
+
+            if (asset is null)
+                continue;
+
+            return asset.BrowserDownloadUrl;
+        }
+
+        throw new IntegrationTestException($"Failed to fetch releases for {ownerName}/{repositoryName} after {MaxGitHubReleaseRetries} attempts.");
     }
 
     private void OnDataReceived(object? sender, DataReceivedEventArgs eventArgs)
