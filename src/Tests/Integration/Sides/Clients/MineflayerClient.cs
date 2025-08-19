@@ -73,10 +73,13 @@ public class MineflayerClient : IntegrationSideBase
 
             bot.once('spawn', async () => {
                 for (const text of texts) {
-                    if (text.startsWith('/'))
-                        bot.once('spawn', () => console.log('Spawned'));
+                    if (text.startsWith('/')) {
+                        bot.once('spawn', () => console.log('spawned'));
+                        bot.once('respawn', () => console.log('respawned'));
+                    }
 
                     bot.chat(text);
+                    console.log('sent:', text);
                     await waitFor(text);
                 }
 
