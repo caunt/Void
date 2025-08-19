@@ -51,40 +51,26 @@ public class MineflayerClient : IntegrationSideBase
             const WAIT_FOR_TIMEOUT_MS = 16 * 1000;
 
             const waitFor = (text) => new Promise(resolve => {
-                const events = text.startsWith('/') ? ['spawn', 'respawn', 'health', 'message'] : ['message'];
+                const event = text.startsWith('/') ? 'login' : 'messagestr';
 
                 const timer = setTimeout(() => {
-                    console.error(`ERROR: [${new Date().toLocaleTimeString()}] timed out waiting for events`, events.join(' or '), 'with text', text);
+                    console.error(`ERROR: timed out waiting for event`, event, 'with text', text);
                     resolve();
                 }, WAIT_FOR_TIMEOUT_MS);
 
-                const listener = () => {
+                bot.once(event, () => {
                     clearTimeout(timer);
-
-                    for (const event of events)
-                        bot.off(event, listener);
-            
-                    console.error(`[${new Date().toLocaleTimeString()}] resolve`);
                     resolve();
-                };
-
-                for (const event of events)
-                    bot.on(event, listener);
+                });
             });
 
             bot.once('spawn', async () => {
                 for (const text of texts) {
-                    if (text.startsWith('/')) {
-                        bot.once('spawn', () => console.log(`[${new Date().toLocaleTimeString()}] spawned`));
-                        bot.once('respawn', () => console.log(`[${new Date().toLocaleTimeString()}] respawned`));
-                    }
-
                     bot.chat(text);
-                    console.log(`[${new Date().toLocaleTimeString()}] sent:`, text);
                     await waitFor(text);
                 }
 
-                console.log('end');
+                console.log('END');
                 bot.end();
             });
 
@@ -126,10 +112,13 @@ public class MineflayerClient : IntegrationSideBase
 
     private static bool HandleConsole(string line)
     {
-        if (line.StartsWith("ERROR:") || line.StartsWith("KICK:"))
+        if (line.StartsWith("ERROR:"))
             throw new IntegrationTestException(line);
 
-        if (line.Contains("end"))
+        if (line.StartsWith("KICK:"))
+            throw new IntegrationTestException(line);
+
+        if (line.Contains("END"))
             return true;
 
         return false;
