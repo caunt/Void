@@ -51,7 +51,7 @@ public class MineflayerClient : IntegrationSideBase
             const WAIT_FOR_TIMEOUT_MS = 16 * 1000;
 
             const waitFor = (text) => new Promise(resolve => {
-                const events = text.startsWith('/') ? ['spawn', 'respawn'] : ['message'];
+                const events = text.startsWith('/') ? ['spawn', 'respawn', 'health'] : ['message'];
 
                 const timer = setTimeout(() => {
                     console.error(`ERROR: [${new Date().toLocaleTimeString()}] timed out waiting for events`, events.join(' or '), 'with text', text);
