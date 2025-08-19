@@ -81,7 +81,7 @@ public class MineflayerClient : IntegrationSideBase
                 bot.end();
             });
 
-            bot.on('error', err => console.error('ERROR: ' + err.message));
+            bot.on('error', err => console.error('ERROR: ' + JSON.stringify(err.message)));
             bot.on('kicked', reason => console.error('KICK: ' + reason));
             """, cancellationToken);
 
