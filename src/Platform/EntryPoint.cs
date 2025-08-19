@@ -48,7 +48,7 @@ public static class EntryPoint
         public string WorkingDirectory
         {
             get;
-            init => field = Path.EndsInDirectorySeparator(field) ? field : field + Path.DirectorySeparatorChar;
+            init => field = Path.EndsInDirectorySeparator(value) ? value : value + Path.DirectorySeparatorChar;
         } = AppContext.BaseDirectory;
         public string[] Arguments { get; init; } = [];
         public TextWriter? LogWriter { get; init; } = null;
