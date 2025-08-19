@@ -81,8 +81,8 @@ public class MineflayerClient : IntegrationSideBase
                 bot.end();
             });
 
-            bot.on('error', err => console.error('ERROR: ' + JSON.stringify(err.message)));
-            bot.on('kicked', reason => console.error('KICK: ' + reason));
+            bot.on('error', err => console.error('ERROR: ' + err.message));
+            bot.on('kicked', reason => console.error('KICK: ' + JSON.stringify(reason)));
             """, cancellationToken);
 
         if (!OperatingSystem.IsWindows())
