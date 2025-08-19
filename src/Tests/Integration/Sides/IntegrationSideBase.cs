@@ -13,7 +13,6 @@ using Nito.AsyncEx;
 using Octokit;
 using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
-using Xunit;
 
 namespace Void.Tests.Integration.Sides;
 
@@ -302,13 +301,14 @@ public abstract class IntegrationSideBase : IIntegrationSide
         };
 
         var releases = await _gitHubClient.Repository.Release.GetAll(ownerName, repositoryName, options);
-
         var asset = releases
             .OrderByDescending(release => release.CreatedAt)
             .SelectMany(release => release.Assets)
-            .FirstOrDefault(asset => assetFilter(asset.Name));
-
-        Assert.NotNull(asset);
+            .FirstOrDefault(asset => assetFilter(asset.Name))
+            ??
+            throw new IntegrationTestException(
+                $"No suitable asset found in the latest {MaxGitHubReleasesToConsider} releases of {ownerName}/{repositoryName}.\n" +
+                $"Available assets: {string.Join(", ", releases.SelectMany(release => release.Assets).Select(asset => asset.Name))}");
 
         return asset.BrowserDownloadUrl;
     }
