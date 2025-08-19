@@ -49,7 +49,7 @@ public class VoidProxy : IIntegrationSide
         var args = new List<string>
         {
             "--port", proxyPort.ToString(),
-            "--logging", "Debug"
+            "--logging", "Trace"
         };
 
         foreach (var targetServer in targetServers)
