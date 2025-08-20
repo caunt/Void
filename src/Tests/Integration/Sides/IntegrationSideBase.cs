@@ -71,7 +71,8 @@ public abstract class IntegrationSideBase : IIntegrationSide
             UseShellExecute = false
         };
 
-        processStartInfo.Environment["DEBUG"] = "minecraft-protocol";
+        foreach (System.Collections.DictionaryEntry variable in Environment.GetEnvironmentVariables())
+            processStartInfo.Environment[(string)variable.Key] = (string?)variable.Value;
 
         foreach (var protocol in new[] { "http", "https" })
         {
