@@ -51,9 +51,25 @@ public class MineflayerClient : IntegrationSideBase
               host,
               port,
               username: '{{nameof(MineflayerClient)}}',
-              version,
-              physicsEnabled: false // physics has a bug that sends position packet in configuration phase, when such phase requested by server from previous play phase
+              version
             });
+
+            const suppressedPackets = new Set([
+              'position',
+              'look',
+              'position_look',
+              'flying'
+            ]);
+
+            // physics has a bug that sends position packet in configuration phase, when such phase requested by server from previous play phase
+            const originalWrite = bot._client.write.bind(bot._client);
+            bot._client.write = (packetName, packetPayload) => {
+              if (suppressedPackets.has(packetName))
+                return;
+
+              return originalWrite(packetName, packetPayload);
+            };
+
             const eventNamesToLog = [
               'chat',
               'whisper',
