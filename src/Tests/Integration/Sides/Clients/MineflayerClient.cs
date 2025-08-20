@@ -47,7 +47,13 @@ public class MineflayerClient : IntegrationSideBase
             const [address, version, ...texts] = process.argv.slice(2);
             const [host, portString] = address.split(':');
             const port = parseInt(portString ?? '25565', 10);
-            const bot = mineflayer.createBot({ host, port, username: '{{nameof(MineflayerClient)}}', version });
+            const bot = mineflayer.createBot({
+              host,
+              port,
+              username: '{{nameof(MineflayerClient)}}',
+              version,
+              physicsEnabled: false // physics has a bug that sends position packet in configuration phase, when such phase requested by server from previous play phase
+            });
             const eventNamesToLog = [
               'chat',
               'whisper',
