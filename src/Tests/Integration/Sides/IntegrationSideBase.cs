@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Tar;
@@ -71,7 +72,8 @@ public abstract class IntegrationSideBase : IIntegrationSide
             UseShellExecute = false
         };
 
-        processStartInfo.Environment["DEBUG"] = "minecraft-protocol";
+        foreach (DictionaryEntry variable in Environment.GetEnvironmentVariables())
+            processStartInfo.Environment[(string)variable.Key] = (string)variable.Value;
 
         foreach (var protocol in new[] { "http", "https" })
         {
