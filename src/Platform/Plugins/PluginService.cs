@@ -326,7 +326,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
 
         do
         {
-            GC.Collect();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
             GC.WaitForPendingFinalizers();
 
             if (!container.IsAlive)
