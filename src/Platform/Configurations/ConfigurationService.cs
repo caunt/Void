@@ -32,7 +32,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
         lock (this)
         {
-            for (var i = _configurations.Count - 1; i > 0; i--)
+            for (var i = _configurations.Count - 1; i >= 0; i--)
             {
                 var (key, configuration) = _configurations.ElementAt(i);
                 var configurationType = configuration.GetType();
