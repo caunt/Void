@@ -70,6 +70,8 @@ public abstract class IntegrationSideBase : IIntegrationSide
             UseShellExecute = false
         };
 
+        processStartInfo.Environment["DEBUG"] = "minecraft-protocol";
+
         foreach (var protocol in new[] { "http", "https" })
         {
             var name = $"{protocol}_proxy";
