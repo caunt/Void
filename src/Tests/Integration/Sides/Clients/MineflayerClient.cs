@@ -188,7 +188,6 @@ public class MineflayerClient : IntegrationSideBase
 
                 bot.once(event, async () => {
                     clearTimeout(timer);
-                    if (event === 'playerJoined') await new Promise(r => setTimeout(r, 10 * 1000));
                     resolve();
                 });
             });
