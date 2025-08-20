@@ -23,7 +23,7 @@ public class MineflayerClient : IntegrationSideBase
     private readonly string _scriptPath;
 
     public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion
-                .Range(ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_8)];
+                .Range(ProtocolVersion.MINECRAFT_1_21_6, ProtocolVersion.MINECRAFT_1_8)];
 
     private MineflayerClient(string nodePath, string scriptPath)
     {

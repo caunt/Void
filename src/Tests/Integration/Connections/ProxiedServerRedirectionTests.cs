@@ -29,7 +29,34 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
         {
             await fixture.MineflayerClient.SendTextMessagesAsync(
                 $"localhost:{ProxyPort}",
-                ProtocolVersion.MINECRAFT_1_21_4,
+                ProtocolVersion.MINECRAFT_1_21_6,
+                [
+                    server1First,
+                    "/server args-server-2",
+                    server2Text,
+                    "/server args-server-1"
+                ],
+                cancellationTokenSource.Token);
+
+            Assert.Contains(fixture.VoidProxy.Logs, line => line.Contains("connected to args-server-2"));
+            Assert.True(fixture.VoidProxy.Logs.Count(line => line.Contains("connected to args-server-1")) is >= 2); // TODO: sometimes, proxy prints multiple times "connected to" message
+        }, fixture.MineflayerClient, fixture.VoidProxy, fixture.PaperServer1, fixture.PaperServer2);
+    }
+
+    [ProxiedTheory]
+    [MemberData(nameof(MineflayerClient.SupportedVersions), MemberType = typeof(MineflayerClient))]
+    public async Task MineflayerMovesBetweenPaperServersThroughProxy_WithProtocolVersion(ProtocolVersion protocolVersion)
+    {
+        var server1First = $"server1-{Guid.NewGuid()}";
+        var server2Text = $"server2-{Guid.NewGuid()}";
+
+        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
+
+        await LoggedExecutorAsync(async () =>
+        {
+            await fixture.MineflayerClient.SendTextMessagesAsync(
+                $"localhost:{ProxyPort}",
+                protocolVersion,
                 [
                     server1First,
                     "/server args-server-2",
