@@ -157,7 +157,7 @@ public class MineflayerClient : IntegrationSideBase
             const WAIT_FOR_TIMEOUT_MS = 16 * 1000;
 
             const waitFor = (text) => new Promise(resolve => {
-                const event = text.startsWith('/') ? 'login' : 'messagestr';
+                const event = text.startsWith('/') ? 'playerJoined' : 'messagestr';
 
                 const timer = setTimeout(() => {
                     console.error(`ERROR: timed out waiting for event`, event, 'with text', text);
@@ -166,7 +166,7 @@ public class MineflayerClient : IntegrationSideBase
 
                 bot.once(event, async () => {
                     clearTimeout(timer);
-                    if (event === 'login') await new Promise(r => setTimeout(r, 10 * 1000));
+                    if (event === 'playerJoined') await new Promise(r => setTimeout(r, 10 * 1000));
                     resolve();
                 });
             });
