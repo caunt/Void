@@ -107,7 +107,7 @@ public class MinecraftPacketIdRegistry : IMinecraftPacketIdRegistry
     {
         packet = null;
 
-        var decodeMethod = type.GetMethod(nameof(IMinecraftPacket<IMinecraftPacket>.Decode));
+        var decodeMethod = type.GetMethod(nameof(IMinecraftPacket<>.Decode));
 
         if (decodeMethod is null)
             return false;
