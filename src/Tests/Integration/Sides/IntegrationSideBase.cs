@@ -305,8 +305,6 @@ public abstract class IntegrationSideBase : IIntegrationSide
 
         while (--retries > 0)
         {
-            using var disposable = await _lock.LockAsync(cancellationToken);
-
             var releases = await _gitHubClient.Repository.Release.GetAll(ownerName, repositoryName, options);
 
             if (releases.Count is 0)
