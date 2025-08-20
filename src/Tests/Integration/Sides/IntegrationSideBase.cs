@@ -20,6 +20,7 @@ public abstract class IntegrationSideBase : IIntegrationSide
 {
     private const int MaxGitHubReleasesToConsider = 3;
     private const int MaxGitHubReleaseRetries = 5;
+    private const int GitHubReleaseRetryDelaySeconds = 20;
 
     private static readonly AsyncLock _lock = new();
     private static readonly GitHubClient _gitHubClient = new(new ProductHeaderValue($"{nameof(Void)}.{nameof(Tests)}"));
@@ -318,7 +319,10 @@ public abstract class IntegrationSideBase : IIntegrationSide
                 .FirstOrDefault(asset => assetFilter(asset.Name));
 
             if (asset is null)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(GitHubReleaseRetryDelaySeconds), cancellationToken);
                 continue;
+            }
 
             return asset.BrowserDownloadUrl;
         }
