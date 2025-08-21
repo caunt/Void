@@ -10,7 +10,7 @@ import { getCollection } from 'astro:content';
 
 export const releases = await getCollection('releases');
 export const workflows = await getCollection('workflows');
-export const builds = workflows.find(entry => entry.data.path.includes('main')).data;
+export const builds = workflows.find(entry => entry.data.path.endsWith('main.yaml')).data;
 export const platforms = [
     { "id": "windows",      "title": "Windows",         "pattern": "-win-",          "icon": "seti:windows" },
     { "id": "linux",        "title": "Linux",           "pattern": "-linux-",        "icon": "linux"        },
