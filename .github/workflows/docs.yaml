@@ -4,6 +4,12 @@ on:
       dotnet-version:
         type: string
         required: true
+  workflow_dispatch:
+    inputs:
+      dotnet-version:
+        description: "Full version of .NET SDK"
+        required: true
+        type: string
 
 jobs:
   push:
