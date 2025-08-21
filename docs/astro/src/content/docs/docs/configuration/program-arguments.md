@@ -15,18 +15,16 @@ Description:
   Runs the proxy
 
 Usage:
-  void-win-x64 [options]
+  void-linux-x64 [options]
 
 Options:
-  -r, --repository <repository>                                    Provides a URI to NuGet repository [--repository
-                                                                   https://nuget.example.com/v3/index.json or --repository
-                                                                   https://username:password@nuget.example.com/v3/index.json].
+  -r, --repository <repository>                                    Provides a URI to NuGet repository [--repository https://nuget.example.com/v3/index.json or --repository https://username:password@nuget.example.com/v3/index.json].
   -p, --plugin <plugin>                                            Provides a path to the file, directory or URL to load plugin.
   --ignore-file-servers                                            Ignore servers specified in configuration files
   --server <server>                                                Registers an additional server in format <host>:<port>
   --interface <interface>                                          Sets the listening network interface
   --port <port>                                                    Sets the listening port
-  --offline                                                        Allows players to connect without Mojang authentication
+  --offline                                                        Allows players to connect without Mojang authorization
   --logging <Critical|Debug|Error|Information|None|Trace|Warning>  Sets the logging level
   --version                                                        Show version information
   -?, -h, --help                                                   Show help and usage information
