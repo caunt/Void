@@ -47,7 +47,7 @@ jobs:
       - name: Install DocFX nightly (GitHub Packages)
         shell: pwsh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_READ_PACKAGES }}
         run: |
           echo $env:GITHUB_TOKEN | gh auth login --with-token
           gh auth refresh -h github.com -s read:packages
