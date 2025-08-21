@@ -49,7 +49,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh auth login --with-token <<< "$env:GITHUB_TOKEN"
+          echo $env:GITHUB_TOKEN | gh auth login --with-token
           gh auth refresh -h github.com -s read:packages
 
           $latestDocfxVersion = gh api /orgs/dotnet/packages/nuget/docfx/versions --jq '.[0].name'
