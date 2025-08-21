@@ -74,15 +74,14 @@ Secret = "YourSecretKeyHere"
 Plugins are compiled with the *.dll extension in any .NET compatible language.
 See the [**Plugin Development Kit**](/docs/developing-plugins/development-kit) section for more details.
 
-- Directory `plugins` is the default location for plugins.
-- [**Environment variable**](/docs/configuration/environment-variables) `VOID_PLUGINS` might be used to include URLs or Local Paths to plugins, separated by comma or semicolon.
-- [**Program argument**](/docs/configuration/program-arguments) `--plugin` (short `-p`) might be used to include URL or Local Path to plugin.
+- Directory `plugins` is the default location to install plugins.
+- [**Environment variable**](/docs/configuration/environment-variables/#plugins) `VOID_PLUGINS` might be used to add URLs or Local Paths to run plugins, separated by comma or semicolon.
+- [**Program argument**](/docs/configuration/program-arguments#plugins) `--plugin` (alias `-p`) might be used to add URL or Local Path to a plugin.
 
-Examples:
-```bash
+```bash title="Program Argument Example"
 $ ./void-linux-x64 --plugin "/home/YourPlugin1.dll" --plugin "https://example.org/download/YourPlugin2.dll"
 ```
-```bash
+```bash title="Environment Variable Example"
 $ VOID_PLUGINS="https://example.org/download/YourPlugin1.dll;/home/YourPlugin2.dll" ./void-linux-x64
 ```
 
