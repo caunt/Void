@@ -5,17 +5,17 @@ sidebar:
   order: 1
 ---
 
-Here's a quick look at what the Void proxy already supports and what's planned for the future.
+import { Badge } from '@astrojs/starlight/components';
 
-## Minecraft
+**A quick look on what the Void proxy already supports and what's is in development.**
 
-#### Terms
-- **Proxying** lets you play through the proxy.
-- **Redirects** move players between servers.
-- **API** exposes the Services API to plugins (Chat, [**Commands**](/docs/developing-plugins/commands), [**Events**](/docs/developing-plugins/events/listening-to-events), Content, [**Packets**](/docs/developing-plugins/network/packets)).
-- **WIP** marks a feature still under development.
+## Terms
+<Badge text="Proxying" variant="tip" /> - lets you play through the proxy.  
+<Badge text="Redirects" variant="tip" /> - move players between servers.  
+<Badge text="API" variant="tip" /> - exposes the Services API to plugins (Chat, [**Commands**](/docs/developing-plugins/commands), [**Events**](/docs/developing-plugins/events/listening-to-events), Content, [**Packets**](/docs/developing-plugins/network/packets)).  
+<Badge text="WIP" variant="tip" /> - marks a feature still under development.
 
-### Game Versions
+## Game Versions
 | Game Version         | Proxying | Redirects | API      | WIP      |
 | :------------------- | :------: | :------:  | :------: | :------: |
 | Java 1.7.2 - 1.21.8  | &#x2705; | &#x2705;  | &#x2705; | &#x2705; |
@@ -28,7 +28,7 @@ Here's a quick look at what the Void proxy already supports and what's planned f
 | Pocket Edition       | &#x274C; | &#x274C;  | &#x274C; | &#x274C; |
 | Pocket Edition Alpha | &#x274C; | &#x274C;  | &#x274C; | &#x274C; |
 
-### Forwardings
+## Forwardings
 | Forwarding                                                  | Supported | WIP      |
 | :---------------------------------------------------------- | :------:  | :------: |
 | [**None (Offline)**](/docs/forwardings/forwarding-overview)      | &#x2705;  | &#x2705; |
@@ -43,7 +43,7 @@ The server securely shares its private key so the proxy can expose an API to plu
 Without the key you can still play, but plugin features are limited.
 :::
 
-### Mod Loaders
+## Mod Loaders
 | Type       | Proxying | Redirects | WIP      |
 | :--------- | :------: | :------:  | :------: |
 | NeoForge   | &#x2705; | &#x274C;  | &#x2705; |
@@ -51,8 +51,3 @@ Without the key you can still play, but plugin features are limited.
 | Fabric     | &#x2705; | &#x274C;  | &#x274C; |
 | Quilt      | &#x2705; | &#x274C;  | &#x274C; |
 | LiteLoader | &#x2705; | &#x274C;  | &#x274C; |
-
-## Other Games
-Currently, Minecraft is the only game supported by the Void proxy.
-We are planning to add support for other games in the future.
-However, they might already work but are limited to the TCP protocol.
