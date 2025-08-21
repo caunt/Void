@@ -180,6 +180,10 @@ public abstract class IntegrationSideBase : IIntegrationSide
         {
             await taskCompletionSource.Task;
         }
+        catch (Exception exception)
+        {
+            throw new IntegrationTestException($"{exception}\nCannot find expected text. Logs:\n{string.Join("\n", Logs)}");
+        }
         finally
         {
             _process.OutputDataReceived -= OnDataReceived;
