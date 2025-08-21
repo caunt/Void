@@ -42,8 +42,22 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
-      - name: Setup DocFX
-        run: dotnet tool update -g docfx
+      # - name: Setup DocFX
+      #   run: dotnet tool update -g docfx
+      - name: Install DocFX nightly (GitHub Packages)
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh auth login --with-token <<< "$env:GITHUB_TOKEN"
+          gh auth refresh -h github.com -s read:packages
+
+          $latestDocfxVersion = gh api /orgs/dotnet/packages/nuget/docfx/versions --jq '.[0].name'
+          $docfxDownloadUrl = "https://nuget.pkg.github.com/dotnet/download/docfx/$latestDocfxVersion/$latestDocfxVersion.nupkg"
+          $docfxLocalPackageFile = "docfx.$latestDocfxVersion.nupkg"
+
+          Invoke-RestMethod -Uri $docfxDownloadUrl -OutFile $docfxLocalPackageFile -Headers @{ Authorization = "Bearer $env:GITHUB_TOKEN" }
+          dotnet tool update -g docfx --prerelease --source ./
       - name: Build with DocFX
         run: docfx docs/docfx/docfx.json --verbose
         continue-on-error: true
