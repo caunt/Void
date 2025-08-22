@@ -39,7 +39,7 @@ public async ValueTask OnPlayerConnected(PlayerConnectedEvent @event, Cancellati
 ```
 
 ## Listening to events
-For your managed services include `IEventListener` interface on your service class.
+For your managed services, include the `IEventListener` interface on your service class.
 ```csharp
 public class MySingletonService : IEventListener
 {
@@ -62,7 +62,7 @@ public class MyScopedService(IPlayerContext context, ILogger logger) : IEventLis
     [Subscribe]
     public void OnPlayerConnected(PlayerConnectedEvent @event)
     {
-        // Code here will be executed only when @event.Player and context.Player are same player.
+        // Code here will be executed only when @event.Player and context.Player are the same player.
         logger.LogInformation("Player {Player} is in its own context? {Result}", @event.Player.Name, @event.Player == context.Player);
     }
 
