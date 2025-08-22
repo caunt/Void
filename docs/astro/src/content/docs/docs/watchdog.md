@@ -7,7 +7,7 @@ The Watchdog feature in Void is designed to monitor the health of the Void Proxy
 This is particularly useful for long-running processes or when running Void in a [**production environment**](/docs/containers/).
 
 ## Enable Watchdog
-Watchdog is disabled by default. To enable it, you need to set the `Enabled` setting in the [**configuration file**](/docs/configuration/in-file#watchdog) to `true`, or [**environment variable**](/docs/configuration/in-file/#watchdog) `VOID_WATCHDOG_ENABLE` to `true`.
+Watchdog is disabled by default. To enable it, you need to set the `Enabled` setting in the [**configuration file**](/docs/configuration/in-file#watchdog) to `true`, or [**environment variable**](/docs/configuration/in-file#watchdog) `VOID_WATCHDOG_ENABLE` to `true`.
 
 ## Health Check
 `/health` endpoint is used to check the health of the Void Proxy.
