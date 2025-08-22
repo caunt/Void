@@ -126,7 +126,7 @@ class MyService(ICommandService commands)
 
         if (!context.TryGetArgument<int>("index", out var slot))
         {
-            // If slot argument is not provided, we will use random one
+            // If the slot argument is not provided, we will use a random one
             slot = Random.Shared.Next(0, 9);
         }
 
