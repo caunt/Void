@@ -259,3 +259,16 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
         };
     }
 }
+
+
+record VanillaPaperServer(ProtocolVersion ProtocolVersion, int Port) : IDockerMinecraftServer
+{
+    public string ItzgType => "PAPER";
+}
+
+interface IDockerMinecraftServer
+{
+    public ProtocolVersion ProtocolVersion { get; }
+    public int Port { get; }
+    public string ItzgType { get; }
+}
