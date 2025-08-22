@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-Program arguments make configuration in terminal easier.
+Program arguments make configuration in the terminal easier.
 
 ## Help
 Provides a list of all available program arguments.
