@@ -16,11 +16,18 @@ if (args.Length is 1 && int.TryParse(args[0], out var value))
     count = value;
 
 Console.WriteLine(@$"Starting {count} minecraft container(s)");
-await StartDockerEnvironmentAsync(version, count);
+await StartDockerEnvironmentAsync(version, count, arguments:
+    [
+        "--ignore-file-servers",
+        "--port", "25565",
+        "--server", "127.0.0.1:25566",
+        "--server", "127.0.0.1:25567",
+        "--server", "127.0.0.1:25568"
+    ]);
 
 return;
 
-async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count = 3, string type = "PAPER", CancellationToken cancellationToken = default)
+async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count = 3, string type = "PAPER", string[]? arguments = null, CancellationToken cancellationToken = default)
 {
     var imageName = "itzg/minecraft-server";
     var imageTag = version switch
@@ -226,7 +233,7 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
 
     try
     {
-        await EntryPoint.RunAsync(cancellationToken);
+        await EntryPoint.RunAsync(new EntryPoint.RunOptions { Arguments = arguments ?? [] }, cancellationToken);
     }
     finally
     {
