@@ -5,7 +5,7 @@ sidebar:
   order: 0
 ---
 
-[**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) is a core of Void networking system.
+[**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) is the core of the Void networking system.
 They define a connection between the player and server.
 
 ## Lifetime
@@ -17,9 +17,9 @@ However, the player might be just redirecting to another server, so **new** [**`
 
 ## Channels
 Channels are used to send or receive data from **one** side of the [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs).
-So separate `INetworkChannel` is created for `IPlayer` and separate `INetworkChannel` is created for `IServer`.
+A separate `INetworkChannel` is created for `IPlayer`, and another for `IServer`.
 
-[**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) always has 2 channels that never change in whole lifetime of the link: `ILink.PlayerChannel` and `ILink.ServerChannel`.
+[**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) always has two channels that remain constant throughout the lifetime of the link: `ILink.PlayerChannel` and `ILink.ServerChannel`.
 
 ## Sides
 [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) saves references to both sides: `ILink.Player` and `ILink.Server`.
