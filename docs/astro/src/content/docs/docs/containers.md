@@ -107,7 +107,7 @@ Other `dev` versions:
 - caunt/void:dev-android-linux-bionic-x64
 
 :::caution
-Versions below are historical and are no longer maintained
+Versions below are historical and are no longer maintained.
 :::
 
 - caunt/void:**`<version>`** - Specific version of Void release, e.g. **`caunt/void:0.5.1`**.
