@@ -2,6 +2,6 @@
 _layout: landing
 ---
 
-# This Documentation is under active development.
+# This documentation is under active development.
 
-Glad to see you being interested in this proxy. Visit this page later to see more information about configuring proxy and developing your first plugin.
+We're glad you're interested in this proxy. Visit this page later to see more information about configuring the proxy and developing your first plugin.

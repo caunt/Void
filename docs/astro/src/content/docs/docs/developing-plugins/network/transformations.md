@@ -1,13 +1,13 @@
 ---
 title: Transformations
-description: Learn how to define packets transformations.
+description: Learn how to define packet transformations.
 sidebar:
   order: 3
 ---
 
-When you have defined a packet, it might change in future versions of Minecraft. There are two ways to handle this:
-- Define conditional packet transformation
-- Define flat packet transformation
+When you define a packet, it might change in future versions of Minecraft. There are two ways to handle this:
+- Define conditional packet transformations
+- Define flat packet transformations
 
 :::caution
 If packet is changed in new version of Minecraft, it is not recommended to define new classes for each packet version.
@@ -16,6 +16,7 @@ If packet is changed in new version of Minecraft, it is not recommended to defin
 
 Instead, use transformations explained below.
 :::
+
 
 ## Conditional packet transformations
 Conditional packet transformations are the simplest way to handle changes, but they can become messy if the packet changes frequently.
@@ -140,8 +141,8 @@ public void OnPhaseChanged(PhaseChangedEvent @event)
 }
 ```
 
-Now the Void proxy can use your defined transformations to transform packets to version that is used by the player. If player is playing on version **1.21**, proxy will upgrade packet to your latest (**1.21.2**) version and pass it to the [**Events System**](/docs/developing-plugins/events/listening-to-events/). When plugin is sending packet to the player playing old version, proxy will downgrade packet to **1.21** and send it to the player.
+Now the Void proxy uses your transformations to match the player's version. If the player is on version **1.21**, the proxy upgrades the packet to your latest (**1.21.2**) version and passes it to the [**Events System**](/docs/developing-plugins/events/listening-to-events/). When the plugin sends a packet to a player on an older version, the proxy downgrades it to **1.21** before sending.
 
 :::tip
-Keep defining flat transformations from one version to another when packet is changing. You have to **define only changed versions** and **skip versions without changes**. When `slot` property will be changed by Mojang to `long` type, define another two transformations - **upgrading** and **downgrading**. Reading `varint` / writing `long` for upgrade, and reading `long` / writing `varint` for downgrade.
+Keep defining flat transformations from one version to another when a packet changes. You only need to **define changed versions** and **skip versions without changes**. When the `slot` property is changed by Mojang to a `long` type, define another two transformations—**upgrading** and **downgrading**. Read `varint` and write `long` for an upgrade, and read `long` and write `varint` for a downgrade.
 :::
