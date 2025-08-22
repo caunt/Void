@@ -73,7 +73,7 @@ public abstract class IntegrationSideBase : IIntegrationSide
         };
 
         foreach (DictionaryEntry variable in Environment.GetEnvironmentVariables())
-            processStartInfo.Environment[(string)variable.Key] = (string)variable.Value;
+            processStartInfo.Environment[(string)variable.Key] = (string?)variable.Value;
 
         foreach (var protocol in new[] { "http", "https" })
         {
