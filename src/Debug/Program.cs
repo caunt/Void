@@ -11,21 +11,30 @@ if (OperatingSystem.IsWindows())
 
 var version = ProtocolVersion.Latest;
 var count = 1;
+var paper = true;
 
 if (args.Length is 1 && int.TryParse(args[0], out var value))
     count = value;
 
 Console.WriteLine(@$"Starting {count} minecraft container(s)");
 
-await StartDockerEnvironmentAsync(version, count);
-// await EntryPoint.RunAsync(new EntryPoint.RunOptions { Arguments = [
-//         "--ignore-file-servers",
-//         "--port", "25565",
-//         "--server", "127.0.0.1:25566",
-//         "--server", "127.0.0.1:25567",
-//         "--server", "127.0.0.1:25568"
-//     ]
-// });
+if (paper)
+{
+    await StartDockerEnvironmentAsync(version, count);
+}
+else
+{
+    await EntryPoint.RunAsync(new EntryPoint.RunOptions
+    {
+        Arguments = [
+            "--ignore-file-servers",
+            "--port", "25565",
+            "--server", "127.0.0.1:25566",
+            "--server", "127.0.0.1:25567",
+            "--server", "127.0.0.1:25568"
+        ]
+    });
+}
 
 return;
 
