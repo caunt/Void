@@ -20,13 +20,17 @@ Console.WriteLine(@$"Starting {count} minecraft container(s)");
 
 if (paper)
 {
-    await StartDockerEnvironmentAsync(version, count);
+    await StartDockerEnvironmentAsync(version, count, arguments:
+        [
+            "--logging", "Debug"
+        ]);
 }
 else
 {
     await EntryPoint.RunAsync(new EntryPoint.RunOptions
     {
         Arguments = [
+            "--logging", "Debug",
             "--ignore-file-servers",
             "--port", "25565",
             "--server", "127.0.0.1:25566",
