@@ -1,5 +1,4 @@
-﻿using System.CommandLine;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Void.Minecraft.Buffers;
@@ -17,13 +16,8 @@ using Void.Proxy.Plugins.ForwardingSupport.Velocity.Packets;
 
 namespace Void.Proxy.Plugins.ForwardingSupport.Velocity.Services;
 
-public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleService console, Settings settings) : IEventListener
+public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleService console, Plugin plugin, Settings settings) : IEventListener
 {
-    private readonly Option<string> _forwardingModernKeyOption = new("--forwarding-modern-key")
-    {
-        Description = "Sets the secret key for modern forwarding"
-    };
-
     [Subscribe]
     public void OnPhaseChanged(PhaseChangedEvent @event)
     {
@@ -102,7 +96,7 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
 
         var forwardingData = buffer.Access(0, buffer.Position);
 
-        if (!console.TryGetOptionValue(_forwardingModernKeyOption, out var secretKey))
+        if (!console.TryGetOptionValue(plugin.ForwardingModernKeyOption, out var secretKey))
             secretKey = settings.Secret;
 
         var secretLength = Encoding.UTF8.GetByteCount(secretKey);
