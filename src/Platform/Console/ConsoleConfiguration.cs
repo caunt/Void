@@ -1,3 +1,5 @@
-﻿namespace Void.Proxy.Console;
+﻿using System.CommandLine;
 
-public record ConsoleConfiguration(bool HasTerminal);
+namespace Void.Proxy.Console;
+
+public record ConsoleConfiguration(bool HasTerminal, Command RootCommand);

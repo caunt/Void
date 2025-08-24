@@ -1,5 +1,4 @@
 ﻿using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.Versioning;
@@ -14,13 +13,18 @@ using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using Void.Proxy.Api;
+using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Plugins.Dependencies;
 
 namespace Void.Proxy.Plugins.Dependencies.Nuget;
 
-public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IRunOptions runOptions, InvocationContext context) : INuGetDependencyResolver
+public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IRunOptions runOptions, IConsoleService console) : INuGetDependencyResolver
 {
-    private static readonly Option<string[]> _repositoriesOption = new(["--repository", "-r"], "Provides a URI to NuGet repository [--repository https://nuget.example.com/v3/index.json or --repository https://username:password@nuget.example.com/v3/index.json].");
+    private static readonly Option<string[]> _repositoryOption = new("--repository", "-r")
+    {
+        Description = "Provides a URI to NuGet repository [--repository https://nuget.example.com/v3/index.json or --repository https://username:password@nuget.example.com/v3/index.json]."
+    };
+
     private static readonly string FrameworkName = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName
         ?? throw new InvalidOperationException("Cannot determine the target framework.");
 
@@ -30,11 +34,6 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     private readonly string PackagesPath = Path.Combine(runOptions.WorkingDirectory, SettingsUtility.DefaultGlobalPackagesFolderPath);
     private readonly NuGet.Common.ILogger _nugetLogger = new NuGetLogger(logger);
     private readonly HashSet<string> _repositories = [];
-
-    public static void RegisterOptions(Command command)
-    {
-        command.AddOption(_repositoriesOption);
-    }
 
     public void AddRepository(string uri)
     {
@@ -145,7 +144,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         try
         {
             var environmentVariableRepositories = UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";"));
-            var repositories = environmentVariableRepositories.Concat(_repositories.Concat(context.ParseResult.GetValueForOption(_repositoriesOption) ?? []))
+            var repositories = environmentVariableRepositories.Concat(_repositories.Concat(console.GetOptionValue(_repositoryOption) ?? []))
                 .Select(source =>
                 {
                     if (!Uri.TryCreate(source, UriKind.Absolute, out var uri))

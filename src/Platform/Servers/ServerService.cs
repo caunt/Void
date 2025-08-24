@@ -1,26 +1,27 @@
 using System.CommandLine;
-using System.CommandLine.Invocation;
+using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Servers;
 using Void.Proxy.Api.Settings;
 
 namespace Void.Proxy.Servers;
 
-public class ServerService(ILogger<ServerService> logger, ISettings settings, InvocationContext context) : IServerService
+public class ServerService(ILogger<ServerService> logger, ISettings settings, IConsoleService console) : IServerService
 {
-    private static readonly Option<bool> _ignoreFileServersOption = new("--ignore-file-servers", description: "Ignore servers specified in configuration files");
-    private static readonly Option<string[]> _serversOption = new("--server", description: "Registers an additional server in format <host>:<port>");
-
-    public static void RegisterOptions(Command command)
+    private static readonly Option<bool> _ignoreFileServersOption = new("--ignore-file-servers")
     {
-        command.AddOption(_ignoreFileServersOption);
-        command.AddOption(_serversOption);
-    }
+        Description = "Ignore servers specified in configuration files"
+    };
 
-    public IEnumerable<IServer> All => GetArgumentsServers().Concat(context.ParseResult.GetValueForOption(_ignoreFileServersOption) ? [] : settings.Servers);
+    private static readonly Option<string[]> _serversOption = new("--server")
+    {
+        Description = "Registers an additional server in format <host>:<port>"
+    };
+
+    public IEnumerable<IServer> All => GetArgumentsServers().Concat(console.GetOptionValue(_ignoreFileServersOption) ? [] : settings.Servers);
 
     private IEnumerable<Server> GetArgumentsServers()
     {
-        var servers = context.ParseResult.GetValueForOption(_serversOption);
+        var servers = console.GetOptionValue(_serversOption);
 
         if (servers == null)
             yield break;

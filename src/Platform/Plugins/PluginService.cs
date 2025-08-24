@@ -1,10 +1,10 @@
 ﻿using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.Diagnostics;
 using System.Reflection;
 using Nito.AsyncEx;
 using Nito.Disposables.Internals;
 using Void.Proxy.Api;
+using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
@@ -15,9 +15,12 @@ using Void.Proxy.Plugins.Context;
 
 namespace Void.Proxy.Plugins;
 
-public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions, IEventService events, IDependencyService dependencies, InvocationContext context, HttpClient httpClient) : IPluginService
+public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions, IEventService events, IDependencyService dependencies, IConsoleService consoleService, HttpClient httpClient) : IPluginService
 {
-    private static readonly Option<string[]> _pluginsOption = new(["--plugin", "-p"], "Provides a path to the file, directory or URL to load plugin.");
+    private static readonly Option<string[]> _pluginsOption = new("--plugin", "-p")
+    {
+        Description = "Provides a path to the file, directory or URL to load plugin."
+    };
 
     private readonly AsyncLock _lock = new();
     private readonly List<WeakPluginContainer> _containers = [];
@@ -29,11 +32,6 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
     public IEnumerable<string> Containers => _containers
         .Select(container => container.Context.Name)
         .WhereNotNull();
-
-    public static void RegisterOptions(Command command)
-    {
-        command.AddOption(_pluginsOption);
-    }
 
     public async ValueTask LoadPluginsAsync(string path = "plugins", CancellationToken cancellationToken = default)
     {
@@ -115,10 +113,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
 
         await LoadPluginsAsync(plugins.WhereNotNull().SelectMany(x => x), cancellationToken);
 
-        string[] GetArgumentsPlugins()
-        {
-            return context.ParseResult.GetValueForOption(_pluginsOption) ?? [];
-        }
+        string[] GetArgumentsPlugins() => consoleService.GetOptionValue(_pluginsOption) ?? [];
 
         static string[] GetVariablesPlugins()
         {

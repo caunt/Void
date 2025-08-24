@@ -1,6 +1,4 @@
 ﻿using System.CommandLine;
-using System.CommandLine.Invocation;
-using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -26,16 +24,27 @@ public class Platform(
     IEventService events,
     IPlayerService players,
     ISettings settings,
-    IHostApplicationLifetime hostApplicationLifetime,
-    InvocationContext context) : IProxy, IHostedService
+    IHostApplicationLifetime hostApplicationLifetime) : IProxy, IHostedService
 {
-    private static readonly Option<int> _portOption = new("--port", description: "Sets the listening port");
-    private static readonly Option<string> _interfaceOption = new("--interface", description: "Sets the listening network interface");
-    private static readonly Option<bool> _offlineOption = new("--offline", description: "Allows players to connect without Mojang authorization");
-    private static readonly Option<LogLevel> _loggingOption = new("--logging", description: "Sets the logging level");
+    private readonly Option<int> _portOption = new("--port")
+    {
+        Description = "Sets the listening port"
+    };
 
-    private readonly IPAddress _interface = context.ParseResult.GetValueForOption(_interfaceOption) is { } value ? IPAddress.Parse(value) : settings.Address;
-    private readonly int _port = context.ParseResult.HasOption(_portOption) ? context.ParseResult.GetValueForOption(_portOption) : settings.Port;
+    private readonly Option<IPAddress> _interfaceOption = new("--interface")
+    {
+        Description = "Sets the listening network interface"
+    };
+
+    private readonly Option<bool> _offlineOption = new("--offline")
+    {
+        Description = "Allows players to connect without Mojang authorization"
+    };
+
+    private readonly Option<LogLevel> _loggingOption = new("--logging")
+    {
+        Description = "Sets the logging level"
+    };
 
     private Task? _backgroundTask;
     private TcpListener? _listener;
@@ -49,6 +58,9 @@ public class Platform(
             field = value;
         }
     }
+
+    private IPAddress Interface => console.TryGetOptionValue(_interfaceOption, out var value) ? value : settings.Address;
+    private int Port => console.TryGetOptionValue(_portOption, out var value) ? value : settings.Port;
 
     public async ValueTask StartAcceptingConnectionsAsync(CancellationToken cancellationToken)
     {
@@ -70,7 +82,7 @@ public class Platform(
                 if (exception.SocketErrorCode is not SocketError.AddressAlreadyInUse)
                     throw;
 
-                logger.LogError("Address {Address}:{Port} already in use by another process. Retrying in 5 seconds ...", _interface, _port);
+                logger.LogError("Address {Address}:{Port} already in use by another process. Retrying in 5 seconds ...", Interface, Port);
                 await Task.Delay(5_000, cancellationToken);
             }
         }
@@ -121,8 +133,8 @@ public class Platform(
         logLevelSwitch.Level = LogLevel.Debug;
 #endif
 
-        if (context.ParseResult.HasOption(_loggingOption))
-            logLevelSwitch.Level = context.ParseResult.GetValueForOption(_loggingOption);
+        if (console.TryGetOptionValue(_loggingOption, out var loggingOptionValue))
+            logLevelSwitch.Level = loggingOptionValue;
 
         logger.LogInformation("Starting {Name} {Version} proxy", nameof(Void), $"v{GetType().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion}");
         var startTime = Stopwatch.GetTimestamp();
@@ -132,8 +144,8 @@ public class Platform(
         if (bool.TryParse(Environment.GetEnvironmentVariable("VOID_OFFLINE"), out var offlineVariable))
             settings.Offline = offlineVariable;
 
-        if (context.ParseResult.GetValueForOption(_offlineOption) is { } option && option)
-            settings.Offline = option;
+        if (console.TryGetOptionValue(_offlineOption, out var offlineOptionValue))
+            settings.Offline = offlineOptionValue;
 
         if (settings.Offline)
             logger.LogWarning("Offline mode is enabled. Players will be able to connect without Mojang authorization.");
@@ -144,11 +156,14 @@ public class Platform(
         await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
 
         logger.LogInformation("Starting connection listener");
-        _listener = new TcpListener(_interface, _port);
+        var @interface = console.GetOptionValue(_interfaceOption) ?? settings.Address;
+
+        _listener = new TcpListener(@interface, Port);
         _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+
         await StartAcceptingConnectionsAsync(cancellationToken);
 
-        logger.LogInformation("Connection listener started on address {Address}:{Port}", _interface, _port);
+        logger.LogInformation("Connection listener started on address {Address}:{Port}", @interface, Port);
 
         _backgroundTask = ExecuteAsync(hostApplicationLifetime.ApplicationStopping).ContinueWith(backgroundTask =>
         {
@@ -187,14 +202,6 @@ public class Platform(
         await plugins.UnloadContainersAsync(cancellationToken);
 
         logger.LogInformation("Proxy stopped!");
-    }
-
-    public static void RegisterOptions(Command command)
-    {
-        command.AddOption(_interfaceOption);
-        command.AddOption(_portOption);
-        command.AddOption(_offlineOption);
-        command.AddOption(_loggingOption);
     }
 
     private async Task ExecuteAsync(CancellationToken cancellationToken)
