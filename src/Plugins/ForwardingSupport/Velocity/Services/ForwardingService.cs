@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.CommandLine;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Void.Minecraft.Buffers;
@@ -8,6 +9,7 @@ using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
 using Void.Minecraft.Profiles;
+using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Players.Contexts;
@@ -15,8 +17,13 @@ using Void.Proxy.Plugins.ForwardingSupport.Velocity.Packets;
 
 namespace Void.Proxy.Plugins.ForwardingSupport.Velocity.Services;
 
-public class ForwardingService(IPlayerContext context, ILogger logger, Settings settings) : IEventListener
+public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleService console, Settings settings) : IEventListener
 {
+    private readonly Option<string> _forwardingModernKeyOption = new("--forwarding-modern-key")
+    {
+        Description = "Sets the secret key for modern forwarding"
+    };
+
     [Subscribe]
     public void OnPhaseChanged(PhaseChangedEvent @event)
     {
@@ -94,7 +101,11 @@ public class ForwardingService(IPlayerContext context, ILogger logger, Settings 
         }
 
         var forwardingData = buffer.Access(0, buffer.Position);
-        var secretLength = Encoding.UTF8.GetByteCount(settings.Secret);
+
+        if (!console.TryGetOptionValue(_forwardingModernKeyOption, out var secretKey))
+            secretKey = settings.Secret;
+
+        var secretLength = Encoding.UTF8.GetByteCount(secretKey);
         Span<byte> secretBytes = stackalloc byte[secretLength];
         Encoding.UTF8.GetBytes(settings.Secret, secretBytes);
         Span<byte> signature = stackalloc byte[32];
