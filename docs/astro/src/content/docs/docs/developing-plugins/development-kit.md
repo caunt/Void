@@ -3,7 +3,7 @@ title: Development Kit
 description: Learn how to use the Plugin Development Kit to create plugins for Void.
 ---
 
-Plugin Development Kit is a set of predefined configurations that simplifies the development process of plugins.
+Plugin Development Kit is a set of predefined configurations that simplify the development process of plugins.
 It can be used with any MSBuild-compatible IDE, such as Visual Studio or JetBrains Rider.
 
 ## Prerequisites
