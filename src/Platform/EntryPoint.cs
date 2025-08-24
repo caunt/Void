@@ -1,8 +1,4 @@
 ﻿using System.CommandLine;
-using System.CommandLine.Builder;
-using System.CommandLine.Hosting;
-using System.CommandLine.Invocation;
-using System.CommandLine.Parsing;
 using DryIoc;
 using DryIoc.Microsoft.DependencyInjection;
 using Serilog;
@@ -76,96 +72,83 @@ public static class EntryPoint
         if (options.WorkingDirectory.Equals(RunOptions.Default.WorkingDirectory, StringComparison.OrdinalIgnoreCase))
             Directory.SetCurrentDirectory(options.WorkingDirectory);
 
+        var command = new RootCommand("Runs the proxy");
         var loggingLevelSwitch = new LoggingLevelSwitch();
-        using var logger = ConfigureLogging(loggingLevelSwitch, options.LogWriter);
 
-        return await BuildCommandLine(cancellationToken)
-            .UseDefaults()
-            .UseHost(builder => SetupHost(builder, loggingLevelSwitch, logger, options))
-            .Build()
-            .InvokeAsync(options.Arguments);
+        using var logger = CreateLogger(loggingLevelSwitch, options.LogWriter);
+        using var host = new HostBuilder()
+            .UseServiceProviderFactory(new DryIocServiceProviderFactory(new Container(Rules.MicrosoftDependencyInjectionRules)))
+            .UseConsoleLifetime(options => options.SuppressStatusMessages = true)
+            .ConfigureServices((context, services) => services
+                .AddSerilog(logger, dispose: false)
+                .AddJsonOptions()
+                .AddHttpClient()
+                .AddSettings()
+                .AddSingleton(loggingLevelSwitch)
+                .AddSingleton(new ConsoleConfiguration(options.LogWriter is null, command))
+                .AddSingleton<ILogLevelSwitch, LogLevelSwitch>()
+                .AddSingleton<IRunOptions>(options)
+                .AddSingletonAndListen<ICryptoService, RsaCryptoService>()
+                .AddSingletonAndListen<IEventService, EventService>()
+                .AddSingletonAndListen<IPluginService, PluginService>()
+                .AddSingletonAndListen<IPlayerService, PlayerService>()
+                .AddSingletonAndListen<IServerService, ServerService>()
+                .AddSingletonAndListen<ILinkService, LinkService>()
+                .AddSingletonAndListen<IConsoleService, ConsoleService>()
+                .AddSingletonAndListen<ICommandService, CommandService>()
+                .AddSingletonAndListen<IConfigurationService, ConfigurationService>()
+                .AddSingletonAndListen<IDependencyService, DependencyService>()
+                .AddSingletonAndListen<IProxy, Platform>()
+                .AddSingleton<IFileDependencyResolver, FileDependencyResolver>(FileDependencyResolver.Factory)
+                .AddSingleton<INuGetDependencyResolver, NuGetDependencyResolver>()
+                .AddSingleton<IEmbeddedDependencyResolver, EmbeddedDependencyResolver>()
+                .AddHostedService(services => services.GetRequiredService<IConfigurationService>())
+                .AddHostedService(services => (Platform)services.GetRequiredService<IProxy>()))
+            .Build();
 
-        static Logger ConfigureLogging(LoggingLevelSwitch loggingLevelSwitch, TextWriter? logWriter)
+        await host.StartAsync(cancellationToken);
+        command.SetAction(async (result, cancellationToken) =>
         {
-            var configuration = new LoggerConfiguration()
-                .Enrich.FromLogContext()
-                .MinimumLevel.ControlledBy(loggingLevelSwitch);
+            var console = host.Services.GetRequiredService<IConsoleService>();
+            var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
 
-            const string template = "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}";
+            var token = lifetime.ApplicationStopping;
+            using var registration = cancellationToken.Register(lifetime.StopApplication);
 
-            if (logWriter is null)
-                configuration = configuration.WriteTo.Console(outputTemplate: template);
-            else
-                configuration = configuration.WriteTo.TextWriter(logWriter, outputTemplate: template);
-
-            return configuration.CreateLogger();
-        }
-
-        static void SetupHost(IHostBuilder builder, LoggingLevelSwitch loggingLevelSwitch, Logger logger, RunOptions options)
-        {
-            builder
-                .UseServiceProviderFactory(new DryIocServiceProviderFactory(new Container(Rules.MicrosoftDependencyInjectionRules)))
-                .UseConsoleLifetime(options => options.SuppressStatusMessages = true)
-                .ConfigureServices(services => services
-                    .AddSerilog(logger, dispose: false)
-                    .AddJsonOptions()
-                    .AddHttpClient()
-                    .AddSettings()
-                    .AddSingleton(loggingLevelSwitch)
-                    .AddSingleton(new ConsoleConfiguration(options.LogWriter is null))
-                    .AddSingleton<ILogLevelSwitch, LogLevelSwitch>()
-                    .AddSingleton<IRunOptions>(options)
-                    .AddSingletonAndListen<ICryptoService, RsaCryptoService>()
-                    .AddSingletonAndListen<IEventService, EventService>()
-                    .AddSingletonAndListen<IPluginService, PluginService>()
-                    .AddSingletonAndListen<IPlayerService, PlayerService>()
-                    .AddSingletonAndListen<IServerService, ServerService>()
-                    .AddSingletonAndListen<ILinkService, LinkService>()
-                    .AddSingletonAndListen<IConsoleService, ConsoleService>()
-                    .AddSingletonAndListen<ICommandService, CommandService>()
-                    .AddSingletonAndListen<IConfigurationService, ConfigurationService>()
-                    .AddSingletonAndListen<IDependencyService, DependencyService>()
-                    .AddSingletonAndListen<IProxy, Platform>()
-                    .AddSingleton<IFileDependencyResolver, FileDependencyResolver>(FileDependencyResolver.Factory)
-                    .AddSingleton<INuGetDependencyResolver, NuGetDependencyResolver>()
-                    .AddSingleton<IEmbeddedDependencyResolver, EmbeddedDependencyResolver>()
-                    .AddHostedService(services => services.GetRequiredService<IConfigurationService>())
-                    .AddHostedService(services => (Platform)services.GetRequiredService<IProxy>()));
-        }
-    }
-
-    private static CommandLineBuilder BuildCommandLine(CancellationToken cancellationToken)
-    {
-        var root = new RootCommand("Runs the proxy");
-
-        NuGetDependencyResolver.RegisterOptions(root);
-        PluginService.RegisterOptions(root);
-        ServerService.RegisterOptions(root);
-        Platform.RegisterOptions(root);
-
-        root.SetHandler(async context => await MainHandlerAsync(context, cancellationToken));
-
-        return new CommandLineBuilder(root);
-    }
-
-    private static async Task MainHandlerAsync(InvocationContext context, CancellationToken cancellationToken)
-    {
-        var host = context.GetHost();
-
-        var console = host.Services.GetRequiredService<IConsoleService>();
-        var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
-
-        var token = lifetime.ApplicationStopping;
-        using var registration = cancellationToken.Register(lifetime.StopApplication);
+            try
+            {
+                while (!token.IsCancellationRequested)
+                    await console.HandleCommandsAsync(token);
+            }
+            catch (Exception exception) when (exception is TaskCanceledException or OperationCanceledException)
+            {
+                // Ignore
+            }
+        });
 
         try
         {
-            while (!token.IsCancellationRequested)
-                await console.HandleCommandsAsync(token);
+            return await command.Parse(options.Arguments).InvokeAsync(cancellationToken: cancellationToken);
         }
-        catch (Exception exception) when (exception is TaskCanceledException or OperationCanceledException)
+        finally
         {
-            // Ignore
+            await host.StopAsync(cancellationToken);
         }
+    }
+
+    private static Logger CreateLogger(LoggingLevelSwitch loggingLevelSwitch, TextWriter? logWriter)
+    {
+        var configuration = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .MinimumLevel.ControlledBy(loggingLevelSwitch);
+
+        const string template = "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}";
+
+        if (logWriter is null)
+            configuration = configuration.WriteTo.Console(outputTemplate: template);
+        else
+            configuration = configuration.WriteTo.TextWriter(logWriter, outputTemplate: template);
+
+        return configuration.CreateLogger();
     }
 }
