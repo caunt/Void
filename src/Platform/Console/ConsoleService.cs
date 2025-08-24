@@ -54,6 +54,24 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
         return consoleConfiguration.RootCommand.Parse(runOptions.Arguments).GetRequiredValue(option);
     }
 
+    public void EnsureOptionDiscovered(Option option)
+    {
+        if (consoleConfiguration.RootCommand.Options.Contains(option))
+            return;
+
+        foreach (var existingOption in consoleConfiguration.RootCommand.Options)
+        {
+            if (!existingOption.Name.Equals(option.Name, StringComparison.OrdinalIgnoreCase) && !existingOption.Aliases.Any(alias => option.Aliases.Contains(alias, StringComparer.OrdinalIgnoreCase)))
+                continue;
+
+            throw new InvalidOperationException($"Option with name or alias '{option.Name}' already exists. " +
+                $"Discovered: {option.Name} ({string.Join(", ", option.Aliases)}), " +
+                $"Existing: {existingOption.Name} ({string.Join(", ", existingOption.Aliases)})");
+        }
+
+        consoleConfiguration.RootCommand.Options.Add(option);
+    }
+
     public async ValueTask HandleCommandsAsync(CancellationToken cancellationToken = default)
     {
         if (!consoleConfiguration.HasTerminal || !IsEnabled)
@@ -85,28 +103,6 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
     public override string ToString()
     {
         return nameof(Console);
-    }
-
-    private void EnsureOptionDiscovered(Option option)
-    {
-        // Determine if the option name and aliases are not present. If so, add the option.
-        // If any of name or aliases are present and equal to passed option, do nothing.
-        // If any of name or aliases are present but not equal to passed option, throw.
-
-        if (consoleConfiguration.RootCommand.Options.Contains(option))
-            return;
-
-        foreach (var existingOption in consoleConfiguration.RootCommand.Options)
-        {
-            if (!existingOption.Name.Equals(option.Name, StringComparison.OrdinalIgnoreCase) && !existingOption.Aliases.Any(alias => option.Aliases.Contains(alias, StringComparer.OrdinalIgnoreCase)))
-                continue;
-
-            throw new InvalidOperationException($"Option with name or alias '{option.Name}' already exists. " +
-                $"Discovered: {option.Name} ({string.Join(", ", option.Aliases)}), " +
-                $"Existing: {existingOption.Name} ({string.Join(", ", existingOption.Aliases)})");
-        }
-
-        consoleConfiguration.RootCommand.Options.Add(option);
     }
 
     private async ValueTask<string[]> SuggestAsync(string input, CancellationToken cancellationToken = default)

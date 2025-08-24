@@ -47,4 +47,12 @@ public interface IConsoleService : ICommandSource
     /// <param name="option">The option whose value is to be retrieved. Cannot be <see langword="null"/>.</param>
     /// <returns>The value of the specified option.</returns>
     public TValue GetRequiredOptionValue<TValue>(Option<TValue> option);
+
+    /// <summary>
+    /// Ensures that the specified command-line option is discovered by platform.
+    /// </summary>
+    /// <remarks>This method is typically used to track options that have been identified during
+    /// processing.</remarks>
+    /// <param name="option">The option to be marked as discovered. Cannot be <see langword="null"/>.</param>
+    public void EnsureOptionDiscovered(Option option);
 }
