@@ -1,11 +1,13 @@
 using System.CommandLine;
 using Void.Proxy.Api.Console;
+using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Servers;
 using Void.Proxy.Api.Settings;
 
 namespace Void.Proxy.Servers;
 
-public class ServerService(ILogger<ServerService> logger, ISettings settings, IConsoleService console) : IServerService
+public class ServerService(ILogger<ServerService> logger, ISettings settings, IConsoleService console) : IServerService, IEventListener
 {
     private static readonly Option<bool> _ignoreFileServersOption = new("--ignore-file-servers")
     {
@@ -18,6 +20,15 @@ public class ServerService(ILogger<ServerService> logger, ISettings settings, IC
     };
 
     public IEnumerable<IServer> All => GetArgumentsServers().Concat(console.GetOptionValue(_ignoreFileServersOption) ? [] : settings.Servers);
+
+    [Subscribe]
+    public void OnProxyStarted(ProxyStartingEvent @event)
+    {
+        logger.LogInformation("Registered servers:");
+
+        foreach (var server in All)
+            logger.LogInformation(" - {Server} ({Address}:{Port})", server.Name, server.Host, server.Port);
+    }
 
     private IEnumerable<Server> GetArgumentsServers()
     {
