@@ -3,6 +3,7 @@ using DryIoc;
 using DryIoc.Microsoft.DependencyInjection;
 using Serilog;
 using Serilog.Core;
+using Serilog.Events;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Configurations;
@@ -140,7 +141,8 @@ public static class EntryPoint
     {
         var configuration = new LoggerConfiguration()
             .Enrich.FromLogContext()
-            .MinimumLevel.ControlledBy(loggingLevelSwitch);
+            .MinimumLevel.ControlledBy(loggingLevelSwitch)
+            .MinimumLevel.Override(nameof(Microsoft), LogEventLevel.Information);
 
         const string template = "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}";
 
