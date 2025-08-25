@@ -34,8 +34,11 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
     {
         EnsureOptionDiscovered(option);
 
-        value = consoleConfiguration.RootCommand.Parse(runOptions.Arguments).GetValue(option);
-        return !EqualityComparer<TValue>.Default.Equals(value, default);
+        var parseResult = consoleConfiguration.RootCommand.Parse(runOptions.Arguments);
+        var optionResult = parseResult.GetResult(option);
+
+        value = parseResult.GetValue(option);
+        return value is not null && optionResult is not null && !optionResult.Implicit;
     }
 
     public TValue? GetOptionValue<TValue>(Option<TValue> option)
