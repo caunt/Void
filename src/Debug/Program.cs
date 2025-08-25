@@ -10,17 +10,19 @@ if (OperatingSystem.IsWindows())
     Console.Clear();
 
 var version = ProtocolVersion.Latest;
-var count = 1;
-var paper = true;
+var useDocker = true;
 
-if (args.Length is 1 && int.TryParse(args[0], out var value))
-    count = value;
+IDockerMinecraftServer[] servers =
+[
+    new VanillaPaperServer(version, 25566),
+    new ForgeServer(version, 25567, Array.Empty<string>())
+];
 
-Console.WriteLine(@$"Starting {count} minecraft container(s)");
+Console.WriteLine(@$"Starting {servers.Length} minecraft container(s)");
 
-if (paper)
+if (useDocker)
 {
-    await StartDockerEnvironmentAsync(version, count, arguments:
+    await StartDockerEnvironmentAsync(servers, arguments:
         [
             "--logging", "Debug",
             "--forwarding-modern-key", "aaa"
@@ -30,7 +32,8 @@ else
 {
     await EntryPoint.RunAsync(new EntryPoint.RunOptions
     {
-        Arguments = [
+        Arguments =
+        [
             "--logging", "Debug",
             "--forwarding-modern-key", "aaa",
             "--ignore-file-servers",
@@ -44,38 +47,10 @@ else
 
 return;
 
-async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count = 3, string type = "PAPER", string[]? arguments = null, CancellationToken cancellationToken = default)
+async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> servers, string[]? arguments = null, CancellationToken cancellationToken = default)
 {
-    var imageName = "itzg/minecraft-server";
-    var imageTag = version switch
-    {
-        // _ when version >= ProtocolVersion.MINECRAFT_1_20_5 => "java21-jdk",
-        // _ when version >= ProtocolVersion.MINECRAFT_1_18 => "java17-jdk", // doesn't support patches
-        _ when version >= ProtocolVersion.MINECRAFT_1_18 => "java21-jdk",
-        _ when version >= ProtocolVersion.MINECRAFT_1_17 => "java16",
-        _ => "java8-jdk"
-    };
+    const string imageName = "itzg/minecraft-server";
     var timeout = TimeSpan.FromSeconds(900);
-    var variables = new List<string>
-    {
-        "PAPER_CONFIG_REPO=https://raw.githubusercontent.com/Shonz1/minecraft-default-configs/main",
-        "EULA=TRUE",
-        "TYPE=" + type,
-        "MODE=CREATIVE",
-        "ONLINE_MODE=FALSE",
-        "OPS=caunt,Shonz1",
-        "PATCH_DEFINITIONS=/tmp/patch.json",
-        "VERSION=" + VersionStringName(version)
-    };
-
-    if (version >= ProtocolVersion.MINECRAFT_1_21_5)
-        variables.Add("PAPER_CHANNEL=experimental");
-
-    if (version == ProtocolVersion.MINECRAFT_1_17)
-        variables.Add("PAPER_DOWNLOAD_URL=https://api.papermc.io/v2/projects/paper/versions/1.17/builds/79/downloads/paper-1.17-79.jar");
-    else if (version == ProtocolVersion.MINECRAFT_1_17_1)
-        variables.Add("PAPER_DOWNLOAD_URL=https://api.papermc.io/v2/projects/paper/versions/1.17.1/builds/411/downloads/paper-1.17.1-411.jar");
-
     const string patches =
         """
         {
@@ -137,8 +112,45 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
 
     using var docker = new DockerClientConfiguration().CreateClient();
 
-    var papers = await Enumerable.Range(1, count).Select(async index =>
+    var containers = await servers.Select(async server =>
     {
+        var imageTag = server.ProtocolVersion switch
+        {
+            // _ when server.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_20_5 => "java21-jdk",
+            // _ when server.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_18 => "java17-jdk", // doesn't support patches
+            _ when server.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_18 => "java21-jdk",
+            _ when server.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_17 => "java16",
+            _ => "java8-jdk"
+        };
+
+        var variables = new List<string>
+        {
+            "EULA=TRUE",
+            "TYPE=" + server.ItzgType,
+            "MODE=CREATIVE",
+            "ONLINE_MODE=FALSE",
+            "OPS=caunt,Shonz1",
+            "VERSION=" + VersionStringName(server.ProtocolVersion)
+        };
+
+        if (server is VanillaPaperServer)
+        {
+            variables.Add("PAPER_CONFIG_REPO=https://raw.githubusercontent.com/Shonz1/minecraft-default-configs/main");
+            variables.Add("PATCH_DEFINITIONS=/tmp/patch.json");
+
+            if (server.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_21_5)
+                variables.Add("PAPER_CHANNEL=experimental");
+
+            if (server.ProtocolVersion == ProtocolVersion.MINECRAFT_1_17)
+                variables.Add("PAPER_DOWNLOAD_URL=https://api.papermc.io/v2/projects/paper/versions/1.17/builds/79/downloads/paper-1.17-79.jar");
+            else if (server.ProtocolVersion == ProtocolVersion.MINECRAFT_1_17_1)
+                variables.Add("PAPER_DOWNLOAD_URL=https://api.papermc.io/v2/projects/paper/versions/1.17.1/builds/411/downloads/paper-1.17.1-411.jar");
+        }
+        else if (server is ForgeServer forge && forge.Mods.Count > 0)
+        {
+            variables.Add("MODS=" + string.Join(',', forge.Mods));
+        }
+
         var images = await docker.Images.ListImagesAsync(new ImagesListParameters { All = true }, cancellationToken);
 
         if (images.All(image => !image.RepoTags.Any(imageName.Equals)))
@@ -150,8 +162,8 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
             }, null, new Progress<JSONMessage>(), cancellationToken);
         }
 
-        var name = $"void-{index}";
-        var port = (ushort)(25565 + index);
+        var name = $"void-{server.Port}";
+        var port = (ushort)server.Port;
 
         while (true)
         {
@@ -254,13 +266,23 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
     }
     finally
     {
-        // await papers.Select(async id => await docker.Containers.StopContainerAsync(id, new ContainerStopParameters())).WhenAll();
+        // await containers.Select(async id => await docker.Containers.StopContainerAsync(id, new ContainerStopParameters())).WhenAll();
     }
 
     async ValueTask<ContainerListResponse?> GetContainerAsync(string name, CancellationToken cancellationToken)
     {
-        var containers = await docker.Containers.ListContainersAsync(new ContainersListParameters { All = true }, cancellationToken);
-        return containers.FirstOrDefault(container => container.Names.Any(containerName => containerName.EndsWith("/" + name)));
+        var containers = await docker.Containers.ListContainersAsync(new ContainersListParameters
+        {
+            All = true,
+            Filters = new Dictionary<string, IDictionary<string, bool>>
+            {
+                {
+                    "name", new Dictionary<string, bool> { ["/" + name] = true }
+                }
+            }
+        }, cancellationToken);
+
+        return containers.FirstOrDefault(container => container.Names.Any(n => n.EndsWith(name)));
     }
 
     string VersionStringName(ProtocolVersion version)
@@ -272,15 +294,19 @@ async ValueTask StartDockerEnvironmentAsync(ProtocolVersion version, int count =
             var value when value == ProtocolVersion.MINECRAFT_1_20_3 => value.Names[1], // paper skipped 1.20.3
             var value when value == ProtocolVersion.MINECRAFT_1_18 => value.Names[1], // paper skipped 1.18
             var value when value == ProtocolVersion.MINECRAFT_1_8 => value.Names[8], // paper first release is 1.8.8
-            var value => value.VersionIntroducedIn
+            var value => value.VersionIntroducedIn,
         };
     }
 }
 
-
 record VanillaPaperServer(ProtocolVersion ProtocolVersion, int Port) : IDockerMinecraftServer
 {
     public string ItzgType => "PAPER";
+}
+
+record ForgeServer(ProtocolVersion ProtocolVersion, int Port, IReadOnlyList<string> Mods) : IDockerMinecraftServer
+{
+    public string ItzgType => "FORGE";
 }
 
 interface IDockerMinecraftServer
@@ -289,3 +315,4 @@ interface IDockerMinecraftServer
     public int Port { get; }
     public string ItzgType { get; }
 }
+
