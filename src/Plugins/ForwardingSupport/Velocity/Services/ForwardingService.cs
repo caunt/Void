@@ -101,7 +101,7 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
 
         var secretLength = Encoding.UTF8.GetByteCount(secretKey);
         Span<byte> secretBytes = stackalloc byte[secretLength];
-        Encoding.UTF8.GetBytes(settings.Secret, secretBytes);
+        Encoding.UTF8.GetBytes(secretKey, secretBytes);
         Span<byte> signature = stackalloc byte[32];
 
         if (!HMACSHA256.TryHashData(secretBytes, forwardingData, signature, out var written))
