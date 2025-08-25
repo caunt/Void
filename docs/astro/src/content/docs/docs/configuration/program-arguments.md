@@ -26,6 +26,7 @@ Options:
   --port <port>                                                    Sets the listening port
   --offline                                                        Allows players to connect without Mojang authorization
   --logging <Critical|Debug|Error|Information|None|Trace|Warning>  Sets the logging level
+  --forwarding-modern-key <forwarding-modern-key>                  Sets the secret key for modern forwarding
   --version                                                        Show version information
   -?, -h, --help                                                   Show help and usage information
 ```
@@ -51,7 +52,7 @@ Options:
   ```
 
 ## Servers
-- `--server`  
+- `--server`
   Registers a server in format `<host>:<port>` where the port is between `1` and `65535`. IPv6 addresses must be enclosed in square brackets.
 - `--ignore-file-servers`
   Ignore servers specified in [**configuration files**](/docs/configuration/in-file).
@@ -63,10 +64,18 @@ Options:
     --server [2001:db8::1]:25565
   ```
 
+## Forwarding
+- `--forwarding-modern-key`
+  Sets the secret key for [**Modern (Velocity)**](/docs/forwardings/modern) forwarding.
+
+  ```bash title="Example Usage"
+  ./void-linux-x64 --forwarding-modern-key YourSecretKeyHere
+  ```
+
 ## Plugins
-- `--plugin`  
+- `--plugin`
   Allows you to specify plugins to load.
-- `--repository`  
+- `--repository`
   Allows you to specify NuGet repositories to resolve plugin dependencies.
 
   ```bash title="Example Usage"
