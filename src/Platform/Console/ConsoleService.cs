@@ -4,19 +4,22 @@ using Void.Minecraft.Commands.Brigadier.Exceptions;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Console;
+using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Proxy;
 using Void.Terminal;
 using SystemConsole = System.Console;
 
 namespace Void.Proxy.Console;
 
-public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration consoleConfiguration, IRunOptions runOptions, ICommandService commands) : IConsoleService
+public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration consoleConfiguration, IRunOptions runOptions, ICommandService commands) : IConsoleService, IEventListener
 {
     public static bool IsEnabled => !SystemConsole.IsInputRedirected && !SystemConsole.IsOutputRedirected;
     public IEnumerable<Option> DiscoveredOptions => consoleConfiguration.RootCommand.Options;
 
     private readonly PromptReader _reader = new();
 
-    public void Setup()
+    [Subscribe(PostOrder.Last)]
+    public void OnProxyStarting(ProxyStartingEvent @event)
     {
         if (!consoleConfiguration.HasTerminal)
             return;
@@ -28,6 +31,19 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
 
         _reader.ResetStyle();
         _reader.HideCursor();
+    }
+
+    [Subscribe]
+    public void OnProxyStopping(ProxyStoppingEvent @event)
+    {
+        if (!consoleConfiguration.HasTerminal)
+            return;
+
+        if (!IsEnabled)
+            return;
+
+        _reader.ResetStyle();
+        _reader.ShowCursor();
     }
 
     public bool TryGetOptionValue<TValue>(Option<TValue> option, [MaybeNullWhen(false)] out TValue value)

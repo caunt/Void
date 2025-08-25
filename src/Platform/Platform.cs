@@ -125,8 +125,6 @@ public class Platform(
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        console.Setup();
-
 #if RELEASE
         logLevelSwitch.Level = settings.LogLevel;
 #else

@@ -56,6 +56,8 @@ public class PromptReader : IDisposable
         {
             do
             {
+                _writer.UpdateBuffer();
+
                 if (!Console.KeyAvailable)
                 {
                     await Task.Delay(50, cancellationToken);
