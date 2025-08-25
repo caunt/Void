@@ -26,7 +26,7 @@ Velocity forwarding is not supported by [**mod loaders**](/docs/getting-started/
 To configure the Velocity forwarding, you need to set up a 'Secret' key on both the proxy and server sides.
 Check the [**In-file configuration**](/docs/configuration/in-file/#modern-velocity) for more details.
 
-You can also provide the key via the `--forwarding-modern-key` program argument:
+You can also provide the key via the `--forwarding-modern-key` [program argument](/docs/configuration/program-arguments):
 
 ```bash title="Example Usage"
 ./void-linux-x64 --forwarding-modern-key YourSecretKeyHere
