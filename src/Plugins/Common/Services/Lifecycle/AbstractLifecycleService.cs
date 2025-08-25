@@ -7,6 +7,7 @@ using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Players;
@@ -54,7 +55,14 @@ public abstract class AbstractLifecycleService : IPluginCommonService
                 ? "You were kicked from proxy"
                 : @event.Text;
 
-        @event.Result = await KickPlayerAsync(@event.Player, reason, cancellationToken);
+        try
+        {
+            @event.Result = await KickPlayerAsync(@event.Player, reason, cancellationToken);
+        }
+        catch (StreamClosedException)
+        {
+            @event.Result = true;
+        }
     }
 
     [Subscribe]
