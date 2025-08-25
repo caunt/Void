@@ -21,8 +21,8 @@ public class PlatformTests
         {
             Assert.Equal(0, exitCode);
 
-            Assert.Contains(logs.Lines, line => line.Contains("Hosting started"));
-            Assert.Contains(logs.Lines, line => line.Contains("Hosting stopped"));
+            Assert.Contains(logs.Lines, line => line.Contains("Proxy started"));
+            Assert.Contains(logs.Lines, line => line.Contains("Proxy stopped"));
         }
         catch (Exception exception)
         {
