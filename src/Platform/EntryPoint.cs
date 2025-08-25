@@ -132,7 +132,7 @@ public static class EntryPoint
         }
         finally
         {
-            await host.StopAsync(cancellationToken);
+            await host.StopAsync(cancellationToken.IsCancellationRequested ? default : cancellationToken);
         }
     }
 
