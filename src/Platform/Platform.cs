@@ -31,7 +31,7 @@ public class Platform(
         Description = "Sets the listening port"
     };
 
-    private readonly Option<IPAddress> _interfaceOption = new("--interface")
+    private readonly Option<string> _interfaceOption = new("--interface")
     {
         Description = "Sets the listening network interface"
     };
@@ -59,7 +59,7 @@ public class Platform(
         }
     }
 
-    private IPAddress Interface => console.TryGetOptionValue(_interfaceOption, out var value) ? value : settings.Address;
+    private IPAddress Interface => console.TryGetOptionValue(_interfaceOption, out var value) && IPAddress.TryParse(value, out var address) ? address : settings.Address;
     private int Port => console.TryGetOptionValue(_portOption, out var value) ? value : settings.Port;
 
     public async ValueTask StartAcceptingConnectionsAsync(CancellationToken cancellationToken)
@@ -156,14 +156,12 @@ public class Platform(
         await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
 
         logger.LogInformation("Starting connection listener");
-        var @interface = console.GetOptionValue(_interfaceOption) ?? settings.Address;
-
-        _listener = new TcpListener(@interface, Port);
+        _listener = new TcpListener(Interface, Port);
         _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
         await StartAcceptingConnectionsAsync(cancellationToken);
 
-        logger.LogInformation("Connection listener started on address {Address}:{Port}", @interface, Port);
+        logger.LogInformation("Connection listener started on address {Address}:{Port}", Interface, Port);
 
         _backgroundTask = ExecuteAsync(hostApplicationLifetime.ApplicationStopping).ContinueWith(backgroundTask =>
         {
