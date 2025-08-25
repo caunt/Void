@@ -13,12 +13,12 @@ import { Badge } from '@astrojs/starlight/components';
 <Badge text="Proxying" variant="tip" /> - lets you play through the proxy.  
 <Badge text="Redirects" variant="tip" /> - move players between servers.  
 <Badge text="API" variant="tip" /> - exposes the Services API to plugins (Chat, [**Commands**](/docs/developing-plugins/commands), [**Events**](/docs/developing-plugins/events/listening-to-events), Content, [**Packets**](/docs/developing-plugins/network/packets)).  
-<Badge text="WIP" variant="tip" /> - marks a feature still under development.
+<Badge text="WIP" variant="tip" /> - marks a feature development status.
 
 ## Game Versions
 | Game Version         | Proxying | Redirects | API      | WIP      |
 | :------------------- | :------: | :------:  | :------: | :------: |
-| Java 1.7.2 - 1.21.8  | &#x2705; | &#x2705;  | &#x2705; | &#x2705; |
+| Java 1.7.2 - 1.21.8  | &#x2705; | &#x2705;  | &#x2705; | &#x231B; |
 | Java 1.0.0 - 1.7.1   | &#x2705; | &#x274C;  | &#x274C; | &#x274C; |
 | Java Beta            | &#x2705; | &#x274C;  | &#x274C; | &#x274C; |
 | Java Alpha           | &#x2705; | &#x274C;  | &#x274C; | &#x274C; |
@@ -32,9 +32,9 @@ import { Badge } from '@astrojs/starlight/components';
 | Forwarding                                                  | Supported | WIP      |
 | :---------------------------------------------------------- | :------:  | :------: |
 | [**None (Offline)**](/docs/forwardings/forwarding-overview) | &#x2705;  | &#x2705; |
-| [**Legacy (Bungee)**](/docs/forwardings/legacy)             | &#x274C;  | &#x2705; |
+| [**Legacy (Bungee)**](/docs/forwardings/legacy)             | &#x274C;  | &#x231B; |
 | [**Modern (Velocity)**](/docs/forwardings/modern)           | &#x2705;  | &#x2705; |
-| [**Online (PK)**](/docs/forwardings/online)                 | &#x2705;  | &#x2705; |
+| [**Online (PK)**](/docs/forwardings/online)                 | &#x2705;  | &#x231B; |
 
 :::tip[Online (Private Key)]
 Online (Private Key) is a new [**forwarding**](/docs/forwardings/online) method.
@@ -48,7 +48,13 @@ Without the key you can still play, but plugin features are limited.
 | :--------------------- | :------: | :------:  | :------: |
 | NeoForge               | &#x2705; | &#x2705;  | &#x2705; |
 | Forge (1.20.2+)        | &#x2705; | &#x2705;  | &#x2705; |
-| Forge (1.20.1 & below) | &#x2705; | &#x274C;  | &#x2705; |
+| Forge (1.20.1 & below) | &#x2705; | &#x274C;  | &#x231B; |
 | Fabric                 | &#x2705; | &#x2754;  | &#x274C; |
 | Quilt                  | &#x2705; | &#x2754;  | &#x274C; |
 | LiteLoader             | &#x2705; | &#x2754;  | &#x274C; |
+
+## Summary
+- &#x2705; - Completed - **22**
+- &#x274C; - Planned - **33**
+- &#x231B; - In Progress - **4**
+- &#x2754; - Unknown - **3**
