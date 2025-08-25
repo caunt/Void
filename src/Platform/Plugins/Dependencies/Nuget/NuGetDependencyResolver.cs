@@ -14,11 +14,13 @@ using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Console;
+using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Plugins.Dependencies;
 
 namespace Void.Proxy.Plugins.Dependencies.Nuget;
 
-public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IRunOptions runOptions, IConsoleService console) : INuGetDependencyResolver
+public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IRunOptions runOptions, IConsoleService console) : INuGetDependencyResolver, IEventListener
 {
     private static readonly Option<string[]> _repositoryOption = new("--repository", "-r")
     {
@@ -34,6 +36,12 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     private readonly string PackagesPath = Path.Combine(runOptions.WorkingDirectory, SettingsUtility.DefaultGlobalPackagesFolderPath);
     private readonly NuGet.Common.ILogger _nugetLogger = new NuGetLogger(logger);
     private readonly HashSet<string> _repositories = [];
+
+    [Subscribe]
+    public void OnProxyStarting(ProxyStartingEvent @event)
+    {
+        console.EnsureOptionDiscovered(_repositoryOption);
+    }
 
     public void AddRepository(string uri)
     {
