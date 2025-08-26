@@ -93,6 +93,10 @@ Follow the existing C# style rules:
   ```
 - Never modify `CHANGELOG.md`; it is generated automatically by `release-please` from commit history.
 
+## Documentation
+
+- When adding links to documentation, make the link text bold. For example: `[**link text**](https://example.com)`.
+
 ## Protocol guidance
 
 When adding or modifying packet handling:
