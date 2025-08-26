@@ -9,18 +9,19 @@ using Void.Proxy;
 if (OperatingSystem.IsWindows())
     Console.Clear();
 
+var docker = true;
 var version = ProtocolVersion.Latest;
-var useDocker = true;
+var timeout = TimeSpan.FromSeconds(900);
 
 IDockerMinecraftServer[] servers =
 [
-    new VanillaPaperServer(version, 25566),
-    new ForgeServer(version, 25567, Array.Empty<string>())
+    new PaperServer(version, 25566),
+    new ForgeServer(version, 25567)
 ];
 
 Console.WriteLine(@$"Starting {servers.Length} minecraft container(s)");
 
-if (useDocker)
+if (docker)
 {
     await StartDockerEnvironmentAsync(servers, arguments:
         [
@@ -49,8 +50,8 @@ return;
 
 async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> servers, string[]? arguments = null, CancellationToken cancellationToken = default)
 {
+
     const string imageName = "itzg/minecraft-server";
-    var timeout = TimeSpan.FromSeconds(900);
     const string patches =
         """
         {
@@ -133,7 +134,7 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
             "VERSION=" + VersionStringName(server.ProtocolVersion)
         };
 
-        if (server is VanillaPaperServer)
+        if (server is PaperServer)
         {
             variables.Add("PAPER_CONFIG_REPO=https://raw.githubusercontent.com/Shonz1/minecraft-default-configs/main");
             variables.Add("PATCH_DEFINITIONS=/tmp/patch.json");
@@ -299,12 +300,12 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
     }
 }
 
-record VanillaPaperServer(ProtocolVersion ProtocolVersion, int Port) : IDockerMinecraftServer
+record PaperServer(ProtocolVersion ProtocolVersion, int Port) : IDockerMinecraftServer
 {
     public string ItzgType => "PAPER";
 }
 
-record ForgeServer(ProtocolVersion ProtocolVersion, int Port, IReadOnlyList<string> Mods) : IDockerMinecraftServer
+record ForgeServer(ProtocolVersion ProtocolVersion, int Port, params IReadOnlyList<string> Mods) : IDockerMinecraftServer
 {
     public string ItzgType => "FORGE";
 }
@@ -315,4 +316,3 @@ interface IDockerMinecraftServer
     public int Port { get; }
     public string ItzgType { get; }
 }
-
