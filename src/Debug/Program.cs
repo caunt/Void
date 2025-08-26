@@ -2,6 +2,7 @@
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using MCStatus;
+using Microsoft.Extensions.Logging;
 using Nito.AsyncEx;
 using Void.Minecraft.Network;
 using Void.Proxy;
@@ -16,35 +17,26 @@ var timeout = TimeSpan.FromSeconds(900);
 IDockerMinecraftServer[] servers =
 [
     new PaperServer(version, 25566),
-    new ForgeServer(version, 25567)
+    new PaperServer(version, 25567),
+    new PaperServer(version, 25568)
+];
+
+string[] arguments = [
+    "--logging", nameof(LogLevel.Debug),
+    "--forwarding-modern-key", "aaa",
+    "--ignore-file-servers",
+    "--port", "25565",
+    "--server", "127.0.0.1:25566",
+    "--server", "127.0.0.1:25567",
+    "--server", "127.0.0.1:25568"
 ];
 
 Console.WriteLine(@$"Starting {servers.Length} minecraft container(s)");
 
 if (docker)
-{
-    await StartDockerEnvironmentAsync(servers, arguments:
-        [
-            "--logging", "Debug",
-            "--forwarding-modern-key", "aaa"
-        ]);
-}
+    await StartDockerEnvironmentAsync(servers, arguments: [.. arguments]);
 else
-{
-    await EntryPoint.RunAsync(new EntryPoint.RunOptions
-    {
-        Arguments =
-        [
-            "--logging", "Debug",
-            "--forwarding-modern-key", "aaa",
-            "--ignore-file-servers",
-            "--port", "25565",
-            "--server", "127.0.0.1:25566",
-            "--server", "127.0.0.1:25567",
-            "--server", "127.0.0.1:25568"
-        ]
-    });
-}
+    await EntryPoint.RunAsync(new EntryPoint.RunOptions { Arguments = [.. arguments] });
 
 return;
 
