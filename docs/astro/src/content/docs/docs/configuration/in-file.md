@@ -91,6 +91,6 @@ Each plugin may [**define one or subset of keyed configuration files**](/docs/de
 Plugins are not required to save or load configurations manually. 
 
 All changes on the disk are automatically loaded into existing instance in the memory.
-Vice versa, all changes in the memory are automatically saved to the disk.
+Vice versa, all changes in the memory are automatically saved to the disk. This automatic saving can be disabled via [**program argument**](/docs/configuration/program-arguments/#file-configuration).
 
 Currently, only TOML format is supported.
