@@ -84,7 +84,20 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
                 $"Existing: {existingOption.Name} ({string.Join(", ", existingOption.Aliases)})");
         }
 
-        consoleConfiguration.RootCommand.Options.Add(option);
+        var options = consoleConfiguration.RootCommand.Options;
+
+        // Find the position where the new option should be inserted so that the list
+        // remains ordered by two keys:
+        //   1. Alias count, in descending order (options with more aliases come first)
+        //   2. Name, in ascending order, case-insensitive
+        //
+        // The trick: build a tuple (-AliasCount, NameLowercase). Negating the alias count
+        // flips the order so higher counts sort first. We then CompareTo the new option’s
+        // tuple and TakeWhile all existing entries that are "less" than it, leaving us
+        // with the correct insert index.
+
+        var insertIndex = options.TakeWhile(existing => (-existing.Aliases.Count, existing.Name.ToLowerInvariant()).CompareTo((-option.Aliases.Count, option.Name.ToLowerInvariant())) < 0).Count();
+        options.Insert(insertIndex, option);
     }
 
     public async ValueTask HandleCommandsAsync(CancellationToken cancellationToken = default)

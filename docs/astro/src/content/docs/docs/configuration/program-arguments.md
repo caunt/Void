@@ -19,20 +19,20 @@ Usage:
 
 Options:
   -?, -h, --help                                         Show help and usage information
-  --version                                              Show version information
-  --read-only                                            Disables saving changes to the configuration files
-  --logging                                              Sets the logging level
-  <Critical|Debug|Error|Information|None|Trace|Warning>
-  --offline                                              Enforces players to connect without Mojang authorization
   -p, --plugin                                           Provides a path to the file, directory or URL to load plugin.
-  --forwarding-modern-key                                Sets the secret key for modern forwarding
-  --ignore-file-servers                                  Ignore servers specified in configuration files
-  --server                                               Registers an additional server in format <host>:<port>
   -r, --repository                                       Provides a URI to NuGet repository [--repository
                                                          https://nuget.example.com/v3/index.json or --repository
                                                          https://username:password@nuget.example.com/v3/index.json].
+  --forwarding-modern-key                                Sets the secret key for modern forwarding
+  --ignore-file-servers                                  Ignore servers specified in configuration files
   --interface                                            Sets the listening network interface
+  --logging                                              Sets the logging level
+  <Critical|Debug|Error|Information|None|Trace|Warning>
+  --offline                                              Allows players to connect without Mojang authorization
   --port                                                 Sets the listening port
+  --read-only                                            Disables saving changes to the configuration files
+  --server                                               Registers an additional server in format <host>:<port>
+  --version                                              Show version information
 ```
 
 ## Authentication
