@@ -10,21 +10,21 @@ using Void.Proxy;
 if (OperatingSystem.IsWindows())
     Console.Clear();
 
-var patchModernForwarding = false;
+var patchModernForwarding = true;
 var docker = true;
-var version = ProtocolVersion.MINECRAFT_1_19_4;
+var version = ProtocolVersion.Latest;
 var timeout = TimeSpan.FromSeconds(900);
 
 IDockerMinecraftServer[] servers =
 [
-    new ForgeServer(version, 25566),
-    new ForgeServer(version, 25567),
-    new ForgeServer(version, 25568)
+    new PaperServer(version, 25566),
+    new PaperServer(version, 25567),
+    new PaperServer(version, 25568)
 ];
 
 string[] arguments = [
     "--read-only",
-    "--logging", nameof(LogLevel.Trace),
+    "--logging", nameof(LogLevel.Debug),
     "--forwarding-modern-key", "aaa",
     "--ignore-file-servers",
     "--port", "25565",
