@@ -12,25 +12,26 @@ if (OperatingSystem.IsWindows())
 
 var patchModernForwarding = false;
 var docker = true;
-var version = ProtocolVersion.Latest;
+var version = ProtocolVersion.MINECRAFT_1_19_4;
 var timeout = TimeSpan.FromSeconds(900);
 
 IDockerMinecraftServer[] servers =
 [
-    new PaperServer(version, 25566),
-    new PaperServer(version, 25567),
-    new PaperServer(version, 25568)
+    new ForgeServer(version, 25566),
+    new ForgeServer(version, 25567),
+    new ForgeServer(version, 25568)
 ];
 
 string[] arguments = [
     "--read-only",
-    "--logging", nameof(LogLevel.Debug),
+    "--logging", nameof(LogLevel.Trace),
     "--forwarding-modern-key", "aaa",
     "--ignore-file-servers",
     "--port", "25565",
     "--server", "127.0.0.1:25566",
     "--server", "127.0.0.1:25567",
-    "--server", "127.0.0.1:25568"
+    "--server", "127.0.0.1:25568",
+    "--offline"
 ];
 
 Console.WriteLine(@$"Starting {servers.Length} minecraft container(s)");
@@ -53,66 +54,68 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
             {{(
             patchModernForwarding ?
             """
-            {
-                 "file":"/data/config/paper-global.yml",
-                 "ops":[
-                    {
-                       "$set":{
-                          "path":"$.proxies.velocity.enabled",
-                          "value":true
-                       }
-                    },
-                    {
-                       "$set":{
-                          "path":"$.proxies.velocity.secret",
-                          "value":"aaa"
-                       }
-                    }
-                 ]
-              },
+               {
+                  "file":"/data/config/paper-global.yml",
+                  "ops":[
+                     {
+                        "$set":{
+                           "path":"$.proxies.velocity.enabled",
+                           "value":true
+                        }
+                     },
+                     {
+                        "$set":{
+                           "path":"$.proxies.velocity.secret",
+                           "value":"aaa"
+                        }
+                     }
+                  ]
+               },
             """
-            : string.Empty)}}
+            : string.Empty
+            )}}
 
             {{(
             patchModernForwarding ?
             """
-              {
-                 "file":"/data/config/paper.yml",
-                 "ops":[
-                    {
-                       "$set":{
-                          "path":"$.settings.velocity-support.enabled",
-                          "value":true
-                       }
-                    },
-                    {
-                       "$set":{
-                          "path":"$.proxies.velocity.online-mode",
-                          "value":true
-                       }
-                    },
-                    {
-                       "$set":{
-                          "path":"$.settings.velocity-support.secret",
-                          "value":"aaa"
-                       }
-                    }
-                 ]
-              },
+               {
+                  "file":"/data/config/paper.yml",
+                  "ops":[
+                     {
+                        "$set":{
+                           "path":"$.settings.velocity-support.enabled",
+                           "value":true
+                        }
+                     },
+                     {
+                        "$set":{
+                           "path":"$.proxies.velocity.online-mode",
+                           "value":true
+                        }
+                     },
+                     {
+                        "$set":{
+                           "path":"$.settings.velocity-support.secret",
+                           "value":"aaa"
+                        }
+                     }
+                  ]
+               },
             """
-            : string.Empty)}}
+            : string.Empty
+            )}}
 
             {{"""
-              {
-                 "file":"/data/config/spigot.yml",
-                 "ops":[
-                    {
-                       "$set":{
-                          "path":"$.settings.debug",
-                          "value":true
-                       }
-                    }
-                 ]
+               {
+                  "file":"/data/config/spigot.yml",
+                  "ops":[
+                     {
+                        "$set":{
+                           "path":"$.settings.debug",
+                           "value":true
+                        }
+                     }
+                  ]
                }
             """}}
            ]
