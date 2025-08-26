@@ -54,8 +54,6 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
             patchModernForwarding ?
         """
         {
-           "patches":[
-              {
                  "file":"/data/config/paper-global.yml",
                  "ops":[
                     {
