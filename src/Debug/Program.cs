@@ -113,7 +113,7 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
                        }
                     }
                  ]
-               },
+               }
             """}}
            ]
         }
