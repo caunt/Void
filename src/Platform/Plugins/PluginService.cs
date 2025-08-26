@@ -220,7 +220,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
             await events.ThrowAsync(new PluginLoadedEvent(plugin), cancellationToken);
         }
 
-        logger.LogInformation("Loaded {Name} plugin from {AssemblyName} ", pluginType.Name, container.Context.PluginAssembly.GetName().Name);
+        logger.LogInformation("Loaded {Name} plugin from {AssemblyName} ", plugin.Name, container.Context.PluginAssembly.GetName().Name);
     }
 
     public IEnumerable<Type> LoadContainer(string name, Stream stream, bool ignoreEmpty = false)
