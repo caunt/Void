@@ -18,17 +18,21 @@ Usage:
   void-linux-x64 [options]
 
 Options:
-  -r, --repository <repository>                                    Provides a URI to NuGet repository [--repository https://nuget.example.com/v3/index.json or --repository https://username:password@nuget.example.com/v3/index.json].
-  -p, --plugin <plugin>                                            Provides a path to the file, directory or URL to load plugin.
-  --ignore-file-servers                                            Ignore servers specified in configuration files
-  --server <server>                                                Registers an additional server in format <host>:<port>
-  --interface <interface>                                          Sets the listening network interface
-  --port <port>                                                    Sets the listening port
-  --offline                                                        Allows players to connect without Mojang authorization
-  --logging <Critical|Debug|Error|Information|None|Trace|Warning>  Sets the logging level
-  --forwarding-modern-key <forwarding-modern-key>                  Sets the secret key for modern forwarding
-  --version                                                        Show version information
-  -?, -h, --help                                                   Show help and usage information
+  -?, -h, --help                                         Show help and usage information
+  --version                                              Show version information
+  --read-only                                            Disables saving changes to the configuration files
+  --logging                                              Sets the logging level
+  <Critical|Debug|Error|Information|None|Trace|Warning>
+  --offline                                              Enforces players to connect without Mojang authorization
+  -p, --plugin                                           Provides a path to the file, directory or URL to load plugin.
+  --forwarding-modern-key                                Sets the secret key for modern forwarding
+  --ignore-file-servers                                  Ignore servers specified in configuration files
+  --server                                               Registers an additional server in format <host>:<port>
+  -r, --repository                                       Provides a URI to NuGet repository [--repository
+                                                         https://nuget.example.com/v3/index.json or --repository
+                                                         https://username:password@nuget.example.com/v3/index.json].
+  --interface                                            Sets the listening network interface
+  --port                                                 Sets the listening port
 ```
 
 ## Authentication
@@ -37,6 +41,14 @@ Options:
 
   ```bash title="Example Usage"
   ./void-linux-x64 --offline
+  ```
+
+## File-configuration
+- `--read-only`  
+  Disables automatically saving changes to the [**configuration files**](/docs/configuration/in-file).
+
+  ```bash title="Example Usage"
+  ./void-linux-x64 --read-only
   ```
 
 ## Network

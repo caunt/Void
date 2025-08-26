@@ -22,6 +22,7 @@ IDockerMinecraftServer[] servers =
 ];
 
 string[] arguments = [
+    "--read-only",
     "--logging", nameof(LogLevel.Debug),
     "--forwarding-modern-key", "aaa",
     "--ignore-file-servers",

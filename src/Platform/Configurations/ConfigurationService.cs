@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.CommandLine;
 using System.Reflection;
 using System.Text;
 using System.Threading.Channels;
@@ -7,6 +8,7 @@ using Void.Proxy.Api;
 using Void.Proxy.Api.Configurations;
 using Void.Proxy.Api.Configurations.Attributes;
 using Void.Proxy.Api.Configurations.Exceptions;
+using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Plugins;
@@ -16,8 +18,13 @@ using Timer = System.Timers.Timer;
 
 namespace Void.Proxy.Configurations;
 
-public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginService plugins, IRunOptions runOptions) : BackgroundService, IConfigurationService, IEventListener
+public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginService plugins, IRunOptions runOptions, IConsoleService console) : BackgroundService, IConfigurationService, IEventListener
 {
+    private readonly Option<bool> _readOnlyOption = new("--read-only")
+    {
+        Description = "Disables saving changes to the configuration files"
+    };
+
     private readonly string _configurationsPath = Path.Combine(runOptions.WorkingDirectory, "configs");
     private readonly ConfigurationTomlSerializer _serializer = new();
     private readonly ConcurrentDictionary<string, object> _configurations = [];
@@ -95,7 +102,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
         {
             Interval = 1000,
             AutoReset = true,
-            Enabled = true
+            Enabled = console.TryGetOptionValue(_readOnlyOption, out var readOnly) && !readOnly
         };
         var fileSystemWatcher = new FileSystemWatcher
         {
