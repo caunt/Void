@@ -10,6 +10,7 @@ using Void.Proxy;
 if (OperatingSystem.IsWindows())
     Console.Clear();
 
+var patchModernForwarding = false;
 var docker = true;
 var version = ProtocolVersion.Latest;
 var timeout = TimeSpan.FromSeconds(900);
@@ -45,7 +46,12 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
 {
 
     const string imageName = "itzg/minecraft-server";
-    const string patches =
+    var patches =
+        $$"""
+        {
+           "patches": [
+            {{(
+            patchModernForwarding ?
         """
         {
            "patches":[
@@ -66,6 +72,12 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
                     }
                  ]
               },
+            """
+            : string.Empty)}}
+
+            {{(
+            patchModernForwarding ?
+            """
               {
                  "file":"/data/config/paper.yml",
                  "ops":[
@@ -89,6 +101,10 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
                     }
                  ]
               },
+            """
+            : string.Empty)}}
+
+            {{"""
               {
                  "file":"/data/config/spigot.yml",
                  "ops":[
@@ -99,7 +115,8 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
                        }
                     }
                  ]
-              }
+               },
+            """}}
            ]
         }
         """;
