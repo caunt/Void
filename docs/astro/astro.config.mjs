@@ -32,6 +32,7 @@ export default defineConfig({
                 label: 'Forwarding',
                 autogenerate: { directory: 'docs/forwardings' }
             },
+            { slug: 'docs/essentials' },
             { slug: 'docs/containers' },
             { slug: 'docs/watchdog' },
             {
