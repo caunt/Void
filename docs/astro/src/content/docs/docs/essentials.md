@@ -9,7 +9,7 @@ The Essentials plugin ships with Void and offers basic utilities for managing th
 
 ## Server Redirection
 
-Use `/server [server-name]` to send yourself to another backend server. If no name is given, one is chosen at random. Review your [**server configuration**](/docs/configuration/in-file/#servers) to see which names are available.
+Use `/server [server-name]` to send yourself to another backend server. If no name is given, one is chosen at random. Review your [**server configuration**](/docs/configuration/in-file/#proxy) to see which names are available, or register new ones with the [**program argument**](/docs/configuration/program-arguments#servers) `--server`.
 
 ## Platform Commands
 
