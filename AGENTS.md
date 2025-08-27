@@ -96,6 +96,7 @@ Follow the existing C# style rules:
 ## Documentation
 
 - When adding links to documentation, make the link text bold. For example: `[**link text**](https://example.com)`.
+- Never include inline code or backticks inside a link caption; keep code formatting outside the link text.
 
 ## Protocol guidance
 
