@@ -19,7 +19,7 @@ Use `/server [server-name]` to send yourself to another backend server. If no na
 
 ## Moderation
 
-`/kick <name> [reason]` removes a player from the proxy with an optional message. For broader moderation strategies, see the [**troubleshooting guide**](/docs/troubleshooting/).
+`/kick <name> [reason]` removes a player from the proxy with an optional message.
 
 ## Debugging
 
