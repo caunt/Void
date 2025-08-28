@@ -5,7 +5,7 @@ sidebar:
   order: 0
 ---
 
-The Essentials plugin ships with Void and offers basic utilities for managing the proxy and connected players. You can explore the [**Essentials plugin project**](https://github.com/caunt/Void/tree/main/src/Plugins/Essentials).
+The [**Essentials plugin**](https://github.com/caunt/Void/tree/main/src/Plugins/Essentials) ships with Void and offers basic utilities for managing the proxy and connected players.
 
 ## Server Redirection
 
