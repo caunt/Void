@@ -13,7 +13,7 @@ Use `/server [server-name]` to send yourself to another backend server. If no na
 
 ## Platform Commands
 
-- `/stop` — immediately stops the proxy. When running in [**containers**](/docs/containers/), prefer orchestrator controls for clean restarts.
+- `/stop` — immediately stops the proxy.
 - `/plugins` — lists currently loaded plugins. Learn more about [**developing plugins**](/docs/developing-plugins/development-kit/).
 - `/unload <name>` — unloads a plugin container without restarting.
 
