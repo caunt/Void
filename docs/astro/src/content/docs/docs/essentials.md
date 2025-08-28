@@ -23,4 +23,4 @@ Use `/server [server-name]` to send yourself to another backend server. If no na
 
 ## Debugging
 
-Essentials logs every network message at the trace level, helping diagnose issues during development or [**testing**](/docs/getting-started/running/).
+Essentials logs every network message at the trace level, helping diagnose issues during development or testing.
