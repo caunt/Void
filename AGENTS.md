@@ -42,7 +42,7 @@ Follow the existing C# style rules:
 ## Development
 
 - Commit only hunks with actual code changes. All code should use CRLF line endings and existing whitespace should be preserved; never reformat untouched lines.
-- Run `dotnet test` to ensure all tests pass.
+- Run `dotnet test` to ensure all tests pass whenever C# source files (`*.cs`) are modified. Skip this step if no C# files change.
 - Be patient with long-running tests and avoid aborting them early; some may take several minutes to complete.
 - After changing source code, run `dotnet build` from the repository root.
 - Conventional Commits are required for commit messages.
