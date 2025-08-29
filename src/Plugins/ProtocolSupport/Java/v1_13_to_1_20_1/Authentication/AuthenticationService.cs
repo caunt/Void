@@ -110,7 +110,12 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
 
     protected override async ValueTask FinishServerAuthenticationAsync(ILink link, AuthenticationResult authenticationResult, CancellationToken cancellationToken)
     {
-        var joinGamePacket = await link.ReceivePacketAsync<JoinGamePacket>(cancellationToken);
+        // Forge sends Plugin Message packets after Login Success but before Join Game
+        IMinecraftClientboundPacket packet;
+        while ((packet = await link.ReceivePacketAsync<IMinecraftClientboundPacket>(cancellationToken)) is not JoinGamePacket)
+            await link.SendPacketAsync(packet, cancellationToken);
+
+        var joinGamePacket = (JoinGamePacket)packet;
 
         if (authenticationResult is AuthenticationResult.AlreadyAuthenticated)
             await link.SendPacketAsync(RespawnPacket.FromJoinGame(joinGamePacket), cancellationToken);
