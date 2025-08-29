@@ -38,17 +38,19 @@ public static class PlayerExtensions
         public Phase Phase { get => player.AsMinecraft.Phase; set => player.AsMinecraft.Phase = value; }
         public GameProfile? Profile { get => player.AsMinecraft.Profile; set => player.AsMinecraft.Profile = value; }
         public IdentifiedKey? IdentifiedKey { get => player.AsMinecraft.IdentifiedKey; set => player.AsMinecraft.IdentifiedKey = value; }
-
-        public ILogger GetLogger()
+        public ILogger Logger
         {
-            var contextBuilder = new StringBuilder();
-            contextBuilder.Append(player.GetType().Name);
-            contextBuilder.Append(" <");
-            contextBuilder.Append(player);
-            contextBuilder.Append('>');
+            get
+            {
+                var contextBuilder = new StringBuilder();
+                contextBuilder.Append(player.GetType().Name);
+                contextBuilder.Append(" <");
+                contextBuilder.Append(player);
+                contextBuilder.Append('>');
 
-            var loggerFactory = player.Context.Services.GetRequiredService<ILoggerFactory>();
-            return loggerFactory.CreateLogger(contextBuilder.ToString());
+                var loggerFactory = player.Context.Services.GetRequiredService<ILoggerFactory>();
+                return loggerFactory.CreateLogger(contextBuilder.ToString());
+            }
         }
 
         public async ValueTask<ChatSendResult> SendChatMessageAsync(Component message, CancellationToken cancellationToken = default)

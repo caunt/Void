@@ -41,7 +41,7 @@ public class CommandService(IEventService events) : ICommandService, IEventListe
         try
         {
             if (source is IPlayer player)
-                player.GetLogger().LogInformation("Entered command: {Command}", command);
+                player.Logger.LogInformation("Entered command: {Command}", command);
 
             _ = await _dispatcher.ExecuteAsync(command, source, cancellationToken);
             return CommandExecutionResult.Executed;
