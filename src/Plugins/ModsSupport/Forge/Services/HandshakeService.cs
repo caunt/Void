@@ -10,7 +10,7 @@ using Void.Proxy.Plugins.ModsSupport.Forge.Packets;
 
 namespace Void.Proxy.Plugins.ModsSupport.Forge.Services;
 
-public class HandshakeService(ILogger<HandshakeService> logger, IPlayerContext context) : IEventListener
+public class HandshakeService(IPlayerContext context) : IEventListener
 {
     [Subscribe]
     public void OnMessageReceived(MessageReceivedEvent @event)
@@ -18,7 +18,7 @@ public class HandshakeService(ILogger<HandshakeService> logger, IPlayerContext c
         if (@event.Message is not PluginMessagePacket packet)
             return;
 
-        context.Player.GetLogger().LogDebug("{Direction} Plugin Message {Channel} => {Data}", @event.Direction, packet.Channel, Convert.ToHexString(packet.Data.Span));
+        context.Logger.LogDebug("{Direction} Plugin Message {Channel} => {Data}", @event.Direction, packet.Channel, Convert.ToHexString(packet.Data.Span));
     }
 
     [Subscribe]

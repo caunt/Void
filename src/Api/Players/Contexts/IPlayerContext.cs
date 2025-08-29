@@ -1,4 +1,5 @@
-﻿using Void.Proxy.Api.Network.Channels;
+﻿using Microsoft.Extensions.Logging;
+using Void.Proxy.Api.Network.Channels;
 
 namespace Void.Proxy.Api.Players.Contexts;
 
@@ -8,6 +9,11 @@ public interface IPlayerContext : IDisposable, IAsyncDisposable
     /// Gets the current player instance.
     /// </summary>
     public IPlayer Player { get; }
+
+    /// <summary>
+    /// Gets the logger instance for logging player-specific events and information.
+    /// </summary>
+    public ILogger Logger { get; }
 
     /// <summary>
     /// Gets the service provider that provides access to player scoped services.
