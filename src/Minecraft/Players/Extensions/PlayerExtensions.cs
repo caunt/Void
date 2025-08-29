@@ -76,10 +76,16 @@ public static class PlayerExtensions
         public void RegisterPacket<T>(params MinecraftPacketIdMapping[] mappings) where T : IMinecraftPacket
         {
             if (typeof(T).IsAssignableTo(typeof(IMinecraftClientboundPacket)))
+            {
                 player.RegisterPacket<T>(Direction.Clientbound, mappings);
+                return;
+            }
 
             if (typeof(T).IsAssignableTo(typeof(IMinecraftServerboundPacket)))
+            {
                 player.RegisterPacket<T>(Direction.Serverbound, mappings);
+                return;
+            }
 
             throw new InvalidOperationException($"Packet {typeof(T).Name} is neither Clientbound nor Serverbound. Specify the direction with {nameof(RegisterPacket)}<{typeof(T).Name}>(Direction, ...).");
         }
