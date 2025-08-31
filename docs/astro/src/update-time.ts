@@ -55,4 +55,4 @@ function collect(directory: string) {
     }
 }
 
-collect(contentRoot)
+collect(contentRoot);
