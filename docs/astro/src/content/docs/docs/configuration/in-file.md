@@ -87,7 +87,7 @@ $ VOID_PLUGINS="https://example.org/download/YourPlugin1.dll;/home/YourPlugin2.d
 
 ## Plugins Configurations (configs/\<Plugin\>/*.toml)
 
-Each plugin may [**define one or subset of keyed configuration files**](/docs/developing-plugins/configuration/) in its own directory. 
+Each plugin may [**define one or a subset of keyed configuration files**](/docs/developing-plugins/configuration/) in its own directory. 
 Plugins are not required to save or load configurations manually. 
 
 All changes on the disk are automatically loaded into existing instance in the memory.
