@@ -12,12 +12,12 @@ Without any forwarding enabled, the server will use the player's offline UUID an
 
 ## Legacy (BungeeCord)
 One of the oldest forwarding modes, developed by [SpigotMC](https://github.com/SpigotMC/BungeeCord).  
-Learn how to configure it in the [**Legacy forwarding**](/docs/forwardings/legacy) page.
+Learn how to configure it on the [**Legacy forwarding**](/docs/forwardings/legacy) page.
 
 ## Modern (Velocity)
 Next generation of forwarding, developed by [PaperMC](https://docs.papermc.io/velocity/player-information-forwarding/).  
-Learn how to configure it in the [**Modern forwarding**](/docs/forwardings/modern) page.
+Learn how to configure it on the [**Modern forwarding**](/docs/forwardings/modern) page.
 
 ## Online (Private Key)
 The newest forwarding mode, being developed by [Void](https://github.com/caunt/Void).  
-Learn how to configure it in the [**Online forwarding**](/docs/forwardings/online) page.
+Learn how to configure it on the [**Online forwarding**](/docs/forwardings/online) page.
