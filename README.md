@@ -32,7 +32,7 @@ Download :hammer_and_wrench: [**Plugin Development Kit**](https://github.com/cau
   <br>
   :globe_with_meridians: 
   <a href="https://t.me/mcVoidProxy">
-    <strong>News in Telegram</strong>
+    <strong>News on Telegram</strong>
     <br>
     <img width="221" height="223" alt="Telegram Channel" src="https://github.com/user-attachments/assets/837c1969-9511-4d51-98c2-2d2b3e58a481" />
   </a>
@@ -42,7 +42,7 @@ Download :hammer_and_wrench: [**Plugin Development Kit**](https://github.com/cau
   <br>
   :globe_with_meridians: 
   <a href="https://t.me/mcvoidproxyforum">
-    <strong>Discuss in Telegram</strong>
+    <strong>Discuss on Telegram</strong>
     <br>
     <img width="221" height="223" alt="image" src="https://github.com/user-attachments/assets/2fb48274-bc08-4544-80a9-aac3fb809ee1" />
   </a>
