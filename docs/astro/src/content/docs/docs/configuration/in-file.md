@@ -71,7 +71,7 @@ Secret = "YourSecretKeyHere"
 
 ## Plugins Installation
 
-Plugins are compiled with the *.dll extension in any .NET compatible language.
+Plugins are compiled with the `.dll` extension in any .NET compatible language.
 See the [**Plugin Development Kit**](/docs/developing-plugins/development-kit) section for more details.
 
 - Directory `plugins` is the default location to install plugins.
