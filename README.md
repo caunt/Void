@@ -1,6 +1,6 @@
 <div align="center" id="toc">
   <a href="https://hub.docker.com/r/caunt/void/tags"><img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/caunt/void?color=4c1"></a>
-  <a href="https://github.com/caunt/Void/issues"><img alt="GitHub Issues or Pull Requests" src="https://img.shields.io/github/issues/caunt/void"></a>
+  <a href="https://github.com/caunt/Void/issues"><img alt="GitHub Issues" src="https://img.shields.io/github/issues/caunt/void"></a>
   <a href="https://github.com/caunt/Void/actions"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/caunt/void/main.yaml"></a>
   <a href="https://www.nuget.org/packages/Void.Proxy.Api/"><img alt="NuGet Downloads" src="https://img.shields.io/nuget/dt/void.proxy.api?label=nuget%20void.proxy.api"></a>
   <a href="https://www.nuget.org/packages/Void.Minecraft/"><img alt="NuGet Downloads" src="https://img.shields.io/nuget/dt/void.minecraft?label=nuget%20void.minecraft"></a>
