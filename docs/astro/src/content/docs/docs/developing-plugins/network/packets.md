@@ -68,8 +68,7 @@ public void OnPhaseChanged(PhaseChangedEvent @event)
 ```
 
 :::note
-ProtocolVersions are specified in 'starting from' context.
-So the 0x4F packet id for `ProtocolVersion.MINECRAFT_1_20_2` means that this packet id is used starting from that version included and up to next version in this mapping definition excluded - `ProtocolVersion.MINECRAFT_1_20_3`, so basically just one 1.20.2 version.
+Each packet ID takes effect at its listed protocol version and remains valid until the next version in the table replaces it.
 :::
 
 ## Receiving Packets
