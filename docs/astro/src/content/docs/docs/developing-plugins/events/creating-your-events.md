@@ -25,7 +25,7 @@ public record MyEvent(string SomeValue) : IEventWithResult<int>
 ```
 
 ## Cancellable Event
-You can define your events as cancellable by making Result type boolean.
+You can define your events as cancellable by making the `Result` type boolean.
 ```csharp
 public record MyEvent(string SomeValue) : IEventWithResult<bool>
 {
