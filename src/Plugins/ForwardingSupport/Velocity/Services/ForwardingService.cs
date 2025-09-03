@@ -18,6 +18,8 @@ namespace Void.Proxy.Plugins.ForwardingSupport.Velocity.Services;
 
 public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleService console, Plugin plugin, Settings settings) : IEventListener
 {
+    private static readonly int MaxForwarding = Enum.GetValues<ForwardingVersion>().Cast<int>().Max();
+
     [Subscribe]
     public void OnPhaseChanged(PhaseChangedEvent @event)
     {
@@ -115,7 +117,7 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
 
     private ForwardingVersion FindForwardingVersion(ForwardingVersion requested)
     {
-        requested = (ForwardingVersion)Math.Min((int)requested, Enum.GetValues<ForwardingVersion>().Cast<int>().Max());
+        requested = (ForwardingVersion)Math.Min((int)requested, MaxForwarding);
 
         if (requested > ForwardingVersion.Default)
         {
