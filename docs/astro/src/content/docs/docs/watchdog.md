@@ -44,8 +44,7 @@ OK
 Responses are the same as for the `/health` endpoint.
 
 :::tip
-While `/bound` may look similar to `/health`, it is important to note that the Void Proxy may be healthy but not accepting connections.
-In such a case, the `/bound` endpoint will return `503 Service Unavailable`, while the `/health` endpoint will return `200 OK`.
+Use `/bound` to see if the proxy accepts connections; `/health` only checks if the proxy is running. A running but unbound proxy returns `503` on `/bound` and `200` on `/health`.
 :::
 
 ## Pause
