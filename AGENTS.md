@@ -30,6 +30,7 @@ This repository is a .NET solution composed of the following sections:
 
 Follow the existing C# style rules:
 
+- Indentation uses four spaces, with tab width set to four.
 - Private fields prefixed with an underscore and method parameters use camelCase.
 - Braces sit on their own lines with a blank line before loops and conditional statements.
 - Method signatures remain on a single line.
