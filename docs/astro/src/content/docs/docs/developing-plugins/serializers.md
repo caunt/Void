@@ -22,19 +22,19 @@ Helpful to convert Json or Snbt to Nbt and vice versa.
   - Converts **[Nbt](/docs/developing-plugins/nbt) to [Snbt](/docs/developing-plugins/nbt/#snbt)** or **[Snbt](/docs/developing-plugins/nbt/#snbt) to [Nbt](/docs/developing-plugins/nbt)**.
 
 :::caution[Prefer deserializing from Snbt]
-Json is not recommended because its properties' type conversion is guessed by bounds of the value.  
+JSON can't guarantee numeric types. In JSON, `{"value": 1}` leaves the number's type unspecified.
 
 ```json
 {
-	"value": 1
+    "value": 1
 }
 ```
-This 'value' number does not specify if it is a byte, short, int or long. So in deserialization time, parser checks if it fits in byte, short, int or long, and uses the first Nbt Tag Type that fits.
 
-On the other hand, Snbt specifies concrete type of the value. 
+In SNBT, `value: 1b` explicitly sets it as a byte.
+
 ```json
 {
-	value: 1b
+    value: 1b
 }
 ```
 :::
