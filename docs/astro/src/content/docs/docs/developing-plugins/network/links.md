@@ -9,11 +9,9 @@ sidebar:
 They define a connection between the player and server.
 
 ## Lifetime
-Instance of [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) is created whenever a player finds a server to connect to.  
-Players do not have any [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) at `PlayerConnectingEvent` event or `PlayerSearchServerEvent` event.
-
-It is disposed when the player disconnects from the server.  
-However, the player might be just redirecting to another server, so **new** [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) will be created for each server connection player makes.
+An [**ILink**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) is created when a player connects to a server and destroyed when they disconnect.
+Switching to another server replaces the existing link with a new [**ILink**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs).
+Players do not have an [**ILink**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) during `PlayerConnectingEvent` or `PlayerSearchServerEvent`.
 
 ## Channels
 Channels are used to send or receive data from **one** side of the [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs).
