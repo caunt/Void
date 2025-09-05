@@ -114,7 +114,7 @@ public class PlayerPositionService(IPlayerContext context) : IEventListener
 ```
 
 Now all players have their own instance of `PlayerPositionService` and each one contains current player position.
-You can get this service from player directly to access actual player position.
+You can get this service directly from the player to access the actual player position.
 ```csharp
 public class TrackerService(IPlayerService players)
 {
