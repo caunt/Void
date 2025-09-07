@@ -25,7 +25,7 @@ A separate `INetworkChannel` is created for `IPlayer`, and another for `IServer`
 ## Custom Implementation
 Void uses internal implementation of [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) if not overridden by plugin.
 
-Plugin can override it by providing custom implementation of [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) with `CreateLinkEvent` event.
+Plugin can override it by providing a custom implementation of [**`ILink`**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) with `CreateLinkEvent`.
 ```csharp
 [Subscribe]
 public void OnCreateLink(CreateLinkEvent @event)
