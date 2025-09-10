@@ -26,7 +26,7 @@ OK
 - PAUSED: The Void Proxy is not accepting connections.
 - STOPPING: The Void Proxy is shutting down.
 
-Status Code `200 OK` may be in any combination of above responses.   
+Status code `200 OK` may be in any combination of the above responses.
 It just means that the Void Proxy is still running and healthy.
 
 ## Bound Check
