@@ -11,7 +11,7 @@ After you have [**defined your packets**](/docs/developing-plugins/network/packe
 Void allows modifying packets in-place only for [**ILink**](/docs/developing-plugins/network/links) implementers.
 
 However, you can still manipulate [**packets**](/docs/developing-plugins/network/packets) by canceling them and sending a modified copy manually.
-In this page, we will proceed with this approach.
+On this page, we will proceed with this approach.
 :::
 
 ## Modifying Packets
