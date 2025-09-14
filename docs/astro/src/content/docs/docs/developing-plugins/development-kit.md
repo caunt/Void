@@ -19,7 +19,7 @@ Some of them include:
 ## Installation
 1) [**Download**](https://github.com/caunt/Void/releases/latest/download/plugin-devkit.zip) the latest **Plugin Development Kit**.
 2) Extract the downloaded zip file to your desired location.
-3) Open the ***.slnx** file with your IDE.
+3) Open the **pdk.slnx** file with your IDE.
 
 ## Running
 Press **F5** to run the project. This will start the Void Proxy with your plugin loaded.
