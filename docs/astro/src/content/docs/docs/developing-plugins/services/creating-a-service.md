@@ -6,7 +6,7 @@ sidebar:
 ---
 
 Services are used to build a Dependency Injection (DI) container.
-Your services will be shared across all plugins, and you can inject other plugins services into your plugin, if needed.
+Your services will be shared across all plugins, and you can inject other plugins' services into your plugin, if needed.
 
 To learn more about DI, see [**Microsoft DI Documentation**](https://docs.microsoft.com/en-us/dotnet/core/extensions/dependency-injection).
 
@@ -40,7 +40,7 @@ dependencies.Register(services =>
 ```
 
 ## Injection
-You can inject your plugin or any other plugins services that are registered in the DI container into your classes.
+You can inject your plugin's or any other plugins' services that are registered in the DI container into your classes.
 ```csharp
 public class ExampleSingletonService(ExampleTransientService transientService)
 {
