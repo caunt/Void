@@ -26,7 +26,7 @@ Prefer containers? See the [**Containers**](/docs/containers/) guide for Docker 
 
 ## Android
 
-Run the [**Termux**](https://play.google.com/store/apps/details?id=com.termux) or any other terminal emulator.
+Run [**Termux**](https://play.google.com/store/apps/details?id=com.termux) or any other terminal emulator.
 
 Follow the instructions for Linux, but use the "bionic" version of the binary.
 
