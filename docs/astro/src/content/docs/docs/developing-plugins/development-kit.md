@@ -45,4 +45,4 @@ This includes NuGet packages, local DLLs, and runtime lookups.
 NuGet dependencies will be automatically downloaded and cached in the **packages** directory.
 
 ## Distribution
-Share your ***.dll** file, without any other files from the **bin** directory.
+Share your **.dll** file, without any other files from the **bin** directory.
