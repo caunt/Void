@@ -43,7 +43,7 @@ Options:
   ./void-linux-x64 --offline
   ```
 
-## File-configuration
+## File Configuration
 - `--read-only`  
   Disables automatically saving changes to the [**configuration files**](/docs/configuration/in-file).
 

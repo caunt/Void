@@ -85,7 +85,7 @@ $ ./void-linux-x64 --plugin "/home/YourPlugin1.dll" --plugin "https://example.or
 $ VOID_PLUGINS="https://example.org/download/YourPlugin1.dll;/home/YourPlugin2.dll" ./void-linux-x64
 ```
 
-## Plugins Configurations (configs/\<Plugin\>/*.toml)
+## Plugin Configurations (configs/\<Plugin\>/*.toml)
 
 Each plugin may [**define one or a subset of keyed configuration files**](/docs/developing-plugins/configuration/) in its own directory. 
 Plugins are not required to save or load configurations manually. 
