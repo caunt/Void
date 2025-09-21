@@ -87,7 +87,7 @@ public class MyScopedService(IPlayerContext context) : IEventListener
 
 While events being filtered, scoped services are still instantiated for each player. 
 So all players and their respective scoped services will be notified about the event.
-This helps in player-specific resources isolation.
+This helps with player-specific resource isolation.
 
 ## Filtered Events usage example
 ```csharp
