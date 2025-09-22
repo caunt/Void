@@ -5,7 +5,7 @@ sidebar:
   order: 0
 ---
 
-File configurations are the main way of configuration.
+File configurations are the primary way to configure Void.
 However, many options can be overridden at runtime using the API in plugins.
 
 ## Proxy
