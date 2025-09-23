@@ -26,7 +26,13 @@ public class MyScopedService(IPlayerContext context)
 {
     public async ValueTask SendMessageAsync(CancellationToken cancellationToken)
     {
-        await context.Player.SendChatMessageAsync("&croses are red, &9violets are blue, &6honey is sweet, &dand so are you", cancellationToken);
+        var poem = string.Concat(
+            "&c", "roses are red, ",
+            "&9", "violets are blue, ",
+            "&6", "honey is sweet, ",
+            "&d", "and so are you");
+
+        await context.Player.SendChatMessageAsync(poem, cancellationToken);
     }
 }
 ```
@@ -60,7 +66,13 @@ public class MyScopedService(IPlayerContext context)
 {
     public async ValueTask SendMessageAsync(CancellationToken cancellationToken)
     {
-        Component component = "&croses are red, &9violets are blue, &6honey is sweet, &dand so are you";
+        var poem = string.Concat(
+            "&c", "roses are red, ",
+            "&9", "violets are blue, ",
+            "&6", "honey is sweet, ",
+            "&d", "and so are you");
+
+        Component component = poem;
 
         var legacy = component.SerializeLegacy(prefix: '&');
         var json = component.SerializeJson();
@@ -82,7 +94,13 @@ public class MyScopedService(IPlayerContext context)
 {
     public async ValueTask SendMessageAsync(CancellationToken cancellationToken)
     {
-        Component component = "&croses are red, &9violets are blue, &6honey is sweet, &dand so are you";
+        var poem = string.Concat(
+            "&c", "roses are red, ",
+            "&9", "violets are blue, ",
+            "&6", "honey is sweet, ",
+            "&d", "and so are you");
+
+        Component component = poem;
 
         // The value is: roses are red, violets are blue, honey is sweet, and so are you
         string text = component.AsText;
