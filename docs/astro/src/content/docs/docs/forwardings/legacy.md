@@ -29,4 +29,4 @@ If you are using official Forge server, you can install [**BungeeForge**](https:
 :::
 
 ## Configuration
-Currently BungeeCord forwarding does not require configuration.
+Currently, BungeeCord forwarding does not require configuration.
