@@ -69,7 +69,7 @@ Enabled = true
 Secret = "YourSecretKeyHere"
 ```
 
-## Plugins Installation
+## Plugin Installation
 
 Plugins are compiled with the `.dll` extension in any .NET compatible language.
 See the [**Plugin Development Kit**](/docs/developing-plugins/development-kit) section for more details.
