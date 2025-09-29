@@ -29,7 +29,7 @@ dependencies.Register(services =>
 });
 ```
 Your services will be automatically activated (instantiated) and subscribed to [**events**](/docs/developing-plugins/events/listening-to-events), if not delayed explicitly.
-You can delay your services activation, by providing `activate: false` parameter to the registration method:
+You can delay your services' activation by providing the `activate: false` parameter to the registration method:
 ```csharp
 dependencies.Register(services =>
 {
