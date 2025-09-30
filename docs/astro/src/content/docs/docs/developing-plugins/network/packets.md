@@ -129,7 +129,7 @@ You can send packets to the link with `ILink.SendPacketAsync` method.
 await player.GetLink().SendPacketAsync(new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
 ```
 
-When you want to explicitly send a packet to the server or client, `SendPacketAsync` has overload that specifies the Side of destination.
+When you want to explicitly send a packet to the server or client, `SendPacketAsync` has an overload that specifies the destination side.
 ```csharp
 await player.GetLink().SendPacketAsync(Side.Client, new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
 ```
