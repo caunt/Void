@@ -1,5 +1,7 @@
-﻿using Void.Minecraft.Network.Channels.Extensions;
+﻿using Void.Minecraft.Network;
+using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Network.Messages;
+using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.PacketId;
 using Void.Minecraft.Network.Registries.PacketId.Mappings;
 using Void.Minecraft.Network.Streams.Packet;
@@ -30,14 +32,9 @@ public static class ChannelExtensions
         return packet;
     }
 
-    public static void SetReadingPacketsMappings(this INetworkChannel channel, IPlugin managedBy, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings)
+    public static void ReplaceSystemPackets(this INetworkChannel channel, Operation operation, IPlugin managedBy, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings)
     {
-        channel.GetSystemRegistry(managedBy).ReplacePackets(Operation.Read, mappings);
-    }
-
-    public static void SetWritingPacketsMappings(this INetworkChannel channel, IPlugin managedBy, IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings)
-    {
-        channel.GetSystemRegistry(managedBy).ReplacePackets(Operation.Write, mappings);
+        channel.GetSystemRegistry(managedBy).ReplacePackets(operation, mappings);
     }
 
     public static void DisposeRegistries(this INetworkChannel channel, IPlugin managedBy)
