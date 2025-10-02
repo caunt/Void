@@ -1,8 +1,10 @@
 ﻿using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
+using Void.Minecraft.Players.Extensions;
+using Void.Proxy.Api.Players;
 
-namespace Void.Proxy.Plugins.ForwardingSupport.Velocity.Packets;
+namespace Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 
 public class LoginPluginResponsePacket : IMinecraftServerboundPacket<LoginPluginResponsePacket>
 {
@@ -25,6 +27,11 @@ public class LoginPluginResponsePacket : IMinecraftServerboundPacket<LoginPlugin
             Successful = buffer.ReadBoolean(),
             Data = buffer.ReadToEnd().ToArray()
         };
+    }
+
+    public static void Register(IPlayer player)
+    {
+        player.RegisterPacket<LoginPluginResponsePacket>([new(0x04, ProtocolVersion.Oldest)]);
     }
 
     public void Dispose()

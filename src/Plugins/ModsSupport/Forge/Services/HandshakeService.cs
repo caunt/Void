@@ -6,6 +6,8 @@ using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players.Contexts;
+using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
+using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 using Void.Proxy.Plugins.ModsSupport.Forge.Packets;
 
 namespace Void.Proxy.Plugins.ModsSupport.Forge.Services;
@@ -15,10 +17,14 @@ public class HandshakeService(IPlayerContext context) : IEventListener
     [Subscribe]
     public void OnMessageReceived(MessageReceivedEvent @event)
     {
-        if (@event.Message is not PluginMessagePacket packet)
-            return;
+        if (@event.Message is PluginMessagePacket pluginMessagePacket)
+            context.Logger.LogDebug("{Direction} Plugin Message {Channel} => {Data}", @event.Direction, pluginMessagePacket.Channel, Convert.ToHexString(pluginMessagePacket.Data.Span));
 
-        context.Logger.LogDebug("{Direction} Plugin Message {Channel} => {Data}", @event.Direction, packet.Channel, Convert.ToHexString(packet.Data.Span));
+        if (@event.Message is LoginPluginRequestPacket loginPluginRequestPacket)
+            context.Logger.LogDebug("{Direction} Login Plugin Request {MessageId} => {Data}", @event.Direction, loginPluginRequestPacket.MessageId, Convert.ToHexString(loginPluginRequestPacket.Data));
+
+        if (@event.Message is LoginPluginResponsePacket loginPluginResponsePacket)
+            context.Logger.LogDebug("{Direction} Login Plugin Response {MessageId} => {Data}", @event.Direction, loginPluginResponsePacket.MessageId, Convert.ToHexString(loginPluginResponsePacket.Data));
     }
 
     [Subscribe]
@@ -26,6 +32,12 @@ public class HandshakeService(IPlayerContext context) : IEventListener
     {
         switch (@event)
         {
+            case { Phase: Phase.Login }:
+                LoginPluginRequestPacket.Register(context.Player);
+                LoginPluginResponsePacket.Register(context.Player);
+
+                context.Logger.LogTrace("Registered packet mappings for at {Side} side", @event.Side);
+                break;
             case { Phase: Phase.Play, Side: Side.Server or Side.Client }:
                 context.Player.RegisterPacket<PluginMessagePacket>(Direction.Clientbound, [
                     new(0x3F, ProtocolVersion.MINECRAFT_1_7_2),

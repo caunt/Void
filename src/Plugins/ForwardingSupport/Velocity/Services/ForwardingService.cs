@@ -12,7 +12,8 @@ using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Players.Contexts;
-using Void.Proxy.Plugins.ForwardingSupport.Velocity.Packets;
+using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
+using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.ForwardingSupport.Velocity.Services;
 
@@ -24,8 +25,8 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
         if (@event.Phase is not Phase.Login)
             return;
 
-        context.Player.RegisterPacket<LoginPluginResponsePacket>([new(0x02, ProtocolVersion.Oldest)]);
-        context.Player.RegisterPacket<LoginPluginRequestPacket>([new(0x04, ProtocolVersion.Oldest)]);
+        LoginPluginRequestPacket.Register(context.Player);
+        LoginPluginResponsePacket.Register(context.Player);
 
         logger.LogTrace("Registered packet mappings for player {Player} at {Side} side", context.Player, @event.Side);
     }
