@@ -2,6 +2,7 @@
 using Void.Minecraft.Network.Registries;
 using Void.Minecraft.Network.Registries.PacketId;
 using Void.Minecraft.Network.Registries.Transformations;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Common.Network.Registries.PacketId;
 using Void.Proxy.Plugins.Common.Network.Registries.Transformations;
@@ -54,6 +55,12 @@ public class RegistryHolder : IRegistryHolder
     {
         PacketIdPlugins.Clear();
         PacketTransformationsPlugins.Clear();
+    }
+
+    public void ClearPluginsDirection(Direction direction)
+    {
+        PacketIdPlugins.Clear(direction);
+        PacketTransformationsPlugins.Clear(direction);
     }
 
     public string PrintPackets()

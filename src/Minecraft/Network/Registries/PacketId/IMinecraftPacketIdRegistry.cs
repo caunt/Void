@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.PacketId.Mappings;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Messages;
 
 namespace Void.Minecraft.Network.Registries.PacketId;
@@ -22,4 +23,5 @@ public interface IMinecraftPacketIdRegistry
     public IMinecraftPacketIdRegistry ReplacePackets(IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings, ProtocolVersion protocolVersion);
     public IMinecraftPacketIdRegistry AddPackets(IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> mappings, ProtocolVersion protocolVersion);
     public void Clear();
+    public void Clear(Direction direction);
 }

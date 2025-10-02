@@ -3,6 +3,7 @@ using Void.Minecraft.Network.Messages;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.Transformations;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Plugins;
 
 namespace Void.Proxy.Plugins.Common.Network.Registries.Transformations;
@@ -50,6 +51,12 @@ public class MinecraftPacketTransformationsPluginsRegistry : IMinecraftPacketTra
     public void Clear()
     {
         _map = [];
+    }
+
+    public void Clear(Direction direction)
+    {
+        foreach (var (_, registry) in _map)
+            registry.Clear(direction);
     }
 
     public void Reset()

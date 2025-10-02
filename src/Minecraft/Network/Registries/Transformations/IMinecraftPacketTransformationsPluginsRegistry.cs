@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Void.Minecraft.Network.Messages;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Plugins;
 
 namespace Void.Minecraft.Network.Registries.Transformations;
@@ -20,5 +21,6 @@ public interface IMinecraftPacketTransformationsPluginsRegistry
     public bool Contains(IMinecraftMessage message, TransformationType type);
     public bool Contains(Type packetType, TransformationType transformationType);
     public void Clear();
+    public void Clear(Direction direction);
     public void Reset();
 }

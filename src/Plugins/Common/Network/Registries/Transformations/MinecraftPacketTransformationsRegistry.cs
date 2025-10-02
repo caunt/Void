@@ -4,6 +4,7 @@ using Void.Minecraft.Network.Messages;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.Transformations;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
+using Void.Proxy.Api.Network;
 
 namespace Void.Proxy.Plugins.Common.Network.Registries.Transformations;
 
@@ -81,6 +82,25 @@ public class MinecraftPacketTransformationsRegistry : IMinecraftPacketTransforma
     {
         _upgradeMappings.Clear();
         _downgradeMappings.Clear();
+    }
+
+    public void Clear(Direction direction)
+    {
+        Clear(direction, _upgradeMappings);
+        Clear(direction, _downgradeMappings);
+    }
+
+    private static void Clear(Direction direction, Dictionary<Type, MinecraftPacketTransformation[]> mappings)
+    {
+        var directionType =
+            direction is Direction.Clientbound ? typeof(IMinecraftClientboundPacket) :
+            direction is Direction.Serverbound ? typeof(IMinecraftServerboundPacket) :
+            throw new ArgumentOutOfRangeException(nameof(direction), direction, null);
+
+        var filtered = mappings.Where(mapping => mapping.Key.IsAssignableTo(directionType)).ToArray();
+
+        foreach (var (type, _) in filtered)
+            mappings.Remove(type);
     }
 
     private Dictionary<Type, MinecraftPacketTransformation[]> GetMappings(TransformationType type) => type switch

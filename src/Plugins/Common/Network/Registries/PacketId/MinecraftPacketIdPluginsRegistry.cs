@@ -2,6 +2,7 @@
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.PacketId;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Messages;
 using Void.Proxy.Api.Plugins;
 
@@ -81,6 +82,12 @@ public class MinecraftPacketIdPluginsRegistry : IMinecraftPacketIdPluginsRegistr
     {
         lock (this)
             _map = [];
+    }
+
+    public void Clear(Direction direction)
+    {
+        foreach (var (_, registry) in _map)
+            registry.Clear(direction);
     }
 
     public void Reset()

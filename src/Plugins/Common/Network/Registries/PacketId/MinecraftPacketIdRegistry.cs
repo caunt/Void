@@ -3,6 +3,7 @@ using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.PacketId;
 using Void.Minecraft.Network.Registries.PacketId.Mappings;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Messages;
 
 namespace Void.Proxy.Plugins.Common.Network.Registries.PacketId;
@@ -101,6 +102,22 @@ public class MinecraftPacketIdRegistry : IMinecraftPacketIdRegistry
     {
         _mappings.Clear();
         _reverseMappings.Clear();
+    }
+
+    public void Clear(Direction direction)
+    {
+        var directionType = 
+            direction is Direction.Clientbound ? typeof(IMinecraftClientboundPacket) : 
+            direction is Direction.Serverbound ? typeof(IMinecraftServerboundPacket) : 
+            throw new ArgumentOutOfRangeException(nameof(direction), direction, null);
+
+        var filtered = _mappings.Where(mapping => mapping.Value.IsAssignableTo(directionType)).ToArray();
+
+        foreach (var (id, type) in filtered)
+        {
+            _mappings.Remove(id);
+            _reverseMappings.Remove(type);
+        }
     }
 
     private static bool TryCreateDecoder(Type type, [MaybeNullWhen(false)] out MinecraftPacketDecoder<IMinecraftPacket> packet)

@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using Void.Minecraft.Network.Messages;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
+using Void.Proxy.Api.Network;
 
 namespace Void.Minecraft.Network.Registries.Transformations;
 
@@ -19,4 +20,5 @@ public interface IMinecraftPacketTransformationsRegistry
     public IMinecraftPacketTransformationsRegistry ReplaceTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> mappings, ProtocolVersion protocolVersion);
     public IMinecraftPacketTransformationsRegistry AddTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> mappings, ProtocolVersion protocolVersion);
     public void Clear();
+    public void Clear(Direction direction);
 }
