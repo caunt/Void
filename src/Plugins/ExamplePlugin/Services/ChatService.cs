@@ -24,7 +24,7 @@ public class ChatSettings
 }
 
 // Here you can use DI to inject any service API you want to use.
-public class ChatService(ILogger<ChatService> logger, IConfigurationService configs, ICommandService commands) : IEventListener
+public class ChatService(ExamplePlugin plugin, ILogger<ChatService> logger, IConfigurationService configs, ICommandService commands) : IEventListener
 {
     // This instance will be updated in place if changes are made on disk.
     private ChatSettings? _settings;
@@ -65,7 +65,7 @@ public class ChatService(ILogger<ChatService> logger, IConfigurationService conf
         // This event is fired when any plugin is being loaded
 
         // Skip all other plugin load events except our plugin
-        if (@event.Plugin != this)
+        if (@event.Plugin != plugin)
             return;
 
         // Register your commands in brigadier-like way
