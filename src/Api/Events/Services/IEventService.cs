@@ -1,4 +1,5 @@
-﻿namespace Void.Proxy.Api.Events.Services;
+﻿
+namespace Void.Proxy.Api.Events.Services;
 
 public interface IEventService
 {
@@ -9,6 +10,8 @@ public interface IEventService
 
     public ValueTask<TResult?> ThrowWithResultAsync<TResult>(IEventWithResult<TResult> @event, CancellationToken cancellationToken = default);
     public ValueTask<TResult?> ThrowWithResultAsync<T, TResult>(CancellationToken cancellationToken = default) where T : IEventWithResult<TResult?>, new();
+
+    public ValueTask WaitAsync(Func<IEvent, bool> condition, CancellationToken cancellationToken = default);
 
     public void RegisterListeners(IEnumerable<IEventListener> listeners, CancellationToken cancellationToken = default);
     public void RegisterListeners(CancellationToken cancellationToken = default, params IEventListener[] listeners);

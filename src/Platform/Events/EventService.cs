@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Collections.Concurrent;
+using System.Reflection;
 using DryIoc;
 using Nito.Disposables.Internals;
 using Void.Proxy.Api.Events;
@@ -9,6 +10,7 @@ namespace Void.Proxy.Events;
 
 public class EventService(ILogger<EventService> logger, IContainer container) : IEventService
 {
+    private readonly ConcurrentDictionary<Func<IEvent, bool>, TaskCompletionSource> _waiters = [];
     private readonly List<Entry> _entries = [];
 
     public IEnumerable<IEventListener> Listeners
@@ -50,6 +52,15 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
             .Select(entry => new WeakEntry(new WeakReference<IEventListener>(entry.Listener), new WeakReference<MethodInfo>(entry.Method), entry.Order, entry.BypassScopedFilter, entry.CancellationToken));
 
         await ThrowAsync(entries, @event, cancellationToken);
+
+        foreach (var (condition, taskCompletionSource) in _waiters)
+        {
+            if (!condition(@event))
+                continue;
+
+            if (_waiters.Remove(condition, out _))
+                taskCompletionSource.SetResult();
+        }
     }
 
     private async ValueTask ThrowAsync<T>(IEnumerable<WeakEntry> entriesNotSafe, T @event, CancellationToken cancellationToken = default) where T : IEvent
@@ -125,6 +136,22 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
         }
 
         logger.LogTrace("Completed invoking {TypeName} event", eventType.Name);
+    }
+
+    public async ValueTask WaitAsync(Func<IEvent, bool> condition, CancellationToken cancellationToken = default)
+    {
+        var taskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _waiters[condition] = taskCompletionSource;
+
+        using var registration = cancellationToken.Register(() =>
+        {
+            if (!_waiters.Remove(condition, out _))
+                return;
+
+            taskCompletionSource.SetCanceled();
+        });
+
+        await taskCompletionSource.Task;
     }
 
     public void RegisterListeners(IEnumerable<IEventListener> listeners, CancellationToken cancellationToken = default)
