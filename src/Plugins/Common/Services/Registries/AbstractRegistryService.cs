@@ -1,8 +1,6 @@
-﻿using System.CommandLine;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Events;
-using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Network.Messages.Binary;
@@ -262,9 +260,9 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         var playerRegistry = link.PlayerChannel.GetMinecraftRegistries().PacketIdSystem;
         var serverRegistry = link.ServerChannel.GetMinecraftRegistries().PacketIdSystem;
 
-        if (!playerRegistry.Write.TryGetPacketId(minecraftPacket, out var id) && 
-            !serverRegistry.Write.TryGetPacketId(minecraftPacket, out id) && 
-            !playerRegistry.Read.TryGetPacketId(minecraftPacket, out id) && 
+        if (!playerRegistry.Write.TryGetPacketId(minecraftPacket, out var id) &&
+            !serverRegistry.Write.TryGetPacketId(minecraftPacket, out id) &&
+            !playerRegistry.Read.TryGetPacketId(minecraftPacket, out id) &&
             !serverRegistry.Read.TryGetPacketId(minecraftPacket, out id))
             yield break;
 

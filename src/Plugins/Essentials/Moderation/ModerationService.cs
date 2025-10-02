@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Nito.Disposables.Internals;
 using Void.Minecraft.Commands.Brigadier;
-using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Extensions;
 using Void.Minecraft.Commands.Brigadier.Suggestion;

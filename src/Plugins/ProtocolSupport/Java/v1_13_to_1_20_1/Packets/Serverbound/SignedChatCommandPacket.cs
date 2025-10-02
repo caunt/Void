@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;

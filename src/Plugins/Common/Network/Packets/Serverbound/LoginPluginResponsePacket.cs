@@ -1,8 +1,6 @@
 ﻿using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
-using Void.Minecraft.Players.Extensions;
-using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 

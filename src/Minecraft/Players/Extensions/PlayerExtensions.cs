@@ -103,7 +103,7 @@ public static class PlayerExtensions
                 Direction.Serverbound => link.ServerChannel,
                 _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
             };
-            
+
             channel.GetMinecraftRegistries().PacketIdPlugins.Get(plugin).RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
         }
 

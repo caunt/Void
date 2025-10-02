@@ -1,5 +1,3 @@
-using System;
-using System.Text;
 using Void.Minecraft.Nbt;
 using Void.Minecraft.Nbt.Tags;
 using Xunit;

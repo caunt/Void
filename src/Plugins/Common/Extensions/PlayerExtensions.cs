@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Void.Minecraft.Events;
-using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Network.Messages.Packets;

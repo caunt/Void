@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using Void.Minecraft.Buffers;
 
 namespace Void.Minecraft.Network.Registries.Transformations.Properties;

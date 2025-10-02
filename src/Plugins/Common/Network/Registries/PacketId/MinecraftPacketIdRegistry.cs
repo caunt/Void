@@ -106,9 +106,9 @@ public class MinecraftPacketIdRegistry : IMinecraftPacketIdRegistry
 
     public void Clear(Direction direction)
     {
-        var directionType = 
-            direction is Direction.Clientbound ? typeof(IMinecraftClientboundPacket) : 
-            direction is Direction.Serverbound ? typeof(IMinecraftServerboundPacket) : 
+        var directionType =
+            direction is Direction.Clientbound ? typeof(IMinecraftClientboundPacket) :
+            direction is Direction.Serverbound ? typeof(IMinecraftServerboundPacket) :
             throw new ArgumentOutOfRangeException(nameof(direction), direction, null);
 
         var filtered = _mappings.Where(mapping => mapping.Value.IsAssignableTo(directionType)).ToArray();

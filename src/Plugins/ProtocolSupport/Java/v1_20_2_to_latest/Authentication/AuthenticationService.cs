@@ -17,7 +17,6 @@ using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Network.Bundles;
 using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
-using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 using Void.Proxy.Plugins.Common.Services.Authentication;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Extensions;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;

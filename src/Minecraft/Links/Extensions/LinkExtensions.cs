@@ -6,12 +6,10 @@ using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Network.Messages;
 using Void.Minecraft.Network.Messages.Packets;
-using Void.Minecraft.Network.Registries;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
-using Void.Proxy.Api.Network.Channels;
 
 namespace Void.Minecraft.Links.Extensions;
 

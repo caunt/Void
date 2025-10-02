@@ -1,5 +1,4 @@
 ﻿using Void.Proxy.Api.Network.Messages;
-using Void.Proxy.Api.Network.Streams.Manual;
 
 namespace Void.Proxy.Api.Network.Streams.Manual.Binary;
 
