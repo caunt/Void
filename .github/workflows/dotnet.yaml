@@ -45,7 +45,7 @@ jobs:
           - os: macos-latest
             runtime: osx-arm64
             run-tests: true
-          - os: macos-13 # macos-latest
+          - os: macos-15-intel # macos-latest
             runtime: osx-x64
             run-tests: true
           - os: windows-11-arm # windows-latest
