@@ -68,8 +68,7 @@ public void OnPhaseChanged(PhaseChangedEvent @event)
 ```
 
 :::note
-ProtocolVersions are specified in 'starting from' context.
-So the 0x4F packet id for `ProtocolVersion.MINECRAFT_1_20_2` means that this packet id is used starting from that version included and up to next version in this mapping definition excluded - `ProtocolVersion.MINECRAFT_1_20_3`, so basically just one 1.20.2 version.
+Each packet ID takes effect at its listed protocol version and remains valid until the next version in the table replaces it.
 :::
 
 ## Receiving Packets
@@ -130,7 +129,7 @@ You can send packets to the link with `ILink.SendPacketAsync` method.
 await player.GetLink().SendPacketAsync(new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
 ```
 
-When you want to explicitly send a packet to the server or client, `SendPacketAsync` has overload that specifies the Side of destination.
+When you want to explicitly send a packet to the server or client, `SendPacketAsync` has an overload that specifies the destination side.
 ```csharp
 await player.GetLink().SendPacketAsync(Side.Client, new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
 ```

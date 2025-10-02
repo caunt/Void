@@ -23,4 +23,4 @@ Use `/server [server-name]` to send yourself to another backend server. If no na
 
 ## Debugging
 
-Essentials logs every network message at the trace level, helping diagnose issues during development or testing.
+Essentials logs every network message at the trace level, helping diagnose issues during development or testing. See the [**logging argument example**](/docs/configuration/program-arguments/#logging) for how to start the proxy with `--logging Trace`.

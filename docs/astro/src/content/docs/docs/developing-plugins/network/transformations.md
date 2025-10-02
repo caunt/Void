@@ -10,7 +10,7 @@ When you define a packet, it might change in future versions of Minecraft. There
 - Define flat packet transformations
 
 :::caution
-If packet is changed in new version of Minecraft, it is not recommended to define new classes for each packet version.
+If the packet is changed in a new version of Minecraft, it is not recommended to define new classes for each packet version.
 
 **Do not define SetHeldItemPacket_v1_20_2, SetHeldItemPacket_v1_20_3, SetHeldItemPacket_v1_20_4, etc.**
 
@@ -121,7 +121,7 @@ If your packet has unchanged properties, you can use `wrapper.Passthrough()` met
 wrapper.Passthrough<ByteProperty>();
 ```
 
-Register your flat transformations for player at same time, when you register your packet:
+Register your flat transformations for the player at the same time when you register your packet:
 ```csharp
 [Subscribe]
 public void OnPhaseChanged(PhaseChangedEvent @event)

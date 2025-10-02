@@ -346,7 +346,7 @@ public static class ComponentNbtTransformers
     {
         if (tag is NbtCompound rootCompound)
         {
-            // Downsample colors to list of compatible
+            // Downsample colors to a list of compatible colors
             if (rootCompound["color"] is NbtString colorTag)
             {
                 var color = TextColor.FromString(colorTag.Value);

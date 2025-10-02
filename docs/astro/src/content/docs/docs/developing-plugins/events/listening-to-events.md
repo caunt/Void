@@ -32,8 +32,8 @@ Most player interactions happen asynchronously. Mark your event handlers `async`
 [Subscribe]
 public async ValueTask OnPlayerConnected(PlayerConnectedEvent @event, CancellationToken cancellationToken)
 {
-    // It is highly recommended to pass cancellation token in all async methods you call.
-    // This helps proxy to correctly manage player network lifetime.
+    // It is highly recommended to pass the cancellation token to all async methods you call.
+    // This helps the proxy correctly manage the player network lifetime.
     await @event.Player.KickAsync("You are not allowed to join this server.", cancellationToken);
 }
 ```

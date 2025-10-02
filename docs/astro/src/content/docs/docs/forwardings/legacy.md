@@ -13,7 +13,7 @@ BungeeCord, also known as Legacy forwarding, is a type of forwarding player data
 
 :::tip
 It is the easiest way to pass player information from the proxy to the server in the handshake packet, supported by many server implementations.
-Legacy forwarding may include additional data, such as forge FML markers.
+Legacy forwarding may include additional data, such as Forge FML markers.
 :::
 
 :::note[Mods]
@@ -29,4 +29,4 @@ If you are using official Forge server, you can install [**BungeeForge**](https:
 :::
 
 ## Configuration
-Currently BungeeCord forwarding does not require configuration.
+Currently, BungeeCord forwarding does not require configuration.

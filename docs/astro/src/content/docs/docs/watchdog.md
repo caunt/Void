@@ -7,7 +7,7 @@ The Watchdog feature in Void is designed to monitor the health of the Void Proxy
 This is particularly useful for long-running processes or when running Void in a [**production environment**](/docs/containers/).
 
 ## Enable Watchdog
-Watchdog is disabled by default. To enable it, you need to set the `Enabled` setting in the [**configuration file**](/docs/configuration/in-file#watchdog) to `true`, or [**environment variable**](/docs/configuration/in-file#watchdog) `VOID_WATCHDOG_ENABLE` to `true`.
+Watchdog is disabled by default. To enable it, you need to set the `Enabled` setting in the [**configuration file**](/docs/configuration/in-file#watchdog) to `true`, or set the [**environment variable**](/docs/configuration/environment-variables#watchdog) `VOID_WATCHDOG_ENABLE` to `true`.
 
 ## Health Check
 `/health` endpoint is used to check the health of the Void Proxy.
@@ -26,7 +26,7 @@ OK
 - PAUSED: The Void Proxy is not accepting connections.
 - STOPPING: The Void Proxy is shutting down.
 
-Status Code `200 OK` may be in any combination of above responses.   
+Status code `200 OK` may be in any combination of the above responses.
 It just means that the Void Proxy is still running and healthy.
 
 ## Bound Check
@@ -44,8 +44,7 @@ OK
 Responses are the same as for the `/health` endpoint.
 
 :::tip
-While `/bound` may look similar to `/health`, it is important to note that the Void Proxy may be healthy but not accepting connections.
-In such a case, the `/bound` endpoint will return `503 Service Unavailable`, while the `/health` endpoint will return `200 OK`.
+Use `/bound` to see if the proxy accepts connections; `/health` only checks if the proxy is running. A running but unbound proxy returns `503` on `/bound` and `200` on `/health`.
 :::
 
 ## Pause

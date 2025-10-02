@@ -5,7 +5,7 @@ sidebar:
   order: 0
 ---
 
-File configurations are the main way of configuration.
+File configurations are the primary way to configure Void.
 However, many options can be overridden at runtime using the API in plugins.
 
 ## Proxy
@@ -69,14 +69,14 @@ Enabled = true
 Secret = "YourSecretKeyHere"
 ```
 
-## Plugins Installation
+## Plugin Installation
 
-Plugins are compiled with the *.dll extension in any .NET compatible language.
+Plugins are compiled with the `.dll` extension in any .NET compatible language.
 See the [**Plugin Development Kit**](/docs/developing-plugins/development-kit) section for more details.
 
 - Directory `plugins` is the default location to install plugins.
-- [**Environment variable**](/docs/configuration/environment-variables/#plugins) `VOID_PLUGINS` might be used to add URLs or Local Paths to run plugins, separated by comma or semicolon.
-- [**Program argument**](/docs/configuration/program-arguments#plugins) `--plugin` (alias `-p`) might be used to add URL or Local Path to a plugin.
+- [**Environment variable**](/docs/configuration/environment-variables/#plugins) `VOID_PLUGINS` might be used to add URLs or local paths to run plugins, separated by comma or semicolon.
+- [**Program argument**](/docs/configuration/program-arguments#plugins) `--plugin` (alias `-p`) might be used to add URL or local path to a plugin.
 
 ```bash title="Program Argument Example"
 $ ./void-linux-x64 --plugin "/home/YourPlugin1.dll" --plugin "https://example.org/download/YourPlugin2.dll"
@@ -85,12 +85,12 @@ $ ./void-linux-x64 --plugin "/home/YourPlugin1.dll" --plugin "https://example.or
 $ VOID_PLUGINS="https://example.org/download/YourPlugin1.dll;/home/YourPlugin2.dll" ./void-linux-x64
 ```
 
-## Plugins Configurations (configs/\<Plugin\>/*.toml)
+## Plugin Configurations (configs/\<Plugin\>/*.toml)
 
-Each plugin may [**define one or subset of keyed configuration files**](/docs/developing-plugins/configuration/) in its own directory. 
+Each plugin may [**define one or a subset of keyed configuration files**](/docs/developing-plugins/configuration/) in its own directory. 
 Plugins are not required to save or load configurations manually. 
 
-All changes on the disk are automatically loaded into existing instance in the memory.
+All changes on the disk are automatically loaded into an existing instance in memory.
 Vice versa, all changes in the memory are automatically saved to the disk. This automatic saving can be disabled via [**program argument**](/docs/configuration/program-arguments/#file-configuration).
 
 Currently, only TOML format is supported.
