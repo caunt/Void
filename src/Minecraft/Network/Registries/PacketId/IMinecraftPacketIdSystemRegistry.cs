@@ -7,6 +7,11 @@ using Void.Proxy.Api.Plugins;
 
 namespace Void.Minecraft.Network.Registries.PacketId;
 
+/// <summary>
+/// Defines an interface for managing and accessing Minecraft packet ID registries for different protocol versions and
+/// operations.
+/// </summary>
+/// <remarks>This interface has split <see cref="Read"/> and <see cref="Write"/> registries unlike <see cref="IMinecraftPacketIdPluginsRegistry"/>.</remarks>
 public interface IMinecraftPacketIdSystemRegistry
 {
     public bool IsEmpty { get; }
