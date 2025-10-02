@@ -12,6 +12,8 @@ using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Network.Bundles;
+using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
+using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 using Void.Proxy.Plugins.Common.Services.Authentication;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Extensions;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientbound;
@@ -137,6 +139,10 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
                 return AuthenticationResult.Authenticated;
             case SetCompressionPacket:
                 // handled by compression service
+                break;
+            case LoginPluginRequestPacket loginPluginRequest:
+                // hope someone handles it
+                // TODO: how do we ensure that someone answered it, considering any plugin can have its own Type for a response packet
                 break;
             case EncryptionRequestPacket:
                 throw new InvalidOperationException("Authentication side is set to Proxy, but server is in online-mode.");

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Void.Minecraft.Events;
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
+using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.Transformations.Extensions;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
@@ -22,8 +23,8 @@ public static class PlayerExtensions
     public static void RegisterSystemTransformations<T>(this IPlayer player, params MinecraftPacketTransformationMapping[] mappings) where T : IMinecraftPacket
     {
         var link = player.GetLink();
-        link.GetRegistries(Direction.Clientbound).PacketTransformationsSystem.All.RegisterTransformations<T>(player.ProtocolVersion, mappings);
-        link.GetRegistries(Direction.Serverbound).PacketTransformationsSystem.All.RegisterTransformations<T>(player.ProtocolVersion, mappings);
+        link.PlayerChannel.GetMinecraftRegistries().PacketTransformationsSystem.All.RegisterTransformations<T>(player.ProtocolVersion, mappings);
+        link.ServerChannel.GetMinecraftRegistries().PacketTransformationsSystem.All.RegisterTransformations<T>(player.ProtocolVersion, mappings);
     }
 
     public static async ValueTask SetPhaseAsync(this IPlayer player, Side side, Phase phase, INetworkChannel channel, CancellationToken cancellationToken)

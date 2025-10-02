@@ -6,8 +6,6 @@ using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players.Contexts;
-using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
-using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 using Void.Proxy.Plugins.ModsSupport.Forge.Packets;
 
 namespace Void.Proxy.Plugins.ModsSupport.Forge.Services;

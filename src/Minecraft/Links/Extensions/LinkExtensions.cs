@@ -46,20 +46,4 @@ public static class LinkExtensions
         var direction = side is Side.Client ? Direction.Clientbound : Direction.Serverbound;
         await events.ThrowAsync(new MessageSentEvent(Side.Proxy, Side.Proxy, side, direction, packet, link, link.Player), cancellationToken);
     }
-
-    public static IRegistryHolder GetRegistries(this ILink link, Direction direction)
-    {
-        var channel = link.GetChannel(direction);
-        return channel.GetRegistries();
-    }
-
-    public static INetworkChannel GetChannel(this ILink link, Direction direction)
-    {
-        return direction switch
-        {
-            Direction.Clientbound => link.PlayerChannel,
-            Direction.Serverbound => link.ServerChannel,
-            _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
-        };
-    }
 }

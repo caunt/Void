@@ -11,9 +11,10 @@ using Void.Minecraft.Profiles;
 using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
+using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players.Contexts;
-using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
-using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
+using Void.Proxy.Plugins.ForwardingSupport.Velocity.Packets;
 
 namespace Void.Proxy.Plugins.ForwardingSupport.Velocity.Services;
 

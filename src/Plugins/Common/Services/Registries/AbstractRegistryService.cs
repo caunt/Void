@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.CommandLine;
+using Microsoft.Extensions.Logging;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Events;
 using Void.Minecraft.Links.Extensions;
@@ -41,8 +42,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             if (!player.TryGetLink(out var link))
                 continue;
 
-            link.GetRegistries(Direction.Clientbound).ClearPlugin(@event.Plugin);
-            link.GetRegistries(Direction.Serverbound).ClearPlugin(@event.Plugin);
+            link.PlayerChannel.GetMinecraftRegistries().ClearPlugin(@event.Plugin);
+            link.ServerChannel.GetMinecraftRegistries().ClearPlugin(@event.Plugin);
         }
     }
 
@@ -90,8 +91,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
         var link = @event.Player.GetLink();
 
-        link.GetRegistries(Direction.Clientbound).ClearPlugins();
-        link.GetRegistries(Direction.Serverbound).ClearPlugins();
+        link.PlayerChannel.GetMinecraftRegistries().ClearPlugins();
+        link.ServerChannel.GetMinecraftRegistries().ClearPlugins();
     }
 
     [Subscribe(PostOrder.Last)]
@@ -103,7 +104,14 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
-        var registries = @event.Link.GetRegistries(@event.Direction).PacketIdPlugins;
+        var channel = @event.Direction switch
+        {
+            Direction.Clientbound => @event.Link.PlayerChannel,
+            Direction.Serverbound => @event.Link.ServerChannel,
+            _ => throw new InvalidOperationException($"Unknown direction {@event.Direction}")
+        };
+
+        var registries = channel.GetMinecraftRegistries().PacketIdPlugins;
 
         if (registries.IsEmpty)
             return;
@@ -111,7 +119,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (registries.Contains(@event.Message))
             return;
 
-        var transformations = @event.Link.GetRegistries(@event.Direction).PacketTransformationsPlugins;
+        var transformations = channel.GetMinecraftRegistries().PacketTransformationsPlugins;
 
         try
         {
@@ -143,7 +151,14 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
-        var registries = @event.Link.GetRegistries(@event.Direction).PacketIdPlugins;
+        var channel = @event.Direction switch
+        {
+            Direction.Clientbound => @event.Link.PlayerChannel,
+            Direction.Serverbound => @event.Link.ServerChannel,
+            _ => throw new InvalidOperationException($"Unknown direction {@event.Direction}")
+        };
+
+        var registries = channel.GetMinecraftRegistries().PacketIdPlugins;
 
         if (registries.IsEmpty)
             return;
@@ -151,7 +166,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (registries.Contains(@event.Message))
             return;
 
-        var transformations = @event.Link.GetRegistries(@event.Direction).PacketTransformationsPlugins;
+        var transformations = channel.GetMinecraftRegistries().PacketTransformationsPlugins;
 
         try
         {
@@ -244,10 +259,13 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!link.Player.IsMinecraft)
             yield break;
 
-        var playerRegistry = link.PlayerChannel.GetRegistries().PacketIdSystem;
-        var serverRegistry = link.ServerChannel.GetRegistries().PacketIdSystem;
+        var playerRegistry = link.PlayerChannel.GetMinecraftRegistries().PacketIdSystem;
+        var serverRegistry = link.ServerChannel.GetMinecraftRegistries().PacketIdSystem;
 
-        if (!playerRegistry.Write.TryGetPacketId(minecraftPacket, out var id) && !serverRegistry.Write.TryGetPacketId(minecraftPacket, out id))
+        if (!playerRegistry.Write.TryGetPacketId(minecraftPacket, out var id) && 
+            !serverRegistry.Write.TryGetPacketId(minecraftPacket, out id) && 
+            !playerRegistry.Read.TryGetPacketId(minecraftPacket, out id) && 
+            !serverRegistry.Read.TryGetPacketId(minecraftPacket, out id))
             yield break;
 
         var queue = new Queue<IMinecraftPacketIdRegistry>(registries.All);

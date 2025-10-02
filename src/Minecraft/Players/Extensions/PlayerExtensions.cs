@@ -96,9 +96,15 @@ public static class PlayerExtensions
         {
             var plugin = player.GetPacketPlugin<T>(player.Context.Services);
             var link = player.GetLink();
-            var registry = link.GetRegistries(direction).PacketIdPlugins.Get(plugin);
 
-            registry.RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
+            var channel = direction switch
+            {
+                Direction.Clientbound => link.PlayerChannel,
+                Direction.Serverbound => link.ServerChannel,
+                _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+            };
+            
+            channel.GetMinecraftRegistries().PacketIdPlugins.Get(plugin).RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
         }
 
         public void RegisterTransformations<T>(params MinecraftPacketTransformationMapping[] mappings) where T : IMinecraftPacket
@@ -106,8 +112,8 @@ public static class PlayerExtensions
             var plugin = player.GetPacketPlugin<T>(player.Context.Services);
             var link = player.GetLink();
 
-            link.GetRegistries(Direction.Clientbound).PacketTransformationsPlugins.Get(plugin).RegisterTransformations<T>(player.AsMinecraft.ProtocolVersion, mappings);
-            link.GetRegistries(Direction.Serverbound).PacketTransformationsPlugins.Get(plugin).RegisterTransformations<T>(player.AsMinecraft.ProtocolVersion, mappings);
+            link.PlayerChannel.GetMinecraftRegistries().PacketTransformationsPlugins.Get(plugin).RegisterTransformations<T>(player.AsMinecraft.ProtocolVersion, mappings);
+            link.ServerChannel.GetMinecraftRegistries().PacketTransformationsPlugins.Get(plugin).RegisterTransformations<T>(player.AsMinecraft.ProtocolVersion, mappings);
         }
 
         private IPlugin GetPacketPlugin<T>(IServiceProvider services) where T : IMinecraftPacket

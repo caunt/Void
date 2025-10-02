@@ -1,5 +1,7 @@
 ﻿using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries.PacketId.Mappings;
+using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
+using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
 
@@ -23,13 +25,15 @@ public static class Registry
         { [new MinecraftPacketIdMapping(0x00, Plugin.SupportedVersions.First())], typeof(LoginDisconnectPacket) },
         { [new MinecraftPacketIdMapping(0x01, Plugin.SupportedVersions.First())], typeof(EncryptionRequestPacket) },
         { [new MinecraftPacketIdMapping(0x02, Plugin.SupportedVersions.First())], typeof(LoginSuccessPacket) },
-        { [new MinecraftPacketIdMapping(0x03, Plugin.SupportedVersions.First())], typeof(SetCompressionPacket) }
+        { [new MinecraftPacketIdMapping(0x03, Plugin.SupportedVersions.First())], typeof(SetCompressionPacket) },
+        { [new MinecraftPacketIdMapping(0x04, Plugin.SupportedVersions.First())], typeof(LoginPluginRequestPacket) }
     };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundLoginMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
     {
         { [new MinecraftPacketIdMapping(0x00, Plugin.SupportedVersions.First())], typeof(LoginStartPacket) },
         { [new MinecraftPacketIdMapping(0x01, Plugin.SupportedVersions.First())], typeof(EncryptionResponsePacket) },
+        { [new MinecraftPacketIdMapping(0x02, Plugin.SupportedVersions.First())], typeof(LoginPluginResponsePacket) },
         { [new MinecraftPacketIdMapping(0x03, Plugin.SupportedVersions.First())], typeof(LoginAcknowledgedPacket) }
     };
 
@@ -61,7 +65,8 @@ public static class Registry
                 new MinecraftPacketIdMapping(0x24, Plugin.SupportedVersions.First()),
                 new MinecraftPacketIdMapping(0x26, ProtocolVersion.MINECRAFT_1_20_5),
                 new MinecraftPacketIdMapping(0x27, ProtocolVersion.MINECRAFT_1_21_2),
-                new MinecraftPacketIdMapping(0x26, ProtocolVersion.MINECRAFT_1_21_5)
+                new MinecraftPacketIdMapping(0x26, ProtocolVersion.MINECRAFT_1_21_5),
+                new MinecraftPacketIdMapping(0x2B, ProtocolVersion.MINECRAFT_1_21_9)
             ],
             typeof(KeepAliveRequestPacket)
         },
@@ -71,7 +76,8 @@ public static class Registry
                 new MinecraftPacketIdMapping(0x67, ProtocolVersion.MINECRAFT_1_20_3),
                 new MinecraftPacketIdMapping(0x69, ProtocolVersion.MINECRAFT_1_20_5),
                 new MinecraftPacketIdMapping(0x70, ProtocolVersion.MINECRAFT_1_21_2),
-                new MinecraftPacketIdMapping(0x6F, ProtocolVersion.MINECRAFT_1_21_5)
+                new MinecraftPacketIdMapping(0x6F, ProtocolVersion.MINECRAFT_1_21_5),
+                new MinecraftPacketIdMapping(0x74, ProtocolVersion.MINECRAFT_1_21_9)
             ],
             typeof(StartConfigurationPacket)
         },
@@ -79,7 +85,8 @@ public static class Registry
             [
                 new MinecraftPacketIdMapping(0x1B, Plugin.SupportedVersions.First()),
                 new MinecraftPacketIdMapping(0x1D, ProtocolVersion.MINECRAFT_1_20_5),
-                new MinecraftPacketIdMapping(0x1C, ProtocolVersion.MINECRAFT_1_21_5)
+                new MinecraftPacketIdMapping(0x1C, ProtocolVersion.MINECRAFT_1_21_5),
+                new MinecraftPacketIdMapping(0x20, ProtocolVersion.MINECRAFT_1_21_9)
             ],
             typeof(PlayDisconnectPacket)
         },
@@ -89,7 +96,8 @@ public static class Registry
                 new MinecraftPacketIdMapping(0x69, ProtocolVersion.MINECRAFT_1_20_3),
                 new MinecraftPacketIdMapping(0x6C, ProtocolVersion.MINECRAFT_1_20_5),
                 new MinecraftPacketIdMapping(0x73, ProtocolVersion.MINECRAFT_1_21_2),
-                new MinecraftPacketIdMapping(0x72, ProtocolVersion.MINECRAFT_1_21_5)
+                new MinecraftPacketIdMapping(0x72, ProtocolVersion.MINECRAFT_1_21_5),
+                new MinecraftPacketIdMapping(0x77, ProtocolVersion.MINECRAFT_1_21_9)
             ],
             typeof(SystemChatMessagePacket)
         }

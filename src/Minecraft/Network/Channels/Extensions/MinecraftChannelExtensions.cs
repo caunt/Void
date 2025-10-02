@@ -21,7 +21,7 @@ public static class MinecraftChannelExtensions
         await channel.WriteMessageAsync(packet, Side.Proxy, cancellationToken);
     }
 
-    public static IRegistryHolder GetRegistries(this INetworkChannel channel)
+    public static IRegistryHolder GetMinecraftRegistries(this INetworkChannel channel)
     {
         if (channel.TryGet<IMinecraftPacketMessageStream>(out var stream))
             return stream.Registries;

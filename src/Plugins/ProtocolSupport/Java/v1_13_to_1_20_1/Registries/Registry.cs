@@ -1,5 +1,7 @@
 ﻿using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries.PacketId.Mappings;
+using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
+using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Serverbound;
 
@@ -23,13 +25,15 @@ public static class Registry
         { [new MinecraftPacketIdMapping(0x00, Plugin.SupportedVersions.First())], typeof(LoginDisconnectPacket) },
         { [new MinecraftPacketIdMapping(0x01, Plugin.SupportedVersions.First())], typeof(EncryptionRequestPacket) },
         { [new MinecraftPacketIdMapping(0x02, Plugin.SupportedVersions.First())], typeof(LoginSuccessPacket) },
-        { [new MinecraftPacketIdMapping(0x03, Plugin.SupportedVersions.First())], typeof(SetCompressionPacket) }
+        { [new MinecraftPacketIdMapping(0x03, Plugin.SupportedVersions.First())], typeof(SetCompressionPacket) },
+        { [new MinecraftPacketIdMapping(0x04, Plugin.SupportedVersions.First())], typeof(LoginPluginRequestPacket) }
     };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundLoginMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
     {
         { [new MinecraftPacketIdMapping(0x00, Plugin.SupportedVersions.First())], typeof(LoginStartPacket) },
-        { [new MinecraftPacketIdMapping(0x01, Plugin.SupportedVersions.First())], typeof(EncryptionResponsePacket) }
+        { [new MinecraftPacketIdMapping(0x01, Plugin.SupportedVersions.First())], typeof(EncryptionResponsePacket) },
+        { [new MinecraftPacketIdMapping(0x02, Plugin.SupportedVersions.First())], typeof(LoginPluginResponsePacket) }
     };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ClientboundPlayMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
@@ -107,7 +111,7 @@ public static class Registry
                 new MinecraftPacketIdMapping(0x02, Plugin.SupportedVersions.First()),
                 new MinecraftPacketIdMapping(0x03, ProtocolVersion.MINECRAFT_1_14, ProtocolVersion.MINECRAFT_1_18_2)
             ],
-            typeof(ChatMessagePacket)
+            typeof(Packets.Serverbound.ChatMessagePacket)
         },
         {
             [

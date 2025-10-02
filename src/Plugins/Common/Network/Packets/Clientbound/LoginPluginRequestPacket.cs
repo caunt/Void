@@ -29,11 +29,6 @@ public class LoginPluginRequestPacket : IMinecraftClientboundPacket<LoginPluginR
         };
     }
 
-    public static void Register(IPlayer player)
-    {
-        player.RegisterPacket<LoginPluginRequestPacket>([new(0x04, ProtocolVersion.Oldest)]);
-    }
-
     public void Dispose()
     {
         GC.SuppressFinalize(this);
