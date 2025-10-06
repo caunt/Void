@@ -17,9 +17,9 @@ Legacy forwarding may include additional data, such as Forge FML markers.
 :::
 
 :::note[Mods]
-BungeeCord forwarding is not supported by mod loaders, however community has created modded server implementations with BungeeCord forwarding, such as [Mohist](https://github.com/MohistMC/Mohist).  
+BungeeCord forwarding is not supported by mod loaders; however, the community has created modded server implementations with BungeeCord forwarding, such as [Mohist](https://github.com/MohistMC/Mohist).
 
-If you are using official Forge server, you can install [**BungeeForge**](https://github.com/caunt/BungeeForge) mod, which adds BungeeCord forwarding support to Forge server.
+If you are using an official Forge server, you can install the [**BungeeForge**](https://github.com/caunt/BungeeForge) mod, which adds BungeeCord forwarding support to the Forge server.
 :::
 
 :::caution[Limitations]
