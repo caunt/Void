@@ -37,8 +37,6 @@ public abstract class AbstractChannelService(IEventService events) : IPluginComm
         var channel = new SimpleMinecraftChannel(new SimpleNetworkStream(stream));
         channel.Add<MinecraftPacketMessageStream>();
 
-        await events.ThrowAsync(new ChannelCreatedEvent(player, side, channel), cancellationToken);
-
         return channel;
     }
 }

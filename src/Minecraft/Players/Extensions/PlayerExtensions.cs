@@ -109,7 +109,10 @@ public static class PlayerExtensions
             }
             else if (direction is Direction.Serverbound)
             {
-                player.Context.Channel?.GetMinecraftRegistries().PacketIdPlugins.Get(plugin).RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
+                if (player.Context.Channel is null)
+                    throw new InvalidOperationException("Cannot register serverbound packet without an active channel.");
+
+                player.Context.Channel.GetMinecraftRegistries().PacketIdPlugins.Get(plugin).RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
             }
             else
             {

@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Nito.AsyncEx;
+using Void.Proxy.Api.Events.Channels;
+using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Servers;
@@ -58,7 +60,12 @@ public static class PlayerExtensions
     public static async ValueTask<INetworkChannel> BuildServerChannelAsync(this IPlayer player, IServer server, CancellationToken cancellationToken = default)
     {
         var channelBuilder = await player.GetChannelBuilderAsync(cancellationToken);
-        return await channelBuilder.BuildServerChannelAsync(player, server, cancellationToken);
+        var channel = await channelBuilder.BuildServerChannelAsync(player, server, cancellationToken);
+
+        var events = player.Context.Services.GetRequiredService<IEventService>();
+        await events.ThrowAsync(new ChannelCreatedEvent(player, Network.Side.Server, channel), cancellationToken);
+
+        return channel;
     }
 
     public static async ValueTask<INetworkChannel> GetChannelAsync(this IPlayer player, CancellationToken cancellationToken = default)
@@ -67,7 +74,12 @@ public static class PlayerExtensions
             return player.Context.Channel;
 
         var channelBuilder = await player.GetChannelBuilderAsync(cancellationToken);
-        player.Context.Channel = await channelBuilder.BuildPlayerChannelAsync(player, cancellationToken);
+        var channel = await channelBuilder.BuildPlayerChannelAsync(player, cancellationToken);
+
+        player.Context.Channel = channel;
+
+        var events = player.Context.Services.GetRequiredService<IEventService>();
+        await events.ThrowAsync(new ChannelCreatedEvent(player, Network.Side.Client, player.Context.Channel), cancellationToken);
 
         return player.Context.Channel;
     }
