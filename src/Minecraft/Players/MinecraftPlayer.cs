@@ -8,11 +8,12 @@ using Void.Proxy.Api.Players.Contexts;
 
 namespace Void.Minecraft.Players;
 
-public class MinecraftPlayer(TcpClient client, IPlayerContext context, string remoteEndPoint, ProtocolVersion protocolVersion) : IPlayer
+public class MinecraftPlayer(TcpClient client, IPlayerContext context, string remoteEndPoint, DateTimeOffset connectedAt, ProtocolVersion protocolVersion) : IPlayer
 {
     public TcpClient Client { get; } = client;
     public IPlayerContext Context { get; } = context;
     public string RemoteEndPoint { get; } = remoteEndPoint;
+    public DateTimeOffset ConnectedAt { get; } = connectedAt;
 
     public ProtocolVersion ProtocolVersion { get; } = protocolVersion;
     public IdentifiedKey? IdentifiedKey { get; set; } // Only 1.19 - 1.19.2

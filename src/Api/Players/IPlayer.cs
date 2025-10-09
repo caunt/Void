@@ -22,6 +22,11 @@ public interface IPlayer : IEquatable<IPlayer>, ICommandSource, IAsyncDisposable
     public string RemoteEndPoint { get; }
 
     /// <summary>
+    /// Gets the date and time when the player connected to the proxy.
+    /// </summary>
+    public DateTimeOffset ConnectedAt { get; }
+
+    /// <summary>
     /// Gets the context containing services and state associated with the
     /// player.
     /// </summary>

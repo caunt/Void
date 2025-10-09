@@ -13,6 +13,7 @@ public class PlayerProxy(IPlayer player) : IPlayer
 {
     public TcpClient Client => Source.Client;
     public string RemoteEndPoint => Source.RemoteEndPoint;
+    public DateTimeOffset ConnectedAt => Source.ConnectedAt;
     public IPlayerContext Context => Source.Context;
     public IPlayer Source { get; private set; } = player is not PlayerProxy ? player : throw new InvalidOperationException($"PlayerProxy cannot be set as {nameof(Source)}");
 

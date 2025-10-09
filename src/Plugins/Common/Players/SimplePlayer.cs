@@ -9,12 +9,14 @@ public class SimplePlayer : IPlayer
     public TcpClient Client { get; }
     public IPlayerContext Context { get; }
     public string RemoteEndPoint { get; }
+    public DateTimeOffset ConnectedAt { get; }
 
     public SimplePlayer(TcpClient client, Func<IPlayer, IPlayerContext> contextBuilder)
     {
         Client = client;
         RemoteEndPoint = client.Client.RemoteEndPoint?.ToString() ?? "Unknown?";
 
+        ConnectedAt = DateTimeOffset.Now;
         Context = contextBuilder(this);
     }
 
