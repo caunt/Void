@@ -11,6 +11,7 @@ using Void.Minecraft.Profiles;
 using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players.Contexts;
 using Void.Proxy.Plugins.ForwardingSupport.Velocity.Packets;
 
@@ -26,10 +27,14 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
         if (@event.Phase is not Phase.Login)
             return;
 
-        LoginPluginRequestPacket.Register(context.Player);
-        LoginPluginResponsePacket.Register(context.Player);
+        if (@event.Side is Side.Server)
+            LoginPluginRequestPacket.Register(context.Player);
+        else if (@event.Side is Side.Client)
+            LoginPluginResponsePacket.Register(context.Player);
+        else
+            throw new InvalidOperationException($"Unexpected side {@event.Side}");
 
-        context.Logger.LogTrace("Registered packet mappings at {Side} side", @event.Side);
+        context.Logger.LogTrace("Registered forwarding packet mappings at {Side} side", @event.Side);
     }
 
     [Subscribe]
