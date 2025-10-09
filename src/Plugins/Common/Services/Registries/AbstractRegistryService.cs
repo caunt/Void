@@ -96,7 +96,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         link.ServerChannel.GetMinecraftRegistries().ClearPlugins();
     }
 
-    [Subscribe(PostOrder.Last)]
+    [Subscribe]
     public async ValueTask OnMessageReceivedWithCustomRegistry(MessageReceivedEvent @event, CancellationToken cancellationToken)
     {
         if (!@event.Player.IsMinecraft)
@@ -105,45 +105,41 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
-        var channel = @event.Direction switch
+        foreach (var channel in @event.Link.Channels)
         {
-            Direction.Clientbound => @event.Link.PlayerChannel,
-            Direction.Serverbound => @event.Link.ServerChannel,
-            _ => throw new InvalidOperationException($"Unknown direction {@event.Direction}")
-        };
+            var registries = channel.GetMinecraftRegistries().PacketIdPlugins;
 
-        var registries = channel.GetMinecraftRegistries().PacketIdPlugins;
+            if (registries.IsEmpty)
+                continue;
 
-        if (registries.IsEmpty)
-            return;
+            if (registries.Contains(@event.Message))
+                continue;
 
-        if (registries.Contains(@event.Message))
-            return;
+            var transformations = channel.GetMinecraftRegistries().PacketTransformationsPlugins;
 
-        var transformations = channel.GetMinecraftRegistries().PacketTransformationsPlugins;
-
-        try
-        {
-            var packets = @event.Message switch
+            try
             {
-                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, registries, transformations, binaryMessage),
-                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, registries, transformations, minecraftPacket),
-                _ => null
-            };
+                var packets = @event.Message switch
+                {
+                    IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, registries, transformations, binaryMessage),
+                    IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, registries, transformations, minecraftPacket),
+                    _ => null
+                };
 
-            if (packets is null)
-                return;
+                if (packets is null)
+                    continue;
 
-            foreach (var packet in packets)
-                @event.Result = await events.ThrowWithResultAsync(new MessageReceivedEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link, @event.Player), cancellationToken);
-        }
-        catch (Exception exception)
-        {
-            logger.LogError(exception, "Error decoding or handling {Type}", @event.Message);
+                foreach (var packet in packets)
+                    @event.Result = await events.ThrowWithResultAsync(new MessageReceivedEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link, @event.Player), cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "Error decoding or handling {Type}", @event.Message);
+            }
         }
     }
 
-    [Subscribe(PostOrder.Last)]
+    [Subscribe]
     public async ValueTask OnMessageSentWithCustomRegistry(MessageSentEvent @event, CancellationToken cancellationToken)
     {
         if (!@event.Player.IsMinecraft)
@@ -152,41 +148,37 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
-        var channel = @event.Direction switch
+        foreach (var channel in @event.Link.Channels)
         {
-            Direction.Clientbound => @event.Link.PlayerChannel,
-            Direction.Serverbound => @event.Link.ServerChannel,
-            _ => throw new InvalidOperationException($"Unknown direction {@event.Direction}")
-        };
+            var registries = channel.GetMinecraftRegistries().PacketIdPlugins;
 
-        var registries = channel.GetMinecraftRegistries().PacketIdPlugins;
+            if (registries.IsEmpty)
+                continue;
 
-        if (registries.IsEmpty)
-            return;
+            if (registries.Contains(@event.Message))
+                continue;
 
-        if (registries.Contains(@event.Message))
-            return;
+            var transformations = channel.GetMinecraftRegistries().PacketTransformationsPlugins;
 
-        var transformations = channel.GetMinecraftRegistries().PacketTransformationsPlugins;
-
-        try
-        {
-            var packets = @event.Message switch
+            try
             {
-                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, registries, transformations, binaryMessage),
-                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, registries, transformations, minecraftPacket),
-                _ => null
-            };
+                var packets = @event.Message switch
+                {
+                    IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, registries, transformations, binaryMessage),
+                    IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, registries, transformations, minecraftPacket),
+                    _ => null
+                };
 
-            if (packets is null)
-                return;
+                if (packets is null)
+                    continue;
 
-            foreach (var packet in packets)
-                await events.ThrowAsync(new MessageSentEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link, @event.Player), cancellationToken);
-        }
-        catch (Exception exception)
-        {
-            logger.LogError(exception, "Error decoding or handling {Type}", @event.Message);
+                foreach (var packet in packets)
+                    await events.ThrowAsync(new MessageSentEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link, @event.Player), cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "Error decoding or handling {Type}", @event.Message);
+            }
         }
     }
 
