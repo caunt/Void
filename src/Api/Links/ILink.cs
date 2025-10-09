@@ -13,6 +13,8 @@ public interface ILink : IEventListener, IAsyncDisposable
     public INetworkChannel ServerChannel { get; }
     public bool IsAlive { get; }
 
+    public IEnumerable<INetworkChannel> Channels => [PlayerChannel, ServerChannel];
+
     public ValueTask StartAsync(CancellationToken cancellationToken);
     public ValueTask StopAsync(CancellationToken cancellationToken);
 }
