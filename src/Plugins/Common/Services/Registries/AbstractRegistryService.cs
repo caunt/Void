@@ -80,9 +80,12 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    [Subscribe(PostOrder.First)]
-    public static void OnPhaseChanged(PhaseChangedEvent @event)
+    [Subscribe]
+    public void OnPhaseChanged(PhaseChangedEvent @event)
     {
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
+            return;
+
         // At handshake phase IPlayer channel is still being built, causing stack overflow here
         if (@event.Phase is Phase.Handshake)
             return;
