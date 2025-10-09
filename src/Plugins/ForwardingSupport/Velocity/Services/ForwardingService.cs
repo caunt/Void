@@ -29,7 +29,7 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
         LoginPluginRequestPacket.Register(context.Player);
         LoginPluginResponsePacket.Register(context.Player);
 
-        logger.LogTrace("Registered packet mappings for player {Player} at {Side} side", context.Player, @event.Side);
+        context.Logger.LogTrace("Registered packet mappings at {Side} side", @event.Side);
     }
 
     [Subscribe]

@@ -34,7 +34,7 @@ public class HandshakeService(IPlayerContext context) : IEventListener
                 LoginPluginRequestPacket.Register(context.Player);
                 LoginPluginResponsePacket.Register(context.Player);
 
-                context.Logger.LogTrace("Registered packet mappings for at {Side} side", @event.Side);
+                context.Logger.LogTrace("Registered packet mappings at {Side} side", @event.Side);
                 break;
             case { Phase: Phase.Play, Side: Side.Server or Side.Client }:
                 context.Player.RegisterPacket<PluginMessagePacket>(Direction.Clientbound, [

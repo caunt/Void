@@ -70,7 +70,7 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
                 new(0x67, ProtocolVersion.MINECRAFT_1_21_9)
             ]);
 
-            logger.LogTrace("Registered packet mappings for player {Player} at {Side} side", player, side);
+            context.Logger.LogTrace("Registered packet mappings at {Side} side", @event.Side);
         }
     }
 
