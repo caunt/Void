@@ -254,7 +254,7 @@ public ref struct MinecraftBuffer
         return _backingBuffer.ReadToEnd();
     }
 
-    public ReadOnlySpan<byte> Dump()
+    public ReadOnlySpan<byte> DumpBytes()
     {
         var position = Position;
         Seek(0, SeekOrigin.Begin);
@@ -263,6 +263,16 @@ public ref struct MinecraftBuffer
         Seek(position, SeekOrigin.Begin);
 
         return data;
+    }
+
+    public string DumpHex()
+    {
+        return Convert.ToHexString(DumpBytes());
+    }
+
+    public string Dump()
+    {
+        return $"Length: {Length}, Position: {Position}, Bytes: {DumpHex()}";
     }
 
     public void Reset()
