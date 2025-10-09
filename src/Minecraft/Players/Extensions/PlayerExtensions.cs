@@ -95,16 +95,26 @@ public static class PlayerExtensions
         public void RegisterPacket<T>(Direction direction, params MinecraftPacketIdMapping[] mappings) where T : IMinecraftPacket
         {
             var plugin = player.GetPacketPlugin<T>(player.Context.Services);
-            var link = player.GetLink();
 
-            var channel = direction switch
+            if (player.TryGetLink(out var link))
             {
-                Direction.Clientbound => link.PlayerChannel,
-                Direction.Serverbound => link.ServerChannel,
-                _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
-            };
+                var channel = direction switch
+                {
+                    Direction.Clientbound => link.PlayerChannel,
+                    Direction.Serverbound => link.ServerChannel,
+                    _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+                };
 
-            channel.GetMinecraftRegistries().PacketIdPlugins.Get(plugin).RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
+                channel.GetMinecraftRegistries().PacketIdPlugins.Get(plugin).RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
+            }
+            else if (direction is Direction.Serverbound)
+            {
+                player.Context.Channel?.GetMinecraftRegistries().PacketIdPlugins.Get(plugin).RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
+            }
+            else
+            {
+                throw new InvalidOperationException("Cannot register clientbound packet without an active link.");
+            }
         }
 
         public void RegisterTransformations<T>(params MinecraftPacketTransformationMapping[] mappings) where T : IMinecraftPacket
