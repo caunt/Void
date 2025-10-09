@@ -10,7 +10,7 @@ Download [**latest version here**](/download).
 
 ## Linux
 
-Set the executable permission
+Set the executable permissions
 ```bash
 chmod +x void-linux-x64
 ```
@@ -40,4 +40,4 @@ Follow the instructions for Linux, but use the "osx" version of the binary.
 
 ## Windows
 
-Run the executable, simple as that.
+Run the executable—simple as that.
