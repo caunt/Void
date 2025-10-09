@@ -80,7 +80,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    [Subscribe]
+    [Subscribe(PostOrder.First)]
     public void OnPhaseChanged(PhaseChangedEvent @event)
     {
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
@@ -94,6 +94,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
         link.PlayerChannel.GetMinecraftRegistries().ClearPlugins();
         link.ServerChannel.GetMinecraftRegistries().ClearPlugins();
+
+        logger.LogDebug("Cleared plugin registries for {Player} on {Side} phase change to {Phase}", @event.Player, @event.Side, @event.Phase);
     }
 
     [Subscribe]
