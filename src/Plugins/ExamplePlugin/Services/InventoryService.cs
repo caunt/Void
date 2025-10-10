@@ -53,6 +53,7 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
             // https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Protocol_version_numbers
 
             player.RegisterPacket<SetHeldItemServerboundPacket>([
+                new(0x28, ProtocolVersion.MINECRAFT_1_20),
                 new(0x2B, ProtocolVersion.MINECRAFT_1_20_2),
                 new(0x2C, ProtocolVersion.MINECRAFT_1_20_3),
                 new(0x2F, ProtocolVersion.MINECRAFT_1_20_5),
@@ -62,6 +63,7 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
             ]);
 
             player.RegisterPacket<SetHeldItemClientboundPacket>([
+                new(0x4D, ProtocolVersion.MINECRAFT_1_20),
                 new(0x4F, ProtocolVersion.MINECRAFT_1_20_2),
                 new(0x51, ProtocolVersion.MINECRAFT_1_20_3),
                 new(0x53, ProtocolVersion.MINECRAFT_1_20_5),
