@@ -56,7 +56,9 @@ public class PromptReader : IDisposable
         {
             do
             {
-                _writer.UpdateBuffer();
+                // TODO: Currently the prompt is not redrawn when enter is рудв
+                // If uncommented, it will be redrawn but multithreaded writes will be drawn over each other
+                // _writer.UpdateBuffer();
 
                 if (!Console.KeyAvailable)
                 {
