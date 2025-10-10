@@ -95,7 +95,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         link.PlayerChannel.GetMinecraftRegistries().ClearPlugins();
         link.ServerChannel.GetMinecraftRegistries().ClearPlugins();
 
-        logger.LogDebug("Cleared plugin registries for {Player} on {Side} phase change to {Phase}", @event.Player, @event.Side, @event.Phase);
+        // TODO: Clear only affected registries that are no longer valid
     }
 
     [Subscribe]
