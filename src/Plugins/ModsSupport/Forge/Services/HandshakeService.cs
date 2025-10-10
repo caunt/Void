@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Void.Minecraft.Events;
 using Void.Minecraft.Network;
+using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
@@ -15,46 +16,49 @@ public class HandshakeService(IPlayerContext context) : IEventListener
     [Subscribe]
     public void OnMessageReceived(MessageReceivedEvent @event)
     {
-        if (@event.Message is PluginMessagePacket pluginMessagePacket)
-            context.Logger.LogDebug("{Direction} Plugin Message {Channel} => {Data}", @event.Direction, pluginMessagePacket.Channel, Convert.ToHexString(pluginMessagePacket.Data.Span));
+        switch (@event.Message)
+        {
+            case HandshakePacket handshakePacket:
+                context.Logger.LogDebug("Received handshake at mods support plugin");
+                break;
 
-        if (@event.Message is LoginPluginRequestPacket loginPluginRequestPacket)
-            context.Logger.LogDebug("{Direction} Login Plugin Request {MessageId} => {Data}", @event.Direction, loginPluginRequestPacket.MessageId, Convert.ToHexString(loginPluginRequestPacket.Data));
+            case PluginMessagePacket pluginMessagePacket:
+                context.Logger.LogDebug("{Direction} Plugin Message {Channel} => {Data}", @event.Direction, pluginMessagePacket.Channel, Convert.ToHexString(pluginMessagePacket.Data.Span));
+                break;
 
-        if (@event.Message is LoginPluginResponsePacket loginPluginResponsePacket)
-            context.Logger.LogDebug("{Direction} Login Plugin Response {MessageId} => {Data}", @event.Direction, loginPluginResponsePacket.MessageId, Convert.ToHexString(loginPluginResponsePacket.Data));
+            case LoginPluginRequestPacket loginPluginRequestPacket:
+                context.Logger.LogDebug("{Direction} Login Plugin Request {MessageId} => {Data}", @event.Direction, loginPluginRequestPacket.MessageId, Convert.ToHexString(loginPluginRequestPacket.Data));
+                break;
+
+            case LoginPluginResponsePacket loginPluginResponsePacket:
+                context.Logger.LogDebug("{Direction} Login Plugin Response {MessageId} => {Data}", @event.Direction, loginPluginResponsePacket.MessageId, Convert.ToHexString(loginPluginResponsePacket.Data));
+                break;
+
+            case IMinecraftBinaryMessage minecraftBinaryMessage:
+                break;
+
+            default:
+                if (@event.Player.Phase is not Phase.Play)
+                    context.Logger.LogDebug("{Direction} {MessageType}", @event.Direction, @event.Message.GetType().Name);
+                break;
+        }
     }
 
-    [Subscribe]
+    [Subscribe(PostOrder.First)]
     public void OnPhaseChanged(PhaseChangedEvent @event)
     {
         switch (@event)
         {
-            case { Phase: Phase.Login }:
-                LoginPluginRequestPacket.Register(context.Player);
-                LoginPluginResponsePacket.Register(context.Player);
-
-                context.Logger.LogTrace("Registered packet mappings at {Side} side", @event.Side);
+            case { Phase: Phase.Handshake, Side: Side.Client }:
+                HandshakePacket.Register(context.Player);
                 break;
-            case { Phase: Phase.Play, Side: Side.Server or Side.Client }:
-                context.Player.RegisterPacket<PluginMessagePacket>(Direction.Clientbound, [
-                    new(0x3F, ProtocolVersion.MINECRAFT_1_7_2),
-                    new(0x18, ProtocolVersion.MINECRAFT_1_9),
-                    new(0x19, ProtocolVersion.MINECRAFT_1_13),
-                    new(0x18, ProtocolVersion.MINECRAFT_1_14),
-                    new(0x19, ProtocolVersion.MINECRAFT_1_15),
-                    new(0x18, ProtocolVersion.MINECRAFT_1_16),
-                    new(0x17, ProtocolVersion.MINECRAFT_1_16_2),
-                    new(0x18, ProtocolVersion.MINECRAFT_1_17),
-                    new(0x15, ProtocolVersion.MINECRAFT_1_19),
-                    new(0x16, ProtocolVersion.MINECRAFT_1_19_1),
-                    new(0x15, ProtocolVersion.MINECRAFT_1_19_3),
-                    new(0x17, ProtocolVersion.MINECRAFT_1_19_4),
-                    new(0x18, ProtocolVersion.MINECRAFT_1_20_2),
-                    new(0x19, ProtocolVersion.MINECRAFT_1_20_5),
-                    new(0x18, ProtocolVersion.MINECRAFT_1_21_5)
-                ]);
-
+            case { Phase: Phase.Login, Side: Side.Client }:
+                LoginPluginResponsePacket.Register(context.Player);
+                break;
+            case { Phase: Phase.Login, Side: Side.Server }:
+                LoginPluginRequestPacket.Register(context.Player);
+                break;
+            case { Phase: Phase.Play, Side: Side.Client }:
                 context.Player.RegisterPacket<PluginMessagePacket>(Direction.Serverbound, [
                     new(0x17, ProtocolVersion.MINECRAFT_1_7_2),
                     new(0x09, ProtocolVersion.MINECRAFT_1_9),
@@ -72,6 +76,25 @@ public class HandshakeService(IPlayerContext context) : IEventListener
                     new(0x12, ProtocolVersion.MINECRAFT_1_20_5),
                     new(0x14, ProtocolVersion.MINECRAFT_1_21_2),
                     new(0x15, ProtocolVersion.MINECRAFT_1_21_6)
+                ]);
+                break;
+            case { Phase: Phase.Play, Side: Side.Server }:
+                context.Player.RegisterPacket<PluginMessagePacket>(Direction.Clientbound, [
+                    new(0x3F, ProtocolVersion.MINECRAFT_1_7_2),
+                    new(0x18, ProtocolVersion.MINECRAFT_1_9),
+                    new(0x19, ProtocolVersion.MINECRAFT_1_13),
+                    new(0x18, ProtocolVersion.MINECRAFT_1_14),
+                    new(0x19, ProtocolVersion.MINECRAFT_1_15),
+                    new(0x18, ProtocolVersion.MINECRAFT_1_16),
+                    new(0x17, ProtocolVersion.MINECRAFT_1_16_2),
+                    new(0x18, ProtocolVersion.MINECRAFT_1_17),
+                    new(0x15, ProtocolVersion.MINECRAFT_1_19),
+                    new(0x16, ProtocolVersion.MINECRAFT_1_19_1),
+                    new(0x15, ProtocolVersion.MINECRAFT_1_19_3),
+                    new(0x17, ProtocolVersion.MINECRAFT_1_19_4),
+                    new(0x18, ProtocolVersion.MINECRAFT_1_20_2),
+                    new(0x19, ProtocolVersion.MINECRAFT_1_20_5),
+                    new(0x18, ProtocolVersion.MINECRAFT_1_21_5)
                 ]);
                 break;
         }
