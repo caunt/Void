@@ -22,7 +22,7 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
     private readonly IEventService _events = events;
     private readonly IPlugin _plugin = plugin;
 
-    [Subscribe]
+    [Subscribe(PostOrder.Last)]
     public async ValueTask OnMessageReceived(MessageReceivedEvent @event, CancellationToken cancellationToken)
     {
         if (!@event.Player.IsMinecraft)
