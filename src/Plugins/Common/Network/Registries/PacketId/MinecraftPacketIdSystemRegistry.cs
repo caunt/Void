@@ -7,7 +7,6 @@ using Void.Proxy.Api.Plugins;
 
 namespace Void.Proxy.Plugins.Common.Network.Registries.PacketId;
 
-// TODO: Remove Read and Write registries, keep only one registry like IMinecraftPacketIdPluginRegistry
 public class MinecraftPacketIdSystemRegistry : IMinecraftPacketIdSystemRegistry
 {
     public bool IsEmpty => this is { Read.IsEmpty: true, Write.IsEmpty: true, ManagedBy: null };
