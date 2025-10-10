@@ -22,7 +22,6 @@ public class PluginMessagePacket : IMinecraftPacket<PluginMessagePacket>
                 return;
             }
 
-
             WriteExtendedForgeShort(ref buffer, Data.Length);
             buffer.Write(Data.Span);
         }
