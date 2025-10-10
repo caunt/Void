@@ -10,22 +10,34 @@ namespace Void.Proxy.Plugins.Common.Network.Registries.PacketId;
 
 public class MinecraftPacketIdPluginsRegistry : IMinecraftPacketIdPluginsRegistry
 {
-    private Dictionary<IPlugin, IMinecraftPacketIdRegistry> _map = [];
+    private readonly Dictionary<IPlugin, IMinecraftPacketIdRegistry> _read = [];
+    private readonly Dictionary<IPlugin, IMinecraftPacketIdRegistry> _write = [];
+
+    private IEnumerable<IMinecraftPacketIdRegistry> All => Read.Concat(Write);
 
     public bool IsEmpty => All.All(registry => registry.IsEmpty);
     public ProtocolVersion? ProtocolVersion { get; set; }
     public IPlugin? ManagedBy { get; set; }
-    public IReadOnlyCollection<IMinecraftPacketIdRegistry> All => _map.Values;
+    public IReadOnlyCollection<IMinecraftPacketIdRegistry> Read => _read.Values;
+    public IReadOnlyCollection<IMinecraftPacketIdRegistry> Write => _write.Values;
 
-    public IMinecraftPacketIdRegistry Get(IPlugin plugin)
+    public IMinecraftPacketIdRegistry Get(Operation operation, IPlugin plugin)
     {
         if (ProtocolVersion is null)
             throw new InvalidOperationException($"{nameof(ProtocolVersion)} is not set yet");
 
-        if (!_map.TryGetValue(plugin, out var registry))
+        var map = operation switch
+        {
+            Operation.Read => _read,
+            Operation.Write => _write,
+            Operation.Any => throw new ArgumentException($"Operation {operation} is not valid here, use {nameof(Get)} twice instead"),
+            _ => throw new ArgumentException($"Invalid operation {operation}", nameof(operation))
+        };
+
+        if (!map.TryGetValue(plugin, out var registry))
         {
             lock (this)
-                _map[plugin] = registry = new MinecraftPacketIdRegistry();
+                map[plugin] = registry = new MinecraftPacketIdRegistry();
         }
 
         return registry;
@@ -45,7 +57,7 @@ public class MinecraftPacketIdPluginsRegistry : IMinecraftPacketIdPluginsRegistr
     {
         plugin = null;
 
-        foreach (var (candidate, registry) in _map)
+        foreach (var (candidate, registry) in _read.Concat(_write))
         {
             if (registry.Contains(type))
             {
@@ -60,7 +72,10 @@ public class MinecraftPacketIdPluginsRegistry : IMinecraftPacketIdPluginsRegistr
     public void Remove(IPlugin plugin)
     {
         lock (this)
-            _map.Remove(plugin);
+        {
+            _read.Remove(plugin);
+            _write.Remove(plugin);
+        }
     }
 
     public bool Contains<T>() where T : IMinecraftPacket
@@ -81,12 +96,15 @@ public class MinecraftPacketIdPluginsRegistry : IMinecraftPacketIdPluginsRegistr
     public void Clear()
     {
         lock (this)
-            _map = [];
+        {
+            _read.Clear();
+            _write.Clear();
+        }
     }
 
     public void Clear(Direction direction)
     {
-        foreach (var (_, registry) in _map)
+        foreach (var registry in All)
             registry.Clear(direction);
     }
 

@@ -65,12 +65,14 @@ public class RegistryHolder : IRegistryHolder
 
     public string PrintPackets()
     {
-        var packetIdSystem = $"{nameof(PacketIdSystem)} [{string.Join(", ", PacketIdSystem.Write.PacketTypes.Select(type => type.Name))}]";
-        var packetIdPlugins = $"{nameof(PacketIdPlugins)} [{string.Join(", ", PacketIdPlugins.All.SelectMany(registry => registry.PacketTypes).Select(type => type.Name))}]";
+        var packetIdSystemRead = $"{nameof(PacketIdSystem)} READ [{string.Join(", ", PacketIdSystem.Read.PacketTypes.Select(type => type.Name))}]";
+        var packetIdSystemWrite = $"{nameof(PacketIdSystem)} WRITE [{string.Join(", ", PacketIdSystem.Write.PacketTypes.Select(type => type.Name))}]";
+        var packetIdPluginsRead = $"{nameof(PacketIdPlugins)} READ [{string.Join(", ", PacketIdPlugins.Read.SelectMany(registry => registry.PacketTypes).Select(type => type.Name))}]";
+        var packetIdPluginsWrite = $"{nameof(PacketIdPlugins)} WRITE [{string.Join(", ", PacketIdPlugins.Write.SelectMany(registry => registry.PacketTypes).Select(type => type.Name))}]";
         var packetTransformationsSystem = $"{nameof(PacketTransformationsSystem)} [{string.Join(", ", PacketTransformationsSystem.All.PacketTypes.Select(type => type.Name))}]";
         var packetTransformationsPlugins = $"{nameof(PacketTransformationsPlugins)} [{string.Join(", ", PacketTransformationsPlugins.All.SelectMany(registry => registry.PacketTypes).Select(type => type.Name))}]";
 
-        return $"{packetIdSystem}\n{packetIdPlugins}\n{packetTransformationsSystem}\n{packetTransformationsPlugins}";
+        return $"{packetIdSystemRead}\n{packetIdSystemWrite}\n{packetIdPluginsRead}\n{packetIdPluginsWrite}\n{packetTransformationsSystem}\n{packetTransformationsPlugins}";
     }
 
     public void Dispose()

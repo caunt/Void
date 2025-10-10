@@ -275,15 +275,15 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
     {
         id = 0;
 
-        if (Registries.PacketIdSystem?.Write is { } systemRegistry)
+        if (Registries.PacketIdSystem is { } systemRegistry)
         {
-            if (systemRegistry.TryGetPacketId(packet, out id))
+            if (systemRegistry.Write.TryGetPacketId(packet, out id))
                 return true;
         }
 
         if (Registries.PacketIdPlugins is { } pluginsRegistries)
         {
-            foreach (var registry in pluginsRegistries.All)
+            foreach (var registry in pluginsRegistries.Write)
             {
                 if (registry.TryGetPacketId(packet, out id))
                     return true;

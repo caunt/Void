@@ -98,21 +98,29 @@ public static class PlayerExtensions
 
             if (player.TryGetLink(out var link))
             {
-                var channel = direction switch
+                var (fromChannel, toChannel) = direction switch
                 {
-                    Direction.Clientbound => link.PlayerChannel,
-                    Direction.Serverbound => link.ServerChannel,
+                    Direction.Clientbound => (link.ServerChannel, link.PlayerChannel),
+                    Direction.Serverbound => (link.PlayerChannel, link.ServerChannel),
                     _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
                 };
 
-                channel.GetMinecraftRegistries().PacketIdPlugins.Get(plugin).RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
+                fromChannel.GetMinecraftRegistries().PacketIdPlugins.Get(Operation.Read, plugin).RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
+                toChannel.GetMinecraftRegistries().PacketIdPlugins.Get(Operation.Write, plugin).RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
             }
-            else if (direction is Direction.Serverbound)
+            else if (direction is Direction.Serverbound) // If no link created yet, we still should have the player channel
             {
                 if (player.Context.Channel is null)
                     throw new InvalidOperationException("Cannot register serverbound packet without an active channel.");
 
-                player.Context.Channel.GetMinecraftRegistries().PacketIdPlugins.Get(plugin).RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
+                var operation = direction switch
+                {
+                    Direction.Clientbound => Operation.Write,
+                    Direction.Serverbound => Operation.Read,
+                    _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+                };
+
+                player.Context.Channel.GetMinecraftRegistries().PacketIdPlugins.Get(operation, plugin).RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
             }
             else
             {

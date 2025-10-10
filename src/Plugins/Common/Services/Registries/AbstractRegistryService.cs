@@ -121,10 +121,19 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             try
             {
+                var operation = @event.Direction switch
+                {
+                    Direction.Clientbound when channel == @event.Link.PlayerChannel => Operation.Write,
+                    Direction.Clientbound when channel == @event.Link.ServerChannel => Operation.Read,
+                    Direction.Serverbound when channel == @event.Link.PlayerChannel => Operation.Read,
+                    Direction.Serverbound when channel == @event.Link.ServerChannel => Operation.Write,
+                    _ => throw new InvalidOperationException($"Cannot determine operation for {channel} and {@event.Direction}")
+                };
+
                 var packets = @event.Message switch
                 {
-                    IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, registries, transformations, binaryMessage),
-                    IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, registries, transformations, minecraftPacket),
+                    IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, operation, registries, transformations, binaryMessage),
+                    IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, operation, registries, transformations, minecraftPacket),
                     _ => null
                 };
 
@@ -164,10 +173,19 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             try
             {
+                var operation = @event.Direction switch
+                {
+                    Direction.Clientbound when channel == @event.Link.PlayerChannel => Operation.Write,
+                    Direction.Clientbound when channel == @event.Link.ServerChannel => Operation.Read,
+                    Direction.Serverbound when channel == @event.Link.PlayerChannel => Operation.Read,
+                    Direction.Serverbound when channel == @event.Link.ServerChannel => Operation.Write,
+                    _ => throw new InvalidOperationException($"Cannot determine operation for {channel} and {@event.Direction}")
+                };
+
                 var packets = @event.Message switch
                 {
-                    IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, registries, transformations, binaryMessage),
-                    IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, registries, transformations, minecraftPacket),
+                    IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, operation, registries, transformations, binaryMessage),
+                    IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, operation, registries, transformations, minecraftPacket),
                     _ => null
                 };
 
@@ -206,12 +224,19 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, Side origin, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketTransformationsPluginsRegistry transformationsMappings, IMinecraftBinaryMessage binaryMessage)
+    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, Side origin, Operation operation, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketTransformationsPluginsRegistry transformationsMappings, IMinecraftBinaryMessage binaryMessage)
     {
         if (!link.Player.IsMinecraft)
             yield break;
 
-        var queue = new Queue<IMinecraftPacketIdRegistry>(registries.All);
+        var filteredRegistries = operation switch
+        {
+            Operation.Read => registries.Read,
+            Operation.Write => registries.Write,
+            _ => []
+        };
+
+        var queue = new Queue<IMinecraftPacketIdRegistry>(filteredRegistries);
         while (queue.TryDequeue(out var registry))
         {
             if (!registry.TryCreateDecoder(binaryMessage.Id, out var type, out var decoder))
@@ -249,7 +274,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, Side origin, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketTransformationsPluginsRegistry transformationsMappings, IMinecraftPacket minecraftPacket)
+    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, Side origin, Operation operation, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketTransformationsPluginsRegistry transformationsMappings, IMinecraftPacket minecraftPacket)
     {
         if (!link.Player.IsMinecraft)
             yield break;
@@ -263,7 +288,14 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             !serverRegistry.Read.TryGetPacketId(minecraftPacket, out id))
             yield break;
 
-        var queue = new Queue<IMinecraftPacketIdRegistry>(registries.All);
+        var filteredRegistries = operation switch
+        {
+            Operation.Read => registries.Read,
+            Operation.Write => registries.Write,
+            _ => []
+        };
+
+        var queue = new Queue<IMinecraftPacketIdRegistry>(filteredRegistries);
         while (queue.TryDequeue(out var registry))
         {
             if (!registry.TryCreateDecoder(id, out var type, out var decoder))

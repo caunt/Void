@@ -13,9 +13,10 @@ public interface IMinecraftPacketIdPluginsRegistry
     public bool IsEmpty { get; }
     public ProtocolVersion? ProtocolVersion { get; set; }
     public IPlugin? ManagedBy { get; set; }
-    public IReadOnlyCollection<IMinecraftPacketIdRegistry> All { get; }
+    public IReadOnlyCollection<IMinecraftPacketIdRegistry> Read { get; }
+    public IReadOnlyCollection<IMinecraftPacketIdRegistry> Write { get; }
 
-    public IMinecraftPacketIdRegistry Get(IPlugin plugin);
+    public IMinecraftPacketIdRegistry Get(Operation operation, IPlugin plugin);
     public bool TryGetPlugin<T>([MaybeNullWhen(false)] out IPlugin plugin) where T : IMinecraftPacket;
     public bool TryGetPlugin(INetworkMessage message, [MaybeNullWhen(false)] out IPlugin plugin);
     public bool TryGetPlugin(Type type, [MaybeNullWhen(false)] out IPlugin plugin);
