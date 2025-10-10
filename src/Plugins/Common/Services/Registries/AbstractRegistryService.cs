@@ -107,46 +107,42 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
-        foreach (var channel in @event.Link.Channels)
+        var operation = Operation.Read;
+        var channel = @event.Direction switch
         {
-            var registries = channel.GetMinecraftRegistries().PacketIdPlugins;
+            Direction.Clientbound => @event.Link.ServerChannel,
+            Direction.Serverbound => @event.Link.PlayerChannel,
+            _ => throw new InvalidOperationException($"Unknown direction {@event.Direction}")
+        };
 
-            if (registries.IsEmpty)
-                continue;
+        var registries = channel.GetMinecraftRegistries().PacketIdPlugins;
 
-            if (registries.Contains(@event.Message))
-                continue;
+        if (registries.IsEmpty)
+            return;
 
-            var transformations = channel.GetMinecraftRegistries().PacketTransformationsPlugins;
+        if (registries.Contains(@event.Message))
+            return;
 
-            try
+        var transformations = channel.GetMinecraftRegistries().PacketTransformationsPlugins;
+
+        try
+        {
+            var packets = @event.Message switch
             {
-                var operation = @event.Direction switch
-                {
-                    Direction.Clientbound when channel == @event.Link.PlayerChannel => Operation.Write,
-                    Direction.Clientbound when channel == @event.Link.ServerChannel => Operation.Read,
-                    Direction.Serverbound when channel == @event.Link.PlayerChannel => Operation.Read,
-                    Direction.Serverbound when channel == @event.Link.ServerChannel => Operation.Write,
-                    _ => throw new InvalidOperationException($"Cannot determine operation for {channel} and {@event.Direction}")
-                };
+                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, operation, registries, transformations, binaryMessage),
+                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, operation, registries, transformations, minecraftPacket),
+                _ => null
+            };
 
-                var packets = @event.Message switch
-                {
-                    IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, operation, registries, transformations, binaryMessage),
-                    IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, operation, registries, transformations, minecraftPacket),
-                    _ => null
-                };
+            if (packets is null)
+                return;
 
-                if (packets is null)
-                    continue;
-
-                foreach (var packet in packets)
-                    @event.Result = await events.ThrowWithResultAsync(new MessageReceivedEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link, @event.Player), cancellationToken);
-            }
-            catch (Exception exception)
-            {
-                logger.LogError(exception, "Error decoding or handling {Type}", @event.Message);
-            }
+            foreach (var packet in packets)
+                @event.Result = await events.ThrowWithResultAsync(new MessageReceivedEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link, @event.Player), cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Error decoding or handling {Type}", @event.Message);
         }
     }
 
@@ -159,46 +155,42 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
-        foreach (var channel in @event.Link.Channels)
+        var operation = Operation.Write;
+        var channel = @event.Direction switch
         {
-            var registries = channel.GetMinecraftRegistries().PacketIdPlugins;
+            Direction.Clientbound => @event.Link.PlayerChannel,
+            Direction.Serverbound => @event.Link.ServerChannel,
+            _ => throw new InvalidOperationException($"Unknown direction {@event.Direction}")
+        };
 
-            if (registries.IsEmpty)
-                continue;
+        var registries = channel.GetMinecraftRegistries().PacketIdPlugins;
 
-            if (registries.Contains(@event.Message))
-                continue;
+        if (registries.IsEmpty)
+            return;
 
-            var transformations = channel.GetMinecraftRegistries().PacketTransformationsPlugins;
+        if (registries.Contains(@event.Message))
+            return;
 
-            try
+        var transformations = channel.GetMinecraftRegistries().PacketTransformationsPlugins;
+
+        try
+        {
+            var packets = @event.Message switch
             {
-                var operation = @event.Direction switch
-                {
-                    Direction.Clientbound when channel == @event.Link.PlayerChannel => Operation.Write,
-                    Direction.Clientbound when channel == @event.Link.ServerChannel => Operation.Read,
-                    Direction.Serverbound when channel == @event.Link.PlayerChannel => Operation.Read,
-                    Direction.Serverbound when channel == @event.Link.ServerChannel => Operation.Write,
-                    _ => throw new InvalidOperationException($"Cannot determine operation for {channel} and {@event.Direction}")
-                };
+                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, operation, registries, transformations, binaryMessage),
+                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, operation, registries, transformations, minecraftPacket),
+                _ => null
+            };
 
-                var packets = @event.Message switch
-                {
-                    IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, operation, registries, transformations, binaryMessage),
-                    IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, operation, registries, transformations, minecraftPacket),
-                    _ => null
-                };
+            if (packets is null)
+                return;
 
-                if (packets is null)
-                    continue;
-
-                foreach (var packet in packets)
-                    await events.ThrowAsync(new MessageSentEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link, @event.Player), cancellationToken);
-            }
-            catch (Exception exception)
-            {
-                logger.LogError(exception, "Error decoding or handling {Type}", @event.Message);
-            }
+            foreach (var packet in packets)
+                await events.ThrowAsync(new MessageSentEvent(@event.Origin, @event.From, @event.To, @event.Direction, packet, @event.Link, @event.Player), cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Error decoding or handling {Type}", @event.Message);
         }
     }
 
