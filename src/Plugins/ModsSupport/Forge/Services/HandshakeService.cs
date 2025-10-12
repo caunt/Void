@@ -1,11 +1,14 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
 using Void.Minecraft.Events;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
+using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Contexts;
 using Void.Proxy.Plugins.ModsSupport.Forge.Packets;
 
@@ -13,13 +16,26 @@ namespace Void.Proxy.Plugins.ModsSupport.Forge.Services;
 
 public class HandshakeService(IPlayerContext context) : IEventListener
 {
+    private readonly ConcurrentDictionary<IPlayer, HandshakePacket> _handshakes = [];
+
+    [Subscribe]
+    public void OnPlayerDisconnect(PlayerDisconnectedEvent @event)
+    {
+        _ = _handshakes.TryRemove(@event.Player, out _);
+    }
+
     [Subscribe]
     public void OnMessageReceived(MessageReceivedEvent @event)
     {
         switch (@event.Message)
         {
-            case HandshakePacket handshakePacket:
-                context.Logger.LogDebug("Received handshake at mods support plugin");
+            case HandshakePacket handshakePacket when handshakePacket.IsForge:
+                var markers = handshakePacket.Markers;
+
+                if (markers.Length > 1)
+                    context.Logger.LogDebug("Has extra handshake markers {Markers}", string.Join(", ", markers));
+
+                _handshakes[@event.Player] = handshakePacket;
                 break;
 
             case PluginMessagePacket pluginMessagePacket:
