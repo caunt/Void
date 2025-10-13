@@ -25,7 +25,7 @@ If you are using an official Forge server, you can install the [**BungeeForge**]
 :::caution[Limitations]
 - Servers have to run in offline mode.
 - You have to install a plugin, mod, or server with built-in implementation.
-- Proxy must authenticate the Mojang player on proxy side.
+- Proxy must authenticate the Mojang player on the proxy side.
 :::
 
 ## Configuration
