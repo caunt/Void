@@ -27,14 +27,14 @@ Then use `GetAsync<T>()` method to get the configuration instance.
 public class MyPlugin(IConfigurationService configs) : IPlugin
 {
     [Subscribe]
-    public void OnPluginLoading(PluginLoadingEvent @event)
+    public async ValueTask OnPluginLoading(PluginLoadingEvent @event, CancellationToken cancellationToken)
     {
         // This event is fired when any plugin is being loaded
 
         // Skip all other plugin load events except ours
         if (@event.Plugin != this)
             return;
-        
+
         var settings = await configs.GetAsync<MySettings>(cancellationToken);
     }
 }
