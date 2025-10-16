@@ -5,8 +5,8 @@ sidebar:
   order: 1
 ---
 
-Events are a great way to communicate between different plugins and proxy. 
-They allow you to respond to specific actions or changes in the game, such as a [**player joining or leaving**](/docs/developing-plugins/events/player-events).
+Events are a great way to communicate between different plugins and the proxy.
+They allow you to respond to specific actions or changes in the game, such as [**a player joining or leaving**](/docs/developing-plugins/events/player-events).
 
 ## Subscribing to events
 You can subscribe to events by applying the `Subscribe` attribute to a method in your class that inherits `IEventListener` interface.
