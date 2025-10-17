@@ -27,7 +27,7 @@ Press **F5** to run the project. This will start the Void Proxy with your plugin
 ## Debugging
 :::caution
 Debugging is currently not supported by JetBrains Rider.
-Proxy is distributed with PublishSingleFile=true flag, which makes Rider unable to attach debugger to the process.
+Proxy is distributed with the `PublishSingleFile=true` flag, which makes Rider unable to attach the debugger to the process.
 See [Rider Debugging](https://www.jetbrains.com/help/rider/Debugging_Code.html) for more details.
 :::
 
