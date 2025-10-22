@@ -69,7 +69,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         return await player.IsPlayingAsync(cancellationToken);
     }
 
-    protected override async ValueTask<int> GetHandshakeNextStateAsync(ILink link, CancellationToken cancellationToken)
+    protected override async ValueTask<int> ReceivePlayerHandshakeAsync(ILink link, CancellationToken cancellationToken)
     {
         var handshake = await link.ReceivePacketAsync<HandshakePacket>(cancellationToken);
 
@@ -104,7 +104,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         }
     }
 
-    protected override async ValueTask<bool> IdentifyPlayerAsync(ILink link, CancellationToken cancellationToken)
+    protected override async ValueTask<bool> StartPlayerLoginAsync(ILink link, CancellationToken cancellationToken)
     {
         if (!link.Player.IsMinecraft)
             return false;
@@ -118,13 +118,13 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         return true;
     }
 
-    protected override async ValueTask AdmitPlayerAsync(ILink link, CancellationToken cancellationToken)
+    protected override async ValueTask FinishPlayerLoginAsync(ILink link, CancellationToken cancellationToken)
     {
         if (!link.Player.IsMinecraft)
             return;
 
         if (link.Player.Profile is not { } profile)
-            throw new InvalidOperationException("Player should be identified before admitting");
+            throw new InvalidOperationException("Player should be logged in already");
 
         await link.SendPacketAsync(new LoginSuccessPacket
         {
@@ -135,13 +135,10 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         await link.ReceivePacketAsync<LoginAcknowledgedPacket>(cancellationToken);
     }
 
-    protected override async ValueTask PrepareServerAuthenticationAsync(ILink link, CancellationToken cancellationToken)
+    protected override async ValueTask HandshakeWithServerAsync(ILink link, CancellationToken cancellationToken)
     {
         if (!link.Player.IsMinecraft)
             return;
-
-        if (link.Player.Profile is not { } profile)
-            throw new InvalidOperationException("Player should be admitted before preparing server");
 
         await link.SendPacketAsync(new HandshakePacket
         {
@@ -150,6 +147,15 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
             ServerAddress = link.Server.Host,
             ServerPort = (ushort)link.Server.Port
         }, cancellationToken);
+    }
+
+    protected override async ValueTask StartServerLoginAsync(ILink link, CancellationToken cancellationToken)
+    {
+        if (!link.Player.IsMinecraft)
+            return;
+
+        if (link.Player.Profile is not { } profile)
+            throw new InvalidOperationException("Player should be logged in already");
 
         await link.SendPacketAsync(new LoginStartPacket
         {

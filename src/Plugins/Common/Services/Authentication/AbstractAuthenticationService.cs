@@ -53,7 +53,7 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         }
         else
         {
-            var playState = await GetHandshakeNextStateAsync(@event.Link, cancellationToken) is 2 or 3;
+            var playState = await ReceivePlayerHandshakeAsync(@event.Link, cancellationToken) is 2 or 3;
 
             if (playState)
                 @event.Result = AuthenticationSide.Proxy;
@@ -96,7 +96,7 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         if (await IsPlayerAuthenticatedAsync(link.Player, cancellationToken))
             return AuthenticationResult.AlreadyAuthenticated;
 
-        if (!await IdentifyPlayerAsync(link, cancellationToken))
+        if (!await StartPlayerLoginAsync(link, cancellationToken))
             return AuthenticationResult.NotAuthenticatedPlayer;
 
         if (!await events.ThrowWithResultAsync(new PlayerVerifyingEncryptionEvent(link.Player, link), cancellationToken))
@@ -106,7 +106,7 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
             return AuthenticationResult.NotAuthenticatedPlayer;
 
         await events.ThrowAsync(new PlayerVerifiedEncryptionEvent(link.Player, link), cancellationToken);
-        await AdmitPlayerAsync(link, cancellationToken);
+        await FinishPlayerLoginAsync(link, cancellationToken);
 
         return AuthenticationResult.Authenticated;
     }
@@ -123,7 +123,8 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         if (link.Player.Profile is null)
             throw new InvalidOperationException("Player should be authenticated before Server");
 
-        await PrepareServerAuthenticationAsync(link, cancellationToken);
+        await HandshakeWithServerAsync(link, cancellationToken);
+        await StartServerLoginAsync(link, cancellationToken);
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -167,7 +168,7 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         return ValueTask.CompletedTask;
     }
 
-    protected abstract ValueTask<int> GetHandshakeNextStateAsync(ILink link, CancellationToken cancellationToken);
+    protected abstract ValueTask<int> ReceivePlayerHandshakeAsync(ILink link, CancellationToken cancellationToken);
 
     protected static async ValueTask<bool> VerifyMojangProfile(IPlayer player, CancellationToken cancellationToken)
     {
@@ -189,11 +190,13 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
 
     protected abstract ValueTask<bool> IsPlayerPlayingAsync(IPlayer player, CancellationToken cancellationToken);
 
-    protected abstract ValueTask<bool> IdentifyPlayerAsync(ILink link, CancellationToken cancellationToken);
+    protected abstract ValueTask<bool> StartPlayerLoginAsync(ILink link, CancellationToken cancellationToken);
 
-    protected abstract ValueTask AdmitPlayerAsync(ILink link, CancellationToken cancellationToken);
+    protected abstract ValueTask FinishPlayerLoginAsync(ILink link, CancellationToken cancellationToken);
 
-    protected abstract ValueTask PrepareServerAuthenticationAsync(ILink link, CancellationToken cancellationToken);
+    protected abstract ValueTask HandshakeWithServerAsync(ILink link, CancellationToken cancellationToken);
+
+    protected abstract ValueTask StartServerLoginAsync(ILink link, CancellationToken cancellationToken);
 
     protected abstract ValueTask<AuthenticationResult> HandleServerPacketAsync(ILink link, IMinecraftClientboundPacket packet, CancellationToken cancellationToken);
 }
