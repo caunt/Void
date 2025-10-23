@@ -12,14 +12,14 @@ To learn more about DI, see [**Microsoft DI Documentation**](https://docs.micros
 
 ## Registration
 
-Inject `DependencyService` into your main plugin constructor:
+Inject `IDependencyService` into your main plugin constructor:
 ```csharp
 public class MyPlugin(IDependencyService dependencies) : IPlugin
 {
 
 }
 ```
-Register your services with injected `DependencyService`:
+Register your services with injected `IDependencyService`:
 ```csharp
 dependencies.Register(services =>
 {
