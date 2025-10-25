@@ -72,7 +72,7 @@ Each packet ID takes effect at its listed protocol version and remains valid unt
 :::
 
 ## Receiving Packets
-Now that we have defined our packet, we can receive it with `MessageReceivedEvent` [**event**](/docs/developing-plugins/events/listening-to-events/).
+Now that we have defined our packet, we can receive it with the `MessageReceivedEvent` [**event**](/docs/developing-plugins/events/listening-to-events/).
 ```csharp
 [Subscribe]
 public void OnMessageReceived(MessageReceivedEvent @event)
@@ -86,7 +86,7 @@ public void OnMessageReceived(MessageReceivedEvent @event)
 }
 ```
 
-There is also a `MessageSentEvent` event that is triggered when the packet is already sent to the receiver.
+There is also a `MessageSentEvent` that is triggered when the packet is already sent to the receiver.
 ```csharp
 [Subscribe]
 public void OnMessageSent(MessageSentEvent @event)
