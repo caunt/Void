@@ -140,7 +140,7 @@ Check out [**complete example**](https://github.com/caunt/Void/blob/main/src/Plu
 
 ## Cancelling Packets
 You can cancel packets in the `MessageReceivedEvent`.
-Set `IEvent.Result` value to `true` to prevent sending packet to receiver.
+Set the `IEvent.Result` value to `true` to prevent sending the packet to the receiver.
 ```csharp
 [Subscribe]
 public void OnMessageReceived(MessageReceivedEvent @event)
