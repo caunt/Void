@@ -81,7 +81,7 @@ public void OnMessageReceived(MessageReceivedEvent @event)
     if (@event.Message is not SetHeldItemClientboundPacket packet)
         return;
         
-    // Print the slot value sent by server
+    // Print the slot value sent by the server
     Console.WriteLine($"Received {nameof(SetHeldItemClientboundPacket)} with Slot: {packet.Slot}");
 }
 ```
