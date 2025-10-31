@@ -7,7 +7,7 @@ Commands help users and administrators interact with the proxy and plugins.
 
 ## Defining a command
 Inject `ICommandService` service to begin working with commands.  
-Commands are registered with `Register` method in [Mojang Brigadier](https://github.com/Mojang/brigadier/)-like style.
+Commands are registered with the `Register` method in [Mojang Brigadier](https://github.com/Mojang/brigadier/)-like style.
 
 ```csharp
 class MyService(ICommandService commands)
