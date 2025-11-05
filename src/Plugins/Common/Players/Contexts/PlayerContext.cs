@@ -8,7 +8,7 @@ namespace Void.Proxy.Plugins.Common.Players.Contexts;
 
 internal record PlayerContext(IServiceProvider Services) : IPlayerContext
 {
-    // Set is allowed to upgrade the player into different implementations when required.
+    // Setter is allowed to upgrade the player into different implementations when required.
     public required IPlayer Player { get; internal set; }
     public ILogger Logger => Player.Logger;
     public INetworkChannel? Channel { get; set; }
