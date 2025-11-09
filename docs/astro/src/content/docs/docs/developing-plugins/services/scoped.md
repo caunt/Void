@@ -11,7 +11,7 @@ Scoped services are useful for managing player-specific state or resources that 
 
 ## Example Definition
 `IPlayerContext` may be injected into your scoped service to access the player context.
-You can get player instance, other player-scoped services, or network channel from it.
+You can get the player instance, other player-scoped services, or the network channel from it.
 
 ```csharp
 public class MyScopedService(IPlayerContext context)
