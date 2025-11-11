@@ -67,7 +67,7 @@ public class MySingletonService(IPlayerService players)
 
 ## Events
 Scoped services subscribed to events that implement `IScopedEvent` interface will be automatically filtered to the current player context.
-For example, if you listen to `PlayerConnectedEvent`, the event will be automatically filtered to the current player only context.
+For example, if you listen to `PlayerConnectedEvent`, the event will be automatically filtered to the current player's context only.
 ```csharp
 public class MyScopedService(IPlayerContext context) : IEventListener
 {
