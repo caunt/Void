@@ -68,7 +68,7 @@ Use them only when the packet changes a few times (around 2–3 Minecraft versio
 ## Flat packet transformations
 Flat packet transformations are more complex and harder to define, but they lead to more consistent behavior and readable code. This idea was adopted from [ViaVersion](https://github.com/ViaVersion/ViaVersion/) codebase.
 
-When using these transformations, you have to keep only **latest** implementation of packet:
+When using these transformations, you have to keep only the **latest** implementation of the packet:
 ```csharp
 public class SetHeldItemClientboundPacket : IMinecraftClientboundPacket<SetHeldItemClientboundPacket>
 {
@@ -96,7 +96,7 @@ public class SetHeldItemClientboundPacket : IMinecraftClientboundPacket<SetHeldI
 
 Now that we have the latest implementation, we need to define the changes that were made across versions.
 
-In case of [**Set Held Item (clientbound)**](/docs/developing-plugins/network/packets#defining-packets) packet, just one change was made - `slot` property type changed from `byte` to `varint`.
+In the case of the [**Set Held Item (clientbound)**](/docs/developing-plugins/network/packets#defining-packets) packet, only one change was made—the `slot` property type changed from `byte` to `varint`.
 ```csharp
 MinecraftPacketTransformationMapping[] Transformations { get; } = [
     new(ProtocolVersion.MINECRAFT_1_21, ProtocolVersion.MINECRAFT_1_21_2, wrapper =>
