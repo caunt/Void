@@ -9,7 +9,7 @@ sidebar:
 They define a connection between the player and server.
 
 ## Lifetime
-An [**ILink**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) is created when a player connects to a server and destroyed when they disconnect.
+An [**ILink**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) is created when a player connects to a server and is destroyed when they disconnect.
 Switching to another server replaces the existing link with a new [**ILink**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs).
 Players do not have an [**ILink**](https://github.com/caunt/Void/blob/main/src/Api/Links/ILink.cs) during `PlayerConnectingEvent` or `PlayerSearchServerEvent`.
 
