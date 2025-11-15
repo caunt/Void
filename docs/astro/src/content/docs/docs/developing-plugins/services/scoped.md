@@ -138,7 +138,7 @@ Most of the events that have Player property are already implemented as `IScoped
 While you can listen to them in Scoped services, they are still available for [**Singleton services**](/docs/developing-plugins/services/singleton).
 In Singleton context, you will receive events **not filtered**. Meaning you will receive events for all players in a single service.
 
-If you would like to not filter events in scoped service, pass `bypassScopedFilter: true` to the `Subscribe` attribute.
+If you would like to not filter events in a scoped service, pass `bypassScopedFilter: true` to the `Subscribe` attribute.
 ```csharp
 public class MyScopedService(IPlayerContext context) : IEventListener
 {
