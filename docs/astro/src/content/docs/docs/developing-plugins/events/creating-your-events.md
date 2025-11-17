@@ -15,7 +15,7 @@ public record MyEvent(string Value1, int Value2, byte[] Value3) : IEvent;
 ```
 
 ## Event with Result
-Event with result is a special type of event that allows you to return a result from the event handlers.
+An event with a result is a special type of event that allows you to return a result from the event handlers.
 If multiple handlers set the result, you will get the last one.
 ```csharp
 public record MyEvent(string SomeValue) : IEventWithResult<int>
