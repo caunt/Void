@@ -55,7 +55,7 @@ Just like with other services, you should implement the `IEventListener` interfa
 However, listening to events in [**scoped services**](/docs/developing-plugins/services/scoped) is a bit different.
 Scoped events are filtered by the player context, so you will only receive events that are relevant to the player that owns the service.
 All other types of events will not be filtered, since they are not scoped.
-Scoped events filter can be disabled by applying `bypassScopedFilter: true` to the `Subscribe` attribute.
+Scoped event filtering can be disabled by applying `bypassScopedFilter: true` to the `Subscribe` attribute.
 ```csharp
 public class MyScopedService(IPlayerContext context, ILogger logger) : IEventListener
 {
