@@ -6,7 +6,7 @@ sidebar:
 ---
 
 ## Download
-Download [**latest version here**](/download).
+Download the [**latest version here**](/download).
 
 ## Linux
 
