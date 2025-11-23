@@ -164,7 +164,7 @@ public static class ComponentJsonTransformers
     {
         if (node is JsonObject rootObject)
         {
-            // Downsample colors to list of compatible
+            // Downsample colors to a list of compatible colors
             if (rootObject["color"] is { } colorTag)
             {
                 var color = TextColor.FromString(colorTag.GetValue<string>());
