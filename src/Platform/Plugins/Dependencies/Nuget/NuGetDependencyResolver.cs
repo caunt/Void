@@ -93,7 +93,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             {
                 logger.LogTrace("Dependency {DependencyName} not found in the offline NuGet cache", assemblyName.Name);
 
-                // some packages easily resolved with just removed suffixes
+                // some packages are easily resolved with just removed suffixes
                 if (!assemblyName.Name.Contains('.'))
                     return null;
 
