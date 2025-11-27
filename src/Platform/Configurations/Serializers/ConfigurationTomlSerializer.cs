@@ -17,7 +17,7 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
     private readonly TomlParser _parser = new();
     private readonly TomlSerializerOptions _options = new()
     {
-        // Allows record types constructors
+        // Allows record type constructors
         OverrideConstructorValues = true,
         IgnoreInvalidEnumValues = false,
         IgnoreNonPublicMembers = true
