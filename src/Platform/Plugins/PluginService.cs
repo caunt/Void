@@ -213,7 +213,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
 
         using (var _ = await _lock.LockAsync(cancellationToken))
         {
-            // Add to container before events, so listeners of plugin loading event can resolve configs with that plugin assembly
+            // Add to container before events so listeners of the plugin loading event can resolve configs with that plugin assembly
             container.Add(plugin);
 
             await events.ThrowAsync(new PluginLoadingEvent(plugin), cancellationToken);
