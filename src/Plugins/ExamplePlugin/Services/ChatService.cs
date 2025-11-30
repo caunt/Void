@@ -32,7 +32,7 @@ public class ChatService(ExamplePlugin plugin, ILogger<ChatService> logger, ICon
     [Subscribe]
     public async ValueTask OnProxyStarting(ProxyStartingEvent @event, CancellationToken cancellationToken)
     {
-        // Once configuration loaded, any changes made to them will be automatically saved to disk. 
+        // Once configuration is loaded, any changes made to them will be automatically saved to disk.
         // Vice versa, any changes made to the configuration file on disk will be automatically loaded into that instance.
         // You do not need to worry about saving or loading the configuration manually, it is done implicitly.
         _settings = await configs.GetAsync<ChatSettings>(cancellationToken);
