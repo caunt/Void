@@ -134,7 +134,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
                             if (fileSystemEventArgs.ChangeType is not WatcherChangeTypes.Changed)
                                 continue;
 
-                            // If changed directory, not a file, skip
+                            // If the changed path is a directory, not a file, skip
                             if (!File.Exists(fileSystemEventArgs.FullPath))
                                 continue;
 
