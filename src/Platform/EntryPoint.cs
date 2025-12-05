@@ -66,7 +66,7 @@ public static class EntryPoint
 
     public static async Task<int> RunAsync(RunOptions options, CancellationToken cancellationToken = default)
     {
-        // If you set custom working directory, you are responsible for everyone to follow it.
+        // If you set a custom working directory, you are responsible for ensuring everything follows it.
         // We are using the default working directory for only normal runs.
         // This was done to allow Tests to not conflict when running in parallel.
 
