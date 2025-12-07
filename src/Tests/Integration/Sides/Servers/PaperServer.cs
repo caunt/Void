@@ -36,7 +36,7 @@ public class PaperServer : IntegrationSideBase
         if (!Directory.Exists(workingDirectory))
             Directory.CreateDirectory(workingDirectory);
 
-        var versionsJson = await client.GetStringAsync("https://api.papermc.io/v2/projects/paper", cancellationToken);
+        var versionsJson = await client.GetStringAsync("https://api.papermc.io/v2/projects/paper/versions", cancellationToken);
         using var versions = JsonDocument.Parse(versionsJson);
         var latestVersion = versions.RootElement.GetProperty("versions").EnumerateArray().Last().GetString();
 
