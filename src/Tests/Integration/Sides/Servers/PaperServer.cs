@@ -36,9 +36,12 @@ public class PaperServer : IntegrationSideBase
         if (!Directory.Exists(workingDirectory))
             Directory.CreateDirectory(workingDirectory);
 
-        var versionsJson = await client.GetStringAsync("https://api.papermc.io/v2/projects/paper/versions", cancellationToken);
+        var versionsJson = await client.GetStringAsync("https://api.papermc.io/v2/projects/paper", cancellationToken);
         using var versions = JsonDocument.Parse(versionsJson);
-        var latestVersion = versions.RootElement.GetProperty("versions").EnumerateArray().Last().GetString();
+        var latestVersion = versions.RootElement.GetProperty("versions").EnumerateArray()
+            .Select(v => v.GetString())
+            .Where(v => v != null && !v.Contains("-pre") && !v.Contains("-rc"))
+            .Last();
 
         var buildsJson = await client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}/builds", cancellationToken);
         using var builds = JsonDocument.Parse(buildsJson);
