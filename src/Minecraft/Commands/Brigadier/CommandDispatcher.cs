@@ -285,8 +285,8 @@ public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
             }
             else
             {
-                var childsUsable = await Task.WhenAll(node.Children.Select(async child => (child, await child.CanUseAsync(source, cancellationToken))));
-                var children = childsUsable.Where(pair => pair.Item2).Select(pair => pair.child);
+                var childrenUsable = await Task.WhenAll(node.Children.Select(async child => (child, await child.CanUseAsync(source, cancellationToken))));
+                var children = childrenUsable.Where(pair => pair.Item2).Select(pair => pair.child);
 
                 if (children.Count() == 1)
                 {
