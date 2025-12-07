@@ -76,12 +76,15 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
 
         foreach (var existingOption in consoleConfiguration.RootCommand.Options)
         {
-            if (!existingOption.Name.Equals(option.Name, StringComparison.OrdinalIgnoreCase) && !existingOption.Aliases.Any(alias => option.Aliases.Contains(alias, StringComparer.OrdinalIgnoreCase)))
+            var existingAliases = existingOption.Aliases ?? [];
+            var optionAliases = option.Aliases ?? [];
+            
+            if (!existingOption.Name.Equals(option.Name, StringComparison.OrdinalIgnoreCase) && !existingAliases.Any(alias => optionAliases.Contains(alias, StringComparer.OrdinalIgnoreCase)))
                 continue;
 
             throw new InvalidOperationException($"Option with name or alias '{option.Name}' already exists. " +
-                $"Discovered: {option.Name} ({string.Join(", ", option.Aliases)}), " +
-                $"Existing: {existingOption.Name} ({string.Join(", ", existingOption.Aliases)})");
+                $"Discovered: {option.Name} ({string.Join(", ", optionAliases)}), " +
+                $"Existing: {existingOption.Name} ({string.Join(", ", existingAliases)})");
         }
 
         var options = consoleConfiguration.RootCommand.Options;
@@ -96,7 +99,7 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
         // tuple and TakeWhile all existing entries that are "less" than it, leaving us
         // with the correct insert index.
 
-        var insertIndex = options.TakeWhile(existing => (-existing.Aliases.Count, existing.Name.ToLowerInvariant()).CompareTo((-option.Aliases.Count, option.Name.ToLowerInvariant())) < 0).Count();
+        var insertIndex = options.TakeWhile(existing => (-(existing.Aliases?.Count ?? 0), existing.Name?.ToLowerInvariant() ?? string.Empty).CompareTo((-(option.Aliases?.Count ?? 0), option.Name?.ToLowerInvariant() ?? string.Empty)) < 0).Count();
         options.Insert(insertIndex, option);
     }
 
