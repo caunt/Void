@@ -73,39 +73,38 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
 
     public void EnsureOptionDiscovered(Option option)
     {
-        using (_optionDiscoveryLock.Lock())
+        using var lockDisposable = _optionDiscoveryLock.Lock();
+        
+        if (consoleConfiguration.RootCommand.Options.Contains(option))
+            return;
+
+        foreach (var existingOption in consoleConfiguration.RootCommand.Options)
         {
-            if (consoleConfiguration.RootCommand.Options.Contains(option))
-                return;
+            var existingAliases = existingOption.Aliases ?? [];
+            var optionAliases = option.Aliases ?? [];
+            
+            if (!existingOption.Name.Equals(option.Name, StringComparison.OrdinalIgnoreCase) && !existingAliases.Any(alias => optionAliases.Contains(alias, StringComparer.OrdinalIgnoreCase)))
+                continue;
 
-            foreach (var existingOption in consoleConfiguration.RootCommand.Options)
-            {
-                var existingAliases = existingOption.Aliases ?? [];
-                var optionAliases = option.Aliases ?? [];
-                
-                if (!existingOption.Name.Equals(option.Name, StringComparison.OrdinalIgnoreCase) && !existingAliases.Any(alias => optionAliases.Contains(alias, StringComparer.OrdinalIgnoreCase)))
-                    continue;
-
-                throw new InvalidOperationException($"Option with name or alias '{option.Name}' already exists. " +
-                    $"Discovered: {option.Name} ({string.Join(", ", optionAliases)}), " +
-                    $"Existing: {existingOption.Name} ({string.Join(", ", existingAliases)})");
-            }
-
-            var options = consoleConfiguration.RootCommand.Options;
-
-            // Find the position where the new option should be inserted so that the list
-            // remains ordered by two keys:
-            //   1. Alias count, in descending order (options with more aliases come first)
-            //   2. Name, in ascending order, case-insensitive
-            //
-            // The trick: build a tuple (-AliasCount, NameLowercase). Negating the alias count
-            // flips the order so higher counts sort first. We then CompareTo the new option’s
-            // tuple and TakeWhile all existing entries that are "less" than it, leaving us
-            // with the correct insert index.
-
-            var insertIndex = options.TakeWhile(existing => (-(existing.Aliases?.Count ?? 0), existing.Name?.ToLowerInvariant() ?? string.Empty).CompareTo((-(option.Aliases?.Count ?? 0), option.Name?.ToLowerInvariant() ?? string.Empty)) < 0).Count();
-            options.Insert(insertIndex, option);
+            throw new InvalidOperationException($"Option with name or alias '{option.Name}' already exists. " +
+                $"Discovered: {option.Name} ({string.Join(", ", optionAliases)}), " +
+                $"Existing: {existingOption.Name} ({string.Join(", ", existingAliases)})");
         }
+
+        var options = consoleConfiguration.RootCommand.Options;
+
+        // Find the position where the new option should be inserted so that the list
+        // remains ordered by two keys:
+        //   1. Alias count, in descending order (options with more aliases come first)
+        //   2. Name, in ascending order, case-insensitive
+        //
+        // The trick: build a tuple (-AliasCount, NameLowercase). Negating the alias count
+        // flips the order so higher counts sort first. We then CompareTo the new option’s
+        // tuple and TakeWhile all existing entries that are "less" than it, leaving us
+        // with the correct insert index.
+
+        var insertIndex = options.TakeWhile(existing => (-(existing.Aliases?.Count ?? 0), existing.Name?.ToLowerInvariant() ?? string.Empty).CompareTo((-(option.Aliases?.Count ?? 0), option.Name?.ToLowerInvariant() ?? string.Empty)) < 0).Count();
+        options.Insert(insertIndex, option);
     }
 
     public async ValueTask HandleCommandsAsync(CancellationToken cancellationToken = default)
