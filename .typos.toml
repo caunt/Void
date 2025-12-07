@@ -1,0 +1,11 @@
+[files]
+extend-exclude = []
+
+[default]
+extend-ignore-re = [
+  # Ignore git commit hashes in markdown files
+  '(?x)\[[0-9a-f]{7}\]\(https://github\.com/.*?/commit/[0-9a-f]+\)',
+]
+
+[default.extend-words]
+# Add any custom words that should be ignored here
