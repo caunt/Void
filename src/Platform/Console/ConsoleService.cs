@@ -99,7 +99,7 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
         // tuple and TakeWhile all existing entries that are "less" than it, leaving us
         // with the correct insert index.
 
-        var insertIndex = options.TakeWhile(existing => (-(existing.Aliases?.Count ?? 0), existing.Name?.ToLowerInvariant() ?? string.Empty).CompareTo((-(option.Aliases?.Count ?? 0), option.Name?.ToLowerInvariant() ?? string.Empty)) < 0).Count();
+        var insertIndex = options.ToArray().TakeWhile(existing => (-(existing.Aliases?.Count ?? 0), existing.Name?.ToLowerInvariant() ?? string.Empty).CompareTo((-(option.Aliases?.Count ?? 0), option.Name?.ToLowerInvariant() ?? string.Empty)) < 0).Count();
         options.Insert(insertIndex, option);
     }
 
