@@ -43,7 +43,7 @@ This repository is organized as follows:
     - ExamplePlugin — minimal API sample plugin
   - **Servers/** — server implementation integrations (e.g., Bukkit)
   - **Terminal/** — terminal UI components
-- **tests/** — xUnit test projects
+  - **Tests/** — xUnit test projects
 - **docs/** — documentation site built with Astro
 - **pdk/** — plugin development kit example
 - **Void.slnx** — solution file
@@ -106,7 +106,7 @@ Follow the C# style rules defined in [**AGENTS.md**](../AGENTS.md):
 
 ### Pull Request Requirements
 
-**Title:** Follow Conventional Commits format
+**Title:** Follow Conventional Commits format with scope and gitmoji (same as commit messages)
 
 **Description Template:**
 ```markdown
@@ -145,7 +145,7 @@ Issues, discussions, specs.
 
 - Run `dotnet build` after code changes
 - Run `dotnet test` when C# files are modified
-- Check tests in `tests/` directory for examples
+- Check tests in `src/Tests/` directory for examples
 - Verify all existing tests pass before submitting changes
 
 ## Key Resources
