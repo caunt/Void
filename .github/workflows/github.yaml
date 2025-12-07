@@ -10,7 +10,6 @@ on:
 
 jobs:
   push:
-    environment: void
     if: ${{ fromJson(inputs.release) }}
     runs-on: ubuntu-latest
     steps:
