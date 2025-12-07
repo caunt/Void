@@ -15,7 +15,7 @@ public abstract class IntegrationFixtureBase : IDisposable
     public IntegrationFixtureBase(string workingDirectory)
     {
         _httpClient = new();
-        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Void.Tests/1.0");
+        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Void.Tests/1.0 (https://github.com/caunt/Void)");
         _httpClient.DefaultRequestHeaders.Pragma.ParseAdd("no-cache");
         _httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
 
