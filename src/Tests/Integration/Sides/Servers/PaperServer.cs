@@ -40,7 +40,7 @@ public class PaperServer : IntegrationSideBase
         using var versions = JsonDocument.Parse(versionsJson);
         var latestVersion = versions.RootElement.GetProperty("versions").EnumerateArray().Last().GetString();
 
-        var buildsJson = await client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}", cancellationToken);
+        var buildsJson = await client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}/builds", cancellationToken);
         using var builds = JsonDocument.Parse(buildsJson);
         var latestBuild = builds.RootElement.GetProperty("builds").EnumerateArray().Last().GetInt32();
 
