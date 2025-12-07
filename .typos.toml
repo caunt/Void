@@ -1,0 +1,11 @@
+# Configuration for typos-cli
+# See https://github.com/crate-ci/typos
+
+[default.extend-words]
+# Git commit hashes and hex strings that are commonly flagged as typos
+# These are part of git commit URLs and should not be treated as typos
+ba = "ba"
+caf = "caf"
+daa = "daa"
+cace = "cace"
+beed = "beed"

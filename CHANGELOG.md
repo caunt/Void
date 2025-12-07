@@ -519,7 +519,7 @@
 * simplify EventService constructor and cancellation handling ([6873af2](https://github.com/caunt/Void/commit/6873af2239d0a0dcb1be23710b6acefedf44e843))
 * simplify OnPluginUnload method in DependencyService ([1b164a1](https://github.com/caunt/Void/commit/1b164a112a8232da1bca59928230dee9a4dbeae3))
 * streamline instance creation in DependencyService ([5e630c4](https://github.com/caunt/Void/commit/5e630c4e3904fcdc14eee69c197f59861ee5939a))
-* uncomment previuos unloading problem ([3a11604](https://github.com/caunt/Void/commit/3a11604fcf2dce09bcefb3984b9dd80dcbc04e37))
+* uncomment previous unloading problem ([3a11604](https://github.com/caunt/Void/commit/3a11604fcf2dce09bcefb3984b9dd80dcbc04e37))
 * update exception messages for registry management ([580e2bd](https://github.com/caunt/Void/commit/580e2bddd83d24d0f10090949a3e303ce6bfeb4f))
 * update instance creation logic in DependencyService ([e20e38c](https://github.com/caunt/Void/commit/e20e38c94a6351085582d033c7222b215cd0e159))
 * update mapping version comparison logic ([62ee5bb](https://github.com/caunt/Void/commit/62ee5bb04c79051bca49b9d4684715352a5910e3))
