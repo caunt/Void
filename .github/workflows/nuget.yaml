@@ -13,7 +13,6 @@ on:
 
 jobs:
   push:
-    environment: void
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     if: ${{ fromJson(inputs.release) }}
