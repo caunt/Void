@@ -21,7 +21,7 @@ public interface IConsoleService : ICommandSource
     /// <param name="option">The option for which to retrieve the value. Cannot be <see langword="null"/>.</param>
     /// <param name="value">When this method returns <see langword="true"/>, contains the value associated with the specified option. When
     /// this method returns <see langword="false"/>, the value is <see langword="null"/>.</param>
-    /// <returns><see langword="true"/> if the value for the specified option was successfully retrieved;  otherwise, <see
+    /// <returns><see langword="true"/> if the value for the specified option was successfully retrieved; otherwise, <see
     /// langword="false"/>.</returns>
     public bool TryGetOptionValue<TValue>(Option<TValue> option, [MaybeNullWhen(false)] out TValue value);
 
