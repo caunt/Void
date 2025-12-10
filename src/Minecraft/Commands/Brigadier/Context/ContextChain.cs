@@ -49,7 +49,7 @@ public record ContextChain(List<CommandContext> Modifiers, CommandContext Execut
     {
         var sourceModifier = modifier.RedirectModifier;
 
-        // Note: source currently in context is irrelevant at this point, since we might have updated it in one of earlier stages
+        // Note: source currently in context is irrelevant at this point, since we might have updated it in one of the earlier stages
         if (sourceModifier == null)
         {
             // Simple redirect, just propagate source to next node
