@@ -61,7 +61,7 @@ public class MineflayerClient : IntegrationSideBase
               'flying'
             ]);
 
-            // physics has a bug that sends position packet in configuration phase, when such phase is requested by server from previous play phase
+            // Physics has a bug that sends a position packet in the configuration phase when that phase is requested by the server from the previous play phase
             const originalWrite = bot._client.write.bind(bot._client);
             bot._client.write = (packetName, packetPayload) => {
               if (suppressedPackets.has(packetName))
