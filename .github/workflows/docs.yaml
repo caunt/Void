@@ -7,9 +7,6 @@ on:
 
 jobs:
   push:
-    environment:
-      name: void
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +31,6 @@ jobs:
         uses: actions/deploy-pages@v4
 
   docfx-bug-test:
-    environment: void
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

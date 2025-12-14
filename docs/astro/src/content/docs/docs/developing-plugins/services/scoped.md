@@ -11,7 +11,7 @@ Scoped services are useful for managing player-specific state or resources that 
 
 ## Example Definition
 `IPlayerContext` may be injected into your scoped service to access the player context.
-You can get player instance, other player-scoped services, or network channel from it.
+You can get the player instance, other player-scoped services, or the network channel from it.
 
 ```csharp
 public class MyScopedService(IPlayerContext context)
@@ -67,7 +67,7 @@ public class MySingletonService(IPlayerService players)
 
 ## Events
 Scoped services subscribed to events that implement `IScopedEvent` interface will be automatically filtered to the current player context.
-For example, if you listen to `PlayerConnectedEvent`, the event will be automatically filtered to the current player only context.
+For example, if you listen to `PlayerConnectedEvent`, the event will be automatically filtered to the current player's context only.
 ```csharp
 public class MyScopedService(IPlayerContext context) : IEventListener
 {
@@ -85,7 +85,7 @@ public class MyScopedService(IPlayerContext context) : IEventListener
 }
 ```
 
-While events being filtered, scoped services are still instantiated for each player. 
+While events are being filtered, scoped services are still instantiated for each player.
 So all players and their respective scoped services will be notified about the event.
 This helps with player-specific resource isolation.
 
@@ -113,7 +113,7 @@ public class PlayerPositionService(IPlayerContext context) : IEventListener
 }
 ```
 
-Now all players have their own instance of `PlayerPositionService` and each one contains current player position.
+Now all players have their own instance of `PlayerPositionService`, and each one contains the current player position.
 You can get this service directly from the player to access the actual player position.
 ```csharp
 public class TrackerService(IPlayerService players)
@@ -138,7 +138,7 @@ Most of the events that have Player property are already implemented as `IScoped
 While you can listen to them in Scoped services, they are still available for [**Singleton services**](/docs/developing-plugins/services/singleton).
 In Singleton context, you will receive events **not filtered**. Meaning you will receive events for all players in a single service.
 
-If you would like to not filter events in scoped service, pass `bypassScopedFilter: true` to the `Subscribe` attribute.
+If you would like to not filter events in a scoped service, pass `bypassScopedFilter: true` to the `Subscribe` attribute.
 ```csharp
 public class MyScopedService(IPlayerContext context) : IEventListener
 {

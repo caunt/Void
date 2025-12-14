@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<NeutralLanguage>en</NeutralLanguage>
@@ -10,7 +10,7 @@
 		<LangVersion>preview</LangVersion>
 		<ContainerRegistry>docker.io</ContainerRegistry>
 		<ContainerRepository>caunt/void</ContainerRepository>
-		<!-- I cannot even create a /app/configs directory, and there is no option to allow access APP to THE APP directory. -->
+                <!-- I cannot even create a /app/configs directory, and there is no option to allow the app to access its directory. -->
 		<ContainerUser>root</ContainerUser>
 		<!-- Exclude this SHA because it is very long string. GitHub Actions will make short version -->
 		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>

@@ -56,7 +56,7 @@ public class PromptReader : IDisposable
         {
             do
             {
-                // TODO: Currently the prompt is not redrawn when enter is рудв
+                // TODO: Currently the prompt is not redrawn when enter is pressed
                 // If uncommented, it will be redrawn but multithreaded writes will be drawn over each other
                 // _writer.UpdateBuffer();
 

@@ -92,8 +92,8 @@ public void OnAuthenticationStarting(AuthenticationStartingEvent @event)
     if (@event.Link.Server.Name is not "lobby")
         return;
 
-    // Ensure Void targets authentication to server side,
-    // So it allows player to authenticate with server.
+    // Ensure Void targets authentication to the server side,
+    // allowing the player to authenticate with the server.
     @event.Result = AuthenticationSide.Server;
 }
 

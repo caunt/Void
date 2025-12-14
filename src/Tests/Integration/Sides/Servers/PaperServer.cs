@@ -38,11 +38,16 @@ public class PaperServer : IntegrationSideBase
 
         var versionsJson = await client.GetStringAsync("https://api.papermc.io/v2/projects/paper", cancellationToken);
         using var versions = JsonDocument.Parse(versionsJson);
-        var latestVersion = versions.RootElement.GetProperty("versions").EnumerateArray().Last().GetString();
+        
+        var filteredSuffixes = new[] { "-pre", "-rc" };
+        var latestVersion = versions.RootElement.GetProperty("versions").EnumerateArray()
+            .Select(versionElement => versionElement.GetString())
+            .Where(version => version != null && !filteredSuffixes.Any(version.Contains))
+            .LastOrDefault() ?? versions.RootElement.GetProperty("versions").EnumerateArray().Last().GetString();
 
-        var buildsJson = await client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}", cancellationToken);
+        var buildsJson = await client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}/builds", cancellationToken);
         using var builds = JsonDocument.Parse(buildsJson);
-        var latestBuild = builds.RootElement.GetProperty("builds").EnumerateArray().Last().GetInt32();
+        var latestBuild = builds.RootElement.GetProperty("builds").EnumerateArray().Last().GetProperty("build").GetInt32();
 
         var buildInfoJson = await client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}/builds/{latestBuild}", cancellationToken);
         using var buildInfo = JsonDocument.Parse(buildInfoJson);

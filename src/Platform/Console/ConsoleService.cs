@@ -1,5 +1,6 @@
 ﻿using System.CommandLine;
 using System.Diagnostics.CodeAnalysis;
+using Nito.AsyncEx;
 using Void.Minecraft.Commands.Brigadier.Exceptions;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Commands;
@@ -17,6 +18,7 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
     public IEnumerable<Option> DiscoveredOptions => consoleConfiguration.RootCommand.Options;
 
     private readonly PromptReader _reader = new();
+    private readonly AsyncLock _optionDiscoveryLock = new();
 
     [Subscribe(PostOrder.Last)]
     public void OnProxyStarting(ProxyStartingEvent @event)
@@ -71,17 +73,22 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
 
     public void EnsureOptionDiscovered(Option option)
     {
+        using var lockDisposable = _optionDiscoveryLock.Lock();
+        
         if (consoleConfiguration.RootCommand.Options.Contains(option))
             return;
 
         foreach (var existingOption in consoleConfiguration.RootCommand.Options)
         {
-            if (!existingOption.Name.Equals(option.Name, StringComparison.OrdinalIgnoreCase) && !existingOption.Aliases.Any(alias => option.Aliases.Contains(alias, StringComparer.OrdinalIgnoreCase)))
+            var existingAliases = existingOption.Aliases ?? [];
+            var optionAliases = option.Aliases ?? [];
+            
+            if (!existingOption.Name.Equals(option.Name, StringComparison.OrdinalIgnoreCase) && !existingAliases.Any(alias => optionAliases.Contains(alias, StringComparer.OrdinalIgnoreCase)))
                 continue;
 
             throw new InvalidOperationException($"Option with name or alias '{option.Name}' already exists. " +
-                $"Discovered: {option.Name} ({string.Join(", ", option.Aliases)}), " +
-                $"Existing: {existingOption.Name} ({string.Join(", ", existingOption.Aliases)})");
+                $"Discovered: {option.Name} ({string.Join(", ", optionAliases)}), " +
+                $"Existing: {existingOption.Name} ({string.Join(", ", existingAliases)})");
         }
 
         var options = consoleConfiguration.RootCommand.Options;
@@ -96,7 +103,7 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
         // tuple and TakeWhile all existing entries that are "less" than it, leaving us
         // with the correct insert index.
 
-        var insertIndex = options.TakeWhile(existing => (-existing.Aliases.Count, existing.Name.ToLowerInvariant()).CompareTo((-option.Aliases.Count, option.Name.ToLowerInvariant())) < 0).Count();
+        var insertIndex = options.TakeWhile(existing => (-(existing.Aliases?.Count ?? 0), existing.Name?.ToLowerInvariant() ?? string.Empty).CompareTo((-(option.Aliases?.Count ?? 0), option.Name?.ToLowerInvariant() ?? string.Empty)) < 0).Count();
         options.Insert(insertIndex, option);
     }
 

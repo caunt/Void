@@ -6,7 +6,7 @@ sidebar:
 ---
 
 Environment variables make configuration in [**container environments**](/docs/containers/) easier.
-However, they might be used from the terminal directly as well.
+However, you can also use them directly from the terminal.
 
 ## Plugins
 - `VOID_PLUGINS`
@@ -33,6 +33,6 @@ However, they might be used from the terminal directly as well.
   Defines the Mojang session server to use.  
   Example: `https://sessionserver.mojang.com/session/minecraft/hasJoined`
 
-- `VOID_MOJANG_PREVENT_PROXY_CONNECTIONS`  
-  Tells Mojang to disallow player proxy connections.  
+- `VOID_MOJANG_PREVENT_PROXY_CONNECTIONS`
+  Tells Mojang to disallow player proxy connections.
   Example: `true`

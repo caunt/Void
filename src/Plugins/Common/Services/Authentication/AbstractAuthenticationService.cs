@@ -136,11 +136,11 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
             if (packet is IMinecraftBinaryMessage message)
             {
                 // TODO: What should we do with unknown messages that expect a response?
-                // Client is already in a Play state, so he cannot answer these messages
+                // Client is already in the Play state, so it cannot answer these messages
                 // Possible solution is to handle these packets in some "healing" service?
                 // Happens when Velocity Forwarding plugin is not loaded
                 await link.SendPacketAsync(message, cancellationToken);
-                throw new NotSupportedException("This packet is not processed by anyone and might be waiting response");
+                throw new NotSupportedException("This packet is not processed by anyone and might be waiting for a response");
                 // continue;
             }
 

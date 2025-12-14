@@ -27,7 +27,6 @@ env:
 
 jobs:
   dev:
-    environment: void
     runs-on: ubuntu-latest
     outputs:
       dotnet-version: ${{ steps.dotnet-version.outputs.result }}
@@ -47,7 +46,6 @@ jobs:
 
   release-please:
     if: ${{ inputs.release-please }}
-    environment: void
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}

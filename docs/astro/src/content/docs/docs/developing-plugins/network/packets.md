@@ -72,7 +72,7 @@ Each packet ID takes effect at its listed protocol version and remains valid unt
 :::
 
 ## Receiving Packets
-Now that we have defined our packet, we can receive it with `MessageReceivedEvent` [**event**](/docs/developing-plugins/events/listening-to-events/).
+Now that we have defined our packet, we can receive it with the `MessageReceivedEvent` [**event**](/docs/developing-plugins/events/listening-to-events/).
 ```csharp
 [Subscribe]
 public void OnMessageReceived(MessageReceivedEvent @event)
@@ -81,12 +81,12 @@ public void OnMessageReceived(MessageReceivedEvent @event)
     if (@event.Message is not SetHeldItemClientboundPacket packet)
         return;
         
-    // Print the slot value sent by server
+    // Print the slot value sent by the server
     Console.WriteLine($"Received {nameof(SetHeldItemClientboundPacket)} with Slot: {packet.Slot}");
 }
 ```
 
-There is also a `MessageSentEvent` event that is triggered when the packet is already sent to the receiver.
+There is also a `MessageSentEvent` that is triggered when the packet is already sent to the receiver.
 ```csharp
 [Subscribe]
 public void OnMessageSent(MessageSentEvent @event)
@@ -140,7 +140,7 @@ Check out [**complete example**](https://github.com/caunt/Void/blob/main/src/Plu
 
 ## Cancelling Packets
 You can cancel packets in the `MessageReceivedEvent`.
-Set `IEvent.Result` value to `true` to prevent sending packet to receiver.
+Set the `IEvent.Result` value to `true` to prevent sending the packet to the receiver.
 ```csharp
 [Subscribe]
 public void OnMessageReceived(MessageReceivedEvent @event)

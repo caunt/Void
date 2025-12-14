@@ -13,7 +13,7 @@ public static class ChannelExtensions
 {
     public static async ValueTask<T> ReceivePacketAsync<T>(this INetworkChannel channel, Side origin, CancellationToken cancellationToken) where T : IMinecraftMessage
     {
-        // just for safety, ensure we do have such IMinecraftPacket implementation in channel registry
+        // Just for safety, ensure we have an IMinecraftPacket implementation in the channel registry
         if (!typeof(T).IsInterface)
         {
             var stream = channel.Get<IMinecraftPacketMessageStream>();

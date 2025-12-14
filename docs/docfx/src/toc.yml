@@ -23,7 +23,7 @@
       href: developing-plugins/events/player-events.md
     - name: Plugin Events
       href: developing-plugins/events/plugin-events.md
-    - name: custom-events.md
+    - name: Custom Events
       href: developing-plugins/events/custom-events.md
   - name: Commands
     href: developing-plugins/commands/commands.md

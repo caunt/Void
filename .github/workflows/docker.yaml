@@ -13,7 +13,6 @@ on:
 
 jobs:
   push-dev:
-    environment: void
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -59,7 +58,6 @@ jobs:
             /p:Version=${{ inputs.void-version }}
 
   push:
-    environment: void
     if: ${{ fromJson(inputs.release) }}
     runs-on: ${{ matrix.os }}
     strategy:

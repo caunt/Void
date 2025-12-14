@@ -7,7 +7,7 @@ namespace Void.Proxy.Api.Console;
 public interface IConsoleService : ICommandSource
 {
     /// <summary>
-    /// Asynchronously processes single incoming command in the terminal until cancellation is requested. Do not call this method directly.
+    /// Asynchronously processes a single incoming command in the terminal until cancellation is requested. Do not call this method directly.
     /// </summary>
     /// <param name="cancellationToken">A token to monitor for cancellation requests. The operation will stop processing current command if the token is
     /// canceled.</param>
@@ -21,7 +21,7 @@ public interface IConsoleService : ICommandSource
     /// <param name="option">The option for which to retrieve the value. Cannot be <see langword="null"/>.</param>
     /// <param name="value">When this method returns <see langword="true"/>, contains the value associated with the specified option. When
     /// this method returns <see langword="false"/>, the value is <see langword="null"/>.</param>
-    /// <returns><see langword="true"/> if the value for the specified option was successfully retrieved;  otherwise, <see
+    /// <returns><see langword="true"/> if the value for the specified option was successfully retrieved; otherwise, <see
     /// langword="false"/>.</returns>
     public bool TryGetOptionValue<TValue>(Option<TValue> option, [MaybeNullWhen(false)] out TValue value);
 

@@ -8,7 +8,7 @@ public enum LinkStopReason
     PlayerDisconnected,
 
     /// <summary>
-    /// Specifies that the player was kicked from the server or server closed connection abnormally.
+    /// Specifies that the player was kicked from the server or the server closed the connection abnormally.
     /// </summary>
     ServerDisconnected,
 
@@ -18,7 +18,7 @@ public enum LinkStopReason
     InternalException,
 
     /// <summary>
-    /// Manually requested to stop the <see cref="ILink"/> implementation, e.g. by calling <see cref="ILink.StopAsync"/> method.
+    /// Manually requested to stop the <see cref="ILink"/> implementation, e.g., by calling the <see cref="ILink.StopAsync"/> method.
     /// </summary>
     Requested
 }
