@@ -11,6 +11,7 @@ using Void.Proxy.Api.Events.Authentication;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins.Dependencies;
@@ -53,9 +54,10 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         }
         else
         {
-            var playState = await ReceivePlayerHandshakeAsync(@event.Link, cancellationToken) is 2 or 3;
+            var nextState = await ReceivePlayerHandshakeAsync(@event.Link, cancellationToken);
+            await events.ThrowAsync(new HandshakeCompletedEvent(@event.Link.Player, @event.Link, Side.Client, nextState), cancellationToken);
 
-            if (playState)
+            if (nextState is 2 or 3)
                 @event.Result = AuthenticationSide.Proxy;
         }
     }
@@ -123,10 +125,10 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         if (link.Player.Profile is null)
             throw new InvalidOperationException("Player should be authenticated before Server");
 
-        var handshakeBuildEventResult = await events.ThrowWithResultAsync(new HandshakeBuildEvent(link.Player, link), cancellationToken) ?? new(null, 2);
+        var handshakeBuildEventResult = await events.ThrowWithResultAsync(new HandshakeBuildEvent(link.Player, link), cancellationToken) ?? new(Packet: null, NextState: 2);
 
         await HandshakeWithServerAsync(link, handshakeBuildEventResult.Packet, handshakeBuildEventResult.NextState, cancellationToken);
-        await events.ThrowAsync(new HandshakeCompletedEvent(link.Player, link, handshakeBuildEventResult.NextState), cancellationToken);
+        await events.ThrowAsync(new HandshakeCompletedEvent(link.Player, link, Side.Server, handshakeBuildEventResult.NextState), cancellationToken);
         await StartServerLoginAsync(link, cancellationToken);
 
         while (!cancellationToken.IsCancellationRequested)

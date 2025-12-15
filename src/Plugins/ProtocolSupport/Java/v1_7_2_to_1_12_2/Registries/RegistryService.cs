@@ -63,22 +63,18 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
-        if (@event.NextState is 1)
+        switch (@event)
         {
-            @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundStatusMappings);
-            @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ServerboundStatusMappings);
-            await @event.Player.SetPhaseAsync(Side.Server, Phase.Status, @event.Link.ServerChannel, cancellationToken);
-        }
-        else if (@event.NextState is 2 or 3)
-        {
-            @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundLoginMappings);
-            @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ServerboundLoginMappings);
-            await @event.Player.SetPhaseAsync(Side.Server, Phase.Login, @event.Link.ServerChannel, cancellationToken);
-        }
-        else
-        {
-            @event.Link.PlayerChannel.DisposeRegistries(_plugin);
-            @event.Link.ServerChannel.DisposeRegistries(_plugin);
+            case { Side: Side.Client, NextState: 1 }:
+                @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundStatusMappings);
+                @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ServerboundStatusMappings);
+                await @event.Player.SetPhaseAsync(Side.Server, Phase.Status, @event.Link.ServerChannel, cancellationToken);
+                break;
+            case { Side: Side.Server, NextState: 2 or 3 }:
+                @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundLoginMappings);
+                @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ServerboundLoginMappings);
+                await @event.Player.SetPhaseAsync(Side.Server, Phase.Login, @event.Link.ServerChannel, cancellationToken);
+                break;
         }
     }
 
