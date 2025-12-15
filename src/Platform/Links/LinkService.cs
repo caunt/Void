@@ -91,14 +91,14 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
 
         var result = await events.ThrowWithResultAsync(new AuthenticationStartedEvent(link, unwrappedPlayer, side), cancellationToken);
 
-        if (result is AuthenticationResult.NoResult)
+        if (result == AuthenticationResult.NoResult)
             throw new InvalidOperationException($"No {nameof(AuthenticationResult)} provided for {link}");
 
         await events.ThrowAsync(new AuthenticationFinishedEvent(link, unwrappedPlayer, side, result), cancellationToken);
 
-        if (result is AuthenticationResult.NotAuthenticatedPlayer or AuthenticationResult.NotAuthenticatedServer)
+        if (!result.IsAuthenticated)
         {
-            await unwrappedPlayer.KickAsync("You are not authorized to play", cancellationToken);
+            await unwrappedPlayer.KickAsync($"You are not authorized to play:\n{result.Message}", cancellationToken);
             return ConnectionResult.NotConnected;
         }
         else

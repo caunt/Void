@@ -124,7 +124,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
 
         var joinGamePacket = (JoinGamePacket)packet;
 
-        if (authenticationResult is AuthenticationResult.AlreadyAuthenticated)
+        if (authenticationResult == AuthenticationResult.AlreadyAuthenticated)
             await link.SendPacketAsync(RespawnPacket.FromJoinGame(joinGamePacket), cancellationToken);
         else
             await link.SendPacketAsync(joinGamePacket, cancellationToken);
@@ -147,7 +147,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
                 break;
             case LoginPluginRequestPacket loginPluginRequest:
                 // hope someone handles it
-                // TODO: how do we ensure that someone answered it, considering any plugin can have its own Type for a response packet
+                // TODO: how do we ensure that someone answered it, considering any plugin can have its own Type for a response packet?
                 break;
             case EncryptionRequestPacket:
                 throw new InvalidOperationException("Authentication side is set to Proxy, but server is in online-mode.");

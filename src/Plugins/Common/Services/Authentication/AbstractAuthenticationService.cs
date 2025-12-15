@@ -82,7 +82,7 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
 
         var authenticationResult = await AuthenticatePlayerAsync(@event.Link, cancellationToken);
 
-        if (authenticationResult is AuthenticationResult.Authenticated or AuthenticationResult.AlreadyAuthenticated)
+        if (authenticationResult.IsAuthenticated)
             authenticationResult = await AuthenticateServerAsync(@event.Link, authenticationResult, cancellationToken);
 
         @event.Result = authenticationResult;
@@ -99,13 +99,13 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
             return AuthenticationResult.AlreadyAuthenticated;
 
         if (!await StartPlayerLoginAsync(link, cancellationToken))
-            return AuthenticationResult.NotAuthenticatedPlayer;
+            return AuthenticationResult.NotAuthenticatedPlayer with { Message = "You are already online on this proxy." };
 
         if (!await events.ThrowWithResultAsync(new PlayerVerifyingEncryptionEvent(link.Player, link), cancellationToken))
-            return AuthenticationResult.NotAuthenticatedPlayer;
+            return AuthenticationResult.NotAuthenticatedPlayer with { Message = "Your encryption cannot be verified." };
 
         if (!await VerifyMojangProfile(link.Player, cancellationToken))
-            return AuthenticationResult.NotAuthenticatedPlayer;
+            return AuthenticationResult.NotAuthenticatedPlayer with { Message = "Mojang session server rejected your session." };
 
         await events.ThrowAsync(new PlayerVerifiedEncryptionEvent(link.Player, link), cancellationToken);
         await FinishPlayerLoginAsync(link, cancellationToken);
@@ -151,12 +151,12 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
 
             var result = await HandleServerPacketAsync(link, packet, cancellationToken);
 
-            if (result is AuthenticationResult.NoResult)
+            if (result == AuthenticationResult.NoResult)
                 continue;
-            else if (result is AuthenticationResult.Authenticated)
+            else if (result == AuthenticationResult.Authenticated)
                 break;
             else
-                return AuthenticationResult.NotAuthenticatedServer;
+                return AuthenticationResult.NotAuthenticatedServer with { Message = "Disconnected by server." };
         }
 
         await FinishServerAuthenticationAsync(link, authenticationResult, cancellationToken);

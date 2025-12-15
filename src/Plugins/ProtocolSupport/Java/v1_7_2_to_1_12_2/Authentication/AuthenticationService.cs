@@ -111,7 +111,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
 
         var joinGamePacket = (JoinGamePacket)packet;
 
-        if (authenticationResult is AuthenticationResult.AlreadyAuthenticated)
+        if (authenticationResult == AuthenticationResult.AlreadyAuthenticated)
             await link.SendPacketAsync(RespawnPacket.FromJoinGame(joinGamePacket), cancellationToken);
         else
             await link.SendPacketAsync(joinGamePacket, cancellationToken);
