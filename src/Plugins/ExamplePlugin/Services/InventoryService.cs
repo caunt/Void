@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Void.Minecraft.Events;
 using Void.Minecraft.Network;
+using Void.Minecraft.Network.Registries.PacketId.Mappings;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
@@ -48,11 +49,11 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
 
         void RegisterPlayMappings(IPlayer player, Side side)
         {
-            // Many packet ids and their properties can be found at
+            // Many packet ids and their properties can be found at:
             // https://minecraft.wiki/w/Java_Edition_protocol
             // https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Protocol_version_numbers
 
-            player.RegisterPacket<SetHeldItemServerboundPacket>([
+            MinecraftPacketIdMapping[] serverboundMappings = [
                 new(0x28, ProtocolVersion.MINECRAFT_1_20),
                 new(0x2B, ProtocolVersion.MINECRAFT_1_20_2),
                 new(0x2C, ProtocolVersion.MINECRAFT_1_20_3),
@@ -60,9 +61,9 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
                 new(0x31, ProtocolVersion.MINECRAFT_1_21_2),
                 new(0x33, ProtocolVersion.MINECRAFT_1_21_4),
                 new(0x34, ProtocolVersion.MINECRAFT_1_21_6)
-            ]);
+            ];
 
-            player.RegisterPacket<SetHeldItemClientboundPacket>([
+            MinecraftPacketIdMapping[] clientboundMappings = [
                 new(0x4D, ProtocolVersion.MINECRAFT_1_20),
                 new(0x4F, ProtocolVersion.MINECRAFT_1_20_2),
                 new(0x51, ProtocolVersion.MINECRAFT_1_20_3),
@@ -70,7 +71,20 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
                 new(0x63, ProtocolVersion.MINECRAFT_1_21_2),
                 new(0x62, ProtocolVersion.MINECRAFT_1_21_5),
                 new(0x67, ProtocolVersion.MINECRAFT_1_21_9)
-            ]);
+            ];
+
+            if (side is Side.Server)
+            {
+                // If Phase changed on Server side, we can Read Clientbound packet from it and Write Serverbound packet to it.
+                player.RegisterPacket<SetHeldItemClientboundPacket>(Operation.Read, clientboundMappings);
+                player.RegisterPacket<SetHeldItemServerboundPacket>(Operation.Write, serverboundMappings);
+            }
+            else if (side is Side.Client)
+            {
+                // If Phase changed on Client side, we can Read Serverbound packet from it and Write Clientbound packet to it.
+                player.RegisterPacket<SetHeldItemServerboundPacket>(Operation.Read, serverboundMappings);
+                player.RegisterPacket<SetHeldItemClientboundPacket>(Operation.Write, clientboundMappings);
+            }
 
             context.Logger.LogTrace("Registered packet mappings at {Side} side", @event.Side);
         }
