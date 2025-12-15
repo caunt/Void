@@ -94,20 +94,10 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
         // Clear only affected registries that are no longer valid
         if (@event.Side is Side.Client)
-        {
-            link.PlayerChannel.GetMinecraftRegistries().ClearPlugins(Direction.Clientbound, Operation.Any);
-            link.PlayerChannel.GetMinecraftRegistries().ClearPlugins(Direction.Serverbound, Operation.Any);
-            link.ServerChannel.GetMinecraftRegistries().ClearPlugins(Direction.Clientbound, Operation.Read);
-            link.ServerChannel.GetMinecraftRegistries().ClearPlugins(Direction.Serverbound, Operation.Read);
-        }
+            link.PlayerChannel.GetMinecraftRegistries().ClearPlugins();
 
         if (@event.Side is Side.Server)
-        {
-            link.ServerChannel.GetMinecraftRegistries().ClearPlugins(Direction.Clientbound, Operation.Any);
-            link.ServerChannel.GetMinecraftRegistries().ClearPlugins(Direction.Serverbound, Operation.Any);
-            link.PlayerChannel.GetMinecraftRegistries().ClearPlugins(Direction.Clientbound, Operation.Read);
-            link.PlayerChannel.GetMinecraftRegistries().ClearPlugins(Direction.Serverbound, Operation.Read);
-        }
+            link.ServerChannel.GetMinecraftRegistries().ClearPlugins();
     }
 
     [Subscribe]
