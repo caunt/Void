@@ -10,13 +10,14 @@ using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Contexts;
+using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.ModsSupport.Forge.Packets;
 
 namespace Void.Proxy.Plugins.ModsSupport.Forge.Services;
 
 public class HandshakeService(IPlayerContext context) : IEventListener
 {
-    private readonly ConcurrentDictionary<IPlayer, HandshakePacket> _handshakes = [];
+    private readonly ConcurrentDictionary<IPlayer, ModdedHandshakePacket> _handshakes = [];
 
     [Subscribe]
     public void OnPlayerDisconnect(PlayerDisconnectedEvent @event)
@@ -25,11 +26,20 @@ public class HandshakeService(IPlayerContext context) : IEventListener
     }
 
     [Subscribe]
+    public void OnServerboundHandshakeBuild(HandshakeBuildEvent @event)
+    {
+        if (!_handshakes.TryGetValue(@event.Player, out var moddedHandshakePacket))
+            return;
+
+        @event.Result = new HandshakeBuildEventResult(moddedHandshakePacket, moddedHandshakePacket.NextState);
+    }
+
+    [Subscribe]
     public void OnMessageReceived(MessageReceivedEvent @event)
     {
         switch (@event.Message)
         {
-            case HandshakePacket handshakePacket when handshakePacket.IsForge:
+            case ModdedHandshakePacket handshakePacket when handshakePacket.IsForge:
                 var markers = handshakePacket.Markers;
 
                 if (markers.Length > 1)
@@ -65,9 +75,18 @@ public class HandshakeService(IPlayerContext context) : IEventListener
     {
         switch (@event)
         {
-            case { Phase: Phase.Handshake, Side: Side.Client }:
-                HandshakePacket.Register(context.Player);
+            case { Phase: Phase.Handshake }:
+                @event.Player.RegisterPacket<ModdedHandshakePacket>(
+                    @event.Channel,
+                    @event.Side switch
+                    {
+                        Side.Client => Operation.Read,
+                        Side.Server => Operation.Write,
+                        _ => throw new InvalidOperationException($"Invalid side changed phase: {@event.Side}")
+                    },
+                    [new(0x00, ProtocolVersion.Oldest)]);
                 break;
+
             case { Phase: Phase.Login, Side: Side.Client }:
                 LoginPluginResponsePacket.Register(context.Player);
                 break;

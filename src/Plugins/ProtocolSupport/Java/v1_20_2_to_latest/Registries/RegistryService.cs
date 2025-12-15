@@ -10,6 +10,7 @@ using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins;
+using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Services.Registries;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
@@ -61,6 +62,31 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
     }
 
     [Subscribe]
+    public async ValueTask OnHandshakeCompleted(HandshakeCompletedEvent @event, CancellationToken cancellationToken)
+    {
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
+            return;
+
+        if (@event.NextState is 1)
+        {
+            @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundStatusMappings);
+            @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ServerboundStatusMappings);
+            await @event.Player.SetPhaseAsync(Side.Server, Phase.Status, @event.Link.ServerChannel, cancellationToken);
+        }
+        else if (@event.NextState is 2 or 3)
+        {
+            @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundLoginMappings);
+            @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ServerboundLoginMappings);
+            await @event.Player.SetPhaseAsync(Side.Server, Phase.Login, @event.Link.ServerChannel, cancellationToken);
+        }
+        else
+        {
+            @event.Link.PlayerChannel.DisposeRegistries(_plugin);
+            @event.Link.ServerChannel.DisposeRegistries(_plugin);
+        }
+    }
+
+    [Subscribe]
     public async ValueTask OnMessageSent(MessageSentEvent @event, CancellationToken cancellationToken)
     {
         if (!@event.Player.IsMinecraft)
@@ -69,23 +95,6 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
         switch (@event.Message)
         {
             case HandshakePacket handshake:
-                if (handshake.NextState is 1)
-                {
-                    @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundStatusMappings);
-                    @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ServerboundStatusMappings);
-                    await @event.Player.SetPhaseAsync(Side.Server, Phase.Status, @event.Link.ServerChannel, cancellationToken);
-                }
-                else if (handshake.NextState is 2 or 3)
-                {
-                    @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundLoginMappings);
-                    @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ServerboundLoginMappings);
-                    await @event.Player.SetPhaseAsync(Side.Server, Phase.Login, @event.Link.ServerChannel, cancellationToken);
-                }
-                else
-                {
-                    @event.Link.PlayerChannel.DisposeRegistries(_plugin);
-                    @event.Link.ServerChannel.DisposeRegistries(_plugin);
-                }
 
                 break;
             case LoginAcknowledgedPacket:

@@ -102,10 +102,19 @@ public class MinecraftPacketIdPluginsRegistry : IMinecraftPacketIdPluginsRegistr
         }
     }
 
-    public void Clear(Direction direction)
+    public void Clear(Direction direction, Operation operation)
     {
-        foreach (var registry in All)
-            registry.Clear(direction);
+        if (operation.HasFlag(Operation.Read))
+        {
+            foreach (var registry in Read)
+                registry.Clear(direction);
+        }
+
+        if (operation.HasFlag(Operation.Write))
+        {
+            foreach (var registry in Write)
+                registry.Clear(direction);
+        }
     }
 
     public void Reset()

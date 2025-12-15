@@ -25,6 +25,6 @@ public interface IMinecraftPacketIdPluginsRegistry
     public bool Contains(INetworkMessage message);
     public bool Contains(Type type);
     public void Clear();
-    public void Clear(Direction direction);
+    public void Clear(Direction direction, Operation operation);
     public void Reset();
 }

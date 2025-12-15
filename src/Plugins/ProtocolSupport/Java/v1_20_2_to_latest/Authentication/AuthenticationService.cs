@@ -135,14 +135,14 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         await link.ReceivePacketAsync<LoginAcknowledgedPacket>(cancellationToken);
     }
 
-    protected override async ValueTask HandshakeWithServerAsync(ILink link, CancellationToken cancellationToken)
+    protected override async ValueTask HandshakeWithServerAsync(ILink link, IMinecraftServerboundPacket? packet, int nextState, CancellationToken cancellationToken)
     {
         if (!link.Player.IsMinecraft)
             return;
 
-        await link.SendPacketAsync(new HandshakePacket
+        await link.SendPacketAsync(packet ?? new HandshakePacket
         {
-            NextState = 2,
+            NextState = nextState,
             ProtocolVersion = link.Player.ProtocolVersion.Version,
             ServerAddress = link.Server.Host,
             ServerPort = (ushort)link.Server.Port

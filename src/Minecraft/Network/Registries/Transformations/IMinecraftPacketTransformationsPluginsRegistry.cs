@@ -21,6 +21,6 @@ public interface IMinecraftPacketTransformationsPluginsRegistry
     public bool Contains(IMinecraftMessage message, TransformationType type);
     public bool Contains(Type packetType, TransformationType transformationType);
     public void Clear();
-    public void Clear(Direction direction);
+    public void Clear(Direction direction, Operation operation);
     public void Reset();
 }

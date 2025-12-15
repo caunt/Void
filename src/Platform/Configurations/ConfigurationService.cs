@@ -275,7 +275,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
 
     private string? GetPluginNameFromConfiguration(Type configurationType)
     {
-        plugins.TryGetPlugin(configurationType, out var plugin);
+        plugins.TryGetPluginFromType(configurationType, out var plugin);
         return plugin?.Name;
     }
 

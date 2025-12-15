@@ -57,10 +57,10 @@ public class RegistryHolder : IRegistryHolder
         PacketTransformationsPlugins.Clear();
     }
 
-    public void ClearPluginsDirection(Direction direction)
+    public void ClearPlugins(Direction direction, Operation operation)
     {
-        PacketIdPlugins.Clear(direction);
-        PacketTransformationsPlugins.Clear(direction);
+        PacketIdPlugins.Clear(direction, operation);
+        PacketTransformationsPlugins.Clear(direction, operation);
     }
 
     public string PrintPackets()

@@ -18,7 +18,7 @@ public interface IRegistryHolder : IDisposable
     public void Setup(IPlugin managedBy, ProtocolVersion protocolVersion);
     public void ClearPlugin(IPlugin plugin);
     public void ClearPlugins();
-    public void ClearPluginsDirection(Direction direction);
+    public void ClearPlugins(Direction direction, Operation operation);
     public string PrintPackets();
     public void DisposeBy(IPlugin managedBy);
 }

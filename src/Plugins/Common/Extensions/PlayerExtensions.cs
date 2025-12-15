@@ -28,7 +28,7 @@ public static class PlayerExtensions
 
     public static async ValueTask SetPhaseAsync(this IPlayer player, Side side, Phase phase, INetworkChannel channel, CancellationToken cancellationToken)
     {
-        player.Logger.LogTrace("Setting {Side} phase to {Phase}", side, phase);
+        player.Logger.LogDebug("Setting {Side} phase to {Phase}", side, phase);
 
         if (side is Side.Client)
             player.Phase = phase;

@@ -123,7 +123,10 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         if (link.Player.Profile is null)
             throw new InvalidOperationException("Player should be authenticated before Server");
 
-        await HandshakeWithServerAsync(link, cancellationToken);
+        var handshakeBuildEventResult = await events.ThrowWithResultAsync(new HandshakeBuildEvent(link.Player, link), cancellationToken) ?? new(null, 2);
+
+        await HandshakeWithServerAsync(link, handshakeBuildEventResult.Packet, handshakeBuildEventResult.NextState, cancellationToken);
+        await events.ThrowAsync(new HandshakeCompletedEvent(link.Player, link, handshakeBuildEventResult.NextState), cancellationToken);
         await StartServerLoginAsync(link, cancellationToken);
 
         while (!cancellationToken.IsCancellationRequested)
@@ -194,7 +197,7 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
 
     protected abstract ValueTask FinishPlayerLoginAsync(ILink link, CancellationToken cancellationToken);
 
-    protected abstract ValueTask HandshakeWithServerAsync(ILink link, CancellationToken cancellationToken);
+    protected abstract ValueTask HandshakeWithServerAsync(ILink link, IMinecraftServerboundPacket? packet, int nextState, CancellationToken cancellationToken);
 
     protected abstract ValueTask StartServerLoginAsync(ILink link, CancellationToken cancellationToken);
 

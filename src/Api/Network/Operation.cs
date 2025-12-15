@@ -1,8 +1,9 @@
 namespace Void.Proxy.Api.Network;
 
+[Flags]
 public enum Operation
 {
-    Any,
-    Write,
-    Read
+    Read = 1,
+    Write = 2,
+    Any = Read | Write
 }

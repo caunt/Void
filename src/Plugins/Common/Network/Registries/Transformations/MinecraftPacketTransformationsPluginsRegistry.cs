@@ -53,8 +53,11 @@ public class MinecraftPacketTransformationsPluginsRegistry : IMinecraftPacketTra
         _map = [];
     }
 
-    public void Clear(Direction direction)
+    public void Clear(Direction direction, Operation operation)
     {
+        // TODO: Transformations registry is not operation-based?
+        // Decide if it should be so.
+
         foreach (var (_, registry) in _map)
             registry.Clear(direction);
     }

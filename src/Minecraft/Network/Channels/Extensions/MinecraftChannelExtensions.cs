@@ -13,19 +13,22 @@ namespace Void.Minecraft.Network.Channels.Extensions;
 
 public static class MinecraftChannelExtensions
 {
-    public static async ValueTask SendPacketAsync<T>(this INetworkChannel channel, T packet, CancellationToken cancellationToken) where T : IMinecraftMessage
+    extension(INetworkChannel channel)
     {
-        if (packet is IMinecraftBinaryMessage binaryMessage)
-            binaryMessage.Stream.Position = binaryMessage.Id.VarIntSize();
+        public async ValueTask SendPacketAsync<T>(T packet, CancellationToken cancellationToken) where T : IMinecraftMessage
+        {
+            if (packet is IMinecraftBinaryMessage binaryMessage)
+                binaryMessage.Stream.Position = binaryMessage.Id.VarIntSize();
 
-        await channel.WriteMessageAsync(packet, Side.Proxy, cancellationToken);
-    }
+            await channel.WriteMessageAsync(packet, Side.Proxy, cancellationToken);
+        }
 
-    public static IRegistryHolder GetMinecraftRegistries(this INetworkChannel channel)
-    {
-        if (channel.TryGet<IMinecraftPacketMessageStream>(out var stream))
-            return stream.Registries;
+        public IRegistryHolder GetMinecraftRegistries()
+        {
+            if (channel.TryGet<IMinecraftPacketMessageStream>(out var stream))
+                return stream.Registries;
 
-        throw new InvalidOperationException($"{nameof(IMinecraftPacketMessageStream)} is not found on this channel");
+            throw new InvalidOperationException($"{nameof(IMinecraftPacketMessageStream)} is not found on this channel");
+        }
     }
 }

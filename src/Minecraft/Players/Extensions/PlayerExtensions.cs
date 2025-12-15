@@ -20,6 +20,7 @@ using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Profiles;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins;
@@ -77,15 +78,20 @@ public static class PlayerExtensions
 
         public void RegisterPacket<T>(params MinecraftPacketIdMapping[] mappings) where T : IMinecraftPacket
         {
+            player.RegisterPacket<T>(Operation.Any, mappings);
+        }
+
+        public void RegisterPacket<T>(Operation operation, params MinecraftPacketIdMapping[] mappings) where T : IMinecraftPacket
+        {
             if (typeof(T).IsAssignableTo(typeof(IMinecraftClientboundPacket)))
             {
-                player.RegisterPacket<T>(Direction.Clientbound, mappings);
+                player.RegisterPacket<T>(Direction.Clientbound, operation, mappings);
                 return;
             }
 
             if (typeof(T).IsAssignableTo(typeof(IMinecraftServerboundPacket)))
             {
-                player.RegisterPacket<T>(Direction.Serverbound, mappings);
+                player.RegisterPacket<T>(Direction.Serverbound, operation, mappings);
                 return;
             }
 
@@ -94,7 +100,12 @@ public static class PlayerExtensions
 
         public void RegisterPacket<T>(Direction direction, params MinecraftPacketIdMapping[] mappings) where T : IMinecraftPacket
         {
-            var plugin = player.GetPacketPlugin<T>(player.Context.Services);
+            player.RegisterPacket<T>(direction, Operation.Any, mappings);
+        }
+
+        public void RegisterPacket<T>(Direction direction, Operation operation, params MinecraftPacketIdMapping[] mappings) where T : IMinecraftPacket
+        {
+            var plugin = player.Context.Services.GetRequiredService<IPluginService>().GetPluginFromType<T>();
 
             if (player.TryGetLink(out var link))
             {
@@ -105,47 +116,46 @@ public static class PlayerExtensions
                     _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
                 };
 
-                fromChannel.GetMinecraftRegistries().PacketIdPlugins.Get(Operation.Read, plugin).RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
-                toChannel.GetMinecraftRegistries().PacketIdPlugins.Get(Operation.Write, plugin).RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
+                if (operation.HasFlag(Operation.Read))
+                    player.RegisterPacket<T>(fromChannel, Operation.Read, mappings);
+
+                if (operation.HasFlag(Operation.Write))
+                    player.RegisterPacket<T>(toChannel, Operation.Write, mappings);
             }
             else if (direction is Direction.Serverbound) // If no link created yet, we still should have the player channel
             {
                 if (player.Context.Channel is null)
-                    throw new InvalidOperationException("Cannot register serverbound packet without an active channel.");
+                    throw new InvalidOperationException($"Cannot register {nameof(Direction.Serverbound)} {typeof(T)} packet without a Player channel.");
 
-                var operation = direction switch
-                {
-                    Direction.Clientbound => Operation.Write,
-                    Direction.Serverbound => Operation.Read,
-                    _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
-                };
+                if (operation.HasFlag(Operation.Write))
+                    throw new InvalidOperationException($"Cannot register {nameof(Direction.Serverbound)} {typeof(T)} packet for {Operation.Write} operation without a Server channel.");
 
-                player.Context.Channel.GetMinecraftRegistries().PacketIdPlugins.Get(operation, plugin).RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
+                if (operation.HasFlag(Operation.Read))
+                    player.RegisterPacket<T>(player.Context.Channel, Operation.Read, mappings);
             }
             else
             {
-                throw new InvalidOperationException("Cannot register clientbound packet without an active link.");
+                throw new InvalidOperationException($"Cannot register {nameof(Direction.Clientbound)} {typeof(T)} packet without a Server channel.");
             }
+        }
+
+        public void RegisterPacket<T>(INetworkChannel channel, Operation operation, params MinecraftPacketIdMapping[] mappings) where T : IMinecraftPacket
+        {
+            channel.GetMinecraftRegistries()
+                .PacketIdPlugins
+                .Get(operation, player.Context.Services
+                    .GetRequiredService<IPluginService>()
+                    .GetPluginFromType<T>())
+                .RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
         }
 
         public void RegisterTransformations<T>(params MinecraftPacketTransformationMapping[] mappings) where T : IMinecraftPacket
         {
-            var plugin = player.GetPacketPlugin<T>(player.Context.Services);
+            var plugin = player.Context.Services.GetRequiredService<IPluginService>().GetPluginFromType<T>();
             var link = player.GetLink();
 
             link.PlayerChannel.GetMinecraftRegistries().PacketTransformationsPlugins.Get(plugin).RegisterTransformations<T>(player.AsMinecraft.ProtocolVersion, mappings);
             link.ServerChannel.GetMinecraftRegistries().PacketTransformationsPlugins.Get(plugin).RegisterTransformations<T>(player.AsMinecraft.ProtocolVersion, mappings);
-        }
-
-        private IPlugin GetPacketPlugin<T>(IServiceProvider services) where T : IMinecraftPacket
-        {
-            var packetType = typeof(T);
-            var plugins = services.GetRequiredService<IPluginService>();
-
-            if (!plugins.TryGetPlugin(packetType, out var plugin))
-                throw new InvalidOperationException($"Plugin for packet {packetType.Name} not found.");
-
-            return plugin;
         }
 
         internal bool TryGetMinecraftPlayer([MaybeNullWhen(false)] out MinecraftPlayer minecraftPlayer)
