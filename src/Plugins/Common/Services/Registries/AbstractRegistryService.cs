@@ -144,7 +144,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
         catch (Exception exception)
         {
-            logger.LogError(exception, "Error decoding or handling {Type}", @event.Message);
+            logger.LogError(exception, "Error decoding or handling {Direction} {Type}", @event.Direction, @event.Message);
         }
     }
 
@@ -192,7 +192,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
         catch (Exception exception)
         {
-            logger.LogError(exception, "Error decoding or handling {Type}", @event.Message);
+            logger.LogError(exception, "Error decoding or handling {Direction} {Type}", @event.Direction, @event.Message);
         }
     }
 
