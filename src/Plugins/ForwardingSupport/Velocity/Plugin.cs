@@ -1,7 +1,6 @@
 ﻿using System.CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Void.Minecraft.Network;
-using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Configurations;
 using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events;
