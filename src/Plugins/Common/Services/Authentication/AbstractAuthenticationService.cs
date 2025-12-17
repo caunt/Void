@@ -85,6 +85,9 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         if (authenticationResult.IsAuthenticated)
             authenticationResult = await AuthenticateServerAsync(@event.Link, authenticationResult, cancellationToken);
 
+        if (authenticationResult.IsAuthenticated)
+            await FinishPlayerLoginAsync(@event.Link, cancellationToken);
+
         @event.Result = authenticationResult;
     }
 
@@ -108,7 +111,6 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
             return AuthenticationResult.NotAuthenticatedPlayer with { Message = "Mojang session server rejected your session." };
 
         await events.ThrowAsync(new PlayerVerifiedEncryptionEvent(link.Player, link), cancellationToken);
-        await FinishPlayerLoginAsync(link, cancellationToken);
 
         return AuthenticationResult.Authenticated;
     }
