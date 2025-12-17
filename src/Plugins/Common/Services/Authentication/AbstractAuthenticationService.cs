@@ -86,7 +86,10 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
             authenticationResult = await AuthenticateServerAsync(@event.Link, authenticationResult, cancellationToken);
 
         if (authenticationResult.IsAuthenticated)
+        {
             await FinishPlayerLoginAsync(@event.Link, cancellationToken);
+            await FinishServerAuthenticationAsync(@event.Link, authenticationResult, cancellationToken);
+        }
 
         @event.Result = authenticationResult;
     }
@@ -161,7 +164,6 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
                 return AuthenticationResult.NotAuthenticatedServer with { Message = "Disconnected by server." };
         }
 
-        await FinishServerAuthenticationAsync(link, authenticationResult, cancellationToken);
         return AuthenticationResult.Authenticated;
     }
 
