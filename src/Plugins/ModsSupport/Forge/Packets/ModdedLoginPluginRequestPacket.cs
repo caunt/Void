@@ -1,37 +1,30 @@
 ﻿using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
-using Void.Minecraft.Players.Extensions;
-using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Plugins.ModsSupport.Forge.Packets;
 
-public class LoginPluginResponsePacket : IMinecraftServerboundPacket<LoginPluginResponsePacket>
+public class ModdedLoginPluginRequestPacket : IMinecraftClientboundPacket<ModdedLoginPluginRequestPacket>
 {
     public required int MessageId { get; set; }
-    public required bool Successful { get; set; }
+    public required string Channel { get; set; }
     public required byte[] Data { get; set; }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
         buffer.WriteVarInt(MessageId);
-        buffer.WriteBoolean(Successful);
+        buffer.WriteString(Channel);
         buffer.Write(Data);
     }
 
-    public static LoginPluginResponsePacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
+    public static ModdedLoginPluginRequestPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        return new LoginPluginResponsePacket
+        return new ModdedLoginPluginRequestPacket
         {
             MessageId = buffer.ReadVarInt(),
-            Successful = buffer.ReadBoolean(),
+            Channel = buffer.ReadString(),
             Data = buffer.ReadToEnd().ToArray()
         };
-    }
-
-    public static void Register(IPlayer player)
-    {
-        player.RegisterPacket<LoginPluginResponsePacket>([new(0x02, ProtocolVersion.Oldest)]);
     }
 
     public void Dispose()
