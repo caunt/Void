@@ -56,6 +56,7 @@ public class ProtocolVersion : IComparable
     public static readonly ProtocolVersion MINECRAFT_1_21_6 = new(771, "1.21.6");
     public static readonly ProtocolVersion MINECRAFT_1_21_7 = new(772, "1.21.7", "1.21.8");
     public static readonly ProtocolVersion MINECRAFT_1_21_9 = new(773, "1.21.9", "1.21.10");
+    public static readonly ProtocolVersion MINECRAFT_1_21_11 = new(774, "1.21.11");
 
     public ProtocolVersion(int version, params string[] names)
     {
