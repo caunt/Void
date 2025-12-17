@@ -1,12 +1,10 @@
 ﻿using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
-using Void.Minecraft.Players.Extensions;
-using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Plugins.ForwardingSupport.Velocity.Packets;
 
-public class LoginPluginRequestPacket : IMinecraftClientboundPacket<LoginPluginRequestPacket>
+public class VelocityLoginPluginRequestPacket : IMinecraftClientboundPacket<VelocityLoginPluginRequestPacket>
 {
     public required int MessageId { get; set; }
     public required string Channel { get; set; }
@@ -19,19 +17,14 @@ public class LoginPluginRequestPacket : IMinecraftClientboundPacket<LoginPluginR
         buffer.Write(Data);
     }
 
-    public static LoginPluginRequestPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
+    public static VelocityLoginPluginRequestPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        return new LoginPluginRequestPacket
+        return new VelocityLoginPluginRequestPacket
         {
             MessageId = buffer.ReadVarInt(),
             Channel = buffer.ReadString(),
             Data = buffer.ReadToEnd().ToArray()
         };
-    }
-
-    public static void Register(IPlayer player)
-    {
-        player.RegisterPacket<LoginPluginRequestPacket>([new(0x04, ProtocolVersion.Oldest)]);
     }
 
     public void Dispose()

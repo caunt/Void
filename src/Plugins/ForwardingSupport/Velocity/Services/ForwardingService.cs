@@ -27,12 +27,24 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
         if (@event.Phase is not Phase.Login)
             return;
 
-        if (@event.Side is Side.Server)
-            LoginPluginRequestPacket.Register(context.Player);
-        else if (@event.Side is Side.Client)
-            LoginPluginResponsePacket.Register(context.Player);
-        else
-            throw new InvalidOperationException($"Unexpected side {@event.Side}");
+        @event.Player.RegisterPacket<VelocityLoginPluginResponsePacket>(
+            @event.Channel,
+            @event.Side switch
+            {
+                Side.Client => Operation.Read,
+                Side.Server => Operation.Write,
+                _ => throw new InvalidOperationException($"Invalid side changed phase: {@event.Side}")
+            },
+            [new(0x02, ProtocolVersion.Oldest)]);
+        @event.Player.RegisterPacket<VelocityLoginPluginRequestPacket>(
+            @event.Channel,
+            @event.Side switch
+            {
+                Side.Client => Operation.Write,
+                Side.Server => Operation.Read,
+                _ => throw new InvalidOperationException($"Invalid side changed phase: {@event.Side}")
+            },
+            [new(0x04, ProtocolVersion.Oldest)]);
 
         context.Logger.LogTrace("Registered forwarding packet mappings at {Side} side", @event.Side);
     }
@@ -40,7 +52,7 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
     [Subscribe]
     public async ValueTask OnMessageReceived(MessageReceivedEvent @event, CancellationToken cancellationToken)
     {
-        if (@event.Message is not LoginPluginRequestPacket packet)
+        if (@event.Message is not VelocityLoginPluginRequestPacket packet)
             return;
 
         if (!context.Player.IsMinecraft)
@@ -117,7 +129,7 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
         }
 
         @event.Cancel();
-        await @event.Link.SendPacketAsync(new LoginPluginResponsePacket { Data = [.. signature[..written], .. forwardingData], MessageId = packet.MessageId, Successful = true }, cancellationToken);
+        await @event.Link.SendPacketAsync(new VelocityLoginPluginResponsePacket { Data = [.. signature[..written], .. forwardingData], MessageId = packet.MessageId, Successful = true }, cancellationToken);
     }
 
     private ForwardingVersion FindForwardingVersion(ForwardingVersion requested)
