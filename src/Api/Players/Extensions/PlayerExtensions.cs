@@ -1,9 +1,11 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Nito.AsyncEx;
 using Void.Proxy.Api.Events.Channels;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Servers;
 
@@ -33,6 +35,103 @@ public static class PlayerExtensions
             throw new InvalidOperationException("Player is not linked to any server");
 
         return link;
+    }
+
+    public static void TrafficPause(this IPlayer player, Direction direction = Direction.Clientbound | Direction.Serverbound, Operation operation = Operation.Any)
+    {
+        if (!player.TryGetLink(out var link))
+        {
+            if (direction.HasFlag(Direction.Clientbound) && operation.HasFlag(Operation.Read))
+                throw new InvalidOperationException($"Cannot pause {nameof(Direction.Clientbound)} reading traffic when player is not linked to any server");
+
+            if (direction.HasFlag(Direction.Serverbound) && operation.HasFlag(Operation.Write))
+                throw new InvalidOperationException($"Cannot pause {nameof(Direction.Serverbound)} writing traffic when player is not linked to any server");
+
+            if (player.Context.Channel is { } channel)
+            {
+                player.Context.Logger.LogTrace("Pausing player {Player} channel for direction {Direction} and operation {Operation}", player, direction, operation);
+                channel.Pause(operation);
+            }
+
+            return;
+        }
+
+        if (direction.HasFlag(Direction.Clientbound))
+        {
+            if (operation.HasFlag(Operation.Read))
+            {
+                player.Context.Logger.LogTrace("Pausing link {Link} reading traffic from server for player {Player}", link, player);
+                link.ServerChannel.Pause(operation);
+            }
+
+            if (operation.HasFlag(Operation.Write))
+            {
+                player.Context.Logger.LogTrace("Pausing link {Link} writing traffic to server for player {Player}", link, player);
+                link.PlayerChannel.Pause(operation);
+            }
+        }
+
+        if (direction.HasFlag(Direction.Serverbound))
+        {
+            if (operation.HasFlag(Operation.Read))
+            {
+                player.Context.Logger.LogTrace("Pausing link {Link} reading traffic from player for player {Player}", link, player);
+                link.PlayerChannel.Pause(operation);
+            }
+            if (operation.HasFlag(Operation.Write))
+            {
+                player.Context.Logger.LogTrace("Pausing link {Link} writing traffic to player for player {Player}", link, player);
+                link.ServerChannel.Pause(operation);
+            }
+        }
+    }
+
+    public static void TrafficContinue(this IPlayer player, Direction direction = Direction.Clientbound | Direction.Serverbound, Operation operation = Operation.Any)
+    {
+        if (!player.TryGetLink(out var link))
+        {
+            if (direction.HasFlag(Direction.Clientbound) && operation.HasFlag(Operation.Read))
+                throw new InvalidOperationException($"Cannot continue {nameof(Direction.Clientbound)} reading traffic when player is not linked to any server");
+
+            if (direction.HasFlag(Direction.Serverbound) && operation.HasFlag(Operation.Write))
+                throw new InvalidOperationException($"Cannot continue {nameof(Direction.Serverbound)} writing traffic when player is not linked to any server");
+
+            if (player.Context.Channel is { } channel)
+            {
+                player.Context.Logger.LogTrace("Continuing player {Player} channel for direction {Direction} and operation {Operation}", player, direction, operation);
+                channel.Resume(operation);
+            }
+
+            return;
+        }
+
+        if (direction.HasFlag(Direction.Clientbound))
+        {
+            if (operation.HasFlag(Operation.Read))
+            {
+                player.Context.Logger.LogTrace("Continuing link {Link} reading traffic from server for player {Player}", link, player);
+                link.ServerChannel.Resume(operation);
+            }
+            if (operation.HasFlag(Operation.Write))
+            {
+                player.Context.Logger.LogTrace("Continuing link {Link} writing traffic to server for player {Player}", link, player);
+                link.PlayerChannel.Resume(operation);
+            }
+        }
+
+        if (direction.HasFlag(Direction.Serverbound))
+        {
+            if (operation.HasFlag(Operation.Read))
+            {
+                player.Context.Logger.LogTrace("Continuing link {Link} reading traffic from player for player {Player}", link, player);
+                link.PlayerChannel.Resume(operation);
+            }
+            if (operation.HasFlag(Operation.Write))
+            {
+                player.Context.Logger.LogTrace("Continuing link {Link} writing traffic to player for player {Player}", link, player);
+                link.ServerChannel.Resume(operation);
+            }
+        }
     }
 
     public static async ValueTask KickAsync(this IPlayer player, string text, CancellationToken cancellationToken = default)
