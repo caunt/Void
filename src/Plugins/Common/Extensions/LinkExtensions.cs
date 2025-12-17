@@ -36,7 +36,7 @@ public static class LinkExtensions
             throw new InvalidOperationException("How would I read packet from proxy?");
 
         var channel = side is Side.Client ? link.PlayerChannel : link.ServerChannel;
-        var packet = await channel.ReceivePacketAsync<T>(side, cancellationToken);
+        var packet = await channel.ReceivePacketAsync<T>(cancellationToken);
 
         var events = link.Player.Context.Services.GetRequiredService<IEventService>();
         var direction = side is Side.Client ? Direction.Serverbound : Direction.Clientbound;

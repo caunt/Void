@@ -146,7 +146,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
             try
             {
-                message = await sourceChannel.ReadMessageAsync(sourceSide, forceCancellationToken);
+                message = await sourceChannel.ReadMessageAsync(forceCancellationToken);
 
                 var cancelled = await events.ThrowWithResultAsync(new MessageReceivedEvent(sourceSide, sourceSide, Side.Proxy, direction, message, this, Player), cancellationToken);
 
@@ -174,7 +174,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
             try
             {
-                await destinationChannel.WriteMessageAsync(message, sourceSide, forceCancellationToken);
+                await destinationChannel.WriteMessageAsync(message, forceCancellationToken);
 
                 await events.ThrowAsync(new MessageSentEvent(sourceSide, Side.Proxy, destinationSide, direction, message, this, Player), cancellationToken);
             }

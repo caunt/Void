@@ -25,7 +25,9 @@ public class SimpleMinecraftChannel(IMessageStreamBase head) : INetworkChannel
 
     public bool IsAlive => head.IsAlive;
     public bool IsConfigured => head is IMessageStream;
-    public bool IsPaused => this is { _readPause.Task.IsCompleted: false } or { _writePause.Task.IsCompleted: false };
+    public bool IsPausedRead => this is { _readPause.Task.IsCompleted: false };
+    public bool IsPausedWrite => this is { _writePause.Task.IsCompleted: false };
+    public bool IsPaused => IsPausedRead && IsPausedWrite;
 
     public void Add<T>() where T : class, IMessageStream, new()
     {
@@ -110,21 +112,21 @@ public class SimpleMinecraftChannel(IMessageStreamBase head) : INetworkChannel
         stream.PrependBuffer(memory);
     }
 
-    public async ValueTask<INetworkMessage> ReadMessageAsync(Side origin, CancellationToken cancellationToken = default)
+    public async ValueTask<INetworkMessage> ReadMessageAsync(CancellationToken cancellationToken = default)
     {
         if (_readPause is not null)
             await _readPause.Task.WaitAsync(cancellationToken);
 
         return head switch
         {
-            IMinecraftPacketMessageStream stream => await stream.ReadPacketAsync(origin, cancellationToken),
+            IMinecraftPacketMessageStream stream => await stream.ReadPacketAsync(cancellationToken),
             ICompleteMessageStream stream => await stream.ReadMessageAsync(cancellationToken),
             IBufferedMessageStream stream => await stream.ReadAsMessageAsync(cancellationToken: cancellationToken),
             _ => throw new InvalidOperationException($"{head.GetType()} cannot be used to read messages")
         };
     }
 
-    public async ValueTask WriteMessageAsync(INetworkMessage message, Side origin, CancellationToken cancellationToken = default)
+    public async ValueTask WriteMessageAsync(INetworkMessage message, CancellationToken cancellationToken = default)
     {
         if (_writePause is not null)
             await _writePause.Task.WaitAsync(cancellationToken);
@@ -135,7 +137,7 @@ public class SimpleMinecraftChannel(IMessageStreamBase head) : INetworkChannel
         switch (head)
         {
             case IMinecraftPacketMessageStream stream:
-                await stream.WritePacketAsync(message as IMinecraftPacket ?? throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(IMinecraftPacket)}."), origin, cancellationToken);
+                await stream.WritePacketAsync(message as IMinecraftPacket ?? throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(IMinecraftPacket)}."), cancellationToken);
                 break;
             case ICompleteMessageStream stream:
                 await stream.WriteMessageAsync(message as CompleteBinaryMessage ?? throw new InvalidCastException($"Unable to cast object of type {message.GetType()} to type {typeof(CompleteBinaryMessage)}."), cancellationToken);

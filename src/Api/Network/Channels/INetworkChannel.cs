@@ -40,6 +40,16 @@ public interface INetworkChannel : IDisposable, IAsyncDisposable
     public bool IsPaused { get; }
 
     /// <summary>
+    /// Gets a value indicating whether read operations are currently paused.
+    /// </summary>
+    public bool IsPausedRead { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether write operations are currently paused.
+    /// </summary>
+    public bool IsPausedWrite { get; }
+
+    /// <summary>
     /// Adds a new stream of type <typeparamref name="T"/> to the end of the pipeline.
     /// </summary>
     public void Add<T>() where T : class, IMessageStream, new();
@@ -90,12 +100,12 @@ public interface INetworkChannel : IDisposable, IAsyncDisposable
     /// <summary>
     /// Reads the next message from the channel.
     /// </summary>
-    public ValueTask<INetworkMessage> ReadMessageAsync(Side origin, CancellationToken cancellationToken = default);
+    public ValueTask<INetworkMessage> ReadMessageAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Writes the specified <paramref name="message"/> to the channel.
     /// </summary>
-    public ValueTask WriteMessageAsync(INetworkMessage message, Side origin, CancellationToken cancellationToken = default);
+    public ValueTask WriteMessageAsync(INetworkMessage message, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Pauses channel operations.

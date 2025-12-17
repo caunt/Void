@@ -4,16 +4,13 @@ using Void.Minecraft.Buffers;
 using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
-using Void.Proxy.Api.Network;
 
 namespace Void.Proxy.Plugins.Common.Network.Registries.Transformations.Mappings;
 
-public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message, Side origin) : IMinecraftBinaryPacketWrapper
+public class MinecraftBinaryPacketWrapper(IMinecraftBinaryMessage message) : IMinecraftBinaryPacketWrapper
 {
     private readonly Deque<IPacketProperty> _read = [];
     private readonly List<IPacketProperty> _write = [];
-
-    public Side Origin => origin;
 
     public TPropertyValue Get<TPropertyValue>(int index) where TPropertyValue : IPacketProperty<TPropertyValue>
     {

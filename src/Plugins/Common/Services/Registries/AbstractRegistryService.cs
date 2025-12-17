@@ -131,8 +131,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         {
             var packets = @event.Message switch
             {
-                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, operation, registries, transformations, binaryMessage),
-                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, operation, registries, transformations, minecraftPacket),
+                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, operation, registries, transformations, binaryMessage),
+                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, operation, registries, transformations, minecraftPacket),
                 _ => null
             };
 
@@ -179,8 +179,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         {
             var packets = @event.Message switch
             {
-                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, @event.Origin, operation, registries, transformations, binaryMessage),
-                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Origin, operation, registries, transformations, minecraftPacket),
+                IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, operation, registries, transformations, binaryMessage),
+                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, operation, registries, transformations, minecraftPacket),
                 _ => null
             };
 
@@ -218,7 +218,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, Side origin, Operation operation, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketTransformationsPluginsRegistry transformationsMappings, IMinecraftBinaryMessage binaryMessage)
+    protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, Operation operation, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketTransformationsPluginsRegistry transformationsMappings, IMinecraftBinaryMessage binaryMessage)
     {
         if (!link.Player.IsMinecraft)
             yield break;
@@ -245,7 +245,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             stream.Position = 0;
             var buffer = new MinecraftBuffer(stream);
-            var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(binaryMessage.Id, stream), origin);
+            var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(binaryMessage.Id, stream));
 
             if (registries.TryGetTransformations(transformationsMappings, type, TransformationType.Upgrade, out var transformations))
             {
@@ -268,7 +268,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, Side origin, Operation operation, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketTransformationsPluginsRegistry transformationsMappings, IMinecraftPacket minecraftPacket)
+    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, Operation operation, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketTransformationsPluginsRegistry transformationsMappings, IMinecraftPacket minecraftPacket)
     {
         if (!link.Player.IsMinecraft)
             yield break;
@@ -297,7 +297,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             using var stream = RecyclableStream.RecyclableMemoryStreamManager.GetStream();
             var buffer = new MinecraftBuffer(stream);
-            var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(id, stream), origin);
+            var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(id, stream));
 
             minecraftPacket.Encode(ref buffer, link.Player.ProtocolVersion);
             stream.Position = 0;
