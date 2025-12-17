@@ -65,7 +65,7 @@ public class HandshakeService(IPlayerContext context) : IEventListener
 
             default:
                 if (@event.Player.Phase is not Phase.Play)
-                    context.Logger.LogDebug("{Direction} {MessageType}", @event.Direction, @event.Message.GetType().Name);
+                    context.Logger.LogDebug("{Direction} {MessageType}", @event.Direction, @event.Message.GetType().FullName);
                 break;
         }
     }
