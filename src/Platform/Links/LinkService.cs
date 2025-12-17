@@ -89,7 +89,8 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
             side = AuthenticationSide.Server;
         }
 
-        var result = await events.ThrowWithResultAsync(new AuthenticationStartedEvent(link, unwrappedPlayer, side), cancellationToken);
+        var result = await events.ThrowWithResultAsync(new AuthenticationStartedEvent(link, unwrappedPlayer, side), cancellationToken)
+            ?? AuthenticationResult.NoResult;
 
         if (result == AuthenticationResult.NoResult)
             throw new InvalidOperationException($"No {nameof(AuthenticationResult)} provided for {link}");
