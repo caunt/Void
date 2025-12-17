@@ -9,8 +9,10 @@ using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins.Dependencies;
+using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
+using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 using Void.Proxy.Plugins.Common.Services.Authentication;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Extensions;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clientbound;
@@ -133,8 +135,17 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
                 // handled by compression service
                 break;
             case LoginPluginRequestPacket loginPluginRequest:
-                // hope someone handles it
-                // TODO: how do we ensure that someone answered it, considering any plugin can have its own Type for a response packet
+                var loginPluginMessage = new LoginPluginMessageEvent(link.Player, link, loginPluginRequest.Channel, loginPluginRequest.Data);
+
+                if (!await events.ThrowWithResultAsync(loginPluginMessage, cancellationToken))
+                    break;
+
+                await link.SendPacketAsync(new LoginPluginResponsePacket
+                {
+                    MessageId = loginPluginRequest.MessageId,
+                    Data = loginPluginMessage.Response ?? [],
+                    Successful = loginPluginMessage.Successful
+                }, cancellationToken);
                 break;
             case EncryptionRequestPacket:
                 throw new InvalidOperationException("Authentication side is set to Proxy, but server is in online-mode.");
