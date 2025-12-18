@@ -78,7 +78,7 @@ public static class EntryPoint
 
         using var logger = CreateLogger(loggingLevelSwitch, options.LogWriter);
         using var host = new HostBuilder()
-            .UseServiceProviderFactory(new DryIocServiceProviderFactory(new Container(Rules.MicrosoftDependencyInjectionRules)))
+            .UseServiceProviderFactory(new DryIocServiceProviderFactory(new Container(DryIocAdapter.MicrosoftDependencyInjectionRules)))
             .UseConsoleLifetime(options => options.SuppressStatusMessages = true)
             .ConfigureServices((context, services) => services
                 .AddSerilog(logger, dispose: false)
