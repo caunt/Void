@@ -80,18 +80,21 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         if (!await @event.Player.IsProtocolSupportedAsync(cancellationToken))
             return;
 
-        var authenticationResult = await AuthenticatePlayerAsync(@event.Link, cancellationToken);
+        var playerAuthenticationResult = await AuthenticatePlayerAsync(@event.Link, cancellationToken);
+        var serverAuthenticationResult = playerAuthenticationResult;
 
-        if (authenticationResult.IsAuthenticated)
-            authenticationResult = await AuthenticateServerAsync(@event.Link, authenticationResult, cancellationToken);
+        if (playerAuthenticationResult.IsAuthenticated)
+            serverAuthenticationResult = await AuthenticateServerAsync(@event.Link, playerAuthenticationResult, cancellationToken);
 
-        if (authenticationResult.IsAuthenticated)
+        if (serverAuthenticationResult.IsAuthenticated)
         {
-            await FinishPlayerLoginAsync(@event.Link, cancellationToken);
-            await FinishServerAuthenticationAsync(@event.Link, authenticationResult, cancellationToken);
+            if (playerAuthenticationResult != AuthenticationResult.AlreadyAuthenticated)
+                await FinishPlayerLoginAsync(@event.Link, cancellationToken);
+
+            await FinishServerAuthenticationAsync(@event.Link, playerAuthenticationResult, cancellationToken);
         }
 
-        @event.Result = authenticationResult;
+        @event.Result = serverAuthenticationResult;
     }
 
     protected bool IsAlreadyOnline(string username)
