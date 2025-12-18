@@ -64,7 +64,8 @@ public class CommandService(ILogger<ICommandService> logger, IEventService event
                     }
                     else
                     {
-                        var commandCode = await resultTask;
+                        // TODO: Do not await - deadlock here
+                        // var commandCode = await resultTask;
 
                         // TODO: Handle error codes appropriately
                     }
