@@ -37,18 +37,21 @@ public class RedirectionService(ILogger<RedirectionService> logger, Plugin plugi
             return 1;
         }
 
-        var currentServer = player.GetServer();
-        var nextServer = context.TryGetArgument<string>("server", out var serverText) switch
+        var previousServer = player.GetServer();
+        var targetServer = context.TryGetArgument<string>("server", out var serverText) switch
         {
             true when servers.All.FirstOrDefault(server => server.Name.Equals(serverText, StringComparison.CurrentCultureIgnoreCase)) is { } found => found,
-            _ => servers.All.Except([currentServer]).ElementAt(Random.Shared.Next(servers.All.Count() - 1))
+            _ => servers.All.Except([previousServer]).ElementAt(Random.Shared.Next(servers.All.Count() - 1))
         };
 
-        if (nextServer is null)
+        if (targetServer is null)
             return 1;
 
-        // /server args-server-2
-        await links.ConnectAsync(player, nextServer, cancellationToken);
+        await links.ConnectAsync(player, targetServer, cancellationToken);
+
+        var currentServer = player.GetLink().Server;
+
+        player.Context.Logger.LogInformation("Redirected from server {PreviousServer} to server {CurrentServer}", previousServer, currentServer);
 
         return 0;
     }
