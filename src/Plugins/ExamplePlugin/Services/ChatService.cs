@@ -42,7 +42,10 @@ public class ChatService(ExamplePlugin plugin, ILogger<ChatService> logger, ICon
     public async ValueTask OnPhaseChanged(PhaseChangedEvent @event, CancellationToken cancellationToken)
     {
         // Continue only when the connection is in the Play phase on the Client side.
-        if (@event is not { Phase: Phase.Play, Side: Side.Client })
+        if (@event is not { Phase: Phase.Play })
+            return;
+
+        if (@event.Side is Side.Server && @event.Player.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_20_2)
             return;
 
         // Only if player has active link to the server.
