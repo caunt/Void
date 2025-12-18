@@ -1,12 +1,11 @@
-﻿using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Extensions;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
-using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Plugins;
+using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Servers;
@@ -14,10 +13,8 @@ using Void.Proxy.Plugins.Common.Services;
 
 namespace Void.Proxy.Plugins.Essentials.Redirection;
 
-public class RedirectionService(ILogger<RedirectionService> logger, Plugin plugin, IServerService servers, ICommandService commands) : IPluginCommonService
+public class RedirectionService(ILogger<RedirectionService> logger, Plugin plugin, IServerService servers, ICommandService commands, ILinkService links) : IPluginCommonService
 {
-    private readonly ConcurrentDictionary<IPlayer, IServer> _connecting = [];
-
     [Subscribe]
     public void OnPluginLoading(PluginLoadingEvent @event)
     {
@@ -28,11 +25,11 @@ public class RedirectionService(ILogger<RedirectionService> logger, Plugin plugi
             .Literal("server")
             .Then(builder => builder
                 .Argument("server", Arguments.GreedyString())
-                .Executes(ChangeServer))
-            .Executes(ChangeServer));
+                .Executes(ChangeServerAsync))
+            .Executes(ChangeServerAsync));
     }
 
-    public int ChangeServer(CommandContext context)
+    public async ValueTask<int> ChangeServerAsync(CommandContext context, CancellationToken cancellationToken)
     {
         if (context.Source is not IPlayer player)
         {
@@ -50,29 +47,9 @@ public class RedirectionService(ILogger<RedirectionService> logger, Plugin plugi
         if (nextServer is null)
             return 1;
 
-        if (_connecting.ContainsKey(player))
-        {
-            _connecting[player] = nextServer;
-            return 0;
-        }
-
-        if (_connecting.TryAdd(player, nextServer))
-        {
-            if (player.TryGetLink(out var link))
-                link.ServerChannel.Close();
-
-            return 0;
-        }
+        // /server args-server-2
+        await links.ConnectAsync(player, nextServer, cancellationToken);
 
         return 0;
-    }
-
-    [Subscribe]
-    public void OnPlayerSearchServer(PlayerSearchServerEvent @event)
-    {
-        if (!_connecting.TryRemove(@event.Player, out var server))
-            return;
-
-        @event.Result = server;
     }
 }
