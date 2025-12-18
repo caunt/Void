@@ -101,7 +101,7 @@ public static class EntryPoint
                 .AddSingletonAndListen<IDependencyService, DependencyService>()
                 .AddSingletonAndListen<IProxy, Platform>()
                 .AddSingletonAndListen<INuGetDependencyResolver, NuGetDependencyResolver>()
-                .AddSingleton<IFileDependencyResolver, FileDependencyResolver>(FileDependencyResolver.Factory)
+                .AddSingleton<IFileDependencyResolver, FileDependencyResolver>()
                 .AddSingleton<IEmbeddedDependencyResolver, EmbeddedDependencyResolver>()
                 .AddHostedService(services => services.GetRequiredService<IConfigurationService>())
                 .AddHostedService(services => (Platform)services.GetRequiredService<IProxy>()))
