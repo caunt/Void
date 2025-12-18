@@ -35,10 +35,18 @@ public class DependencyResolver(
     {
         foreach (var reference in containers)
         {
-            var assembly = reference.Context.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.FullName == assemblyName.FullName);
+            var assembly = reference.Context.Assemblies.FirstOrDefault(loadedAssembly => loadedAssembly.GetName().Name == assemblyName.Name);
 
             if (assembly is null)
                 continue;
+
+            if (assemblyName.Version is not null)
+            {
+                var loadedAssemblyName = assembly.GetName();
+
+                if (loadedAssemblyName.Version is not null && loadedAssemblyName.Version.CompareTo(assemblyName.Version) is not 0)
+                    logger.LogWarning("Already loaded assembly {AssemblyName} version {AssemblyVersion} does not match requested version {RequestedAssemblyVersion} in {ContextName}", loadedAssemblyName.Name, loadedAssemblyName.Version, assemblyName.Version, context.Name);
+            }
 
             return assembly;
         }
@@ -69,7 +77,7 @@ public class DependencyResolver(
                     var loadedAssemblyName = assembly.GetName();
 
                     if (loadedAssemblyName.Version is not null && loadedAssemblyName.Version.CompareTo(assemblyName.Version) is not 0)
-                        logger.LogWarning("Assembly {AssemblyName} version {AssemblyVersion} does not match requested version {RequestedAssemblyVersion} in {ContextName}", loadedAssemblyName.Name, loadedAssemblyName.Version, assemblyName.Version, context.Name);
+                        logger.LogWarning("Standard assembly {AssemblyName} version {AssemblyVersion} does not match requested version {RequestedAssemblyVersion} in {ContextName}", loadedAssemblyName.Name, loadedAssemblyName.Version, assemblyName.Version, context.Name);
                 }
             }
             else
