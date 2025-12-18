@@ -10,7 +10,8 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<PackageId>Void.Proxy.Api</PackageId>
+		<PackageIdSuffix></PackageIdSuffix>
+		<PackageId>Void.Proxy.Api$(PackageIdSuffix)</PackageId>
 	</PropertyGroup>
 
 	<ItemGroup>
