@@ -6,6 +6,7 @@ namespace Void.Proxy.Plugins.Common.Players;
 
 public class SimplePlayer : IPlayer
 {
+    public string Name => ToString();
     public TcpClient Client { get; }
     public IPlayerContext Context { get; }
     public string RemoteEndPoint { get; }

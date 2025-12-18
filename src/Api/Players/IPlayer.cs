@@ -11,10 +11,15 @@ namespace Void.Proxy.Api.Players;
 public interface IPlayer : IEquatable<IPlayer>, ICommandSource, IAsyncDisposable, IDisposable
 {
     /// <summary>
-    /// Gets the underlying <see cref="TcpClient"/> used for network
+    /// Gets the underlying <see cref="TcpClient"/> used for network.
     /// communication.
     /// </summary>
     public TcpClient Client { get; }
+
+    /// <summary>
+    /// Gets the name of the player. Fallbacks to IP address if unavailable.
+    /// </summary>
+    public string Name { get; }
 
     /// <summary>
     /// Gets the textual representation of the client's remote endpoint.

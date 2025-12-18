@@ -10,6 +10,7 @@ namespace Void.Minecraft.Players;
 
 public class MinecraftPlayer(TcpClient client, IPlayerContext context, string remoteEndPoint, DateTimeOffset connectedAt, ProtocolVersion protocolVersion) : IPlayer
 {
+    public string Name => ToString();
     public TcpClient Client { get; } = client;
     public IPlayerContext Context { get; } = context;
     public string RemoteEndPoint { get; } = remoteEndPoint;

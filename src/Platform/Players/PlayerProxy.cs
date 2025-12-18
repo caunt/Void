@@ -11,6 +11,7 @@ namespace Void.Proxy.Players;
 /// <param name="player">The initial player instance that the proxy will represent and manage.</param>
 public class PlayerProxy(IPlayer player) : IPlayer
 {
+    public string Name => ToString();
     public TcpClient Client => Source.Client;
     public string RemoteEndPoint => Source.RemoteEndPoint;
     public DateTimeOffset ConnectedAt => Source.ConnectedAt;
