@@ -51,7 +51,7 @@ jobs:
     needs: [build,semver]
     uses: ./.github/workflows/nuget.yaml
     secrets: inherit
-    if: ${{ needs.semver.outputs.release }}
+    if: ${{ fromJSON(needs.semver.outputs.release) }}
     with:
       dotnet-version: ${{ needs.semver.outputs.dotnet-version }}
       void-version: ${{ needs.semver.outputs.void-version }}
