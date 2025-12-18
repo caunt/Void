@@ -51,6 +51,11 @@ public class CommandService(ILogger<ICommandService> logger, IEventService event
                 {
                     return await _dispatcher.ExecuteAsync(results, cancellationToken);
                 }
+                catch (Exception exception)
+                {
+                    logger.LogCritical(exception, "An exception occurred while executing command {Command} from {Source}.", command, source);
+                    return int.MinValue;
+                }
                 finally
                 {
                     if (!_executions.Remove(results, out var resultTask))
