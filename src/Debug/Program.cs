@@ -10,16 +10,25 @@ using Void.Proxy;
 if (OperatingSystem.IsWindows())
     Console.Clear();
 
-var patchModernForwarding = true;
+var patchModernForwarding = false;
 var docker = true;
 var version = ProtocolVersion.Latest;
-var timeout = TimeSpan.FromSeconds(900);
+var timeout = TimeSpan.FromMinutes(30);
 
 IDockerMinecraftServer[] servers =
 [
+    // ProtocolVersion.Latest
     new PaperServer(version, 25566),
     new PaperServer(version, 25567),
     new PaperServer(version, 25568)
+    // ProtocolVersion.MINECRAFT_1_21
+    // new NeoForgeServer(version, 25566, ["https://mediafilez.forgecdn.net/files/7039/43/refinedstorage-neoforge-2.0.0.jar"]),
+    // new NeoForgeServer(version, 25567, ["https://mediafilez.forgecdn.net/files/7039/43/refinedstorage-neoforge-2.0.0.jar"]),
+    // new NeoForgeServer(version, 25568, ["https://mediafilez.forgecdn.net/files/7039/43/refinedstorage-neoforge-2.0.0.jar"])
+    // ProtocolVersion.MINECRAFT_1_20
+    // new ForgeServer(version, 25566, ["https://mediafilez.forgecdn.net/files/4844/585/refinedstorage-1.12.4.jar"]),
+    // new ForgeServer(version, 25567, ["https://mediafilez.forgecdn.net/files/4844/585/refinedstorage-1.12.4.jar"]),
+    // new ForgeServer(version, 25568, ["https://mediafilez.forgecdn.net/files/4844/585/refinedstorage-1.12.4.jar"])
 ];
 
 string[] arguments = [
@@ -145,6 +154,8 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
             "VERSION=" + VersionStringName(server.ProtocolVersion)
         };
 
+        variables.AddRange(server.EnvironmentVariables.AsEnumerable().Select(keyPair => $"{keyPair.Key}={keyPair.Value}"));
+
         if (server is PaperServer)
         {
             variables.Add("PAPER_CONFIG_REPO=https://raw.githubusercontent.com/Shonz1/minecraft-default-configs/main");
@@ -161,6 +172,10 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
         else if (server is ForgeServer forge && forge.Mods.Count > 0)
         {
             variables.Add("MODS=" + string.Join(',', forge.Mods));
+        }
+        else if (server is NeoForgeServer neoForge && neoForge.Mods.Count > 0)
+        {
+            variables.Add("MODS=" + string.Join(',', neoForge.Mods));
         }
 
         var images = await docker.Images.ListImagesAsync(new ImagesListParameters { All = true }, cancellationToken);
@@ -306,6 +321,7 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
             var value when value == ProtocolVersion.MINECRAFT_1_20_3 => value.Names[1], // paper skipped 1.20.3
             var value when value == ProtocolVersion.MINECRAFT_1_18 => value.Names[1], // paper skipped 1.18
             var value when value == ProtocolVersion.MINECRAFT_1_8 => value.Names[8], // paper first release is 1.8.8
+            var value when value == ProtocolVersion.MINECRAFT_1_20 => value.Names[1], // refined storage requires forge 1.20.1
             var value => value.VersionIntroducedIn,
         };
     }
@@ -314,11 +330,19 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
 record PaperServer(ProtocolVersion ProtocolVersion, int Port) : IDockerMinecraftServer
 {
     public string ItzgType => "PAPER";
+    public Dictionary<string, string> EnvironmentVariables => [];
 }
 
 record ForgeServer(ProtocolVersion ProtocolVersion, int Port, params IReadOnlyList<string> Mods) : IDockerMinecraftServer
 {
     public string ItzgType => "FORGE";
+    public Dictionary<string, string> EnvironmentVariables => [];
+}
+
+record NeoForgeServer(ProtocolVersion ProtocolVersion, int Port, params IReadOnlyList<string> Mods) : IDockerMinecraftServer
+{
+    public string ItzgType => "NEOFORGE";
+    public Dictionary<string, string> EnvironmentVariables => ProtocolVersion == ProtocolVersion.MINECRAFT_1_21 ? new Dictionary<string, string>() { { "NEOFORGE_VERSION", "21.1.216" } } : [];
 }
 
 interface IDockerMinecraftServer
@@ -326,4 +350,5 @@ interface IDockerMinecraftServer
     public ProtocolVersion ProtocolVersion { get; }
     public int Port { get; }
     public string ItzgType { get; }
+    public Dictionary<string, string> EnvironmentVariables { get; }
 }
