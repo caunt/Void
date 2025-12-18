@@ -10,7 +10,8 @@ public class FileDependencyResolver(AssemblyDependencyResolver resolver) : IFile
     public static FileDependencyResolver Factory(IServiceProvider provider)
     {
         var runOptions = provider.GetRequiredService<IRunOptions>();
-        return ActivatorUtilities.CreateInstance<FileDependencyResolver>(provider, new AssemblyDependencyResolver(runOptions.WorkingDirectory));
+        return ActivatorUtilities.CreateInstance<FileDependencyResolver>(provider,
+            new AssemblyDependencyResolver(Environment.ProcessPath ?? Path.Combine(runOptions.WorkingDirectory, nameof(Void))));
     }
 
     public Assembly? Resolve(AssemblyLoadContext context, AssemblyName assemblyName)
