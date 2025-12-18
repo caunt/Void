@@ -8,8 +8,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<PackageIdSuffix></PackageIdSuffix>
-		<PackageId>Void.Minecraft$(PackageIdSuffix)</PackageId>
+		<PackageId>Void.Minecraft</PackageId>
 	</PropertyGroup>
 
 	<ItemGroup>

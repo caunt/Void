@@ -15,7 +15,7 @@ jobs:
   push:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      PACKAGE_ID_SUFFIX_ARGUMENT: ${{ fromJson(inputs.release) && '' || '/p:PackageIdSuffix=-alpha' }}
+      PACKAGE_VERSION_SUFFIX_ARGUMENT: ${{ fromJson(inputs.release) && '' || '-alpha' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,11 +24,11 @@ jobs:
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
       - name: Build
-        run: dotnet build --configuration Release /p:Version=${{ inputs.void-version }}
+        run: dotnet build --configuration Release /p:Version=${{ inputs.void-version }}${{ env.PACKAGE_VERSION_SUFFIX_ARGUMENT }}
       - name: Pack Api
-        run: dotnet pack src/Api --configuration Release --output artifacts /p:Version=${{ inputs.void-version }} ${{ env.PACKAGE_ID_SUFFIX_ARGUMENT }}
+        run: dotnet pack src/Api --configuration Release --output artifacts /p:Version=${{ inputs.void-version }}${{ env.PACKAGE_VERSION_SUFFIX_ARGUMENT }}
       - name: Pack Minecraft
-        run: dotnet pack src/Minecraft --configuration Release --output artifacts /p:Version=${{ inputs.void-version }} ${{ env.PACKAGE_ID_SUFFIX_ARGUMENT }}
+        run: dotnet pack src/Minecraft --configuration Release --output artifacts /p:Version=${{ inputs.void-version }}${{ env.PACKAGE_VERSION_SUFFIX_ARGUMENT }}
       - name: Rename Artifacts
         shell: bash
         run: mv artifacts/*Api* artifacts/api.nupkg && mv artifacts/*Minecraft* artifacts/minecraft.nupkg
