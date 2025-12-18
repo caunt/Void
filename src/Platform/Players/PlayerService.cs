@@ -148,7 +148,8 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
         if (!@event.Link.PlayerChannel.IsAlive)
             return;
 
-        await links.ConnectPlayerAnywhereAsync(@event.Player, cancellationToken);
+        if (@event.Reason is not LinkStopReason.Requested)
+            await links.ConnectPlayerAnywhereAsync(@event.Player, cancellationToken);
     }
 
     [Subscribe(PostOrder.Last)]
