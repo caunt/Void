@@ -37,13 +37,12 @@ public static class ChannelExtensions
 
     public static void DisposeRegistries(this INetworkChannel channel, IPlugin managedBy)
     {
-        var registries = channel.GetMinecraftRegistries();
-        registries.DisposeBy(managedBy);
+        channel.MinecraftRegistries.DisposeBy(managedBy);
     }
 
     private static IMinecraftPacketIdSystemRegistry GetSystemRegistry(this INetworkChannel channel, IPlugin managedBy)
     {
-        var registry = channel.GetMinecraftRegistries().PacketIdSystem;
+        var registry = channel.MinecraftRegistries.PacketIdSystem;
 
         if (registry.ManagedBy != managedBy)
             throw new InvalidOperationException($"Registry is managed by {registry.ManagedBy}, not {managedBy.Name}");

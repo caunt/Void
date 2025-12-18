@@ -107,7 +107,7 @@ public static class PlayerExtensions
         {
             var plugin = player.Context.Services.GetRequiredService<IPluginService>().GetPluginFromType<T>();
 
-            if (player.TryGetLink(out var link))
+            if (player.Link is { } link)
             {
                 var (fromChannel, toChannel) = direction switch
                 {
@@ -141,28 +141,27 @@ public static class PlayerExtensions
 
         public void RegisterPacket<T>(INetworkChannel channel, Operation operation, params MinecraftPacketIdMapping[] mappings) where T : IMinecraftPacket
         {
-            channel.GetMinecraftRegistries()
-                .PacketIdPlugins
+            channel.MinecraftRegistries.PacketIdPlugins
                 .Get(operation, player.Context.Services
                     .GetRequiredService<IPluginService>()
                     .GetPluginFromType<T>())
                 .RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
         }
 
-        [Obsolete($"Use RegisterTransformations<T>({nameof(INetworkChannel)}, {nameof(MinecraftPacketTransformationMapping)}[]) instead.")]
+        [Obsolete($"Use {nameof(RegisterTransformations)}<T>({nameof(INetworkChannel)}, {nameof(MinecraftPacketTransformationMapping)}[]) instead.")]
         public void RegisterTransformations<T>(params MinecraftPacketTransformationMapping[] mappings) where T : IMinecraftPacket
         {
             var plugin = player.Context.Services.GetRequiredService<IPluginService>().GetPluginFromType<T>();
-            var link = player.GetLink();
+            var link = player.Link ?? throw new InvalidOperationException("Cannot register packet transformations without an established link.");
 
-            link.PlayerChannel.GetMinecraftRegistries().PacketTransformationsPlugins.Get(plugin).RegisterTransformations<T>(player.AsMinecraft.ProtocolVersion, mappings);
-            link.ServerChannel.GetMinecraftRegistries().PacketTransformationsPlugins.Get(plugin).RegisterTransformations<T>(player.AsMinecraft.ProtocolVersion, mappings);
+            link.PlayerChannel.MinecraftRegistries.PacketTransformationsPlugins.Get(plugin).RegisterTransformations<T>(player.AsMinecraft.ProtocolVersion, mappings);
+            link.ServerChannel.MinecraftRegistries.PacketTransformationsPlugins.Get(plugin).RegisterTransformations<T>(player.AsMinecraft.ProtocolVersion, mappings);
         }
 
         public void RegisterTransformations<T>(INetworkChannel channel, params MinecraftPacketTransformationMapping[] mappings) where T : IMinecraftPacket
         {
             var plugin = player.Context.Services.GetRequiredService<IPluginService>().GetPluginFromType<T>();
-            channel.GetMinecraftRegistries().PacketTransformationsPlugins.Get(plugin).RegisterTransformations<T>(player.AsMinecraft.ProtocolVersion, mappings);
+            channel.MinecraftRegistries.PacketTransformationsPlugins.Get(plugin).RegisterTransformations<T>(player.AsMinecraft.ProtocolVersion, mappings);
         }
 
         internal bool TryGetMinecraftPlayer([MaybeNullWhen(false)] out MinecraftPlayer minecraftPlayer)

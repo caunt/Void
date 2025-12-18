@@ -21,9 +21,9 @@ public static class PlayerExtensions
 {
     public static void RegisterSystemTransformations<T>(this IPlayer player, params MinecraftPacketTransformationMapping[] mappings) where T : IMinecraftPacket
     {
-        var link = player.GetLink();
-        link.PlayerChannel.GetMinecraftRegistries().PacketTransformationsSystem.All.RegisterTransformations<T>(player.ProtocolVersion, mappings);
-        link.ServerChannel.GetMinecraftRegistries().PacketTransformationsSystem.All.RegisterTransformations<T>(player.ProtocolVersion, mappings);
+        var link = player.Link ?? throw new InvalidOperationException("Cannot register packet transformations without a link.");
+        link.PlayerChannel.MinecraftRegistries.PacketTransformationsSystem.All.RegisterTransformations<T>(player.ProtocolVersion, mappings);
+        link.ServerChannel.MinecraftRegistries.PacketTransformationsSystem.All.RegisterTransformations<T>(player.ProtocolVersion, mappings);
     }
 
     public static async ValueTask SetPhaseAsync(this IPlayer player, Side side, Phase phase, INetworkChannel channel, CancellationToken cancellationToken)

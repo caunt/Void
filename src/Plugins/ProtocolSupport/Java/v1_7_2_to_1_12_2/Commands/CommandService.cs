@@ -29,7 +29,10 @@ public class CommandService(ILogger<CommandService> logger, IEventService events
         if (!command.StartsWith('/'))
             command = "/" + command;
 
-        await player.GetLink().SendPacketAsync(new ChatMessagePacket { Text = command }, cancellationToken);
+        if (player.Link is not { } link)
+            throw new InvalidOperationException("Player has no link.");
+
+        await link.SendPacketAsync(new ChatMessagePacket { Text = command }, cancellationToken);
         return true;
     }
 

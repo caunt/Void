@@ -37,11 +37,11 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
     {
         foreach (var player in players.All)
         {
-            if (!player.TryGetLink(out var link))
+            if (player.Link is not { } link)
                 continue;
 
-            link.PlayerChannel.GetMinecraftRegistries().ClearPlugin(@event.Plugin);
-            link.ServerChannel.GetMinecraftRegistries().ClearPlugin(@event.Plugin);
+            link.PlayerChannel.MinecraftRegistries.ClearPlugin(@event.Plugin);
+            link.ServerChannel.MinecraftRegistries.ClearPlugin(@event.Plugin);
         }
     }
 
@@ -90,14 +90,14 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (@event.Phase is Phase.Handshake)
             return;
 
-        var link = @event.Player.GetLink();
+        var link = @event.Player.Link ?? throw new InvalidOperationException("Cannot clear registries without a link.");
 
         // Clear only affected registries that are no longer valid
         if (@event.Side is Side.Client)
-            link.PlayerChannel.GetMinecraftRegistries().ClearPlugins();
+            link.PlayerChannel.MinecraftRegistries.ClearPlugins();
 
         if (@event.Side is Side.Server)
-            link.ServerChannel.GetMinecraftRegistries().ClearPlugins();
+            link.ServerChannel.MinecraftRegistries.ClearPlugins();
     }
 
     [Subscribe]
@@ -117,7 +117,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             _ => throw new InvalidOperationException($"Unknown direction {@event.Direction}")
         };
 
-        var registries = channel.GetMinecraftRegistries().PacketIdPlugins;
+        var registries = channel.MinecraftRegistries.PacketIdPlugins;
 
         if (registries.IsEmpty)
             return;
@@ -125,7 +125,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (registries.Contains(@event.Message))
             return;
 
-        var transformations = channel.GetMinecraftRegistries().PacketTransformationsPlugins;
+        var transformations = channel.MinecraftRegistries.PacketTransformationsPlugins;
 
         try
         {
@@ -165,7 +165,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             _ => throw new InvalidOperationException($"Unknown direction {@event.Direction}")
         };
 
-        var registries = channel.GetMinecraftRegistries().PacketIdPlugins;
+        var registries = channel.MinecraftRegistries.PacketIdPlugins;
 
         if (registries.IsEmpty)
             return;
@@ -173,7 +173,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (registries.Contains(@event.Message))
             return;
 
-        var transformations = channel.GetMinecraftRegistries().PacketTransformationsPlugins;
+        var transformations = channel.MinecraftRegistries.PacketTransformationsPlugins;
 
         try
         {
@@ -273,8 +273,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!link.Player.IsMinecraft)
             yield break;
 
-        var playerRegistry = link.PlayerChannel.GetMinecraftRegistries().PacketIdSystem;
-        var serverRegistry = link.ServerChannel.GetMinecraftRegistries().PacketIdSystem;
+        var playerRegistry = link.PlayerChannel.MinecraftRegistries.PacketIdSystem;
+        var serverRegistry = link.ServerChannel.MinecraftRegistries.PacketIdSystem;
 
         if (!playerRegistry.Write.TryGetPacketId(minecraftPacket, out var id) &&
             !serverRegistry.Write.TryGetPacketId(minecraftPacket, out id) &&

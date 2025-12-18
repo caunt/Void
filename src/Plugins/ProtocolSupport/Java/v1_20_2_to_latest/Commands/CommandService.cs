@@ -26,7 +26,10 @@ public class CommandService(ILogger<CommandService> logger, IEventService events
         if (!await player.IsPlayingAsync(cancellationToken))
             return false;
 
-        await player.GetLink().SendPacketAsync(new ChatCommandPacket { Command = command }, cancellationToken);
+        if (player.Link is not { } link)
+            throw new InvalidOperationException("Player has no link.");
+
+        await link.SendPacketAsync(new ChatCommandPacket { Command = command }, cancellationToken);
         return true;
     }
 

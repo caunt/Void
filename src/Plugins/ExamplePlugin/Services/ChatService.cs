@@ -49,7 +49,7 @@ public class ChatService(ExamplePlugin plugin, ILogger<ChatService> logger, ICon
             return;
 
         // Only if player has active link to the server.
-        if (!@event.Player.TryGetLink(out var link))
+        if (@event.Player.Link is not { } link)
             return;
 
         // If settings are not loaded, do nothing. Practically impossible, but just in case, always do null-checks.

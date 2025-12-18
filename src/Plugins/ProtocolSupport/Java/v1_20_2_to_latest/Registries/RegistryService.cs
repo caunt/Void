@@ -113,7 +113,7 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
 
     protected override void SetupRegistries(INetworkChannel channel, Side side, ProtocolVersion protocolVersion)
     {
-        channel.GetMinecraftRegistries().Setup(_plugin, protocolVersion);
+        channel.MinecraftRegistries.Setup(_plugin, protocolVersion);
 
         if (side is Side.Client)
         {

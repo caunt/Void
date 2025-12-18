@@ -37,7 +37,7 @@ public class RedirectionService(ILogger<RedirectionService> logger, Plugin plugi
             return 1;
         }
 
-        var previousServer = player.GetServer();
+        var previousServer = player.Server;
         var targetServer = context.TryGetArgument<string>("server", out var serverText) switch
         {
             true when servers.All.FirstOrDefault(server => server.Name.Equals(serverText, StringComparison.CurrentCultureIgnoreCase)) is { } found => found,
@@ -49,7 +49,7 @@ public class RedirectionService(ILogger<RedirectionService> logger, Plugin plugi
 
         await links.ConnectAsync(player, targetServer, cancellationToken);
 
-        var currentServer = player.GetLink().Server;
+        var currentServer = player.Link?.Server ?? throw new InvalidOperationException("Player is not linked to any server after redirection.");
 
         player.Context.Logger.LogInformation("Redirected from server {PreviousServer} to server {CurrentServer}", previousServer, currentServer);
 
