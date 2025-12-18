@@ -15,9 +15,10 @@ using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Commands;
 
-public class CommandService(IEventService events) : ICommandService, IEventListener
+public class CommandService(ILogger<ICommandService> logger, IEventService events) : ICommandService, IEventListener
 {
     private readonly CommandDispatcher _dispatcher = new();
+    private readonly Dictionary<ParseResults, Task<int>> _executions = [];
 
     public ICommandDispatcher Dispatcher => _dispatcher;
 
@@ -43,7 +44,29 @@ public class CommandService(IEventService events) : ICommandService, IEventListe
             if (source is IPlayer player)
                 player.Logger.LogInformation("Entered command: {Command}", command);
 
-            _ = await _dispatcher.ExecuteAsync(command, source, cancellationToken);
+            var results = await _dispatcher.ParseAsync(new(command), source, cancellationToken);
+            var commandTask = Task.Run(async () =>
+            {
+                try
+                {
+                    return await _dispatcher.ExecuteAsync(results, cancellationToken);
+                }
+                finally
+                {
+                    if (!_executions.Remove(results, out var resultTask))
+                    {
+                        logger.LogCritical("Failed to remove command {Command} execution task from {Source} in tracking dictionary.", command, source);
+                    }
+                    else
+                    {
+                        var commandCode = await resultTask;
+
+                        // TODO: Handle error codes appropriately
+                    }
+                }
+            });
+
+            _executions.Add(results, commandTask);
             return CommandExecutionResult.Executed;
         }
         catch (CommandSyntaxException exception) when (exception.Message.Contains("Unknown command"))
