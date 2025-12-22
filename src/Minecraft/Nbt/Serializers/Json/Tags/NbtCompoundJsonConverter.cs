@@ -35,7 +35,7 @@ public class NbtCompoundJsonConverter : JsonConverter<NbtCompound>
     {
         writer.WriteStartObject();
 
-        foreach (var (propertyName, propertyTag) in tag.Values)
+        foreach (var (propertyName, propertyTag) in tag.Fields)
         {
             writer.WritePropertyName(propertyName);
             JsonSerializer.Serialize(writer, propertyTag, options);

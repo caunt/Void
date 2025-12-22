@@ -224,7 +224,7 @@ public static class ComponentNbtTransformers
             if (rootCompound["hover_event"] is NbtCompound hoverEvent)
             {
                 rootCompound["hoverEvent"] = hoverEvent;
-                rootCompound.Values.Remove("hover_event");
+                rootCompound.Fields.Remove("hover_event");
 
                 if (hoverEvent["action"] is NbtString action)
                 {
@@ -236,7 +236,7 @@ public static class ComponentNbtTransformers
                         case "show_item":
                             var contents = new NbtCompound();
 
-                            foreach (var (key, value) in hoverEvent.Values)
+                            foreach (var (key, value) in hoverEvent.Fields)
                             {
                                 if (key is "action")
                                     continue;
@@ -252,12 +252,12 @@ public static class ComponentNbtTransformers
                                 }
                             }
 
-                            if (contents.Values.Count > 0)
+                            if (contents.Fields.Count > 0)
                                 hoverEvent["contents"] = contents;
                             break;
                         case "show_entity":
                             var entityContents = new NbtCompound();
-                            foreach (var (key, value) in hoverEvent.Values)
+                            foreach (var (key, value) in hoverEvent.Fields)
                             {
                                 if (key is "action")
                                     continue;
@@ -279,7 +279,7 @@ public static class ComponentNbtTransformers
             if (rootCompound["click_event"] is NbtCompound clickEvent)
             {
                 rootCompound["clickEvent"] = clickEvent;
-                rootCompound.Values.Remove("click_event");
+                rootCompound.Fields.Remove("click_event");
 
                 if (clickEvent["action"] is NbtString action)
                 {
@@ -360,7 +360,7 @@ public static class ComponentNbtTransformers
             {
                 if (hoverEvent["contents"] is NbtCompound contentsCompound)
                 {
-                    hoverEvent.Values.Remove("contents");
+                    hoverEvent.Fields.Remove("contents");
 
                     if (contentsCompound["action"] is NbtString action)
                     {
@@ -471,7 +471,7 @@ public static class ComponentNbtTransformers
             if (root["hoverEvent"] is NbtCompound hoverEvent)
             {
                 root["hover_event"] = hoverEvent;
-                root.Values.Remove("hoverEvent");
+                root.Fields.Remove("hoverEvent");
 
                 if (hoverEvent["action"] is NbtString action)
                 {
@@ -484,11 +484,11 @@ public static class ComponentNbtTransformers
                             hoverEvent["id"] = contents;
                             break;
                         case "show_item" when hoverEvent["contents"] is NbtCompound contents:
-                            foreach (var (key, value) in contents.Values)
+                            foreach (var (key, value) in contents.Fields)
                                 hoverEvent[key] = value;
                             break;
                         case "show_entity" when hoverEvent["contents"] is NbtCompound contents:
-                            foreach (var (key, value) in contents.Values)
+                            foreach (var (key, value) in contents.Fields)
                             {
                                 var newKey = key switch
                                 {
@@ -507,7 +507,7 @@ public static class ComponentNbtTransformers
             if (root["clickEvent"] is NbtCompound clickEvent)
             {
                 root["click_event"] = clickEvent;
-                root.Values.Remove("clickEvent");
+                root.Fields.Remove("clickEvent");
 
                 if (clickEvent["action"] is NbtString action)
                 {
@@ -551,7 +551,7 @@ public static class ComponentNbtTransformers
             {
                 if (hoverEvent["value"] is NbtTag value)
                 {
-                    hoverEvent.Values.Remove("value");
+                    hoverEvent.Fields.Remove("value");
 
                     if (hoverEvent["action"] is NbtString action)
                     {
