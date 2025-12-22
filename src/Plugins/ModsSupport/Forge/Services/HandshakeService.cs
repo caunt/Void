@@ -121,7 +121,10 @@ public class HandshakeService(IPlayerContext context, IPluginService plugins, Pl
     {
         switch (@event.Message)
         {
-            case ModdedHandshakePacket handshakePacket when handshakePacket.IsForge:
+            case ModdedHandshakePacket handshakePacket:
+                if (!handshakePacket.IsForge)
+                    break;
+
                 var markers = handshakePacket.Markers;
 
                 if (markers.Length > 1)
