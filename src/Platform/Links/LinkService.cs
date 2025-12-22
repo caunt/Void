@@ -70,44 +70,51 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
             return ConnectionResult.NotConnected;
         }
 
-        if (firstConnection)
-            await events.ThrowAsync(new PlayerConnectedEvent(unwrappedPlayer), cancellationToken);
-
-        link = await events.ThrowWithResultAsync(new CreateLinkEvent(unwrappedPlayer, server, playerChannel, serverChannel), cancellationToken)
-                   ?? new Link(unwrappedPlayer, server, playerChannel, serverChannel, logger, events, cancellationToken);
-
-        using (await _lock.LockAsync(cancellationToken))
-            _links.Add(link);
-
-        events.RegisterListeners(link);
-
-        var side = await events.ThrowWithResultAsync(new AuthenticationStartingEvent(link, unwrappedPlayer), cancellationToken);
-
-        if (side is AuthenticationSide.Proxy && !await unwrappedPlayer.IsProtocolSupportedAsync(cancellationToken))
+        try
         {
-            logger.LogWarning("Player {Player} protocol is not supported, forcing authentication to Server side", unwrappedPlayer);
-            side = AuthenticationSide.Server;
+            if (firstConnection)
+                await events.ThrowAsync(new PlayerConnectedEvent(unwrappedPlayer), cancellationToken);
+
+            link = await events.ThrowWithResultAsync(new CreateLinkEvent(unwrappedPlayer, server, playerChannel, serverChannel), cancellationToken)
+                       ?? new Link(unwrappedPlayer, server, playerChannel, serverChannel, logger, events, cancellationToken);
+
+            using (await _lock.LockAsync(cancellationToken))
+                _links.Add(link);
+
+            events.RegisterListeners(link);
+
+            var side = await events.ThrowWithResultAsync(new AuthenticationStartingEvent(link, unwrappedPlayer), cancellationToken);
+
+            if (side is AuthenticationSide.Proxy && !await unwrappedPlayer.IsProtocolSupportedAsync(cancellationToken))
+            {
+                logger.LogWarning("Player {Player} protocol is not supported, forcing authentication to Server side", unwrappedPlayer);
+                side = AuthenticationSide.Server;
+            }
+
+            var result = await events.ThrowWithResultAsync(new AuthenticationStartedEvent(link, unwrappedPlayer, side), cancellationToken)
+                ?? AuthenticationResult.NoResult;
+
+            await events.ThrowAsync(new AuthenticationFinishedEvent(link, unwrappedPlayer, side, result), cancellationToken);
+
+            if (!result.IsAuthenticated)
+            {
+                await unwrappedPlayer.KickAsync($"You are not authorized to play:\n{result.Message}", cancellationToken);
+                return ConnectionResult.NotConnected;
+            }
+            else
+            {
+                await link.StartAsync(cancellationToken);
+                logger.LogInformation("Player {Player} connected to {Server} ({ProtocolVersion})", unwrappedPlayer, link.Server, unwrappedPlayer.ProtocolVersion);
+
+                return ConnectionResult.Connected;
+            }
         }
-
-        var result = await events.ThrowWithResultAsync(new AuthenticationStartedEvent(link, unwrappedPlayer, side), cancellationToken)
-            ?? AuthenticationResult.NoResult;
-
-        if (result == AuthenticationResult.NoResult)
-            throw new InvalidOperationException($"No {nameof(AuthenticationResult)} provided for {link}");
-
-        await events.ThrowAsync(new AuthenticationFinishedEvent(link, unwrappedPlayer, side, result), cancellationToken);
-
-        if (!result.IsAuthenticated)
+        catch (Exception exception)
         {
-            await unwrappedPlayer.KickAsync($"You are not authorized to play:\n{result.Message}", cancellationToken);
+            logger.LogError(exception, "An error occurred during authentication of {Player} to {Server}", unwrappedPlayer, server);
+            await unwrappedPlayer.KickAsync("An internal error occurred during authentication", cancellationToken);
+
             return ConnectionResult.NotConnected;
-        }
-        else
-        {
-            await link.StartAsync(cancellationToken);
-            logger.LogInformation("Player {Player} connected to {Server} ({ProtocolVersion})", unwrappedPlayer, link.Server, unwrappedPlayer.ProtocolVersion);
-
-            return ConnectionResult.Connected;
         }
     }
 
