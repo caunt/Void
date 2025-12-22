@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using Void.Minecraft.Commands.Brigadier;
+using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Exceptions;
 using Void.Minecraft.Commands.Brigadier.Suggestion;
 using Void.Minecraft.Commands.Brigadier.Tree.Nodes;
@@ -41,10 +42,20 @@ public class CommandService(ILogger<ICommandService> logger, IEventService event
 
         try
         {
-            if (source is IPlayer player)
-                player.Logger.LogInformation("Entered command: {Command}", command);
+            var player = source as IPlayer;
+            player?.Logger.LogInformation("Entered command: {Command}", command);
 
             var results = await _dispatcher.ParseAsync(new(command), source, cancellationToken);
+
+            if (results.Reader.CanRead || ContextChain.TryFlatten(results.Context.Build(results.Reader.Source)) is null)
+            {
+                if (player is null)
+                    return CommandExecutionResult.Executed;
+
+                await events.ThrowAsync(new ChatCommandSendEvent(player, command, origin), cancellationToken);
+                return CommandExecutionResult.Forwarded;
+            }
+
             var commandTask = Task.Run(async () =>
             {
                 try
@@ -74,14 +85,6 @@ public class CommandService(ILogger<ICommandService> logger, IEventService event
 
             _executions.Add(results, commandTask);
             return CommandExecutionResult.Executed;
-        }
-        catch (CommandSyntaxException exception) when (exception.Message.Contains("Unknown command"))
-        {
-            // Ignore unknown commands
-            if (source is IPlayer player)
-                await events.ThrowAsync(new ChatCommandSendEvent(player, command, origin), cancellationToken);
-
-            return CommandExecutionResult.Forwarded;
         }
         catch (CommandSyntaxException exception)
         {
