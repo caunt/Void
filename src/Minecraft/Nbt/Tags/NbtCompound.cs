@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using SharpNBT;
 
@@ -32,5 +33,6 @@ public record NbtCompound(Dictionary<string, NbtTag> Values) : NbtTag
     public static implicit operator CompoundTag(NbtCompound tag) => new(tag.Name, tag.Values?.Select(pair => (Tag)pair.Value) ?? []);
 
     public bool ContainsKey(string name) => Values.ContainsKey(name);
+    public bool TryGetValue(string name, [MaybeNullWhen(false)] out NbtTag value) => Values.TryGetValue(name, out value);
     public override string ToString() => ToSnbt();
 }
