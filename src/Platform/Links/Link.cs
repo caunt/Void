@@ -206,7 +206,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
         logger.LogTrace("Stopping {Link} link {Direction} direction with reason {Reason}", direction, this, _stopReason);
 
-        // cancellationToken here most likely canceled already
+        // cancellationToken here is most likely canceled already
         // use forceCancellationToken for events
 
         try
