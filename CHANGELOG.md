@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.5.6](https://github.com/caunt/Void/compare/v0.5.5...v0.5.6) (2025-12-26)
+
+
+### Features
+
+* **api:** ✨ added player name property ([361cb9b](https://github.com/caunt/Void/commit/361cb9b08d0abdc860695f6d97999172c7c02b05))
+* **core:** ✨ migrate some APIs to extension properties ([51ee50d](https://github.com/caunt/Void/commit/51ee50d205026aea1040b7638a160a3f50d05d02))
+* **extensions:** ✨ added flexible packet transformation API ([cd8cb6a](https://github.com/caunt/Void/commit/cd8cb6a2cdae08a87d49e3493703736fb48fe1f5))
+* **nbt:** ✨ added TryGetValue method to NbtCompound ([bceed05](https://github.com/caunt/Void/commit/bceed05cead311c14fb8f0bee21e0eb47bf0d60b))
+* **serializer:** ✨ improved NBT tag type safety ([8e77609](https://github.com/caunt/Void/commit/8e776093fcc40f44abdea00023f3f96f8041921e))
+
+
+### Bug Fixes
+
+* **command:** 🐛 improved unknown command handling ([0512629](https://github.com/caunt/Void/commit/0512629c0993cbd2366c20ef63ff5cbed86ce289))
+* **command:** 🐛 prevented deadlock by not awaiting task from itself ([af68f35](https://github.com/caunt/Void/commit/af68f35f00f600f116f41339ae5ccf058a169498))
+* **links:** 🐛 improved error handling in authentication ([74f118f](https://github.com/caunt/Void/commit/74f118fa14e8eb77800df7cc8f56d63c7796dc40))
+* **logging:** 🐛 improved error handling for command executions ([aadae16](https://github.com/caunt/Void/commit/aadae1643357954b5acd817cff2489161cb85c19))
+* **network:** 🐛 reduced mods logging ([c2f235c](https://github.com/caunt/Void/commit/c2f235c7f11c84b2c9b47f685ef5194461774ba0))
+* **protocolsupport:** 📝 correct authentication comment typo ([566b312](https://github.com/caunt/Void/commit/566b31286975b1a362b9be4f026dec172f0bb315))
+
 ## [0.5.5](https://github.com/caunt/Void/compare/v0.5.4...v0.5.5) (2025-12-18)
 
 
