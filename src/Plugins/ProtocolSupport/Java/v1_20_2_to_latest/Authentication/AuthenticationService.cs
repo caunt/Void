@@ -93,7 +93,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         // tell IPlayer client to switch to Configuration state
         await link.SendTerminalPacketAsync<StartConfigurationPacket>(cancellationToken);
 
-        // IPlayer might be still sending Play state packets, read them all until configuration acknowledged
+        // IPlayer might still be sending Play state packets; read them all until configuration is acknowledged
         var playPacketsLimit = 256;
 
         IMinecraftServerboundPacket packet;
