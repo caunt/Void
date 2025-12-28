@@ -139,7 +139,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
             case LoginDisconnectPacket loginDisconnectPacket:
                 logger.LogInformation("Player {Player} cannot authenticate on {Server}: {Reason}", link.Player, link.Server, loginDisconnectPacket.Reason.SerializeLegacy());
 
-                // since IPlayer client is already completed login state, it cannot be kicked with login disconnect packet
+                // Since the IPlayer client has already completed the login state, it cannot be kicked with a login disconnect packet
                 await link.Player.KickAsync(loginDisconnectPacket.Reason, cancellationToken);
                 return AuthenticationResult.NotAuthenticatedServer;
             case LoginSuccessPacket:
