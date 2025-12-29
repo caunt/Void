@@ -13,7 +13,7 @@ public class WeakPluginContainer
     public PluginAssemblyLoadContext Context { get; }
     public CancellationTokenSource CancellationTokenSource { get; } = new();
 
-    [SuppressMessage("Style", "IDE0290:Use primary constructor", Justification = "They are saving strict reference to parameters")]
+    [SuppressMessage("Style", "IDE0290:Use primary constructor", Justification = "They keep a strict reference to parameters")]
     public WeakPluginContainer(PluginAssemblyLoadContext context, params IPlugin[] plugins)
     {
         Context = context;
