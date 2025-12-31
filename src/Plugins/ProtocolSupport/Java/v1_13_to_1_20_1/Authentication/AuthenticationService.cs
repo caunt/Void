@@ -52,7 +52,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
 
     protected override async ValueTask FinishPlayingAsync(ILink link, CancellationToken cancellationToken)
     {
-        // IPlayer might be in middle of Bundle when client is not handling packets until closing bundle received
+        // IPlayer might be in the middle of a bundle when the client is not handling packets until the closing bundle is received
         var bundles = link.Player.Context.Services.GetRequiredService<IBundleService>();
 
         if (bundles.IsActivated)
