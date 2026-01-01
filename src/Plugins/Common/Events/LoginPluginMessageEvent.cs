@@ -12,7 +12,7 @@ public record LoginPluginMessageEvent(IPlayer Player, ILink Link, string Channel
     public byte[]? Response { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether the processing on client was successful.
+    /// Gets or sets a value indicating whether the processing on the client was successful.
     /// </summary>
     public bool Successful { get; set; }
 
