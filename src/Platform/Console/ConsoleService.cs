@@ -74,7 +74,7 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
     public void EnsureOptionDiscovered(Option option)
     {
         using var lockDisposable = _optionDiscoveryLock.Lock();
-        
+
         if (consoleConfiguration.RootCommand.Options.Contains(option))
             return;
 
@@ -82,7 +82,7 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
         {
             var existingAliases = existingOption.Aliases ?? [];
             var optionAliases = option.Aliases ?? [];
-            
+
             if (!existingOption.Name.Equals(option.Name, StringComparison.OrdinalIgnoreCase) && !existingAliases.Any(alias => optionAliases.Contains(alias, StringComparer.OrdinalIgnoreCase)))
                 continue;
 

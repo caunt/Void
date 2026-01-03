@@ -38,7 +38,7 @@ public class PaperServer : IntegrationSideBase
 
         var versionsJson = await client.GetStringAsync("https://api.papermc.io/v2/projects/paper", cancellationToken);
         using var versions = JsonDocument.Parse(versionsJson);
-        
+
         var filteredSuffixes = new[] { "-pre", "-rc" };
         var latestVersion = versions.RootElement.GetProperty("versions").EnumerateArray()
             .Select(versionElement => versionElement.GetString())
