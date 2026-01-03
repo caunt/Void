@@ -218,7 +218,7 @@ public ref struct MinecraftBuffer
         return Component.ReadFrom(ref this);
     }
 
-    public void WriteComponent(Component value, bool writeName = true)
+    public void WriteComponent(Component value, bool writeName = false)
     {
         value.WriteTo(ref this, writeName);
     }
