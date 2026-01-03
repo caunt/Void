@@ -19,13 +19,13 @@ public static class ComponentNbtSerializer
     public static NbtCompound Serialize(Component component)
     {
         var content = component.Content;
-        var tag = new NbtCompound
-        {
-            ["type"] = new NbtString(content.Type)
-        };
+        var tag = new NbtCompound();
 
         switch (content)
         {
+            case LiteralContent literalContent:
+                tag[""] = literalContent.Value;
+                break;
             case TextContent textContent:
                 tag["text"] = new NbtString(textContent.Value);
                 break;
@@ -36,7 +36,7 @@ public static class ComponentNbtSerializer
                     tag["fallback"] = new NbtString(translatableContent.Fallback);
 
                 if (translatableContent.With is not null)
-                    tag["with"] = new NbtList(translatableContent.With.Select(component => Serialize(component)), NbtTagType.Compound);
+                    tag["with"] = new NbtList(translatableContent.With.Select(Serialize), NbtTagType.Compound);
                 break;
             case ScoreContent scoreContent:
                 tag["score"] = new NbtCompound
@@ -225,9 +225,15 @@ public static class ComponentNbtSerializer
     {
         var compound = tag.AsCompound();
 
+        if (compound.ContainsKey(""))
+        {
+            var literalNbtTag = GetAs<NbtTag>(compound, "");
+
+            component = component with { Content = new LiteralContent(literalNbtTag) };
+        }
+
         if (compound["type"] is NbtString { Value: "text" } || compound.ContainsKey("text"))
         {
-            // TODO: Number, Boolean and String (nbt)
             var textNbtString = GetAs<NbtString>(compound, "text");
 
             component = component with { Content = new TextContent(textNbtString.Value) };
