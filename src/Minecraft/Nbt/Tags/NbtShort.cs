@@ -1,5 +1,3 @@
-using SharpNBT;
-
 namespace Void.Minecraft.Nbt.Tags;
 
 public record NbtShort(short Value) : NbtTag

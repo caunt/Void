@@ -1,5 +1,4 @@
 ﻿using System;
-using SharpNBT;
 
 namespace Void.Minecraft.Nbt;
 

@@ -1,5 +1,3 @@
-using SharpNBT;
-
 namespace Void.Minecraft.Nbt.Tags;
 
 public record NbtFloat(float Value) : NbtTag

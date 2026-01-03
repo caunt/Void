@@ -2,12 +2,11 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
-using SharpNBT;
-using SharpNBT.SNBT;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Nbt.Serializers.Json;
 using Void.Minecraft.Nbt.Serializers.String;
+using Void.Minecraft.Nbt.Snbt;
 using Void.Minecraft.Nbt.Tags;
 
 namespace Void.Minecraft.Nbt;
@@ -53,24 +52,34 @@ public abstract record NbtTag
         var value => throw new NotSupportedException(value.ToString())
     };
 
-    public MemoryStream AsStream(NbtFormatOptions formatOptions = NbtFormatOptions.Java)
+    public MemoryStream AsStream(NbtFormatOptions formatOptions = NbtFormatOptions.Java, bool writeName = true)
     {
         var stream = new MemoryStream();
         var writer = new TagWriter(stream, (FormatOptions)formatOptions);
+        var name = Name;
+
+        // Remove name to force tag serialization without name
+        if (!writeName)
+            Name = null;
+
         var tag = (Tag)this;
 
-        // SharpNBT does not write tag type in case of empty tag name
-        if (string.IsNullOrEmpty(Name))
-        {
-            stream.WriteByte((byte)tag.Type);
+        stream.WriteByte((byte)tag.Type);
 
+        // Void.Minecraft.Nbt does not write tag type in case of empty tag name
+        if (writeName && string.IsNullOrEmpty(name))
+        {
             // TODO: Handle "UseVarInt" option
-            if (Name is not null)
+            if (name is not null)
                 stream.Write([0, 0]);
         }
 
         writer.WriteTag(tag);
         stream.Position = 0;
+
+        // Restore name
+        if (!writeName)
+            Name = name;
 
         return stream;
     }

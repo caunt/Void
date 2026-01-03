@@ -1,5 +1,3 @@
-using SharpNBT;
-
 namespace Void.Minecraft.Nbt;
 
 public enum NbtTagType : byte

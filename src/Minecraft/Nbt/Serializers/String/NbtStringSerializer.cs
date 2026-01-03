@@ -1,5 +1,4 @@
-﻿using SharpNBT;
-using SharpNBT.SNBT;
+﻿using Void.Minecraft.Nbt.Snbt;
 
 namespace Void.Minecraft.Nbt.Serializers.String;
 
