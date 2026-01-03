@@ -21,10 +21,9 @@ public class NbtReader(Stream stream, FormatOptions options, bool leaveOpen = fa
 
             var tag = ReadTag(tagType, named: true);
 
-            // 1.21.4 sends empty string tag name with empty value for achievements
-            // 1.21.5 sends new line characters in chat with empty tag name
-            if (string.IsNullOrWhiteSpace(tag.Name))
-                _tagNameField?.SetValue(tag, "text");
+            // TODO: Fix SharpNBT. Name should not be null here because vanilla sometimes sends empty string in key name but SharpNBT changes it to null.
+            if (tag.Name is null)
+                _tagNameField?.SetValue(tag, "");
 
             compoundTag.Add(tag);
         }

@@ -277,8 +277,9 @@ public class CompoundTag : Tag, IDictionary<string, Tag>, ICollection<Tag>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Tag ValidateChild(Tag tag)
     {
-        if (string.IsNullOrWhiteSpace(tag.Name))
+        if (tag.Name is null)
             throw new FormatException(Strings.ChildrenMustBeNamed);
+
         tag.Parent = this;
         return tag;
     }

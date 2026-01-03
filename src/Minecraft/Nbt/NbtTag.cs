@@ -65,7 +65,7 @@ public abstract record NbtTag
         var tag = (Tag)this;
 
         // SharpNBT does not write tag type in case of empty tag name
-        if (string.IsNullOrEmpty(name))
+        if (name is null)
         {
             stream.WriteByte((byte)tag.Type);
 

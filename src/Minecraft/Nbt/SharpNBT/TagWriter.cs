@@ -309,8 +309,7 @@ public class TagWriter : TagIO
         if (tag.Parent is ListTag)
             return;
 
-        // TODO: Commented out second condition because not compatible with Void. However, we should investigate if this has very breaking consequences.
-        if (string.IsNullOrEmpty(tag.Name)/* && !(tag is CompoundTag && tag.Parent is null)*/)
+        if (tag.Name is null)
             return;
 
         BaseStream.WriteByte((byte)tag.Type);
