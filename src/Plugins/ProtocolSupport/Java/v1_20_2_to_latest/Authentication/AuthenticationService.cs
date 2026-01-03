@@ -26,7 +26,9 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbo
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Authentication;
 
+#pragma warning disable CS9107 // Parameter is captured into the state of the enclosing type and its value is also passed to the base constructor. The value might be captured by the base class as well.
 public class AuthenticationService(ILogger<AuthenticationService> logger, IEventService events, IPlayerService players, IDependencyService dependencies) : AbstractAuthenticationService(events, players, dependencies)
+#pragma warning restore CS9107 // Parameter is captured into the state of the enclosing type and its value is also passed to the base constructor. The value might be captured by the base class as well.
 {
     [Subscribe]
     public static void OnMessageReceived(MessageReceivedEvent @event)
