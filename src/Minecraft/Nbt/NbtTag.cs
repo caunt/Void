@@ -56,21 +56,20 @@ public abstract record NbtTag
     {
         var stream = new MemoryStream();
         var writer = new TagWriter(stream, (FormatOptions)formatOptions);
-        var name = Name;
 
         // Remove name to force tag serialization without name
         if (!writeName)
             Name = null;
 
+        var name = Name;
         var tag = (Tag)this;
 
-        stream.WriteByte((byte)tag.Type);
-
-        // Void.Minecraft.Nbt does not write tag type in case of empty tag name
-        if (writeName && string.IsNullOrEmpty(name))
+        // SharpNBT does not write tag type in case of empty tag name
+        if (string.IsNullOrEmpty(name))
         {
-            // TODO: Handle "UseVarInt" option
-            if (name is not null)
+            stream.WriteByte((byte)tag.Type);
+
+            if (writeName)
                 stream.Write([0, 0]);
         }
 

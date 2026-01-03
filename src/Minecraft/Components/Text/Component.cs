@@ -49,9 +49,10 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     /// Writes serialized data to a buffer.
     /// </summary>
     /// <param name="buffer">The buffer is used to store serialized data.</param>
-    public void WriteTo(ref MinecraftBuffer buffer)
+    /// <param name="writeName">A boolean parameter that indicates whether to include the name when writing the tag to the buffer. Default is true.</param>
+    public void WriteTo(ref MinecraftBuffer buffer, bool writeName = true)
     {
-        buffer.WriteTag(SerializeNbt());
+        buffer.WriteTag(SerializeNbt(), writeName);
     }
 
     /// <summary>
@@ -59,9 +60,10 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     /// </summary>
     /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface for writing data.</typeparam>
     /// <param name="buffer">This parameter is the destination where the serialized data will be written.</param>
-    public void WriteTo<TBuffer>(ref TBuffer buffer) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    /// <param name="writeName">A boolean parameter that indicates whether to include the name when writing the tag to the buffer. Default is true.</param>
+    public void WriteTo<TBuffer>(ref TBuffer buffer, bool writeName = true) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
-        buffer.WriteTag(SerializeNbt());
+        buffer.WriteTag(SerializeNbt(), writeName);
     }
 
     /// <summary>

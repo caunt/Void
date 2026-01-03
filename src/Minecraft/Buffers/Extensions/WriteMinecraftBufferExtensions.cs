@@ -196,10 +196,11 @@ public static class WriteMinecraftBufferExtensions
     /// handling.</typeparam>
     /// <param name="buffer">This parameter is a reference to the buffer where the tag will be written.</param>
     /// <param name="value">This parameter represents the tag that will be converted to a stream and written to the buffer.</param>
-    public static void WriteTag<TBuffer>(ref this TBuffer buffer, NbtTag value)
+    /// <param name="writeName">This parameter indicates whether the name of the tag should be included when writing to the buffer. Default is true.</param>
+    public static void WriteTag<TBuffer>(ref this TBuffer buffer, NbtTag value, bool writeName = true)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>
-        buffer.Write(value.AsStream());
+        buffer.Write(value.AsStream(writeName: writeName));
 
     /// <summary>
     /// Writes a component to a specified buffer using a given protocol version.

@@ -52,7 +52,7 @@ public class SystemChatMessagePacket : IMinecraftClientboundPacket<SystemChatMes
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        buffer.WriteComponent(Message);
+        buffer.WriteComponent(Message, writeName: false);
         buffer.WriteBoolean(Overlay);
     }
 

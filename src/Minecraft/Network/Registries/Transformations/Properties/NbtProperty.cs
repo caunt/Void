@@ -25,6 +25,6 @@ public record NbtProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<NbtPrope
 
     public void Write(ref MinecraftBuffer buffer)
     {
-        buffer.WriteTag(AsNbtTag);
+        buffer.WriteTag(AsNbtTag, writeName: false);
     }
 }
