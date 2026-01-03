@@ -8,6 +8,7 @@ using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network.Channels;
+using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Servers;
@@ -108,6 +109,10 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
 
                 return ConnectionResult.Connected;
             }
+        }
+        catch (StreamClosedException)
+        {
+            throw;
         }
         catch (Exception exception)
         {
