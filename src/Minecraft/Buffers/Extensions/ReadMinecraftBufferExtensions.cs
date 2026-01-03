@@ -3,7 +3,6 @@ using System.Buffers.Binary;
 using System.Text;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Nbt;
-using Void.Minecraft.Network;
 using Void.Minecraft.Profiles;
 
 namespace Void.Minecraft.Buffers.Extensions;
@@ -207,10 +206,10 @@ public static class ReadMinecraftBufferExtensions
     /// <param name="buffer">This parameter is the data source from which the component is read.</param>
     /// <param name="protocolVersion">This parameter indicates the version of the protocol to be used for reading the component.</param>
     /// <returns>Returns the component that has been read from the buffer.</returns>
-    public static Component ReadComponent<TBuffer>(ref this TBuffer buffer, ProtocolVersion protocolVersion)
+    public static Component ReadComponent<TBuffer>(ref this TBuffer buffer)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>
-        Component.ReadFrom(ref buffer, protocolVersion);
+        Component.ReadFrom(ref buffer);
 
     /// <summary>
     /// Reads all remaining data from a buffer and returns it as a read-only span of bytes.

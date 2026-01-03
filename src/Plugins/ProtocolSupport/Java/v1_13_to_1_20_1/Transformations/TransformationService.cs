@@ -23,6 +23,7 @@ public class TransformationService : AbstractTransformationService
             return;
 
         @event.Player.RegisterSystemTransformations<ChatMessagePacket>(ChatMessagePacket.Transformations);
+        @event.Player.RegisterSystemTransformations<SystemChatMessagePacket>(SystemChatMessagePacket.Transformations);
     }
 
     [Subscribe(PostOrder.First)]
@@ -35,5 +36,6 @@ public class TransformationService : AbstractTransformationService
             return;
 
         @event.Player.RegisterSystemTransformations<ChatMessagePacket>(ChatMessagePacket.Transformations);
+        @event.Player.RegisterSystemTransformations<SystemChatMessagePacket>(SystemChatMessagePacket.Transformations);
     }
 }

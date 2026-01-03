@@ -227,6 +227,7 @@ public static class ComponentNbtSerializer
 
         if (compound["type"] is NbtString { Value: "text" } || compound.ContainsKey("text"))
         {
+            // TODO: Number, Boolean and String (nbt)
             var textNbtString = GetAs<NbtString>(compound, "text");
 
             component = component with { Content = new TextContent(textNbtString.Value) };

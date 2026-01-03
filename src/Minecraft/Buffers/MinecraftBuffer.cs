@@ -4,7 +4,6 @@ using System.IO;
 using System.Numerics;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Nbt;
-using Void.Minecraft.Network;
 using Void.Minecraft.Profiles;
 
 namespace Void.Minecraft.Buffers;
@@ -209,19 +208,19 @@ public ref struct MinecraftBuffer
         return _backingBuffer.ReadTag(readName);
     }
 
-    public void WriteTag(NbtTag value)
+    public void WriteTag(NbtTag value, bool writeName = true)
     {
-        _backingBuffer.WriteTag(value);
+        _backingBuffer.WriteTag(value, writeName);
     }
 
-    public Component ReadComponent(ProtocolVersion protocolVersion)
+    public Component ReadComponent()
     {
-        return Component.ReadFrom(ref this, protocolVersion);
+        return Component.ReadFrom(ref this);
     }
 
-    public void WriteComponent(Component value, ProtocolVersion protocolVersion)
+    public void WriteComponent(Component value)
     {
-        value.WriteTo(ref this, protocolVersion);
+        value.WriteTo(ref this);
     }
 
     public void Seek(long offset)

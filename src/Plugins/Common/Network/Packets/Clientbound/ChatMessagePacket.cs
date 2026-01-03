@@ -67,14 +67,14 @@ public class ChatMessagePacket : IMinecraftClientboundPacket<ChatMessagePacket>
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        buffer.WriteComponent(Message, protocolVersion);
+        buffer.WriteComponent(Message);
         buffer.WriteUnsignedByte(Position);
         buffer.WriteUuid(Sender);
     }
 
     public static ChatMessagePacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        var message = buffer.ReadComponent(protocolVersion);
+        var message = buffer.ReadComponent();
         var position = buffer.ReadUnsignedByte();
         var sender = buffer.ReadUuid();
 

@@ -4,7 +4,6 @@ using System.IO;
 using System.Text;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Nbt;
-using Void.Minecraft.Network;
 using Void.Minecraft.Profiles;
 
 namespace Void.Minecraft.Buffers.Extensions;
@@ -210,10 +209,10 @@ public static class WriteMinecraftBufferExtensions
     /// <param name="buffer">This parameter is a reference to the buffer where the component will be written.</param>
     /// <param name="value">This parameter represents the component that will be written to the buffer.</param>
     /// <param name="protocolVersion">This parameter indicates the version of the protocol to be used during the write operation.</param>
-    public static void WriteComponent<TBuffer>(ref this TBuffer buffer, Component value, ProtocolVersion protocolVersion)
+    public static void WriteComponent<TBuffer>(ref this TBuffer buffer, Component value)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>
-        value.WriteTo(ref buffer, protocolVersion);
+        value.WriteTo(ref buffer);
 
     /// <summary>
     /// Writes a byte span to a buffer, allowing for efficient data handling in a structured format.

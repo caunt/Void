@@ -11,12 +11,12 @@ public class PlayDisconnectPacket : IMinecraftClientboundPacket<PlayDisconnectPa
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        buffer.WriteComponent(Reason, protocolVersion);
+        buffer.WriteComponent(Reason);
     }
 
     public static PlayDisconnectPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        return new PlayDisconnectPacket { Reason = buffer.ReadComponent(protocolVersion) };
+        return new PlayDisconnectPacket { Reason = buffer.ReadComponent() };
     }
 
     public void Dispose()

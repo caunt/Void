@@ -5,7 +5,6 @@ using Void.Minecraft.Components.Text;
 using Void.Minecraft.Components.Text.Properties;
 using Void.Minecraft.Components.Text.Properties.Content;
 using Void.Minecraft.Nbt.Tags;
-using Void.Minecraft.Network;
 using Void.Minecraft.Profiles;
 using Xunit;
 
@@ -217,10 +216,10 @@ public class ReadMinecraftBufferExtensionsTests
         var buffer = new BufferSpan(data);
         var component = new Component(new TextContent("hello"), Children.Default, Formatting.Default, Interactivity.Default);
 
-        buffer.WriteComponent(component, ProtocolVersion.MINECRAFT_1_20_2);
+        buffer.WriteComponent(component);
         buffer.Position = 0;
 
-        var read = buffer.ReadComponent(ProtocolVersion.MINECRAFT_1_20_2);
+        var read = buffer.ReadComponent();
         Assert.Equal("hello", read.AsText);
     }
 

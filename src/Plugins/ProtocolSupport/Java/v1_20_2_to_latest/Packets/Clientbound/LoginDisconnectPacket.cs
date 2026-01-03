@@ -11,12 +11,12 @@ public class LoginDisconnectPacket : IMinecraftClientboundPacket<LoginDisconnect
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        buffer.WriteComponent(Reason, ProtocolVersion.MINECRAFT_1_20_2);
+        buffer.WriteComponent(Reason);
     }
 
     public static LoginDisconnectPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        return new LoginDisconnectPacket { Reason = buffer.ReadComponent(ProtocolVersion.MINECRAFT_1_20_2) };
+        return new LoginDisconnectPacket { Reason = buffer.ReadComponent() };
     }
 
     public void Dispose()

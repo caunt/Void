@@ -16,6 +16,7 @@ public static class ComponentNbtTransformers
 {
     private const string ShowAchievementMarker = "!1.11.1=>1.12!";
 
+    [Obsolete("Rewrite properties yourself instead.")]
     public static void Apply(IMinecraftBinaryPacketWrapper wrapper, ProtocolVersion from, ProtocolVersion to)
     {
         if (from <= ProtocolVersion.MINECRAFT_1_20 && to > ProtocolVersion.MINECRAFT_1_20)
@@ -44,16 +45,19 @@ public static class ComponentNbtTransformers
         }
     }
 
+    [Obsolete("Rewrite properties yourself instead.")]
     public static NamedNbtProperty Apply(NamedNbtProperty property, ProtocolVersion from, ProtocolVersion to)
     {
         return NamedNbtProperty.FromNbtTag(Apply(property.AsNbtTag, from, to));
     }
 
+    [Obsolete("Rewrite properties yourself instead.")]
     public static NbtProperty Apply(NbtProperty property, ProtocolVersion from, ProtocolVersion to)
     {
         return NbtProperty.FromNbtTag(Apply(property.AsNbtTag, from, to));
     }
 
+    [Obsolete("Rewrite properties yourself instead.")]
     public static NbtTag Apply(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
     {
         if (tag is NbtString nbtString)
@@ -85,6 +89,7 @@ public static class ComponentNbtTransformers
         };
     }
 
+    [Obsolete("Rewrite properties yourself instead.")]
     private static NbtTag Downgrade(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
     {
         if (from > ProtocolVersion.MINECRAFT_1_21_4 && to <= ProtocolVersion.MINECRAFT_1_21_4)
@@ -105,6 +110,7 @@ public static class ComponentNbtTransformers
         return tag;
     }
 
+    [Obsolete("Rewrite properties yourself instead.")]
     private static NbtTag Upgrade(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
     {
         if (from <= ProtocolVersion.MINECRAFT_1_8 && to > ProtocolVersion.MINECRAFT_1_8)
@@ -126,14 +132,16 @@ public static class ComponentNbtTransformers
     }
 
     #region Downgrade
+    [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_21_5_to_v1_21_4(IMinecraftBinaryPacketWrapper wrapper)
     {
         var property = wrapper.Read<NbtProperty>();
         var tag = Downgrade_v1_21_5_to_v1_21_4(property.AsNbtTag);
 
-        wrapper.Write(NamedNbtProperty.FromNbtTag(tag));
+        wrapper.Write(NbtProperty.FromNbtTag(tag));
     }
 
+    [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_20_3_to_v1_20_2(IMinecraftBinaryPacketWrapper wrapper)
     {
         var property = wrapper.Read<NbtProperty>();
@@ -143,43 +151,48 @@ public static class ComponentNbtTransformers
         wrapper.Write(property);
     }
 
+    [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_16_to_v1_15_2(IMinecraftBinaryPacketWrapper wrapper)
     {
-        var property = wrapper.Read<NamedNbtProperty>();
+        var property = wrapper.Read<NbtProperty>();
         var tag = Downgrade_v1_16_to_v1_15_2(property.AsNbtTag);
 
-        property = NamedNbtProperty.FromNbtTag(tag);
+        property = NbtProperty.FromNbtTag(tag);
         wrapper.Write(property);
     }
 
+    [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_12_to_v1_11_1(IMinecraftBinaryPacketWrapper wrapper)
     {
-        var property = wrapper.Read<NamedNbtProperty>();
+        var property = wrapper.Read<NbtProperty>();
         var tag = Downgrade_v1_12_to_v1_11_1(property.AsNbtTag);
 
-        property = NamedNbtProperty.FromNbtTag(tag);
+        property = NbtProperty.FromNbtTag(tag);
         wrapper.Write(property);
     }
 
+    [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_9_to_v1_8(IMinecraftBinaryPacketWrapper wrapper)
     {
-        var property = wrapper.Read<NamedNbtProperty>();
+        var property = wrapper.Read<NbtProperty>();
         var tag = Downgrade_v1_9_to_v1_8(property.AsNbtTag);
 
-        property = NamedNbtProperty.FromNbtTag(tag);
+        property = NbtProperty.FromNbtTag(tag);
         wrapper.Write(property);
     }
     #endregion
 
     #region Upgrade
+    [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_21_4_to_v1_21_5(IMinecraftBinaryPacketWrapper wrapper)
     {
-        var property = wrapper.Read<NamedNbtProperty>();
+        var property = wrapper.Read<NbtProperty>();
         var tag = Upgrade_v1_21_4_to_v1_21_5(property.AsNbtTag);
 
         wrapper.Write(NbtProperty.FromNbtTag(tag));
     }
 
+    [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_20_2_to_v1_20_3(IMinecraftBinaryPacketWrapper wrapper)
     {
         var property = wrapper.Read<NbtProperty>();
@@ -189,49 +202,51 @@ public static class ComponentNbtTransformers
         wrapper.Write(property);
     }
 
+    [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_15_2_to_v1_16(IMinecraftBinaryPacketWrapper wrapper)
     {
-        var property = wrapper.Read<NamedNbtProperty>();
+        var property = wrapper.Read<NbtProperty>();
         var tag = Upgrade_v1_15_2_to_v1_16(property.AsNbtTag);
 
-        property = NamedNbtProperty.FromNbtTag(tag);
+        property = NbtProperty.FromNbtTag(tag);
         wrapper.Write(property);
     }
 
+    [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_11_1_to_v1_12(IMinecraftBinaryPacketWrapper wrapper)
     {
-        var property = wrapper.Read<NamedNbtProperty>();
+        var property = wrapper.Read<NbtProperty>();
         var tag = Upgrade_v1_11_1_to_v1_12(property.AsNbtTag);
 
-        property = NamedNbtProperty.FromNbtTag(tag);
+        property = NbtProperty.FromNbtTag(tag);
         wrapper.Write(property);
     }
 
+    [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_8_to_v1_9(IMinecraftBinaryPacketWrapper wrapper)
     {
-        var property = wrapper.Read<NamedNbtProperty>();
+        var property = wrapper.Read<NbtProperty>();
         var tag = Upgrade_v1_8_to_v1_9(property.AsNbtTag);
 
-        property = NamedNbtProperty.FromNbtTag(tag);
+        property = NbtProperty.FromNbtTag(tag);
         wrapper.Write(property);
     }
     #endregion
 
     public static NbtTag Downgrade_v1_21_5_to_v1_21_4(NbtTag tag)
     {
-        if (tag is NbtCompound rootCompound)
+        if (tag is NbtCompound root)
         {
-            if (rootCompound["hover_event"] is NbtCompound hoverEvent)
+            if (root["hover_event"] is NbtCompound hoverEvent)
             {
-                rootCompound["hoverEvent"] = hoverEvent;
-                rootCompound.Fields.Remove("hover_event");
+                root.RenameKey("hover_event", "hoverEvent");
 
                 if (hoverEvent["action"] is NbtString action)
                 {
                     switch (action.Value)
                     {
                         case "show_text":
-                            hoverEvent["value"] = hoverEvent["contents"];
+                            hoverEvent.RenameKey("value", "contents");
                             break;
                         case "show_item":
                             var contents = new NbtCompound();
@@ -243,7 +258,7 @@ public static class ComponentNbtTransformers
 
                                 if (key == "id")
                                 {
-                                    hoverEvent["contents"] = value;
+                                    hoverEvent.RenameKey("id", "contents");
                                     break;
                                 }
                                 else
@@ -276,34 +291,33 @@ public static class ComponentNbtTransformers
                 }
             }
 
-            if (rootCompound["click_event"] is NbtCompound clickEvent)
+            if (root["click_event"] is NbtCompound clickEvent)
             {
-                rootCompound["clickEvent"] = clickEvent;
-                rootCompound.Fields.Remove("click_event");
+                root.RenameKey("click_event", "clickEvent");
 
                 if (clickEvent["action"] is NbtString action)
                 {
                     switch (action.Value)
                     {
                         case "open_url":
-                            clickEvent["value"] = clickEvent["url"];
+                            clickEvent.RenameKey("url", "value");
                             break;
                         case "run_command" or "suggest_command":
-                            clickEvent["value"] = clickEvent["command"];
+                            clickEvent.RenameKey("command", "value");
                             break;
                         case "change_page" when clickEvent["page"] is NbtInt page:
-                            clickEvent["value"] = new NbtString(page.Value.ToString());
+                            clickEvent.RenameKey("page", "value");
                             break;
                     }
                 }
             }
 
             // Replace recursive text components
-            if (rootCompound["with"] is NbtList with)
-                rootCompound["with"] = new NbtList(with.Data.Select(Downgrade_v1_21_5_to_v1_21_4), with.DataType);
+            if (root["with"] is NbtList with)
+                root["with"] = new NbtList(with.Data.Select(Downgrade_v1_21_5_to_v1_21_4), with.DataType);
 
-            if (rootCompound["extra"] is NbtList extra)
-                rootCompound["extra"] = new NbtList(extra.Data.Select(Downgrade_v1_20_3_to_v1_20_2), extra.DataType);
+            if (root["extra"] is NbtList extra)
+                root["extra"] = new NbtList(extra.Data.Select(Downgrade_v1_21_5_to_v1_21_4), extra.DataType);
         }
 
         return tag;
@@ -470,15 +484,14 @@ public static class ComponentNbtTransformers
         {
             if (root["hoverEvent"] is NbtCompound hoverEvent)
             {
-                root["hover_event"] = hoverEvent;
-                root.Fields.Remove("hoverEvent");
+                root.RenameKey("hoverEvent", "hover_event");
 
                 if (hoverEvent["action"] is NbtString action)
                 {
                     switch (action.Value)
                     {
                         case "show_text":
-                            hoverEvent["value"] = hoverEvent["contents"];
+                            hoverEvent.RenameKey("contents", "value");
                             break;
                         case "show_item" when hoverEvent["contents"] is NbtString contents:
                             hoverEvent["id"] = contents;
@@ -506,21 +519,20 @@ public static class ComponentNbtTransformers
 
             if (root["clickEvent"] is NbtCompound clickEvent)
             {
-                root["click_event"] = clickEvent;
-                root.Fields.Remove("clickEvent");
+                root.RenameKey("clickEvent", "click_event");
 
                 if (clickEvent["action"] is NbtString action)
                 {
                     switch (action.Value)
                     {
                         case "open_url":
-                            clickEvent["value"] = clickEvent["url"];
+                            clickEvent.RenameKey("value", "url");
                             break;
                         case "run_command" or "suggest_command":
-                            clickEvent["value"] = clickEvent["command"];
+                            clickEvent.RenameKey("value", "command");
                             break;
-                        case "change_page" when clickEvent["page"] is NbtString page:
-                            clickEvent["value"] = new NbtInt(int.Parse(page.Value));
+                        case "change_page" when clickEvent["value"] is NbtString page:
+                            clickEvent["page"] = new NbtInt(int.Parse(page.Value));
                             break;
                     }
                 }
@@ -528,10 +540,10 @@ public static class ComponentNbtTransformers
 
             // Replace recursive text components
             if (root["with"] is NbtList with)
-                root["with"] = new NbtList(with.Data.Select(Upgrade_v1_11_1_to_v1_12), with.DataType);
+                root["with"] = new NbtList(with.Data.Select(Upgrade_v1_21_4_to_v1_21_5), with.DataType);
 
             if (root["extra"] is NbtList extra)
-                root["extra"] = new NbtList(extra.Data.Select(Upgrade_v1_11_1_to_v1_12), extra.DataType);
+                root["extra"] = new NbtList(extra.Data.Select(Upgrade_v1_21_4_to_v1_21_5), extra.DataType);
         }
 
         return tag;

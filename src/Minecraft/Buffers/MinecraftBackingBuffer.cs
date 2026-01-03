@@ -521,9 +521,9 @@ internal ref struct MinecraftBackingBuffer
         return nbt;
     }
 
-    public void WriteTag(NbtTag value)
+    public void WriteTag(NbtTag value, bool writeName = true)
     {
-        Write(value.AsStream());
+        Write(value.AsStream(writeName: writeName));
     }
 
     public void Seek(long offset, SeekOrigin origin)
