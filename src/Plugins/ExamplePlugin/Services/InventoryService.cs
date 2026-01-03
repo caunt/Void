@@ -32,9 +32,16 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
         }
     }
 
+    static bool once = false;
     [Subscribe]
-    public void OnPhaseChanged(PhaseChangedEvent @event)
+    public async Task OnPhaseChanged(PhaseChangedEvent @event)
     {
+        if (!once && @event is { Side: Side.Client, Phase: Phase.Configuration })
+        {
+            await @event.Player.KickAsync();
+            once = true;
+        }
+
         // Minecraft phases indicate the state of the game. Common phases are Handshake, Login, Configuration and Play.
         // They are NOT synced between server and player instantly. When player is in Play phase, server might still be in Login phase.
         // This means you should decide which side Phase change you want to handle here. In this case, both sides are handled.

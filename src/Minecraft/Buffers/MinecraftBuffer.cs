@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.IO;
 using System.Numerics;
+using System.Text.Json;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Nbt;
 using Void.Minecraft.Profiles;
@@ -218,9 +219,19 @@ public ref struct MinecraftBuffer
         return Component.ReadFrom(ref this);
     }
 
+    public Component ReadJsonComponent()
+    {
+        return Component.ReadJsonFrom(ref this);
+    }
+
     public void WriteComponent(Component value, bool writeName = false)
     {
         value.WriteTo(ref this, writeName);
+    }
+
+    public void WriteJsonComponent(Component value, JsonSerializerOptions? jsonSerializerOptions = null)
+    {
+        value.WriteJsonTo(ref this, jsonSerializerOptions);
     }
 
     public void Seek(long offset)

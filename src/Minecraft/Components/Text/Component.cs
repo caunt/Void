@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.IO;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Components.Text.Properties;
@@ -11,6 +13,11 @@ namespace Void.Minecraft.Components.Text;
 
 public record Component(IContent Content, Children Children, Formatting Formatting, Interactivity Interactivity)
 {
+    private static readonly JsonSerializerOptions _defaultJsonSerializerOptions = new()
+    {
+        WriteIndented = false
+    };
+
     /// <summary>
     /// Represents a default component initialized with empty text content, default children, formatting, and
     /// interactivity.
@@ -46,6 +53,27 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     }
 
     /// <summary>
+    /// Reads data from a buffer and deserializes it.
+    /// </summary>
+    /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface for reading data.</typeparam>
+    /// <param name="buffer">This parameter is the source from which data is read and processed for deserialization.</param>
+    /// <returns>The method returns a Component object created from the deserialized data.</returns>
+    public static Component ReadJsonFrom<TBuffer>(ref TBuffer buffer) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    {
+        return DeserializeJson(JsonNode.Parse(buffer.ReadString()) ?? throw new InvalidDataException("Failed to parse JsonNode from buffer string."));
+    }
+
+    /// <summary>
+    /// Reads data from a buffer and deserializes it into a Component.
+    /// </summary>
+    /// <param name="buffer">The buffer containing the data to be read and deserialized into a Component.</param>
+    /// <returns>Returns a Component object created from the data in the buffer.</returns>
+    public static Component ReadJsonFrom(ref MinecraftBuffer buffer)
+    {
+        return DeserializeJson(JsonNode.Parse(buffer.ReadString()) ?? throw new InvalidDataException("Failed to parse JsonNode from buffer string."));
+    }
+
+    /// <summary>
     /// Writes serialized data to a buffer.
     /// </summary>
     /// <param name="buffer">The buffer is used to store serialized data.</param>
@@ -64,6 +92,27 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     public void WriteTo<TBuffer>(ref TBuffer buffer, bool writeName = true) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
         buffer.WriteTag(SerializeNbt(), writeName);
+    }
+
+    /// <summary>
+    /// Writes serialized data to a buffer.
+    /// </summary>
+    /// <param name="buffer">The buffer is used to store serialized data.</param>
+    /// <param name="jsonSerializerOptions">Options for customizing JSON serialization behavior. If not provided, default options will be used.</param>
+    public void WriteJsonTo(ref MinecraftBuffer buffer, JsonSerializerOptions? jsonSerializerOptions = null)
+    {
+        buffer.WriteString(SerializeJson().ToJsonString(jsonSerializerOptions ?? _defaultJsonSerializerOptions));
+    }
+
+    /// <summary>
+    /// Writes serialized data to a buffer.
+    /// </summary>
+    /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface for writing data.</typeparam>
+    /// <param name="buffer">This parameter is the destination where the serialized data will be written.</param>
+    /// <param name="jsonSerializerOptions">Options for customizing JSON serialization behavior. If not provided, default options will be used.</param>
+    public void WriteJsonTo<TBuffer>(ref TBuffer buffer, JsonSerializerOptions? jsonSerializerOptions = null) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    {
+        buffer.WriteString(SerializeJson().ToJsonString(jsonSerializerOptions ?? _defaultJsonSerializerOptions));
     }
 
     /// <summary>
