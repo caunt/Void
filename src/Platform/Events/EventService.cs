@@ -110,7 +110,7 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
                     if (context.Player != scopedEvent.Player)
                         continue;
 
-                    // Allow invocation of scoped events only if scoped player matched
+                    // Allow invocation of scoped events only if the scoped player matches
                 }
             }
 

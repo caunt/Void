@@ -514,7 +514,7 @@ internal ref struct MinecraftBackingBuffer
         var position = GetPosition();
         var data = ReadToEnd();
 
-        // TODO another one allocation to be removed
+        // TODO another allocation to be removed
         var length = NbtTag.Parse(data.ToArray(), out var nbt, readName);
         Seek(position + length, SeekOrigin.Begin);
 

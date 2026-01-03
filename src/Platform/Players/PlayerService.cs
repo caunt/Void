@@ -141,7 +141,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
     [Subscribe]
     public async ValueTask OnLinkStopped(LinkStoppedEvent @event, CancellationToken cancellationToken)
     {
-        // All other reasons should throw player disconnected event themselves
+        // All other reasons should throw a player disconnected event themselves
         if (@event.Reason is LinkStopReason.PlayerDisconnected)
             await events.ThrowAsync(new PlayerDisconnectedEvent(@event.Player), cancellationToken);
 

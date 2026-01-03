@@ -131,7 +131,7 @@ public class SimpleMinecraftChannel(IMessageStreamBase head) : INetworkChannel
         if (_writePause is not null)
             await _writePause.Task.WaitAsync(cancellationToken);
 
-        // Underlying streams often non thread-safe at writes
+        // Underlying streams are often non-thread-safe during writes
         using var _ = await _writeLock.LockAsync(cancellationToken);
 
         switch (head)

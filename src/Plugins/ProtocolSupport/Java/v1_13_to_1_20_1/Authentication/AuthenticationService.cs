@@ -54,7 +54,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
 
     protected override async ValueTask FinishPlayingAsync(ILink link, CancellationToken cancellationToken)
     {
-        // IPlayer might be in middle of Bundle when client is not handling packets until closing bundle received
+        // IPlayer might be in the middle of a bundle when the client is not handling packets until the closing bundle is received
         var bundles = link.Player.Context.Services.GetRequiredService<IBundleService>();
 
         if (bundles.IsActivated)
@@ -141,7 +141,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
             case LoginDisconnectPacket loginDisconnectPacket:
                 logger.LogInformation("Player {Player} cannot authenticate on {Server}: {Reason}", link.Player, link.Server, loginDisconnectPacket.Reason.SerializeLegacy());
 
-                // since IPlayer client is already completed login state, it cannot be kicked with login disconnect packet
+                // Since the IPlayer client has already completed the login state, it cannot be kicked with a login disconnect packet
                 await link.Player.KickAsync(loginDisconnectPacket.Reason, cancellationToken);
                 return AuthenticationResult.NotAuthenticatedServer;
             case LoginSuccessPacket:
