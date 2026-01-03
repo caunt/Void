@@ -2,7 +2,7 @@
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
 
-namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbound;
+namespace Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
 
 public class KeepAliveRequestPacket : IMinecraftClientboundPacket<KeepAliveRequestPacket>
 {
