@@ -256,7 +256,7 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
             var registrationFactory = registration.Factory;
             var reuse = registrationFactory.Reuse;
 
-            // Register only Scoped services in player own "scoped" container
+            // Register only Scoped services in player's own "scoped" container
             if (reuse.Lifespan <= Reuse.Transient.Lifespan || reuse.Lifespan >= Reuse.Singleton.Lifespan)
                 continue;
 
