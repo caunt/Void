@@ -33,7 +33,7 @@ public readonly struct BufferMemory(Memory<byte> source)
             throw new ArgumentOutOfRangeException(nameof(length), "Value must be non-negative.");
 
         if (position + length > source.Length)
-            throw new EndOfBufferException(position, length, source.Length);
+            throw new EndOfBufferException(source.Length, position, length);
 
         return new BufferMemory(source.Slice(position, length));
     }

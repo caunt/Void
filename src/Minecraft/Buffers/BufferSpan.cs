@@ -56,7 +56,7 @@ public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>
             throw new ArgumentOutOfRangeException(nameof(length), "Value must be non-negative.");
 
         if (position + length > _source.Length)
-            throw new EndOfBufferException(position, length, _source.Length);
+            throw new EndOfBufferException(_source.Length, position, length);
 
         return _source.Slice(position, length);
     }
@@ -75,7 +75,7 @@ public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>
             throw new ArgumentOutOfRangeException(nameof(offset), "New position must be non-negative.");
 
         if (position > _source.Length)
-            throw new EndOfBufferException(_position, _position - position, _source.Length);
+            throw new EndOfBufferException(_source.Length, _position, _position - position);
 
         _position = position;
     }
