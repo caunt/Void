@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers.Binary;
 using System.IO;
+using Void.Minecraft.Buffers.Exceptions;
 
 namespace Void.Minecraft.Buffers.ReadWrite;
 
@@ -14,7 +15,7 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
         var result = memoryStream.ReadByte();
 
         if (result < 0)
-            throw new InternalBufferOverflowException();
+            throw new EndOfBufferException(Length, Position, requestedLength: 1);
 
         return (byte)result;
     }
