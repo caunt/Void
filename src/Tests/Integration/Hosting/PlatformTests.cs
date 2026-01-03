@@ -15,7 +15,7 @@ public class PlatformTests
         var logs = new CollectingTextWriter();
 
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await EntryPoint.RunAsync(new EntryPoint.RunOptions { LogWriter = logs, WorkingDirectory = nameof(EntryPoint_RunsStopsSuccessfully) }, cancellationTokenSource.Token);
+        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { LogWriter = logs, WorkingDirectory = nameof(EntryPoint_RunsStopsSuccessfully) }, cancellationTokenSource.Token);
 
         try
         {
@@ -26,7 +26,7 @@ public class PlatformTests
         }
         catch (Exception exception)
         {
-            Assert.Fail($"{nameof(EntryPoint)} failed to run or stop successfully.\n{exception}\nLogs:\n{logs.Text}");
+            Assert.Fail($"{nameof(VoidEntryPoint)} failed to run or stop successfully.\n{exception}\nLogs:\n{logs.Text}");
         }
     }
 
@@ -36,7 +36,7 @@ public class PlatformTests
         var logs = new CollectingTextWriter();
 
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await EntryPoint.RunAsync(new EntryPoint.RunOptions { LogWriter = logs, Arguments = ["--port", "50000"], WorkingDirectory = nameof(EntryPoint_UsesPortOption) }, cancellationTokenSource.Token);
+        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { LogWriter = logs, Arguments = ["--port", "50000"], WorkingDirectory = nameof(EntryPoint_UsesPortOption) }, cancellationTokenSource.Token);
 
         try
         {
@@ -47,7 +47,7 @@ public class PlatformTests
         }
         catch (Exception exception)
         {
-            Assert.Fail($"{nameof(EntryPoint)} failed to run or stop successfully.\n{exception}\nLogs:\n{logs.Text}");
+            Assert.Fail($"{nameof(VoidEntryPoint)} failed to run or stop successfully.\n{exception}\nLogs:\n{logs.Text}");
         }
     }
 
@@ -57,7 +57,7 @@ public class PlatformTests
         var logs = new CollectingTextWriter();
 
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await EntryPoint.RunAsync(new EntryPoint.RunOptions { LogWriter = logs, Arguments = ["--interface", "127.0.0.1"], WorkingDirectory = nameof(EntryPoint_UsesInterfaceOption) }, cancellationTokenSource.Token);
+        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { LogWriter = logs, Arguments = ["--interface", "127.0.0.1"], WorkingDirectory = nameof(EntryPoint_UsesInterfaceOption) }, cancellationTokenSource.Token);
 
         try
         {
@@ -68,7 +68,7 @@ public class PlatformTests
         }
         catch (Exception exception)
         {
-            Assert.Fail($"{nameof(EntryPoint)} failed to run or stop successfully.\n{exception}\nLogs:\n{logs.Text}");
+            Assert.Fail($"{nameof(VoidEntryPoint)} failed to run or stop successfully.\n{exception}\nLogs:\n{logs.Text}");
         }
     }
 }

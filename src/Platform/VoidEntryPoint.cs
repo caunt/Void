@@ -36,7 +36,7 @@ using Void.Proxy.Servers;
 
 namespace Void.Proxy;
 
-public static class EntryPoint
+public static class VoidEntryPoint
 {
     public record RunOptions : IRunOptions
     {
@@ -51,7 +51,7 @@ public static class EntryPoint
         public TextWriter? LogWriter { get; init; } = null;
     }
 
-    static EntryPoint() => System.Console.Title = nameof(Void);
+    static VoidEntryPoint() => System.Console.Title = nameof(Void);
 
     private static async Task<int> Main(string[] args)
     {

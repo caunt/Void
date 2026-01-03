@@ -64,7 +64,7 @@ public class VoidProxy : IIntegrationSide
         if (offlineMode)
             args.Add("--offline");
 
-        var task = EntryPoint.RunAsync(new EntryPoint.RunOptions { WorkingDirectory = workingDirectory, Arguments = [.. args], LogWriter = logWriter }, cancellationTokenSource.Token);
+        var task = VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { WorkingDirectory = workingDirectory, Arguments = [.. args], LogWriter = logWriter }, cancellationTokenSource.Token);
 
         // Wait for the proxy to start, because it takes some time to listen on the port
 

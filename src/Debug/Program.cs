@@ -48,7 +48,7 @@ Console.WriteLine(@$"Starting {servers.Length} minecraft container(s)");
 if (docker)
     await StartDockerEnvironmentAsync(servers, arguments: [.. arguments]);
 else
-    await EntryPoint.RunAsync(new EntryPoint.RunOptions { Arguments = [.. arguments] });
+    await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { Arguments = [.. arguments] });
 
 return;
 
@@ -289,7 +289,7 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
 
     try
     {
-        await EntryPoint.RunAsync(new EntryPoint.RunOptions { Arguments = arguments ?? [] }, cancellationToken);
+        await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { Arguments = arguments ?? [] }, cancellationToken);
     }
     finally
     {
