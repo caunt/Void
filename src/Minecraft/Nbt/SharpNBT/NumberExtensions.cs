@@ -22,7 +22,6 @@ public static class NumberExtensions
     }
 
     /// <inheritdoc cref="SwapEndian(short)"/>
-    [CLSCompliant(false)]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ushort SwapEndian(this ushort value)
     {
@@ -34,7 +33,6 @@ public static class NumberExtensions
     public static int SwapEndian(this int value) => unchecked((int)SwapEndian(unchecked((uint)value)));
 
     /// <inheritdoc cref="SwapEndian(short)"/>
-    [CLSCompliant(false)]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static uint SwapEndian(this uint value)
     {
@@ -43,7 +41,6 @@ public static class NumberExtensions
     }
 
     /// <inheritdoc cref="SwapEndian(short)"/>
-    [CLSCompliant(false)]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ulong SwapEndian(this ulong value)
     {

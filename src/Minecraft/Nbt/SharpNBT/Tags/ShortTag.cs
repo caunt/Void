@@ -1,4 +1,3 @@
-using System;
 using System.Text.Json;
 using JetBrains.Annotations;
 
@@ -16,7 +15,6 @@ public class ShortTag : NumericTag<short>
     /// <remarks>
     /// This is only a reinterpretation of the bytes, no actual conversion is performed.
     /// </remarks>
-    [CLSCompliant(false)]
     public ushort UnsignedValue
     {
         get => unchecked((ushort)Value);
@@ -39,7 +37,6 @@ public class ShortTag : NumericTag<short>
     }
 
     /// <inheritdoc cref="ShortTag(string,short)"/>
-    [CLSCompliant(false)]
     public ShortTag(string? name, ushort value) : base(TagType.Short, name, unchecked((short)value))
     {
     }
@@ -72,7 +69,6 @@ public class ShortTag : NumericTag<short>
     /// </summary>
     /// <param name="tag">The tag to convert.</param>
     /// <returns>The tag represented as a <see cref="ushort"/>.</returns>
-    [CLSCompliant(false)]
     public static implicit operator ushort(ShortTag tag) => unchecked((ushort)tag.Value);
 
     /// <inheritdoc />

@@ -1,4 +1,3 @@
-using System;
 using System.Text.Json;
 using JetBrains.Annotations;
 
@@ -16,7 +15,6 @@ public class LongTag : NumericTag<long>
     /// <remarks>
     /// This is only a reinterpretation of the bytes, no actual conversion is performed.
     /// </remarks>
-    [CLSCompliant(false)]
     public ulong UnsignedValue
     {
         get => unchecked((ulong)Value);
@@ -33,7 +31,6 @@ public class LongTag : NumericTag<long>
     }
 
     /// <inheritdoc cref="LongTag(string,long)"/>
-    [CLSCompliant(false)]
     public LongTag(string? name, ulong value) : base(TagType.Long, name, unchecked((long)value))
     {
     }
@@ -66,7 +63,6 @@ public class LongTag : NumericTag<long>
     /// </summary>
     /// <param name="tag">The tag to convert.</param>
     /// <returns>The tag represented as a <see cref="ulong"/>.</returns>
-    [CLSCompliant(false)]
     public static implicit operator ulong(LongTag tag) => unchecked((ulong)tag.Value);
 
     /// <inheritdoc />

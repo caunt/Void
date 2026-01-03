@@ -63,7 +63,6 @@ public class TagBuilder
     public TagBuilder AddByte(string? name, int value) => AddByte(name, unchecked((byte)(value & 0xFF)));
 
     /// <inheritdoc cref="AddByte(string,byte)"/>
-    [CLSCompliant(false)]
     public TagBuilder AddByte(string? name, sbyte value) => AddByte(name, unchecked((byte)value));
 
     /// <summary>
@@ -77,7 +76,6 @@ public class TagBuilder
     public TagBuilder AddByte(int value) => AddByte(null, unchecked((byte)(value & 0xFF)));
 
     /// <inheritdoc cref="AddByte(sbyte)"/>
-    [CLSCompliant(false)]
     public TagBuilder AddByte(sbyte value) => AddByte(null, unchecked((byte)value));
 
     /// <summary>
@@ -92,7 +90,6 @@ public class TagBuilder
     public TagBuilder AddShort(string? name, int value) => AddShort(name, unchecked((short)(value & 0xFFFF)));
 
     /// <inheritdoc cref="AddShort(string,short)"/>
-    [CLSCompliant(false)]
     public TagBuilder AddShort(string? name, ushort value) => AddShort(name, unchecked((short)value));
 
     /// <summary>
@@ -106,7 +103,6 @@ public class TagBuilder
     public TagBuilder AddShort(int value) => AddShort(null, unchecked((short)(value & 0xFFFF)));
 
     /// <inheritdoc cref="AddShort(short)"/>
-    [CLSCompliant(false)]
     public TagBuilder AddShort(ushort value) => AddShort(null, unchecked((short)value));
 
     /// <summary>
@@ -118,7 +114,6 @@ public class TagBuilder
     public TagBuilder AddInt(string? name, int value) => AddTag(new IntTag(name, value));
 
     /// <inheritdoc cref="AddInt(string,int)"/>
-    [CLSCompliant(false)]
     public TagBuilder AddInt(string? name, uint value) => AddInt(name, unchecked((int)value));
 
     /// <summary>
@@ -129,7 +124,6 @@ public class TagBuilder
     public TagBuilder AddInt(int value) => AddInt(null, value);
 
     /// <inheritdoc cref="AddInt(int)"/>
-    [CLSCompliant(false)]
     public TagBuilder AddInt(uint value) => AddInt(null, unchecked((int)value));
 
     /// <summary>
@@ -141,7 +135,6 @@ public class TagBuilder
     public TagBuilder AddLong(string? name, long value) => AddTag(new LongTag(name, value));
 
     /// <inheritdoc cref="AddLong(string,long)"/>
-    [CLSCompliant(false)]
     public TagBuilder AddLong(string? name, ulong value) => AddLong(name, unchecked((long)value));
 
     /// <summary>
@@ -152,7 +145,6 @@ public class TagBuilder
     public TagBuilder AddLong(long value) => AddLong(null, value);
 
     /// <inheritdoc cref="AddLong(long)"/>
-    [CLSCompliant(false)]
     public TagBuilder AddLong(ulong value) => AddLong(null, unchecked((long)value));
 
     /// <summary>
@@ -226,7 +218,6 @@ public class TagBuilder
     /// <param name="name">The name of the node to add.</param>
     /// <param name="values">The value(s) that will be included in the tag.</param>
     /// <returns>Returns this <see cref="TagBuilder"/> instance for chaining.</returns>
-    [CLSCompliant(false)]
     public TagBuilder AddByteArray(string? name, params sbyte[] values)
     {
         var span = new ReadOnlySpan<sbyte>(values);
@@ -234,7 +225,6 @@ public class TagBuilder
     }
 
     /// <inheritdoc cref="AddByteArray(string,byte[])"/>
-    [CLSCompliant(false)]
     public TagBuilder AddByteArray(string? name, IEnumerable<sbyte> values) => AddByteArray(name, values.ToArray());
 
     /// <summary>
@@ -242,11 +232,9 @@ public class TagBuilder
     /// </summary>
     /// <param name="values">The value(s) that will be included in the tag.</param>
     /// <returns>Returns this <see cref="TagBuilder"/> instance for chaining.</returns>
-    [CLSCompliant(false)]
     public TagBuilder AddByteArray(params sbyte[] values) => AddByteArray(null, values);
 
     /// <inheritdoc cref="AddByteArray(byte[])"/>
-    [CLSCompliant(false)]
     public TagBuilder AddByteArray(IEnumerable<sbyte> values) => AddByteArray(null, values.ToArray());
 
     /// <summary>

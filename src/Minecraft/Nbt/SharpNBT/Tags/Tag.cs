@@ -1,14 +1,10 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-
-[assembly: CLSCompliant(true)]
-[assembly: InternalsVisibleTo("Void.Minecraft.Nbt.Tests")]
 
 namespace Void.Minecraft.Nbt;
 

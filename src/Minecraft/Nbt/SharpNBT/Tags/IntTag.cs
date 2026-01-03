@@ -1,4 +1,3 @@
-using System;
 using System.Text.Json;
 using JetBrains.Annotations;
 
@@ -16,7 +15,6 @@ public class IntTag : NumericTag<int>
     /// <remarks>
     /// This is only a reinterpretation of the bytes, no actual conversion is performed.
     /// </remarks>
-    [CLSCompliant(false)]
     public uint UnsignedValue
     {
         get => unchecked((uint)Value);
@@ -33,7 +31,6 @@ public class IntTag : NumericTag<int>
     }
 
     /// <inheritdoc cref="IntTag(string,int)"/>
-    [CLSCompliant(false)]
     public IntTag(Tag? parent, string? name, uint value) : base(TagType.Int, name, unchecked((int)value))
     {
     }
@@ -66,7 +63,6 @@ public class IntTag : NumericTag<int>
     /// </summary>
     /// <param name="tag">The tag to convert.</param>
     /// <returns>The tag represented as a <see cref="uint"/>.</returns>
-    [CLSCompliant(false)]
     public static implicit operator uint(IntTag tag) => unchecked((uint)tag.Value);
 
     /// <inheritdoc />

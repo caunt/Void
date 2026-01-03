@@ -38,7 +38,6 @@ public class ByteTag : NumericTag<byte>
     /// <remarks>
     /// This is only a reinterpretation of the bytes, no actual conversion is performed.
     /// </remarks>
-    [CLSCompliant(false)]
     public sbyte SignedValue
     {
         get => unchecked((sbyte)Value);
@@ -83,7 +82,6 @@ public class ByteTag : NumericTag<byte>
     }
 
     /// <inheritdoc cref="ByteTag(string,byte)"/>
-    [CLSCompliant(false)]
     public ByteTag(string? name, sbyte value) : base(TagType.Byte, name, unchecked((byte)value))
     {
     }
@@ -130,7 +128,6 @@ public class ByteTag : NumericTag<byte>
     /// </summary>
     /// <param name="tag">The tag to convert.</param>
     /// <returns>The tag represented as a <see cref="sbyte"/>.</returns>
-    [CLSCompliant(false)]
     public static implicit operator sbyte(ByteTag tag) => unchecked((sbyte)tag.Value);
 
     /// <inheritdoc />
