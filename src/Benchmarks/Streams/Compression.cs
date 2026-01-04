@@ -28,9 +28,9 @@ public class Compression
     /*
      * BenchmarkDotNet v0.14.0, Windows 11 (10.0.22631.4112/23H2/2023Update/SunValley3)
      * 12th Gen Intel Core i9-12900KF, 1 CPU, 24 logical and 16 physical cores
-     * .NET SDK 9.0.100-preview.7.24407.12
-     *   [Host]     : .NET 9.0.0 (9.0.24.40507), X64 RyuJIT AVX2 [AttachedDebugger]
-     *   DefaultJob : .NET 9.0.0 (9.0.24.40507), X64 RyuJIT AVX2
+     * .NET SDK 10.0.100-preview.1.25073.1
+     *   [Host]     : .NET 10.0.0 (10.0.24.55202), X64 RyuJIT AVX2 [AttachedDebugger]
+     *   DefaultJob : .NET 10.0.0 (10.0.24.55202), X64 RyuJIT AVX2
      *
      *
      * 1KB buffer (with compression)
