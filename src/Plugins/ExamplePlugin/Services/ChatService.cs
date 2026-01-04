@@ -3,15 +3,13 @@ using Microsoft.Extensions.Logging;
 using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Extensions;
-using Void.Minecraft.Events;
-using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Configurations;
 using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Proxy;
-using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 
@@ -39,24 +37,15 @@ public class ChatService(ExamplePlugin plugin, ILogger<ChatService> logger, ICon
     }
 
     [Subscribe]
-    public async ValueTask OnPhaseChanged(PhaseChangedEvent @event, CancellationToken cancellationToken)
+    public async ValueTask OnPlayerJoinedServer(PlayerJoinedServerEvent @event, CancellationToken cancellationToken)
     {
-        // Continue only when the connection is in the Play phase on the Client side.
-        if (@event is not { Phase: Phase.Play })
-            return;
-
-        if (@event.Side is Side.Server && @event.Player.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_20_2)
-            return;
-
-        // Only if player has active link to the server.
-        if (@event.Player.Link is not { } link)
-            return;
+        // This event is fired when both sides start Play phase.
 
         // If settings are not loaded, do nothing. Practically impossible, but just in case, always do null-checks.
         if (_settings is null)
             return;
 
-        var message = _settings.WelcomeMessage.Replace("%SERVER%", link.Server.Name);
+        var message = _settings.WelcomeMessage.Replace("%SERVER%", @event.Server.Name);
 
         await @event.Player.SendChatMessageAsync(message, cancellationToken);
     }

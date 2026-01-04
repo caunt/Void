@@ -4,23 +4,57 @@ using Void.Minecraft.Events.Chat;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Api.Events.Player;
+using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Players;
 using Void.Proxy.Plugins.Common.Players.Contexts;
 
 namespace Void.Proxy.Plugins.Common.Services.Lifecycle;
 
-public abstract class AbstractLifecycleService : IPluginCommonService
+public abstract class AbstractLifecycleService(IEventService events) : IPluginCommonService
 {
     [Subscribe]
     public static void OnPlayerConnecting(PlayerConnectingEvent @event)
     {
         @event.Result ??= new SimplePlayer(@event.Client, instance => new PlayerContext(@event.GetServices(instance)) { Player = instance });
+    }
+
+    [Subscribe]
+    public async ValueTask OnPhaseChanged(PhaseChangedEvent @event)
+    {
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
+            return;
+
+        if (@event.Phase is not Phase.Play)
+            return;
+
+        if (@event.Player.ProtocolVersion < ProtocolVersion.MINECRAFT_1_20_2)
+            return;
+
+        if (@event.Side is not Side.Server)
+            return;
+
+        var link = @event.Player.Link ?? throw new InvalidOperationException($"Player has no link assigned in {nameof(Phase.Play)} phase.");
+        await events.ThrowAsync(new PlayerJoinedServerEvent(link.Player, link.Server, link));
+    }
+
+    [Subscribe]
+    public async ValueTask OnLinkStarted(LinkStartedEvent @event)
+    {
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
+            return;
+
+        if (@event.Player.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_20_2)
+            return;
+
+        await events.ThrowAsync(new PlayerJoinedServerEvent(@event.Link.Player, @event.Link.Server, @event.Link));
     }
 
     [Subscribe]

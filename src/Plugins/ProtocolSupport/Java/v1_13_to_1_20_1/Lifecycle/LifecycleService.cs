@@ -3,6 +3,7 @@ using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Players.Extensions;
+using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
@@ -13,7 +14,7 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientboun
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Lifecycle;
 
-public class LifecycleService : AbstractLifecycleService
+public class LifecycleService(IEventService events) : AbstractLifecycleService(events)
 {
     protected override async ValueTask EnableCompressionAsync(ILink link, CancellationToken cancellationToken)
     {
