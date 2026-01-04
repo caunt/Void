@@ -12,6 +12,7 @@ using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Extensions.Reflection;
 using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Commands;
@@ -61,6 +62,11 @@ public class CommandService(ILogger<ICommandService> logger, IEventService event
                 try
                 {
                     return await _dispatcher.ExecuteAsync(results, cancellationToken);
+                }
+                catch (StreamClosedException)
+                {
+                    // Ignore
+                    return int.MinValue;
                 }
                 catch (Exception exception)
                 {
