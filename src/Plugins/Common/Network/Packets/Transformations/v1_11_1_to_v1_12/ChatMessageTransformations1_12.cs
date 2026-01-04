@@ -1,0 +1,30 @@
+﻿using Void.Minecraft.Components.Text.Transformers;
+using Void.Minecraft.Network;
+using Void.Minecraft.Network.Registries.Transformations.Mappings;
+using Void.Minecraft.Network.Registries.Transformations.Properties;
+using Void.Proxy.Api.Players;
+using Void.Proxy.Plugins.Common.Extensions;
+using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
+
+namespace Void.Proxy.Plugins.Common.Network.Packets.Transformations.v1_11_1_to_v1_12;
+
+public record ChatMessageTransformations1_12() : BaseTransformations(ProtocolVersion.MINECRAFT_1_11_1, ProtocolVersion.MINECRAFT_1_12)
+{
+    public override MinecraftPacketTransformationMapping[] Mappings => [
+        new(OlderVersion, NewerVersion, wrapper =>
+        {
+            ComponentJsonTransformers.Passthrough_v1_11_1_to_v1_12(wrapper);
+            wrapper.Passthrough<ByteProperty>();
+        }),
+        new(NewerVersion, OlderVersion, wrapper =>
+        {
+            ComponentJsonTransformers.Passthrough_v1_12_to_v1_11_1(wrapper);
+            wrapper.Passthrough<ByteProperty>();
+        })
+    ];
+
+    public override void Register(IPlayer player)
+    {
+        player.RegisterSystemTransformations<ChatMessagePacket>(Mappings);
+    }
+}
