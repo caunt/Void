@@ -3,9 +3,6 @@ using Void.Minecraft.Nbt.Serializers.Json;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
-using Void.Proxy.Api.Players;
-using Void.Proxy.Plugins.Common.Extensions;
-using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
 
 namespace Void.Proxy.Plugins.Common.Network.Packets.Transformations.v1_20_2_to_v1_20_3;
 
@@ -29,9 +26,4 @@ public record SystemChatMessageTransformations1_20_3() : BaseTransformations(Pro
             wrapper.Passthrough<BoolProperty>();
         })
     ];
-
-    public override void Register(IPlayer player)
-    {
-        player.RegisterSystemTransformations<SystemChatMessagePacket>(Mappings);
-    }
 }

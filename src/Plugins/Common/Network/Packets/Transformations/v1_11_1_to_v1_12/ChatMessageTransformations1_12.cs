@@ -2,9 +2,6 @@
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
-using Void.Proxy.Api.Players;
-using Void.Proxy.Plugins.Common.Extensions;
-using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
 
 namespace Void.Proxy.Plugins.Common.Network.Packets.Transformations.v1_11_1_to_v1_12;
 
@@ -22,9 +19,4 @@ public record ChatMessageTransformations1_12() : BaseTransformations(ProtocolVer
             wrapper.Passthrough<ByteProperty>();
         })
     ];
-
-    public override void Register(IPlayer player)
-    {
-        player.RegisterSystemTransformations<ChatMessagePacket>(Mappings);
-    }
 }
