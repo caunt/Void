@@ -61,7 +61,8 @@ jobs:
         run: |
           git clone https://github.com/dotnet/docfx.git
           cd docfx
-          git checkout feat-add-net10-support-2
+          git fetch origin refs/pull/10561/head:pr-10561
+          git checkout pr-10561
       - name: Build DocFX templates
         run: |
           cd docfx/templates
