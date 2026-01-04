@@ -14,21 +14,21 @@ namespace Void.Proxy.Plugins.Common.Network.Packets.Transformations;
 
 public static class NetworkTransformations
 {
-    public static BaseTransformations[] KeepAlive { get; } = [
-        new KeepAliveTransformations1_8(),
-        new KeepAliveTransformations1_12_2()
+    public static PacketTransformation[] KeepAlive { get; } = [
+        new KeepAliveTransformation1_8(),
+        new KeepAliveTransformation1_12_2()
     ];
 
-    public static BaseTransformations[] ChatMessage { get; } = [
-        new ChatMessageTransformations1_8(),
-        new ChatMessageTransformations1_9(),
-        new ChatMessageTransformations1_12(),
-        new ChatMessageTransformations1_16()
+    public static PacketTransformation[] ChatMessage { get; } = [
+        new ChatMessageTransformation1_8(),
+        new ChatMessageTransformation1_9(),
+        new ChatMessageTransformation1_12(),
+        new ChatMessageTransformation1_16()
     ];
 
-    public static BaseTransformations[] SystemChatMessage { get; } = [
-        new SystemChatMessageTransformations1_20_3(),
-        new SystemChatMessageTransformations1_21_5()
+    public static PacketTransformation[] SystemChatMessage { get; } = [
+        new SystemChatMessageTransformation1_20_3(),
+        new SystemChatMessageTransformation1_21_5()
     ];
 
     public static void Register(IPlayer player)

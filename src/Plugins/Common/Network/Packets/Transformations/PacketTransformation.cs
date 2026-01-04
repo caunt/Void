@@ -3,7 +3,7 @@ using Void.Minecraft.Network.Registries.Transformations.Mappings;
 
 namespace Void.Proxy.Plugins.Common.Network.Packets.Transformations;
 
-public abstract record BaseTransformations(ProtocolVersion OlderVersion, ProtocolVersion NewerVersion)
+public abstract record PacketTransformation(ProtocolVersion OlderVersion, ProtocolVersion NewerVersion)
 {
     public MinecraftPacketTransformationMapping[] Mappings => [
         new(OlderVersion, NewerVersion, Upgrade),

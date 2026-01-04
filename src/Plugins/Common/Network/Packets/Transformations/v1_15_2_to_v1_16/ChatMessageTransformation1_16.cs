@@ -3,19 +3,21 @@ using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
 
-namespace Void.Proxy.Plugins.Common.Network.Packets.Transformations.v1_8_to_v1_9;
+namespace Void.Proxy.Plugins.Common.Network.Packets.Transformations.v1_15_2_to_v1_16;
 
-public record ChatMessageTransformations1_9() : BaseTransformations(ProtocolVersion.MINECRAFT_1_8, ProtocolVersion.MINECRAFT_1_9)
+public record ChatMessageTransformation1_16() : PacketTransformation(ProtocolVersion.MINECRAFT_1_15_2, ProtocolVersion.MINECRAFT_1_16)
 {
     public override void Upgrade(IMinecraftBinaryPacketWrapper wrapper)
     {
-        ComponentJsonTransformers.Passthrough_v1_8_to_v1_9(wrapper);
+        ComponentJsonTransformers.Passthrough_v1_15_2_to_v1_16(wrapper);
         wrapper.Passthrough<ByteProperty>();
+        wrapper.Write(UuidProperty.Empty);
     }
 
     public override void Downgrade(IMinecraftBinaryPacketWrapper wrapper)
     {
-        ComponentJsonTransformers.Passthrough_v1_9_to_v1_8(wrapper);
+        ComponentJsonTransformers.Passthrough_v1_16_to_v1_15_2(wrapper);
         wrapper.Passthrough<ByteProperty>();
+        _ = wrapper.Read<UuidProperty>();
     }
 }

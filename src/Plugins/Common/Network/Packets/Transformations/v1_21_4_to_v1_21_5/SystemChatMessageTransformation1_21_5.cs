@@ -5,7 +5,7 @@ using Void.Minecraft.Network.Registries.Transformations.Properties;
 
 namespace Void.Proxy.Plugins.Common.Network.Packets.Transformations.v1_21_4_to_v1_21_5;
 
-public record SystemChatMessageTransformations1_21_5() : BaseTransformations(ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_21_5)
+public record SystemChatMessageTransformation1_21_5() : PacketTransformation(ProtocolVersion.MINECRAFT_1_21_4, ProtocolVersion.MINECRAFT_1_21_5)
 {
     public override void Upgrade(IMinecraftBinaryPacketWrapper wrapper)
     {

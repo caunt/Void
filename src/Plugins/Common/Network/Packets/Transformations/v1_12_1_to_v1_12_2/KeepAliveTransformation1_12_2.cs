@@ -4,7 +4,7 @@ using Void.Minecraft.Network.Registries.Transformations.Properties;
 
 namespace Void.Proxy.Plugins.Common.Network.Packets.Transformations.v1_12_1_to_v1_12_2;
 
-public record KeepAliveTransformations1_12_2() : BaseTransformations(ProtocolVersion.MINECRAFT_1_12_1, ProtocolVersion.MINECRAFT_1_12_2)
+public record KeepAliveTransformation1_12_2() : PacketTransformation(ProtocolVersion.MINECRAFT_1_12_1, ProtocolVersion.MINECRAFT_1_12_2)
 {
     public override void Upgrade(IMinecraftBinaryPacketWrapper wrapper)
     {
