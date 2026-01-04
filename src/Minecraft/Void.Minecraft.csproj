@@ -5,6 +5,7 @@
 		<Nullable>enable</Nullable>
 		<DebugType>embedded</DebugType>
 		<LangVersion>preview</LangVersion>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<PropertyGroup>
