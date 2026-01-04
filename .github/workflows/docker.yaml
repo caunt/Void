@@ -30,7 +30,7 @@ jobs:
           - os: windows-latest
             container_runtime_identifiers: win-x64
             container_image_tags: dev-windows
-            container_base_image: mcr.microsoft.com/dotnet/runtime:9.0-nanoserver-ltsc2025
+            container_base_image: mcr.microsoft.com/dotnet/runtime:10.0-nanoserver-ltsc2025
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET
@@ -76,7 +76,7 @@ jobs:
           - os: windows-latest
             container_runtime_identifiers: win-x64
             container_image_tags: ${{ inputs.void-version }}-windows;latest-windows
-            container_base_image: mcr.microsoft.com/dotnet/runtime:9.0-nanoserver-ltsc2025
+            container_base_image: mcr.microsoft.com/dotnet/runtime:10.0-nanoserver-ltsc2025
     steps: 
       - uses: actions/checkout@v4
       - name: Setup .NET
