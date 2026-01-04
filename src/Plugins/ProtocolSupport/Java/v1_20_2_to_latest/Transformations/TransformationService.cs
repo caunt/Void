@@ -16,7 +16,7 @@ public class TransformationService : AbstractTransformationService
         if (!Plugin.SupportedVersions.Contains(@event.Player.ProtocolVersion))
             return;
 
-        if (@event is not { Side: Side.Client, Phase: Phase.Play })
+        if (@event is not { Side: Side.Server, Phase: Phase.Play })
             return;
 
         NetworkTransformations.Register(@event.Player);
