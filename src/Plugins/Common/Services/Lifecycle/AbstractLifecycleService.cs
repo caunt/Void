@@ -64,11 +64,14 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
     [Subscribe]
     public async ValueTask OnMessageReceived(MessageReceivedEvent @event, CancellationToken cancellationToken)
     {
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
+            return;
+
         switch (@event.Message)
         {
             case KeepAliveRequestPacket:
             case KeepAliveResponsePacket:
-                logger.LogDebug("Received keep alive {Message} from {Player}", @event.Message, @event.Player);
+                logger.LogDebug("Received keep alive {Message} from {Side} for player {Player}", @event.Message, @event.From, @event.Player);
                 break;
         }
     }

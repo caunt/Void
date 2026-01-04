@@ -56,6 +56,22 @@ public static class Registry
         },
         {
             [
+                new MinecraftPacketIdMapping(0x1F, Plugin.SupportedVersions.First()),
+                new MinecraftPacketIdMapping(0x21, ProtocolVersion.MINECRAFT_1_13),
+                new MinecraftPacketIdMapping(0x20, ProtocolVersion.MINECRAFT_1_14),
+                new MinecraftPacketIdMapping(0x21, ProtocolVersion.MINECRAFT_1_15),
+                new MinecraftPacketIdMapping(0x20, ProtocolVersion.MINECRAFT_1_16),
+                new MinecraftPacketIdMapping(0x1F, ProtocolVersion.MINECRAFT_1_16_2),
+                new MinecraftPacketIdMapping(0x21, ProtocolVersion.MINECRAFT_1_17),
+                new MinecraftPacketIdMapping(0x1E, ProtocolVersion.MINECRAFT_1_19),
+                new MinecraftPacketIdMapping(0x20, ProtocolVersion.MINECRAFT_1_19_1),
+                new MinecraftPacketIdMapping(0x1F, ProtocolVersion.MINECRAFT_1_19_3),
+                new MinecraftPacketIdMapping(0x23, ProtocolVersion.MINECRAFT_1_19_4)
+            ],
+            typeof(KeepAliveRequestPacket)
+        },
+        {
+            [
                 new MinecraftPacketIdMapping(0x25, Plugin.SupportedVersions.First()),
                 new MinecraftPacketIdMapping(0x25, ProtocolVersion.MINECRAFT_1_14),
                 new MinecraftPacketIdMapping(0x26, ProtocolVersion.MINECRAFT_1_15),
@@ -106,6 +122,20 @@ public static class Registry
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundPlayMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
     {
+        {
+            [
+                new MinecraftPacketIdMapping(0x0B, Plugin.SupportedVersions.First()),
+                new MinecraftPacketIdMapping(0x0E, ProtocolVersion.MINECRAFT_1_13),
+                new MinecraftPacketIdMapping(0x0F, ProtocolVersion.MINECRAFT_1_14),
+                new MinecraftPacketIdMapping(0x10, ProtocolVersion.MINECRAFT_1_16),
+                new MinecraftPacketIdMapping(0x0F, ProtocolVersion.MINECRAFT_1_17),
+                new MinecraftPacketIdMapping(0x11, ProtocolVersion.MINECRAFT_1_19),
+                new MinecraftPacketIdMapping(0x12, ProtocolVersion.MINECRAFT_1_19_1),
+                new MinecraftPacketIdMapping(0x11, ProtocolVersion.MINECRAFT_1_19_3),
+                new MinecraftPacketIdMapping(0x12, ProtocolVersion.MINECRAFT_1_19_4)
+            ],
+            typeof(KeepAliveResponsePacket)
+        },
         {
             [
                 new MinecraftPacketIdMapping(0x02, Plugin.SupportedVersions.First()),

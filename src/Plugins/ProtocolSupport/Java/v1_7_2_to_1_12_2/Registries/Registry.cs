@@ -40,6 +40,13 @@ public static class Registry
     {
         {
             [
+                new MinecraftPacketIdMapping(0x00, Plugin.SupportedVersions.First()),
+                new MinecraftPacketIdMapping(0x1F, ProtocolVersion.MINECRAFT_1_9)
+            ],
+            typeof(KeepAliveRequestPacket)
+        },
+        {
+            [
                 new MinecraftPacketIdMapping(0x40, Plugin.SupportedVersions.First()),
                 new MinecraftPacketIdMapping(0x1A, ProtocolVersion.MINECRAFT_1_9)
             ],
@@ -72,6 +79,15 @@ public static class Registry
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundPlayMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
     {
+        {
+            [
+                new MinecraftPacketIdMapping(0x00, Plugin.SupportedVersions.First()),
+                new MinecraftPacketIdMapping(0x0B, ProtocolVersion.MINECRAFT_1_9),
+                new MinecraftPacketIdMapping(0x0C, ProtocolVersion.MINECRAFT_1_12),
+                new MinecraftPacketIdMapping(0x0B, ProtocolVersion.MINECRAFT_1_12_1)
+            ],
+            typeof(KeepAliveResponsePacket)
+        },
         {
             [
                 new MinecraftPacketIdMapping(0x01, Plugin.SupportedVersions.First()),
