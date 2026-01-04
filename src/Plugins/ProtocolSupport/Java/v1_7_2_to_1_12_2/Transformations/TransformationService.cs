@@ -13,7 +13,7 @@ namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Transformatio
 public class TransformationService : AbstractTransformationService
 {
     [Subscribe(PostOrder.First)]
-    public static void OnPhaseChangedEvent(PhaseChangedEvent @event)
+    public static void OnPhaseChanged(PhaseChangedEvent @event)
     {
         if (!Plugin.SupportedVersions.Contains(@event.Player.ProtocolVersion))
             return;
@@ -25,7 +25,7 @@ public class TransformationService : AbstractTransformationService
     }
 
     [Subscribe(PostOrder.First)]
-    public static void OnMessageReceived(MessageSentEvent @event)
+    public static void OnMessageSent(MessageSentEvent @event)
     {
         if (!Plugin.SupportedVersions.Contains(@event.Player.ProtocolVersion))
             return;

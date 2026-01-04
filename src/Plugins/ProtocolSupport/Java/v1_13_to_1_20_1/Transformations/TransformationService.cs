@@ -25,7 +25,7 @@ public class TransformationService : AbstractTransformationService
     }
 
     [Subscribe(PostOrder.First)]
-    public static void OnMessageReceived(MessageSentEvent @event)
+    public static void OnMessageSent(MessageSentEvent @event)
     {
         if (!Plugin.SupportedVersions.Contains(@event.Player.ProtocolVersion))
             return;
