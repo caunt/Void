@@ -20,7 +20,7 @@ public static class MinecraftPacketIdPluginsRegistryExtensions
         if (!registriesHolder.TryGetPlugin(packetType, out var plugin))
             return false;
 
-        if (!transformationsHolder.Get(plugin).TryGetTransformations(packetType, transformationType, out transformations))
+        if (!transformationsHolder.Get(plugin).TryGetFor(packetType, transformationType, out transformations))
             return false;
 
         return true;

@@ -7,9 +7,9 @@ namespace Void.Minecraft.Network.Registries.Transformations.Extensions;
 
 public static class MinecraftPacketTransformationsExtensions
 {
-    public static void RegisterTransformations<T>(this IMinecraftPacketTransformationsRegistry registry, ProtocolVersion protocolVersion, params MinecraftPacketTransformationMapping[] mappings) where T : IMinecraftPacket
+    public static void RegisterTransformations<T>(this IMinecraftPacketTransformationsRegistry registry, ProtocolVersion protocolVersion, params IEnumerable<MinecraftPacketTransformationMapping> mappings) where T : IMinecraftPacket
     {
-        registry.AddTransformations(new Dictionary<MinecraftPacketTransformationMapping[], Type>()
+        registry.Add(new Dictionary<IEnumerable<MinecraftPacketTransformationMapping>, Type>()
         {
             { mappings, typeof(T) }
         }, protocolVersion);

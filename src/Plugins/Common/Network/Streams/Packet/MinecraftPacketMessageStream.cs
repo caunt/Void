@@ -294,7 +294,7 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
 
     private bool TryGetTransformations(Type packetType, TransformationType type, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformations)
     {
-        if (Registries.PacketTransformationsSystem.All.TryGetTransformations(packetType, type, out transformations))
+        if (Registries.PacketTransformationsSystem.All.TryGetFor(packetType, type, out transformations))
             return true;
 
         if (Registries.PacketIdPlugins.TryGetTransformations(Registries.PacketTransformationsPlugins, packetType, type, out transformations))

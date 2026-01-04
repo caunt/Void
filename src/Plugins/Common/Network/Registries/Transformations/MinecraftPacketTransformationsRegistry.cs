@@ -31,20 +31,20 @@ public class MinecraftPacketTransformationsRegistry : IMinecraftPacketTransforma
         return GetMappings(transformationType).Keys.Any(packetType.IsAssignableFrom);
     }
 
-    public bool TryGetTransformations(Type packetType, TransformationType type, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformation)
+    public bool TryGetFor(Type packetType, TransformationType type, [MaybeNullWhen(false)] out MinecraftPacketTransformation[] transformation)
     {
         return GetMappings(type).TryGetValue(packetType, out transformation);
     }
 
-    public IMinecraftPacketTransformationsRegistry ReplaceTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> transformations, ProtocolVersion protocolVersion)
+    public IMinecraftPacketTransformationsRegistry Replace(IReadOnlyDictionary<IEnumerable<MinecraftPacketTransformationMapping>, Type> transformations, ProtocolVersion protocolVersion)
     {
         Clear();
-        AddTransformations(transformations, protocolVersion);
+        Add(transformations, protocolVersion);
 
         return this;
     }
 
-    public IMinecraftPacketTransformationsRegistry AddTransformations(IReadOnlyDictionary<MinecraftPacketTransformationMapping[], Type> transformationMappings, ProtocolVersion protocolVersion)
+    public IMinecraftPacketTransformationsRegistry Add(IReadOnlyDictionary<IEnumerable<MinecraftPacketTransformationMapping>, Type> transformationMappings, ProtocolVersion protocolVersion)
     {
         foreach (var (mappings, type) in transformationMappings)
         {

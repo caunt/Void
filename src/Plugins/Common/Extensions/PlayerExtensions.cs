@@ -19,7 +19,7 @@ namespace Void.Proxy.Plugins.Common.Extensions;
 
 public static class PlayerExtensions
 {
-    public static void RegisterSystemTransformations<T>(this IPlayer player, params MinecraftPacketTransformationMapping[] mappings) where T : IMinecraftPacket
+    public static void RegisterSystemTransformations<T>(this IPlayer player, params IEnumerable<MinecraftPacketTransformationMapping> mappings) where T : IMinecraftPacket
     {
         var link = player.Link ?? throw new InvalidOperationException("Cannot register packet transformations without a link.");
         link.PlayerChannel.MinecraftRegistries.PacketTransformationsSystem.All.RegisterTransformations<T>(player.ProtocolVersion, mappings);
