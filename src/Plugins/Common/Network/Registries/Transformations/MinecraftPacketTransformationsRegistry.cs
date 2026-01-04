@@ -68,6 +68,9 @@ public class MinecraftPacketTransformationsRegistry : IMinecraftPacketTransforma
             var upgradeTransformers = mappingsToUpgrade.Select(i => i.Transformation);
             var downgradeTransformers = mappingsToDowngrade.Select(i => i.Transformation);
 
+            if (!upgradeTransformers.Any() && !downgradeTransformers.Any())
+                continue;
+
             if (!_upgradeMappings.TryAdd(type, [.. upgradeTransformers]))
                 throw new ArgumentException($"Upgrade transformations for {type} are already registered");
 
