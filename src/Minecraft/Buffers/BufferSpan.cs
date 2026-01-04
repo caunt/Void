@@ -68,7 +68,7 @@ public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>
             SeekOrigin.Begin => offset,
             SeekOrigin.Current => _position + offset,
             SeekOrigin.End => _source.Length + offset,
-            _ => throw new ArgumentException("Invalid SeekOrigin", nameof(origin)),
+            _ => throw new ArgumentException($"Invalid SeekOrigin value: {origin}. Expected Begin, Current, or End.", nameof(origin)),
         };
 
         if (position < 0)

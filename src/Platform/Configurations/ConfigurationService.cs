@@ -72,7 +72,7 @@ public class ConfigurationService(ILogger<ConfigurationService> logger, IPluginS
     {
         // Tomlet constraint
         if (configurationType.Attributes.HasFlag(TypeAttributes.Sealed) || (!configurationType.Attributes.HasFlag(TypeAttributes.Public) && !configurationType.Attributes.HasFlag(TypeAttributes.NestedPublic)))
-            throw new ArgumentException($"{configurationType} is either sealed or not public");
+            throw new ArgumentException($"Configuration type '{configurationType.Name}' is either sealed or not public. Tomlet requires public, non-sealed types for serialization.");
 
         var fileName = GetFileName(key, configurationType);
 
