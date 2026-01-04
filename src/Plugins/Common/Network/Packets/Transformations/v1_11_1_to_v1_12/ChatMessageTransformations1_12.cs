@@ -7,16 +7,15 @@ namespace Void.Proxy.Plugins.Common.Network.Packets.Transformations.v1_11_1_to_v
 
 public record ChatMessageTransformations1_12() : BaseTransformations(ProtocolVersion.MINECRAFT_1_11_1, ProtocolVersion.MINECRAFT_1_12)
 {
-    public override MinecraftPacketTransformationMapping[] Mappings => [
-        new(OlderVersion, NewerVersion, wrapper =>
-        {
-            ComponentJsonTransformers.Passthrough_v1_11_1_to_v1_12(wrapper);
-            wrapper.Passthrough<ByteProperty>();
-        }),
-        new(NewerVersion, OlderVersion, wrapper =>
-        {
-            ComponentJsonTransformers.Passthrough_v1_12_to_v1_11_1(wrapper);
-            wrapper.Passthrough<ByteProperty>();
-        })
-    ];
+    public override void Upgrade(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        ComponentJsonTransformers.Passthrough_v1_11_1_to_v1_12(wrapper);
+        wrapper.Passthrough<ByteProperty>();
+    }
+
+    public override void Downgrade(IMinecraftBinaryPacketWrapper wrapper)
+    {
+        ComponentJsonTransformers.Passthrough_v1_12_to_v1_11_1(wrapper);
+        wrapper.Passthrough<ByteProperty>();
+    }
 }
