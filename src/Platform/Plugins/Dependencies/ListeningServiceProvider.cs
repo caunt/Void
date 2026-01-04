@@ -1,4 +1,5 @@
-﻿using Void.Proxy.Api.Events;
+﻿using DryIoc;
+using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Services;
 
 namespace Void.Proxy.Plugins.Dependencies;
@@ -19,11 +20,18 @@ public class ListeningServiceProvider(IServiceProvider source, CancellationToken
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var instance = source.GetService(serviceType);
+        try
+        {
+            var instance = source.GetService(serviceType);
 
-        if (instance is IEventListener listener)
-            _events.RegisterListeners(cancellationToken, listener);
+            if (instance is IEventListener listener)
+                _events.RegisterListeners(cancellationToken, listener);
 
-        return instance;
+            return instance;
+        }
+        catch (ContainerException exception) when (exception.Error == Error.ContainerIsDisposed)
+        {
+            throw new ObjectDisposedException(nameof(source));
+        }
     }
 }

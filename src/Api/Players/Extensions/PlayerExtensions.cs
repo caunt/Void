@@ -23,7 +23,7 @@ public static class PlayerExtensions
         {
             get
             {
-                var links = player.Context.Services.GetRequiredService<ILinkService>();
+                var links = player.GetRequiredService<ILinkService>();
 
                 if (!links.TryGetLink(player, out var link))
                     return null;
@@ -41,7 +41,7 @@ public static class PlayerExtensions
         [Obsolete("Use property Link instead")]
         public bool TryGetLink([MaybeNullWhen(false)] out ILink link)
         {
-            var links = player.Context.Services.GetRequiredService<ILinkService>();
+            var links = player.GetRequiredService<ILinkService>();
             return links.TryGetLink(player, out link);
         }
 
@@ -160,7 +160,7 @@ public static class PlayerExtensions
             if (player.Context.IsDisposed)
                 return;
 
-            var players = player.Context.Services.GetRequiredService<IPlayerService>();
+            var players = player.GetRequiredService<IPlayerService>();
             await players.KickPlayerAsync(player, text, cancellationToken);
 
             if (!player.Context.IsDisposed)
@@ -178,7 +178,7 @@ public static class PlayerExtensions
             var channelBuilder = await player.GetChannelBuilderAsync(cancellationToken);
             var channel = await channelBuilder.BuildServerChannelAsync(player, server, cancellationToken);
 
-            var events = player.Context.Services.GetRequiredService<IEventService>();
+            var events = player.GetRequiredService<IEventService>();
             await events.ThrowAsync(new ChannelCreatedEvent(player, Network.Side.Server, channel), cancellationToken);
 
             return channel;
@@ -194,7 +194,7 @@ public static class PlayerExtensions
 
             player.Context.Channel = channel;
 
-            var events = player.Context.Services.GetRequiredService<IEventService>();
+            var events = player.GetRequiredService<IEventService>();
             await events.ThrowAsync(new ChannelCreatedEvent(player, Network.Side.Client, player.Context.Channel), cancellationToken);
 
             return player.Context.Channel;
@@ -202,10 +202,22 @@ public static class PlayerExtensions
 
         internal async ValueTask<IChannelBuilderService> GetChannelBuilderAsync(CancellationToken cancellationToken = default)
         {
-            var channelBuilder = player.Context.Services.GetRequiredService<IChannelBuilderService>();
+            var channelBuilder = player.GetRequiredService<IChannelBuilderService>();
             await channelBuilder.SearchChannelBuilderAsync(player, cancellationToken);
 
             return channelBuilder;
+        }
+
+        private TService GetRequiredService<TService>() where TService : notnull
+        {
+            try
+            {
+                return player.Context.Services.GetRequiredService<TService>();
+            }
+            catch (ObjectDisposedException exception)
+            {
+                throw new ObjectDisposedException("Player is not online anymore", exception);
+            }
         }
     }
 }
