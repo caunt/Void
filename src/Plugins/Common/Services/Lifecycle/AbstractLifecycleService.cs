@@ -1,10 +1,12 @@
-﻿using Void.Minecraft.Components.Text;
+﻿using Microsoft.Extensions.Logging;
+using Void.Minecraft.Components.Text;
 using Void.Minecraft.Events;
 using Void.Minecraft.Events.Chat;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Links;
+using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
@@ -13,12 +15,14 @@ using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Events;
+using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
+using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 using Void.Proxy.Plugins.Common.Players;
 using Void.Proxy.Plugins.Common.Players.Contexts;
 
 namespace Void.Proxy.Plugins.Common.Services.Lifecycle;
 
-public abstract class AbstractLifecycleService(IEventService events) : IPluginCommonService
+public abstract class AbstractLifecycleService(ILogger logger, IEventService events) : IPluginCommonService
 {
     [Subscribe]
     public static void OnPlayerConnecting(PlayerConnectingEvent @event)
@@ -27,7 +31,7 @@ public abstract class AbstractLifecycleService(IEventService events) : IPluginCo
     }
 
     [Subscribe]
-    public async ValueTask OnPhaseChanged(PhaseChangedEvent @event)
+    public async ValueTask OnPhaseChanged(PhaseChangedEvent @event, CancellationToken cancellationToken)
     {
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
@@ -42,11 +46,11 @@ public abstract class AbstractLifecycleService(IEventService events) : IPluginCo
             return;
 
         var link = @event.Player.Link ?? throw new InvalidOperationException($"Player has no link assigned in {nameof(Phase.Play)} phase.");
-        await events.ThrowAsync(new PlayerJoinedServerEvent(link.Player, link.Server, link));
+        await events.ThrowAsync(new PlayerJoinedServerEvent(link.Player, link.Server, link), cancellationToken);
     }
 
     [Subscribe]
-    public async ValueTask OnLinkStarted(LinkStartedEvent @event)
+    public async ValueTask OnLinkStarted(LinkStartedEvent @event, CancellationToken cancellationToken)
     {
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
@@ -54,7 +58,19 @@ public abstract class AbstractLifecycleService(IEventService events) : IPluginCo
         if (@event.Player.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_20_2)
             return;
 
-        await events.ThrowAsync(new PlayerJoinedServerEvent(@event.Link.Player, @event.Link.Server, @event.Link));
+        await events.ThrowAsync(new PlayerJoinedServerEvent(@event.Link.Player, @event.Link.Server, @event.Link), cancellationToken);
+    }
+
+    [Subscribe]
+    public async ValueTask OnMessageReceived(MessageReceivedEvent @event, CancellationToken cancellationToken)
+    {
+        switch (@event.Message)
+        {
+            case KeepAliveRequestPacket:
+            case KeepAliveResponsePacket:
+                logger.LogDebug("Received keep alive {Message} from {Player}", @event.Message, @event.Player);
+                break;
+        }
     }
 
     [Subscribe]

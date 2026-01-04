@@ -4,7 +4,7 @@ using Void.Minecraft.Network.Messages.Packets;
 
 namespace Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
 
-public class KeepAliveRequestPacket : IMinecraftServerboundPacket<KeepAliveRequestPacket>
+public class KeepAliveRequestPacket : IMinecraftClientboundPacket<KeepAliveRequestPacket>
 {
     public long Id { get; set; }
 

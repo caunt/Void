@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Components.Text;
+﻿using Microsoft.Extensions.Logging;
+using Void.Minecraft.Components.Text;
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
@@ -13,7 +14,7 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Clientbo
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Lifecycle;
 
-public class LifecycleService(IEventService events) : AbstractLifecycleService(events)
+public class LifecycleService(ILogger<LifecycleService> logger, IEventService events) : AbstractLifecycleService(logger, events)
 {
     protected override async ValueTask EnableCompressionAsync(ILink link, CancellationToken cancellationToken)
     {

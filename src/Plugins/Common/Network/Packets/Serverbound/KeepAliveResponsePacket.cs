@@ -1,5 +1,25 @@
-﻿using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
+﻿using Void.Minecraft.Buffers;
+using Void.Minecraft.Network;
+using Void.Minecraft.Network.Messages.Packets;
 
 namespace Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 
-public class KeepAliveResponsePacket : KeepAliveRequestPacket;
+public class KeepAliveResponsePacket : IMinecraftServerboundPacket<KeepAliveResponsePacket>
+{
+    public long Id { get; set; }
+
+    public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
+    {
+        buffer.WriteLong(Id);
+    }
+
+    public static KeepAliveResponsePacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
+    {
+        return new KeepAliveResponsePacket { Id = buffer.ReadLong() };
+    }
+
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+    }
+}
