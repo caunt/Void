@@ -15,7 +15,7 @@ namespace Void.Minecraft.Nbt;
 public abstract class Tag : IEquatable<Tag>, ICloneable
 {
     /// <summary>
-    /// Text applied in a pretty-print sting when a tag has no defined <see cref="Name"/> value.
+    /// Text applied in a pretty-print string when a tag has no defined <see cref="Name"/> value.
     /// </summary>
     protected const string NoName = "None";
 
