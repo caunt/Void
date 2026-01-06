@@ -18,9 +18,9 @@ var timeout = TimeSpan.FromMinutes(30);
 IDockerMinecraftServer[] servers =
 [
     // ProtocolVersion.Latest
-    new PaperServer(version, 25566),
-    new PaperServer(version, 25567),
-    new PaperServer(version, 25568)
+    new VanillaServer(version, 25566),
+    new VanillaServer(version, 25567),
+    new VanillaServer(version, 25568)
     // ProtocolVersion.MINECRAFT_1_21
     // new NeoForgeServer(version, 25566, ["https://mediafilez.forgecdn.net/files/7039/43/refinedstorage-neoforge-2.0.0.jar"]),
     // new NeoForgeServer(version, 25567, ["https://mediafilez.forgecdn.net/files/7039/43/refinedstorage-neoforge-2.0.0.jar"]),
@@ -325,6 +325,12 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
             var value => value.VersionIntroducedIn,
         };
     }
+}
+
+record VanillaServer(ProtocolVersion ProtocolVersion, int Port) : IDockerMinecraftServer
+{
+    public string ItzgType => "VANILLA";
+    public Dictionary<string, string> EnvironmentVariables => [];
 }
 
 record PaperServer(ProtocolVersion ProtocolVersion, int Port) : IDockerMinecraftServer
