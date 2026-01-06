@@ -59,7 +59,7 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
             return;
 
         if (settings is null)
-            throw new Exception("Settings are not initialized yet");
+            throw new Exception("ForwardingService settings have not been initialized; ensure configuration is loaded before handling messages.");
 
         if (!settings.Enabled)
             return;
