@@ -7,6 +7,11 @@ on:
         description: What to implement
         required: true
         type: string
+      model:
+        description: OpenAI API Model
+        required: true
+        default: codex-mini-latest
+        type: string
       base_branch:
         description: Branch to branch off from
         required: true
@@ -28,7 +33,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: latest
 
@@ -41,7 +46,7 @@ jobs:
         run: printenv OPENAI_API_KEY | codex login --with-api-key
 
       - name: Implement change with Codex
-        run: codex exec --full-auto "${{ inputs.task }}"
+        run: codex exec --ask-for-approval never --sandbox danger-full-access --model "${{ inputs.model }}" "${{ inputs.task }}"
 
       - name: Commit changes and open pull request
         env:
