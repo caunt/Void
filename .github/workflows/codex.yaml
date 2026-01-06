@@ -46,7 +46,7 @@ jobs:
         run: printenv OPENAI_API_KEY | codex login --with-api-key
 
       - name: Implement change with Codex
-        run: codex --yolo --model "${{ inputs.model }}" exec "${{ inputs.task }}"
+        run: codex exec --yolo --model "${{ inputs.model }}" "${{ inputs.task }}"
 
       - name: Commit changes and open pull request
         env:
