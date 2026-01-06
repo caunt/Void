@@ -46,7 +46,7 @@ jobs:
         run: printenv OPENAI_API_KEY | codex login --with-api-key
 
       - name: Implement change with Codex
-        run: codex exec --ask-for-approval never --sandbox danger-full-access --model "${{ inputs.model }}" "${{ inputs.task }}"
+        run: codex --ask-for-approval never --sandbox danger-full-access --model "${{ inputs.model }}" exec "${{ inputs.task }}"
 
       - name: Commit changes and open pull request
         env:
