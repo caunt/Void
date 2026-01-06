@@ -46,7 +46,7 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
     public static Uuid Parse(params int[] parts)
     {
         if (parts.Length is not 4)
-            throw new ArgumentException("Arguments size should be 4", nameof(parts));
+            throw new ArgumentException($"Expected 4 parts but got {parts.Length}. A UUID requires exactly 4 integer parts.", nameof(parts));
 
         Span<byte> m0Bytes = stackalloc byte[4]; // m0: first 4 bytes (little-endian)
         BinaryPrimitives.WriteInt32LittleEndian(m0Bytes, parts[0]);

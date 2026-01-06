@@ -23,7 +23,7 @@ on:
         value: ${{ jobs.release-please.outputs.tag_name }}
 
 env:
-  DOTNET_VERSION: ${{ github.event.inputs.dotnet-version || join(fromJSON('["9.0.x","10.0.x"]'), '\n') }}
+  DOTNET_VERSION: ${{ github.event.inputs.dotnet-version || join(fromJSON('["10.0.x"]'), '\n') }}
 
 jobs:
   dev:

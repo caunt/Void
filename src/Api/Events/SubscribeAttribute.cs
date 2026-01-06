@@ -18,12 +18,12 @@ public class SubscribeAttribute(PostOrder order = PostOrder.Normal, bool bypassS
         var parameters = methodInfo.GetParameters();
 
         if (parameters.Length is < 1 or > 2)
-            throw new ArgumentException("The method must have 1 or 2 parameters.");
+            throw new ArgumentException($"The method '{methodInfo.Name}' must have 1 or 2 parameters, but has {parameters.Length}.");
 
         if (!parameters[0].ParameterType.IsAssignableTo(typeof(IEvent)))
-            throw new ArgumentException("The first parameter must be of type IEvent.");
+            throw new ArgumentException($"The method '{methodInfo.Name}' first parameter must be of type IEvent, but is {parameters[0].ParameterType.Name}.");
 
         if (parameters.Length == 2 && !parameters[1].ParameterType.IsAssignableTo(typeof(CancellationToken)))
-            throw new ArgumentException("The second parameter must be of type CancellationToken.");
+            throw new ArgumentException($"The method '{methodInfo.Name}' second parameter must be of type CancellationToken, but is {parameters[1].ParameterType.Name}.");
     }
 }

@@ -38,22 +38,43 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
-      # - name: Setup DocFX
-      #   run: dotnet tool update -g docfx
-      - name: Install DocFX nightly (GitHub Packages)
-        shell: pwsh
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_READ_PACKAGES }}
+      # Alternative: Install DocFX nightly from GitHub Packages (commented out)
+      # - name: Install DocFX nightly (GitHub Packages)
+      #   shell: pwsh
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.PAT_READ_PACKAGES }}
+      #   run: |
+      #     echo $env:GITHUB_TOKEN | gh auth login --with-token
+      #     gh auth refresh -h github.com -s read:packages
+      #
+      #     $latestDocfxVersion = gh api /orgs/dotnet/packages/nuget/docfx/versions --jq '.[0].name'
+      #     $docfxDownloadUrl = "https://nuget.pkg.github.com/dotnet/download/docfx/$latestDocfxVersion/$latestDocfxVersion.nupkg"
+      #     $docfxLocalPackageFile = "docfx.$latestDocfxVersion.nupkg"
+      #
+      #     Invoke-RestMethod -Uri $docfxDownloadUrl -OutFile $docfxLocalPackageFile -Headers @{ Authorization = "Bearer $env:GITHUB_TOKEN" }
+      #     dotnet tool update -g docfx --prerelease --source ./
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Clone DocFX repository
         run: |
-          echo $env:GITHUB_TOKEN | gh auth login --with-token
-          gh auth refresh -h github.com -s read:packages
-
-          $latestDocfxVersion = gh api /orgs/dotnet/packages/nuget/docfx/versions --jq '.[0].name'
-          $docfxDownloadUrl = "https://nuget.pkg.github.com/dotnet/download/docfx/$latestDocfxVersion/$latestDocfxVersion.nupkg"
-          $docfxLocalPackageFile = "docfx.$latestDocfxVersion.nupkg"
-
-          Invoke-RestMethod -Uri $docfxDownloadUrl -OutFile $docfxLocalPackageFile -Headers @{ Authorization = "Bearer $env:GITHUB_TOKEN" }
-          dotnet tool update -g docfx --prerelease --source ./
+          git clone https://github.com/dotnet/docfx.git
+          cd docfx
+          git fetch origin refs/pull/10561/head:pr-10561
+          git checkout pr-10561
+      - name: Build DocFX templates
+        run: |
+          cd docfx/templates
+          npm install
+          npm run build
+      - name: Build and pack DocFX
+        run: |
+          cd docfx
+          dotnet build
+          dotnet pack src/docfx/docfx.csproj -c Release -o ./artifacts/nupkg
+      - name: Install DocFX from local package
+        run: dotnet tool install -g docfx --add-source ./docfx/artifacts/nupkg --prerelease
       - name: Build with DocFX
         run: docfx docs/docfx/docfx.json --verbose
         continue-on-error: true
