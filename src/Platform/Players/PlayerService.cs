@@ -142,7 +142,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
     public async ValueTask OnLinkStopped(LinkStoppedEvent @event, CancellationToken cancellationToken)
     {
         // All other reasons should throw a player disconnected event themselves
-        if (@event.Reason is LinkStopReason.PlayerDisconnected)
+        if (@event.Reason is LinkStopReason.PlayerDisconnected or LinkStopReason.ServerDisconnected)
             await events.ThrowAsync(new PlayerDisconnectedEvent(@event.Player), cancellationToken);
 
         if (!@event.Link.PlayerChannel.IsAlive)
@@ -163,7 +163,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
                 return;
 
             if (count > 1)
-                logger.LogWarning("Multiple players disconnected in one event");
+                logger.LogWarning("Multiple instances of same player disconnected at once");
         }
 
         logger.LogInformation("Player {Player} disconnected", @event.Player);
