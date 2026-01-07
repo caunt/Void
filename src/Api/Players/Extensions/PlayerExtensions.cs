@@ -153,18 +153,8 @@ public static class PlayerExtensions
 
         public async ValueTask KickAsync(string text, CancellationToken cancellationToken = default)
         {
-            // Synchronize in case two threads try to kick the same player at the same time
-            using var _ = await _lock.LockAsync(cancellationToken);
-
-            // Might be called twice, so just handle first one
-            if (player.Context.IsDisposed)
-                return;
-
-            var players = player.GetRequiredService<IPlayerService>();
-            await players.KickPlayerAsync(player, text, cancellationToken);
-
-            if (!player.Context.IsDisposed)
-                throw new Exception("Player context should be disposed after kick");
+            using var disposable = await _lock.LockAsync(cancellationToken);
+            await player.GetRequiredService<IPlayerService>().KickPlayerAsync(player, text, cancellationToken);
         }
 
         public async ValueTask<bool> IsProtocolSupportedAsync(CancellationToken cancellationToken = default)
