@@ -13,6 +13,7 @@
 		<ProjectReference Include="..\..\Minecraft\Void.Minecraft.csproj" />
 		<PackageReference Include="SharpZipLib" Version="1.4.2" />
 		<PackageReference Include="Ionic.Zlib.Core" Version="1.0.0" />
+		<PackageReference Include="ThrottleDebounce" Version="3.0.0-beta5" />
 	</ItemGroup>
 
 </Project>
