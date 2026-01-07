@@ -63,7 +63,7 @@ public class CommandService(ILogger<ICommandService> logger, IEventService event
                 {
                     return await _dispatcher.ExecuteAsync(results, cancellationToken);
                 }
-                catch (StreamClosedException)
+                catch (StreamException)
                 {
                     // Ignore
                     return int.MinValue;

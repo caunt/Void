@@ -1,18 +1,26 @@
 ﻿using System.Net.Sockets;
+using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Network.Streams.Manual.Network;
 
 namespace Void.Proxy.Plugins.Common.Network.Streams.Network;
 
-public class SimpleNetworkStream(NetworkStream baseStream) : INetworkStream
+public class SimpleNetworkStream(NetworkStream baseStream, TimeSpan writeTimeout, TimeSpan readTimeout) : INetworkStream
 {
     private Memory<byte> _nextBuffer = Memory<byte>.Empty;
     private bool _isClosed = false;
 
     public NetworkStream BaseStream => baseStream;
+    public TimeSpan WriteTimeout => writeTimeout;
+    public TimeSpan ReadTimeout => readTimeout;
     public bool CanRead => BaseStream.CanRead;
     public bool CanWrite => BaseStream.CanWrite;
     public bool IsAlive => IsAliveComplex();
+
+    public SimpleNetworkStream(NetworkStream baseStream) : this(baseStream, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(15))
+    {
+        // Intentionally left blank
+    }
 
     public void PrependBuffer(Memory<byte> buffer)
     {
@@ -36,16 +44,19 @@ public class SimpleNetworkStream(NetworkStream baseStream) : INetworkStream
 
     public async ValueTask<int> ReadAsync(Memory<byte> memory, CancellationToken cancellationToken = default)
     {
-        if (_nextBuffer is not { Length: > 0 })
+        return await ExecuteWithTimeout(async (cancellationToken) =>
         {
-            var read = await baseStream.ReadAsync(memory, cancellationToken);
-            return read > 0 ? read : throw new StreamClosedException();
-        }
+            if (_nextBuffer is not { Length: > 0 })
+            {
+                var read = await baseStream.ReadAsync(memory, cancellationToken);
+                return read > 0 ? read : throw new StreamClosedException();
+            }
 
-        var length = Math.Min(_nextBuffer.Length, memory.Length);
-        _nextBuffer[..length].CopyTo(memory);
-        _nextBuffer = _nextBuffer[length..];
-        return length;
+            var length = Math.Min(_nextBuffer.Length, memory.Length);
+            _nextBuffer[..length].CopyTo(memory);
+            _nextBuffer = _nextBuffer[length..];
+            return length;
+        }, Operation.Read, cancellationToken);
     }
 
     public void ReadExactly(Span<byte> span)
@@ -73,25 +84,28 @@ public class SimpleNetworkStream(NetworkStream baseStream) : INetworkStream
 
     public async ValueTask ReadExactlyAsync(Memory<byte> memory, CancellationToken cancellationToken = default)
     {
-        if (_nextBuffer.Length >= memory.Length)
+        await ExecuteWithTimeout(async (cancellationToken) =>
         {
-            _nextBuffer[..memory.Length].CopyTo(memory);
-            _nextBuffer = _nextBuffer[memory.Length..];
-        }
-        else
-        {
-            try
+            if (_nextBuffer.Length >= memory.Length)
             {
-                var length = _nextBuffer.Length;
-                _nextBuffer.CopyTo(memory[..length]);
-                _nextBuffer = Memory<byte>.Empty;
-                await baseStream.ReadExactlyAsync(memory[length..], cancellationToken);
+                _nextBuffer[..memory.Length].CopyTo(memory);
+                _nextBuffer = _nextBuffer[memory.Length..];
             }
-            catch (Exception exception) when (exception is EndOfStreamException or IOException { InnerException: SocketException } or ObjectDisposedException)
+            else
             {
-                throw new StreamClosedException();
+                try
+                {
+                    var length = _nextBuffer.Length;
+                    _nextBuffer.CopyTo(memory[..length]);
+                    _nextBuffer = Memory<byte>.Empty;
+                    await baseStream.ReadExactlyAsync(memory[length..], cancellationToken);
+                }
+                catch (Exception exception) when (exception is EndOfStreamException or IOException { InnerException: SocketException } or ObjectDisposedException)
+                {
+                    throw new StreamClosedException();
+                }
             }
-        }
+        }, Operation.Read, cancellationToken);
     }
 
     public void Write(ReadOnlySpan<byte> span)
@@ -108,14 +122,17 @@ public class SimpleNetworkStream(NetworkStream baseStream) : INetworkStream
 
     public async ValueTask WriteAsync(ReadOnlyMemory<byte> memory, CancellationToken cancellationToken = default)
     {
-        try
+        await ExecuteWithTimeout(async (cancellationToken) =>
         {
-            await baseStream.WriteAsync(memory, cancellationToken);
-        }
-        catch (Exception exception) when (exception is EndOfStreamException or IOException { InnerException: SocketException } or ObjectDisposedException)
-        {
-            throw new StreamClosedException();
-        }
+            try
+            {
+                await baseStream.WriteAsync(memory, cancellationToken);
+            }
+            catch (Exception exception) when (exception is EndOfStreamException or IOException { InnerException: SocketException } or ObjectDisposedException)
+            {
+                throw new StreamClosedException();
+            }
+        }, Operation.Write, cancellationToken);
     }
 
     public void Flush()
@@ -178,5 +195,31 @@ public class SimpleNetworkStream(NetworkStream baseStream) : INetworkStream
             return false;
 
         return true;
+    }
+
+    private async ValueTask ExecuteWithTimeout(Func<CancellationToken, ValueTask> function, Operation operation, CancellationToken cancellationToken)
+    {
+        await ExecuteWithTimeout<int>(async linkedCancellationToken =>
+        {
+            await function(linkedCancellationToken);
+            return 0;
+        }, operation, cancellationToken);
+    }
+
+    private async ValueTask<TResult> ExecuteWithTimeout<TResult>(Func<CancellationToken, ValueTask<TResult>> function, Operation operation, CancellationToken cancellationToken)
+    {
+        using var operationCancellationTokenSource = new CancellationTokenSource();
+        operationCancellationTokenSource.CancelAfter(operation is Operation.Read ? readTimeout : writeTimeout);
+
+        using var linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, operationCancellationTokenSource.Token);
+
+        try
+        {
+            return await function(linkedCancellationTokenSource.Token);
+        }
+        catch (OperationCanceledException) when (operationCancellationTokenSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            throw new StreamTimeoutException(operation);
+        }
     }
 }

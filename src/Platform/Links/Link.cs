@@ -153,7 +153,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
                 if (cancelled)
                     continue;
             }
-            catch (Exception exception) when (exception is StreamClosedException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
+            catch (Exception exception) when (exception is StreamException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
             {
                 _stopReason = direction switch
                 {
@@ -178,7 +178,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
                 await events.ThrowAsync(new MessageSentEvent(sourceSide, Side.Proxy, destinationSide, direction, message, this, Player), cancellationToken);
             }
-            catch (Exception exception) when (exception is StreamClosedException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
+            catch (Exception exception) when (exception is StreamException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
             {
                 _stopReason = direction switch
                 {

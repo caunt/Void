@@ -61,7 +61,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
         }
         catch (Exception exception)
         {
-            if (exception is StreamClosedException)
+            if (exception is StreamException)
                 return;
 
             logger.LogError(exception, "Client {RemoteEndPoint} cannot be proxied", player.RemoteEndPoint);

@@ -110,7 +110,7 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
                 return ConnectionResult.Connected;
             }
         }
-        catch (StreamClosedException)
+        catch (StreamException)
         {
             throw;
         }
