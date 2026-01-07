@@ -107,8 +107,9 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
 
     public IServiceProvider CreatePlayerComposite(IPlayer player)
     {
+        var playerHashCode = player.GetStableHashCode();
         var composite = CreateCompositeContainer($"[{player}] Player Composite",
-            _assemblyPlayerContainers.SelectMany(pair => pair.Value.Where(pair => pair.Key == player.GetStableHashCode()).Select(pair => pair.Value))
+            _assemblyPlayerContainers.SelectMany(pair => pair.Value.Where(pair => pair.Key == playerHashCode).Select(pair => pair.Value))
             .Append(container)
             .Concat(_assemblyContainers.Values));
 
@@ -236,15 +237,17 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
             _assemblyPlayerContainers.Add(assembly, playerContainers);
         }
 
-        if (!playerContainers.TryGetValue(player.GetStableHashCode(), out var playerContainer))
+        var playerHashCode = player.GetStableHashCode();
+
+        if (!playerContainers.TryGetValue(playerHashCode, out var playerContainer))
         {
             playerContainer = CreateCompositeContainer($"[{assembly.GetName().Name}/{player}] Assembly Player Composite", _assemblyPlayerContainers.Values
-                .SelectMany(playersContainers => playersContainers.Where(pair => pair.Key == player.GetStableHashCode()).Select(pair => pair.Value))
+                .SelectMany(playersContainers => playersContainers.Where(pair => pair.Key == playerHashCode).Select(pair => pair.Value))
                 .Append(container)
                 .Concat(_assemblyContainers.Values));
 
             playerContainer.RegisterInstance(player.Context, setup: Setup.With(preventDisposal: true));
-            playerContainers.Add(player.GetStableHashCode(), playerContainer);
+            playerContainers.Add(playerHashCode, playerContainer);
         }
 
         // Ensure all scoped services are registered in player container
