@@ -33,7 +33,7 @@ public static class PlayerExtensions
 
         var registry = stream.Registries.PacketIdSystem;
 
-        // if registry contains one of Login state packet
+        // if registry contains one of Login state packets
         return registry.Contains<LoginDisconnectPacket>();
     }
 }
