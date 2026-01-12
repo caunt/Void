@@ -1,5 +1,70 @@
 # Changelog
 
+## [0.5.6](https://github.com/caunt/Void/compare/v0.5.5...v0.5.6) (2026-01-12)
+
+
+### Features
+
+* **api:** ✨ added player name property ([361cb9b](https://github.com/caunt/Void/commit/361cb9b08d0abdc860695f6d97999172c7c02b05))
+* **buffer:** ✨ added text components json serialization support for network buffers ([0edb11f](https://github.com/caunt/Void/commit/0edb11fe8ed7f1a2899b126a7af342dcfad136dc))
+* **buffer:** ✨ unified component (de)serialization API ([c840c21](https://github.com/caunt/Void/commit/c840c21e7cc01dc1d6b6a949f8b40d17870a1a21))
+* **buffers:** ✨ added support for large buffer indices ([2a96fb5](https://github.com/caunt/Void/commit/2a96fb5da5ffa1841cc1187fc26a2a79929d8a6c))
+* **components:** ✨ added more control over tag name serialization ([058f8e0](https://github.com/caunt/Void/commit/058f8e006b00906b9a42302d80cf61862249c5a1))
+* **components:** ✨ added support for literal content type ([8518d28](https://github.com/caunt/Void/commit/8518d2888af1970a7673705e9fa44c4a81329cf6))
+* **core:** ✨ migrate some APIs to extension properties ([51ee50d](https://github.com/caunt/Void/commit/51ee50d205026aea1040b7638a160a3f50d05d02))
+* **events:** ✨ added PlayerJoinedServerEvent when both sides in Play phase ([4528dae](https://github.com/caunt/Void/commit/4528daeefeb571fd345e22bdb7c257e8e7297ec3))
+* **extensions:** ✨ added flexible packet transformation API ([cd8cb6a](https://github.com/caunt/Void/commit/cd8cb6a2cdae08a87d49e3493703736fb48fe1f5))
+* **lifecycle:** ✨ added keep alive tracking and timeouts ([1be6f6f](https://github.com/caunt/Void/commit/1be6f6f0e7adb091f9edadc205c4876b29c210b7))
+* **nbt:** ✨ added TryGetValue method to NbtCompound ([bceed05](https://github.com/caunt/Void/commit/bceed05cead311c14fb8f0bee21e0eb47bf0d60b))
+* **nbt:** ✨ integrated archived Eric Freed's project SharpNBT ([91356b3](https://github.com/caunt/Void/commit/91356b3210957ce9e56ffd7dcd5a4613d07898c7))
+* **network:** ♻️ centralized packet transformation registration ([8ff8dcd](https://github.com/caunt/Void/commit/8ff8dcdbab9c29296bd0a78cb612ec172bae4d8b))
+* **network:** ✨ centralized packet id definitions ([682db46](https://github.com/caunt/Void/commit/682db46c60377cca1531d4b830e829aa1d18ac7f))
+* **network:** ✨ implemented stream timeouts ([ad0253f](https://github.com/caunt/Void/commit/ad0253f9047c1972994f03e4f39ddf0f14aa0a40))
+* **properties:** ✨ added more parsing capabilities ([f1bd643](https://github.com/caunt/Void/commit/f1bd643eb9d38de3e8bb18f9ea7611619b411316))
+* **properties:** ✨ improved JSON serialization flexibility ([48ad114](https://github.com/caunt/Void/commit/48ad1146d436d63781d79865d5174ab1347da382))
+* **serializer:** ✨ improved NBT tag type safety ([8e77609](https://github.com/caunt/Void/commit/8e776093fcc40f44abdea00023f3f96f8041921e))
+
+
+### Bug Fixes
+
+* **api:** 🐛 improved error handling and logging ([5bf37e9](https://github.com/caunt/Void/commit/5bf37e98c764dc8abdf647b08980c49924c8d02f))
+* **auth:** 🐛 improved error handling for early closing connections ([873550e](https://github.com/caunt/Void/commit/873550ea98e08e3e354de5d193252b63bb8ae45d))
+* **buffer:** 🐛 changed default value of writeName parameter to false for components ([756d97e](https://github.com/caunt/Void/commit/756d97e35aca6c78973772969a02e87c90c47159))
+* **buffers:** 🐛 standardize buffer exception parameter order ([989a9e1](https://github.com/caunt/Void/commit/989a9e15130b6a7b4ea849039801604f743a95a5))
+* **buffers:** 🛑 improved end-of-buffer error throwing ([da0ec0e](https://github.com/caunt/Void/commit/da0ec0e9ccca0ad869925a317216ea1fa3f36ed2))
+* **command:** 🐛 improved unknown command handling ([0512629](https://github.com/caunt/Void/commit/0512629c0993cbd2366c20ef63ff5cbed86ce289))
+* **command:** 🐛 prevented deadlock by not awaiting task from itself ([af68f35](https://github.com/caunt/Void/commit/af68f35f00f600f116f41339ae5ccf058a169498))
+* **commands:** 🐛 ignore StreamClosedException in execution ([11ca15d](https://github.com/caunt/Void/commit/11ca15d4cc399a2eb7214d83e3b6c8c42ebc259c))
+* **components:** ♻️ updated components to latest vanilla implementation ([8683da5](https://github.com/caunt/Void/commit/8683da51561f8326392d1fc6c212f69c10fdbd3c))
+* **dependency:** 🐛 use cached player hash for lookups ([c88a0ac](https://github.com/caunt/Void/commit/c88a0acd15d6d13bdc9319b07ab2e329be6ed6c6))
+* **exceptions:** ✨ improve exception messages with better context ([a2d2d98](https://github.com/caunt/Void/commit/a2d2d985883c6f1ce273ba94b4d629fd5347e4e4))
+* **lifecycle:** 🐛 improved keep-alive handling and logging ([44958dc](https://github.com/caunt/Void/commit/44958dc7439c4c42e1bf71e46712358d5dfdfa20))
+* **links:** 🐛 improved error handling in authentication ([74f118f](https://github.com/caunt/Void/commit/74f118fa14e8eb77800df7cc8f56d63c7796dc40))
+* **logging:** 🐛 improved error handling for command executions ([aadae16](https://github.com/caunt/Void/commit/aadae1643357954b5acd817cff2489161cb85c19))
+* **minecraft:** ✏️ correct tag parsing comment typo ([9552d8b](https://github.com/caunt/Void/commit/9552d8b9d36d9054238024e53ee0ad008b51631c))
+* **nbt:** 🐛 allowed empty tag names like vanilla does ([cdf2a88](https://github.com/caunt/Void/commit/cdf2a885fbc4cd0b7d949aed0f53d8f206454303))
+* **nbt:** 🐛 use Fields property instead of Values ([533908b](https://github.com/caunt/Void/commit/533908b99bb5dfe98052a70c66a0448fdda0c6e0))
+* **nbt:** 🧹 removed unsigned type support from public API ([ce8402f](https://github.com/caunt/Void/commit/ce8402f7538f47e35a062394657ba312eba13981))
+* **network:** ♻️ unified disconnect packet definition ([faea054](https://github.com/caunt/Void/commit/faea054f799eaebd3ef45b2b60e4ec8961bd5755))
+* **network:** 🐛 reduced mods logging ([c2f235c](https://github.com/caunt/Void/commit/c2f235c7f11c84b2c9b47f685ef5194461774ba0))
+* **network:** 🛠️ improved packet decoder method lookup ([17c788b](https://github.com/caunt/Void/commit/17c788b980e2bfa86202415dd7842002d1825fc5))
+* **platform:** ♻️ renamed entry point for clarity ([b281541](https://github.com/caunt/Void/commit/b281541de1afdf539332753fa1dd71af8e1d70ae))
+* **platform:** ✏️ correct suppression comment ([3a8d387](https://github.com/caunt/Void/commit/3a8d387c896d289df32b6c943303806650b8d4cd))
+* **player:** 🐛 improved disconnect handling and logging ([6043c95](https://github.com/caunt/Void/commit/6043c95919dfbeb45b716628ccd1c7e725d23e03))
+* **player:** 🐛 improved player disconnect event handling ([84c7db8](https://github.com/caunt/Void/commit/84c7db8e8fa25dd424f38b5f474c5a37ae866670))
+* **player:** 🛠️ simplified player kick logic ([9c3887a](https://github.com/caunt/Void/commit/9c3887a5e32d2e43224269dc46fe7e0180eaf0c5))
+* **protocol:** ✨ added keep-alive packet id mappings for all versions ([3d77afb](https://github.com/caunt/Void/commit/3d77afbeb6286fec81d5d3a1095a9e5d75c1d4ee))
+* **protocolsupport:** ✏️ clarify login disconnect comment ([ceeafe8](https://github.com/caunt/Void/commit/ceeafe8909eceb166ec6007493a880d49c9698be))
+* **protocolsupport:** 📝 correct authentication comment typo ([566b312](https://github.com/caunt/Void/commit/566b31286975b1a362b9be4f026dec172f0bb315))
+* **registry:** 🛠️ skip empty packet transformation mappings ([87a434c](https://github.com/caunt/Void/commit/87a434ccc1c1ca6799604cdedf6864aa49bbaf13))
+* **services:** 🛠️ improved error handling for disposed players context ([de974c8](https://github.com/caunt/Void/commit/de974c81b2cb5411302084b6b85faa99ad37d98e))
+* **transformations:** 🛠️ register on server play phase only ([9bee10b](https://github.com/caunt/Void/commit/9bee10be6766afb9c96ff7268e2b7c2c8c807c39))
+
+
+### Reverts
+
+* **brigadier:** ⏪ revert exception improvements in CommandContext ([5d5536a](https://github.com/caunt/Void/commit/5d5536aeed0722ba42af2123e005cb9b7fab6e6e))
+
 ## [0.5.5](https://github.com/caunt/Void/compare/v0.5.4...v0.5.5) (2025-12-18)
 
 
