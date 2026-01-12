@@ -3,6 +3,7 @@ using Void.Minecraft.Components.Text;
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
+using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Players;
@@ -43,7 +44,7 @@ public class LifecycleService(ILogger<LifecycleService> logger, IEventService ev
 
         if (await player.IsPlayingAsync(cancellationToken))
         {
-            await channel.SendPacketAsync(new PlayDisconnectPacket { Reason = reason }, cancellationToken);
+            await player.SendPacketAsync(new PlayDisconnectPacket { Reason = reason }, cancellationToken);
         }
         else if (await player.IsConfiguringAsync(cancellationToken))
         {

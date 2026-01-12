@@ -66,7 +66,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (this is { _playerToServerTask: null } or { _serverToPlayerTask: null })
+        if (_onStoppingTask is null)
             throw new InvalidOperationException($"{nameof(Link)} is not started");
 
         await DisposeAsync();

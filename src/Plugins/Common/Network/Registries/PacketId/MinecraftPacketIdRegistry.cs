@@ -85,7 +85,7 @@ public class MinecraftPacketIdRegistry : IMinecraftPacketIdRegistry
                 var to = current.LastValidProtocolVersion ?? (current.Equals(next) ? ProtocolVersion.Latest : next.ProtocolVersion - 1);
 
                 if (from.CompareTo(to) > 0)
-                    throw new ArgumentException($"Next mapping version ({to}) should be lower than the current ({from})");
+                    throw new ArgumentException($"Next mapping version ({to}) should be lower than the current ({from}) for {type}");
 
                 if (!ProtocolVersion.Range(from, to).Contains(protocolVersion))
                     continue;

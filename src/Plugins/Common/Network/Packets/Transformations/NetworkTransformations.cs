@@ -1,5 +1,11 @@
-﻿using Void.Proxy.Api.Players;
-using Void.Proxy.Plugins.Common.Extensions;
+﻿using Void.Minecraft.Network.Channels.Extensions;
+using Void.Minecraft.Network.Messages.Packets;
+using Void.Minecraft.Network.Registries.Transformations.Extensions;
+using Void.Minecraft.Network.Registries.Transformations.Mappings;
+using Void.Minecraft.Players.Extensions;
+using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
 using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 using Void.Proxy.Plugins.Common.Network.Packets.Transformations.v1_11_1_to_v1_12;
@@ -31,11 +37,23 @@ public static class NetworkTransformations
         new SystemChatMessageTransformation1_21_5()
     ];
 
-    public static void Register(IPlayer player)
+    public static void Register(ILink? link, IPlayer player)
     {
-        player.RegisterSystemTransformations<KeepAliveRequestPacket>(KeepAlive.SelectMany(keepAlive => keepAlive.Mappings));
-        player.RegisterSystemTransformations<KeepAliveResponsePacket>(KeepAlive.SelectMany(keepAlive => keepAlive.Mappings));
-        player.RegisterSystemTransformations<ChatMessagePacket>(ChatMessage.SelectMany(chatMessage => chatMessage.Mappings));
-        player.RegisterSystemTransformations<SystemChatMessagePacket>(SystemChatMessage.SelectMany(systemChatMessage => systemChatMessage.Mappings));
+        // Not really possible, but just to be sure
+        link ??= player.Link;
+
+        ArgumentNullException.ThrowIfNull(link, nameof(link));
+
+        RegisterMappings<KeepAliveRequestPacket>(link, KeepAlive.SelectMany(keepAlive => keepAlive.Mappings));
+        RegisterMappings<KeepAliveResponsePacket>(link, KeepAlive.SelectMany(keepAlive => keepAlive.Mappings));
+        RegisterMappings<ChatMessagePacket>(link, ChatMessage.SelectMany(chatMessage => chatMessage.Mappings));
+        RegisterMappings<SystemChatMessagePacket>(link, SystemChatMessage.SelectMany(systemChatMessage => systemChatMessage.Mappings));
+    }
+
+    private static void RegisterMappings<T>(ILink link, params IEnumerable<MinecraftPacketTransformationMapping> mappings) where T : IMinecraftPacket
+    {
+        var protocolVersion = link.Player.ProtocolVersion;
+        link.PlayerChannel.MinecraftRegistries.PacketTransformationsSystem.All.RegisterTransformations<T>(protocolVersion, mappings);
+        link.ServerChannel.MinecraftRegistries.PacketTransformationsSystem.All.RegisterTransformations<T>(protocolVersion, mappings);
     }
 }

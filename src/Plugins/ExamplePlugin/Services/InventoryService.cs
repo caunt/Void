@@ -1,12 +1,10 @@
 using Microsoft.Extensions.Logging;
 using Void.Minecraft.Events;
 using Void.Minecraft.Network;
-using Void.Minecraft.Network.Registries.PacketId.Mappings;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
-using Void.Proxy.Api.Network;
-using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Players.Contexts;
 using Void.Proxy.Plugins.ExamplePlugin.Packets.Clientbound;
 using Void.Proxy.Plugins.ExamplePlugin.Packets.Serverbound;
@@ -37,57 +35,39 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
     {
         // Minecraft phases indicate the state of the game. Common phases are Handshake, Login, Configuration and Play.
         // They are NOT synced between server and player instantly. When player is in Play phase, server might still be in Login phase.
-        // This means you should decide which side Phase change you want to handle here. In this case, both sides are handled.
 
-        switch (@event)
-        {
-            // Since wanted packet is in Play phase, we register it only in Play phase.
-            case { Phase: Phase.Play, Side: Side.Server or Side.Client }:
-                RegisterPlayMappings(@event.Player, @event.Side);
-                break;
-        }
+        // Context logger renders log as [MinecraftPlayer <caunt>] LogMessage
+        context.Logger.LogDebug("Changed phase to {Phase} on {Side} side", @event.Phase, @event.Side);
+    }
 
-        void RegisterPlayMappings(IPlayer player, Side side)
-        {
-            // Many packet ids and their properties can be found at:
-            // https://minecraft.wiki/w/Java_Edition_protocol
-            // https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Protocol_version_numbers
+    [Subscribe]
+    public async Task OnPlayerJoinedServer(PlayerJoinedServerEvent @event)
+    {
+        // Many packet ids and their properties can be found here:
+        // https://minecraft.wiki/w/Java_Edition_protocol
+        // https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Protocol_version_numbers
 
-            MinecraftPacketIdMapping[] serverboundMappings = [
-                new(0x28, ProtocolVersion.MINECRAFT_1_20),
-                new(0x2B, ProtocolVersion.MINECRAFT_1_20_2),
-                new(0x2C, ProtocolVersion.MINECRAFT_1_20_3),
-                new(0x2F, ProtocolVersion.MINECRAFT_1_20_5),
-                new(0x31, ProtocolVersion.MINECRAFT_1_21_2),
-                new(0x33, ProtocolVersion.MINECRAFT_1_21_4),
-                new(0x34, ProtocolVersion.MINECRAFT_1_21_6)
-            ];
+        @event.Player.RegisterPacket<SetHeldItemClientboundPacket>([
+            new(0x4D, ProtocolVersion.MINECRAFT_1_20),
+            new(0x4F, ProtocolVersion.MINECRAFT_1_20_2),
+            new(0x51, ProtocolVersion.MINECRAFT_1_20_3),
+            new(0x53, ProtocolVersion.MINECRAFT_1_20_5),
+            new(0x63, ProtocolVersion.MINECRAFT_1_21_2),
+            new(0x62, ProtocolVersion.MINECRAFT_1_21_5),
+            new(0x67, ProtocolVersion.MINECRAFT_1_21_9)
+        ]);
 
-            MinecraftPacketIdMapping[] clientboundMappings = [
-                new(0x4D, ProtocolVersion.MINECRAFT_1_20),
-                new(0x4F, ProtocolVersion.MINECRAFT_1_20_2),
-                new(0x51, ProtocolVersion.MINECRAFT_1_20_3),
-                new(0x53, ProtocolVersion.MINECRAFT_1_20_5),
-                new(0x63, ProtocolVersion.MINECRAFT_1_21_2),
-                new(0x62, ProtocolVersion.MINECRAFT_1_21_5),
-                new(0x67, ProtocolVersion.MINECRAFT_1_21_9)
-            ];
+        @event.Player.RegisterPacket<SetHeldItemServerboundPacket>([
+            new(0x28, ProtocolVersion.MINECRAFT_1_20),
+            new(0x2B, ProtocolVersion.MINECRAFT_1_20_2),
+            new(0x2C, ProtocolVersion.MINECRAFT_1_20_3),
+            new(0x2F, ProtocolVersion.MINECRAFT_1_20_5),
+            new(0x31, ProtocolVersion.MINECRAFT_1_21_2),
+            new(0x33, ProtocolVersion.MINECRAFT_1_21_4),
+            new(0x34, ProtocolVersion.MINECRAFT_1_21_6)
+        ]);
 
-            if (side is Side.Server)
-            {
-                // If Phase changed on Server side, we can Read Clientbound packet from it and Write Serverbound packet to it.
-                player.RegisterPacket<SetHeldItemClientboundPacket>(Operation.Read, clientboundMappings);
-                player.RegisterPacket<SetHeldItemServerboundPacket>(Operation.Write, serverboundMappings);
-            }
-            else if (side is Side.Client)
-            {
-                // If Phase changed on Client side, we can Read Serverbound packet from it and Write Clientbound packet to it.
-                player.RegisterPacket<SetHeldItemServerboundPacket>(Operation.Read, serverboundMappings);
-                player.RegisterPacket<SetHeldItemClientboundPacket>(Operation.Write, clientboundMappings);
-            }
-
-            context.Logger.LogTrace("Registered packet mappings at {Side} side", @event.Side);
-        }
+        context.Logger.LogTrace("Registered packet mappings");
     }
 
     public async ValueTask ChangeSlotAsync(int slot, CancellationToken cancellationToken)

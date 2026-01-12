@@ -45,6 +45,13 @@ public static class Registry
                 new MinecraftPacketIdMapping(0x02, ProtocolVersion.MINECRAFT_1_20_5)
             ], typeof(ConfigurationDisconnectPacket)
         },
+        {
+            [
+                new MinecraftPacketIdMapping(0x03, Plugin.SupportedVersions.First()),
+                new MinecraftPacketIdMapping(0x04, ProtocolVersion.MINECRAFT_1_20_5)
+            ],
+            typeof(KeepAliveRequestPacket)
+        }
     };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundConfigurationMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
@@ -54,6 +61,13 @@ public static class Registry
                 new MinecraftPacketIdMapping(0x02, Plugin.SupportedVersions.First()),
                 new MinecraftPacketIdMapping(0x03, ProtocolVersion.MINECRAFT_1_20_5)
             ], typeof(AcknowledgeFinishConfigurationPacket)
+        },
+        {
+            [
+                new MinecraftPacketIdMapping(0x03, Plugin.SupportedVersions.First()),
+                new MinecraftPacketIdMapping(0x04, ProtocolVersion.MINECRAFT_1_20_5)
+            ],
+            typeof(KeepAliveResponsePacket)
         }
     };
 

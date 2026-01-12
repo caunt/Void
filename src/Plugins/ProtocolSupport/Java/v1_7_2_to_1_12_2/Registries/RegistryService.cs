@@ -39,20 +39,20 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
                 {
                     @event.Link.PlayerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ServerboundStatusMappings);
                     @event.Link.PlayerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ClientboundStatusMappings);
-                    await @event.Player.SetPhaseAsync(Side.Client, Phase.Status, @event.Link.PlayerChannel, cancellationToken);
+                    await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Status, @event.Link.PlayerChannel, cancellationToken);
                 }
                 else if (handshake.NextState is 2 or 3)
                 {
                     @event.Link.PlayerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ServerboundLoginMappings);
                     @event.Link.PlayerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ClientboundLoginMappings);
-                    await @event.Player.SetPhaseAsync(Side.Client, Phase.Login, @event.Link.PlayerChannel, cancellationToken);
+                    await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Login, @event.Link.PlayerChannel, cancellationToken);
                 }
 
                 break;
             case LoginSuccessPacket:
                 @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundPlayMappings);
                 @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ServerboundPlayMappings);
-                await @event.Player.SetPhaseAsync(Side.Server, Phase.Play, @event.Link.ServerChannel, cancellationToken);
+                await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Play, @event.Link.ServerChannel, cancellationToken);
                 break;
         }
     }
@@ -68,12 +68,12 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
             case { Side: Side.Client, NextState: 1 }:
                 @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundStatusMappings);
                 @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ServerboundStatusMappings);
-                await @event.Player.SetPhaseAsync(Side.Server, Phase.Status, @event.Link.ServerChannel, cancellationToken);
+                await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Status, @event.Link.ServerChannel, cancellationToken);
                 break;
             case { Side: Side.Server, NextState: 2 or 3 }:
                 @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundLoginMappings);
                 @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ServerboundLoginMappings);
-                await @event.Player.SetPhaseAsync(Side.Server, Phase.Login, @event.Link.ServerChannel, cancellationToken);
+                await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Login, @event.Link.ServerChannel, cancellationToken);
                 break;
         }
     }
@@ -89,7 +89,7 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
             case LoginSuccessPacket:
                 @event.Link.PlayerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ServerboundPlayMappings);
                 @event.Link.PlayerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ClientboundPlayMappings);
-                await @event.Player.SetPhaseAsync(Side.Client, Phase.Play, @event.Link.PlayerChannel, cancellationToken);
+                await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Play, @event.Link.PlayerChannel, cancellationToken);
                 break;
         }
     }

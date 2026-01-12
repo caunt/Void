@@ -107,7 +107,7 @@ public static class PlayerExtensions
         {
             var plugin = player.Context.Services.GetRequiredService<IPluginService>().GetPluginFromType<T>();
 
-            if (player.Link is { } link)
+            if (player.WeakLink is { } link)
             {
                 var (fromChannel, toChannel) = direction switch
                 {
@@ -122,7 +122,7 @@ public static class PlayerExtensions
                 if (operation.HasFlag(Operation.Write))
                     player.RegisterPacket<T>(toChannel, Operation.Write, mappings);
             }
-            else if (direction is Direction.Serverbound) // If no link created yet, we still should have the player channel
+            else if (direction is Direction.Serverbound) // Fallback
             {
                 if (player.Context.Channel is null)
                     throw new InvalidOperationException($"Cannot register {nameof(Direction.Serverbound)} {typeof(T)} packet without a Player channel.");
@@ -132,6 +132,17 @@ public static class PlayerExtensions
 
                 if (operation.HasFlag(Operation.Read))
                     player.RegisterPacket<T>(player.Context.Channel, Operation.Read, mappings);
+            }
+            else if (direction is Direction.Clientbound) // Fallback
+            {
+                if (player.Context.Channel is null)
+                    throw new InvalidOperationException($"Cannot register {nameof(Direction.Clientbound)} {typeof(T)} packet without a Player channel.");
+
+                if (operation.HasFlag(Operation.Read))
+                    throw new InvalidOperationException($"Cannot register {nameof(Direction.Clientbound)} {typeof(T)} packet for {Operation.Read} operation without a Server channel.");
+
+                if (operation.HasFlag(Operation.Write))
+                    player.RegisterPacket<T>(player.Context.Channel, Operation.Write, mappings);
             }
             else
             {

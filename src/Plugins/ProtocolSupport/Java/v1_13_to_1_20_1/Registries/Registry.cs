@@ -56,8 +56,7 @@ public static class Registry
         },
         {
             [
-                new MinecraftPacketIdMapping(0x1F, Plugin.SupportedVersions.First()),
-                new MinecraftPacketIdMapping(0x21, ProtocolVersion.MINECRAFT_1_13),
+                new MinecraftPacketIdMapping(0x21, Plugin.SupportedVersions.First()),
                 new MinecraftPacketIdMapping(0x20, ProtocolVersion.MINECRAFT_1_14),
                 new MinecraftPacketIdMapping(0x21, ProtocolVersion.MINECRAFT_1_15),
                 new MinecraftPacketIdMapping(0x20, ProtocolVersion.MINECRAFT_1_16),
@@ -124,8 +123,7 @@ public static class Registry
     {
         {
             [
-                new MinecraftPacketIdMapping(0x0B, Plugin.SupportedVersions.First()),
-                new MinecraftPacketIdMapping(0x0E, ProtocolVersion.MINECRAFT_1_13),
+                new MinecraftPacketIdMapping(0x0E, Plugin.SupportedVersions.First()),
                 new MinecraftPacketIdMapping(0x0F, ProtocolVersion.MINECRAFT_1_14),
                 new MinecraftPacketIdMapping(0x10, ProtocolVersion.MINECRAFT_1_16),
                 new MinecraftPacketIdMapping(0x0F, ProtocolVersion.MINECRAFT_1_17),

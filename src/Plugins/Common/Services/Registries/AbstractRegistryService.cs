@@ -55,7 +55,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             return;
 
         SetupRegistries(@event.Channel, @event.Side, @event.Player.ProtocolVersion);
-        await @event.Player.SetPhaseAsync(@event.Side, Phase.Handshake, @event.Channel, cancellationToken);
+        await @event.Player.SetPhaseAsync(link: null, @event.Side, Phase.Handshake, @event.Channel, cancellationToken);
     }
 
     [Subscribe]
@@ -90,7 +90,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (@event.Phase is Phase.Handshake)
             return;
 
-        var link = @event.Player.Link ?? throw new InvalidOperationException("Cannot clear registries without a link.");
+        var link = @event.Link ?? throw new InvalidOperationException("Cannot clear registries without a link.");
 
         // Clear only affected registries that are no longer valid
         if (@event.Side is Side.Client)

@@ -32,6 +32,28 @@ public static class PlayerExtensions
             }
         }
 
+        public ILink? WeakLink
+        {
+            get
+            {
+                var links = player.GetRequiredService<ILinkService>();
+
+                if (!links.TryGetWeakLink(player, out var link))
+                    return null;
+
+                return link;
+            }
+        }
+
+        public bool HasLink
+        {
+            get
+            {
+                var links = player.GetRequiredService<ILinkService>();
+                return links.HasLink(player);
+            }
+        }
+
         [Obsolete("Use property Server instead")]
         public IServer? GetServer()
         {
@@ -169,7 +191,7 @@ public static class PlayerExtensions
             var channel = await channelBuilder.BuildServerChannelAsync(player, server, cancellationToken);
 
             var events = player.GetRequiredService<IEventService>();
-            await events.ThrowAsync(new ChannelCreatedEvent(player, Network.Side.Server, channel), cancellationToken);
+            await events.ThrowAsync(new ChannelCreatedEvent(player, Side.Server, channel), cancellationToken);
 
             return channel;
         }

@@ -19,7 +19,7 @@ public abstract class AbstractTransformationService : IPluginCommonService
         if (@event is not { Side: Side.Server, Phase: Phase.Play })
             return;
 
-        NetworkTransformations.Register(@event.Player);
+        NetworkTransformations.Register(@event.Link, @event.Player);
     }
 
     protected abstract bool IsSupportedVersion(ProtocolVersion protocolVersion);

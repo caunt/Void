@@ -2,6 +2,7 @@
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Events;
 using Void.Minecraft.Events.Chat;
+using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
@@ -24,10 +25,25 @@ namespace Void.Proxy.Plugins.Common.Services.Lifecycle;
 
 public abstract class AbstractLifecycleService(ILogger logger, IEventService events) : IPluginCommonService
 {
+    private const string DefaultKickMessage = "You were kicked from proxy";
+
+    private readonly TimeSpan _keepAliveInterval = TimeSpan.FromSeconds(5);
+    private readonly Dictionary<int, KeepAliveTracker> _keepAliveTrackers = [];
+
     [Subscribe]
-    public static void OnPlayerConnecting(PlayerConnectingEvent @event)
+    public void OnPlayerConnecting(PlayerConnectingEvent @event)
     {
+        logger.LogTrace("Player connecting: {Client}", @event.Client);
         @event.Result ??= new SimplePlayer(@event.Client, instance => new PlayerContext(@event.GetServices(instance)) { Player = instance });
+    }
+
+    [Subscribe]
+    public void OnPlayerDisconnected(PlayerDisconnectedEvent @event)
+    {
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
+            return;
+
+        RemoveKeepAliveTracker(@event.Player);
     }
 
     [Subscribe]
@@ -35,6 +51,9 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
     {
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
+
+        if (@event.Phase is Phase.Configuration or Phase.Play)
+            await PongKeepAliveTracker(@event.Player, cancellationToken: cancellationToken);
 
         if (@event.Phase is not Phase.Play)
             return;
@@ -69,9 +88,13 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
 
         switch (@event.Message)
         {
-            case KeepAliveRequestPacket:
-            case KeepAliveResponsePacket:
-                logger.LogDebug("Received keep alive {Message} from {Side} for player {Player}", @event.Message, @event.From, @event.Player);
+            case KeepAliveRequestPacket keepAliveRequest:
+                @event.Cancel();
+                await @event.Link.SendPacketAsync(new KeepAliveResponsePacket { Id = keepAliveRequest.Id }, cancellationToken);
+                break;
+            case KeepAliveResponsePacket keepAliveResponse:
+                @event.Cancel();
+                await PongKeepAliveTracker(@event.Player, keepAliveResponse.Id, cancellationToken);
                 break;
         }
     }
@@ -102,17 +125,17 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
 
         var reason = @event is MinecraftPlayerKickEvent minecraftPlayerKick
             ? minecraftPlayerKick.Reason is null
-                ? "You were kicked from proxy"
+                ? DefaultKickMessage
                 : minecraftPlayerKick.Reason
             : @event.Text is null
-                ? "You were kicked from proxy"
+                ? DefaultKickMessage
                 : @event.Text;
 
         try
         {
             @event.Result = await KickPlayerAsync(@event.Player, reason, cancellationToken);
         }
-        catch (StreamClosedException)
+        catch (StreamException)
         {
             @event.Result = true;
         }
@@ -134,4 +157,38 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
     protected abstract ValueTask<bool> KickPlayerAsync(IPlayer player, Component reason, CancellationToken cancellationToken);
     protected abstract ValueTask<bool> SendChatMessageAsync(IPlayer player, Component text, CancellationToken cancellationToken);
     protected abstract bool IsSupportedVersion(ProtocolVersion version);
+
+    private async ValueTask PongKeepAliveTracker(IPlayer player, long id = KeepAliveTracker.DefaultRequestId, CancellationToken cancellationToken = default)
+    {
+        var key = player.GetStableHashCode();
+
+        if (!_keepAliveTrackers.TryGetValue(key, out var tracker))
+        {
+            tracker = _keepAliveTrackers[key] = new KeepAliveTracker(async id =>
+            {
+                player.Logger.LogTrace("Sending Keep Alive request {Id}", id);
+
+                try
+                {
+                    await player.SendPacketAsync(new KeepAliveRequestPacket { Id = id }, cancellationToken);
+                }
+                catch (Exception exception)
+                {
+                    player.Logger.LogError(exception, "Failed to send Keep Alive request {Id}", id);
+                }
+            }, _keepAliveInterval);
+        }
+
+        await tracker.PongAsync(player, id, cancellationToken);
+    }
+
+    private void RemoveKeepAliveTracker(IPlayer player)
+    {
+        var key = player.GetStableHashCode();
+
+        if (_keepAliveTrackers.Remove(key, out var tracker))
+            tracker.Dispose();
+
+        // Otherwise player was connected with Status phase only and never had a tracker created
+    }
 }

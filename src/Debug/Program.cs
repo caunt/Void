@@ -151,6 +151,7 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
             "MODE=CREATIVE",
             "ONLINE_MODE=FALSE",
             "OPS=caunt,Shonz1",
+            "MAX_TICK_TIME=-1",
             "VERSION=" + VersionStringName(server.ProtocolVersion)
         };
 

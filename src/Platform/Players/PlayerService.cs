@@ -56,7 +56,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
             logger.LogTrace("Player {Player} connecting", player);
             var result = await links.ConnectPlayerAnywhereAsync(player, cancellationToken);
 
-            if (!links.TryGetLink(player, out var link))
+            if (result is ConnectionResult.NotConnected)
                 logger.LogWarning("Player {Player} failed to connect", player);
         }
         catch (Exception exception)
@@ -91,12 +91,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
             return;
 
         var channel = await player.GetChannelAsync(cancellationToken);
-
-        if (links.TryGetLink(player, out var link))
-        {
-            link.PlayerChannel.TryPause();
-            link.ServerChannel.TryPause();
-        }
+        channel.TryPause();
 
         var kicked = await events.ThrowWithResultAsync(playerKickEvent, cancellationToken);
 
@@ -119,37 +114,38 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
                 logger.LogWarning("Plugins didn't handle graceful {Player} player kick in {Timeout}ms", player, settings.KickTimeout);
         }
 
-        link?.PlayerChannel.TryResume();
-        link?.ServerChannel.TryResume();
-
+        channel.TryResume();
         await channel.FlushAsync(cancellationToken);
 
-        if (link is not null)
-        {
-            await link.PlayerChannel.FlushAsync(cancellationToken);
-            await link.ServerChannel.FlushAsync(cancellationToken);
-        }
-
-        link?.PlayerChannel.Close();
-        link?.ServerChannel.Close();
-
+        channel.Close();
         player.Client.Close();
 
-        if (link is null)
+        if (!player.HasLink)
             await events.ThrowAsync(new PlayerDisconnectedEvent(player), cancellationToken);
+
+        logger.LogTrace("Player {Player} kicked", player);
     }
 
     [Subscribe]
     public async ValueTask OnLinkStopped(LinkStoppedEvent @event, CancellationToken cancellationToken)
     {
-        if (@event.Reason is not LinkStopReason.Requested)
-            await events.ThrowAsync(new PlayerDisconnectedEvent(@event.Player), cancellationToken);
+        var isPlayerAlive = @event.Reason is not LinkStopReason.PlayerDisconnected && @event.Link.PlayerChannel.IsAlive;
 
-        if (!@event.Link.PlayerChannel.IsAlive)
+        if (!isPlayerAlive)
+        {
+            await events.ThrowAsync(new PlayerDisconnectedEvent(@event.Player), cancellationToken);
+            return;
+        }
+
+        if (@event.Reason is LinkStopReason.Requested)
             return;
 
-        if (@event.Reason is not LinkStopReason.Requested)
-            await links.ConnectPlayerAnywhereAsync(@event.Player, cancellationToken);
+        logger.LogTrace("Reconnecting player {Player} after link {Link} stopped due to {Reason}", @event.Player, @event.Link, @event.Reason);
+
+        var result = await links.ConnectPlayerAnywhereAsync(@event.Player, [@event.Link.Server], cancellationToken);
+
+        if (result is ConnectionResult.NotConnected)
+            await @event.Player.KickAsync("Failed to find a server for you", cancellationToken);
     }
 
     [Subscribe(PostOrder.Last)]
