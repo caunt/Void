@@ -13,6 +13,7 @@ using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players.Contexts;
+using Void.Proxy.Plugins.Common.Network.Packets;
 using Void.Proxy.Plugins.ForwardingSupport.Velocity.Packets;
 
 namespace Void.Proxy.Plugins.ForwardingSupport.Velocity.Services;
@@ -35,7 +36,7 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
                 Side.Server => Operation.Write,
                 _ => throw new InvalidOperationException($"Invalid side changed phase: {@event.Side}")
             },
-            [new(0x02, ProtocolVersion.Oldest)]);
+            PacketIdDefinitions.ServerboundLoginPluginResponse);
         @event.Player.RegisterPacket<VelocityLoginPluginRequestPacket>(
             @event.Channel,
             @event.Side switch
@@ -44,7 +45,7 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
                 Side.Server => Operation.Read,
                 _ => throw new InvalidOperationException($"Invalid side changed phase: {@event.Side}")
             },
-            [new(0x04, ProtocolVersion.Oldest)]);
+            PacketIdDefinitions.ClientboundLoginPluginRequest);
 
         context.Logger.LogTrace("Registered forwarding packet mappings at {Side} side", @event.Side);
     }
@@ -124,9 +125,7 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
         Span<byte> signature = stackalloc byte[32];
 
         if (!HMACSHA256.TryHashData(secretBytes, forwardingData, signature, out var written))
-        {
             throw new InvalidOperationException("Failed to compute HMAC signature.");
-        }
 
         @event.Cancel();
         await @event.Link.SendPacketAsync(new VelocityLoginPluginResponsePacket { Data = [.. signature[..written], .. forwardingData], MessageId = packet.MessageId, Successful = true }, cancellationToken);

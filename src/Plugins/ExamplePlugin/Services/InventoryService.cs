@@ -47,25 +47,10 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
         // https://minecraft.wiki/w/Java_Edition_protocol
         // https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Protocol_version_numbers
 
-        @event.Player.RegisterPacket<SetHeldItemClientboundPacket>([
-            new(0x4D, ProtocolVersion.MINECRAFT_1_20),
-            new(0x4F, ProtocolVersion.MINECRAFT_1_20_2),
-            new(0x51, ProtocolVersion.MINECRAFT_1_20_3),
-            new(0x53, ProtocolVersion.MINECRAFT_1_20_5),
-            new(0x63, ProtocolVersion.MINECRAFT_1_21_2),
-            new(0x62, ProtocolVersion.MINECRAFT_1_21_5),
-            new(0x67, ProtocolVersion.MINECRAFT_1_21_9)
-        ]);
-
-        @event.Player.RegisterPacket<SetHeldItemServerboundPacket>([
-            new(0x28, ProtocolVersion.MINECRAFT_1_20),
-            new(0x2B, ProtocolVersion.MINECRAFT_1_20_2),
-            new(0x2C, ProtocolVersion.MINECRAFT_1_20_3),
-            new(0x2F, ProtocolVersion.MINECRAFT_1_20_5),
-            new(0x31, ProtocolVersion.MINECRAFT_1_21_2),
-            new(0x33, ProtocolVersion.MINECRAFT_1_21_4),
-            new(0x34, ProtocolVersion.MINECRAFT_1_21_6)
-        ]);
+        // In this example we are using Void predefined packet id mappings in PacketIdDefinitions.
+        // Define your own mappings for packets you'd like to work with.
+        @event.Player.RegisterPacket<SetHeldItemClientboundPacket>(PacketIdDefinitions.ClientboundSetHeldItem);
+        @event.Player.RegisterPacket<SetHeldItemServerboundPacket>(PacketIdDefinitions.ServerboundSetHeldItem);
 
         context.Logger.LogTrace("Registered packet mappings");
     }

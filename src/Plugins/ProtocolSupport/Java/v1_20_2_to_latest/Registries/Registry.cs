@@ -13,7 +13,7 @@ public static class Registry
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundHandshakeMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
     {
-        { [new MinecraftPacketIdMapping(0x00, Plugin.SupportedVersions.First())], typeof(HandshakePacket) }
+        { PacketIdDefinitions.ServerboundHandshake, typeof(HandshakePacket) }
     };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ClientboundStatusMappings = new Dictionary<MinecraftPacketIdMapping[], Type>();
@@ -22,138 +22,48 @@ public static class Registry
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ClientboundLoginMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
     {
-        { [new MinecraftPacketIdMapping(0x00, Plugin.SupportedVersions.First())], typeof(JsonDisconnectPacket) },
-        { [new MinecraftPacketIdMapping(0x01, Plugin.SupportedVersions.First())], typeof(EncryptionRequestPacket) },
-        { [new MinecraftPacketIdMapping(0x02, Plugin.SupportedVersions.First())], typeof(LoginSuccessPacket) },
-        { [new MinecraftPacketIdMapping(0x03, Plugin.SupportedVersions.First())], typeof(SetCompressionPacket) },
-        { [new MinecraftPacketIdMapping(0x04, Plugin.SupportedVersions.First())], typeof(LoginPluginRequestPacket) }
+        { PacketIdDefinitions.ClientboundLoginDisconnect, typeof(JsonDisconnectPacket) },
+        { PacketIdDefinitions.ClientboundEncryptionRequest, typeof(EncryptionRequestPacket) },
+        { PacketIdDefinitions.ClientboundLoginSuccess, typeof(LoginSuccessPacket) },
+        { PacketIdDefinitions.ClientboundSetCompression, typeof(SetCompressionPacket) },
+        { PacketIdDefinitions.ClientboundLoginPluginRequest, typeof(LoginPluginRequestPacket) }
     };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundLoginMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
     {
-        { [new MinecraftPacketIdMapping(0x00, Plugin.SupportedVersions.First())], typeof(LoginStartPacket) },
-        { [new MinecraftPacketIdMapping(0x01, Plugin.SupportedVersions.First())], typeof(EncryptionResponsePacket) },
-        { [new MinecraftPacketIdMapping(0x02, Plugin.SupportedVersions.First())], typeof(LoginPluginResponsePacket) },
-        { [new MinecraftPacketIdMapping(0x03, Plugin.SupportedVersions.First())], typeof(LoginAcknowledgedPacket) }
+        { PacketIdDefinitions.ServerboundLoginStart, typeof(LoginStartPacket) },
+        { PacketIdDefinitions.ServerboundEncryptionResponse, typeof(EncryptionResponsePacket) },
+        { PacketIdDefinitions.ServerboundLoginPluginResponse, typeof(LoginPluginResponsePacket) },
+        { PacketIdDefinitions.ServerboundLoginAcknowledged, typeof(LoginAcknowledgedPacket) }
     };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ClientboundConfigurationMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
     {
-        {
-            [
-                new MinecraftPacketIdMapping(0x01, Plugin.SupportedVersions.First()),
-                new MinecraftPacketIdMapping(0x02, ProtocolVersion.MINECRAFT_1_20_5)
-            ], typeof(NbtDisconnectPacket)
-        },
-        {
-            [
-                new MinecraftPacketIdMapping(0x03, Plugin.SupportedVersions.First()),
-                new MinecraftPacketIdMapping(0x04, ProtocolVersion.MINECRAFT_1_20_5)
-            ],
-            typeof(KeepAliveRequestPacket)
-        }
+        { PacketIdDefinitions.ClientboundConfigurationDisconnect, typeof(NbtDisconnectPacket) },
+        { PacketIdDefinitions.ClientboundConfigurationKeepAliveRequest, typeof(KeepAliveRequestPacket) }
     };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundConfigurationMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
     {
-        {
-            [
-                new MinecraftPacketIdMapping(0x02, Plugin.SupportedVersions.First()),
-                new MinecraftPacketIdMapping(0x03, ProtocolVersion.MINECRAFT_1_20_5)
-            ], typeof(AcknowledgeFinishConfigurationPacket)
-        },
-        {
-            [
-                new MinecraftPacketIdMapping(0x03, Plugin.SupportedVersions.First()),
-                new MinecraftPacketIdMapping(0x04, ProtocolVersion.MINECRAFT_1_20_5)
-            ],
-            typeof(KeepAliveResponsePacket)
-        }
+        { PacketIdDefinitions.ServerboundAcknowledgeFinishConfiguration, typeof(AcknowledgeFinishConfigurationPacket) },
+        { PacketIdDefinitions.ServerboundConfigurationKeepAliveResponse, typeof(KeepAliveResponsePacket) }
     };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ClientboundPlayMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
     {
-        { [new MinecraftPacketIdMapping(0x00, Plugin.SupportedVersions.First())], typeof(BundleDelimiterPacket) },
-        {
-            [
-                new MinecraftPacketIdMapping(0x24, Plugin.SupportedVersions.First()),
-                new MinecraftPacketIdMapping(0x26, ProtocolVersion.MINECRAFT_1_20_5),
-                new MinecraftPacketIdMapping(0x27, ProtocolVersion.MINECRAFT_1_21_2),
-                new MinecraftPacketIdMapping(0x26, ProtocolVersion.MINECRAFT_1_21_5),
-                new MinecraftPacketIdMapping(0x2B, ProtocolVersion.MINECRAFT_1_21_9)
-            ],
-            typeof(KeepAliveRequestPacket)
-        },
-        {
-            [
-                new MinecraftPacketIdMapping(0x65, Plugin.SupportedVersions.First()),
-                new MinecraftPacketIdMapping(0x67, ProtocolVersion.MINECRAFT_1_20_3),
-                new MinecraftPacketIdMapping(0x69, ProtocolVersion.MINECRAFT_1_20_5),
-                new MinecraftPacketIdMapping(0x70, ProtocolVersion.MINECRAFT_1_21_2),
-                new MinecraftPacketIdMapping(0x6F, ProtocolVersion.MINECRAFT_1_21_5),
-                new MinecraftPacketIdMapping(0x74, ProtocolVersion.MINECRAFT_1_21_9)
-            ],
-            typeof(StartConfigurationPacket)
-        },
-        {
-            [
-                new MinecraftPacketIdMapping(0x1B, Plugin.SupportedVersions.First()),
-                new MinecraftPacketIdMapping(0x1D, ProtocolVersion.MINECRAFT_1_20_5),
-                new MinecraftPacketIdMapping(0x1C, ProtocolVersion.MINECRAFT_1_21_5),
-                new MinecraftPacketIdMapping(0x20, ProtocolVersion.MINECRAFT_1_21_9)
-            ],
-            typeof(NbtDisconnectPacket)
-        },
-        {
-            [
-                new MinecraftPacketIdMapping(0x67, Plugin.SupportedVersions.First()),
-                new MinecraftPacketIdMapping(0x69, ProtocolVersion.MINECRAFT_1_20_3),
-                new MinecraftPacketIdMapping(0x6C, ProtocolVersion.MINECRAFT_1_20_5),
-                new MinecraftPacketIdMapping(0x73, ProtocolVersion.MINECRAFT_1_21_2),
-                new MinecraftPacketIdMapping(0x72, ProtocolVersion.MINECRAFT_1_21_5),
-                new MinecraftPacketIdMapping(0x77, ProtocolVersion.MINECRAFT_1_21_9)
-            ],
-            typeof(SystemChatMessagePacket)
-        }
+        { PacketIdDefinitions.ClientboundBundleDelimiter, typeof(BundleDelimiterPacket) },
+        { PacketIdDefinitions.ClientboundPlayKeepAliveRequest, typeof(KeepAliveRequestPacket) },
+        { PacketIdDefinitions.ClientboundStartConfiguration, typeof(StartConfigurationPacket) },
+        { PacketIdDefinitions.ClientboundPlayDisconnect, typeof(NbtDisconnectPacket) },
+        { PacketIdDefinitions.ClientboundSystemChatMessage, typeof(SystemChatMessagePacket) }
     };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundPlayMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
     {
-        {
-            [
-                new MinecraftPacketIdMapping(0x04, ProtocolVersion.MINECRAFT_1_20_5),
-                new MinecraftPacketIdMapping(0x05, ProtocolVersion.MINECRAFT_1_21_2),
-                new MinecraftPacketIdMapping(0x06, ProtocolVersion.MINECRAFT_1_21_6)
-            ], typeof(ChatCommandPacket)
-        },
-        {
-            [
-                new MinecraftPacketIdMapping(0x04, Plugin.SupportedVersions.First()),
-                new MinecraftPacketIdMapping(0x05, ProtocolVersion.MINECRAFT_1_20_5),
-                new MinecraftPacketIdMapping(0x06, ProtocolVersion.MINECRAFT_1_21_2),
-                new MinecraftPacketIdMapping(0x07, ProtocolVersion.MINECRAFT_1_21_6)
-            ],
-            typeof(SignedChatCommandPacket)
-        },
-        {
-            [
-                new MinecraftPacketIdMapping(0x14, Plugin.SupportedVersions.First()),
-                new MinecraftPacketIdMapping(0x15, ProtocolVersion.MINECRAFT_1_20_3),
-                new MinecraftPacketIdMapping(0x18, ProtocolVersion.MINECRAFT_1_20_5),
-                new MinecraftPacketIdMapping(0x1A, ProtocolVersion.MINECRAFT_1_21_2),
-                new MinecraftPacketIdMapping(0x1B, ProtocolVersion.MINECRAFT_1_21_6)
-            ],
-            typeof(KeepAliveResponsePacket)
-        },
-        {
-            [
-                new MinecraftPacketIdMapping(0x0B, Plugin.SupportedVersions.First()),
-                new MinecraftPacketIdMapping(0x0C, ProtocolVersion.MINECRAFT_1_20_5),
-                new MinecraftPacketIdMapping(0x0E, ProtocolVersion.MINECRAFT_1_21_2),
-                new MinecraftPacketIdMapping(0x0F, ProtocolVersion.MINECRAFT_1_21_6)
-            ],
-            typeof(AcknowledgeConfigurationPacket)
-        }
+        { PacketIdDefinitions.ServerboundChatCommand, typeof(ChatCommandPacket) },
+        { PacketIdDefinitions.ServerboundSignedChatCommand, typeof(SignedChatCommandPacket) },
+        { PacketIdDefinitions.ServerboundPlayKeepAliveResponse, typeof(KeepAliveResponsePacket) },
+        { PacketIdDefinitions.ServerboundAcknowledgeConfiguration, typeof(AcknowledgeConfigurationPacket) }
     };
 
     public static void Fill()
