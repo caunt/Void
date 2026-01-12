@@ -54,10 +54,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
                 _players.Add(player);
 
             logger.LogTrace("Player {Player} connecting", player);
-            var result = await links.ConnectPlayerAnywhereAsync(player, cancellationToken);
-
-            if (result is ConnectionResult.NotConnected)
-                logger.LogWarning("Player {Player} failed to connect", player);
+            _ = await links.ConnectPlayerAnywhereAsync(player, cancellationToken);
         }
         catch (Exception exception)
         {

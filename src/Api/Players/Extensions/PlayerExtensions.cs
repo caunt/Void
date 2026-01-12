@@ -7,6 +7,7 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Channels;
+using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Servers;
 
 namespace Void.Proxy.Api.Players.Extensions;
@@ -226,9 +227,10 @@ public static class PlayerExtensions
             {
                 return player.Context.Services.GetRequiredService<TService>();
             }
-            catch (ObjectDisposedException exception)
+            catch (ObjectDisposedException)
             {
-                throw new ObjectDisposedException("Player is not online anymore", exception);
+                // Player is not online anymore
+                throw new StreamClosedException();
             }
         }
     }
