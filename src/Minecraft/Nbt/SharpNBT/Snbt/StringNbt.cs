@@ -86,7 +86,7 @@ public static class StringNbt
             // Read the name of the tag
             var childName = ParseString(ref scanner, out _);
 
-            // Move to and asser the next significant character is a deliminator.
+            // Move to and assert the next significant character is a delimiter.
             scanner.MoveNext(true, true);
             scanner.AssertChar(':');
 

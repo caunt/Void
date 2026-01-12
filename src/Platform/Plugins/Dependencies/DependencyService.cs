@@ -361,7 +361,7 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
 
     private IEnumerable<ServiceRegistrationInfo> GetServiceRegistrations(IContainer container)
     {
-        // Scoped services are allowed in non scoped containers, so they can later be copied to "scoped" player containers as singletons
+        // Scoped services are allowed in non-scoped containers, so they can later be copied to "scoped" player containers as singletons
         var allowScoped = _assemblyContainers.ContainsValue(container);
 
         foreach (var registration in container.GetServiceRegistrations())

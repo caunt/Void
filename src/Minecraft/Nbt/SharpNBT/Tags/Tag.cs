@@ -36,7 +36,7 @@ public abstract class Tag : IEquatable<Tag>, ICloneable
     public string? Name { get; }
 
     /// <summary>
-    /// Initialized a new instance of the <see cref="Tag"/> class.
+    /// Initializes a new instance of the <see cref="Tag"/> class.
     /// </summary>
     /// <param name="type">A constant describing the NBT type for this tag.</param>
     /// <param name="name">The name of the tag, or <see langword="null"/> if tag has no name.</param>
