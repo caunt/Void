@@ -31,18 +31,10 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
     }
 
     [Subscribe]
-    public async Task OnPhaseChanged(PhaseChangedEvent @event)
-    {
-        // Minecraft phases indicate the state of the game. Common phases are Handshake, Login, Configuration and Play.
-        // They are NOT synced between server and player instantly. When player is in Play phase, server might still be in Login phase.
-
-        // Context logger renders log as [MinecraftPlayer <caunt>] LogMessage
-        context.Logger.LogDebug("Changed phase to {Phase} on {Side} side", @event.Phase, @event.Side);
-    }
-
-    [Subscribe]
     public async Task OnPlayerJoinedServer(PlayerJoinedServerEvent @event)
     {
+        // This event triggers when player joins a server (not the proxy) and both sides become into Play phase.
+
         // Many packet ids and their properties can be found here:
         // https://minecraft.wiki/w/Java_Edition_protocol
         // https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Protocol_version_numbers
@@ -52,7 +44,20 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
         @event.Player.RegisterPacket<SetHeldItemClientboundPacket>(PacketIdDefinitions.ClientboundSetHeldItem);
         @event.Player.RegisterPacket<SetHeldItemServerboundPacket>(PacketIdDefinitions.ServerboundSetHeldItem);
 
+        // Context logger renders log as [MinecraftPlayer <caunt>] LogMessage
         context.Logger.LogTrace("Registered packet mappings");
+    }
+
+    [Subscribe]
+    public async Task OnPhaseChanged(PhaseChangedEvent @event)
+    {
+        // Minecraft phases indicate the state of the game. Common phases are Handshake, Login, Configuration and Play.
+        // They are NOT synced between server and player instantly. When player is in Play phase, server might still be in Login phase.
+
+        // For most packets PlayerJoinedServerEvent is sufficient to register packet mappings.
+        // However if any of your packets can be delivered in unsynced phases state, you might want to register them here instead.
+
+        context.Logger.LogDebug("Changed phase to {Phase} on {Side} side", @event.Phase, @event.Side);
     }
 
     public async ValueTask ChangeSlotAsync(int slot, CancellationToken cancellationToken)
