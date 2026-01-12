@@ -3,6 +3,7 @@ using System.Buffers;
 using System.IO;
 using System.Numerics;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Nbt;
 using Void.Minecraft.Profiles;
@@ -11,6 +12,11 @@ namespace Void.Minecraft.Buffers;
 
 public ref struct MinecraftBuffer
 {
+    private static readonly JsonSerializerOptions _defaultJsonSerializerOptions = new()
+    {
+        WriteIndented = false
+    };
+
     private MinecraftBackingBuffer _backingBuffer;
 
     public readonly bool HasData => _backingBuffer.HasData();
@@ -214,24 +220,29 @@ public ref struct MinecraftBuffer
         _backingBuffer.WriteTag(value, writeName);
     }
 
-    public Component ReadComponent()
+    public Component ReadComponent(bool asNbt = true)
     {
-        return Component.ReadFrom(ref this);
+        return asNbt
+            ? Component.ReadFrom(ref this)
+            : Component.DeserializeJson(ReadJsonString());
     }
 
-    public Component ReadJsonComponent()
+    public void WriteComponent(Component value, bool asNbt = true, bool writeNbtName = false)
     {
-        return Component.ReadJsonFrom(ref this);
+        if (asNbt)
+            value.WriteTo(ref this, writeNbtName);
+        else
+            WriteJsonString(value.SerializeJson());
     }
 
-    public void WriteComponent(Component value, bool writeName = false)
+    public JsonNode ReadJsonString()
     {
-        value.WriteTo(ref this, writeName);
+        return JsonNode.Parse(ReadString()) ?? throw new InvalidDataException("Failed to parse JsonNode from buffer string.");
     }
 
-    public void WriteJsonComponent(Component value, JsonSerializerOptions? jsonSerializerOptions = null)
+    public void WriteJsonString(JsonNode node, JsonSerializerOptions? jsonSerializerOptions = null)
     {
-        value.WriteJsonTo(ref this, jsonSerializerOptions);
+        WriteString(node.ToJsonString(jsonSerializerOptions ?? _defaultJsonSerializerOptions));
     }
 
     public void Seek(long offset)
