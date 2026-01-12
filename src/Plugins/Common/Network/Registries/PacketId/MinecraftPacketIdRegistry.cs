@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.PacketId;
@@ -124,7 +125,7 @@ public class MinecraftPacketIdRegistry : IMinecraftPacketIdRegistry
     {
         packet = null;
 
-        var decodeMethod = type.GetMethod(nameof(IMinecraftPacket<>.Decode));
+        var decodeMethod = type.GetMethod(nameof(IMinecraftPacket<>.Decode), BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
 
         if (decodeMethod is null)
             return false;
