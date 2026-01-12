@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Network.Channels.Extensions;
+﻿using Void.Minecraft.Network;
+using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.Transformations.Extensions;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
@@ -37,17 +38,27 @@ public static class NetworkTransformations
         new SystemChatMessageTransformation1_21_5()
     ];
 
-    public static void Register(ILink? link, IPlayer player)
+    public static PacketTransformation[] PlayDisconnect { get; } = [
+        new PlayDisconnectTransformation1_20_3()
+    ];
+
+    public static void Register(ILink? link, IPlayer player, Phase phase)
     {
         // Not really possible, but just to be sure
         link ??= player.Link;
 
         ArgumentNullException.ThrowIfNull(link, nameof(link));
 
-        RegisterMappings<KeepAliveRequestPacket>(link, KeepAlive.SelectMany(keepAlive => keepAlive.Mappings));
-        RegisterMappings<KeepAliveResponsePacket>(link, KeepAlive.SelectMany(keepAlive => keepAlive.Mappings));
-        RegisterMappings<ChatMessagePacket>(link, ChatMessage.SelectMany(chatMessage => chatMessage.Mappings));
-        RegisterMappings<SystemChatMessagePacket>(link, SystemChatMessage.SelectMany(systemChatMessage => systemChatMessage.Mappings));
+        switch (phase)
+        {
+            case Phase.Play:
+                RegisterMappings<KeepAliveRequestPacket>(link, KeepAlive.SelectMany(keepAlive => keepAlive.Mappings));
+                RegisterMappings<KeepAliveResponsePacket>(link, KeepAlive.SelectMany(keepAlive => keepAlive.Mappings));
+                RegisterMappings<ChatMessagePacket>(link, ChatMessage.SelectMany(chatMessage => chatMessage.Mappings));
+                RegisterMappings<SystemChatMessagePacket>(link, SystemChatMessage.SelectMany(systemChatMessage => systemChatMessage.Mappings));
+                RegisterMappings<NbtDisconnectPacket>(link, PlayDisconnect.SelectMany(playDisconnect => playDisconnect.Mappings));
+                break;
+        }
     }
 
     private static void RegisterMappings<T>(ILink link, params IEnumerable<MinecraftPacketTransformationMapping> mappings) where T : IMinecraftPacket

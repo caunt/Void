@@ -1,12 +1,11 @@
 ﻿using Void.Minecraft.Components.Text.Transformers;
 using Void.Minecraft.Nbt.Serializers.Json;
-using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Network.Registries.Transformations.Properties;
 
 namespace Void.Proxy.Plugins.Common.Network.Packets.Transformations.v1_20_2_to_v1_20_3;
 
-public record SystemChatMessageTransformation1_20_3() : PacketTransformation(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.MINECRAFT_1_20_3)
+public record SystemChatMessageTransformation1_20_3 : BaseTransformation1_20_3
 {
     public override void Upgrade(IMinecraftBinaryPacketWrapper wrapper)
     {

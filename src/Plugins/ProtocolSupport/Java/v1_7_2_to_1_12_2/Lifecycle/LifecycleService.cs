@@ -51,11 +51,11 @@ public class LifecycleService(ILogger<LifecycleService> logger, IEventService ev
 
         if (await player.IsPlayingAsync(cancellationToken))
         {
-            await channel.SendPacketAsync(new PlayDisconnectPacket { Reason = reason }, cancellationToken);
+            await channel.SendPacketAsync(new JsonDisconnectPacket { Reason = reason }, cancellationToken);
         }
         else if (await player.IsLoggingInAsync(cancellationToken))
         {
-            await channel.SendPacketAsync(new LoginDisconnectPacket { Reason = reason }, cancellationToken);
+            await channel.SendPacketAsync(new JsonDisconnectPacket { Reason = reason }, cancellationToken);
         }
         else
         {

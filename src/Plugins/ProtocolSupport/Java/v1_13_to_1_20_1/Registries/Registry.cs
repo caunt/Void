@@ -22,7 +22,7 @@ public static class Registry
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ClientboundLoginMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
     {
-        { [new MinecraftPacketIdMapping(0x00, Plugin.SupportedVersions.First())], typeof(LoginDisconnectPacket) },
+        { [new MinecraftPacketIdMapping(0x00, Plugin.SupportedVersions.First())], typeof(JsonDisconnectPacket) },
         { [new MinecraftPacketIdMapping(0x01, Plugin.SupportedVersions.First())], typeof(EncryptionRequestPacket) },
         { [new MinecraftPacketIdMapping(0x02, Plugin.SupportedVersions.First())], typeof(LoginSuccessPacket) },
         { [new MinecraftPacketIdMapping(0x03, Plugin.SupportedVersions.First())], typeof(SetCompressionPacket) },
@@ -52,7 +52,7 @@ public static class Registry
                 new MinecraftPacketIdMapping(0x17, ProtocolVersion.MINECRAFT_1_19_3),
                 new MinecraftPacketIdMapping(0x1A, ProtocolVersion.MINECRAFT_1_19_4),
             ],
-            typeof(PlayDisconnectPacket)
+            typeof(JsonDisconnectPacket)
         },
         {
             [

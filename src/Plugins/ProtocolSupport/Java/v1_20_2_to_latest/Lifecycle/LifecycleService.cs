@@ -44,15 +44,15 @@ public class LifecycleService(ILogger<LifecycleService> logger, IEventService ev
 
         if (await player.IsPlayingAsync(cancellationToken))
         {
-            await player.SendPacketAsync(new PlayDisconnectPacket { Reason = reason }, cancellationToken);
+            await player.SendPacketAsync(new NbtDisconnectPacket { Reason = reason }, cancellationToken);
         }
         else if (await player.IsConfiguringAsync(cancellationToken))
         {
-            await channel.SendPacketAsync(new ConfigurationDisconnectPacket { Reason = reason }, cancellationToken);
+            await channel.SendPacketAsync(new NbtDisconnectPacket { Reason = reason }, cancellationToken);
         }
         else if (await player.IsLoggingInAsync(cancellationToken))
         {
-            await channel.SendPacketAsync(new LoginDisconnectPacket { Reason = reason }, cancellationToken);
+            await channel.SendPacketAsync(new JsonDisconnectPacket { Reason = reason }, cancellationToken);
         }
         else
         {
