@@ -1,98 +1,122 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Void.Proxy;
+using Void.Tests.Streams;
 using Xunit;
 
 namespace Void.Tests.ServersTests;
 
 public class ServerArgumentParsingTests
 {
-    [Theory]
-    [InlineData("paper.default.svc.cluster.local", "paper.default.svc.cluster.local", 25565)]
-    [InlineData("localhost:25566", "localhost", 25566)]
-    [InlineData("example.com", "example.com", 25565)]
-    [InlineData("example.com:30000", "example.com", 30000)]
-    [InlineData("192.168.1.1", "192.168.1.1", 25565)]
-    [InlineData("192.168.1.1:25567", "192.168.1.1", 25567)]
-    [InlineData("[2001:db8::1]:25565", "[2001:db8::1]", 25565)]
-    public void ParseServerArgument_ValidFormats_ParsesCorrectly(string input, string expectedHost, int expectedPort)
+    [Fact]
+    public async Task EntryPoint_UsesServerOptionWithoutPort_DefaultsTo25565()
     {
-        // Parse using Uri (mimicking the ServerService logic)
-        var result = Uri.TryCreate($"tcp://{input}", UriKind.Absolute, out var uri);
-        
-        Assert.True(result, $"Failed to parse: {input}");
-        Assert.NotNull(uri);
-        Assert.Equal(expectedHost, uri.Host);
-        
-        var actualPort = uri.Port == -1 ? 25565 : uri.Port;
-        Assert.Equal(expectedPort, actualPort);
-    }
+        var logs = new CollectingTextWriter();
 
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData("invalid::port")]
-    public void ParseServerArgument_InvalidFormats_FailsOrHandlesGracefully(string input)
-    {
-        if (string.IsNullOrWhiteSpace(input))
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions
         {
-            // Empty/whitespace should be handled before parsing
-            Assert.True(string.IsNullOrWhiteSpace(input));
+            LogWriter = logs,
+            Arguments = ["--ignore-file-servers", "--server", "paper.default.svc.cluster.local"],
+            WorkingDirectory = nameof(EntryPoint_UsesServerOptionWithoutPort_DefaultsTo25565)
+        }, cancellationTokenSource.Token);
+
+        try
+        {
+            Assert.Equal(0, exitCode);
+
+            Assert.Contains(logs.Lines, line => line.Contains("Registered servers"));
+            Assert.Contains(logs.Lines, line => line.Contains("paper.default.svc.cluster.local:25565"));
         }
-        else
+        catch (Exception exception)
         {
-            // Invalid formats should fail to parse or be rejected
-            var result = Uri.TryCreate($"tcp://{input}", UriKind.Absolute, out var uri);
-            
-            if (result && uri != null)
-            {
-                // If it parses, ensure host is valid
-                Assert.False(string.IsNullOrWhiteSpace(uri.Host));
-            }
+            Assert.Fail($"{nameof(VoidEntryPoint)} failed to run or stop successfully.\n{exception}\nLogs:\n{logs.Text}");
         }
     }
 
     [Fact]
-    public void DefaultPort_IsCorrectMinecraftPort()
+    public async Task EntryPoint_UsesServerOptionWithPort_UsesSpecifiedPort()
     {
-        const int expectedDefaultPort = 25565;
-        
-        // Test that a hostname without port defaults to 25565
-        var result = Uri.TryCreate("tcp://minecraft.server.com", UriKind.Absolute, out var uri);
-        
-        Assert.True(result);
-        Assert.NotNull(uri);
-        Assert.Equal(-1, uri.Port); // Uri returns -1 for missing port
-        
-        var actualPort = uri.Port == -1 ? expectedDefaultPort : uri.Port;
-        Assert.Equal(25565, actualPort);
+        var logs = new CollectingTextWriter();
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions
+        {
+            LogWriter = logs,
+            Arguments = ["--ignore-file-servers", "--server", "localhost:25566"],
+            WorkingDirectory = nameof(EntryPoint_UsesServerOptionWithPort_UsesSpecifiedPort)
+        }, cancellationTokenSource.Token);
+
+        try
+        {
+            Assert.Equal(0, exitCode);
+
+            Assert.Contains(logs.Lines, line => line.Contains("Registered servers"));
+            Assert.Contains(logs.Lines, line => line.Contains("localhost:25566"));
+        }
+        catch (Exception exception)
+        {
+            Assert.Fail($"{nameof(VoidEntryPoint)} failed to run or stop successfully.\n{exception}\nLogs:\n{logs.Text}");
+        }
     }
 
-    [Theory]
-    [InlineData("localhost:25565")]
-    [InlineData("localhost:1")]
-    [InlineData("localhost:65535")]
-    public void ParseServerArgument_ValidPortRange_Succeeds(string input)
+    [Fact]
+    public async Task EntryPoint_UsesMultipleServersWithMixedFormats_ParsesAllCorrectly()
     {
-        var result = Uri.TryCreate($"tcp://{input}", UriKind.Absolute, out var uri);
-        
-        Assert.True(result);
-        Assert.NotNull(uri);
-        Assert.InRange(uri.Port, 1, 65535);
+        var logs = new CollectingTextWriter();
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions
+        {
+            LogWriter = logs,
+            Arguments = [
+                "--ignore-file-servers",
+                "--server", "server1.local",
+                "--server", "server2.local:25567",
+                "--server", "192.168.1.1"
+            ],
+            WorkingDirectory = nameof(EntryPoint_UsesMultipleServersWithMixedFormats_ParsesAllCorrectly)
+        }, cancellationTokenSource.Token);
+
+        try
+        {
+            Assert.Equal(0, exitCode);
+
+            Assert.Contains(logs.Lines, line => line.Contains("Registered servers"));
+            Assert.Contains(logs.Lines, line => line.Contains("server1.local:25565"));
+            Assert.Contains(logs.Lines, line => line.Contains("server2.local:25567"));
+            Assert.Contains(logs.Lines, line => line.Contains("192.168.1.1:25565"));
+        }
+        catch (Exception exception)
+        {
+            Assert.Fail($"{nameof(VoidEntryPoint)} failed to run or stop successfully.\n{exception}\nLogs:\n{logs.Text}");
+        }
     }
 
-    [Theory]
-    [InlineData("server1.local")]
-    [InlineData("server2.local:25567")]
-    [InlineData("192.168.1.1")]
-    [InlineData("192.168.1.2:25568")]
-    public void ParseServerArgument_MixedFormats_EachParsesCorrectly(string input)
+    [Fact]
+    public async Task EntryPoint_UsesServerOptionWithIPv6_ParsesCorrectly()
     {
-        var result = Uri.TryCreate($"tcp://{input}", UriKind.Absolute, out var uri);
-        
-        Assert.True(result);
-        Assert.NotNull(uri);
-        Assert.False(string.IsNullOrWhiteSpace(uri.Host));
-        
-        var port = uri.Port == -1 ? 25565 : uri.Port;
-        Assert.InRange(port, 1, 65535);
+        var logs = new CollectingTextWriter();
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions
+        {
+            LogWriter = logs,
+            Arguments = ["--ignore-file-servers", "--server", "[2001:db8::1]:25565"],
+            WorkingDirectory = nameof(EntryPoint_UsesServerOptionWithIPv6_ParsesCorrectly)
+        }, cancellationTokenSource.Token);
+
+        try
+        {
+            Assert.Equal(0, exitCode);
+
+            Assert.Contains(logs.Lines, line => line.Contains("Registered servers"));
+            Assert.Contains(logs.Lines, line => line.Contains("[2001:db8::1]:25565"));
+        }
+        catch (Exception exception)
+        {
+            Assert.Fail($"{nameof(VoidEntryPoint)} failed to run or stop successfully.\n{exception}\nLogs:\n{logs.Text}");
+        }
     }
 }
