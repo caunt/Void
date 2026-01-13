@@ -63,7 +63,8 @@ Follow the existing C# style rules:
   - `ci` — Continuous Integration
 - Commit bodies are required and must include a brief note about any observable behavior change.
 - Use the `fix` or `feat` type only when your changes modify the proxy code in `./src`. For documentation, CI, or other unrelated updates, choose a more appropriate type such as `docs` or `chore`.
-- Append a [gitmoji](https://gitmoji.dev/specification) after the commit scope, e.g., `feat(api): ✨ add new endpoint`.
+- Append a [gitmoji](https://gitmoji.dev/specification) after the commit scope, e.g., `feat(api): ✨ added new endpoint`.
+- Use past tense for commit subjects when the change represents a completed action, e.g., `fixed bug` rather than `fix bug`.
 - Pull request titles should follow the same Conventional Commits format.
 - Pull request descriptions must use the following template:
 
