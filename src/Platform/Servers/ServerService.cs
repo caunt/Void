@@ -16,7 +16,7 @@ public class ServerService(ILogger<ServerService> logger, ISettings settings, IC
 
     private static readonly Option<string[]> _serversOption = new("--server")
     {
-        Description = "Registers an additional server in format <host>:<port>"
+        Description = "Registers an additional server in format <host>:<port> or <host> (port defaults to 25565)"
     };
 
     public IEnumerable<IServer> All => GetArgumentsServers().Concat(console.GetOptionValue(_ignoreFileServersOption) ? [] : settings.Servers);
@@ -47,6 +47,7 @@ public class ServerService(ILogger<ServerService> logger, ISettings settings, IC
                 continue;
             }
 
+            // Try to parse with Uri first (this handles the host:port format)
             if (!Uri.TryCreate($"tcp://{argument}", UriKind.Absolute, out var uri))
             {
                 logger.LogWarning("Invalid server {Server}", argument);
@@ -55,6 +56,10 @@ public class ServerService(ILogger<ServerService> logger, ISettings settings, IC
 
             var port = uri.Port;
             var host = uri.Host;
+
+            // If port is -1, Uri couldn't parse it, so use the default port
+            if (port == -1)
+                port = IServer.DefaultPort;
 
             if (port is < 1 or > 65535 || string.IsNullOrWhiteSpace(host))
             {

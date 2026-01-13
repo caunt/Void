@@ -8,6 +8,10 @@ namespace Void.Proxy.Api.Servers;
 public interface IServer
 {
     /// <summary>
+    /// The default Minecraft server port.
+    /// </summary>
+    public const int DefaultPort = 25565;
+    /// <summary>
     /// Gets the name of the server.
     /// </summary>
     public string Name { get; }
