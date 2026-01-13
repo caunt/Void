@@ -74,7 +74,8 @@ Options:
     --ignore-file-servers \
     --server 127.0.0.1:25565 \
     --server paper.default.svc.cluster.local \
-    --server [2001:db8::1]:25565
+    --server [2001:db8::1]:25565 \
+    --server [2001:db8::1]
   ```
 
 ## Forwarding
