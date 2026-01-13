@@ -51,7 +51,7 @@ spec:
     spec:
       containers:
       - name: void
-        image: caunt/void:latest
+        image: caunt/void:dev
         imagePullPolicy: Always
         args:
           - "--ignore-file-servers"
