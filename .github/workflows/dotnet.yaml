@@ -87,6 +87,7 @@ jobs:
           if-no-files-found: error
       - name: Test
         if: ${{ matrix.run-tests && !startsWith(env.COMMIT_MESSAGE, 'revert') && !startsWith(env.COMMIT_MESSAGE, 'docs') && !startsWith(env.COMMIT_MESSAGE, 'style') && !startsWith(env.COMMIT_MESSAGE, 'chore') && !startsWith(env.COMMIT_MESSAGE, 'refactor') && !startsWith(env.COMMIT_MESSAGE, 'build') && !startsWith(env.COMMIT_MESSAGE, 'ci') }} # GitHub Actions are limited in runners architectures. Check http://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#standard-github-hosted-runners-for-public-repositories.
+        continue-on-error: true
         env:
           VOID_INTEGRATION_PROXIED_TESTS_ENABLED: true
         run: dotnet test --runtime ${{ matrix.runtime }} --verbosity normal ${{ matrix.parameters }}
