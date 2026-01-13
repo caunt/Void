@@ -78,7 +78,6 @@ Options:
     --server paper-server.default.svc.cluster.local
   ```
 
-
 ## Forwarding
 - `--forwarding-modern-key`
   Sets the secret key for [**Modern (Velocity)**](/docs/forwardings/modern) forwarding.
