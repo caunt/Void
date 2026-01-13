@@ -77,7 +77,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
 
                     if (!response.IsSuccessStatusCode)
                     {
-                        logger.LogWarning("Remote plugin {Name} couldn't be loaded: {StatusCode}", remoteName, response.StatusCode);
+                        logger.LogWarning("Remote plugin {Uri} couldn't be loaded: {StatusCode}", url, response.StatusCode);
                         return null;
                     }
 
@@ -86,7 +86,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
                 }
                 catch (Exception exception)
                 {
-                    logger.LogWarning("Remote plugin {Name} couldn't be loaded: {Message}", remoteName, exception.Message);
+                    logger.LogWarning("Remote plugin {Uri} couldn't be loaded: {Message}", url, exception.Message);
                     return null;
                 }
             }
