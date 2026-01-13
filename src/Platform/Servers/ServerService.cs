@@ -62,7 +62,7 @@ public class ServerService(ILogger<ServerService> logger, ISettings settings, IC
             var port = uri.Port;
             var host = uri.Host;
 
-            // If port is -1, no port was specified, so use the default port
+            // Uri.Port returns -1 when no port is specified in the URI
             if (port == -1)
                 port = DefaultPort;
 
