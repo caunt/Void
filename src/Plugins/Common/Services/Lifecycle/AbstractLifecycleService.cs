@@ -40,6 +40,9 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
     [Subscribe]
     public void OnPlayerDisconnected(PlayerDisconnectedEvent @event)
     {
+        if (!@event.Player.IsMinecraft)
+            return;
+
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
