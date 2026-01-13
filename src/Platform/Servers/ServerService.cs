@@ -9,6 +9,11 @@ namespace Void.Proxy.Servers;
 
 public class ServerService(ILogger<ServerService> logger, ISettings settings, IConsoleService console) : IServerService, IEventListener
 {
+    /// <summary>
+    /// The default Minecraft server port.
+    /// </summary>
+    private const int DefaultPort = 25565;
+
     private static readonly Option<bool> _ignoreFileServersOption = new("--ignore-file-servers")
     {
         Description = "Ignore servers specified in configuration files"
@@ -59,7 +64,7 @@ public class ServerService(ILogger<ServerService> logger, ISettings settings, IC
 
             // If port is -1, Uri couldn't parse it, so use the default port
             if (port == -1)
-                port = IServer.DefaultPort;
+                port = DefaultPort;
 
             if (port is < 1 or > 65535 || string.IsNullOrWhiteSpace(host))
             {
