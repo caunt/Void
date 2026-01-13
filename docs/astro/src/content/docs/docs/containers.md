@@ -21,7 +21,7 @@ You can pass additional [program arguments](/docs/configuration/program-argument
 ```bash
 docker run --name void --network host --pull=always --rm caunt/void:dev \
   --ignore-file-servers \
-  --server paper-server.default.svc.cluster.local:25566 \
+  --server mc.example.com:25566 \
   --port 25565 \
   --interface 0.0.0.0
 ```
@@ -55,7 +55,7 @@ spec:
         imagePullPolicy: Always
         args:
           - "--ignore-file-servers"
-          - "--server=paper.default.svc.cluster.local"
+          - "--server=paper-server.default.svc.cluster.local"
         ports:
         - name: watchdog
           containerPort: 80
