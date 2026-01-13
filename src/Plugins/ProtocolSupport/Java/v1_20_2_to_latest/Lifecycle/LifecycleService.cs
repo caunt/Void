@@ -44,7 +44,7 @@ public class LifecycleService(ILogger<LifecycleService> logger, IEventService ev
 
         if (await player.IsPlayingAsync(cancellationToken))
         {
-            await player.SendPacketAsync(new NbtDisconnectPacket { Reason = reason }, cancellationToken);
+            await channel.SendPacketAsync(new NbtDisconnectPacket { Reason = reason }, cancellationToken);
         }
         else if (await player.IsConfiguringAsync(cancellationToken))
         {
