@@ -110,7 +110,7 @@ internal ref struct MemoryStreamBackingBuffer(MemoryStream memoryStream)
 
     public readonly ReadOnlySpan<byte> Read(long length)
     {
-        // TODO is there way to get ReadOnlySequence from MemoryStream? do not allocate please
+        // TODO is there a way to get ReadOnlySequence from MemoryStream? do not allocate please
         var block = new byte[length];
         memoryStream.ReadExactly(block);
         return block;
