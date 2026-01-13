@@ -13,6 +13,11 @@ on:
       dotnet-version:
         description: "Full version of .NET SDK"
         required: false
+      skip-tests:
+        description: "Skip running dotnet tests"
+        required: false
+        default: true
+        type: boolean
   push:
     branches: ["main"]
 
@@ -29,6 +34,7 @@ jobs:
     with:
       dotnet-version: ${{ needs.semver.outputs.dotnet-version }}
       void-version: ${{ needs.semver.outputs.void-version }}
+      skip-tests: ${{ github.event.inputs.skip-tests || 'false' }}
 
   github:
     needs: [build,semver]

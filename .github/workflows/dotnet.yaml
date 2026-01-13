@@ -7,6 +7,10 @@ on:
       void-version:
         type: string
         required: true
+      skip-tests:
+        type: string
+        required: false
+        default: 'false'
 
 jobs:
   publish:
@@ -86,7 +90,7 @@ jobs:
           compression-level: 9
           if-no-files-found: error
       - name: Test
-        if: ${{ matrix.run-tests && !startsWith(env.COMMIT_MESSAGE, 'revert') && !startsWith(env.COMMIT_MESSAGE, 'docs') && !startsWith(env.COMMIT_MESSAGE, 'style') && !startsWith(env.COMMIT_MESSAGE, 'chore') && !startsWith(env.COMMIT_MESSAGE, 'refactor') && !startsWith(env.COMMIT_MESSAGE, 'build') && !startsWith(env.COMMIT_MESSAGE, 'ci') }} # GitHub Actions are limited in runners architectures. Check http://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#standard-github-hosted-runners-for-public-repositories.
+        if: ${{ inputs.skip-tests != 'true' && matrix.run-tests && !startsWith(env.COMMIT_MESSAGE, 'revert') && !startsWith(env.COMMIT_MESSAGE, 'docs') && !startsWith(env.COMMIT_MESSAGE, 'style') && !startsWith(env.COMMIT_MESSAGE, 'chore') && !startsWith(env.COMMIT_MESSAGE, 'refactor') && !startsWith(env.COMMIT_MESSAGE, 'build') && !startsWith(env.COMMIT_MESSAGE, 'ci') }} # GitHub Actions are limited in runners architectures. Check http://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#standard-github-hosted-runners-for-public-repositories.
         continue-on-error: true
         env:
           VOID_INTEGRATION_PROXIED_TESTS_ENABLED: true
