@@ -49,22 +49,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
     {
         var plugins = await GetArgumentsPlugins().Concat(GetVariablesPlugins()).Select(async variable =>
         {
-            if (!Path.IsPathRooted(variable))
-                variable = Path.Combine(runOptions.WorkingDirectory, variable);
-
-            if (File.Exists(variable))
-            {
-                var name = Path.GetFileName(variable);
-                logger.LogTrace("Found {Name} local plugin", name);
-
-                await using var stream = File.OpenRead(variable);
-                return LoadContainer(name, stream);
-            }
-            else if (Directory.Exists(variable))
-            {
-                return await LoadDirectoryPluginTypesAsync(new DirectoryInfo(variable), cancellationToken);
-            }
-            else if (Uri.TryCreate(variable, UriKind.Absolute, out var url))
+            if (Uri.TryCreate(variable, UriKind.Absolute, out var url))
             {
                 if (url.IsFile)
                 {
@@ -78,7 +63,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
                     }
                     catch (Exception exception)
                     {
-                        logger.LogWarning(exception, "Local plugin {Name} couldn't be loaded", name);
+                        logger.LogWarning("Local plugin {Name} couldn't be loaded: {Message}", name, exception.Message);
                         return null;
                     }
                 }
@@ -101,9 +86,25 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
                 }
                 catch (Exception exception)
                 {
-                    logger.LogWarning(exception, "Remote plugin {Name} couldn't be loaded", remoteName);
+                    logger.LogWarning("Remote plugin {Name} couldn't be loaded: {Message}", remoteName, exception.Message);
                     return null;
                 }
+            }
+
+            if (!Path.IsPathRooted(variable))
+                variable = Path.Combine(runOptions.WorkingDirectory, variable);
+
+            if (File.Exists(variable))
+            {
+                var name = Path.GetFileName(variable);
+                logger.LogTrace("Found {Name} local plugin", name);
+
+                await using var stream = File.OpenRead(variable);
+                return LoadContainer(name, stream);
+            }
+            else if (Directory.Exists(variable))
+            {
+                return await LoadDirectoryPluginTypesAsync(new DirectoryInfo(variable), cancellationToken);
             }
             else
             {
