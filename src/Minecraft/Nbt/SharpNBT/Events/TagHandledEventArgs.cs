@@ -17,7 +17,7 @@ public class TagHandledEventArgs : HandledEventArgs
     public TagType Type { get; }
 
     /// <summary>
-    /// Gets flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.
+    /// Gets flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.
     /// </summary>
     public bool IsNamed { get; }
 
@@ -38,7 +38,7 @@ public class TagHandledEventArgs : HandledEventArgs
     /// Creates a new instance of the <see cref="TagHandledEventArgs"/> class.
     /// </summary>
     /// <param name="type">A constant describing the basic NBT type of the tag.</param>
-    /// <param name="isNamed">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="isNamed">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <param name="stream">The stream being read from, positioned at the beginning of the tag payload.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="stream"/> is <see langword="null"/>.</exception>
     public TagHandledEventArgs(TagType type, bool isNamed, Stream stream)
