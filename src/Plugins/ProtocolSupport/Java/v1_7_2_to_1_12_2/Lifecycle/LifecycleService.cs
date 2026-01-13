@@ -57,6 +57,10 @@ public class LifecycleService(ILogger<LifecycleService> logger, IEventService ev
         {
             await channel.SendPacketAsync(new JsonDisconnectPacket { Reason = reason }, cancellationToken);
         }
+        else if (await player.IsInLoginPhaseAsync(cancellationToken))
+        {
+            await channel.SendPacketAsync(new JsonDisconnectPacket { Reason = reason }, cancellationToken);
+        }
         else
         {
             return false;

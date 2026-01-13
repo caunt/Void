@@ -2,6 +2,7 @@
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clientbound;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Extensions;
 
@@ -35,5 +36,18 @@ public static class PlayerExtensions
 
         // if registry contains one of Login state packets
         return registry.Contains<LoginSuccessPacket>();
+    }
+
+    public static async ValueTask<bool> IsInLoginPhaseAsync(this IPlayer player, CancellationToken cancellationToken = default)
+    {
+        var channel = await player.GetChannelAsync(cancellationToken);
+
+        if (!channel.TryGet<IMinecraftPacketMessageStream>(out var stream))
+            return false;
+
+        var registry = stream.Registries.PacketIdSystem;
+
+        // if registry contains one of Login state serverbound packets
+        return registry.Contains<LoginStartPacket>();
     }
 }
