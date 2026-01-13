@@ -33,7 +33,7 @@ That’s the gist. Now let’s put it into a Deployment that ships.
 
 ## Namespace and basic assumptions
 
-I’m assuming you have a working cluster with a default StorageClass, but we won’t rely on a filesystem layout inside the pod. DNS inside the cluster should resolve your backend server pods or Services like `minecraft-backend.default.svc.cluster.local`. For simplicity I’ll refer to it as `minecraft-backend` below.
+I’m assuming you have a working cluster with a default StorageClass, but we won’t rely on a filesystem layout inside the pod. DNS inside the cluster should resolve your backend server pods or Services like `paper-server.default.svc.cluster.local`. For simplicity I’ll refer to it as `paper-server` below.
 
 ---
 
@@ -65,7 +65,7 @@ spec:
           args:
             - "--ignore-file-servers"
             - "--server"
-            - "minecraft-backend:25566"
+            - "paper-server.default.svc.cluster.local:25566"
             - "--port"
             - "25565"
             - "--interface"
