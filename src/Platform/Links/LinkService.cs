@@ -96,8 +96,6 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
         catch (Exception exception)
         {
             logger.LogWarning("Player {Player} cannot connect to a {Server} server because it is unavailable: {Message}", unwrappedPlayer, server, exception.Message);
-
-            await unwrappedPlayer.KickAsync($"Server {server} is unavailable", cancellationToken);
             return ConnectionResult.NotConnected;
         }
 
