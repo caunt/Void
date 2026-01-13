@@ -65,7 +65,7 @@ Options:
 
 ## Servers
 - `--server`
-  Registers a server in the format `<host>:<port>` where the port is between `1` and `65535`. IPv6 addresses must be enclosed in square brackets.
+  Registers a server in the format `<host>:<port>` or `<host>` (port defaults to 25565). The port must be between `1` and `65535`. IPv6 addresses must be enclosed in square brackets.
 - `--ignore-file-servers`
   Ignore servers specified in [**configuration files**](/docs/configuration/in-file).
 
@@ -73,6 +73,7 @@ Options:
   ./void-linux-x64 \
     --ignore-file-servers \
     --server 127.0.0.1:25565 \
+    --server paper.default.svc.cluster.local \
     --server [2001:db8::1]:25565
   ```
 
