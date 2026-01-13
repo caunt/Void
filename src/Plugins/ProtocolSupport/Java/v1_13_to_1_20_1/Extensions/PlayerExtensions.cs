@@ -36,17 +36,4 @@ public static class PlayerExtensions
         // if registry contains one of Login state packets
         return registry.Contains<LoginSuccessPacket>();
     }
-
-    public static async ValueTask<bool> IsInLoginPhaseAsync(this IPlayer player, CancellationToken cancellationToken = default)
-    {
-        var channel = await player.GetChannelAsync(cancellationToken);
-
-        if (!channel.TryGet<IMinecraftPacketMessageStream>(out var stream))
-            return false;
-
-        var registry = stream.Registries.PacketIdSystem;
-
-        // if registry contains one of Login state serverbound packets
-        return registry.Contains<LoginStartPacket>();
-    }
 }

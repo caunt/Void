@@ -50,17 +50,10 @@ public class LifecycleService(ILogger<LifecycleService> logger, IEventService ev
         {
             await channel.SendPacketAsync(new NbtDisconnectPacket { Reason = reason }, cancellationToken);
         }
-        else if (await player.IsLoggingInAsync(cancellationToken))
-        {
-            await channel.SendPacketAsync(new JsonDisconnectPacket { Reason = reason }, cancellationToken);
-        }
-        else if (await player.IsInLoginPhaseAsync(cancellationToken))
-        {
-            await channel.SendPacketAsync(new JsonDisconnectPacket { Reason = reason }, cancellationToken);
-        }
         else
         {
-            return false;
+            // Try to send Login disconnect packet as fallback
+            await channel.SendPacketAsync(new JsonDisconnectPacket { Reason = reason }, cancellationToken);
         }
 
         return true;
