@@ -34,7 +34,7 @@ jobs:
     with:
       dotnet-version: ${{ needs.semver.outputs.dotnet-version }}
       void-version: ${{ needs.semver.outputs.void-version }}
-      skip-tests: ${{ github.event.inputs.skip-tests || false }}
+      skip-tests: ${{ github.event.inputs.skip-tests == 'true' }}
 
   github:
     needs: [build,semver]
