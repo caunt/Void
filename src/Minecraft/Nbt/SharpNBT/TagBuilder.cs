@@ -309,7 +309,7 @@ public class TagBuilder
     }
 
     /// <summary>
-    /// Closes the current <see cref="ListTag"/> section and decreases the <see cref="Depth"/> by one. Does nothing if the the current node does not
+    /// Closes the current <see cref="ListTag"/> section and decreases the <see cref="Depth"/> by one. Does nothing if the current node does not
     /// represent a <see cref="ListTag"/>.
     /// </summary>
     /// <returns>Returns this <see cref="TagBuilder"/> instance for chaining.</returns>
@@ -337,7 +337,7 @@ public class TagBuilder
     }
 
     /// <summary>
-    /// Closes the current <see cref="CompoundTag"/> section and decreases the <see cref="Depth"/> by one. Does nothing if the the current node does not
+    /// Closes the current <see cref="CompoundTag"/> section and decreases the <see cref="Depth"/> by one. Does nothing if the current node does not
     /// represent a <see cref="CompoundTag"/>.
     /// </summary>
     /// <returns>Returns this <see cref="TagBuilder"/> instance for chaining.</returns>
