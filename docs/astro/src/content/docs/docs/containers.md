@@ -53,6 +53,9 @@ spec:
       - name: void
         image: caunt/void:latest
         imagePullPolicy: Always
+        args:
+            - "--ignore-file-servers"
+            - "--server=paper.default.svc.cluster.local"
         ports:
         - name: watchdog
           containerPort: 80
