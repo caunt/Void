@@ -143,7 +143,7 @@ public static class VoidEntryPoint
             .Enrich.FromLogContext()
             .MinimumLevel.ControlledBy(loggingLevelSwitch)
             .MinimumLevel.Override(nameof(Microsoft), LogEventLevel.Information)
-            .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Verbose);
+            .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning);
 
         const string template = "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}";
 
