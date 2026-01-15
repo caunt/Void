@@ -328,7 +328,7 @@ internal sealed class NotifyPropertyChangedInvocatorAttribute : Attribute
 /// means that the method doesn't return normally (throws or terminates the process).<br/>
 /// Value <c>canbenull</c> is only applicable for output parameters.<br/>
 /// You can use multiple <c>[ContractAnnotation]</c> for each FDT row, or use single attribute
-/// with rows separated by the semicolon. There is no notion of order rows, all rows are checked
+/// with rows separated by the semicolon. There is no notion of order of rows, all rows are checked
 /// for applicability and applied per each program state tracked by the analysis engine.<br/>
 /// </syntax>
 /// <examples><list>
