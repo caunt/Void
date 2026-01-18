@@ -80,11 +80,13 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
 
     public async ValueTask KickPlayerAsync(IPlayer player, string? text = null, CancellationToken cancellationToken = default)
     {
+        player = player.Unwrap();
         await KickPlayerAsync(player, new PlayerKickEvent(player, text), cancellationToken);
     }
 
     public async ValueTask KickPlayerAsync(IPlayer player, PlayerKickEvent playerKickEvent, CancellationToken cancellationToken = default)
     {
+        player = player.Unwrap();
         logger.LogTrace("Kicking player {Player}", player);
 
         if (!All.Contains(player))
