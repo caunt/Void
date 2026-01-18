@@ -91,7 +91,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
             if (await WaitWithTimeout(_playerToServerTask))
             {
-                logger.LogTrace("Timed out waiting Player {Player} disconnection from Server {Server} manually, closing forcefully", Player, Server);
+                logger.LogTrace("Timed out waiting for Player {Player} disconnection from Server {Server} manually, closing forcefully", Player, Server);
                 await _ctsPlayerToServerForce.CancelAsync();
 
                 if (await WaitWithTimeout(_playerToServerTask))
@@ -116,7 +116,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
             if (await WaitWithTimeout(_serverToPlayerTask))
             {
-                logger.LogTrace("Timed out waiting Server {Server} disconnection from Player {Player} manually, closing forcefully", Server, Player);
+                logger.LogTrace("Timed out waiting for Server {Server} disconnection from Player {Player} manually, closing forcefully", Server, Player);
                 await _ctsServerToPlayerForce.CancelAsync();
 
                 if (await WaitWithTimeout(_serverToPlayerTask))
