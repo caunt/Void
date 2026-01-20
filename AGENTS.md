@@ -1,5 +1,15 @@
 # Repository Guidelines
 
+## Initial exploration
+
+Before starting any work, run the following command to better understand the repository structure:
+
+```bash
+tree --prune -I 'bin|obj|.git'
+```
+
+This displays the directory tree while excluding build artifacts (`bin`, `obj`) and git metadata (`.git`).
+
 ## Structure
 
 This repository is a .NET solution composed of the following sections:
