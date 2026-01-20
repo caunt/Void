@@ -90,14 +90,20 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (@event.Phase is Phase.Handshake)
             return;
 
-        var link = @event.Link ?? throw new InvalidOperationException("Cannot clear registries without a link.");
+        if (@event.Link is { } link)
+        {
+            // Clear only affected registries that are no longer valid
 
-        // Clear only affected registries that are no longer valid
-        if (@event.Side is Side.Client)
-            link.PlayerChannel.MinecraftRegistries.ClearPlugins();
+            if (@event.Side is Side.Client)
+                link.PlayerChannel.MinecraftRegistries.ClearPlugins();
 
-        if (@event.Side is Side.Server)
-            link.ServerChannel.MinecraftRegistries.ClearPlugins();
+            if (@event.Side is Side.Server)
+                link.ServerChannel.MinecraftRegistries.ClearPlugins();
+        }
+        else
+        {
+            @event.Channel.MinecraftRegistries.ClearPlugins();
+        }
     }
 
     [Subscribe]
