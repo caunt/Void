@@ -54,7 +54,7 @@ public enum FormatOptions
     BedrockFile = LittleEndian,
 
     /// <summary>
-    /// Flags for using a format compatible with Bedrock editions of Minecraft when transporting across a network..
+    /// Flags for using a format compatible with Bedrock editions of Minecraft when transporting across a network.
     /// </summary>
     BedrockNetwork = LittleEndian | VarIntegers | ZigZagEncoding
 }
