@@ -34,8 +34,8 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
     [Subscribe]
     public void OnPlayerConnecting(PlayerConnectingEvent @event)
     {
-        logger.LogTrace("Player connecting: {Client}", @event.Client);
         @event.Result ??= new SimplePlayer(@event.Client, instance => new PlayerContext(@event.GetServices(instance)) { Player = instance });
+        logger.LogTrace("Player connecting: {Player}", @event.Result);
     }
 
     [Subscribe]
