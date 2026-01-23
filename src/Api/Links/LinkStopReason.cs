@@ -13,7 +13,7 @@ public enum LinkStopReason
     ServerDisconnected,
 
     /// <summary>
-    /// Internal exception occurred in <see cref="ILink"/> implementation.
+    /// An internal exception occurred in <see cref="ILink"/> implementation.
     /// </summary>
     InternalException,
 
