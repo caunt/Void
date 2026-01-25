@@ -47,9 +47,15 @@ public class RedirectionService(ILogger<RedirectionService> logger, Plugin plugi
         if (targetServer is null)
             return 1;
 
-        await links.ConnectAsync(player, targetServer, cancellationToken);
+        var result = await links.ConnectAsync(player, targetServer, cancellationToken);
 
-        var currentServer = player.Link?.Server ?? throw new InvalidOperationException("Player is not linked to any server after redirection.");
+        if (result is ConnectionResult.NotConnected)
+            return 1;
+
+        var currentServer = player.Link?.Server ?? throw new InvalidOperationException("Player is not linked to any server after successful redirection.");
+
+        if (previousServer == currentServer)
+            return 0;
 
         player.Context.Logger.LogInformation("Redirected from server {PreviousServer} to server {CurrentServer}", previousServer, currentServer);
 
