@@ -26,16 +26,15 @@ Then use `GetAsync<T>()` method to get the configuration instance.
 ```csharp
 public class MyPlugin(IConfigurationService configs) : IPlugin
 {
+    private MySettings? _settings;
+
     [Subscribe]
-    public async ValueTask OnPluginLoading(PluginLoadingEvent @event, CancellationToken cancellationToken)
+    public async ValueTask OnProxyStarting(ProxyStartingEvent @event, CancellationToken cancellationToken)
     {
-        // This event is fired when any plugin is being loaded
-
-        // Skip all other plugin load events except ours
-        if (@event.Plugin != this)
-            return;
-
-        var settings = await configs.GetAsync<MySettings>(cancellationToken);
+        // Once configuration is loaded, any changes made to them will be automatically saved to disk.
+        // Vice versa, any changes made to the configuration file on disk will be automatically loaded into that instance.
+        // You do not need to worry about saving or loading the configuration manually, it is done implicitly.
+        _settings = await configs.GetAsync<MySettings>(cancellationToken);
     }
 }
 ```
