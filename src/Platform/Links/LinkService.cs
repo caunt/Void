@@ -40,14 +40,14 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
             if (ignoredServers.Contains(selectedServer))
                 logger.LogWarning("Selected server {Server} for player {Player} is in ignored servers list", selectedServer, player);
 
-            return await ConnectAsync(player, selectedServer, cancellationToken);
+            return await ConnectCoreAsync(player, selectedServer, cancellationToken);
         }
 
         foreach (var server in servers.All.Except(ignoredServers))
         {
             try
             {
-                var result = await ConnectAsync(player, server, cancellationToken);
+                var result = await ConnectCoreAsync(player, server, cancellationToken);
 
                 if (result is not ConnectionResult.Connected)
                     continue;
@@ -64,6 +64,75 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
     }
 
     public async ValueTask<ConnectionResult> ConnectAsync(IPlayer player, IServer server, CancellationToken cancellationToken = default)
+    {
+        var previousServer = player.Server;
+        var result = await ConnectCoreAsync(player, server, cancellationToken);
+
+        if (result is ConnectionResult.NotConnected)
+        {
+            if (previousServer is null)
+            {
+                await player.KickAsync("Could not redirect you to the target server and you had no previous server.", cancellationToken);
+                return result;
+            }
+
+            result = await ConnectCoreAsync(player, previousServer, cancellationToken);
+
+            if (result is ConnectionResult.NotConnected)
+            {
+                await player.KickAsync("Could not redirect you to the target server nor previous server.", cancellationToken);
+                return result;
+            }
+        }
+
+        return result;
+    }
+
+    [Subscribe(PostOrder.First)]
+    public async ValueTask OnLinkStopped(LinkStoppedEvent @event, CancellationToken cancellationToken)
+    {
+        if (@event.Link.IsAlive)
+            throw new Exception($"Link {@event.Link} is still alive");
+
+        using (await _lock.LockAsync(cancellationToken))
+        {
+            if (!_activeLinks.Remove(@event.Link))
+                throw new InvalidOperationException($"Link {@event.Link} is not found");
+
+            _weakLinks.Remove(@event.Link);
+        }
+
+        // IServer channel is no longer needed
+        @event.Link.ServerChannel.Close();
+
+        if (!@event.Link.PlayerChannel.IsAlive)
+            @event.Link.PlayerChannel.Close();
+        else if (!await @event.Player.IsProtocolSupportedAsync(cancellationToken))
+            @event.Link.PlayerChannel.Close();
+
+        logger.LogTrace("Stopped forwarding {Link} traffic", @event.Link);
+    }
+
+    public bool TryGetLink(IPlayer player, [NotNullWhen(true)] out ILink? link)
+    {
+        player = player.Unwrap();
+        link = _activeLinks.FirstOrDefault(link => link.Player == player);
+        return link is not null;
+    }
+
+    public bool TryGetWeakLink(IPlayer player, [NotNullWhen(true)] out ILink? link)
+    {
+        player = player.Unwrap();
+        link = _weakLinks.FirstOrDefault(link => link.Player == player);
+        return link is not null;
+    }
+
+    public bool HasLink(IPlayer player)
+    {
+        return _activeLinks.Any(link => link.Player == player);
+    }
+
+    private async ValueTask<ConnectionResult> ConnectCoreAsync(IPlayer player, IServer server, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -105,7 +174,7 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
                 await events.ThrowAsync(new PlayerConnectedEvent(unwrappedPlayer), cancellationToken);
 
             link = await events.ThrowWithResultAsync(new CreateLinkEvent(unwrappedPlayer, server, playerChannel, serverChannel), cancellationToken)
-                       ?? new Link(unwrappedPlayer, server, playerChannel, serverChannel, logger, events, cancellationToken);
+                        ?? new Link(unwrappedPlayer, server, playerChannel, serverChannel, logger, events, cancellationToken);
 
             _weakLinks.Add(link);
 
@@ -161,49 +230,5 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
                 }
             }
         }
-    }
-
-    [Subscribe(PostOrder.First)]
-    public async ValueTask OnLinkStopped(LinkStoppedEvent @event, CancellationToken cancellationToken)
-    {
-        if (@event.Link.IsAlive)
-            throw new Exception($"Link {@event.Link} is still alive");
-
-        using (await _lock.LockAsync(cancellationToken))
-        {
-            if (!_activeLinks.Remove(@event.Link))
-                throw new InvalidOperationException($"Link {@event.Link} is not found");
-
-            _weakLinks.Remove(@event.Link);
-        }
-
-        // IServer channel is no longer needed
-        @event.Link.ServerChannel.Close();
-
-        if (!@event.Link.PlayerChannel.IsAlive)
-            @event.Link.PlayerChannel.Close();
-        else if (!await @event.Player.IsProtocolSupportedAsync(cancellationToken))
-            @event.Link.PlayerChannel.Close();
-
-        logger.LogTrace("Stopped forwarding {Link} traffic", @event.Link);
-    }
-
-    public bool TryGetLink(IPlayer player, [NotNullWhen(true)] out ILink? link)
-    {
-        player = player.Unwrap();
-        link = _activeLinks.FirstOrDefault(link => link.Player == player);
-        return link is not null;
-    }
-
-    public bool TryGetWeakLink(IPlayer player, [NotNullWhen(true)] out ILink? link)
-    {
-        player = player.Unwrap();
-        link = _weakLinks.FirstOrDefault(link => link.Player == player);
-        return link is not null;
-    }
-
-    public bool HasLink(IPlayer player)
-    {
-        return _activeLinks.Any(link => link.Player == player);
     }
 }
