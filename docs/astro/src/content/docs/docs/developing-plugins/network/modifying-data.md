@@ -25,7 +25,7 @@ public async ValueTask OnMessageReceived(MessageReceivedEvent @event, Cancellati
         return;
     
     // Cancel the original packet
-    @event.Cancel();
+    @event.Result = true;
     
     // Modify the packet
     packet.Slot = 1;
@@ -36,5 +36,5 @@ public async ValueTask OnMessageReceived(MessageReceivedEvent @event, Cancellati
 ```
 
 :::caution
-Changes to the packet properties are ignored by the internal [**ILink**](/docs/developing-plugins/network/links) implementation. Always ensure you call `Cancel()` and `SendPacketAsync()` to apply your changes.
+Changes to the packet properties are ignored by the internal [**ILink**](/docs/developing-plugins/network/links) implementation. Always ensure you set `Result = true` and call `SendPacketAsync()` to apply your changes.
 :::

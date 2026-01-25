@@ -15,7 +15,7 @@ Packets can be defined with `IMinecraftClientboundPacket<TPacket>` or `IMinecraf
 
 ## Defining Packets
 Your packet definition must specify how to Decode and Encode the packet data.  
-In this example, we will define a [Set Held Item (clientbound)](https://minecraft.wiki/w/Java_Edition_protocol/Packets#Set_Held_Item_(clientbound)) packet.
+In this example, we will define a [**Set Held Item (clientbound)**](https://minecraft.wiki/w/Java_Edition_protocol/Packets#Set_Held_Item_(clientbound)) packet.
 
 This packet contains one integer property - `slot`, which is the index of the item in the player hotbar.
 ```csharp
@@ -26,12 +26,20 @@ public class SetHeldItemClientboundPacket : IMinecraftClientboundPacket<SetHeldI
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        buffer.WriteVarInt(Slot);
+        if (protocolVersion > ProtocolVersion.MINECRAFT_1_21)
+            buffer.WriteVarInt(Slot);
+        else
+            buffer.WriteUnsignedByte((byte)Slot);
     }
 
     public static SetHeldItemClientboundPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        int slot = buffer.ReadVarInt();
+        int slot;
+
+        if (protocolVersion > ProtocolVersion.MINECRAFT_1_21)
+            slot = buffer.ReadVarInt();
+        else
+            slot = buffer.ReadUnsignedByte();
 
         return new SetHeldItemClientboundPacket
         {
@@ -50,14 +58,29 @@ public class SetHeldItemClientboundPacket : IMinecraftClientboundPacket<SetHeldI
 ## Registering Packets
 Before receiving or sending packets, you need to register them specifying packet ids for each game protocol version.
 Packet registrations are made for each game phase, so you need to register them in the correct phase. Common phases are `Handshake`, `Login`, `Configuration` and `Play`.
+
+For convenience, Void provides `PacketIdDefinitions` with predefined packet ID mappings for common packets.
 ```csharp
 [Subscribe]
-public void OnPhaseChanged(PhaseChangedEvent @event)
+public async Task OnPlayerJoinedServer(PlayerJoinedServerEvent @event)
 {
-    if (@event.Phase is not Phase.Play)
-        return;
+    // This event triggers when player joins a server (not the proxy) and both sides become into Play phase.
 
+    // In this example we are using Void predefined packet id mappings in PacketIdDefinitions.
+    // Define your own mappings for packets you'd like to work with.
+    @event.Player.RegisterPacket<SetHeldItemClientboundPacket>(PacketIdDefinitions.ClientboundSetHeldItem);
+    @event.Player.RegisterPacket<SetHeldItemServerboundPacket>(PacketIdDefinitions.ServerboundSetHeldItem);
+}
+```
+
+Alternatively, you can define packet IDs manually for custom packets:
+```csharp
+[Subscribe]
+public void OnPlayerJoinedServer(PlayerJoinedServerEvent @event)
+{
     @event.Player.RegisterPacket<SetHeldItemClientboundPacket>([
+        new(0x09, ProtocolVersion.Oldest),
+        new(0x38, ProtocolVersion.MINECRAFT_1_8),
         new(0x4F, ProtocolVersion.MINECRAFT_1_20_2),
         new(0x51, ProtocolVersion.MINECRAFT_1_20_3),
         new(0x53, ProtocolVersion.MINECRAFT_1_20_5),
