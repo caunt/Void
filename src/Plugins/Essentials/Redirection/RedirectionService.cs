@@ -33,7 +33,7 @@ public class RedirectionService(ILogger<RedirectionService> logger, Plugin plugi
     {
         if (context.Source is not IPlayer player)
         {
-            logger.LogInformation("This command can be executed only by player");
+            logger.LogInformation("This command can be executed only by a player");
             return 1;
         }
 
