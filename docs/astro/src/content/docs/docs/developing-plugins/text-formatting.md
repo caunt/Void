@@ -20,7 +20,7 @@ public class MyScopedService(IPlayerContext context)
 ```
 
 ## Formatting Codes
-It is easy to format text with the Minecraft [formatting codes](https://minecraft.fandom.com/wiki/Formatting_codes) using the & symbol.
+It is easy to format text with the Minecraft [**formatting codes**](https://minecraft.fandom.com/wiki/Formatting_codes) using the & symbol.
 ```csharp
 public class MyScopedService(IPlayerContext context)
 {
