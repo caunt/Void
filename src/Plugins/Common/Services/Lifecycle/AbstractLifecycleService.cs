@@ -16,7 +16,6 @@ using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Events;
-using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
 using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 using Void.Proxy.Plugins.Common.Players;
@@ -134,9 +133,6 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
             : @event.Text is null
                 ? DefaultKickMessage
                 : @event.Text;
-
-        if (@event.Player.Phase is Phase.Handshake)
-            await @event.Player.SetPhaseAsync(link: null, Side.Client, Phase.Login, await @event.Player.GetChannelAsync(cancellationToken), cancellationToken);
 
         try
         {

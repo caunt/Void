@@ -8,6 +8,7 @@ using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Authentication;
+using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
@@ -18,6 +19,7 @@ using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Mojang;
+using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.Common.Services.Authentication;
 
@@ -54,12 +56,43 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         }
         else
         {
-            var nextState = await ReceivePlayerHandshakeAsync(@event.Link, cancellationToken);
-            await events.ThrowAsync(new HandshakeCompletedEvent(@event.Link.Player, @event.Link, Side.Client, nextState), cancellationToken);
+            var handshake = await @event.Link.ReceivePacketAsync<HandshakePacket>(cancellationToken);
 
-            if (nextState is 2 or 3)
+            // Status query
+            if (handshake.IsStatusQuery)
+                await @event.Link.SendPacketAsync(handshake, cancellationToken);
+
+            await events.ThrowAsync(new HandshakeCompletedEvent(@event.Link.Player, @event.Link, Side.Client, handshake.NextState), cancellationToken);
+
+            if (!handshake.IsStatusQuery)
                 @event.Result = AuthenticationSide.Proxy;
         }
+    }
+
+
+    [Subscribe]
+    public async ValueTask OnPlayerKickEvent(PlayerKickEvent @event, CancellationToken cancellationToken)
+    {
+        if (!@event.Player.IsMinecraft)
+            return;
+
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
+            return;
+
+        if (@event.Player.Phase is not Phase.Handshake)
+            return;
+
+        var channel = await @event.Player.GetChannelAsync(cancellationToken);
+
+        if (channel.IsPausedRead)
+            channel.Resume(Operation.Read);
+
+        var handshake = await channel.ReceivePacketAsync<HandshakePacket>(cancellationToken);
+
+        if (!handshake.IsStatusQuery)
+            await @event.Player.SetPhaseAsync(link: null, Side.Client, Phase.Login, await @event.Player.GetChannelAsync(cancellationToken), cancellationToken);
+
+        @event.Result = true;
     }
 
     [Subscribe]
@@ -179,8 +212,6 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
     {
         return ValueTask.CompletedTask;
     }
-
-    protected abstract ValueTask<int> ReceivePlayerHandshakeAsync(ILink link, CancellationToken cancellationToken);
 
     protected static async ValueTask<bool> VerifyMojangProfile(IPlayer player, CancellationToken cancellationToken)
     {

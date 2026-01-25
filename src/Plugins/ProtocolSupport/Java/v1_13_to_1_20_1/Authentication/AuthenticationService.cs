@@ -41,17 +41,6 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         return await player.IsPlayingAsync(cancellationToken);
     }
 
-    protected override async ValueTask<int> ReceivePlayerHandshakeAsync(ILink link, CancellationToken cancellationToken)
-    {
-        var handshake = await link.ReceivePacketAsync<HandshakePacket>(cancellationToken);
-
-        // Status query
-        if (handshake.NextState is not 2 and not 3)
-            await link.SendPacketAsync(handshake, cancellationToken);
-
-        return handshake.NextState;
-    }
-
     protected override async ValueTask FinishPlayingAsync(ILink link, CancellationToken cancellationToken)
     {
         // IPlayer might be in the middle of a bundle when the client is not handling packets until the closing bundle is received

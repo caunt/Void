@@ -39,17 +39,6 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         return await player.IsPlayingAsync(cancellationToken);
     }
 
-    protected override async ValueTask<int> ReceivePlayerHandshakeAsync(ILink link, CancellationToken cancellationToken)
-    {
-        var handshake = await link.ReceivePacketAsync<HandshakePacket>(cancellationToken);
-
-        // Status query
-        if (handshake.NextState is not 2 and not 3)
-            await link.SendPacketAsync(handshake, cancellationToken);
-
-        return handshake.NextState;
-    }
-
     protected override async ValueTask<bool> StartPlayerLoginAsync(ILink link, CancellationToken cancellationToken)
     {
         if (!link.Player.IsMinecraft)
