@@ -14,19 +14,19 @@ This document provides comprehensive verification of all packet IDs for the Set 
 **Sources:**
 1. **wiki.vg Protocol**: Clientbound Held Item Change documented as 0x38 for 1.8 [wiki.vg](https://c4k3.github.io/wiki.vg/Protocol.html)
 2. **S09PacketHeldItemChange Forge API**: Server packet 0x38 for 1.8 [Forge API Docs](https://github.juanmuscaria.com/DocsMC/net/minecraft/network/play/server/S09PacketHeldItemChange.html)
-3. **Protocol Analysis**: Community protocol documentation confirms 0x38 [Multiple Sources]
+3. **Minecraft Wiki Protocol**: Java Edition protocol documentation for 1.8 [Minecraft Wiki](https://minecraft.wiki/w/Java_Edition_protocol/Packets)
 
 ### 1.9 - 1.11.2 (Protocol 107-316): **0x37**
 **Sources:**
 1. **wiki.vg Protocol**: Clientbound Set Held Item is 0x37 for 1.9-1.11 [wiki.vg](https://c4k3.github.io/wiki.vg/Protocol.html)
 2. **Minecraft Wiki Protocol**: Java Edition protocol confirms 0x37 [Minecraft Wiki](https://minecraft.wiki/w/Java_Edition_protocol/Packets)
-3. **Protocol Libraries**: Community-maintained libraries show 0x37 for these versions
+3. **GitHub Packet ID Reference**: Community-maintained reference for 1.9-1.11 [GitHub](https://github.com/xKumorio/Minecraft-Packet-ID-Reference/)
 
-###  1.12 - 1.12.2 (Protocol 335-340): **0x3B**
+### 1.12 - 1.12.2 (Protocol 335-340): **0x3B**
 **Sources:**
 1. **wiki.vg Protocol**: Clientbound packet ID 0x3B for 1.12 series [wiki.vg](https://c4k3.github.io/wiki.vg/Protocol.html)
 2. **Minecraft Packet ID Reference**: GitHub reference confirms 0x3B [GitHub](https://github.com/xKumorio/Minecraft-Packet-ID-Reference/)
-3. **Protocol Documentation**: Multiple protocol docs confirm this ID for 1.12.x
+3. **Minecraft Wiki Protocol**: Java Edition protocol for 1.12 [Minecraft Wiki](https://minecraft.wiki/w/Java_Edition_protocol/Packets)
 
 ### 1.13 - 1.16.5 (Protocol 393-754): **0x3A**
 **Sources:**
@@ -56,7 +56,7 @@ This document provides comprehensive verification of all packet IDs for the Set 
 **Sources:**
 1. **Soupply Protocol Java 338**: Protocol library shows 0x4A [Soupply](https://soupply.github.io/protocol/java338/clientbound.html)
 2. **Minecraft Packet ID Reference**: Confirms 0x4A for 1.19.1-1.19.2 [GitHub](https://github.com/xKumorio/Minecraft-Packet-ID-Reference/)
-3. **Protocol Documentation**: Multiple sources confirm 0x4A for protocol 760
+3. **wiki.vg Protocol**: Protocol documentation for 1.19.1-1.19.2 [wiki.vg](https://c4k3.github.io/wiki.vg/Protocol.html)
 
 ### 1.19.3 (Protocol 761): **0x4C**
 **Sources:**
@@ -89,7 +89,7 @@ This document provides comprehensive verification of all packet IDs for the Set 
 ### 1.12 - 1.12.2 (Protocol 335-340): **0x1A**
 **Sources:**
 1. **wiki.vg Protocol**: Serverbound packet 0x1A for 1.12 series [wiki.vg](https://c4k3.github.io/wiki.vg/Protocol.html)
-2. **Protocol Documentation**: Multiple sources confirm 0x1A for 1.12.x
+2. **Minecraft Wiki Protocol**: Java Edition protocol for 1.12 [Minecraft Wiki](https://minecraft.wiki/w/Java_Edition_protocol/Packets)
 3. **Minecraft Packet Reference**: GitHub repo confirms 0x1A [GitHub](https://github.com/xKumorio/Minecraft-Packet-ID-Reference/)
 
 ### 1.13 - 1.16.5 (Protocol 393-754): **0x25**
@@ -107,7 +107,7 @@ This document provides comprehensive verification of all packet IDs for the Set 
 ### 1.19.3 (Protocol 761): **0x29**
 **Sources:**
 1. **Minecraft Wiki Protocol**: Serverbound packet 0x29 for 1.19.3 [Minecraft Wiki](https://minecraft.wiki/w/Java_Edition_protocol/Packets)
-2. **Protocol Documentation**: Multiple sources confirm 0x29 for protocol 761
+2. **wiki.vg Protocol**: Protocol documentation for 1.19.3 [wiki.vg](https://c4k3.github.io/wiki.vg/Protocol.html)
 3. **GitHub Packet Reference**: Community reference confirms 0x29 [GitHub](https://github.com/xKumorio/Minecraft-Packet-ID-Reference/)
 
 ### 1.20 - 1.20.1 (Protocol 763): **0x28**
