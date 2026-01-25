@@ -55,6 +55,9 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
+        if (@event.Phase is Phase.Handshake && @event.Side is Side.Server)
+            RemoveKeepAliveTracker(@event.Player);
+
         if (@event.Phase is Phase.Configuration or Phase.Play)
             await PongKeepAliveTracker(@event.Player, cancellationToken: cancellationToken);
 
