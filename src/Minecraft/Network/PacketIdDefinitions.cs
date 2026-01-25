@@ -7,6 +7,16 @@ public static class PacketIdDefinitions
     #region Example Plugin Definitions
 
     public static readonly MinecraftPacketIdMapping[] ClientboundSetHeldItem = [
+        new(0x09, ProtocolVersion.Oldest),
+        new(0x38, ProtocolVersion.MINECRAFT_1_8),
+        new(0x37, ProtocolVersion.MINECRAFT_1_9),
+        new(0x3B, ProtocolVersion.MINECRAFT_1_12),
+        new(0x3A, ProtocolVersion.MINECRAFT_1_13),
+        new(0x3F, ProtocolVersion.MINECRAFT_1_17),
+        new(0x3C, ProtocolVersion.MINECRAFT_1_18),
+        new(0x48, ProtocolVersion.MINECRAFT_1_19),
+        new(0x4A, ProtocolVersion.MINECRAFT_1_19_1),
+        new(0x4C, ProtocolVersion.MINECRAFT_1_19_3),
         new(0x4D, ProtocolVersion.MINECRAFT_1_20),
         new(0x4F, ProtocolVersion.MINECRAFT_1_20_2),
         new(0x51, ProtocolVersion.MINECRAFT_1_20_3),
@@ -17,6 +27,12 @@ public static class PacketIdDefinitions
     ];
 
     public static readonly MinecraftPacketIdMapping[] ServerboundSetHeldItem = [
+        new(0x09, ProtocolVersion.Oldest),
+        new(0x16, ProtocolVersion.MINECRAFT_1_9),
+        new(0x1A, ProtocolVersion.MINECRAFT_1_12),
+        new(0x25, ProtocolVersion.MINECRAFT_1_13),
+        new(0x28, ProtocolVersion.MINECRAFT_1_17),
+        new(0x29, ProtocolVersion.MINECRAFT_1_19_3),
         new(0x28, ProtocolVersion.MINECRAFT_1_20),
         new(0x2B, ProtocolVersion.MINECRAFT_1_20_2),
         new(0x2C, ProtocolVersion.MINECRAFT_1_20_3),
