@@ -67,7 +67,7 @@ var bytes = stream.ToArray();
 
 ## SNBT
 SNBT is a human-readable format for NBT data.
-[Read more about SNBT](https://minecraft.wiki/w/NBT_format#SNBT_format).
+[**Read more about SNBT**](https://minecraft.wiki/w/NBT_format#SNBT_format).
 
 ### Converting NBT to SNBT
 ```csharp
