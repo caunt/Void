@@ -91,6 +91,10 @@ public void OnPlayerJoinedServer(PlayerJoinedServerEvent @event)
 ```
 
 :::note
+This is a simplified example showing key version transitions. For complete version coverage, refer to `PacketIdDefinitions` or the [**protocol documentation**](https://minecraft.wiki/w/Java_Edition_protocol/Packets).
+:::
+
+:::note
 Each packet ID takes effect at its listed protocol version and remains valid until the next version in the table replaces it.
 :::
 
