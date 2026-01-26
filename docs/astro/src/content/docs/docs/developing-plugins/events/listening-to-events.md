@@ -67,7 +67,7 @@ public class MyScopedService(IPlayerContext context, ILogger<MyScopedService> lo
     }
 
     [Subscribe(bypassScopedFilter: true)]
-    public void OnPlayerConnectedGlobally(PlayerConnectedEvent @event)
+    public void OnPlayerConnected(PlayerConnectedEvent @event)
     {
         // Code here will be executed for all players in all scopes.
     }
