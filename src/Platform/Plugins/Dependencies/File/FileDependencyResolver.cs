@@ -31,9 +31,14 @@ public class FileDependencyResolver(IRunOptions runOptions) : IFileDependencyRes
         return ResolveAssemblyToPath(unmanagedDllName);
     }
 
-    private string ResolveAssemblyToPath(string name)
+    private string? ResolveAssemblyToPath(string name)
     {
-        return Directory.EnumerateFiles(runOptions.WorkingDirectory, $"{name}.*", new EnumerationOptions { RecurseSubdirectories = true }).Single();
+        var searchName = $"{name}.dll";
+
+        var root = Directory.EnumerateFiles(runOptions.WorkingDirectory, searchName);
+        var plugins = Directory.EnumerateFiles(Path.Combine(runOptions.WorkingDirectory, PluginService.DefaultPluginsPath), searchName);
+
+        return root.Concat(plugins).SingleOrDefault();
     }
 
     private static bool IsManagedDotNetAssembly(Stream stream)
