@@ -37,6 +37,8 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     private readonly NuGet.Common.ILogger _nugetLogger = new NuGetLogger(logger);
     private readonly HashSet<string> _repositories = [];
 
+    private IEnumerable<string> Repositories => UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";")).Concat(_repositories.Concat(console.GetOptionValue(_repositoryOption) ?? [])).Where(uri => !string.IsNullOrWhiteSpace(uri));
+
     [Subscribe]
     public async ValueTask OnProxyStarting(ProxyStartingEvent @event, CancellationToken cancellationToken)
     {
@@ -395,15 +397,6 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         foreach (var (url, status) in statuses)
         {
             logger.LogInformation(" - {Url} [{Status}]", url, status);
-        }
-    }
-
-    private IEnumerable<string> Repositories
-    {
-        get
-        {
-            var environmentVariableRepositories = UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";"));
-            return environmentVariableRepositories.Concat(_repositories.Concat(console.GetOptionValue(_repositoryOption) ?? [])).Where(uri => !string.IsNullOrWhiteSpace(uri));
         }
     }
 
