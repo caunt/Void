@@ -37,7 +37,34 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     private readonly NuGet.Common.ILogger _nugetLogger = new NuGetLogger(logger);
     private readonly HashSet<string> _repositories = [];
 
-    private IEnumerable<string> Repositories => UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";")).Concat(_repositories.Concat(console.GetOptionValue(_repositoryOption) ?? [])).Where(uri => !string.IsNullOrWhiteSpace(uri));
+    private IEnumerable<string> UriRepositories => UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";")).Concat(_repositories.Concat(console.GetOptionValue(_repositoryOption) ?? [])).Where(uri => !string.IsNullOrWhiteSpace(uri));
+    private IEnumerable<SourceRepository> Repositories
+    {
+        get
+        {
+            return UriRepositories.Select(source =>
+            {
+                if (!Uri.TryCreate(source, UriKind.Absolute, out var uri))
+                    return null;
+
+                var url = new UriBuilder(uri) { UserName = "", Password = "" }.Uri.ToString();
+                var repository = Repository.Factory.GetCoreV3(url);
+
+                if (string.IsNullOrWhiteSpace(uri.UserInfo))
+                    return repository;
+
+                var parts = Uri.UnescapeDataString(uri.UserInfo).Split(':');
+
+                if (parts.Length is not 2)
+                    return repository;
+
+                repository.PackageSource.Credentials = PackageSourceCredential.FromUserInput(url, parts[0], parts[1], true, null);
+                return repository;
+            })
+            .Append(DefaultRepository)
+            .WhereNotNull();
+        }
+    }
 
     [Subscribe]
     public async ValueTask OnProxyStarting(ProxyStartingEvent @event, CancellationToken cancellationToken)
@@ -160,56 +187,29 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
     private async Task<string?> ResolveAssemblyFromOnlineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)
     {
-        try
+        foreach (var repository in Repositories)
         {
-            var repositories = Repositories.Select(source =>
-                {
-                    if (!Uri.TryCreate(source, UriKind.Absolute, out var uri))
-                        return null;
-
-                    var url = new UriBuilder(uri)
-                    {
-                        UserName = "",
-                        Password = ""
-                    }.Uri.ToString();
-
-                    var repository = Repository.Factory.GetCoreV3(url);
-
-                    if (string.IsNullOrWhiteSpace(uri.UserInfo))
-                        return repository;
-
-                    var parts = Uri.UnescapeDataString(uri.UserInfo).Split(':');
-
-                    if (parts.Length is not 2)
-                        return repository;
-
-                    repository.PackageSource.Credentials = PackageSourceCredential.FromUserInput(url, parts[0], parts[1], true, null);
-                    return repository;
-                })
-                .Append(DefaultRepository)
-                .WhereNotNull();
-
-            foreach (var repository in repositories)
+            try
             {
                 var identity = await TryResolveNuGetIdentityAsync(repository, assemblyName, cancellationToken);
 
                 if (identity is null)
                 {
                     logger.LogTrace("Dependency {DependencyName} not found in {Repository}", assemblyName.Name, repository.PackageSource.Name);
-                    return null;
+                    continue;
                 }
 
                 var packagePath = Path.Combine(PackagesPath, identity.Id.ToLower(), identity.Version.ToString());
 
                 if (Directory.Exists(packagePath))
-                    break;
+                    throw new InvalidOperationException($"Dependency {identity.Id} version {identity.Version} already exists in the NuGet cache. This should have been resolved in the offline step.");
 
                 await TryDownloadNuGetPackageAsync(repository, identity, cancellationToken);
 
                 if (!Directory.Exists(packagePath))
                 {
                     logger.LogWarning("Dependency {DependencyName} cannot be downloaded from {Repository}", identity.Id, repository.PackageSource.Name);
-                    return null;
+                    continue;
                 }
 
                 var packageReader = new PackageFolderReader(packagePath);
@@ -228,10 +228,10 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                         : Path.Combine(packagePath, assembly);
                 }
             }
-        }
-        catch (Exception exception)
-        {
-            logger.LogError(exception, "Dependency {PackageId} cannot be resolved from NuGet", assemblyName.Name);
+            catch (Exception exception)
+            {
+                logger.LogTrace(exception, "Dependency {PackageId} cannot be resolved from NuGet repository {RepositoryName}", assemblyName.Name, repository.PackageSource.Name);
+            }
         }
 
         return null;
@@ -344,7 +344,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
         var statuses = new List<(string Url, string Status)>();
 
-        foreach (var repository in Repositories)
+        foreach (var repository in UriRepositories)
         {
             var sanitizedUrl = repository.Contains('@') ? repository[(repository.IndexOf('@') + 1)..] : repository;
 
