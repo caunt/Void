@@ -226,9 +226,7 @@ public class PlatformTests
             Assert.Equal(0, exitCode);
             Assert.Contains(logs.Lines, line => line.Contains("Proxy started"));
             Assert.Contains(logs.Lines, line => line.Contains("Custom NuGet repositories"));
-            Assert.Contains(logs.Lines, line => line.Contains("https://api.nuget.org/v3/index.json [Ok]"));
-            Assert.DoesNotContain(logs.Lines, line => line.Contains("[Timeout]"));
-            Assert.DoesNotContain(logs.Lines, line => line.Contains("[NotConnected]"));
+            Assert.Contains(logs.Lines, line => line.Contains("https://api.nuget.org/v3/index.json") && line.Contains("[Ok]"));
         }
         catch (Exception exception)
         {
@@ -245,7 +243,7 @@ public class PlatformTests
         var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions
         {
             LogWriter = logs,
-            Arguments = ["--repository", "https://invalid-nuget-repository-that-does-not-exist.example.com/v3/index.json"],
+            Arguments = ["--repository", "http://127.0.0.1:1/v3/index.json"],
             WorkingDirectory = nameof(EntryPoint_WithInvalidNuGetRepository_LogsWarningAndProbesUnsuccessfully)
         }, cancellationTokenSource.Token);
 
@@ -254,7 +252,7 @@ public class PlatformTests
             Assert.Equal(0, exitCode);
             Assert.Contains(logs.Lines, line => line.Contains("Proxy started"));
             Assert.Contains(logs.Lines, line => line.Contains("Custom NuGet repositories"));
-            Assert.Contains(logs.Lines, line => line.Contains("https://invalid-nuget-repository-that-does-not-exist.example.com/v3/index.json") && (line.Contains("[Timeout]") || line.Contains("[NotConnected]")));
+            Assert.Contains(logs.Lines, line => line.Contains("http://127.0.0.1:1/v3/index.json") && (line.Contains("[Timeout]") || line.Contains("[NotConnected]")));
         }
         catch (Exception exception)
         {

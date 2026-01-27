@@ -353,8 +353,9 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         {
             if (!Uri.TryCreate(repositoryUri, UriKind.Absolute, out var uri))
             {
-                logger.LogWarning("Invalid NuGet repository URI: {RepositoryUri}", repositoryUri);
-                statuses.Add((repositoryUri, "Invalid"));
+                var sanitizedUri = repositoryUri.Contains('@') ? repositoryUri.Substring(repositoryUri.IndexOf('@') + 1) : repositoryUri;
+                logger.LogWarning("Invalid NuGet repository URI: {RepositoryUri}", sanitizedUri);
+                statuses.Add((sanitizedUri, "Invalid"));
                 continue;
             }
 
@@ -368,7 +369,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             {
                 using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
-                using var response = await httpClient.GetAsync(url, linkedCts.Token);
+                using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, linkedCts.Token);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -382,6 +383,11 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             }
             catch (OperationCanceledException)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+
                 logger.LogWarning("NuGet repository {RepositoryUrl} timed out", url);
                 statuses.Add((url, "Timeout"));
             }
