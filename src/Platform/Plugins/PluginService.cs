@@ -17,6 +17,8 @@ namespace Void.Proxy.Plugins;
 
 public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions, IEventService events, IDependencyService dependencies, IConsoleService consoleService, HttpClient httpClient) : IPluginService
 {
+    public const string DefaultPluginsPath = "plugins";
+
     private static readonly Option<string[]> _pluginsOption = new("--plugin", "-p")
     {
         Description = "Provides a path to the file, directory or URL to load plugin."
@@ -33,7 +35,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
         .Select(container => container.Context.Name)
         .WhereNotNull();
 
-    public async ValueTask LoadPluginsAsync(string path = "plugins", CancellationToken cancellationToken = default)
+    public async ValueTask LoadPluginsAsync(string path = DefaultPluginsPath, CancellationToken cancellationToken = default)
     {
         logger.LogInformation("Loading environment plugins");
         await LoadEnvironmentPluginsAsync(cancellationToken);
@@ -155,7 +157,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
         await LoadPluginsAsync(plugins, cancellationToken);
     }
 
-    public async ValueTask LoadDirectoryPluginsAsync(string path = "plugins", CancellationToken cancellationToken = default)
+    public async ValueTask LoadDirectoryPluginsAsync(string path = DefaultPluginsPath, CancellationToken cancellationToken = default)
     {
         if (!Path.IsPathRooted(path))
             path = Path.Combine(runOptions.WorkingDirectory, path);
