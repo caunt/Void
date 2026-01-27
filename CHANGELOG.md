@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.5.7](https://github.com/caunt/Void/compare/v0.5.6...v0.5.7) (2026-01-27)
+
+
+### Features
+
+* **auth:** ✨ handle early disconnects for status queries ([37a1839](https://github.com/caunt/Void/commit/37a183991b4c0c11d9873939f2ca2468dea1d5ca))
+* **link:** ✨ improved player reconnection on failed connection requests ([cacd51a](https://github.com/caunt/Void/commit/cacd51a9cc55104dd7c2ddd8aa4281871b5c7ca6))
+* **nuget:** ✨ added NuGet repository probing functionality ([c355700](https://github.com/caunt/Void/commit/c3557004a1cac191fbacc5876292998a2c5e77d9))
+* **protocol:** ✨ expanded SetHeldItem packet definitions from 1.7.2 to latest ([9e9f2b4](https://github.com/caunt/Void/commit/9e9f2b4857fa1bc23095f57ecfddcec6be2ddc8a))
+* **resolver:** ✨ improved assembly path resolution ([a2b0bed](https://github.com/caunt/Void/commit/a2b0bed59b8e576d5bff67e913e1fa7331632b8c))
+* **server:** ✨ allow --server option without port, default to 25565 ([0eb44d9](https://github.com/caunt/Void/commit/0eb44d901f000a7763774df6bd77effc43f85238))
+* **server:** allow --server option without port, default to 25565 ([8c6cc88](https://github.com/caunt/Void/commit/8c6cc8885693269279d92456baf84ef40945bcd1))
+
+
+### Bug Fixes
+
+* **common:** 🐛 corrected cancellation log spelling ([5612838](https://github.com/caunt/Void/commit/56128383c68f208eba805106a8e3ffb8561af30b))
+* **essentials:** 🐛 corrected log message grammar ([742aa15](https://github.com/caunt/Void/commit/742aa1571bc3376e735b6c1703e5a3b493f90f3f))
+* **keepalive:** 🐛 reset tracker on server redirection ([6d73acd](https://github.com/caunt/Void/commit/6d73acdc7e5662debb6c6915d6437d3f025da460))
+* **kicks:** ✨ allowed changing phase to login without a link to kick players early ([b8df337](https://github.com/caunt/Void/commit/b8df3371ae36f943d12e9c2fafc995dbe1f41499))
+* **lifecycle:** ✅ added IsMinecraft check in OnPlayerDisconnected ([6fecca8](https://github.com/caunt/Void/commit/6fecca8a71661a5398816e4247bf7fbe7253e0fd))
+* **links:** 🐛 allow multi-server retry on connection failure ([7f13515](https://github.com/caunt/Void/commit/7f13515c95657ca94a921b46f04d1f0c93d9db99))
+* **links:** 🐛 corrected timeout log wording ([5e2a687](https://github.com/caunt/Void/commit/5e2a6873e54a3312eebdd7c881095100b6c69e8d))
+* **minecraft:** 🐛 correct XML doc langword typo ([0d40cf8](https://github.com/caunt/Void/commit/0d40cf84cc79c6884c0bdad6be1ce8c51d79b1fa))
+* **nbt:** 🐛 corrected network format description ([6ec23d3](https://github.com/caunt/Void/commit/6ec23d3918b6e99969a503c38ec9e705d10e256c))
+* **nuget:** ✨ improved custom repository handling and error logging ([61a70c5](https://github.com/caunt/Void/commit/61a70c50a900ac4d71a8d55a0273bfc095184f09))
+* **nuget:** 🐛 declare sanitizedUrl once and assign appropriately ([0b87567](https://github.com/caunt/Void/commit/0b87567c40939cb4b412869f7897d812bbb1230f))
+* **nuget:** 🐛 initialize sanitizedUrl once, reassign only for valid URIs ([2147d98](https://github.com/caunt/Void/commit/2147d98baaa2ec95dcd55e2693b6444898667cac))
+* **nuget:** 🐛 removed duplicate sanitizedUrl reassignment ([7d725fe](https://github.com/caunt/Void/commit/7d725fe37dee358ba999a1c4030facfa0d1d3c23))
+* **nuget:** 🔐 keep credentials in HTTP probe requests ([280e8eb](https://github.com/caunt/Void/commit/280e8eb220f6310dd04561666ec1293e5d2f025d))
+* **nuget:** 🔒 added sanitized URI to invalid repository logging ([72a47d0](https://github.com/caunt/Void/commit/72a47d014e5a7fa5a15472c6ff7a84e61f238529))
+* **nuget:** log error status code instead of general failure ([4e622c3](https://github.com/caunt/Void/commit/4e622c3a42eac1f885ab5326aa60c0f804360b0a))
+* **player-service:** 🐛 updated error messages for server connection failures ([0a6a5ef](https://github.com/caunt/Void/commit/0a6a5ef00ae4ba109cf59d0b45d53cd63bd0ca90))
+* **player:** 🐛 unwrap player before kick operations ([1ce1b16](https://github.com/caunt/Void/commit/1ce1b16ab71973d5b9cf1888b03bb0b4c36f41c7))
+* **plugins:** 🐛 honor remote plugin URLs ([525a456](https://github.com/caunt/Void/commit/525a4567c12cdd1b2d9c6e132d1a77be0aaf8904))
+* **plugins:** 🔇 set HttpClient log level to Warning to suppress verbose logs ([2c62348](https://github.com/caunt/Void/commit/2c623486b26baf975e53c2c6ace94eefa0123bdd))
+* **plugins:** 🔇 suppress verbose HttpClient logs and show full URI in errors ([9b4db14](https://github.com/caunt/Void/commit/9b4db146353429d17c68daa28bfdaf409db774be))
+* **protocol:** 🐛 logged actual player instance instead of TcpClient ([9780a94](https://github.com/caunt/Void/commit/9780a94f5f40ff3ad6783c3fa2d5b711e898e541))
+* **resolver:** 🛠️ handle missing plugins directory safely ([d8af77e](https://github.com/caunt/Void/commit/d8af77e431b4cb51ddbf1c01903c79ed40b8e7b2))
+
+
+### Reverts
+
+* remove last two rebase-related commits ([e317f8e](https://github.com/caunt/Void/commit/e317f8ed59020e7c3769e31be3488a4cb7fa81fb))
+
 ## [0.5.6](https://github.com/caunt/Void/compare/v0.5.5...v0.5.6) (2026-01-12)
 
 
