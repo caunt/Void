@@ -357,7 +357,8 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                 continue;
             }
 
-            var url = new UriBuilder(uri)
+            var url = uri.ToString();
+            var sanitizedUrl = new UriBuilder(uri)
             {
                 UserName = "",
                 Password = ""
@@ -371,12 +372,12 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    logger.LogWarning("NuGet repository {RepositoryUrl} returned non-success status code: {StatusCode}", url, response.StatusCode);
-                    statuses.Add((url, $"Http{(int)response.StatusCode}"));
+                    logger.LogWarning("NuGet repository {RepositoryUrl} returned non-success status code: {StatusCode}", sanitizedUrl, response.StatusCode);
+                    statuses.Add((sanitizedUrl, $"Http{(int)response.StatusCode}"));
                 }
                 else
                 {
-                    statuses.Add((url, "Ok"));
+                    statuses.Add((sanitizedUrl, "Ok"));
                 }
             }
             catch (OperationCanceledException)
@@ -386,13 +387,13 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                     throw;
                 }
 
-                logger.LogWarning("NuGet repository {RepositoryUrl} timed out", url);
-                statuses.Add((url, "Timeout"));
+                logger.LogWarning("NuGet repository {RepositoryUrl} timed out", sanitizedUrl);
+                statuses.Add((sanitizedUrl, "Timeout"));
             }
             catch (Exception exception)
             {
-                logger.LogWarning("NuGet repository {RepositoryUrl} is not responding: {Message}", url, exception.Message);
-                statuses.Add((url, "NotConnected"));
+                logger.LogWarning("NuGet repository {RepositoryUrl} is not responding: {Message}", sanitizedUrl, exception.Message);
+                statuses.Add((sanitizedUrl, "NotConnected"));
             }
         }
 
