@@ -34,11 +34,14 @@ public class FileDependencyResolver(IRunOptions runOptions) : IFileDependencyRes
     private string? ResolveAssemblyToPath(string name)
     {
         var searchName = $"{name}.dll";
+        var candidates = Directory.EnumerateFiles(runOptions.WorkingDirectory, searchName);
 
-        var root = Directory.EnumerateFiles(runOptions.WorkingDirectory, searchName);
-        var plugins = Directory.EnumerateFiles(Path.Combine(runOptions.WorkingDirectory, PluginService.DefaultPluginsPath), searchName);
+        var pluginsDirectory = Path.Combine(runOptions.WorkingDirectory, PluginService.DefaultPluginsPath);
 
-        return root.Concat(plugins).SingleOrDefault();
+        if (Directory.Exists(pluginsDirectory))
+            candidates = candidates.Concat(Directory.EnumerateFiles(pluginsDirectory, searchName));
+
+        return candidates.SingleOrDefault();
     }
 
     private static bool IsManagedDotNetAssembly(Stream stream)
