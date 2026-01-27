@@ -359,7 +359,6 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             }
 
             var url = uri.ToString();
-            sanitizedUrl = url.Contains('@') ? url.Substring(url.IndexOf('@') + 1) : url;
 
             try
             {
