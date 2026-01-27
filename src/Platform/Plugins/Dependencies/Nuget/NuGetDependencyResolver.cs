@@ -343,9 +343,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         var repositoryUris = Repositories.ToList();
 
         if (repositoryUris.Count == 0)
-        {
             return;
-        }
 
         var statuses = new List<(string Url, string Status)>();
 
@@ -353,9 +351,8 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         {
             if (!Uri.TryCreate(repositoryUri, UriKind.Absolute, out var uri))
             {
-                var sanitizedUri = repositoryUri.Contains('@') ? repositoryUri.Substring(repositoryUri.IndexOf('@') + 1) : repositoryUri;
-                logger.LogWarning("Invalid NuGet repository URI: {RepositoryUri}", sanitizedUri);
-                statuses.Add((sanitizedUri, "Invalid"));
+                logger.LogWarning("Invalid NuGet repository URI");
+                statuses.Add((repositoryUri, "Invalid"));
                 continue;
             }
 
@@ -367,9 +364,9 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
             try
             {
-                using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
-                using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, linkedCts.Token);
+                using var timeoutCancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                using var linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancellationTokenSource.Token);
+                using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, linkedCancellationTokenSource.Token);
 
                 if (!response.IsSuccessStatusCode)
                 {
