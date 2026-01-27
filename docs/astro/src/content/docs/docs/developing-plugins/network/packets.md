@@ -15,7 +15,7 @@ Packets can be defined with `IMinecraftClientboundPacket<TPacket>` or `IMinecraf
 
 ## Defining Packets
 Your packet definition must specify how to Decode and Encode the packet data.  
-In this example, we will define a [Set Held Item (clientbound)](https://minecraft.wiki/w/Java_Edition_protocol/Packets#Set_Held_Item_(clientbound)) packet.
+In this example, we will define a [**Set Held Item (clientbound)**](https://minecraft.wiki/w/Java_Edition_protocol/Packets#Set_Held_Item_(clientbound)) packet.
 
 This packet contains one integer property - `slot`, which is the index of the item in the player hotbar.
 ```csharp
@@ -26,12 +26,20 @@ public class SetHeldItemClientboundPacket : IMinecraftClientboundPacket<SetHeldI
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        buffer.WriteVarInt(Slot);
+        if (protocolVersion > ProtocolVersion.MINECRAFT_1_21)
+            buffer.WriteVarInt(Slot);
+        else
+            buffer.WriteUnsignedByte((byte)Slot);
     }
 
     public static SetHeldItemClientboundPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        int slot = buffer.ReadVarInt();
+        int slot;
+
+        if (protocolVersion > ProtocolVersion.MINECRAFT_1_21)
+            slot = buffer.ReadVarInt();
+        else
+            slot = buffer.ReadUnsignedByte();
 
         return new SetHeldItemClientboundPacket
         {
@@ -52,17 +60,26 @@ Before receiving or sending packets, you need to register them specifying packet
 Packet registrations are made for each game phase, so you need to register them in the correct phase. Common phases are `Handshake`, `Login`, `Configuration` and `Play`.
 ```csharp
 [Subscribe]
-public void OnPhaseChanged(PhaseChangedEvent @event)
+public void OnPlayerJoinedServer(PlayerJoinedServerEvent @event)
 {
-    if (@event.Phase is not Phase.Play)
-        return;
-
     @event.Player.RegisterPacket<SetHeldItemClientboundPacket>([
+        new(0x09, ProtocolVersion.Oldest),
+        new(0x38, ProtocolVersion.MINECRAFT_1_8),
+        new(0x37, ProtocolVersion.MINECRAFT_1_9),
+        new(0x3B, ProtocolVersion.MINECRAFT_1_12),
+        new(0x3A, ProtocolVersion.MINECRAFT_1_13),
+        new(0x3F, ProtocolVersion.MINECRAFT_1_17),
+        new(0x3C, ProtocolVersion.MINECRAFT_1_18),
+        new(0x48, ProtocolVersion.MINECRAFT_1_19),
+        new(0x4A, ProtocolVersion.MINECRAFT_1_19_1),
+        new(0x4C, ProtocolVersion.MINECRAFT_1_19_3),
+        new(0x4D, ProtocolVersion.MINECRAFT_1_20),
         new(0x4F, ProtocolVersion.MINECRAFT_1_20_2),
         new(0x51, ProtocolVersion.MINECRAFT_1_20_3),
         new(0x53, ProtocolVersion.MINECRAFT_1_20_5),
         new(0x63, ProtocolVersion.MINECRAFT_1_21_2),
-        new(0x62, ProtocolVersion.MINECRAFT_1_21_5)
+        new(0x62, ProtocolVersion.MINECRAFT_1_21_5),
+        new(0x67, ProtocolVersion.MINECRAFT_1_21_9)
     ]);
 }
 ```

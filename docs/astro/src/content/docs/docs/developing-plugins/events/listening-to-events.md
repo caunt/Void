@@ -57,7 +57,7 @@ Scoped events are filtered by the player context, so you will only receive event
 All other types of events will not be filtered, since they are not scoped.
 Scoped event filtering can be disabled by applying `bypassScopedFilter: true` to the `Subscribe` attribute.
 ```csharp
-public class MyScopedService(IPlayerContext context, ILogger logger) : IEventListener
+public class MyScopedService(IPlayerContext context, ILogger<MyScopedService> logger) : IEventListener
 {
     [Subscribe]
     public void OnPlayerConnected(PlayerConnectedEvent @event)

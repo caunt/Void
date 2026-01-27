@@ -7,10 +7,10 @@ Commands help users and administrators interact with the proxy and plugins.
 
 ## Defining a command
 Inject `ICommandService` service to begin working with commands.  
-Commands are registered with the `Register` method in [Mojang Brigadier](https://github.com/Mojang/brigadier/)-like style.
+Commands are registered with the `Register` method in [**Mojang Brigadier**](https://github.com/Mojang/brigadier/)-like style.
 
 ```csharp
-class MyService(ICommandService commands)
+class MyService(ICommandService commands, ILogger<MyService> logger)
 {
     public void RegisterCommands()
     {
@@ -70,7 +70,7 @@ class MyService(ICommandService commands) : ICommandSource
 ## Command arguments
 You can define optional command arguments with `Argument` method.
 ```csharp
-class MyService(ICommandService commands)
+class MyService(ICommandService commands, ILogger<MyService> logger)
 {
     public void RegisterCommands()
     {
@@ -103,7 +103,7 @@ class MyService(ICommandService commands)
 
 ## Complex Command Example
 ```csharp
-class MyService(ICommandService commands)
+class MyService(ICommandService commands, ILogger<MyService> logger)
 {
     // Register a `slot` command to change player held item slot
     public void RegisterCommands()

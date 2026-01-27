@@ -66,7 +66,7 @@ Use them only when the packet changes a few times (around 2–3 Minecraft versio
 :::
 
 ## Flat packet transformations
-Flat packet transformations are more complex and harder to define, but they lead to more consistent behavior and readable code. This idea was adopted from [ViaVersion](https://github.com/ViaVersion/ViaVersion/) codebase.
+Flat packet transformations are more complex and harder to define, but they lead to more consistent behavior and readable code. This idea was adopted from [**ViaVersion**](https://github.com/ViaVersion/ViaVersion/) codebase.
 
 When using these transformations, you have to keep only the **latest** implementation of the packet:
 ```csharp
