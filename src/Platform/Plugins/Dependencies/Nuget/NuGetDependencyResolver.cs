@@ -373,7 +373,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                 if (!response.IsSuccessStatusCode)
                 {
                     logger.LogWarning("NuGet repository {RepositoryUrl} returned non-success status code: {StatusCode}", url, response.StatusCode);
-                    statuses.Add((url, "NotConnected"));
+                    statuses.Add((url, $"Http{(int)response.StatusCode}"));
                 }
                 else
                 {
