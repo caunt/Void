@@ -349,10 +349,11 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
         foreach (var repositoryUri in repositoryUris)
         {
-            var sanitizedUrl = repositoryUri.Contains('@') ? repositoryUri.Substring(repositoryUri.IndexOf('@') + 1) : repositoryUri;
+            string sanitizedUrl;
 
             if (!Uri.TryCreate(repositoryUri, UriKind.Absolute, out var uri))
             {
+                sanitizedUrl = repositoryUri.Contains('@') ? repositoryUri.Substring(repositoryUri.IndexOf('@') + 1) : repositoryUri;
                 logger.LogWarning("Invalid NuGet repository URI: {RepositoryUri}", sanitizedUrl);
                 statuses.Add((sanitizedUrl, "Invalid"));
                 continue;
