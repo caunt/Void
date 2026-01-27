@@ -38,13 +38,13 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     private readonly HashSet<string> _repositories = [];
 
     [Subscribe]
-    public void OnProxyStarting(ProxyStartingEvent @event)
+    public async ValueTask OnProxyStarting(ProxyStartingEvent @event, CancellationToken cancellationToken)
     {
         console.EnsureOptionDiscovered(_repositoryOption);
 
         try
         {
-            ProbeRepositoriesAsync().GetAwaiter().GetResult();
+            await ProbeRepositoriesAsync(cancellationToken);
         }
         catch (Exception exception)
         {
@@ -160,8 +160,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     {
         try
         {
-            var environmentVariableRepositories = UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";"));
-            var repositories = environmentVariableRepositories.Concat(_repositories.Concat(console.GetOptionValue(_repositoryOption) ?? []))
+            var repositories = Repositories
                 .Select(source =>
                 {
                     if (!Uri.TryCreate(source, UriKind.Absolute, out var uri))
@@ -339,13 +338,21 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
     private async Task ProbeRepositoriesAsync(CancellationToken cancellationToken = default)
     {
-        var repositoryUris = GetConfiguredRepositoryUris();
+        var repositoryUris = Repositories.ToList();
+
+        if (repositoryUris.Count == 0)
+        {
+            return;
+        }
+
+        var statuses = new List<(string Url, string Status)>();
 
         foreach (var repositoryUri in repositoryUris)
         {
             if (!Uri.TryCreate(repositoryUri, UriKind.Absolute, out var uri))
             {
                 logger.LogWarning("Invalid NuGet repository URI: {RepositoryUri}", repositoryUri);
+                statuses.Add((repositoryUri, "Invalid"));
                 continue;
             }
 
@@ -364,19 +371,40 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                 if (!response.IsSuccessStatusCode)
                 {
                     logger.LogWarning("NuGet repository {RepositoryUrl} returned non-success status code: {StatusCode}", url, response.StatusCode);
+                    statuses.Add((url, "NotConnected"));
                 }
+                else
+                {
+                    statuses.Add((url, "Ok"));
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                logger.LogWarning("NuGet repository {RepositoryUrl} timed out", url);
+                statuses.Add((url, "Timeout"));
             }
             catch (Exception exception)
             {
                 logger.LogWarning("NuGet repository {RepositoryUrl} is not responding: {Message}", url, exception.Message);
+                statuses.Add((url, "NotConnected"));
             }
+        }
+
+        logger.LogInformation("Custom NuGet repositories:");
+
+        foreach (var (url, status) in statuses)
+        {
+            logger.LogInformation(" - {Url} [{Status}]", url, status);
         }
     }
 
-    private IEnumerable<string> GetConfiguredRepositoryUris()
+    private IEnumerable<string> Repositories
     {
-        var environmentVariableRepositories = UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";"));
-        return environmentVariableRepositories.Concat(_repositories.Concat(console.GetOptionValue(_repositoryOption) ?? [])).Where(uri => !string.IsNullOrWhiteSpace(uri));
+        get
+        {
+            var environmentVariableRepositories = UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";"));
+            return environmentVariableRepositories.Concat(_repositories.Concat(console.GetOptionValue(_repositoryOption) ?? [])).Where(uri => !string.IsNullOrWhiteSpace(uri));
+        }
     }
 
     [GeneratedRegex(@"(?<!\\);")]
