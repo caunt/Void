@@ -41,7 +41,15 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     public void OnProxyStarting(ProxyStartingEvent @event)
     {
         console.EnsureOptionDiscovered(_repositoryOption);
-        ProbeRepositoriesAsync().GetAwaiter().GetResult();
+
+        try
+        {
+            ProbeRepositoriesAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Failed to probe NuGet repositories");
+        }
     }
 
     public void AddRepository(string uri)
@@ -331,8 +339,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
     private async Task ProbeRepositoriesAsync(CancellationToken cancellationToken = default)
     {
-        var environmentVariableRepositories = UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";"));
-        var repositoryUris = environmentVariableRepositories.Concat(_repositories.Concat(console.GetOptionValue(_repositoryOption) ?? [])).Where(uri => !string.IsNullOrWhiteSpace(uri));
+        var repositoryUris = GetConfiguredRepositoryUris();
 
         foreach (var repositoryUri in repositoryUris)
         {
@@ -350,7 +357,9 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
             try
             {
-                using var response = await httpClient.GetAsync(url, cancellationToken);
+                using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+                using var response = await httpClient.GetAsync(url, linkedCts.Token);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -362,6 +371,12 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                 logger.LogWarning("NuGet repository {RepositoryUrl} is not responding: {Message}", url, exception.Message);
             }
         }
+    }
+
+    private IEnumerable<string> GetConfiguredRepositoryUris()
+    {
+        var environmentVariableRepositories = UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";"));
+        return environmentVariableRepositories.Concat(_repositories.Concat(console.GetOptionValue(_repositoryOption) ?? [])).Where(uri => !string.IsNullOrWhiteSpace(uri));
     }
 
     [GeneratedRegex(@"(?<!\\);")]

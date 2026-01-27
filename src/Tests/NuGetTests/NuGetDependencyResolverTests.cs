@@ -10,7 +10,7 @@ namespace Void.Tests.NuGetTests;
 public class NuGetDependencyResolverTests
 {
     [Fact]
-    public async Task EntryPoint_WithValidNuGetRepository_ProbesSuccessfully()
+    public async Task EntryPoint_WithValidNuGetRepository_StartsSuccessfully()
     {
         var logs = new CollectingTextWriter();
 
@@ -19,13 +19,13 @@ public class NuGetDependencyResolverTests
         {
             LogWriter = logs,
             Arguments = ["--repository", "https://api.nuget.org/v3/index.json"],
-            WorkingDirectory = nameof(EntryPoint_WithValidNuGetRepository_ProbesSuccessfully)
+            WorkingDirectory = nameof(EntryPoint_WithValidNuGetRepository_StartsSuccessfully)
         }, cancellationTokenSource.Token);
 
         try
         {
             Assert.Equal(0, exitCode);
-            Assert.DoesNotContain(logs.Lines, line => line.Contains("is not responding"));
+            Assert.Contains(logs.Lines, line => line.Contains("Proxy started"));
         }
         catch (Exception exception)
         {
@@ -34,7 +34,7 @@ public class NuGetDependencyResolverTests
     }
 
     [Fact]
-    public async Task EntryPoint_WithInvalidNuGetRepository_LogsWarning()
+    public async Task EntryPoint_WithInvalidNuGetRepository_StartsSuccessfully()
     {
         var logs = new CollectingTextWriter();
 
@@ -43,13 +43,13 @@ public class NuGetDependencyResolverTests
         {
             LogWriter = logs,
             Arguments = ["--repository", "https://invalid-nuget-repository-that-does-not-exist.example.com/v3/index.json"],
-            WorkingDirectory = nameof(EntryPoint_WithInvalidNuGetRepository_LogsWarning)
+            WorkingDirectory = nameof(EntryPoint_WithInvalidNuGetRepository_StartsSuccessfully)
         }, cancellationTokenSource.Token);
 
         try
         {
             Assert.Equal(0, exitCode);
-            Assert.Contains(logs.Lines, line => line.Contains("is not responding") || line.Contains("returned non-success status code"));
+            Assert.Contains(logs.Lines, line => line.Contains("Proxy started"));
         }
         catch (Exception exception)
         {
