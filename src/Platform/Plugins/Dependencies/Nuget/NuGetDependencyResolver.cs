@@ -162,8 +162,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     {
         try
         {
-            var repositories = Repositories
-                .Select(source =>
+            var repositories = Repositories.Select(source =>
                 {
                     if (!Uri.TryCreate(source, UriKind.Absolute, out var uri))
                         return null;
@@ -340,35 +339,31 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
     private async Task ProbeRepositoriesAsync(CancellationToken cancellationToken = default)
     {
-        var repositoryUris = Repositories.ToList();
-
-        if (repositoryUris.Count == 0)
+        if (!Repositories.Any())
             return;
 
         var statuses = new List<(string Url, string Status)>();
 
-        foreach (var repositoryUri in repositoryUris)
+        foreach (var repository in Repositories)
         {
-            var sanitizedUrl = repositoryUri.Contains('@') ? repositoryUri.Substring(repositoryUri.IndexOf('@') + 1) : repositoryUri;
+            var sanitizedUrl = repository.Contains('@') ? repository[(repository.IndexOf('@') + 1)..] : repository;
 
-            if (!Uri.TryCreate(repositoryUri, UriKind.Absolute, out var uri))
+            if (!Uri.TryCreate(repository, UriKind.Absolute, out var uri))
             {
-                logger.LogWarning("Invalid NuGet repository URI: {RepositoryUri}", sanitizedUrl);
+                logger.LogTrace("Invalid NuGet repository URI: {RepositoryUri}", sanitizedUrl);
                 statuses.Add((sanitizedUrl, "Invalid"));
                 continue;
             }
-
-            var url = uri.ToString();
 
             try
             {
                 using var timeoutCancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(5));
                 using var linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancellationTokenSource.Token);
-                using var response = await httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, linkedCancellationTokenSource.Token);
+                using var response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, linkedCancellationTokenSource.Token);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    logger.LogWarning("NuGet repository {RepositoryUrl} returned non-success status code: {StatusCode}", sanitizedUrl, response.StatusCode);
+                    logger.LogTrace("NuGet repository {RepositoryUrl} returned non-success status code: {StatusCode}", sanitizedUrl, response.StatusCode);
                     statuses.Add((sanitizedUrl, $"Http{(int)response.StatusCode}"));
                 }
                 else
@@ -379,16 +374,14 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             catch (OperationCanceledException)
             {
                 if (cancellationToken.IsCancellationRequested)
-                {
                     throw;
-                }
 
-                logger.LogWarning("NuGet repository {RepositoryUrl} timed out", sanitizedUrl);
+                logger.LogTrace("NuGet repository {RepositoryUrl} timed out", sanitizedUrl);
                 statuses.Add((sanitizedUrl, "Timeout"));
             }
             catch (Exception exception)
             {
-                logger.LogWarning("NuGet repository {RepositoryUrl} is not responding: {Message}", sanitizedUrl, exception.Message);
+                logger.LogTrace("NuGet repository {RepositoryUrl} is not responding: {Message}", sanitizedUrl, exception.Message);
                 statuses.Add((sanitizedUrl, "NotConnected"));
             }
         }
@@ -396,9 +389,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         logger.LogInformation("Custom NuGet repositories:");
 
         foreach (var (url, status) in statuses)
-        {
             logger.LogInformation(" - {Url} [{Status}]", url, status);
-        }
     }
 
     [GeneratedRegex(@"(?<!\\);")]
