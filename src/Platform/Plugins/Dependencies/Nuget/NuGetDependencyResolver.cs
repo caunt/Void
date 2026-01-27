@@ -20,7 +20,7 @@ using Void.Proxy.Api.Plugins.Dependencies;
 
 namespace Void.Proxy.Plugins.Dependencies.Nuget;
 
-public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IRunOptions runOptions, IConsoleService console) : INuGetDependencyResolver, IEventListener
+public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IRunOptions runOptions, IConsoleService console, HttpClient httpClient) : INuGetDependencyResolver, IEventListener
 {
     private static readonly Option<string[]> _repositoryOption = new("--repository", "-r")
     {
@@ -41,6 +41,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     public void OnProxyStarting(ProxyStartingEvent @event)
     {
         console.EnsureOptionDiscovered(_repositoryOption);
+        ProbeRepositoriesAsync().GetAwaiter().GetResult();
     }
 
     public void AddRepository(string uri)
@@ -326,6 +327,41 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     {
         var packageMetadataResource = await repository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
         return await packageMetadataResource.GetMetadataAsync(packageId, true, false, Cache, _nugetLogger, cancellationToken);
+    }
+
+    private async Task ProbeRepositoriesAsync(CancellationToken cancellationToken = default)
+    {
+        var environmentVariableRepositories = UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";"));
+        var repositoryUris = environmentVariableRepositories.Concat(_repositories.Concat(console.GetOptionValue(_repositoryOption) ?? [])).Where(uri => !string.IsNullOrWhiteSpace(uri));
+
+        foreach (var repositoryUri in repositoryUris)
+        {
+            if (!Uri.TryCreate(repositoryUri, UriKind.Absolute, out var uri))
+            {
+                logger.LogWarning("Invalid NuGet repository URI: {RepositoryUri}", repositoryUri);
+                continue;
+            }
+
+            var url = new UriBuilder(uri)
+            {
+                UserName = "",
+                Password = ""
+            }.Uri.ToString();
+
+            try
+            {
+                using var response = await httpClient.GetAsync(url, cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    logger.LogWarning("NuGet repository {RepositoryUrl} returned non-success status code: {StatusCode}", url, response.StatusCode);
+                }
+            }
+            catch (Exception exception)
+            {
+                logger.LogWarning("NuGet repository {RepositoryUrl} is not responding: {Message}", url, exception.Message);
+            }
+        }
     }
 
     [GeneratedRegex(@"(?<!\\);")]
