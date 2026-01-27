@@ -349,16 +349,17 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
         foreach (var repositoryUri in repositoryUris)
         {
+            var sanitizedUrl = repositoryUri.Contains('@') ? repositoryUri.Substring(repositoryUri.IndexOf('@') + 1) : repositoryUri;
+
             if (!Uri.TryCreate(repositoryUri, UriKind.Absolute, out var uri))
             {
-                var sanitizedUri = SanitizeRepositoryUrl(repositoryUri);
-                logger.LogWarning("Invalid NuGet repository URI: {RepositoryUri}", sanitizedUri);
-                statuses.Add((sanitizedUri, "Invalid"));
+                logger.LogWarning("Invalid NuGet repository URI: {RepositoryUri}", sanitizedUrl);
+                statuses.Add((sanitizedUrl, "Invalid"));
                 continue;
             }
 
             var url = uri.ToString();
-            var sanitizedUrl = SanitizeRepositoryUrl(url);
+            sanitizedUrl = url.Contains('@') ? url.Substring(url.IndexOf('@') + 1) : url;
 
             try
             {
@@ -400,8 +401,6 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             logger.LogInformation(" - {Url} [{Status}]", url, status);
         }
     }
-
-    private static string SanitizeRepositoryUrl(string url) => url.Contains('@') ? url.Substring(url.IndexOf('@') + 1) : url;
 
     [GeneratedRegex(@"(?<!\\);")]
     private static partial Regex UnescapedSemicolonRegex();
