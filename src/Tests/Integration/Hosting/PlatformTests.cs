@@ -235,7 +235,7 @@ public class PlatformTests
     }
 
     [Fact]
-    public async Task EntryPoint_WithInvalidNuGetRepository_LogsWarningAndProbesUnsuccessfully()
+    public async Task EntryPoint_WithInvalidNuGetRepository_ProbesUnsuccessfully()
     {
         var logs = new CollectingTextWriter();
 
@@ -244,7 +244,7 @@ public class PlatformTests
         {
             LogWriter = logs,
             Arguments = ["--repository", "http://127.0.0.1:1/v3/index.json"],
-            WorkingDirectory = nameof(EntryPoint_WithInvalidNuGetRepository_LogsWarningAndProbesUnsuccessfully)
+            WorkingDirectory = nameof(EntryPoint_WithInvalidNuGetRepository_ProbesUnsuccessfully)
         }, cancellationTokenSource.Token);
 
         try
