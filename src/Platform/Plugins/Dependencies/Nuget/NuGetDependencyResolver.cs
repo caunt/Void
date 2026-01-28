@@ -96,13 +96,13 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             return null;
         }
 
-        if (ResolveAssemblyFromOfflineNuGetAsync(assemblyName).GetAwaiter().GetResult() is { } offlineResult)
+        if (ResolveAssemblyFromOfflineNuGetAsync(assemblyName, CancellationToken.None).GetAwaiter().GetResult() is { } offlineResult)
         {
-            var updatedIdentity = CheckAndDownloadUpdateAsync(assemblyName, offlineResult.Identity).GetAwaiter().GetResult();
+            var updatedIdentity = CheckAndDownloadUpdateAsync(assemblyName, offlineResult.Identity, CancellationToken.None).GetAwaiter().GetResult();
 
             if (updatedIdentity is not null && updatedIdentity.Version.CompareTo(offlineResult.Identity.Version) > 0)
             {
-                var updatedAssemblyPath = ResolveAssemblyPathFromIdentityAsync(assemblyName, updatedIdentity).GetAwaiter().GetResult();
+                var updatedAssemblyPath = ResolveAssemblyPathFromIdentityAsync(assemblyName, updatedIdentity, CancellationToken.None).GetAwaiter().GetResult();
 
                 if (updatedAssemblyPath is not null)
                 {
@@ -112,7 +112,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                         return assembly;
                 }
 
-                logger.LogWarning("Failed to resolve updated assembly path for {PackageId} version {Version}, falling back to cached version", updatedIdentity.Id, updatedIdentity.Version);
+                logger.LogError("Failed to resolve updated assembly path for {PackageId} version {Version}, falling back to cached version", updatedIdentity.Id, updatedIdentity.Version);
             }
 
             var cachedAssembly = context.LoadFromAssemblyPath(offlineResult.AssemblyPath);
@@ -121,7 +121,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                 return cachedAssembly;
         }
 
-        if (ResolveAssemblyFromOnlineNuGetAsync(assemblyName).GetAwaiter().GetResult() is { } onlineAssemblyPath)
+        if (ResolveAssemblyFromOnlineNuGetAsync(assemblyName, CancellationToken.None).GetAwaiter().GetResult() is { } onlineAssemblyPath)
         {
             var assembly = context.LoadFromAssemblyPath(onlineAssemblyPath);
 
@@ -235,13 +235,13 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             }
             catch (Exception exception)
             {
-                logger.LogTrace(exception, "Failed to check for updates for {PackageId} from {RepositoryName}", currentIdentity.Id, repository.PackageSource.Name);
+                logger.LogWarning(exception, "Failed to check for updates for {PackageId} from {RepositoryName}", currentIdentity.Id, repository.PackageSource.Name);
             }
         }
 
         if (bestUpdate is not null && bestRepository is not null)
         {
-            logger.LogInformation("Update available for {PackageId}: {CurrentVersion} -> {NewVersion}", currentIdentity.Id, currentIdentity.Version, bestUpdate.Version);
+            logger.LogInformation("Automatic update available for {PackageId}: {CurrentVersion} -> {NewVersion}. Downloading and applying update.", currentIdentity.Id, currentIdentity.Version, bestUpdate.Version);
 
             var packagePath = Path.Combine(PackagesPath, bestUpdate.Id.ToLower(), bestUpdate.Version.ToString());
 
@@ -285,20 +285,29 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             var frameworks = await packageReader.GetLibItemsAsync(cancellationToken);
             var targetFramework = NuGetFramework.ParseFrameworkName(FrameworkName, new DefaultFrameworkNameProvider());
 
-            foreach (var framework in frameworks.Where(f => DefaultCompatibilityProvider.Instance.IsCompatible(targetFramework, f.TargetFramework)))
+            var compatibleFrameworks = frameworks
+                .Where(f => DefaultCompatibilityProvider.Instance.IsCompatible(targetFramework, f.TargetFramework))
+                .ToList();
+
+            if (compatibleFrameworks.Count == 0)
+            {
+                logger.LogWarning("No compatible framework found for target framework {TargetFramework} in package {PackageId} version {Version}", targetFramework, identity.Id, identity.Version);
+                return null;
+            }
+
+            foreach (var framework in compatibleFrameworks)
             {
                 var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
 
                 if (assembly is null)
                 {
-                    logger.LogWarning("Assembly {AssemblyName} not found in package {PackageId} version {Version}", assemblyName.Name, identity.Id, identity.Version);
-                    return null;
+                    continue;
                 }
 
                 return Path.Combine(packagePath, assembly);
             }
 
-            logger.LogWarning("No compatible framework found for target framework {TargetFramework} in package {PackageId} version {Version}", targetFramework, identity.Id, identity.Version);
+            logger.LogWarning("Assembly {AssemblyName} not found in any compatible framework for target framework {TargetFramework} in package {PackageId} version {Version}", assemblyName.Name, targetFramework, identity.Id, identity.Version);
         }
         catch (Exception exception)
         {
