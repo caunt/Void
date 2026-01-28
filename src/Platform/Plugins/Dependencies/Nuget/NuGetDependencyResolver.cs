@@ -178,7 +178,30 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                 return null;
             }
 
-            var identities = availableVersions.Select(version => new PackageIdentity(assemblyName.Name, NuGetVersion.Parse(version)));
+            var identities = new List<PackageIdentity>();
+
+            foreach (var version in availableVersions)
+            {
+                var versionPackagePath = Path.Combine(localPackagePath, version);
+
+                try
+                {
+                    using var versionPackageReader = new PackageFolderReader(versionPackagePath);
+                    var packageIdentity = versionPackageReader.GetIdentity();
+                    identities.Add(packageIdentity);
+                }
+                catch (Exception exception)
+                {
+                    logger.LogWarning(exception, "Failed to read package identity from {PackagePath}, skipping version {Version}", versionPackagePath, version);
+                }
+            }
+
+            if (identities.Count == 0)
+            {
+                logger.LogWarning("No valid package identities found for {DependencyName} in the offline NuGet cache", assemblyName.Name);
+                return null;
+            }
+
             var identity = SelectBestNuGetPackageVersion(identities, assemblyName.Version);
 
             if (identity == null)
