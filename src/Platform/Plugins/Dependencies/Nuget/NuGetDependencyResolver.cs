@@ -111,14 +111,14 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                     if (AreEqual(assembly.GetName(), assemblyName))
                         return assembly;
                 }
-            }
-            else
-            {
-                var assembly = context.LoadFromAssemblyPath(offlineResult.AssemblyPath);
 
-                if (AreEqual(assembly.GetName(), assemblyName))
-                    return assembly;
+                logger.LogWarning("Failed to resolve updated assembly path for {PackageId} version {Version}, falling back to cached version", updatedIdentity.Id, updatedIdentity.Version);
             }
+
+            var cachedAssembly = context.LoadFromAssemblyPath(offlineResult.AssemblyPath);
+
+            if (AreEqual(cachedAssembly.GetName(), assemblyName))
+                return cachedAssembly;
         }
 
         if (ResolveAssemblyFromOnlineNuGetAsync(assemblyName).GetAwaiter().GetResult() is { } onlineAssemblyPath)
@@ -205,6 +205,9 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
     private async Task<PackageIdentity?> CheckAndDownloadUpdateAsync(AssemblyName assemblyName, PackageIdentity currentIdentity, CancellationToken cancellationToken = default)
     {
+        PackageIdentity? bestUpdate = null;
+        SourceRepository? bestRepository = null;
+
         foreach (var repository in Repositories)
         {
             try
@@ -219,24 +222,10 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
                 if (onlineIdentity.Version.CompareTo(currentIdentity.Version) > 0)
                 {
-                    logger.LogInformation("Update available for {PackageId}: {CurrentVersion} -> {NewVersion}", currentIdentity.Id, currentIdentity.Version, onlineIdentity.Version);
-
-                    var packagePath = Path.Combine(PackagesPath, onlineIdentity.Id.ToLower(), onlineIdentity.Version.ToString());
-
-                    if (!Directory.Exists(packagePath))
+                    if (bestUpdate is null || onlineIdentity.Version.CompareTo(bestUpdate.Version) > 0)
                     {
-                        await TryDownloadNuGetPackageAsync(repository, onlineIdentity, cancellationToken);
-
-                        if (Directory.Exists(packagePath))
-                        {
-                            logger.LogInformation("Successfully updated {PackageId} to version {NewVersion}", onlineIdentity.Id, onlineIdentity.Version);
-                            return onlineIdentity;
-                        }
-                    }
-                    else
-                    {
-                        logger.LogTrace("Update for {PackageId} version {NewVersion} already exists in cache", onlineIdentity.Id, onlineIdentity.Version);
-                        return onlineIdentity;
+                        bestUpdate = onlineIdentity;
+                        bestRepository = repository;
                     }
                 }
                 else
@@ -247,6 +236,33 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             catch (Exception exception)
             {
                 logger.LogTrace(exception, "Failed to check for updates for {PackageId} from {RepositoryName}", currentIdentity.Id, repository.PackageSource.Name);
+            }
+        }
+
+        if (bestUpdate is not null && bestRepository is not null)
+        {
+            logger.LogInformation("Update available for {PackageId}: {CurrentVersion} -> {NewVersion}", currentIdentity.Id, currentIdentity.Version, bestUpdate.Version);
+
+            var packagePath = Path.Combine(PackagesPath, bestUpdate.Id.ToLower(), bestUpdate.Version.ToString());
+
+            if (!Directory.Exists(packagePath))
+            {
+                await TryDownloadNuGetPackageAsync(bestRepository, bestUpdate, cancellationToken);
+
+                if (Directory.Exists(packagePath))
+                {
+                    logger.LogInformation("Successfully updated {PackageId} to version {NewVersion}", bestUpdate.Id, bestUpdate.Version);
+                    return bestUpdate;
+                }
+                else
+                {
+                    logger.LogWarning("Failed to download update for {PackageId} to version {NewVersion} from {RepositoryName}: package directory '{PackagePath}' does not exist after download attempt", bestUpdate.Id, bestUpdate.Version, bestRepository.PackageSource.Name, packagePath);
+                }
+            }
+            else
+            {
+                logger.LogTrace("Update for {PackageId} version {NewVersion} already exists in cache", bestUpdate.Id, bestUpdate.Version);
+                return bestUpdate;
             }
         }
 
@@ -265,15 +281,12 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                 return null;
             }
 
-            var packageReader = new PackageFolderReader(packagePath);
+            using var packageReader = new PackageFolderReader(packagePath);
             var frameworks = await packageReader.GetLibItemsAsync(cancellationToken);
             var targetFramework = NuGetFramework.ParseFrameworkName(FrameworkName, new DefaultFrameworkNameProvider());
 
-            foreach (var framework in frameworks)
+            foreach (var framework in frameworks.Where(f => DefaultCompatibilityProvider.Instance.IsCompatible(targetFramework, f.TargetFramework)))
             {
-                if (!DefaultCompatibilityProvider.Instance.IsCompatible(targetFramework, framework.TargetFramework))
-                    continue;
-
                 var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
 
                 if (assembly is null)
@@ -284,6 +297,8 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
                 return Path.Combine(packagePath, assembly);
             }
+
+            logger.LogWarning("No compatible framework found for target framework {TargetFramework} in package {PackageId} version {Version}", targetFramework, identity.Id, identity.Version);
         }
         catch (Exception exception)
         {
