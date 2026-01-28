@@ -363,7 +363,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                     continue;
                 }
 
-                var packageReader = new PackageFolderReader(packagePath);
+                using var packageReader = new PackageFolderReader(packagePath);
                 var frameworks = await packageReader.GetLibItemsAsync(cancellationToken);
                 var targetFramework = NuGetFramework.ParseFrameworkName(FrameworkName, new DefaultFrameworkNameProvider());
 
