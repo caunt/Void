@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Proxy;
@@ -33,6 +34,17 @@ public class ServerService(ILogger<ServerService> logger, ISettings settings, IC
 
         foreach (var server in All)
             logger.LogInformation(" - {Server} ({Address}:{Port})", server.Name, server.Host, server.Port);
+    }
+
+    public bool TryGetByName(string name, [MaybeNullWhen(false)] out IServer server)
+    {
+        server = GetByName(name);
+        return server is not null;
+    }
+
+    public IServer? GetByName(string name)
+    {
+        return All.FirstOrDefault(server => server.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
 
     private IEnumerable<Server> GetArgumentsServers()
