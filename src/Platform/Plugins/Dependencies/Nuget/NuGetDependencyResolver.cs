@@ -96,12 +96,27 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             return null;
         }
 
-        if (ResolveAssemblyFromOfflineNuGetAsync(assemblyName).GetAwaiter().GetResult() is { } offlineAssemblyPath)
+        if (ResolveAssemblyFromOfflineNuGetAsync(assemblyName).GetAwaiter().GetResult() is { } offlineResult)
         {
-            var assembly = context.LoadFromAssemblyPath(offlineAssemblyPath);
+            var updatedIdentity = CheckAndDownloadUpdateAsync(assemblyName, offlineResult.Identity).GetAwaiter().GetResult();
 
-            if (AreEqual(assembly.GetName(), assemblyName))
-                return assembly;
+            if (updatedIdentity is not null && updatedIdentity.Version.CompareTo(offlineResult.Identity.Version) > 0)
+            {
+                if (ResolveAssemblyFromOfflineNuGetAsync(assemblyName).GetAwaiter().GetResult() is { } updatedResult)
+                {
+                    var assembly = context.LoadFromAssemblyPath(updatedResult.AssemblyPath);
+
+                    if (AreEqual(assembly.GetName(), assemblyName))
+                        return assembly;
+                }
+            }
+            else
+            {
+                var assembly = context.LoadFromAssemblyPath(offlineResult.AssemblyPath);
+
+                if (AreEqual(assembly.GetName(), assemblyName))
+                    return assembly;
+            }
         }
 
         if (ResolveAssemblyFromOnlineNuGetAsync(assemblyName).GetAwaiter().GetResult() is { } onlineAssemblyPath)
@@ -117,7 +132,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         static bool AreEqual(AssemblyName assemblyName1, AssemblyName assemblyName2) => assemblyName1.Name?.Equals(assemblyName2.Name) ?? false;
     }
 
-    private async Task<string?> ResolveAssemblyFromOfflineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)
+    private async Task<(string AssemblyPath, PackageIdentity Identity)?> ResolveAssemblyFromOfflineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -172,14 +187,65 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
                 var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
 
-                return assembly is null
-                    ? throw new FileNotFoundException($"Dependency {assemblyName.Name} was found in the offline NuGet cache but the file cannot be located")
-                    : Path.Combine(packagePath, assembly);
+                if (assembly is null)
+                    throw new FileNotFoundException($"Dependency {assemblyName.Name} was found in the offline NuGet cache but the file cannot be located");
+
+                return (Path.Combine(packagePath, assembly), identity);
             }
         }
         catch (Exception exception)
         {
             logger.LogError(exception, "Failed to resolve {DependencyName} from the offline NuGet cache", assemblyName.Name);
+        }
+
+        return null;
+    }
+
+    private async Task<PackageIdentity?> CheckAndDownloadUpdateAsync(AssemblyName assemblyName, PackageIdentity currentIdentity, CancellationToken cancellationToken = default)
+    {
+        foreach (var repository in Repositories)
+        {
+            try
+            {
+                var onlineIdentity = await TryResolveNuGetIdentityAsync(repository, assemblyName, cancellationToken);
+
+                if (onlineIdentity is null)
+                {
+                    logger.LogTrace("Dependency {DependencyName} not found in {Repository} for update check", assemblyName.Name, repository.PackageSource.Name);
+                    continue;
+                }
+
+                if (onlineIdentity.Version.CompareTo(currentIdentity.Version) > 0)
+                {
+                    logger.LogInformation("Update available for {PackageId}: {CurrentVersion} -> {NewVersion}", currentIdentity.Id, currentIdentity.Version, onlineIdentity.Version);
+
+                    var packagePath = Path.Combine(PackagesPath, onlineIdentity.Id.ToLower(), onlineIdentity.Version.ToString());
+
+                    if (!Directory.Exists(packagePath))
+                    {
+                        await TryDownloadNuGetPackageAsync(repository, onlineIdentity, cancellationToken);
+
+                        if (Directory.Exists(packagePath))
+                        {
+                            logger.LogInformation("Successfully updated {PackageId} to version {NewVersion}", onlineIdentity.Id, onlineIdentity.Version);
+                            return onlineIdentity;
+                        }
+                    }
+                    else
+                    {
+                        logger.LogTrace("Update for {PackageId} version {NewVersion} already exists in cache", onlineIdentity.Id, onlineIdentity.Version);
+                        return onlineIdentity;
+                    }
+                }
+                else
+                {
+                    logger.LogTrace("No update available for {PackageId} (current: {CurrentVersion}, online: {OnlineVersion})", currentIdentity.Id, currentIdentity.Version, onlineIdentity.Version);
+                }
+            }
+            catch (Exception exception)
+            {
+                logger.LogTrace(exception, "Failed to check for updates for {PackageId} from {RepositoryName}", currentIdentity.Id, repository.PackageSource.Name);
+            }
         }
 
         return null;
