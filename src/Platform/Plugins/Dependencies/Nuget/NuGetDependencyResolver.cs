@@ -214,7 +214,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         {
             try
             {
-                var onlineIdentity = await TryResolveNuGetPackageByIdAsync(repository, currentIdentity.Id, assemblyName.Version, cancellationToken);
+                var onlineIdentity = await TryResolveNuGetPackageByIdAsync(repository, currentIdentity.Id, null, cancellationToken);
 
                 if (onlineIdentity is null)
                 {
