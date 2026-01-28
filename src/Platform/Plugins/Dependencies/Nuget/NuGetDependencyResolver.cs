@@ -177,23 +177,14 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             }
 
             var packagePath = Path.Combine(PackagesPath, identity.Id.ToLower(), identity.Version.ToString());
-            var packageReader = new PackageFolderReader(packagePath);
+            using var packageReader = new PackageFolderReader(packagePath);
 
-            var frameworks = await packageReader.GetLibItemsAsync(cancellationToken);
-            var targetFramework = NuGetFramework.ParseFrameworkName(FrameworkName, new DefaultFrameworkNameProvider());
+            var assemblyPath = await ResolveAssemblyPathFromPackageAsync(packageReader, packagePath, assemblyName, identity.Id, identity.Version, cancellationToken);
 
-            foreach (var framework in frameworks)
-            {
-                if (!DefaultCompatibilityProvider.Instance.IsCompatible(targetFramework, framework.TargetFramework))
-                    continue;
+            if (assemblyPath is null)
+                throw new FileNotFoundException($"Dependency {assemblyName.Name} was found in the offline NuGet cache but the file cannot be located");
 
-                var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
-
-                if (assembly is null)
-                    throw new FileNotFoundException($"Dependency {assemblyName.Name} was found in the offline NuGet cache but the file cannot be located");
-
-                return (Path.Combine(packagePath, assembly), identity);
-            }
+            return (assemblyPath, identity);
         }
         catch (Exception exception)
         {
@@ -282,38 +273,45 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             }
 
             using var packageReader = new PackageFolderReader(packagePath);
-            var frameworks = await packageReader.GetLibItemsAsync(cancellationToken);
-            var targetFramework = NuGetFramework.ParseFrameworkName(FrameworkName, new DefaultFrameworkNameProvider());
 
-            var compatibleFrameworks = frameworks
-                .Where(f => DefaultCompatibilityProvider.Instance.IsCompatible(targetFramework, f.TargetFramework))
-                .ToList();
-
-            if (compatibleFrameworks.Count == 0)
-            {
-                logger.LogWarning("No compatible framework found for target framework {TargetFramework} in package {PackageId} version {Version}", targetFramework, identity.Id, identity.Version);
-                return null;
-            }
-
-            foreach (var framework in compatibleFrameworks)
-            {
-                var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
-
-                if (assembly is null)
-                {
-                    continue;
-                }
-
-                return Path.Combine(packagePath, assembly);
-            }
-
-            logger.LogWarning("Assembly {AssemblyName} not found in any compatible framework for target framework {TargetFramework} in package {PackageId} version {Version}", assemblyName.Name, targetFramework, identity.Id, identity.Version);
+            return await ResolveAssemblyPathFromPackageAsync(packageReader, packagePath, assemblyName, identity.Id, identity.Version, cancellationToken);
         }
         catch (Exception exception)
         {
             logger.LogError(exception, "Failed to resolve assembly path for {PackageId} version {Version}", identity.Id, identity.Version);
         }
 
+        return null;
+    }
+
+    private async Task<string?> ResolveAssemblyPathFromPackageAsync(PackageFolderReader packageReader, string packagePath, AssemblyName assemblyName, string packageId, NuGetVersion packageVersion, CancellationToken cancellationToken)
+    {
+        var frameworks = await packageReader.GetLibItemsAsync(cancellationToken);
+        var targetFramework = NuGetFramework.ParseFrameworkName(FrameworkName, new DefaultFrameworkNameProvider());
+
+        var compatibleFrameworks = frameworks
+            .Where(f => DefaultCompatibilityProvider.Instance.IsCompatible(targetFramework, f.TargetFramework))
+            .ToList();
+
+        if (compatibleFrameworks.Count == 0)
+        {
+            logger.LogWarning("No compatible framework found for target framework {TargetFramework} in package {PackageId} version {Version}", targetFramework, packageId, packageVersion);
+            return null;
+        }
+
+        foreach (var framework in compatibleFrameworks)
+        {
+            var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
+
+            if (assembly is null)
+            {
+                continue;
+            }
+
+            return Path.Combine(packagePath, assembly);
+        }
+
+        logger.LogWarning("Assembly {AssemblyName} not found in any compatible framework for target framework {TargetFramework} in package {PackageId} version {Version}", assemblyName.Name, targetFramework, packageId, packageVersion);
         return null;
     }
 
