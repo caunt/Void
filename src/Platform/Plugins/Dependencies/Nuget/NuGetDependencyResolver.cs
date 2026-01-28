@@ -110,9 +110,13 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
                     if (AreEqual(assembly.GetName(), assemblyName))
                         return assembly;
-                }
 
-                logger.LogError("Failed to resolve updated assembly path for {PackageId} version {Version}, falling back to cached version", updatedIdentity.Id, updatedIdentity.Version);
+                    logger.LogError("Loaded assembly name mismatch for updated package {PackageId} version {Version}: expected {ExpectedName} but got {ActualName}, falling back to cached version", updatedIdentity.Id, updatedIdentity.Version, assemblyName.Name, assembly.GetName().Name);
+                }
+                else
+                {
+                    logger.LogError("Failed to resolve updated assembly path for {PackageId} version {Version}, falling back to cached version", updatedIdentity.Id, updatedIdentity.Version);
+                }
             }
 
             if (System.IO.File.Exists(offlineResult.AssemblyPath))
