@@ -210,7 +210,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         {
             try
             {
-                var onlineIdentity = await TryResolveNuGetPackageByIdAsync(repository, currentIdentity.Id, cancellationToken);
+                var onlineIdentity = await TryResolveNuGetPackageByIdAsync(repository, currentIdentity.Id, assemblyName.Version, cancellationToken);
 
                 if (onlineIdentity is null)
                 {
@@ -266,10 +266,10 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         return null;
     }
 
-    private async Task<PackageIdentity?> TryResolveNuGetPackageByIdAsync(SourceRepository repository, string packageId, CancellationToken cancellationToken)
+    private async Task<PackageIdentity?> TryResolveNuGetPackageByIdAsync(SourceRepository repository, string packageId, Version? requestedVersion, CancellationToken cancellationToken)
     {
         var packages = await GetNuGetPackageVersionAsync(repository, packageId, cancellationToken);
-        var best = SelectBestNuGetPackageVersion(packages.Select(package => package.Identity), null);
+        var best = SelectBestNuGetPackageVersion(packages.Select(package => package.Identity), requestedVersion);
 
         return best;
     }
@@ -315,7 +315,17 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
         foreach (var framework in compatibleFrameworks)
         {
-            var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
+            var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase));
+
+            if (assembly is null)
+            {
+                assembly = framework.Items.FirstOrDefault();
+
+                if (assembly is not null)
+                {
+                    logger.LogWarning("Using fallback assembly {FallbackAssembly} from framework {Framework} for requested assembly {RequestedAssembly} in package {PackageId} version {Version}", Path.GetFileName(assembly), framework.TargetFramework, assemblyName.Name, packageId, packageVersion);
+                }
+            }
 
             if (assembly is null)
             {
