@@ -214,7 +214,8 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         {
             try
             {
-                var onlineIdentity = await TryResolveNuGetPackageByIdAsync(repository, currentIdentity.Id, null, cancellationToken);
+                var packages = await GetNuGetPackageVersionAsync(repository, currentIdentity.Id, cancellationToken);
+                var onlineIdentity = SelectBestNuGetPackageVersion(packages.Select(package => package.Identity), null);
 
                 if (onlineIdentity is null)
                 {
@@ -268,14 +269,6 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         }
 
         return null;
-    }
-
-    private async Task<PackageIdentity?> TryResolveNuGetPackageByIdAsync(SourceRepository repository, string packageId, Version? requestedVersion, CancellationToken cancellationToken)
-    {
-        var packages = await GetNuGetPackageVersionAsync(repository, packageId, cancellationToken);
-        var best = SelectBestNuGetPackageVersion(packages.Select(package => package.Identity), requestedVersion);
-
-        return best;
     }
 
     private async Task<string?> ResolveAssemblyPathFromIdentityAsync(AssemblyName assemblyName, PackageIdentity identity, CancellationToken cancellationToken = default)
