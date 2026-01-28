@@ -18,7 +18,6 @@ using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Extensions;
 using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Extensions;
-using Void.Proxy.Plugins.Common.Network.Packets;
 using Void.Proxy.Plugins.ModsSupport.Forge.Packets;
 
 namespace Void.Proxy.Plugins.ModsSupport.Forge.Services;
@@ -47,7 +46,7 @@ public class HandshakeService(IPlayerContext context, IPluginService plugins, Pl
         if (!_playerMods.TryGetValue(@event.Player, out var mods))
             return;
 
-        @event.Result = new HandshakeBuildEventResult(mods.HandshakePacket, mods.HandshakePacket.NextState);
+        @event.Result = new HandshakeBuildEventResult(mods.HandshakePacket, mods.HandshakePacket.ServerAddress, mods.HandshakePacket.NextState);
     }
 
     [Subscribe]
