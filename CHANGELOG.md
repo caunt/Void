@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.8](https://github.com/caunt/Void/compare/v0.5.7...v0.5.8) (2026-01-28)
+
+
+### Bug Fixes
+
+* **di:** ✨ skip activation of open generic services ([82603b8](https://github.com/caunt/Void/commit/82603b85191bf3582f03617a6376ae0179ab769b))
+
 ## [0.5.7](https://github.com/caunt/Void/compare/v0.5.6...v0.5.7) (2026-01-27)
 
 

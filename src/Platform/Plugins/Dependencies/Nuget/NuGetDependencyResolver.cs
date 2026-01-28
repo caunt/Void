@@ -73,7 +73,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
         try
         {
-            await ProbeRepositoriesAsync(cancellationToken);
+            await ProbeRepositoriesAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception)
         {
@@ -96,15 +96,43 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             return null;
         }
 
-        if (ResolveAssemblyFromOfflineNuGetAsync(assemblyName).GetAwaiter().GetResult() is { } offlineAssemblyPath)
+        if (ResolveAssemblyFromOfflineNuGetAsync(assemblyName, CancellationToken.None).GetAwaiter().GetResult() is { } offlineResult)
         {
-            var assembly = context.LoadFromAssemblyPath(offlineAssemblyPath);
+            var updatedIdentity = CheckAndDownloadUpdateAsync(assemblyName, offlineResult.Identity, CancellationToken.None).GetAwaiter().GetResult();
 
-            if (AreEqual(assembly.GetName(), assemblyName))
-                return assembly;
+            if (updatedIdentity is not null && updatedIdentity.Version.CompareTo(offlineResult.Identity.Version) > 0)
+            {
+                var updatedAssemblyPath = ResolveAssemblyPathFromIdentityAsync(assemblyName, updatedIdentity, CancellationToken.None).GetAwaiter().GetResult();
+
+                if (updatedAssemblyPath is not null)
+                {
+                    var assembly = context.LoadFromAssemblyPath(updatedAssemblyPath);
+
+                    if (AreEqual(assembly.GetName(), assemblyName))
+                        return assembly;
+
+                    logger.LogError("Loaded assembly name mismatch for updated package {PackageId} version {Version}: expected {ExpectedName} but got {ActualName}, falling back to cached version", updatedIdentity.Id, updatedIdentity.Version, assemblyName.Name, assembly.GetName().Name);
+                }
+                else
+                {
+                    logger.LogError("Failed to resolve updated assembly path for {PackageId} version {Version}, falling back to cached version", updatedIdentity.Id, updatedIdentity.Version);
+                }
+            }
+
+            if (System.IO.File.Exists(offlineResult.AssemblyPath))
+            {
+                var cachedAssembly = context.LoadFromAssemblyPath(offlineResult.AssemblyPath);
+
+                if (AreEqual(cachedAssembly.GetName(), assemblyName))
+                    return cachedAssembly;
+            }
+            else
+            {
+                logger.LogError("Cached assembly path {AssemblyPath} for {PackageId} no longer exists", offlineResult.AssemblyPath, offlineResult.Identity.Id);
+            }
         }
 
-        if (ResolveAssemblyFromOnlineNuGetAsync(assemblyName).GetAwaiter().GetResult() is { } onlineAssemblyPath)
+        if (ResolveAssemblyFromOnlineNuGetAsync(assemblyName, CancellationToken.None).GetAwaiter().GetResult() is { } onlineAssemblyPath)
         {
             var assembly = context.LoadFromAssemblyPath(onlineAssemblyPath);
 
@@ -117,7 +145,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         static bool AreEqual(AssemblyName assemblyName1, AssemblyName assemblyName2) => assemblyName1.Name?.Equals(assemblyName2.Name) ?? false;
     }
 
-    private async Task<string?> ResolveAssemblyFromOfflineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)
+    private async Task<(string AssemblyPath, PackageIdentity Identity)?> ResolveAssemblyFromOfflineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -139,7 +167,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                 var variant = (AssemblyName)assemblyName.Clone();
                 variant.Name = prefix;
 
-                return await ResolveAssemblyFromOfflineNuGetAsync(variant, cancellationToken);
+                return await ResolveAssemblyFromOfflineNuGetAsync(variant, cancellationToken).ConfigureAwait(false);
             }
 
             var availableVersions = Directory.GetDirectories(localPackagePath).Select(Path.GetFileName).WhereNotNull().ToArray();
@@ -160,22 +188,14 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             }
 
             var packagePath = Path.Combine(PackagesPath, identity.Id.ToLower(), identity.Version.ToString());
-            var packageReader = new PackageFolderReader(packagePath);
+            using var packageReader = new PackageFolderReader(packagePath);
 
-            var frameworks = await packageReader.GetLibItemsAsync(cancellationToken);
-            var targetFramework = NuGetFramework.ParseFrameworkName(FrameworkName, new DefaultFrameworkNameProvider());
+            var assemblyPath = await ResolveAssemblyPathFromPackageAsync(packageReader, packagePath, assemblyName, identity.Id, identity.Version, cancellationToken).ConfigureAwait(false);
 
-            foreach (var framework in frameworks)
-            {
-                if (!DefaultCompatibilityProvider.Instance.IsCompatible(targetFramework, framework.TargetFramework))
-                    continue;
+            if (assemblyPath is null)
+                throw new FileNotFoundException($"Dependency {assemblyName.Name} was found in the offline NuGet cache but the file cannot be located");
 
-                var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
-
-                return assembly is null
-                    ? throw new FileNotFoundException($"Dependency {assemblyName.Name} was found in the offline NuGet cache but the file cannot be located")
-                    : Path.Combine(packagePath, assembly);
-            }
+            return (assemblyPath, identity);
         }
         catch (Exception exception)
         {
@@ -185,13 +205,144 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         return null;
     }
 
+    private async Task<PackageIdentity?> CheckAndDownloadUpdateAsync(AssemblyName assemblyName, PackageIdentity currentIdentity, CancellationToken cancellationToken = default)
+    {
+        PackageIdentity? bestUpdate = null;
+        SourceRepository? bestRepository = null;
+
+        foreach (var repository in Repositories)
+        {
+            try
+            {
+                var packages = await GetNuGetPackageVersionAsync(repository, currentIdentity.Id, cancellationToken).ConfigureAwait(false);
+                var onlineIdentity = SelectBestNuGetPackageVersion(packages.Select(package => package.Identity), null);
+
+                if (onlineIdentity is null)
+                {
+                    logger.LogTrace("Dependency {PackageId} not found in {Repository} for update check", currentIdentity.Id, repository.PackageSource.Name);
+                    continue;
+                }
+
+                if (onlineIdentity.Version.CompareTo(currentIdentity.Version) > 0)
+                {
+                    if (bestUpdate is null || onlineIdentity.Version.CompareTo(bestUpdate.Version) > 0)
+                    {
+                        bestUpdate = onlineIdentity;
+                        bestRepository = repository;
+                    }
+                }
+                else
+                {
+                    logger.LogTrace("No update available for {PackageId} (current: {CurrentVersion}, online: {OnlineVersion})", currentIdentity.Id, currentIdentity.Version, onlineIdentity.Version);
+                }
+            }
+            catch (Exception exception)
+            {
+                logger.LogWarning(exception, "Failed to check for updates for {PackageId} from {RepositoryName}", currentIdentity.Id, repository.PackageSource.Name);
+            }
+        }
+
+        if (bestUpdate is not null && bestRepository is not null)
+        {
+            logger.LogInformation("Automatic update available for {PackageId}: {CurrentVersion} -> {NewVersion}. Downloading and applying update.", currentIdentity.Id, currentIdentity.Version, bestUpdate.Version);
+
+            var packagePath = Path.Combine(PackagesPath, bestUpdate.Id.ToLower(), bestUpdate.Version.ToString());
+
+            if (!Directory.Exists(packagePath))
+            {
+                await TryDownloadNuGetPackageAsync(bestRepository, bestUpdate, cancellationToken).ConfigureAwait(false);
+
+                if (!Directory.Exists(packagePath))
+                {
+                    logger.LogError("Failed to download update for {PackageId} to version {NewVersion} from {RepositoryName}: package directory '{PackagePath}' does not exist after download attempt", bestUpdate.Id, bestUpdate.Version, bestRepository.PackageSource.Name, packagePath);
+                    return null;
+                }
+
+                logger.LogInformation("Successfully updated {PackageId} to version {NewVersion}", bestUpdate.Id, bestUpdate.Version);
+                return bestUpdate;
+            }
+            else
+            {
+                logger.LogTrace("Update for {PackageId} version {NewVersion} already exists in cache", bestUpdate.Id, bestUpdate.Version);
+                return bestUpdate;
+            }
+        }
+
+        return null;
+    }
+
+    private async Task<string?> ResolveAssemblyPathFromIdentityAsync(AssemblyName assemblyName, PackageIdentity identity, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var packagePath = Path.Combine(PackagesPath, identity.Id.ToLower(), identity.Version.ToString());
+
+            if (!Directory.Exists(packagePath))
+            {
+                logger.LogWarning("Package directory for {PackageId} version {Version} does not exist", identity.Id, identity.Version);
+                return null;
+            }
+
+            using var packageReader = new PackageFolderReader(packagePath);
+
+            return await ResolveAssemblyPathFromPackageAsync(packageReader, packagePath, assemblyName, identity.Id, identity.Version, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Failed to resolve assembly path for {PackageId} version {Version}", identity.Id, identity.Version);
+        }
+
+        return null;
+    }
+
+    private async Task<string?> ResolveAssemblyPathFromPackageAsync(PackageFolderReader packageReader, string packagePath, AssemblyName assemblyName, string packageId, NuGetVersion packageVersion, CancellationToken cancellationToken)
+    {
+        var frameworks = await packageReader.GetLibItemsAsync(cancellationToken).ConfigureAwait(false);
+        var targetFramework = NuGetFramework.ParseFrameworkName(FrameworkName, new DefaultFrameworkNameProvider());
+
+        var compatibleFrameworks = frameworks
+            .Where(f => DefaultCompatibilityProvider.Instance.IsCompatible(targetFramework, f.TargetFramework))
+            .ToList();
+
+        if (compatibleFrameworks.Count == 0)
+        {
+            logger.LogWarning("No compatible framework found for target framework {TargetFramework} in package {PackageId} version {Version}", targetFramework, packageId, packageVersion);
+            return null;
+        }
+
+        foreach (var framework in compatibleFrameworks)
+        {
+            var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase));
+
+            if (assembly is null)
+            {
+                assembly = framework.Items.FirstOrDefault();
+
+                if (assembly is not null)
+                {
+                    logger.LogWarning("Using fallback assembly {FallbackAssembly} from framework {Framework} for requested assembly {RequestedAssembly} in package {PackageId} version {Version}", Path.GetFileName(assembly), framework.TargetFramework, assemblyName.Name, packageId, packageVersion);
+                }
+            }
+
+            if (assembly is null)
+            {
+                continue;
+            }
+
+            return Path.Combine(packagePath, assembly);
+        }
+
+        logger.LogWarning("Assembly {AssemblyName} not found in any compatible framework for target framework {TargetFramework} in package {PackageId} version {Version}", assemblyName.Name, targetFramework, packageId, packageVersion);
+        return null;
+    }
+
     private async Task<string?> ResolveAssemblyFromOnlineNuGetAsync(AssemblyName assemblyName, CancellationToken cancellationToken = default)
     {
         foreach (var repository in Repositories)
         {
             try
             {
-                var identity = await TryResolveNuGetIdentityAsync(repository, assemblyName, cancellationToken);
+                var identity = await TryResolveNuGetIdentityAsync(repository, assemblyName, cancellationToken).ConfigureAwait(false);
 
                 if (identity is null)
                 {
@@ -204,7 +355,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                 if (Directory.Exists(packagePath))
                     throw new InvalidOperationException($"Dependency {identity.Id} version {identity.Version} already exists in the NuGet cache. This should have been resolved in the offline step.");
 
-                await TryDownloadNuGetPackageAsync(repository, identity, cancellationToken);
+                await TryDownloadNuGetPackageAsync(repository, identity, cancellationToken).ConfigureAwait(false);
 
                 if (!Directory.Exists(packagePath))
                 {
@@ -212,8 +363,8 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                     continue;
                 }
 
-                var packageReader = new PackageFolderReader(packagePath);
-                var frameworks = await packageReader.GetLibItemsAsync(cancellationToken);
+                using var packageReader = new PackageFolderReader(packagePath);
+                var frameworks = await packageReader.GetLibItemsAsync(cancellationToken).ConfigureAwait(false);
                 var targetFramework = NuGetFramework.ParseFrameworkName(FrameworkName, new DefaultFrameworkNameProvider());
 
                 foreach (var framework in frameworks)
@@ -241,7 +392,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     {
         try
         {
-            using var result = await PackageDownloader.GetDownloadResourceResultAsync(repository, identity, new PackageDownloadContext(Cache), PackagesPath, _nugetLogger, cancellationToken);
+            using var result = await PackageDownloader.GetDownloadResourceResultAsync(repository, identity, new PackageDownloadContext(Cache), PackagesPath, _nugetLogger, cancellationToken).ConfigureAwait(false);
             logger.LogTrace("Downloaded {PackageId} version {PackageVersion} dependency from {Repository}", identity.Id, identity.Version, repository.PackageSource.Name);
         }
         catch (FatalProtocolException exception)
@@ -257,13 +408,13 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     private async Task<PackageIdentity?> TryResolveNuGetIdentityAsync(SourceRepository repository, AssemblyName assemblyName, CancellationToken cancellationToken)
     {
         logger.LogTrace("Looking for dependency {DependencyName} as Identity in NuGet", assemblyName.Name);
-        var identity = await TryResolveNuGetPackageIdAsync(repository, assemblyName, cancellationToken);
+        var identity = await TryResolveNuGetPackageIdAsync(repository, assemblyName, cancellationToken).ConfigureAwait(false);
 
         if (identity is not null)
             return identity;
 
         logger.LogTrace("Looking for dependency {DependencyName} with TryGet in NuGet", assemblyName.Name);
-        identity = await TryResolveNuGetPackageSearchAsync(repository, assemblyName, cancellationToken);
+        identity = await TryResolveNuGetPackageSearchAsync(repository, assemblyName, cancellationToken).ConfigureAwait(false);
 
         if (identity is not null)
             return identity;
@@ -277,7 +428,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         if (string.IsNullOrWhiteSpace(assemblyName.Name))
             return null;
 
-        var packages = await GetNuGetPackageVersionAsync(repository, assemblyName.Name, cancellationToken);
+        var packages = await GetNuGetPackageVersionAsync(repository, assemblyName.Name, cancellationToken).ConfigureAwait(false);
         var best = SelectBestNuGetPackageVersion(packages.Select(package => package.Identity), assemblyName.Version);
 
         return best;
@@ -285,13 +436,13 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
     private async Task<PackageIdentity?> TryResolveNuGetPackageSearchAsync(SourceRepository repository, AssemblyName assemblyName, CancellationToken cancellationToken)
     {
-        var packageSearchResource = await repository.GetResourceAsync<PackageSearchResource>(cancellationToken);
-        var packageSearchResults = await packageSearchResource.SearchAsync(assemblyName.Name, new SearchFilter(true), 0, 1, _nugetLogger, cancellationToken);
+        var packageSearchResource = await repository.GetResourceAsync<PackageSearchResource>(cancellationToken).ConfigureAwait(false);
+        var packageSearchResults = await packageSearchResource.SearchAsync(assemblyName.Name, new SearchFilter(true), 0, 1, _nugetLogger, cancellationToken).ConfigureAwait(false);
 
         // actually always 1
         foreach (var packageSearchResult in packageSearchResults)
         {
-            var packages = await GetNuGetPackageVersionAsync(repository, packageSearchResult.Identity.Id, cancellationToken);
+            var packages = await GetNuGetPackageVersionAsync(repository, packageSearchResult.Identity.Id, cancellationToken).ConfigureAwait(false);
             var best = SelectBestNuGetPackageVersion(packages.Select(package => package.Identity), assemblyName.Version);
 
             return best;
@@ -333,8 +484,8 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
     private async Task<IEnumerable<IPackageSearchMetadata>> GetNuGetPackageVersionAsync(SourceRepository repository, string packageId, CancellationToken cancellationToken)
     {
-        var packageMetadataResource = await repository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
-        return await packageMetadataResource.GetMetadataAsync(packageId, true, false, Cache, _nugetLogger, cancellationToken);
+        var packageMetadataResource = await repository.GetResourceAsync<PackageMetadataResource>(cancellationToken).ConfigureAwait(false);
+        return await packageMetadataResource.GetMetadataAsync(packageId, true, false, Cache, _nugetLogger, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task ProbeRepositoriesAsync(CancellationToken cancellationToken = default)
@@ -359,7 +510,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             {
                 using var timeoutCancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(5));
                 using var linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancellationTokenSource.Token);
-                using var response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, linkedCancellationTokenSource.Token);
+                using var response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, linkedCancellationTokenSource.Token).ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                 {
