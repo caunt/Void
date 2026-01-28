@@ -5,4 +5,4 @@ using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Plugins.Common.Events;
 
-public record HandshakeCompletedEvent(IPlayer Player, ILink Link, Side Side, int NextState) : IScopedEvent;
+public record HandshakeCompletedEvent(IPlayer Player, ILink Link, Side Side, string ServerAddress, int NextState) : IScopedEvent;

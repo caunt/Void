@@ -62,7 +62,7 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
             if (handshake.IsStatusQuery)
                 await @event.Link.SendPacketAsync(handshake, cancellationToken);
 
-            await events.ThrowAsync(new HandshakeCompletedEvent(@event.Link.Player, @event.Link, Side.Client, handshake.NextState), cancellationToken);
+            await events.ThrowAsync(new HandshakeCompletedEvent(@event.Link.Player, @event.Link, Side.Client, handshake.ServerAddress, handshake.NextState), cancellationToken);
 
             if (!handshake.IsStatusQuery)
                 @event.Result = AuthenticationSide.Proxy;
@@ -166,10 +166,10 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         if (link.Player.Profile is null)
             throw new InvalidOperationException("Player should be authenticated before Server");
 
-        var handshakeBuildEventResult = await events.ThrowWithResultAsync(new HandshakeBuildEvent(link.Player, link), cancellationToken) ?? new(Packet: null, NextState: 2);
+        var handshakeBuildEventResult = await events.ThrowWithResultAsync(new HandshakeBuildEvent(link.Player, link), cancellationToken) ?? new(NextState: 2);
 
         await HandshakeWithServerAsync(link, handshakeBuildEventResult.Packet, handshakeBuildEventResult.NextState, cancellationToken);
-        await events.ThrowAsync(new HandshakeCompletedEvent(link.Player, link, Side.Server, handshakeBuildEventResult.NextState), cancellationToken);
+        await events.ThrowAsync(new HandshakeCompletedEvent(link.Player, link, Side.Server, handshakeBuildEventResult.ServerAddress ?? link.Server.Host, handshakeBuildEventResult.NextState), cancellationToken);
         await StartServerLoginAsync(link, cancellationToken);
 
         while (!cancellationToken.IsCancellationRequested)
