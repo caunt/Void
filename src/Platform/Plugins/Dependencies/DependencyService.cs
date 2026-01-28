@@ -185,6 +185,9 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
             if (!activate)
                 continue;
 
+            if (serviceType.IsOpenGeneric())
+                continue;
+
             if (service.Lifetime is ServiceLifetime.Singleton)
             {
                 GetContainer(assembly).GetRequiredService(serviceType);
@@ -194,12 +197,7 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
                 var players = container.GetRequiredService<IPlayerService>();
 
                 foreach (var player in players.All)
-                {
-                    if (serviceType.ContainsGenericParameters)
-                        continue;
-
                     GetContainer(assembly, player).GetRequiredService(serviceType);
-                }
             }
         }
     }
