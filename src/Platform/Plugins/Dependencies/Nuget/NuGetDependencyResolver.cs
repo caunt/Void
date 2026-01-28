@@ -210,7 +210,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                 return null;
             }
 
-            var packagePath = Path.Combine(PackagesPath, identity.Id.ToLower(), identity.Version.ToString());
+            var packagePath = Path.Combine(localPackagePath, identity.Version.ToString());
             using var packageReader = new PackageFolderReader(packagePath);
 
             var assemblyPath = await ResolveAssemblyPathFromPackageAsync(packageReader, packagePath, assemblyName, identity.Id, identity.Version, cancellationToken).ConfigureAwait(false);
