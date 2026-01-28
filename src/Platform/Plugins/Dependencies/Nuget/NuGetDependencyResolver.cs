@@ -115,10 +115,17 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                 logger.LogError("Failed to resolve updated assembly path for {PackageId} version {Version}, falling back to cached version", updatedIdentity.Id, updatedIdentity.Version);
             }
 
-            var cachedAssembly = context.LoadFromAssemblyPath(offlineResult.AssemblyPath);
+            if (System.IO.File.Exists(offlineResult.AssemblyPath))
+            {
+                var cachedAssembly = context.LoadFromAssemblyPath(offlineResult.AssemblyPath);
 
-            if (AreEqual(cachedAssembly.GetName(), assemblyName))
-                return cachedAssembly;
+                if (AreEqual(cachedAssembly.GetName(), assemblyName))
+                    return cachedAssembly;
+            }
+            else
+            {
+                logger.LogError("Cached assembly path {AssemblyPath} for {PackageId} no longer exists", offlineResult.AssemblyPath, offlineResult.Identity.Id);
+            }
         }
 
         if (ResolveAssemblyFromOnlineNuGetAsync(assemblyName, CancellationToken.None).GetAwaiter().GetResult() is { } onlineAssemblyPath)
@@ -203,11 +210,11 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         {
             try
             {
-                var onlineIdentity = await TryResolveNuGetIdentityAsync(repository, assemblyName, cancellationToken);
+                var onlineIdentity = await TryResolveNuGetPackageByIdAsync(repository, currentIdentity.Id, cancellationToken);
 
                 if (onlineIdentity is null)
                 {
-                    logger.LogTrace("Dependency {DependencyName} not found in {Repository} for update check", assemblyName.Name, repository.PackageSource.Name);
+                    logger.LogTrace("Dependency {PackageId} not found in {Repository} for update check", currentIdentity.Id, repository.PackageSource.Name);
                     continue;
                 }
 
@@ -240,15 +247,14 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             {
                 await TryDownloadNuGetPackageAsync(bestRepository, bestUpdate, cancellationToken);
 
-                if (Directory.Exists(packagePath))
+                if (!Directory.Exists(packagePath))
                 {
-                    logger.LogInformation("Successfully updated {PackageId} to version {NewVersion}", bestUpdate.Id, bestUpdate.Version);
-                    return bestUpdate;
+                    logger.LogError("Failed to download update for {PackageId} to version {NewVersion} from {RepositoryName}: package directory '{PackagePath}' does not exist after download attempt", bestUpdate.Id, bestUpdate.Version, bestRepository.PackageSource.Name, packagePath);
+                    return null;
                 }
-                else
-                {
-                    logger.LogWarning("Failed to download update for {PackageId} to version {NewVersion} from {RepositoryName}: package directory '{PackagePath}' does not exist after download attempt", bestUpdate.Id, bestUpdate.Version, bestRepository.PackageSource.Name, packagePath);
-                }
+
+                logger.LogInformation("Successfully updated {PackageId} to version {NewVersion}", bestUpdate.Id, bestUpdate.Version);
+                return bestUpdate;
             }
             else
             {
@@ -258,6 +264,14 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         }
 
         return null;
+    }
+
+    private async Task<PackageIdentity?> TryResolveNuGetPackageByIdAsync(SourceRepository repository, string packageId, CancellationToken cancellationToken)
+    {
+        var packages = await GetNuGetPackageVersionAsync(repository, packageId, cancellationToken);
+        var best = SelectBestNuGetPackageVersion(packages.Select(package => package.Identity), null);
+
+        return best;
     }
 
     private async Task<string?> ResolveAssemblyPathFromIdentityAsync(AssemblyName assemblyName, PackageIdentity identity, CancellationToken cancellationToken = default)
