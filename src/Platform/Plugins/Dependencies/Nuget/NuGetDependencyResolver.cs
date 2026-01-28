@@ -102,9 +102,11 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 
             if (updatedIdentity is not null && updatedIdentity.Version.CompareTo(offlineResult.Identity.Version) > 0)
             {
-                if (ResolveAssemblyFromOfflineNuGetAsync(assemblyName).GetAwaiter().GetResult() is { } updatedResult)
+                var updatedAssemblyPath = ResolveAssemblyPathFromIdentityAsync(assemblyName, updatedIdentity).GetAwaiter().GetResult();
+
+                if (updatedAssemblyPath is not null)
                 {
-                    var assembly = context.LoadFromAssemblyPath(updatedResult.AssemblyPath);
+                    var assembly = context.LoadFromAssemblyPath(updatedAssemblyPath);
 
                     if (AreEqual(assembly.GetName(), assemblyName))
                         return assembly;
@@ -246,6 +248,46 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             {
                 logger.LogTrace(exception, "Failed to check for updates for {PackageId} from {RepositoryName}", currentIdentity.Id, repository.PackageSource.Name);
             }
+        }
+
+        return null;
+    }
+
+    private async Task<string?> ResolveAssemblyPathFromIdentityAsync(AssemblyName assemblyName, PackageIdentity identity, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var packagePath = Path.Combine(PackagesPath, identity.Id.ToLower(), identity.Version.ToString());
+
+            if (!Directory.Exists(packagePath))
+            {
+                logger.LogWarning("Package directory for {PackageId} version {Version} does not exist", identity.Id, identity.Version);
+                return null;
+            }
+
+            var packageReader = new PackageFolderReader(packagePath);
+            var frameworks = await packageReader.GetLibItemsAsync(cancellationToken);
+            var targetFramework = NuGetFramework.ParseFrameworkName(FrameworkName, new DefaultFrameworkNameProvider());
+
+            foreach (var framework in frameworks)
+            {
+                if (!DefaultCompatibilityProvider.Instance.IsCompatible(targetFramework, framework.TargetFramework))
+                    continue;
+
+                var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase)) ?? framework.Items.FirstOrDefault();
+
+                if (assembly is null)
+                {
+                    logger.LogWarning("Assembly {AssemblyName} not found in package {PackageId} version {Version}", assemblyName.Name, identity.Id, identity.Version);
+                    return null;
+                }
+
+                return Path.Combine(packagePath, assembly);
+            }
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Failed to resolve assembly path for {PackageId} version {Version}", identity.Id, identity.Version);
         }
 
         return null;
