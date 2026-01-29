@@ -11,7 +11,7 @@ public class RegistryKeyArgumentSerializer : IArgumentPropertySerializer<Registr
 
     public RegistryKeyArgument Deserialize(BufferSpan buffer, ProtocolVersion protocolVersion)
     {
-        return new RegistryKeyArgument(identifier: buffer.ReadString());
+        return new RegistryKeyArgument(Identifier: buffer.ReadString());
     }
 
     public void Serialize(RegistryKeyArgument value, BufferSpan buffer, ProtocolVersion protocolVersion)
