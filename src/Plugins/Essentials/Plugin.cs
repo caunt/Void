@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Void.Minecraft.Network;
+using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
@@ -11,7 +12,7 @@ using Void.Proxy.Plugins.Essentials.Redirection;
 
 namespace Void.Proxy.Plugins.Essentials;
 
-public class Plugin(IDependencyService dependencies) : IProtocolPlugin
+public class Plugin(IDependencyService dependencies, IConsoleService console) : IProtocolPlugin
 {
     public static IEnumerable<ProtocolVersion> SupportedVersions => ProtocolVersion.Range(ProtocolVersion.MINECRAFT_1_20_2, ProtocolVersion.Latest);
 
@@ -26,9 +27,14 @@ public class Plugin(IDependencyService dependencies) : IProtocolPlugin
         dependencies.Register(services =>
         {
             services.AddSingleton<RedirectionService>();
+            services.AddSingleton<OverridesService>();
             services.AddSingleton<ModerationService>();
             services.AddSingleton<PlatformService>();
             services.AddSingleton<TraceService>();
         });
+
+        var overrides = dependencies.GetRequiredService<OverridesService>();
+        overrides.OverridesOption.Validators.Add(OverridesService.ValidateOverride);
+        console.EnsureOptionDiscovered(overrides.OverridesOption);
     }
 }
