@@ -260,7 +260,7 @@ public ref struct MinecraftBuffer
         return _backingBuffer.Read(length);
     }
 
-    public void Write(ReadOnlySpan<byte> data)
+    public void Write(scoped ReadOnlySpan<byte> data)
     {
         _backingBuffer.Write(data);
     }
@@ -284,6 +284,11 @@ public ref struct MinecraftBuffer
         Seek(position, SeekOrigin.Begin);
 
         return data;
+    }
+
+    public BufferSpan CopyAsBufferSpan()
+    {
+        return new BufferSpan(ReadToEnd().ToArray()) { Position = (int)Position };
     }
 
     public string DumpHex()
