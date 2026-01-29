@@ -49,6 +49,37 @@ Host = "127.0.0.1"
 Port = 25568
 ```
 
+### Server Overrides
+The `Override` property allows you to redirect players to specific servers based on the hostname they use to connect to the proxy. This enables you to route players to different backend servers depending on the domain or subdomain they use.
+
+When a player connects using a hostname that matches a server's `Override` value, they will be automatically redirected to that server instead of the default first server in the list.
+
+```toml title="Example with Overrides"
+# Players connecting via lobby.example.org will be sent to the lobby server
+[[Servers]]
+Name = "lobby"
+Host = "127.0.0.1"
+Port = 25566
+Override = "lobby.example.org"
+
+# Players connecting via minigames.example.org will be sent to the minigames server
+[[Servers]]
+Name = "minigames"
+Host = "127.0.0.1"
+Port = 25567
+Override = "minigames.example.org"
+
+# Default server for players connecting via any other hostname
+[[Servers]]
+Name = "limbo"
+Host = "127.0.0.1"
+Port = 25568
+```
+
+:::tip
+You can also configure overrides via [**program arguments**](/docs/configuration/program-arguments#servers) using the `--override` flag, which allows you to specify overrides at runtime without modifying configuration files.
+:::
+
 ## Watchdog
 [**Watchdog**](/docs/watchdog) is a built-in HTTP server that allows you to check status or control the proxy.
 
