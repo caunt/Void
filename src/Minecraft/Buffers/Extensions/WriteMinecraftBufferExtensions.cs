@@ -332,7 +332,7 @@ public static class WriteMinecraftBufferExtensions
             buffer.WriteProperty(property);
     }
 
-    private static void WriteByteArrayCore<TBuffer>(ref TBuffer buffer, ReadOnlySpan<byte> value) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    private static void WriteByteArrayCore<TBuffer>(ref TBuffer buffer, scoped ReadOnlySpan<byte> value) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
         buffer.WriteVarInt(value.Length);
         buffer.Write(value);
