@@ -1,11 +1,11 @@
 THIRD-PARTY NOTICES
 ===================
 
-This project contains code originally authored by a third party and used under the terms of the license below.  
+This project contains code originally authored by third parties and used under the terms of the licenses below.  
 Modifications may have been made.
 
 ------------------------------------------------------------
-Original work: Microsoft Corporation (Mojang) - [**Brigadier**](https://github.com/Mojang/brigadier)  
+Original work: Mojang - [**Brigadier**](https://github.com/Mojang/brigadier)  
 Copyright (c) Microsoft Corporation  
 License: MIT License  
 ------------------------------------------------------------
