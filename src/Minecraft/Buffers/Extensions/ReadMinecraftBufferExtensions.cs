@@ -212,6 +212,21 @@ public static class ReadMinecraftBufferExtensions
         Component.ReadFrom(ref buffer);
 
     /// <summary>
+    /// Reads a byte array from the specified buffer, using a variable-length integer to determine the number of bytes.
+    /// to read.
+    /// </summary>
+    /// <remarks>This method is useful for efficiently reading length-prefixed byte arrays from a Minecraft
+    /// protocol buffer, where the length is encoded as a variable-length integer.</remarks>
+    /// <typeparam name="TBuffer">The type of the buffer, which must be a value type that implements the IMinecraftBuffer<TBuffer> interface.</typeparam>
+    /// <param name="buffer">A reference to the buffer from which the byte array is read. The buffer must support reading variable-length
+    /// integers.</param>
+    /// <returns>A read-only span of bytes containing the data read from the buffer.</returns>
+    public static ReadOnlySpan<byte> ReadByteArray<TBuffer>(ref this TBuffer buffer)
+        where TBuffer : struct, IMinecraftBuffer<TBuffer>,
+        allows ref struct =>
+        buffer.Read(buffer.ReadVarInt());
+
+    /// <summary>
     /// Reads all remaining data from a buffer and returns it as a read-only span of bytes.
     /// </summary>
     /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface.</typeparam>

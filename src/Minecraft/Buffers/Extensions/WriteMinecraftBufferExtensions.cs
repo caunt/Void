@@ -215,6 +215,11 @@ public static class WriteMinecraftBufferExtensions
         allows ref struct =>
         value.WriteTo(ref buffer);
 
+    public static void WriteByteArray<TBuffer>(ref this TBuffer buffer, scoped ReadOnlySpan<byte> data)
+        where TBuffer : struct, IMinecraftBuffer<TBuffer>,
+        allows ref struct =>
+        WriteByteArrayCore(ref buffer, data);
+
     /// <summary>
     /// Writes a byte span to a buffer, allowing for efficient data handling in a structured format.
     /// </summary>
@@ -325,5 +330,11 @@ public static class WriteMinecraftBufferExtensions
 
         foreach (var property in value)
             buffer.WriteProperty(property);
+    }
+
+    private static void WriteByteArrayCore<TBuffer>(ref TBuffer buffer, ReadOnlySpan<byte> value) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    {
+        buffer.WriteVarInt(value.Length);
+        buffer.Write(value);
     }
 }
