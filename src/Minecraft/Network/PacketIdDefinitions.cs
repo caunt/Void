@@ -322,5 +322,18 @@ public static class PacketIdDefinitions
         new(0x18, ProtocolVersion.MINECRAFT_1_21_5)
     ];
 
+    public static readonly MinecraftPacketIdMapping[] ClientboundCommands = [
+        new(0x11, ProtocolVersion.MINECRAFT_1_13),
+        new(0x12, ProtocolVersion.MINECRAFT_1_15),
+        new(0x11, ProtocolVersion.MINECRAFT_1_16),
+        new(0x10, ProtocolVersion.MINECRAFT_1_16_2),
+        new(0x12, ProtocolVersion.MINECRAFT_1_17),
+        new(0x0F, ProtocolVersion.MINECRAFT_1_19),
+        new(0x0E, ProtocolVersion.MINECRAFT_1_19_3),
+        new(0x10, ProtocolVersion.MINECRAFT_1_19_4),
+        new(0x11, ProtocolVersion.MINECRAFT_1_20_2),
+        new(0x10, ProtocolVersion.MINECRAFT_1_21_5)
+    ];
+
     #endregion
 }
