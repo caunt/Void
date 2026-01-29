@@ -24,7 +24,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
 {
     private static readonly Option<string[]> _repositoryOption = new("--repository", "-r")
     {
-        Description = "Provides a URI to NuGet repository [--repository https://nuget.example.com/v3/index.json or --repository https://username:password@nuget.example.com/v3/index.json]."
+        Description = "Provides a URI to NuGet repository.\nExamples:\n--repository https://nuget.example.com/v3/index.json\n--repository https://username:password@nuget.example.com/v3/index.json"
     };
 
     private static readonly string FrameworkName = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName
@@ -537,7 +537,8 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
             }
         }
 
-        logger.LogInformation("Custom NuGet repositories:");
+        if (statuses.Count > 0)
+            logger.LogInformation("Custom NuGet repositories:");
 
         foreach (var (url, status) in statuses)
             logger.LogInformation(" - {Url} [{Status}]", url, status);
