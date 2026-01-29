@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 using System.Text;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Nbt;
@@ -225,6 +226,22 @@ public static class ReadMinecraftBufferExtensions
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>
         buffer.Read(buffer.ReadVarInt());
+
+    /// <summary>
+    /// Reads an array of 32-bit integers from the specified buffer and returns a read-only span containing the values.
+    /// </summary>
+    /// <remarks>The method first reads a variable-length integer from the buffer to determine the number of
+    /// integers to read. It then accesses the corresponding region of memory as a span of integers. The returned span
+    /// is only valid as long as the underlying buffer remains valid and unchanged.</remarks>
+    /// <typeparam name="TBuffer">The type of the buffer that implements the IMinecraftBuffer interface and provides access to the underlying
+    /// data.</typeparam>
+    /// <param name="buffer">A reference to the buffer from which the integer array is read. The buffer must be valid and positioned at the
+    /// start of the array data.</param>
+    /// <returns>A read-only span of 32-bit integers representing the array read from the buffer.</returns>
+    public static ReadOnlySpan<int> ReadIntArray<TBuffer>(ref this TBuffer buffer)
+        where TBuffer : struct, IMinecraftBuffer<TBuffer>,
+        allows ref struct =>
+        MemoryMarshal.Cast<byte, int>(buffer.Access(buffer.ReadVarInt() * sizeof(int)));
 
     /// <summary>
     /// Reads all remaining data from a buffer and returns it as a read-only span of bytes.

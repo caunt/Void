@@ -215,10 +215,33 @@ public static class WriteMinecraftBufferExtensions
         allows ref struct =>
         value.WriteTo(ref buffer);
 
+    /// <summary>
+    /// Writes the specified byte array to the provided Minecraft buffer.
+    /// </summary>
+    /// <remarks>This method is intended for use with custom buffer structures that implement the
+    /// IMinecraftBuffer interface, ensuring type safety and efficient memory usage.</remarks>
+    /// <typeparam name="TBuffer">The type of the buffer to which the data will be written. Must be a value type that implements the
+    /// IMinecraftBuffer<TBuffer> interface.</typeparam>
+    /// <param name="buffer">A reference to the buffer that receives the byte array data.</param>
+    /// <param name="data">A read-only span of bytes containing the data to write to the buffer.</param>
     public static void WriteByteArray<TBuffer>(ref this TBuffer buffer, scoped ReadOnlySpan<byte> data)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>
         WriteByteArrayCore(ref buffer, data);
+
+    /// <summary>
+    /// Writes a sequence of 32-bit integers to the specified Minecraft buffer.
+    /// </summary>
+    /// <remarks>Use this method to efficiently serialize an array of integers into a buffer that conforms to
+    /// the IMinecraftBuffer interface. The method is intended for use with value-type buffers and supports efficient,
+    /// allocation-free writing.</remarks>
+    /// <typeparam name="TBuffer">The type of the buffer that implements the IMinecraftBuffer interface.</typeparam>
+    /// <param name="buffer">A reference to the buffer to which the integer array will be written.</param>
+    /// <param name="data">A read-only span containing the integers to write to the buffer.</param>
+    public static void WriteIntArray<TBuffer>(ref this TBuffer buffer, scoped ReadOnlySpan<int> data)
+        where TBuffer : struct, IMinecraftBuffer<TBuffer>,
+        allows ref struct =>
+        WriteIntArrayCore(ref buffer, data);
 
     /// <summary>
     /// Writes a byte span to a buffer, allowing for efficient data handling in a structured format.
@@ -336,5 +359,13 @@ public static class WriteMinecraftBufferExtensions
     {
         buffer.WriteVarInt(value.Length);
         buffer.Write(value);
+    }
+
+    private static void WriteIntArrayCore<TBuffer>(ref TBuffer buffer, scoped ReadOnlySpan<int> value) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    {
+        buffer.WriteVarInt(value.Length);
+
+        foreach (var integer in value)
+            buffer.WriteInt(integer);
     }
 }
