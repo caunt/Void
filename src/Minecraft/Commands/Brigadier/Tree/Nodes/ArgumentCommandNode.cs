@@ -9,27 +9,12 @@ using Void.Minecraft.Commands.Brigadier.Suggestion;
 
 namespace Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 
-public abstract class ArgumentCommandNode(
-    CommandExecutor? executor,
-    CommandRequirement? requirement,
-    CommandNode? redirectTarget,
-    RedirectModifier? redirectModifier,
-    bool isForks,
-    SuggestionProvider? customSuggestions) : CommandNode(executor, requirement, redirectTarget, redirectModifier, isForks)
+public abstract class ArgumentCommandNode(CommandExecutor? executor, CommandRequirement? requirement, CommandNode? redirectTarget, RedirectModifier? redirectModifier, bool isForks, SuggestionProvider? customSuggestions) : CommandNode(executor, requirement, redirectTarget, redirectModifier, isForks)
 {
     public SuggestionProvider? CustomSuggestions { get; set; } = customSuggestions;
 }
 
-public class ArgumentCommandNode<TType>(
-    string name,
-    IArgumentType<TType> type,
-    CommandExecutor? executor,
-    CommandRequirement? requirement,
-    CommandNode? redirectTarget,
-    RedirectModifier? redirectModifier,
-    bool isForks,
-    SuggestionProvider? customSuggestions
-    ) : ArgumentCommandNode(executor, requirement, redirectTarget, redirectModifier, isForks, customSuggestions)
+public class ArgumentCommandNode<TType>(string name, IArgumentType<TType> type, CommandExecutor? executor, CommandRequirement? requirement, CommandNode? redirectTarget, RedirectModifier? redirectModifier, bool isForks, SuggestionProvider? customSuggestions) : ArgumentCommandNode(executor, requirement, redirectTarget, redirectModifier, isForks, customSuggestions)
 {
     private const string UsageArgumentOpen = "<";
     private const string UsageArgumentClose = ">";
