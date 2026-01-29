@@ -41,6 +41,10 @@ public class ChatService(ExamplePlugin plugin, ILogger<ChatService> logger, ICon
     {
         // This event is fired when both sides start Play phase.
 
+        // Indicates that Player will be redirected right now to another server, do nothing.
+        if (@event.IsRedirecting)
+            return;
+
         // If settings are not loaded, do nothing. Practically impossible, but just in case, always do null-checks.
         if (_settings is null)
             return;
