@@ -92,7 +92,7 @@ Options:
   ./void-linux-x64 \
     --ignore-file-servers \
     --server 127.0.0.1:25565 \
-    --override vanilla.example.org=args-server-0
+    --override vanilla.example.org=args-server-1
   ```
 
   ```bash title="Example with File-configured Server"
