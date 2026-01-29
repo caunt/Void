@@ -55,12 +55,11 @@ The `Override` property allows you to redirect players to specific servers based
 When a player connects using a hostname that matches a server's `Override` value, they will be automatically redirected to that server instead of the default first server in the list.
 
 ```toml title="Example with Overrides"
-# Players connecting via lobby.example.org will be sent to the lobby server
+# Default server for players connecting via any non-matching hostname
 [[Servers]]
 Name = "lobby"
 Host = "127.0.0.1"
 Port = 25566
-Override = "lobby.example.org"
 
 # Players connecting via minigames.example.org will be sent to the minigames server
 [[Servers]]
@@ -69,11 +68,12 @@ Host = "127.0.0.1"
 Port = 25567
 Override = "minigames.example.org"
 
-# Default server for players connecting via any other hostname
+# Players connecting via limbo.example.org will be sent to the limbo server
 [[Servers]]
 Name = "limbo"
 Host = "127.0.0.1"
 Port = 25568
+Override = "limbo.example.org"
 ```
 
 :::tip
