@@ -31,12 +31,22 @@ Offline = false
 LogLevel = "Information"
 
 # Predefined list of servers. 
-# Players will be connected to the first one, if not specified otherwise from plugins.
-Servers = [
-	{ Name = "lobby", Host = "127.0.0.1", Port = 25566 },
-	{ Name = "minigames", Host = "127.0.0.1", Port = 25567 },
-	{ Name = "limbo", Host = "127.0.0.1", Port = 25568 }
-]
+# Players will be connected to the first one, if not specified otherwise from plugins or not selected by overriden hostname.
+[[Servers]]
+Name = "lobby"
+Host = "127.0.0.1"
+Port = 25566
+Override = "lobby.example.org"
+
+[[Servers]]
+Name = "minigames"
+Host = "127.0.0.1"
+Port = 25567
+
+[[Servers]]
+Name = "limbo"
+Host = "127.0.0.1"
+Port = 25568
 ```
 
 ## Watchdog
