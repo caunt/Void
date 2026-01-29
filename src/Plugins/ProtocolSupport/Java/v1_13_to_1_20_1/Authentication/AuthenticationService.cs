@@ -128,7 +128,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         switch (packet)
         {
             case DisconnectPacket disconnectPacket:
-                logger.LogInformation("Player {Player} cannot authenticate on {Server}: {Reason}", link.Player, link.Server, disconnectPacket.Reason.SerializeLegacy());
+                logger.LogInformation("Player {Player} cannot authenticate on {Server}: {Reason}", link.Player, link.Server, disconnectPacket.Reason);
 
                 // Since the IPlayer client has already completed the login state, it cannot be kicked with a login disconnect packet
                 await link.Player.KickAsync(disconnectPacket.Reason, cancellationToken);
