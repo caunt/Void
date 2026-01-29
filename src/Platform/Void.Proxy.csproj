@@ -79,6 +79,10 @@
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 			<CopyToOutputDirectory>false</CopyToOutputDirectory>
 		</ProjectReference>
+		<ProjectReference Include="..\Plugins\ForwardingSupport\ProxyCompatibleForge\Void.Proxy.Plugins.ForwardingSupport.ProxyCompatibleForge.csproj">
+			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+			<CopyToOutputDirectory>false</CopyToOutputDirectory>
+		</ProjectReference>
 		<ProjectReference Include="..\Plugins\ModsSupport\Forge\Void.Proxy.Plugins.ModsSupport.Forge.csproj">
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 			<CopyToOutputDirectory>false</CopyToOutputDirectory>
@@ -126,6 +130,10 @@
 
 		<EmbeddedResource Include="..\Plugins\ForwardingSupport\Velocity\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ForwardingSupport.Velocity.dll">
 			<Link>Embedded\Void.Proxy.Plugins.ForwardingSupport.Velocity.dll</Link>
+			<LogicalName>%(Filename)%(Extension)</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="..\Plugins\ForwardingSupport\ProxyCompatibleForge\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ForwardingSupport.ProxyCompatibleForge.dll">
+			<Link>Embedded\Void.Proxy.Plugins.ForwardingSupport.ProxyCompatibleForge.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
 
