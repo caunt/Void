@@ -13,7 +13,7 @@ using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players.Contexts;
-using Void.Proxy.Plugins.Common.Network.Packets;
+using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
 using Void.Proxy.Plugins.ForwardingSupport.Velocity.Packets;
 
 namespace Void.Proxy.Plugins.ForwardingSupport.Velocity.Services;
@@ -53,6 +53,22 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
     [Subscribe]
     public async ValueTask OnMessageReceived(MessageReceivedEvent @event, CancellationToken cancellationToken)
     {
+        if (@event.Message is DisconnectPacket disconnectPacket)
+        {
+            if (disconnectPacket.Reason.ToString().Contains("IllegalArgumentException: Empty key"))
+            {
+                disconnectPacket.Reason =
+                    $"""
+                    Forwarding setup required
+
+                    The {@event.Link.Server} expects a Velocity (Modern) forwarding secret key.
+
+
+                    Set it up in settings.toml configuration file or with --forwarding-modern-key program argument.
+                    """.ReplaceLineEndings("\n");
+            }
+        }
+
         if (@event.Message is not VelocityLoginPluginRequestPacket packet)
             return;
 
