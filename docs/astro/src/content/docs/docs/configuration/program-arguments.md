@@ -20,9 +20,9 @@ Usage:
 Options:
   -?, -h, --help                                         Show help and usage information
   -o, --override                                         Register an additional server override to redirect players based on
-                                                         hostname they are connecting with.
+                                                         the hostname they are connecting with.
   -p, --plugin                                           Provides a path to the file, directory or URL to load plugin.
-  -r, --repository                                       Provides a URI to NuGet repository.
+  -r, --repository                                       Provides a URI to a NuGet repository.
   --forwarding-modern-key                                Sets the secret key for modern forwarding
   --ignore-file-servers                                  Ignore servers specified in configuration files
   --interface                                            Sets the listening network interface
@@ -106,7 +106,7 @@ Options:
 - `--plugin`
   Allows you to specify plugins to load.
 - `--repository`
-  Provides a URI to NuGet repository. You can specify multiple repositories and include credentials in the URI using the format `https://username:password@nuget.example.com/v3/index.json`.
+  Provides a URI to a NuGet repository. You can specify multiple repositories and include credentials in the URI using the format `https://username:password@nuget.example.com/v3/index.json`.
 
   ```bash title="Example Usage"
   ./void-linux-x64 \
