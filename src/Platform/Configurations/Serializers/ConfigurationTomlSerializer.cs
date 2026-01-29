@@ -14,13 +14,13 @@ namespace Void.Proxy.Configurations.Serializers;
 public class ConfigurationTomlSerializer : IConfigurationSerializer
 {
     private readonly Dictionary<Type, Type> _typeTomlMappedCache = [];
-    private readonly TomlParser _parser = new();
     private readonly TomlSerializerOptions _options = new()
     {
         // Allows record type constructors
         OverrideConstructorValues = true,
         IgnoreInvalidEnumValues = false,
-        IgnoreNonPublicMembers = true
+        IgnoreNonPublicMembers = true,
+        MaxTableEntriesCountToInline = 5
     };
 
     public void RemoveAssemblyCache(Assembly assembly)
@@ -81,7 +81,7 @@ public class ConfigurationTomlSerializer : IConfigurationSerializer
 
         try
         {
-            document = _parser.Parse(source);
+            document = new TomlParser().Parse(source);
         }
         catch (TomlException exception)
         {

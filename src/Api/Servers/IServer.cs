@@ -18,6 +18,11 @@ public interface IServer
     public string Host { get; }
 
     /// <summary>
+    /// Gets or sets the hostname override for the server.
+    /// </summary>
+    public string? Override { get; }
+
+    /// <summary>
     /// Gets the port used for connecting to the server.
     /// </summary>
     public int Port { get; }

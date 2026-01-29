@@ -17,9 +17,9 @@ public record Settings : ISettings
     public bool Offline { get; set; } = false;
     public List<Server> Servers { get; init; } =
     [
-        new("lobby", "127.0.0.1", 25566),
-        new("minigames", "127.0.0.1", 25567),
-        new("limbo", "127.0.0.1", 25568)
+        new(Name: "lobby", Host: "127.0.0.1", Port: 25566, Override: "lobby.example.org"),
+        new(Name: "minigames", Host: "127.0.0.1", Port: 25567),
+        new(Name: "limbo", Host: "127.0.0.1", Port: 25568)
     ];
 
     IPAddress ISettings.Address => IPAddress.Parse(Address);

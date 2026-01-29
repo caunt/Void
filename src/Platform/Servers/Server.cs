@@ -2,7 +2,7 @@
 
 namespace Void.Proxy.Servers;
 
-public record Server(string Name, string Host, int Port) : IServer
+public record Server(string Name, string Host, int Port, string? Override = null) : IServer
 {
     public string? Brand { get; set; }
 

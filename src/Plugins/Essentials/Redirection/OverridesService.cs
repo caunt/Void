@@ -39,12 +39,10 @@ public class OverridesService(ILogger<OverridesService> logger, IServerService s
     [Subscribe]
     public async ValueTask OnHandshakeCompleted(HandshakeCompletedEvent @event, CancellationToken cancellationToken)
     {
-        var overrides = console.GetOptionValue(OverridesOption);
+        var serverOverrides = servers.All.Where(server => !string.IsNullOrWhiteSpace(server.Override)).Select(server => $"{server.Override}={server.Name}");
+        var optionOverrides = console.GetOptionValue(OverridesOption) ?? [];
 
-        if (overrides is null)
-            return;
-
-        foreach (var value in overrides)
+        foreach (var value in serverOverrides.Concat(optionOverrides))
         {
             var parts = value.Split("=");
 
