@@ -31,10 +31,10 @@ public class CompatibilityService(ILogger<CompatibilityService> logger) : IEvent
     [Subscribe]
     public void OnMessageReceived(MessageReceivedEvent @event)
     {
-        if (@event.Message is not CommandsPacket commandsPacket)
+        if (@event.Message is not CommandsPacket packet)
             return;
 
         Console.WriteLine(@event);
-        logger.LogDebug("Received CommandsPacket: DataLength={DataLength}", commandsPacket.Data.Length);
+        logger.LogDebug("Received CommandsPacket: {Packet}", packet);
     }
 }
