@@ -61,10 +61,10 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
                     $"""
                     Forwarding setup required
 
-                    The {@event.Link.Server} expects a Velocity (Modern) forwarding secret key.
+                    The {@event.Link.Server} needs a Velocity (Modern) forwarding secret key.
 
 
-                    Set it up in settings.toml configuration file or with --forwarding-modern-key program argument.
+                    If you're using Proxy Compatible Forge, set it up in ./config/proxy-compatible-forge.toml
                     """.ReplaceLineEndings("\n");
             }
         }
