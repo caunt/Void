@@ -34,7 +34,6 @@ public class CompatibilityService(ILogger<CompatibilityService> logger) : IEvent
         if (@event.Message is not CommandsPacket packet)
             return;
 
-        Console.WriteLine(@event);
         logger.LogDebug("Received CommandsPacket: {Packet}", packet);
     }
 }
