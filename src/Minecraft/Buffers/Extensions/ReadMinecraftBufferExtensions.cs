@@ -183,7 +183,7 @@ public static class ReadMinecraftBufferExtensions
     /// <param name="count">Specifies the number of properties to read from the buffer, with a default value indicating all properties
     /// should be read.</param>
     /// <returns>An array of properties read from the buffer.</returns>
-    public static Property[] ReadPropertyArray<TBuffer>(ref this TBuffer buffer, int count = -1)
+    public static ReadOnlyMemory<Property> ReadPropertyArray<TBuffer>(ref this TBuffer buffer, int count = -1)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>
         ReadPropertyArrayCore(ref buffer, count);
@@ -227,6 +227,21 @@ public static class ReadMinecraftBufferExtensions
         buffer.Read(buffer.ReadVarInt());
 
     /// <summary>
+    /// Reads an array of variable-length integers from the specified buffer.
+    /// </summary>
+    /// <remarks>This method is intended for use with buffers that implement the IMinecraftBuffer interface,
+    /// enabling efficient reading of variable-length integer arrays commonly used in Minecraft network
+    /// protocols.</remarks>
+    /// <typeparam name="TBuffer">The type of the buffer, which must be a value type implementing the IMinecraftBuffer<TBuffer> interface.</typeparam>
+    /// <param name="buffer">A reference to the buffer from which the variable-length integer array is read. The buffer must be properly
+    /// initialized and contain valid data.</param>
+    /// <returns>A read-only span containing the integers read from the buffer.</returns>
+    public static ReadOnlyMemory<int> ReadVarIntArray<TBuffer>(ref this TBuffer buffer)
+        where TBuffer : struct, IMinecraftBuffer<TBuffer>,
+        allows ref struct =>
+        ReadVarIntArrayCore(ref buffer);
+
+    /// <summary>
     /// Reads a sequence of 32-bit integers from the specified Minecraft buffer.
     /// </summary>
     /// <remarks>This method is an extension for types implementing IMinecraftBuffer, enabling efficient
@@ -236,7 +251,7 @@ public static class ReadMinecraftBufferExtensions
     /// <param name="buffer">A reference to the buffer from which the integer array is read. The buffer must be a valid instance of a type
     /// that implements IMinecraftBuffer.</param>
     /// <returns>A read-only span containing the integers read from the buffer.</returns>
-    public static ReadOnlySpan<int> ReadIntArray<TBuffer>(ref this TBuffer buffer)
+    public static ReadOnlyMemory<int> ReadIntArray<TBuffer>(ref this TBuffer buffer)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>
         ReadIntArrayCore(ref buffer);
@@ -372,7 +387,7 @@ public static class ReadMinecraftBufferExtensions
         return new Property(name, value, isSigned, signature);
     }
 
-    private static Property[] ReadPropertyArrayCore<TBuffer>(ref TBuffer buffer, int count = -1) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    private static ReadOnlyMemory<Property> ReadPropertyArrayCore<TBuffer>(ref TBuffer buffer, int count = -1) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
         if (count < 0)
             count = buffer.ReadVarInt();
@@ -385,7 +400,18 @@ public static class ReadMinecraftBufferExtensions
         return properties;
     }
 
-    private static ReadOnlySpan<int> ReadIntArrayCore<TBuffer>(ref this TBuffer buffer) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    private static ReadOnlyMemory<int> ReadVarIntArrayCore<TBuffer>(ref this TBuffer buffer) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    {
+        var size = buffer.ReadVarInt();
+        var ints = new int[size];
+
+        for (var i = 0; i < size; i++)
+            ints[i] = buffer.ReadVarInt();
+
+        return ints;
+    }
+
+    private static ReadOnlyMemory<int> ReadIntArrayCore<TBuffer>(ref this TBuffer buffer) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
         var size = buffer.ReadVarInt();
         var ints = new int[size];

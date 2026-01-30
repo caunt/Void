@@ -230,6 +230,19 @@ public static class WriteMinecraftBufferExtensions
         WriteByteArrayCore(ref buffer, data);
 
     /// <summary>
+    /// Writes a sequence of variable-length integers to the specified buffer.
+    /// </summary>
+    /// <remarks>This method is intended for use with buffers that implement the IMinecraftBuffer interface,
+    /// enabling efficient serialization of integer arrays in variable-length format.</remarks>
+    /// <typeparam name="TBuffer">The type of the buffer that implements the IMinecraftBuffer interface.</typeparam>
+    /// <param name="buffer">A reference to the buffer to which the variable-length integers will be written.</param>
+    /// <param name="data">A read-only span containing the integers to write as variable-length values.</param>
+    public static void WriteVarIntArray<TBuffer>(ref this TBuffer buffer, scoped ReadOnlySpan<int> data)
+        where TBuffer : struct, IMinecraftBuffer<TBuffer>,
+        allows ref struct =>
+        WriteVarIntArrayCore(ref buffer, data);
+
+    /// <summary>
     /// Writes a sequence of 32-bit integers to the specified Minecraft buffer.
     /// </summary>
     /// <remarks>Use this method to efficiently serialize an array of integers into a buffer that conforms to
@@ -359,6 +372,14 @@ public static class WriteMinecraftBufferExtensions
     {
         buffer.WriteVarInt(value.Length);
         buffer.Write(value);
+    }
+
+    private static void WriteVarIntArrayCore<TBuffer>(ref TBuffer buffer, scoped ReadOnlySpan<int> value) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    {
+        buffer.WriteVarInt(value.Length);
+
+        foreach (var integer in value)
+            buffer.WriteInt(integer);
     }
 
     private static void WriteIntArrayCore<TBuffer>(ref TBuffer buffer, scoped ReadOnlySpan<int> value) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
