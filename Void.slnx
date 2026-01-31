@@ -10,14 +10,14 @@
     <Project Path="src\Plugins\Common\Void.Proxy.Plugins.Common.csproj" />
     <Project Path="src\Plugins\Essentials\Void.Proxy.Plugins.Essentials.csproj" />
     <Project Path="src\Plugins\ExamplePlugin\Void.Proxy.Plugins.ExamplePlugin.csproj" />
-    <Project Path="src\Plugins\ModsSupport\Forge\Void.Proxy.Plugins.ModsSupport.Forge.csproj" />
+    <Project Path="src\Plugins\ForwardingSupport\Velocity\Void.Proxy.Plugins.ForwardingSupport.Velocity.csproj" />
     <Project Path="src\Plugins\ProtocolSupport\Java\v1_13_to_1_20_1\Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.csproj" />
     <Project Path="src\Plugins\ProtocolSupport\Java\v1_20_2_to_latest\Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.csproj" />
     <Project Path="src\Plugins\ProtocolSupport\Java\v1_7_2_to_1_12_2\Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.csproj" />
   </Folder>
-  <Folder Name="/Plugins/Minecraft/ForwardingSupport/">
-    <Project Path="src\Plugins\ForwardingSupport\Velocity\Void.Proxy.Plugins.ForwardingSupport.Velocity.csproj" />
-    <Project Path="src\Plugins\ForwardingSupport\ProxyCompatibleForge\Void.Proxy.Plugins.ForwardingSupport.ProxyCompatibleForge.csproj" />
+  <Folder Name="/Plugins/Minecraft/ModsSupport/">
+    <Project Path="src\Plugins\ModsSupport\CrossStitch\Void.Proxy.Plugins.ModsSupport.CrossStitch.csproj" />
+    <Project Path="src\Plugins\ModsSupport\Forge\Void.Proxy.Plugins.ModsSupport.Forge.csproj" />
   </Folder>
   <Folder Name="/Extensions/">
     <Project Path="src\Minecraft\Void.Minecraft.csproj" />
