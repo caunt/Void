@@ -178,6 +178,10 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
                 {
                     await player.SendPacketAsync(new KeepAliveRequestPacket { Id = id }, cancellationToken);
                 }
+                catch (StreamClosedException)
+                {
+                    // Ignored
+                }
                 catch (Exception exception)
                 {
                     player.Logger.LogError(exception, "Failed to send Keep Alive request {Id}", id);
