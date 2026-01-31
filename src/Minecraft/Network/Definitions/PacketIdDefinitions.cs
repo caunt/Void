@@ -1,6 +1,6 @@
 ﻿using Void.Minecraft.Network.Registries.PacketId.Mappings;
 
-namespace Void.Minecraft.Network;
+namespace Void.Minecraft.Network.Definitions;
 
 public static class PacketIdDefinitions
 {
