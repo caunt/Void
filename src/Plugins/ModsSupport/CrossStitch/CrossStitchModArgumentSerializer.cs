@@ -5,7 +5,6 @@ using Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 using Void.Minecraft.Commands.Brigadier.Registry;
 using Void.Minecraft.Commands.Brigadier.Serializers;
 using Void.Minecraft.Network;
-using Void.Proxy.Plugins.ModsSupport.CrossStitch.Services;
 
 namespace Void.Proxy.Plugins.ModsSupport.CrossStitch;
 

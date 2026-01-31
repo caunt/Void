@@ -4,7 +4,7 @@ using Void.Minecraft.Network;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Proxy;
 
-namespace Void.Proxy.Plugins.ModsSupport.CrossStitch.Services;
+namespace Void.Proxy.Plugins.ModsSupport.CrossStitch;
 
 public class CrossStitchService(ILogger<CrossStitchService> logger) : IEventListener
 {

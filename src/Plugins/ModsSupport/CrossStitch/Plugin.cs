@@ -4,7 +4,6 @@ using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Plugins.Common.Plugins;
-using Void.Proxy.Plugins.ModsSupport.CrossStitch.Services;
 
 namespace Void.Proxy.Plugins.ModsSupport.CrossStitch;
 
