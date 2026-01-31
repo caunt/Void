@@ -286,9 +286,12 @@ public ref struct MinecraftBuffer
         return data;
     }
 
-    public BufferSpan CopyAsBufferSpan()
+    public BufferSpan CopyAsBufferSpan(bool read = false)
     {
-        return new BufferSpan(DumpBytes().ToArray()) { Position = (int)Position };
+        if (read)
+            return new BufferSpan(ReadToEnd().ToArray());
+        else
+            return new BufferSpan(DumpBytes().ToArray()) { Position = (int)Position };
     }
 
     public string DumpHex()
