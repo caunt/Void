@@ -79,7 +79,7 @@
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 			<CopyToOutputDirectory>false</CopyToOutputDirectory>
 		</ProjectReference>
-		<ProjectReference Include="..\Plugins\ForwardingSupport\ProxyCompatibleForge\Void.Proxy.Plugins.ForwardingSupport.ProxyCompatibleForge.csproj">
+		<ProjectReference Include="..\Plugins\ModsSupport\CrossStitch\Void.Proxy.Plugins.ModsSupport.CrossStitch.csproj">
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 			<CopyToOutputDirectory>false</CopyToOutputDirectory>
 		</ProjectReference>
@@ -132,11 +132,11 @@
 			<Link>Embedded\Void.Proxy.Plugins.ForwardingSupport.Velocity.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
-		<EmbeddedResource Include="..\Plugins\ForwardingSupport\ProxyCompatibleForge\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ForwardingSupport.ProxyCompatibleForge.dll">
-			<Link>Embedded\Void.Proxy.Plugins.ForwardingSupport.ProxyCompatibleForge.dll</Link>
+		
+		<EmbeddedResource Include="..\Plugins\ModsSupport\CrossStitch\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ModsSupport.CrossStitch.dll">
+			<Link>Embedded\Void.Proxy.Plugins.ModsSupport.CrossStitch.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>
 		</EmbeddedResource>
-
 		<EmbeddedResource Include="..\Plugins\ModsSupport\Forge\bin\$(Configuration)\$(TargetFramework)\Void.Proxy.Plugins.ModsSupport.Forge.dll">
 			<Link>Embedded\Void.Proxy.Plugins.ModsSupport.Forge.dll</Link>
 			<LogicalName>%(Filename)%(Extension)</LogicalName>

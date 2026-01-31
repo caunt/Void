@@ -4,15 +4,15 @@ using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Plugins.Common.Plugins;
-using Void.Proxy.Plugins.ForwardingSupport.ProxyCompatibleForge.Services;
+using Void.Proxy.Plugins.ModsSupport.CrossStitch.Services;
 
-namespace Void.Proxy.Plugins.ForwardingSupport.ProxyCompatibleForge;
+namespace Void.Proxy.Plugins.ModsSupport.CrossStitch;
 
 public class Plugin(IDependencyService dependencies) : IProtocolPlugin
 {
     public static IEnumerable<ProtocolVersion> SupportedVersions => ProtocolVersion.Range();
 
-    public string Name => nameof(ProxyCompatibleForge);
+    public string Name => nameof(CrossStitch);
 
     [Subscribe]
     public void OnPluginLoading(PluginLoadingEvent @event)
@@ -22,7 +22,7 @@ public class Plugin(IDependencyService dependencies) : IProtocolPlugin
 
         dependencies.Register(services =>
         {
-            services.AddSingleton<CompatibilityService>();
+            services.AddSingleton<CrossStitchService>();
         });
     }
 }
