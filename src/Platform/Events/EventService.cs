@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using DryIoc;
-using Nito.Disposables.Internals;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Plugins.Dependencies;
@@ -46,40 +46,79 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
 
     public async ValueTask ThrowAsync<T>(T @event, CancellationToken cancellationToken = default) where T : IEvent
     {
-        var entries = _entries
-            .WhereNotNull()
-            .OrderBy(entry => entry.Order)
-            .Select(entry => new WeakEntry(new WeakReference<IEventListener>(entry.Listener), new WeakReference<MethodInfo>(entry.Method), entry.Order, entry.BypassScopedFilter, entry.CancellationToken));
+        var eventType = @event.GetType();
 
-        await ThrowAsync(entries, @event, cancellationToken);
+        var invoked = new HashSet<InvokedListenerMethod>(InvokedListenerMethodComparer.Instance);
+        var firstParameterTypeCache = new Dictionary<MethodInfo, Type>(ReferenceEqualityComparer.Instance);
 
-        foreach (var (condition, taskCompletionSource) in _waiters)
+        // Entries list is often modified during invocation (listeners being registered/unregistered), iterate until no more candidates are found
+        while (true)
+        {
+            var invocationCandidates = new List<InvocationCandidate>();
+
+            var entriesCountSnapshot = _entries.Count;
+            for (var entryIndex = 0; entryIndex < entriesCountSnapshot; entryIndex++)
+            {
+                var entry = _entries[entryIndex];
+
+                var invokedKey = new InvokedListenerMethod(entry.Listener, entry.Method);
+
+                if (invoked.Contains(invokedKey))
+                    continue;
+
+                if (!firstParameterTypeCache.TryGetValue(entry.Method, out var firstParameterType))
+                {
+                    firstParameterType = entry.Method.GetParameters()[0].ParameterType;
+                    firstParameterTypeCache.Add(entry.Method, firstParameterType);
+                }
+
+                if (!eventType.IsAssignableTo(firstParameterType))
+                    continue;
+
+                invoked.Add(invokedKey);
+
+                invocationCandidates.Add(new InvocationCandidate(
+                    entry.Order,
+                    entryIndex,
+                    new WeakEntry(
+                        new WeakReference<IEventListener>(entry.Listener),
+                        new WeakReference<MethodInfo>(entry.Method),
+                        entry.Order,
+                        entry.BypassScopedFilter,
+                        entry.CancellationToken)));
+            }
+
+            if (invocationCandidates.Count is 0)
+                break;
+
+            invocationCandidates.Sort(static (left, right) =>
+            {
+                var orderComparison = left.Order.CompareTo(right.Order);
+
+                if (orderComparison is not 0)
+                    return orderComparison;
+
+                return left.Sequence.CompareTo(right.Sequence);
+            });
+
+            var toInvoke = new WeakEntry[invocationCandidates.Count];
+
+            for (var candidateIndex = 0; candidateIndex < invocationCandidates.Count; candidateIndex++)
+                toInvoke[candidateIndex] = invocationCandidates[candidateIndex].WeakEntry;
+
+            await ThrowOnceAsync(toInvoke, @event, cancellationToken);
+        }
+
+        if (_waiters.IsEmpty)
+            return;
+
+        foreach (var (condition, taskCompletionSource) in _waiters.ToArray())
         {
             if (!condition(@event))
                 continue;
 
-            if (_waiters.Remove(condition, out _))
+            if (_waiters.TryRemove(condition, out _))
                 taskCompletionSource.SetResult();
-        }
-    }
-
-    private async ValueTask ThrowAsync<T>(IEnumerable<WeakEntry> entriesNotSafe, T @event, CancellationToken cancellationToken = default) where T : IEvent
-    {
-        var eventType = @event.GetType();
-        var alreadyInvoked = new HashSet<WeakEntry>();
-
-        while (true)
-        {
-            var toInvoke = entriesNotSafe
-                .Where(entry => entry.IsCompatible(eventType))
-                .Where(entry => alreadyInvoked.All(invokedEntry => invokedEntry.Listener != entry.Listener || invokedEntry.Method != entry.Method))
-                .Where(alreadyInvoked.Add)
-                .ToArray();
-
-            if (toInvoke.Length == 0)
-                return;
-
-            await ThrowOnceAsync(toInvoke, @event, cancellationToken);
         }
     }
 
@@ -244,4 +283,23 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
     }
 
     private record Entry(IEventListener Listener, MethodInfo Method, PostOrder Order, bool BypassScopedFilter, CancellationToken CancellationToken);
+
+    private readonly record struct InvocationCandidate(PostOrder Order, int Sequence, WeakEntry WeakEntry);
+
+    private readonly record struct InvokedListenerMethod(IEventListener Listener, MethodInfo Method);
+
+    private sealed class InvokedListenerMethodComparer : IEqualityComparer<InvokedListenerMethod>
+    {
+        public static readonly InvokedListenerMethodComparer Instance = new();
+
+        public bool Equals(InvokedListenerMethod left, InvokedListenerMethod right)
+        {
+            return ReferenceEquals(left.Listener, right.Listener) && ReferenceEquals(left.Method, right.Method);
+        }
+
+        public int GetHashCode(InvokedListenerMethod value)
+        {
+            return HashCode.Combine(RuntimeHelpers.GetHashCode(value.Listener), RuntimeHelpers.GetHashCode(value.Method));
+        }
+    }
 }
