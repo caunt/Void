@@ -55,7 +55,8 @@ public static class Registry
         { PacketIdDefinitions.ClientboundPlayKeepAliveRequest, typeof(KeepAliveRequestPacket) },
         { PacketIdDefinitions.ClientboundStartConfiguration, typeof(StartConfigurationPacket) },
         { PacketIdDefinitions.ClientboundPlayDisconnect, typeof(NbtDisconnectPacket) },
-        { PacketIdDefinitions.ClientboundSystemChatMessage, typeof(SystemChatMessagePacket) }
+        { PacketIdDefinitions.ClientboundSystemChatMessage, typeof(SystemChatMessagePacket) },
+        { PacketIdDefinitions.ClientboundCommands, typeof(CommandsPacket) }
     };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundPlayMappings = new Dictionary<MinecraftPacketIdMapping[], Type>

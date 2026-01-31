@@ -42,7 +42,8 @@ public static class Registry
         { PacketIdDefinitions.ClientboundPlayDisconnect, typeof(JsonDisconnectPacket) },
         { PacketIdDefinitions.ClientboundJoinGame, typeof(JoinGamePacket) },
         { PacketIdDefinitions.ClientboundRespawn, typeof(RespawnPacket) },
-        { PacketIdDefinitions.ClientboundChatMessage, typeof(Common.Network.Packets.Clientbound.ChatMessagePacket) }
+        { PacketIdDefinitions.ClientboundChatMessage, typeof(Common.Network.Packets.Clientbound.ChatMessagePacket) },
+        { PacketIdDefinitions.ClientboundCommands, typeof(CommandsPacket) }
     };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundPlayMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
