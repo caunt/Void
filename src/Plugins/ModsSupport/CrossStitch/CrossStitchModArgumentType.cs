@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using Void.Minecraft.Buffers;
+﻿using Void.Minecraft.Buffers;
+using Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 using Void.Minecraft.Commands.Brigadier.Registry;
+using StringReader = Void.Minecraft.Commands.Brigadier.StringReader;
 
-namespace Void.Minecraft.Commands.Brigadier.ArgumentTypes;
+namespace Void.Proxy.Plugins.ModsSupport.CrossStitch;
 
-// public record CrossStitchModArgumentValue(BufferMemory Data) : IArgumentValue;
 public record CrossStitchModArgumentType(ArgumentSerializerMapping Mapping, BufferMemory Data) : IArgumentType
 {
     public IEnumerable<string> Examples => throw new NotSupportedException();

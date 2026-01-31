@@ -163,7 +163,7 @@ public class CommandsPacket : IMinecraftClientboundPacket<CommandsPacket>
         void SerializeArgumentNode(ref BufferSpan buffer, ArgumentCommandNode argumentCommandNode)
         {
             buffer.WriteString(argumentCommandNode.Name);
-            ArgumentSerializerRegistry.Serialize(ref buffer, argumentCommandNode, protocolVersion);
+            ArgumentSerializerRegistry.Serialize(ref buffer, argumentCommandNode.Type, protocolVersion);
 
             if (argumentCommandNode.CustomSuggestions is not null)
             {
@@ -208,7 +208,8 @@ public class CommandsPacket : IMinecraftClientboundPacket<CommandsPacket>
         ProtocolCommandNode DeserializeArgumentNode(ref BufferSpan buffer)
         {
             var name = buffer.ReadString();
-            var argumentBuilder = ArgumentSerializerRegistry.DeserializeArgumentBuilder(ref buffer, name, protocolVersion);
+            var argumentType = ArgumentSerializerRegistry.Deserialize(ref buffer, protocolVersion);
+            var argumentBuilder = RequiredArgumentBuilder.Create(name, argumentType);
 
             if (flags.HasFlag(ProtocolCommandNodeFlags.HasSuggestionsType))
             {

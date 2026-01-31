@@ -4,10 +4,8 @@ using Void.Minecraft.Buffers;
 using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 using Void.Minecraft.Commands.Brigadier.ArgumentTypes.RegistryKey;
-using Void.Minecraft.Commands.Brigadier.Builder;
 using Void.Minecraft.Commands.Brigadier.Serializers;
 using Void.Minecraft.Commands.Brigadier.Serializers.Passthrough;
-using Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 using Void.Minecraft.Network;
 
 namespace Void.Minecraft.Commands.Brigadier.Registry;
@@ -392,15 +390,26 @@ public class ArgumentSerializerRegistry
             [ProtocolVersion.MINECRAFT_1_21_6] = 55
         }));
 
-        Register(new ArgumentSerializerMapping("crossstitch:mod_argument", new()
-        {
-            [ProtocolVersion.MINECRAFT_1_19] = -256
-        }), typeof(CrossStitchModArgumentType), CrossStitchModArgumentSerializer.Instance);
-
         Register(new ArgumentSerializerMapping("minecraft:nbt"));
     }
 
-    public static ArgumentBuilder DeserializeArgumentBuilder(ref BufferSpan buffer, string name, ProtocolVersion protocolVersion)
+    public static void Register(ArgumentSerializerMapping mapping, IArgumentSerializer? serializer = null)
+    {
+        Register(mapping, argumentType: null, serializer ?? EmptyArgumentPassthroughSerializer.Instance);
+    }
+
+    public static void Register(ArgumentSerializerMapping mapping, Type? argumentType, IArgumentSerializer serializer)
+    {
+        MappingToSerializer[mapping] = serializer;
+
+        if (argumentType is null)
+            return;
+
+        ArgumentTypeToSerializer[argumentType] = serializer;
+        ArgumentTypeToMapping[argumentType] = mapping;
+    }
+
+    public static IArgumentType Deserialize(ref BufferSpan buffer, ProtocolVersion protocolVersion)
     {
         var mapping = DecodeParserMapping(ref buffer, protocolVersion);
 
@@ -408,32 +417,19 @@ public class ArgumentSerializerRegistry
             throw new ArgumentException($"Unexpected argument type mapping identifier {mapping.Identifier}.");
 
         var argumentType = serializer.Deserialize(ref buffer, protocolVersion);
-        var argumentBuilder = RequiredArgumentBuilder.Create(name, argumentType switch
-        {
-            IPassthroughArgumentValue passthroughArgumentValue => new PassthroughArgumentType(mapping, passthroughArgumentValue),
-            _ => argumentType
-        });
 
-        return argumentBuilder;
+        if (argumentType is IPassthroughArgumentValue passthroughArgumentValue)
+            argumentType = new PassthroughArgumentType(mapping, passthroughArgumentValue);
+
+        return argumentType;
     }
 
-    public static void Serialize(ref BufferSpan buffer, ArgumentCommandNode argumentCommandNode, ProtocolVersion protocolVersion)
+    public static void Serialize(ref BufferSpan buffer, IArgumentType argumentType, ProtocolVersion protocolVersion)
     {
-        var argumentType = argumentCommandNode.Type;
-
         if (argumentType is PassthroughArgumentType passthroughArgumentType)
         {
-            WriteParserMapping(ref buffer, passthroughArgumentType.Mappings, protocolVersion);
+            WriteParserIdentifier(ref buffer, passthroughArgumentType.Mappings, protocolVersion);
             passthroughArgumentType.Value.Serialize(ref buffer, protocolVersion);
-
-            return;
-        }
-
-        if (argumentType is CrossStitchModArgumentType modArgumentProperty)
-        {
-            WriteParserMapping(ref buffer, modArgumentProperty.Mapping, protocolVersion);
-            var modArgumentBuffer = modArgumentProperty.Data.Span;
-            buffer.Write(modArgumentBuffer.ReadToEnd());
             return;
         }
 
@@ -442,11 +438,11 @@ public class ArgumentSerializerRegistry
         if (!ArgumentTypeToSerializer.TryGetValue(argumentTypeRuntimeType, out var serializer) || !ArgumentTypeToMapping.TryGetValue(argumentTypeRuntimeType, out var mapping))
             throw new ArgumentException($"Don't know how to serialize {argumentTypeRuntimeType.FullName}");
 
-        WriteParserMapping(ref buffer, mapping, protocolVersion);
+        WriteParserIdentifier(ref buffer, mapping, protocolVersion);
         serializer.Serialize(argumentType, ref buffer, protocolVersion);
     }
 
-    public static void WriteParserMapping(ref BufferSpan buffer, ArgumentSerializerMapping mapping, ProtocolVersion protocolVersion)
+    public static void WriteParserIdentifier(ref BufferSpan buffer, ArgumentSerializerMapping mapping, ProtocolVersion protocolVersion)
     {
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19)
         {
@@ -454,7 +450,6 @@ public class ArgumentSerializerRegistry
                 throw new ArgumentException($"Argument type mapping {mapping} has no parser ID for protocol version {protocolVersion}.");
 
             buffer.WriteVarInt(parserId);
-            return;
         }
         else
         {
@@ -488,21 +483,5 @@ public class ArgumentSerializerRegistry
 
             throw new ArgumentException($"Argument type mapping identifier {identifier} unknown.");
         }
-    }
-
-    private static void Register(ArgumentSerializerMapping mapping, IArgumentSerializer? serializer = null)
-    {
-        Register(mapping, argumentType: null, serializer ?? EmptyArgumentPassthroughSerializer.Instance);
-    }
-
-    private static void Register(ArgumentSerializerMapping mapping, Type? argumentType, IArgumentSerializer serializer)
-    {
-        MappingToSerializer[mapping] = serializer;
-
-        if (argumentType is null)
-            return;
-
-        ArgumentTypeToSerializer[argumentType] = serializer;
-        ArgumentTypeToMapping[argumentType] = mapping;
     }
 }

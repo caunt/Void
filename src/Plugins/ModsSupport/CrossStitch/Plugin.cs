@@ -20,9 +20,6 @@ public class Plugin(IDependencyService dependencies) : IProtocolPlugin
         if (@event.Plugin != this)
             return;
 
-        dependencies.Register(services =>
-        {
-            services.AddSingleton<CrossStitchService>();
-        });
+        dependencies.Register(services => services.AddSingleton<CrossStitchService>());
     }
 }
