@@ -2,6 +2,9 @@
 
 namespace Void.Minecraft.Network.Definitions;
 
+// Thanks to Velocity Contributors!
+// https://github.com/PaperMC/Velocity/
+
 public static class PacketIdDefinitions
 {
     #region Example Plugin Definitions

@@ -1,4 +1,4 @@
-﻿using Void.Minecraft.Network;
+﻿using Void.Minecraft.Network.Definitions;
 using Void.Minecraft.Network.Registries.PacketId.Mappings;
 using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
 using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
