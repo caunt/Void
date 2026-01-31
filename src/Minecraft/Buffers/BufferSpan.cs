@@ -7,7 +7,7 @@ namespace Void.Minecraft.Buffers;
 /// <summary>
 /// Manages a span of bytes, allowing access and manipulation of its position within the buffer.
 /// </summary>
-public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>
+public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>, IDisposable
 {
     private readonly Span<byte> _source;
     private int _position;
@@ -78,5 +78,16 @@ public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>
             throw new EndOfBufferException(_source.Length, _position, _position - position);
 
         _position = position;
+    }
+
+    public readonly void Dispose()
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(Remaining, nameof(Remaining));
+
+        if (Remaining is 0)
+            return;
+
+        if (Remaining > 0)
+            throw new BufferRemainingDataException(_source.Length, _position);
     }
 }
