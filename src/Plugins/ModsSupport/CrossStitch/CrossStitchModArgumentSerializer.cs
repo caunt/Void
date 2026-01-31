@@ -43,9 +43,9 @@ public class CrossStitchModArgumentSerializer : IArgumentSerializer
         var modArgumentType = argumentType.As<CrossStitchModArgumentType>();
         var unwrappedMapping = modArgumentType.Mapping;
 
-        // ArgumentSerializerRegistry already wrote the identifier, we need to go back and overwrite it with unwrapped one
-        var modArgumentHeaderSize = _headerSizes[protocolVersion];
-        buffer.Seek(-modArgumentHeaderSize);
+        // ArgumentSerializerRegistry already wrote the parser identifier, we need to go back and overwrite it with unwrapped one
+        var headerSize = _headerSizes[protocolVersion];
+        buffer.Seek(-headerSize);
 
         ArgumentSerializerRegistry.WriteParserIdentifier(ref buffer, unwrappedMapping, protocolVersion);
 
