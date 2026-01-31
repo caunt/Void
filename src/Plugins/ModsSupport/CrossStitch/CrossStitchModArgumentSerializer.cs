@@ -10,7 +10,7 @@ namespace Void.Proxy.Plugins.ModsSupport.CrossStitch;
 
 public class CrossStitchModArgumentSerializer : IArgumentSerializer
 {
-    private readonly FrozenDictionary<ProtocolVersion, int> _headerSizes = ProtocolVersion.Range().ToFrozenDictionary(version => version, version =>
+    private static readonly FrozenDictionary<ProtocolVersion, int> _headerSizes = ProtocolVersion.Range().ToFrozenDictionary(version => version, version =>
     {
         var mapping = CrossStitchService.ModArgumentMapping;
         var buffer = new BufferSpan(stackalloc byte[mapping.Identifier.Length * 2]);
