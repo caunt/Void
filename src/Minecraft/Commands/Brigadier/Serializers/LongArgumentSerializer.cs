@@ -3,16 +3,16 @@ using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 using Void.Minecraft.Network;
 
-namespace Void.Minecraft.Commands.Brigadier.Network.Serializers;
+namespace Void.Minecraft.Commands.Brigadier.Serializers;
 
-public class LongArgumentPropertySerializer : IArgumentPropertySerializer<LongArgumentType>
+public class LongArgumentSerializer : IArgumentSerializer
 {
     public const byte HAS_MINIMUM = 0x01;
     public const byte HAS_MAXIMUM = 0x02;
 
-    public static IArgumentPropertySerializer<LongArgumentType> Instance { get; } = new LongArgumentPropertySerializer();
+    public static IArgumentSerializer Instance { get; } = new LongArgumentSerializer();
 
-    public LongArgumentType Deserialize(BufferSpan buffer, ProtocolVersion protocolVersion)
+    public IArgumentType Deserialize(ref BufferSpan buffer, ProtocolVersion protocolVersion)
     {
         var flags = buffer.ReadUnsignedByte();
 
@@ -22,8 +22,10 @@ public class LongArgumentPropertySerializer : IArgumentPropertySerializer<LongAr
         return LongArgumentType.LongArgument(minimum, maximum);
     }
 
-    public void Serialize(LongArgumentType value, BufferSpan buffer, ProtocolVersion protocolVersion)
+    public void Serialize(IArgumentType argumentType, ref BufferSpan buffer, ProtocolVersion protocolVersion)
     {
+        var value = argumentType.As<LongArgumentType>();
+
         var hasMinimum = value.Minimum != long.MinValue;
         var hasMaximum = value.Maximum != long.MaxValue;
 

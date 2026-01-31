@@ -9,25 +9,21 @@ using Void.Minecraft.Commands.Brigadier.Suggestion;
 
 namespace Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 
-public abstract class ArgumentCommandNode(CommandExecutor? executor, CommandRequirement? requirement, CommandNode? redirectTarget, RedirectModifier? redirectModifier, bool isForks, SuggestionProvider? customSuggestions) : CommandNode(executor, requirement, redirectTarget, redirectModifier, isForks)
-{
-    public SuggestionProvider? CustomSuggestions { get; set; } = customSuggestions;
-}
-
-public class ArgumentCommandNode<TType>(string name, IArgumentType<TType> type, CommandExecutor? executor, CommandRequirement? requirement, CommandNode? redirectTarget, RedirectModifier? redirectModifier, bool isForks, SuggestionProvider? customSuggestions) : ArgumentCommandNode(executor, requirement, redirectTarget, redirectModifier, isForks, customSuggestions)
+public class ArgumentCommandNode(string name, IArgumentType type, CommandExecutor? executor, CommandRequirement? requirement, CommandNode? redirectTarget, RedirectModifier? redirectModifier, bool isForks, SuggestionProvider? customSuggestions) : CommandNode(executor, requirement, redirectTarget, redirectModifier, isForks)
 {
     private const string UsageArgumentOpen = "<";
     private const string UsageArgumentClose = ">";
 
-    public IArgumentType<TType> Type { get; } = type;
+    public IArgumentType Type { get; } = type;
     public override string Name => name;
     public override string UsageText => $"{UsageArgumentOpen}{Name}{UsageArgumentClose}";
     public override IEnumerable<string> Examples => Type.Examples;
     protected override string SortedKey => Name;
+    public SuggestionProvider? CustomSuggestions { get; set; } = customSuggestions;
 
     public override IArgumentBuilder<CommandNode> CreateBuilder()
     {
-        return RequiredArgumentBuilder<TType>.Create(Name, Type)
+        return RequiredArgumentBuilder.Create(Name, Type)
             .Requires(Requirement)
             .Forward(RedirectTarget, RedirectModifier, IsForks)
             .Suggests(CustomSuggestions)
@@ -60,9 +56,14 @@ public class ArgumentCommandNode<TType>(string name, IArgumentType<TType> type, 
     {
         var start = reader.Cursor;
         var result = Type.Parse(reader);
-        var parsed = new ParsedArgument<TType>(start, reader.Cursor, result);
+        var parsed = new ParsedArgument(start, reader.Cursor, result);
 
         contextBuilder.WithArgument(Name, parsed);
         contextBuilder.WithNode(this, parsed.Range);
+    }
+
+    public override string ToString()
+    {
+        return $"ArgumentCommandNode{{name='{Name}', type={Type}}}";
     }
 }

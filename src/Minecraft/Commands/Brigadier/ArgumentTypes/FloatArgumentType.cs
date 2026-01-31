@@ -4,7 +4,8 @@ using Void.Minecraft.Commands.Brigadier.Exceptions;
 
 namespace Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 
-public record FloatArgumentType : IArgumentType<float>
+public record FloatArgumentValue(float Value) : IArgumentValue;
+public record FloatArgumentType : IArgumentType
 {
     public IEnumerable<string> Examples => ["0", "1.2", ".5", "-1", "-.5", "-1234.56"];
 
@@ -40,7 +41,7 @@ public record FloatArgumentType : IArgumentType<float>
         return context.GetArgument<float>(name);
     }
 
-    public float Parse(StringReader reader)
+    public IArgumentValue Parse(StringReader reader)
     {
         var start = reader.Cursor;
         var result = reader.ReadFloat();
@@ -57,6 +58,6 @@ public record FloatArgumentType : IArgumentType<float>
             throw CommandSyntaxException.BuiltInExceptions.FloatTooBig.CreateWithContext(reader, result, Maximum);
         }
 
-        return result;
+        return new FloatArgumentValue(result);
     }
 }

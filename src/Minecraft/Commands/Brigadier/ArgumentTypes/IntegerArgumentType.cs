@@ -4,7 +4,8 @@ using Void.Minecraft.Commands.Brigadier.Exceptions;
 
 namespace Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 
-public record IntegerArgumentType : IArgumentType<int>
+public record IntegerArgumentValue(int Value) : IArgumentValue;
+public record IntegerArgumentType : IArgumentType
 {
     public IEnumerable<string> Examples => ["0", "123", "-123"];
 
@@ -40,7 +41,7 @@ public record IntegerArgumentType : IArgumentType<int>
         return context.GetArgument<int>(name);
     }
 
-    public int Parse(StringReader reader)
+    public IArgumentValue Parse(StringReader reader)
     {
         var start = reader.Cursor;
         var result = reader.ReadInt();
@@ -57,6 +58,6 @@ public record IntegerArgumentType : IArgumentType<int>
             throw CommandSyntaxException.BuiltInExceptions.IntegerTooBig.CreateWithContext(reader, result, Maximum);
         }
 
-        return result;
+        return new IntegerArgumentValue(result);
     }
 }

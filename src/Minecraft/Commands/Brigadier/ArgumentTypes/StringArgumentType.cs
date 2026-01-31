@@ -3,7 +3,8 @@ using System.Collections.Generic;
 
 namespace Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 
-public record StringArgumentType : IArgumentType<string>
+public record StringArgumentValue(string Value) : IArgumentValue;
+public record StringArgumentType : IArgumentType
 {
     public IEnumerable<string> Examples => Type switch
     {
@@ -35,21 +36,21 @@ public record StringArgumentType : IArgumentType<string>
         return new StringArgumentType { Type = StringType.GreedyPhrase };
     }
 
-    public string Parse(StringReader reader)
+    public IArgumentValue Parse(StringReader reader)
     {
         if (Type == StringType.GreedyPhrase)
         {
             var text = reader.Remaining;
             reader.Cursor = reader.TotalLength;
-            return text;
+            return new StringArgumentValue(text);
         }
         else if (Type == StringType.SingleWord)
         {
-            return reader.ReadUnquotedString();
+            return new StringArgumentValue(reader.ReadUnquotedString());
         }
         else
         {
-            return reader.ReadString();
+            return new StringArgumentValue(reader.ReadString());
         }
     }
 

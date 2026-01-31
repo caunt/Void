@@ -5,18 +5,18 @@ using Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 
 namespace Void.Minecraft.Commands.Brigadier.Builder;
 
-public class RequiredArgumentBuilder<TType>(string Name, IArgumentType<TType> Type) : ArgumentBuilder<RequiredArgumentBuilder<TType>, ArgumentCommandNode<TType>>
+public record RequiredArgumentBuilder(string Name, IArgumentType Type) : ArgumentBuilder<RequiredArgumentBuilder, ArgumentCommandNode>
 {
     public SuggestionProvider? SuggestionProvider { get; private set; }
 
-    public static RequiredArgumentBuilder<TType> Create(string name, IArgumentType<TType> type)
+    public static RequiredArgumentBuilder Create(string name, IArgumentType type)
     {
         return new(name, type);
     }
 
-    public override ArgumentCommandNode<TType> Build()
+    public override ArgumentCommandNode Build()
     {
-        var result = new ArgumentCommandNode<TType>(Name, Type, Executor, Requirement, RedirectTarget, RedirectModifier, IsForks, SuggestionProvider);
+        var result = new ArgumentCommandNode(Name, Type, Executor, Requirement, RedirectTarget, RedirectModifier, IsForks, SuggestionProvider);
 
         foreach (var argument in Arguments)
             result.AddChild(argument);
@@ -24,13 +24,13 @@ public class RequiredArgumentBuilder<TType>(string Name, IArgumentType<TType> Ty
         return result;
     }
 
-    public RequiredArgumentBuilder<TType> Suggests(SuggestionProvider? provider)
+    public override RequiredArgumentBuilder Suggests(SuggestionProvider? provider)
     {
         SuggestionProvider = provider;
         return this;
     }
 
-    public RequiredArgumentBuilder<TType> Suggests(SuggestionProviderSync? provider)
+    public RequiredArgumentBuilder Suggests(SuggestionProviderSync? provider)
     {
         if (provider is not null)
             SuggestionProvider = (context, builder, _) => ValueTask.FromResult(provider(context, builder));

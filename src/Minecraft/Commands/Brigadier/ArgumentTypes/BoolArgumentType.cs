@@ -7,7 +7,8 @@ using Void.Minecraft.Commands.Brigadier.Suggestion;
 
 namespace Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 
-public record BoolArgumentType : IArgumentType<bool>
+public record BoolArgumentValue(bool Value) : IArgumentValue;
+public record BoolArgumentType : IArgumentType
 {
     public IEnumerable<string> Examples => ["true", "false"];
 
@@ -25,9 +26,9 @@ public record BoolArgumentType : IArgumentType<bool>
         return context.GetArgument<bool>(name);
     }
 
-    public bool Parse(StringReader reader)
+    public IArgumentValue Parse(StringReader reader)
     {
-        return reader.ReadBoolean();
+        return new BoolArgumentValue(reader.ReadBoolean());
     }
 
     public virtual async ValueTask<Suggestions> ListSuggestionsAsync(CommandContext context, SuggestionsBuilder builder, CancellationToken cancellationToken)

@@ -1,12 +1,11 @@
-﻿using System;
-using Void.Minecraft.Commands.Brigadier.ArgumentTypes;
+﻿using Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 using Void.Minecraft.Commands.Brigadier.Context;
 
 namespace Void.Minecraft.Commands.Brigadier;
 
 public class Arguments
 {
-    public static IntegerArgumentType Integer(int min = Int32.MinValue, int max = Int32.MaxValue)
+    public static IntegerArgumentType Integer(int min = int.MinValue, int max = int.MaxValue)
     {
         return IntegerArgumentType.IntegerArgument(min, max);
     }

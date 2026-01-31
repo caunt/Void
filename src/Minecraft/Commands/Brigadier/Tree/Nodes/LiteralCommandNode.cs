@@ -53,6 +53,11 @@ public class LiteralCommandNode(string literal, CommandExecutor? executor, Comma
         throw CommandSyntaxException.BuiltInExceptions.LiteralIncorrect.CreateWithContext(reader, Literal);
     }
 
+    public override string ToString()
+    {
+        return $"LiteralCommandNode{{literal='{Literal}'}}";
+    }
+
     private int Parse(StringReader reader)
     {
         var start = reader.Cursor;

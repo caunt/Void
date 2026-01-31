@@ -34,7 +34,7 @@ public class CommandContextBuilder
         return this;
     }
 
-    public CommandContextBuilder WithArgument<TType>(string name, ParsedArgument<TType> argument)
+    public CommandContextBuilder WithArgument(string name, ParsedArgument argument)
     {
         Arguments[name] = argument;
         return this;

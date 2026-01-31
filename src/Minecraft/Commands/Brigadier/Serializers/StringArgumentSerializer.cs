@@ -4,13 +4,13 @@ using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 using Void.Minecraft.Network;
 
-namespace Void.Minecraft.Commands.Brigadier.Network.Serializers;
+namespace Void.Minecraft.Commands.Brigadier.Serializers;
 
-public class StringArgumentPropertySerializer : IArgumentPropertySerializer<StringArgumentType>
+public class StringArgumentSerializer : IArgumentSerializer
 {
-    public static IArgumentPropertySerializer<StringArgumentType> Instance { get; } = new StringArgumentPropertySerializer();
+    public static IArgumentSerializer Instance { get; } = new StringArgumentSerializer();
 
-    public StringArgumentType Deserialize(BufferSpan buffer, ProtocolVersion protocolVersion)
+    public IArgumentType Deserialize(ref BufferSpan buffer, ProtocolVersion protocolVersion)
     {
         return buffer.ReadVarInt() switch
         {
@@ -21,9 +21,11 @@ public class StringArgumentPropertySerializer : IArgumentPropertySerializer<Stri
         };
     }
 
-    public void Serialize(StringArgumentType value, BufferSpan buffer, ProtocolVersion protocolVersion)
+    public void Serialize(IArgumentType value, ref BufferSpan buffer, ProtocolVersion protocolVersion)
     {
-        switch (value.Type)
+        var stringArgumentType = value.As<StringArgumentType>();
+
+        switch (stringArgumentType.Type)
         {
             case StringArgumentType.StringType.SingleWord:
                 buffer.WriteVarInt(0);
@@ -35,7 +37,7 @@ public class StringArgumentPropertySerializer : IArgumentPropertySerializer<Stri
                 buffer.WriteVarInt(2);
                 break;
             default:
-                throw new InvalidDataException("Invalid string argument type " + value.Type);
+                throw new InvalidDataException("Invalid string argument type " + stringArgumentType.Type);
         }
     }
 }

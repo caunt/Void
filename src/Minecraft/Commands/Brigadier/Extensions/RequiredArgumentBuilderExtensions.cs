@@ -5,8 +5,8 @@ namespace Void.Minecraft.Commands.Brigadier.Extensions;
 
 public static class RequiredArgumentBuilderExtensions
 {
-    public static RequiredArgumentBuilder<TType> Argument<TType>(this IArgumentContext _, string name, IArgumentType<TType> type)
+    public static RequiredArgumentBuilder Argument(this IArgumentContext _, string name, IArgumentType type)
     {
-        return RequiredArgumentBuilder<TType>.Create(name, type);
+        return RequiredArgumentBuilder.Create(name, type);
     }
 }

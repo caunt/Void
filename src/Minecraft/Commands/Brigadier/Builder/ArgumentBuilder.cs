@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Void.Minecraft.Commands.Brigadier.Suggestion;
 using Void.Minecraft.Commands.Brigadier.Tree;
 using Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 
@@ -12,9 +13,9 @@ public interface IArgumentBuilder<out TNode> where TNode : CommandNode
     TNode Build();
 }
 
-public abstract class ArgumentBuilder<TBuilder, TNode> : IArgumentBuilder<TNode> where TBuilder : ArgumentBuilder<TBuilder, TNode> where TNode : CommandNode
+public abstract record ArgumentBuilder
 {
-    private readonly RootCommandNode _arguments = new();
+    protected readonly RootCommandNode _arguments = new();
 
     public CommandExecutor? Executor { get; set; }
     public RedirectModifier? RedirectModifier { get; set; }
@@ -23,6 +24,70 @@ public abstract class ArgumentBuilder<TBuilder, TNode> : IArgumentBuilder<TNode>
     public CommandRequirement? Requirement { get; set; } = (_, _) => ValueTask.FromResult(true);
     public IEnumerable<CommandNode> Arguments => _arguments.Children;
 
+    public abstract CommandNode Build();
+
+    public virtual ArgumentBuilder Executes(CommandExecutor? command)
+    {
+        Executor = command;
+        return this;
+    }
+
+    public virtual ArgumentBuilder Executes(CommandExecutorSync? command)
+    {
+        if (command is not null)
+            Executor = (context, _) => ValueTask.FromResult(command(context));
+
+        return this;
+    }
+
+    public virtual ArgumentBuilder Requires(CommandRequirement? requirement)
+    {
+        Requirement = requirement;
+        return this;
+    }
+
+    public virtual ArgumentBuilder Redirect(CommandNode target)
+    {
+        return Forward(target, null, false);
+    }
+
+    public virtual ArgumentBuilder Redirect(CommandNode target, SingleRedirectModifier modifier)
+    {
+        return Forward(target, o => [modifier(o)], false);
+    }
+
+    public virtual ArgumentBuilder Fork(CommandNode target, RedirectModifier modifier)
+    {
+        return Forward(target, modifier, true);
+    }
+
+    public virtual ArgumentBuilder Forward(CommandNode? target, RedirectModifier? modifier, bool fork)
+    {
+        if (_arguments.Children.Any())
+            throw new InvalidOperationException("Cannot forward a node with children");
+
+        RedirectTarget = target;
+        RedirectModifier = modifier;
+        IsForks = fork;
+        return this;
+    }
+
+    public virtual ArgumentBuilder Suggests(SuggestionProvider? provider)
+    {
+        throw new NotSupportedException($"You have executed this on {GetType()}. Only {nameof(RequiredArgumentBuilder)} supports suggestions.");
+    }
+
+    protected void AddChild(CommandNode node)
+    {
+        if (RedirectTarget is not null)
+            throw new InvalidOperationException("Cannot add children to a redirected node");
+
+        _arguments.AddChild(node);
+    }
+}
+
+public abstract record ArgumentBuilder<TBuilder, TNode> : ArgumentBuilder, IArgumentBuilder<TNode> where TBuilder : ArgumentBuilder<TBuilder, TNode> where TNode : CommandNode
+{
     public TBuilder Then<TChildNode>(IArgumentBuilder<TChildNode> argument) where TChildNode : CommandNode
     {
         if (RedirectTarget is not null)
@@ -50,50 +115,44 @@ public abstract class ArgumentBuilder<TBuilder, TNode> : IArgumentBuilder<TNode>
         return GetThis();
     }
 
-    public TBuilder Executes(CommandExecutor? command)
+    public new TBuilder Executes(CommandExecutor? command)
     {
-        Executor = command;
-        return GetThis();
+        return base.Executes(command) as TBuilder ?? GetThis();
     }
 
-    public TBuilder Executes(CommandExecutorSync? command)
+    public new TBuilder Executes(CommandExecutorSync? command)
     {
-        if (command is not null)
-            Executor = (context, _) => ValueTask.FromResult(command(context));
-
-        return GetThis();
+        return base.Executes(command) as TBuilder ?? GetThis();
     }
 
-    public TBuilder Requires(CommandRequirement? requirement)
+    public new TBuilder Requires(CommandRequirement? requirement)
     {
-        Requirement = requirement;
-        return GetThis();
+        return base.Requires(requirement) as TBuilder ?? GetThis();
     }
 
-    public TBuilder Redirect(CommandNode target)
+    public new TBuilder Redirect(CommandNode target)
     {
-        return Forward(target, null, false);
+        return base.Redirect(target) as TBuilder ?? GetThis();
     }
 
-    public TBuilder Redirect(CommandNode target, SingleRedirectModifier modifier)
+    public new TBuilder Redirect(CommandNode target, SingleRedirectModifier modifier)
     {
-        return Forward(target, o => [modifier(o)], false);
+        return base.Redirect(target, modifier) as TBuilder ?? GetThis();
     }
 
-    public TBuilder Fork(CommandNode target, RedirectModifier modifier)
+    public new TBuilder Fork(CommandNode target, RedirectModifier modifier)
     {
-        return Forward(target, modifier, true);
+        return base.Fork(target, modifier) as TBuilder ?? GetThis();
     }
 
-    public TBuilder Forward(CommandNode? target, RedirectModifier? modifier, bool fork)
+    public new TBuilder Forward(CommandNode? target, RedirectModifier? modifier, bool fork)
     {
-        if (_arguments.Children.Any())
-            throw new InvalidOperationException("Cannot forward a node with children");
+        return base.Forward(target, modifier, fork) as TBuilder ?? GetThis();
+    }
 
-        RedirectTarget = target;
-        RedirectModifier = modifier;
-        IsForks = fork;
-        return GetThis();
+    public new virtual TBuilder Suggests(SuggestionProvider? provider)
+    {
+        return base.Suggests(provider) as TBuilder ?? GetThis();
     }
 
     private TBuilder GetThis()
@@ -104,5 +163,5 @@ public abstract class ArgumentBuilder<TBuilder, TNode> : IArgumentBuilder<TNode>
         return builder;
     }
 
-    public abstract TNode Build();
+    public abstract override TNode Build();
 }
