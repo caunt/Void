@@ -9,5 +9,5 @@ public record CrossStitchModArgumentType(ArgumentSerializerMapping Mapping, Buff
 {
     public IEnumerable<string> Examples => throw new NotSupportedException();
 
-    public IArgumentValue Parse(StringReader reader) => throw new NotImplementedException();
+    public IArgumentValue Parse(StringReader reader) => throw new NotSupportedException();
 }
