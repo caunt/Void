@@ -1,5 +1,68 @@
 # Changelog
 
+## [0.5.9](https://github.com/caunt/Void/compare/v0.5.8...v0.5.9) (2026-01-31)
+
+
+### Features
+
+* **brigadier:** ✨ added support for mod and registry key args ([071bb9a](https://github.com/caunt/Void/commit/071bb9a83aa1075e81ac826e97c6420ae83a7eb5))
+* **buffer:** ✨ added buffer copying and scoped write ([b46878c](https://github.com/caunt/Void/commit/b46878cce483f72645b69d944d9b128a1e2cedc9))
+* **buffer:** ✨ added support for byte array read/write ([b17bddf](https://github.com/caunt/Void/commit/b17bddf9e0d3bea7a641f0c491d66382687457e6))
+* **buffer:** ✨ added support for int array read/write ([3bff132](https://github.com/caunt/Void/commit/3bff13254a8d973db0849afec1dbf66bac751329))
+* **buffer:** ✨ added VarInt array support ([c649278](https://github.com/caunt/Void/commit/c6492789b1e587c1580f23ec04d2f575242668c4))
+* **buffer:** ✨ allow copying with reading buffer data to the end ([f43281c](https://github.com/caunt/Void/commit/f43281c27944e1333ef00df2f5374fe66449b937))
+* **buffers:** ✨ enforce full buffer consumption on dispose ([7613b0b](https://github.com/caunt/Void/commit/7613b0bf4cbfc7ca8b809cfe9dd825afbc9ee46a))
+* **commands:** ♻️ added argument parser definitions ([5d1781e](https://github.com/caunt/Void/commit/5d1781e3db1ef8f5669f19d049b266d90e556361))
+* **commands:** ✨ added argument property serializers ([dabcdcb](https://github.com/caunt/Void/commit/dabcdcbab373dfe5007ccae9c735b847cc6058e0))
+* **commands:** ✨ added bool argument serializer ([36649f7](https://github.com/caunt/Void/commit/36649f70161eb9cf2a8a8ed032cb2105fec086cc))
+* **commands:** ✨ added packet / event support for available commands message ([5099a01](https://github.com/caunt/Void/commit/5099a016dba8bb9ef276942c99966e3fa58e405d))
+* **commands:** ✨ added registry key arg serializers ([47bfd55](https://github.com/caunt/Void/commit/47bfd5576832b74eb9ba16f8570d7190bce63957))
+* **commands:** ✨ moved cross stitch argument type support ([e66a869](https://github.com/caunt/Void/commit/e66a869a255aea584efd96b7819a6beaefb1f8f0))
+* **commands:** ✨ remade brigadier arguments system to be non-generic ([5c108ff](https://github.com/caunt/Void/commit/5c108ff23c7339e8d9edb8617603e7af93575d04))
+* **essentials:** ✨ added hostname-based server overrides ([be0a78d](https://github.com/caunt/Void/commit/be0a78d7d33447cf9f918bf5f98626f7f61b5dbc))
+* **events:** ✨ added server address to handshake events ([955f65a](https://github.com/caunt/Void/commit/955f65aac01cd341069d2a3bd97255abe74a9b42))
+* **events:** ✨ support player redirect in join event ([a7cc409](https://github.com/caunt/Void/commit/a7cc4095fe87fe5110092f2c7a9446382794e603))
+* **network:** ✨ added argument identifier mapping ([fb61421](https://github.com/caunt/Void/commit/fb61421ae820283c8d291173f0b01dcea97aebcd))
+* **network:** ✨ updated identifier type and interface implementation ([c225072](https://github.com/caunt/Void/commit/c22507265afc7a7c8a67f408f943de6466fab583))
+* **nuget:** ✨ added update checking for offline assemblies ([850231e](https://github.com/caunt/Void/commit/850231e1ac40067ac3d73d5fe449e2380a515557))
+* **plugin:** ✨ added ProxyCompatibleForge plugin ([7b24e31](https://github.com/caunt/Void/commit/7b24e3178e58a1f8261b20bbb0d95f1ef060dee7))
+* **plugins:** ✨ added CrossStitch support plugin ([7efbc6b](https://github.com/caunt/Void/commit/7efbc6b6fed20cf5cf8517bcd386f3a2c01af6cc))
+* **protocol:** ✨ added ClientboundCommands packet mapping ([2d280a4](https://github.com/caunt/Void/commit/2d280a4bbd082c769ff93a6f389056cffaf0e024))
+* **proxy:** ✨ added support for CommandsPacket handling ([e002094](https://github.com/caunt/Void/commit/e0020944181ed21cbc4326dcd8c15a629e47bc07))
+* **proxy:** ✨ implemented chat command node graph structure serialization ([47402ff](https://github.com/caunt/Void/commit/47402ff1e438c50674afe25d6adfe74b5389a2e4))
+* **server:** ✨ support per-server hostname overrides in file configuration ([36eef85](https://github.com/caunt/Void/commit/36eef85936e3d6366242feb84b87792487828c8e))
+* **servers:** ✨ added server lookup by name methods ([845d0da](https://github.com/caunt/Void/commit/845d0da7c7e42700e11630114d699b5a08f64add))
+
+
+### Bug Fixes
+
+* **buffer:** 🐛 use DumpBytes for BufferSpan creation ([a77e427](https://github.com/caunt/Void/commit/a77e427a0552f93c5902a8dafca58d7fd3f305d5))
+* **buffer:** 🛡️ enforced span lifetime safety ([f4a0872](https://github.com/caunt/Void/commit/f4a087283b10cc8860faa35d3a1a36c5ebce2e8c))
+* **buffer:** 🛡️ improved int array reading safety ([eac39db](https://github.com/caunt/Void/commit/eac39dbc42a5922299d7afd51f720832e02365be))
+* **deps:** 🐛 fixed PackageReader resource leak in NuGetDependencyResolver ([c65ca26](https://github.com/caunt/Void/commit/c65ca26d3ddfb878a440b94714aac6136a14ff13))
+* **forge:** 🛠️ include server address in handshake result ([6e27897](https://github.com/caunt/Void/commit/6e278979d9cf14b5ee096c7a316dd946e32fdc65))
+* **forwarding:** 🐛 improved empty key disconnection message ([79999be](https://github.com/caunt/Void/commit/79999be1d97b084e26f01591ef2b3db4cc9e7488))
+* **lifecycle:** 🐛 ignore StreamClosedException on keepalive ([5e027d3](https://github.com/caunt/Void/commit/5e027d32c9372d793dd9ece46753638740672d1c))
+* **logging:** 🐛 clarify Velocity forwarding key message ([3bc9161](https://github.com/caunt/Void/commit/3bc9161320adb64b4640f214dc8aa4a082341add))
+* **logging:** 🐛 improved CommandsPacket logging output ([aa78fa9](https://github.com/caunt/Void/commit/aa78fa921bc34efe4731868a71bfd2514c4fdd68))
+* **logging:** 🐛 improved repository option docs and logging ([0be1d06](https://github.com/caunt/Void/commit/0be1d06c009ef3c5cf380fb3890fb15c9bd499b9))
+* **logging:** 🐛 log disconnect reason without legacy format ([cc68514](https://github.com/caunt/Void/commit/cc685149c081b9d3ccae43f58485517c3a143ad8))
+* **mods:** ✨ share header size mapping across instances ([1bc94c9](https://github.com/caunt/Void/commit/1bc94c92c636725165c71dae780e325846d153e3))
+* **modssupport:** 🛑 signal unsupported parsing ([9f7ef9a](https://github.com/caunt/Void/commit/9f7ef9a7d34388249f4431b25f8b819a4bc1101b))
+* **nuget:** ♻️ addressed code review feedback ([47ff527](https://github.com/caunt/Void/commit/47ff527cf7fc978d6f105f2162e5db0c95aa610d))
+* **nuget:** ♻️ improved logging and cancellation token handling ([9e27baf](https://github.com/caunt/Void/commit/9e27baf12a1237e33be66638b5aaab0b6d0a5d49))
+* **nuget:** 🐛 allow major version updates during automatic update checks ([c755b34](https://github.com/caunt/Void/commit/c755b34e3f5fd0402bea45c5d719f611959d2158))
+* **nuget:** 🐛 improved error message accuracy for assembly resolution ([97fbf87](https://github.com/caunt/Void/commit/97fbf87c1663c6d7b9403be1d0c783b3b278e745))
+* **nuget:** 🐛 improved update download validation and package ID resolution ([fa72f24](https://github.com/caunt/Void/commit/fa72f24c96b89bfd6355adb8cbad7b1a714699f2))
+* **nuget:** 🐛 improved version compatibility and assembly fallback logging ([934b46f](https://github.com/caunt/Void/commit/934b46f13b0a6759590183913fb735d33a29cbb0))
+* **nuget:** 🐛 prevented deadlocks by adding ConfigureAwait(false) to all async calls ([f14d530](https://github.com/caunt/Void/commit/f14d530f6faa9ec0ff0f96bf4d8ddbff95495804))
+* **serializer:** 🐛 updated constructor param to match casing ([2589fe8](https://github.com/caunt/Void/commit/2589fe8883e3f5fdcfbbac4943bc2cce1415f80d))
+
+
+### Performance Improvements
+
+* **events:** ✨ slightly optimized event re-invocation selection ([58cabd1](https://github.com/caunt/Void/commit/58cabd1fae85869f13399f8352632ec03278fd90))
+
 ## [0.5.8](https://github.com/caunt/Void/compare/v0.5.7...v0.5.8) (2026-01-28)
 
 
