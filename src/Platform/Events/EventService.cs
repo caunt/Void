@@ -51,7 +51,7 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
         var invoked = new HashSet<InvokedListenerMethod>(InvokedListenerMethodComparer.Instance);
         var firstParameterTypeCache = new Dictionary<MethodInfo, Type>(ReferenceEqualityComparer.Instance);
 
-        // Entries list is often modified during invocation (listeners being registered/unregistered), iterate until no more candidates are found
+        // Entries list is often modified during invocation (listeners being registered/unregistered), so we iterate until no more candidates are found
         while (true)
         {
             var invocationCandidates = new List<InvocationCandidate>();
@@ -59,6 +59,8 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
             var entriesCountSnapshot = _entries.Count;
             for (var entryIndex = 0; entryIndex < entriesCountSnapshot; entryIndex++)
             {
+                // TODO: This list can be modified while we scan it, so we can't safely index it until we build a stable snapshot
+                // Consider making copies not on ThrowAsync, but on Register/Unregister instead, rebuild whole List on each modification
                 var entry = _entries[entryIndex];
 
                 var invokedKey = new InvokedListenerMethod(entry.Listener, entry.Method);
