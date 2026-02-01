@@ -8,7 +8,7 @@ sidebar:
 Services are used to build a Dependency Injection (DI) container.
 Your services will be shared across all plugins, and you can inject other plugins' services into your plugin, if needed.
 
-To learn more about DI, see [**Microsoft DI Documentation**](https://docs.microsoft.com/en-us/dotnet/core/extensions/dependency-injection).
+To learn more about DI, see [**Microsoft DI Documentation**](https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection).
 
 ## Registration
 
@@ -75,7 +75,7 @@ Services in the DI container can have different lifetimes, which determine how l
 2. [**Scoped**](/docs/developing-plugins/services/scoped): An instance is created once per player.
 3. [**Transient**](/docs/developing-plugins/services/transient): A new instance is provided every time it is requested.
 
-See the detailed description of each lifetime in the [**Microsoft Documentation**](https://docs.microsoft.com/en-us/dotnet/core/extensions/dependency-injection#service-lifetimes).
+See the detailed description of each lifetime in the [**Microsoft Documentation**](https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection#service-lifetimes).
 
 ## Example
 See the [**ExamplePlugin.cs**](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs) for service registrations and [**Services**](https://github.com/caunt/Void/tree/main/src/Plugins/ExamplePlugin/Services) directory for services usage and implementations.
