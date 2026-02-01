@@ -40,10 +40,10 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
         logger.LogInformation("Loading environment plugins");
         await LoadEnvironmentPluginsAsync(cancellationToken);
 
-        logger.LogInformation("Loading embedded plugins");
+        logger.LogDebug("Loading embedded plugins");
         await LoadEmbeddedPluginsAsync(cancellationToken);
 
-        logger.LogInformation("Loading directory plugins");
+        logger.LogDebug("Loading directory plugins");
         await LoadDirectoryPluginsAsync(cancellationToken: cancellationToken);
     }
 
@@ -223,7 +223,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
             await events.ThrowAsync(new PluginLoadedEvent(plugin), cancellationToken);
         }
 
-        logger.LogInformation("Loaded {Name} plugin from {AssemblyName} ", plugin.Name, container.Context.PluginAssembly.GetName().Name);
+        logger.LogDebug("Loaded {Name} plugin from {AssemblyName} ", plugin.Name, container.Context.PluginAssembly.GetName().Name);
     }
 
     public IEnumerable<Type> LoadContainer(string name, Stream stream, bool ignoreEmpty = false)
