@@ -21,7 +21,7 @@ Instead, use transformations explained below.
 ## Conditional packet transformations
 Conditional packet transformations are the simplest way to handle changes, but they can become messy if the packet changes frequently.
 
-We will use previously defined [**Set Held Item (clientbound)**](/docs/developing-plugins/network/packets#defining-packets) packet as an example.
+We will use previously defined [**Set Held Item (clientbound)**](/docs/developing-plugins/network/packets/#defining-packets) packet as an example.
 In this packet, changes were made from Minecraft version **1.21** to **1.21.2**.
 In version **1.21**, the slot was defined as `byte`, but in version **1.21.2** it was changed to `varint`.
 ```csharp
@@ -96,7 +96,7 @@ public class SetHeldItemClientboundPacket : IMinecraftClientboundPacket<SetHeldI
 
 Now that we have the latest implementation, we need to define the changes that were made across versions.
 
-In the case of the [**Set Held Item (clientbound)**](/docs/developing-plugins/network/packets#defining-packets) packet, only one change was made—the `slot` property type changed from `byte` to `varint`.
+In the case of the [**Set Held Item (clientbound)**](/docs/developing-plugins/network/packets/#defining-packets) packet, only one change was made—the `slot` property type changed from `byte` to `varint`.
 ```csharp
 MinecraftPacketTransformationMapping[] Transformations { get; } = [
     new(ProtocolVersion.MINECRAFT_1_21, ProtocolVersion.MINECRAFT_1_21_2, wrapper =>
