@@ -33,6 +33,6 @@
 
 <div align="center">
   <div><strong><a href="https://t.me/mcVoidProxy">Join us on Telegram</a></strong></div>
-  <a href="https://t.me/mcVoidProxy"><img width="221" height="223" alt="Telegram News QR" src="https://github.com/user-attachments/assets/fa7a809a-f36c-4532-9a66-e56c6c921b87"></a>
-  <a href="https://t.me/mcVoidProxyForum"><img width="221" height="223" alt="Telegram Forum QR" src="https://github.com/user-attachments/assets/2cdf8f36-a474-4472-bc39-6837066ed23b"></a>
+  <a href="https://t.me/mcVoidProxy"><img width="150" height="150" alt="Telegram News QR" src="https://github.com/user-attachments/assets/fa7a809a-f36c-4532-9a66-e56c6c921b87"></a>
+  <a href="https://t.me/mcVoidProxyForum"><img width="150" height="150" alt="Telegram Forum QR" src="https://github.com/user-attachments/assets/2cdf8f36-a474-4472-bc39-6837066ed23b"></a>
 </div>
