@@ -5,7 +5,10 @@
   <a href="https://www.nuget.org/packages/Void.Proxy.Api/"><img alt="NuGet Downloads" src="https://img.shields.io/nuget/dt/void.proxy.api?label=nuget%20void.proxy.api"></a>
   <a href="https://www.nuget.org/packages/Void.Minecraft/"><img alt="NuGet Downloads" src="https://img.shields.io/nuget/dt/void.minecraft?label=nuget%20void.minecraft"></a>
   <br>
-  <a href="https://void.caunt.world/"><img alt="Greetings!" width="400" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/astro/public/logo-text-horizontal.svg"></a>
+  <a href="https://void.caunt.world/">
+    <img alt="Welcome to you!" align="middle" width="400" src="https://github.com/user-attachments/assets/dc4af80c-34f7-4ae1-8325-823aca31fbc0"><!--
+    --><img alt="Greetings!" align="middle" width="400" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/astro/public/logo-text-horizontal.svg">
+  </a>
 </div>
 
 <div align="center" id="toc">
