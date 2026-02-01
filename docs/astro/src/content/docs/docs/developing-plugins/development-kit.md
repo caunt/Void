@@ -8,6 +8,11 @@ It can be used with any MSBuild-compatible IDE, such as Visual Studio or JetBrai
 
 ## Prerequisites
 Void plugins are written with many modern .NET features, so you will need to ensure that you have experience with them or at least know what you are doing.
+
+:::note[Requirements]
+**.NET 10.0 SDK** or later is required to develop plugins for Void. You can download it from the [**official .NET website**](https://dotnet.microsoft.com/download).
+:::
+
 Some of them include:
 - [**Dependency Injection**](/docs/developing-plugins/services/creating-a-service/)
 - Asynchronous Programming
