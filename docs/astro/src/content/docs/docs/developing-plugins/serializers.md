@@ -10,7 +10,7 @@ Prefer using [**`Serialize` methods**](/docs/developing-plugins/text-formatting/
 - `ComponentJsonSerializer` 
   - Converts **[Text Component](/docs/developing-plugins/text-formatting) to Json** or **Json to [Text Component](/docs/developing-plugins/text-formatting)**.
 - `ComponentLegacySerializer` 
-  - Converts **[Text Component](/docs/developing-plugins/text-formatting) to [Legacy string](/docs/developing-plugins/text-formatting#formatting-codes)** or **[Legacy string](/docs/developing-plugins/text-formatting#formatting-codes) to [Text Component](/docs/developing-plugins/text-formatting)**.
+  - Converts **[Text Component](/docs/developing-plugins/text-formatting) to [Legacy string](/docs/developing-plugins/text-formatting/#formatting-codes)** or **[Legacy string](/docs/developing-plugins/text-formatting/#formatting-codes) to [Text Component](/docs/developing-plugins/text-formatting)**.
 - `ComponentNbtSerializer` 
   - Converts **[Text Component](/docs/developing-plugins/text-formatting) to [Nbt](/docs/developing-plugins/nbt)** or **[Nbt](/docs/developing-plugins/nbt) to [Text Component](/docs/developing-plugins/text-formatting)**.
 

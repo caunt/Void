@@ -60,7 +60,7 @@ public class MyScopedService(IPlayerContext context)
 ```
 
 ## Converting Components
-Components can be converted from and to many different formats like Legacy, Json, [**Nbt**](/docs/developing-plugins/nbt) and [**Snbt**](/docs/developing-plugins/nbt#snbt)
+Components can be converted from and to many different formats like Legacy, Json, [**Nbt**](/docs/developing-plugins/nbt) and [**Snbt**](/docs/developing-plugins/nbt/#snbt)
 ```csharp
 public class MyScopedService(IPlayerContext context)
 {

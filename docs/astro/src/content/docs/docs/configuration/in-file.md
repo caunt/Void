@@ -77,7 +77,7 @@ Override = "limbo.example.org"
 ```
 
 :::tip
-You can also configure overrides via [**program arguments**](/docs/configuration/program-arguments#servers) using the `--override` flag, which allows you to specify overrides at runtime without modifying configuration files.
+You can also configure overrides via [**program arguments**](/docs/configuration/program-arguments/#servers) using the `--override` flag, which allows you to specify overrides at runtime without modifying configuration files.
 :::
 
 ## Watchdog
@@ -117,7 +117,7 @@ See the [**Plugin Development Kit**](/docs/developing-plugins/development-kit) s
 
 - Directory `plugins` is the default location to install plugins.
 - [**Environment variable**](/docs/configuration/environment-variables/#plugins) `VOID_PLUGINS` might be used to add URLs or local paths to run plugins, separated by comma or semicolon.
-- [**Program argument**](/docs/configuration/program-arguments#plugins) `--plugin` (alias `-p`) might be used to add URL or local path to a plugin.
+- [**Program argument**](/docs/configuration/program-arguments/#plugins) `--plugin` (alias `-p`) might be used to add URL or local path to a plugin.
 
 ```bash title="Program Argument Example"
 $ ./void-linux-x64 --plugin "/home/YourPlugin1.dll" --plugin "https://example.org/download/YourPlugin2.dll"
