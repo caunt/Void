@@ -30,9 +30,7 @@ public class ServerService(ILogger<ServerService> logger, ISettings settings, IC
     [Subscribe]
     public void OnProxyStarted(ProxyStartingEvent @event)
     {
-        var servers = All.ToList();
-
-        if (!servers.Any())
+        if (!All.Any())
         {
             logger.LogWarning("No servers are registered");
             return;
@@ -40,7 +38,7 @@ public class ServerService(ILogger<ServerService> logger, ISettings settings, IC
 
         logger.LogInformation("Registered servers:");
 
-        foreach (var server in servers)
+        foreach (var server in All)
             logger.LogInformation(" - {Server} ({Address}:{Port})", server.Name, server.Host, server.Port);
     }
 
