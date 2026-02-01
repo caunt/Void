@@ -153,7 +153,7 @@ public class Platform(
 
         await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
 
-        logger.LogInformation("Starting connection listener");
+        logger.LogDebug("Starting connection listener");
         _listener = new TcpListener(Interface, Port);
         _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
