@@ -4,9 +4,9 @@
   <a href="https://github.com/caunt/Void/actions"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/caunt/void/main.yaml"></a>
   <a href="https://www.nuget.org/packages/Void.Proxy.Api/"><img alt="NuGet Downloads" src="https://img.shields.io/nuget/dt/void.proxy.api?label=nuget%20void.proxy.api"></a>
   <a href="https://www.nuget.org/packages/Void.Minecraft/"><img alt="NuGet Downloads" src="https://img.shields.io/nuget/dt/void.minecraft?label=nuget%20void.minecraft"></a>
-  <br>
-  <a href="https://void.caunt.world/"><img alt="Welcome to you!" align="middle" width="400" src="https://github.com/user-attachments/assets/dc4af80c-34f7-4ae1-8325-823aca31fbc0"></a>
-  <a href="https://void.caunt.world/"><img alt="Greetings!" align="middle" width="400" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/astro/public/logo-text-horizontal.svg">
+
+  <a href="https://void.caunt.world/"><img alt="Welcome to you!" align="middle" width="500" src="https://github.com/user-attachments/assets/889492b9-67a5-492c-8ac6-2a235bfe7605"></a>
+  <a href="https://void.caunt.world/"><img alt="Greetings!" align="middle" width="300" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/astro/public/logo-text-horizontal.svg">
   </a>
 </div>
 
@@ -18,6 +18,7 @@
   </ul>
 </div>
 
+  
 ### :floppy_disk: **Download:**
 &nbsp;&nbsp;&nbsp;&nbsp; :+1: [**Latest Release**](https://void.caunt.world/download/)  
 &nbsp;&nbsp;&nbsp;&nbsp; :whale: [**Run with Docker**](https://void.caunt.world/docs/containers/)
