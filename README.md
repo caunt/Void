@@ -5,9 +5,8 @@
   <a href="https://www.nuget.org/packages/Void.Proxy.Api/"><img alt="NuGet Downloads" src="https://img.shields.io/nuget/dt/void.proxy.api?label=nuget%20void.proxy.api"></a>
   <a href="https://www.nuget.org/packages/Void.Minecraft/"><img alt="NuGet Downloads" src="https://img.shields.io/nuget/dt/void.minecraft?label=nuget%20void.minecraft"></a>
 
-  <a href="https://void.caunt.world/"><img alt="Welcome to you!" align="middle" width="500" src="https://github.com/user-attachments/assets/889492b9-67a5-492c-8ac6-2a235bfe7605"></a>
-  <a href="https://void.caunt.world/"><img alt="Greetings!" align="middle" width="300" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/astro/public/logo-text-horizontal.svg">
-  </a>
+  <a href="https://void.caunt.world/"><img alt="Welcome to you!" align="middle" width="550" src="https://github.com/user-attachments/assets/889492b9-67a5-492c-8ac6-2a235bfe7605"></a>
+  <a href="https://void.caunt.world/"><img alt="Greetings!" align="middle" width="250" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/astro/public/logo-text-horizontal.svg"></a>
 </div>
 
 <div align="center" id="toc">
