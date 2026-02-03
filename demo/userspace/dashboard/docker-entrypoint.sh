@@ -2,9 +2,8 @@
 set -e
 
 # Check that required environment variables are set
-if [ -z "$VOID_CONTAINER_NAME" ] || [ -z "$CLIENT_CONTAINER_NAME" ]; then
+if [ -z "$CLIENT_CONTAINER_NAME" ]; then
     echo "ERROR: Required environment variables not set:"
-    echo "  VOID_CONTAINER_NAME=${VOID_CONTAINER_NAME}"
     echo "  CLIENT_CONTAINER_NAME=${CLIENT_CONTAINER_NAME}"
     exit 1
 fi
@@ -17,7 +16,7 @@ fi
 
 # Substitute only our specific environment variables, leaving nginx variables intact
 echo "Substituting environment variables in nginx config..."
-if ! envsubst '${VOID_CONTAINER_NAME} ${CLIENT_CONTAINER_NAME}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf; then
+if ! envsubst '${CLIENT_CONTAINER_NAME}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf; then
     echo "ERROR: envsubst failed"
     exit 1
 fi
