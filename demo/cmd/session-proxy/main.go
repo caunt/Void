@@ -515,7 +515,7 @@ func (server *Server) ensureImagesAvailable() error {
 
 		log.Printf("Image %s not found. Building from %s ...", img.name, img.buildPath)
 
-		build := dockerCommand("build", "-t", img.name, img.buildPath)
+		build := dockerCommand("build", "--platform", "linux/amd64", "-t", img.name, img.buildPath)
 		outputBytes, err := build.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("docker build failed for %s: %v: %s", img.name, err, string(outputBytes))
