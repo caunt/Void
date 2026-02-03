@@ -950,7 +950,7 @@ func (writer *logPrefixWriter) Write(data []byte) (int, error) {
 	writer.mutex.Lock()
 	defer writer.mutex.Unlock()
 
-	writer.buffer.Write(data)
+	_, _ = writer.buffer.Write(data)
 	content := writer.buffer.String()
 
 	// Split by newlines and process complete lines
@@ -959,7 +959,7 @@ func (writer *logPrefixWriter) Write(data []byte) (int, error) {
 	// Keep the last line in buffer if it doesn't end with newline
 	if !strings.HasSuffix(content, "\n") {
 		writer.buffer.Reset()
-		writer.buffer.WriteString(lines[len(lines)-1])
+		_, _ = writer.buffer.WriteString(lines[len(lines)-1])
 		lines = lines[:len(lines)-1]
 	} else {
 		writer.buffer.Reset()
