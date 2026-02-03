@@ -51,7 +51,7 @@ type Server struct {
 func main() {
 	server := &Server{
 		listenAddr:        getEnvString("LISTEN_ADDR", "0.0.0.0:8080"),
-		sessionTTL:        time.Duration(getEnvInt("SESSION_TTL_SECONDS", 300)) * time.Second,
+		sessionTTL:        time.Duration(getEnvInt("SESSION_TTL_SECONDS", 7200)) * time.Second,
 		backendNetwork:    getEnvString("BACKEND_NETWORK", "backend"),
 		dashboardImage:    getEnvString("DASHBOARD_IMAGE", "dashboard:latest"),
 		voidImage:         getEnvString("VOID_IMAGE", "terminal-void:latest"),

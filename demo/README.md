@@ -59,7 +59,7 @@ You will be redirected to:
 
 ## Behavior
 
-- Sessions expire after **300 seconds** and per-session containers are stopped with `docker stop --time 0`.
+- Sessions expire after **2 hours** and per-session containers are stopped with `docker stop --time 0`.
 - The shared itzg-server container persists between sessions.
 - If a session container is still starting, you'll see a live "Starting session" page that polls status (~1 request / 1.5s) and only redirects when the dashboard port is actually reachable.
 - If a session is expired, you'll see a live "Session expired" page that redirects to a new session.
