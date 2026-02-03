@@ -52,13 +52,17 @@ func handleConnection(clientConnection net.Conn, upstreamAddr string) {
 	go func() {
 		defer waitGroup.Done()
 		_, _ = io.Copy(upstreamConnection, clientConnection)
-		_ = upstreamConnection.(*net.TCPConn).CloseWrite()
+		if tcpConnection, ok := upstreamConnection.(*net.TCPConn); ok {
+			_ = tcpConnection.CloseWrite()
+		}
 	}()
 
 	go func() {
 		defer waitGroup.Done()
 		_, _ = io.Copy(clientConnection, upstreamConnection)
-		_ = clientConnection.(*net.TCPConn).CloseWrite()
+		if tcpConnection, ok := clientConnection.(*net.TCPConn); ok {
+			_ = tcpConnection.CloseWrite()
+		}
 	}()
 
 	waitGroup.Wait()

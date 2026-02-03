@@ -571,7 +571,8 @@ func (server *Server) startClientContainer(session *Session) error {
 func (server *Server) removeNetwork(networkName string) error {
 	outputBytes, err := dockerCommand("network", "rm", networkName).CombinedOutput()
 	if err != nil {
-		if strings.Contains(string(outputBytes), "not found") {
+		outputString := strings.ToLower(string(outputBytes))
+		if strings.Contains(outputString, "not found") || strings.Contains(outputString, "no such network") {
 			return nil
 		}
 
@@ -584,7 +585,8 @@ func (server *Server) removeNetwork(networkName string) error {
 func (server *Server) stopContainer(containerName string) error {
 	outputBytes, err := dockerCommand("stop", "--time", "0", containerName).CombinedOutput()
 	if err != nil {
-		if strings.Contains(string(outputBytes), "No such container") {
+		outputString := strings.ToLower(string(outputBytes))
+		if strings.Contains(outputString, "no such container") {
 			return nil
 		}
 
