@@ -20,23 +20,30 @@ import (
 )
 
 type Session struct {
-	ID             string
-	ChildName      string
-	ChildHostPort  int
-	CreatedUtc     time.Time
-	ExpiresUtc     time.Time
-	DeleteTimer    *time.Timer
+	ID                string
+	DashboardName     string
+	VoidName          string
+	ClientName        string
+	SessionNetworkName string
+	DashboardHostPort int
+	CreatedUtc        time.Time
+	ExpiresUtc        time.Time
+	DeleteTimer       *time.Timer
 	LastReadyCheckUtc time.Time
-	LastReady      bool
+	LastReady         bool
 }
 
 type Server struct {
-	listenAddr      string
-	sessionTTL      time.Duration
-	sessionNetwork  string
-	childImage      string
-	childPort       int
-	childPrivileged bool
+	listenAddr         string
+	sessionTTL         time.Duration
+	backendNetwork     string
+	dashboardImage     string
+	voidImage          string
+	clientImage        string
+	itzgImage          string
+	dashboardPort      int
+	sharedItzgStarted  bool
+	sharedItzgLock     sync.Mutex
 
 	sessionsLock sync.RWMutex
 	sessions     map[string]*Session
@@ -44,21 +51,28 @@ type Server struct {
 
 func main() {
 	server := &Server{
-		listenAddr:      getEnvString("LISTEN_ADDR", "0.0.0.0:8080"),
-		sessionTTL:      time.Duration(getEnvInt("SESSION_TTL_SECONDS", 300)) * time.Second,
-		sessionNetwork:  getEnvString("SESSION_NETWORK", "session-proxy-net"),
-		childImage:      getEnvString("CHILD_IMAGE", "compose-isolated:latest"),
-		childPort:       getEnvInt("CHILD_PORT", 8080),
-		childPrivileged: getEnvBool("CHILD_PRIVILEGED", true),
-		sessions:        map[string]*Session{},
+		listenAddr:        getEnvString("LISTEN_ADDR", "0.0.0.0:8080"),
+		sessionTTL:        time.Duration(getEnvInt("SESSION_TTL_SECONDS", 300)) * time.Second,
+		backendNetwork:    getEnvString("BACKEND_NETWORK", "backend"),
+		dashboardImage:    getEnvString("DASHBOARD_IMAGE", "dashboard:latest"),
+		voidImage:         getEnvString("VOID_IMAGE", "terminal-void:latest"),
+		clientImage:       getEnvString("CLIENT_IMAGE", "client:latest"),
+		itzgImage:         getEnvString("ITZG_IMAGE", "terminal-itzg:latest"),
+		dashboardPort:     getEnvInt("DASHBOARD_PORT", 8080),
+		sharedItzgStarted: false,
+		sessions:          map[string]*Session{},
 	}
 
-	if err := server.ensureNetworkExists(); err != nil {
-		log.Fatalf("Failed to ensure docker network exists: %v", err)
+	if err := server.ensureBackendNetworkExists(); err != nil {
+		log.Fatalf("Failed to ensure backend network exists: %v", err)
 	}
 
-	if err := server.ensureChildImageAvailable(); err != nil {
-		log.Fatalf("Failed to ensure child image is available: %v", err)
+	if err := server.ensureImagesAvailable(); err != nil {
+		log.Fatalf("Failed to ensure images are available: %v", err)
+	}
+
+	if err := server.ensureSharedItzgRunning(); err != nil {
+		log.Fatalf("Failed to ensure shared itzg server is running: %v", err)
 	}
 
 	mux := http.NewServeMux()
@@ -74,8 +88,8 @@ func main() {
 	}
 
 	log.Printf("Listening on http://%s", server.listenAddr)
-	log.Printf("Session network: %s", server.sessionNetwork)
-	log.Printf("Child image: %s (port %d)", server.childImage, server.childPort)
+	log.Printf("Backend network: %s", server.backendNetwork)
+	log.Printf("Dashboard image: %s (port %d)", server.dashboardImage, server.dashboardPort)
 	log.Printf("Session TTL: %s", server.sessionTTL)
 
 	if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -99,23 +113,27 @@ func (server *Server) handleNewSession(writer http.ResponseWriter, request *http
 		return
 	}
 
-	hostPort, err := allocateFreeTcpPort()
+	dashboardHostPort, err := allocateFreeTcpPort()
 	if err != nil {
 		http.Error(writer, "Failed to allocate local port", http.StatusInternalServerError)
 		return
 	}
 
+	sanitizedId := sanitizeForDockerName(sessionId)
 	session := &Session{
-		ID:            sessionId,
-		ChildName:     "session-" + sanitizeForDockerName(sessionId),
-		ChildHostPort: hostPort,
-		CreatedUtc:    time.Now().UTC(),
+		ID:                 sessionId,
+		DashboardName:      "dashboard-" + sanitizedId,
+		VoidName:           "void-proxy-" + sanitizedId,
+		ClientName:         "client-" + sanitizedId,
+		SessionNetworkName: "sess-" + sanitizedId,
+		DashboardHostPort:  dashboardHostPort,
+		CreatedUtc:         time.Now().UTC(),
 	}
 	session.ExpiresUtc = session.CreatedUtc.Add(server.sessionTTL)
 
-	if err := server.startChildContainer(session); err != nil {
-		log.Printf("Failed to start child container for session %s: %v", session.ID, err)
-		server.writeLiveHtml(writer, http.StatusServiceUnavailable, "Starting session", "Failed to start session container. Retrying…", "/new")
+	if err := server.startSessionContainers(session); err != nil {
+		log.Printf("Failed to start session containers for session %s: %v", session.ID, err)
+		server.writeLiveHtml(writer, http.StatusServiceUnavailable, "Starting session", "Failed to start session containers. Retrying…", "/new")
 		return
 	}
 
@@ -193,7 +211,7 @@ func (server *Server) handleSessionProxy(writer http.ResponseWriter, request *ht
 
 	targetUrl := &url.URL{
 		Scheme: "http",
-		Host:   fmt.Sprintf("127.0.0.1:%d", session.ChildHostPort),
+		Host:   fmt.Sprintf("127.0.0.1:%d", session.DashboardHostPort),
 	}
 
 	reverseProxy := httputil.NewSingleHostReverseProxy(targetUrl)
@@ -238,7 +256,7 @@ func (server *Server) isSessionReady(session *Session) bool {
 		return lastReady
 	}
 
-	address := fmt.Sprintf("127.0.0.1:%d", session.ChildHostPort)
+	address := fmt.Sprintf("127.0.0.1:%d", session.DashboardHostPort)
 	connection, err := net.DialTimeout("tcp", address, 200*time.Millisecond)
 	readyValue := err == nil
 	if connection != nil {
@@ -430,74 +448,248 @@ func (server *Server) deleteSession(sessionId string) {
 		return
 	}
 
-	log.Printf("Deleting session %s (container %s)", session.ID, session.ChildName)
+	log.Printf("Deleting session %s", session.ID)
 
-	stopError := server.stopContainer(session.ChildName)
-	if stopError != nil {
-		log.Printf("Failed to stop container %s: %v", session.ChildName, stopError)
+	// Stop dashboard container
+	if err := server.stopContainer(session.DashboardName); err != nil {
+		log.Printf("Failed to stop dashboard container %s: %v", session.DashboardName, err)
 	}
+
+	// Stop void proxy container
+	if err := server.stopContainer(session.VoidName); err != nil {
+		log.Printf("Failed to stop void container %s: %v", session.VoidName, err)
+	}
+
+	// Stop client container
+	if err := server.stopContainer(session.ClientName); err != nil {
+		log.Printf("Failed to stop client container %s: %v", session.ClientName, err)
+	}
+
+	// Remove session network
+	if err := server.removeNetwork(session.SessionNetworkName); err != nil {
+		log.Printf("Failed to remove session network %s: %v", session.SessionNetworkName, err)
+	}
+
+	log.Printf("Session %s cleanup completed", session.ID)
 }
 
-func (server *Server) ensureNetworkExists() error {
-	inspect := dockerCommand("network", "inspect", server.sessionNetwork)
+func (server *Server) ensureBackendNetworkExists() error {
+	inspect := dockerCommand("network", "inspect", server.backendNetwork)
 	inspect.Stdout = nil
 	inspect.Stderr = nil
 	if err := inspect.Run(); err == nil {
 		return nil
 	}
 
-	create := dockerCommand("network", "create", server.sessionNetwork)
+	create := dockerCommand("network", "create", server.backendNetwork)
 	outputBytes, err := create.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("docker network create failed: %v: %s", err, string(outputBytes))
 	}
 
+	log.Printf("Created backend network: %s", server.backendNetwork)
 	return nil
 }
 
-func (server *Server) ensureChildImageAvailable() error {
-	inspect := dockerCommand("image", "inspect", server.childImage)
-	inspect.Stdout = nil
-	inspect.Stderr = nil
-	if err := inspect.Run(); err == nil {
-		return nil
-	}
-
+func (server *Server) ensureImagesAvailable() error {
 	userspaceDirectory := "/opt/userspace"
 	if _, err := os.Stat(userspaceDirectory); err != nil {
 		return fmt.Errorf("userspace directory not found at %s: %v", userspaceDirectory, err)
 	}
 
-	log.Printf("Child image %s not found. Building from %s ...", server.childImage, userspaceDirectory)
+	images := []struct {
+		name      string
+		buildPath string
+	}{
+		{server.dashboardImage, userspaceDirectory + "/dashboard"},
+		{server.voidImage, userspaceDirectory + "/terminal-void"},
+		{server.clientImage, userspaceDirectory + "/client"},
+		{server.itzgImage, userspaceDirectory + "/terminal-itzg"},
+	}
 
-	build := dockerCommand("build", "-t", server.childImage, userspaceDirectory)
-	outputBytes, err := build.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("docker build failed: %v: %s", err, string(outputBytes))
+	for _, img := range images {
+		inspect := dockerCommand("image", "inspect", img.name)
+		inspect.Stdout = nil
+		inspect.Stderr = nil
+		if err := inspect.Run(); err == nil {
+			continue
+		}
+
+		log.Printf("Image %s not found. Building from %s ...", img.name, img.buildPath)
+
+		build := dockerCommand("build", "-t", img.name, img.buildPath)
+		outputBytes, err := build.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("docker build failed for %s: %v: %s", img.name, err, string(outputBytes))
+		}
+
+		log.Printf("Successfully built image: %s", img.name)
 	}
 
 	return nil
 }
 
-func (server *Server) startChildContainer(session *Session) error {
+func (server *Server) ensureSharedItzgRunning() error {
+	server.sharedItzgLock.Lock()
+	defer server.sharedItzgLock.Unlock()
+
+	if server.sharedItzgStarted {
+		return nil
+	}
+
+	containerName := "itzg-server"
+
+	// Check if itzg container is already running
+	inspect := dockerCommand("inspect", "--format", "{{.State.Running}}", containerName)
+	inspect.Stderr = nil
+	outputBytes, err := inspect.Output()
+	if err == nil && strings.TrimSpace(string(outputBytes)) == "true" {
+		log.Printf("Shared itzg server already running: %s", containerName)
+		server.sharedItzgStarted = true
+		return nil
+	}
+
+	// Remove existing stopped container if any
+	_ = dockerCommand("rm", "-f", containerName).Run()
+
+	log.Printf("Starting shared itzg server: %s", containerName)
+
 	args := []string{
 		"run",
 		"-d",
 		"--rm",
-		"--name", session.ChildName,
-		"--network", server.sessionNetwork,
-		"-p", fmt.Sprintf("127.0.0.1:%d:%d", session.ChildHostPort, server.childPort),
+		"--name", containerName,
+		"--network", server.backendNetwork,
+		"-e", "EULA=true",
+		"-e", "TYPE=PAPER",
+		"-e", "VERSION=LATEST",
+		"-e", "ONLINE_MODE=false",
+		"-e", "OVERRIDE_SERVER_PROPERTIES=true",
+		"-e", "SERVER_PORT=25565",
+		server.itzgImage,
 	}
 
-	if server.childPrivileged {
-		args = append(args, "--privileged")
-	}
-
-	args = append(args, server.childImage)
-
-	outputBytes, err := dockerCommand(args...).CombinedOutput()
+	outputBytes, err = dockerCommand(args...).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("docker run failed: %v: %s", err, string(outputBytes))
+		return fmt.Errorf("failed to start shared itzg server: %v: %s", err, string(outputBytes))
+	}
+
+	server.sharedItzgStarted = true
+	log.Printf("Shared itzg server started: %s", containerName)
+	return nil
+}
+
+func (server *Server) createSessionNetwork(networkName string) error {
+	create := dockerCommand("network", "create", networkName)
+	outputBytes, err := create.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("docker network create failed: %v: %s", err, string(outputBytes))
+	}
+
+	log.Printf("Created session network: %s", networkName)
+	return nil
+}
+
+func (server *Server) startSessionContainers(session *Session) error {
+	// 1. Create per-session network
+	if err := server.createSessionNetwork(session.SessionNetworkName); err != nil {
+		return fmt.Errorf("failed to create session network: %w", err)
+	}
+
+	// 2. Start void proxy container (connected to both networks)
+	voidArgs := []string{
+		"run",
+		"-d",
+		"--rm",
+		"--name", session.VoidName,
+		"--network", server.backendNetwork,
+		"-e", "ARGUMENTS=--offline --ignore-file-servers --server itzg-server",
+		server.voidImage,
+	}
+
+	outputBytes, err := dockerCommand(voidArgs...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to start void container: %v: %s", err, string(outputBytes))
+	}
+
+	// Connect void to session network with alias "proxy"
+	connectArgs := []string{
+		"network", "connect",
+		"--alias", "proxy",
+		session.SessionNetworkName,
+		session.VoidName,
+	}
+
+	outputBytes, err = dockerCommand(connectArgs...).CombinedOutput()
+	if err != nil {
+		_ = server.stopContainer(session.VoidName)
+		return fmt.Errorf("failed to connect void to session network: %v: %s", err, string(outputBytes))
+	}
+
+	// 3. Start client container (only on session network)
+	clientArgs := []string{
+		"run",
+		"-d",
+		"--rm",
+		"--name", session.ClientName,
+		"--network", session.SessionNetworkName,
+		"-e", "SERVER=proxy",
+		server.clientImage,
+	}
+
+	outputBytes, err = dockerCommand(clientArgs...).CombinedOutput()
+	if err != nil {
+		_ = server.stopContainer(session.VoidName)
+		return fmt.Errorf("failed to start client container: %v: %s", err, string(outputBytes))
+	}
+
+	// 4. Start dashboard container (connected to session network for routing)
+	dashboardArgs := []string{
+		"run",
+		"-d",
+		"--rm",
+		"--name", session.DashboardName,
+		"--network", session.SessionNetworkName,
+		"-p", fmt.Sprintf("127.0.0.1:%d:8080", session.DashboardHostPort),
+		"-e", fmt.Sprintf("VOID_CONTAINER_NAME=%s", session.VoidName),
+		"-e", fmt.Sprintf("CLIENT_CONTAINER_NAME=%s", session.ClientName),
+		server.dashboardImage,
+	}
+
+	outputBytes, err = dockerCommand(dashboardArgs...).CombinedOutput()
+	if err != nil {
+		_ = server.stopContainer(session.VoidName)
+		_ = server.stopContainer(session.ClientName)
+		return fmt.Errorf("failed to start dashboard container: %v: %s", err, string(outputBytes))
+	}
+
+	// Connect dashboard to backend network to reach shared itzg
+	connectArgs = []string{
+		"network", "connect",
+		server.backendNetwork,
+		session.DashboardName,
+	}
+
+	outputBytes, err = dockerCommand(connectArgs...).CombinedOutput()
+	if err != nil {
+		_ = server.stopContainer(session.DashboardName)
+		_ = server.stopContainer(session.VoidName)
+		_ = server.stopContainer(session.ClientName)
+		return fmt.Errorf("failed to connect dashboard to backend network: %v: %s", err, string(outputBytes))
+	}
+
+	log.Printf("Started session containers for %s", session.ID)
+	return nil
+}
+
+func (server *Server) removeNetwork(networkName string) error {
+	outputBytes, err := dockerCommand("network", "rm", networkName).CombinedOutput()
+	if err != nil {
+		if strings.Contains(string(outputBytes), "not found") {
+			return nil
+		}
+
+		return fmt.Errorf("docker network rm failed: %v: %s", err, string(outputBytes))
 	}
 
 	return nil
