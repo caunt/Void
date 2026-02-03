@@ -642,7 +642,6 @@ func (server *Server) startSessionContainers(session *Session) error {
 	voidArgs := []string{
 		"run",
 		"-d",
-		"--rm",
 		"--name", session.VoidName,
 		"--network", server.backendNetwork,
 		"-e", "ARGUMENTS=--offline --ignore-file-servers --server itzg-server",
@@ -678,7 +677,6 @@ func (server *Server) startSessionContainers(session *Session) error {
 	clientArgs := []string{
 		"run",
 		"-d",
-		"--rm",
 		"--name", session.ClientName,
 		"--network", session.SessionNetworkName,
 		"-e", "SERVER=proxy",
@@ -694,11 +692,11 @@ func (server *Server) startSessionContainers(session *Session) error {
 	log.Printf("Session %s: Client container %s started", session.ID, session.ClientName)
 
 	// 4. Start dashboard container (connected to session network for routing)
+	// Note: We don't use --rm here so we can retrieve logs if it fails to start
 	log.Printf("Session %s: Starting dashboard container %s on port %d", session.ID, session.DashboardName, session.DashboardHostPort)
 	dashboardArgs := []string{
 		"run",
 		"-d",
-		"--rm",
 		"--name", session.DashboardName,
 		"--network", session.SessionNetworkName,
 		"-p", fmt.Sprintf("127.0.0.1:%d:8080", session.DashboardHostPort),
@@ -719,16 +717,19 @@ func (server *Server) startSessionContainers(session *Session) error {
 	// Wait briefly and verify dashboard container is still running before connecting to network
 	time.Sleep(dashboardStartupWaitDuration)
 	
-	inspectArgs := []string{"inspect", "--format", "{{.State.Running}}", session.DashboardName}
+	// Get full container state including exit code
+	inspectArgs := []string{"inspect", "--format", "{{.State.Running}}|{{.State.ExitCode}}|{{.State.Error}}", session.DashboardName}
 	inspectOutput, inspectErr := dockerCommand(inspectArgs...).Output()
 	
 	if inspectErr != nil {
 		log.Printf("Session %s: Failed to inspect dashboard container: %v", session.ID, inspectErr)
 		
-		// Get container logs to diagnose the issue
-		logsCmd := dockerCommand("logs", "--tail", strconv.Itoa(containerLogTailLines), session.DashboardName)
-		if logsOutput, logsErr := logsCmd.CombinedOutput(); logsErr == nil {
+		// Try to get container logs (may fail if container already removed)
+		logsCmd := dockerCommand("logs", session.DashboardName)
+		if logsOutput, logsErr := logsCmd.CombinedOutput(); logsErr == nil && len(logsOutput) > 0 {
 			log.Printf("Session %s: Dashboard container logs:\n%s", session.ID, string(logsOutput))
+		} else {
+			log.Printf("Session %s: Could not retrieve dashboard logs: %v", session.ID, logsErr)
 		}
 		
 		_ = server.stopContainer(session.DashboardName)
@@ -737,19 +738,34 @@ func (server *Server) startSessionContainers(session *Session) error {
 		return fmt.Errorf("failed to inspect dashboard container: %w", inspectErr)
 	}
 	
-	if strings.TrimSpace(string(inspectOutput)) != "true" {
-		log.Printf("Session %s: Dashboard container exited before network connection (running: %s)", session.ID, strings.TrimSpace(string(inspectOutput)))
+	// Parse inspect output: running|exitCode|error
+	stateParts := strings.Split(strings.TrimSpace(string(inspectOutput)), "|")
+	isRunning := len(stateParts) > 0 && stateParts[0] == "true"
+	exitCode := ""
+	stateError := ""
+	if len(stateParts) > 1 {
+		exitCode = stateParts[1]
+	}
+	if len(stateParts) > 2 {
+		stateError = stateParts[2]
+	}
+	
+	if !isRunning {
+		log.Printf("Session %s: Dashboard container exited before network connection (exitCode: %s, error: %s)", session.ID, exitCode, stateError)
 		
-		// Get container logs to diagnose the issue
-		logsCmd := dockerCommand("logs", "--tail", strconv.Itoa(containerLogTailLines), session.DashboardName)
-		if logsOutput, logsErr := logsCmd.CombinedOutput(); logsErr == nil {
+		// Try to get container logs (may fail if container already removed with --rm)
+		logsCmd := dockerCommand("logs", session.DashboardName)
+		logsOutput, logsErr := logsCmd.CombinedOutput()
+		if logsErr == nil && len(logsOutput) > 0 {
 			log.Printf("Session %s: Dashboard container logs:\n%s", session.ID, string(logsOutput))
+		} else {
+			log.Printf("Session %s: Could not retrieve dashboard logs (container may be removed): %v", session.ID, logsErr)
 		}
 		
 		_ = server.stopContainer(session.DashboardName)
 		_ = server.stopContainer(session.VoidName)
 		_ = server.stopContainer(session.ClientName)
-		return fmt.Errorf("dashboard container exited immediately after start")
+		return fmt.Errorf("dashboard container exited immediately with code %s", exitCode)
 	}
 
 	// Connect dashboard to backend network to reach shared itzg
@@ -790,13 +806,21 @@ func (server *Server) removeNetwork(networkName string) error {
 }
 
 func (server *Server) stopContainer(containerName string) error {
-	outputBytes, err := dockerCommand("stop", "--time", "0", containerName).CombinedOutput()
-	if err != nil {
-		if strings.Contains(string(outputBytes), "No such container") {
+	// First try to stop the container
+	stopOutput, stopErr := dockerCommand("stop", "--time", "0", containerName).CombinedOutput()
+	if stopErr != nil {
+		if !strings.Contains(string(stopOutput), "No such container") {
+			log.Printf("Warning: Failed to stop container %s: %v", containerName, stopErr)
+		}
+	}
+	
+	// Then remove the container (works even if already stopped or doesn't exist)
+	removeOutput, removeErr := dockerCommand("rm", "-f", containerName).CombinedOutput()
+	if removeErr != nil {
+		if strings.Contains(string(removeOutput), "No such container") {
 			return nil
 		}
-
-		return fmt.Errorf("docker stop failed: %v: %s", err, string(outputBytes))
+		return fmt.Errorf("docker rm failed: %v: %s", removeErr, string(removeOutput))
 	}
 
 	return nil
