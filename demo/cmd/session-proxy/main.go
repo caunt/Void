@@ -129,6 +129,8 @@ func (server *Server) handleNewSession(writer http.ResponseWriter, request *http
 	}
 	session.ExpiresUtc = session.CreatedUtc.Add(server.sessionTTL)
 
+	log.Printf("Creating new session %s (dashboard port: %d, TTL: %s)", session.ID, session.DashboardHostPort, server.sessionTTL)
+
 	if err := server.startSessionContainers(session); err != nil {
 		log.Printf("Failed to start session containers for session %s: %v", session.ID, err)
 		server.writeLiveHtml(writer, http.StatusServiceUnavailable, "Starting session", "Failed to start session containers. Retrying…", "/new")
@@ -143,6 +145,7 @@ func (server *Server) handleNewSession(writer http.ResponseWriter, request *http
 		server.deleteSession(session.ID)
 	})
 
+	log.Printf("Session %s created successfully, redirecting to /s/%s/", session.ID, session.ID)
 	location := "/s/" + session.ID + "/"
 	http.Redirect(writer, request, location, http.StatusTemporaryRedirect)
 }
@@ -259,6 +262,18 @@ func (server *Server) isSessionReady(session *Session) bool {
 	readyValue := err == nil
 	if connection != nil {
 		_ = connection.Close()
+	}
+
+	// Log state changes to help diagnose startup issues
+	if !lastReady && readyValue {
+		log.Printf("Session %s: Dashboard became ready on port %d", session.ID, session.DashboardHostPort)
+	} else if lastReady && !readyValue {
+		log.Printf("Session %s: Dashboard became unreachable on port %d", session.ID, session.DashboardHostPort)
+	} else if !readyValue && !lastCheckUtc.IsZero() {
+		// Only log every 10 seconds for "still not ready" to avoid spam
+		if now.Sub(lastCheckUtc) > 10*time.Second {
+			log.Printf("Session %s: Dashboard still not ready on port %d (error: %v)", session.ID, session.DashboardHostPort, err)
+		}
 	}
 
 	server.sessionsLock.Lock()
@@ -589,8 +604,12 @@ func (server *Server) createSessionNetwork(networkName string) error {
 }
 
 func (server *Server) startSessionContainers(session *Session) error {
+	log.Printf("Session %s: Starting container orchestration", session.ID)
+	
 	// 1. Create per-session network
+	log.Printf("Session %s: Creating network %s", session.ID, session.SessionNetworkName)
 	if err := server.createSessionNetwork(session.SessionNetworkName); err != nil {
+		log.Printf("Session %s: Failed to create network: %v", session.ID, err)
 		return fmt.Errorf("failed to create session network: %w", err)
 	}
 
@@ -598,11 +617,13 @@ func (server *Server) startSessionContainers(session *Session) error {
 	cleanupNetwork := true
 	defer func() {
 		if cleanupNetwork {
+			log.Printf("Session %s: Cleaning up network %s due to failure", session.ID, session.SessionNetworkName)
 			_ = server.removeNetwork(session.SessionNetworkName)
 		}
 	}()
 
 	// 2. Start void proxy container (connected to both networks)
+	log.Printf("Session %s: Starting void-proxy container %s", session.ID, session.VoidName)
 	voidArgs := []string{
 		"run",
 		"-d",
@@ -615,10 +636,13 @@ func (server *Server) startSessionContainers(session *Session) error {
 
 	outputBytes, err := dockerCommand(voidArgs...).CombinedOutput()
 	if err != nil {
+		log.Printf("Session %s: Failed to start void container: %v, output: %s", session.ID, err, string(outputBytes))
 		return fmt.Errorf("failed to start void container: %v: %s", err, string(outputBytes))
 	}
+	log.Printf("Session %s: Void-proxy container %s started", session.ID, session.VoidName)
 
 	// Connect void to session network with alias "proxy"
+	log.Printf("Session %s: Connecting void-proxy to session network with alias 'proxy'", session.ID)
 	connectArgs := []string{
 		"network", "connect",
 		"--alias", "proxy",
@@ -628,11 +652,14 @@ func (server *Server) startSessionContainers(session *Session) error {
 
 	outputBytes, err = dockerCommand(connectArgs...).CombinedOutput()
 	if err != nil {
+		log.Printf("Session %s: Failed to connect void to session network: %v, output: %s", session.ID, err, string(outputBytes))
 		_ = server.stopContainer(session.VoidName)
 		return fmt.Errorf("failed to connect void to session network: %v: %s", err, string(outputBytes))
 	}
+	log.Printf("Session %s: Void-proxy connected to session network", session.ID)
 
 	// 3. Start client container (only on session network)
+	log.Printf("Session %s: Starting client container %s", session.ID, session.ClientName)
 	clientArgs := []string{
 		"run",
 		"-d",
@@ -645,11 +672,14 @@ func (server *Server) startSessionContainers(session *Session) error {
 
 	outputBytes, err = dockerCommand(clientArgs...).CombinedOutput()
 	if err != nil {
+		log.Printf("Session %s: Failed to start client container: %v, output: %s", session.ID, err, string(outputBytes))
 		_ = server.stopContainer(session.VoidName)
 		return fmt.Errorf("failed to start client container: %v: %s", err, string(outputBytes))
 	}
+	log.Printf("Session %s: Client container %s started", session.ID, session.ClientName)
 
 	// 4. Start dashboard container (connected to session network for routing)
+	log.Printf("Session %s: Starting dashboard container %s on port %d", session.ID, session.DashboardName, session.DashboardHostPort)
 	dashboardArgs := []string{
 		"run",
 		"-d",
@@ -664,12 +694,15 @@ func (server *Server) startSessionContainers(session *Session) error {
 
 	outputBytes, err = dockerCommand(dashboardArgs...).CombinedOutput()
 	if err != nil {
+		log.Printf("Session %s: Failed to start dashboard container: %v, output: %s", session.ID, err, string(outputBytes))
 		_ = server.stopContainer(session.VoidName)
 		_ = server.stopContainer(session.ClientName)
 		return fmt.Errorf("failed to start dashboard container: %v: %s", err, string(outputBytes))
 	}
+	log.Printf("Session %s: Dashboard container %s started", session.ID, session.DashboardName)
 
 	// Connect dashboard to backend network to reach shared itzg
+	log.Printf("Session %s: Connecting dashboard to backend network", session.ID)
 	connectArgs = []string{
 		"network", "connect",
 		server.backendNetwork,
@@ -678,15 +711,17 @@ func (server *Server) startSessionContainers(session *Session) error {
 
 	outputBytes, err = dockerCommand(connectArgs...).CombinedOutput()
 	if err != nil {
+		log.Printf("Session %s: Failed to connect dashboard to backend network: %v, output: %s", session.ID, err, string(outputBytes))
 		_ = server.stopContainer(session.DashboardName)
 		_ = server.stopContainer(session.VoidName)
 		_ = server.stopContainer(session.ClientName)
 		return fmt.Errorf("failed to connect dashboard to backend network: %v: %s", err, string(outputBytes))
 	}
+	log.Printf("Session %s: Dashboard connected to backend network", session.ID)
 
 	// Success - don't clean up the network
 	cleanupNetwork = false
-	log.Printf("Started session containers for %s", session.ID)
+	log.Printf("Session %s: All containers started successfully (dashboard port: %d)", session.ID, session.DashboardHostPort)
 	return nil
 }
 
