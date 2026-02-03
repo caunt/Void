@@ -594,6 +594,14 @@ func (server *Server) startSessionContainers(session *Session) error {
 		return fmt.Errorf("failed to create session network: %w", err)
 	}
 
+	// Set up cleanup on failure - remove network if we don't complete successfully
+	cleanupNetwork := true
+	defer func() {
+		if cleanupNetwork {
+			_ = server.removeNetwork(session.SessionNetworkName)
+		}
+	}()
+
 	// 2. Start void proxy container (connected to both networks)
 	voidArgs := []string{
 		"run",
@@ -676,6 +684,8 @@ func (server *Server) startSessionContainers(session *Session) error {
 		return fmt.Errorf("failed to connect dashboard to backend network: %v: %s", err, string(outputBytes))
 	}
 
+	// Success - don't clean up the network
+	cleanupNetwork = false
 	log.Printf("Started session containers for %s", session.ID)
 	return nil
 }
