@@ -17,6 +17,10 @@ cp /usr/local/bin/tcp-proxy /opt/userspace/tcp-proxy/tcp-proxy
 echo "Building tcp-proxy image..."
 docker build -t tcp-proxy:latest /opt/userspace/tcp-proxy
 
+# Build client image
+echo "Building client image..."
+docker build -t client:latest /opt/userspace/client
+
 # Create backend network
 echo "Creating backend network..."
 docker network create backend 2>/dev/null || true
