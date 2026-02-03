@@ -1,0 +1,33 @@
+services:
+  dashboard:
+    build: dashboard
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    
+  client:
+    build: client
+    ports:
+      - "6080:6080"
+    restart: unless-stopped
+    environment:
+      SERVER: void
+
+  void:
+    build: terminal-void
+    restart: unless-stopped
+    environment:
+      ARGUMENTS: --offline --ignore-file-servers --server itzg
+
+  itzg:
+    build: terminal-itzg
+    restart: unless-stopped
+    environment:
+      EULA: "true"
+      TYPE: "PAPER"
+      VERSION: "LATEST"
+      ONLINE_MODE: "false"
+      OVERRIDE_SERVER_PROPERTIES: "true"
+      SERVER_PORT: "25565"
+    ports:
+      - "25565:25565"

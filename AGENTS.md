@@ -33,6 +33,7 @@ This repository is a .NET solution composed of the following sections:
   - Terminal — terminal UI for proxy console.
 - tests — xUnit test projects.
 - docs — documentation site built with Astro.
+- demo - sample demo Void proxy, Minecraft server and client, all in browser.
 - pdk — plugin development kit example.
 - Void.slnx — solution file referencing all projects.
 
