@@ -19,7 +19,7 @@ ENV ITZG_IMAGE=terminal-itzg:latest
 COPY --from=build /out/session-proxy /usr/local/bin/session-proxy
 COPY userspace /opt/userspace
 COPY start.sh /start.sh
-RUN chmod +x /start.sh
+RUN sed -i 's/\r$//' /start.sh && chmod +x /start.sh
 
 EXPOSE 8080
 ENTRYPOINT ["/start.sh"]
