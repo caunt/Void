@@ -10,10 +10,12 @@ FROM docker:27-dind
 RUN apk add --no-cache ca-certificates
 ENV LISTEN_ADDR=0.0.0.0:8080
 ENV SESSION_TTL_SECONDS=300
-ENV SESSION_NETWORK=session-proxy-net
-ENV CHILD_IMAGE=compose-isolated:latest
-ENV CHILD_PORT=8080
-ENV CHILD_PRIVILEGED=true
+ENV BACKEND_NETWORK=backend
+ENV DASHBOARD_IMAGE=dashboard:latest
+ENV VOID_IMAGE=terminal-void:latest
+ENV CLIENT_IMAGE=client:latest
+ENV ITZG_IMAGE=terminal-itzg:latest
+ENV DASHBOARD_PORT=8080
 
 COPY --from=build /out/session-proxy /usr/local/bin/session-proxy
 COPY userspace /opt/userspace
