@@ -9,7 +9,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /out/session-proxy ./cm
 FROM docker:27-dind
 RUN apk add --no-cache ca-certificates
 ENV LISTEN_ADDR=0.0.0.0:8080
-ENV SESSION_TTL_SECONDS=300
+ENV SESSION_TTL_SECONDS=7200
 ENV BACKEND_NETWORK=backend
 ENV DASHBOARD_IMAGE=dashboard:latest
 ENV VOID_IMAGE=terminal-void:latest
