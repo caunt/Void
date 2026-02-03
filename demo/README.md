@@ -57,6 +57,15 @@ You will be redirected to:
 
 - /s/<sessionId>/
 
+## Environment Variables
+
+- **REDIRECT_LOGS**: Set to `true` or `1` to enable real-time logging of all container logs. When enabled, logs from the shared itzg-server and all per-session containers (dashboard, void-proxy, client) are streamed to the session-proxy stdout with container name prefixes. Defaults to `false`.
+
+Example:
+```bash
+docker run --rm --privileged -p 8080:8080 -e REDIRECT_LOGS=true caunt/void-demo:latest
+```
+
 ## Behavior
 
 - Sessions expire after **2 hours** and per-session containers are stopped with `docker stop --time 0`.
