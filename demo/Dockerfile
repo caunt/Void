@@ -5,6 +5,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /out/session-proxy ./cmd/session-proxy
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /out/tcp-proxy ./cmd/tcp-proxy
 
 FROM docker:27-dind
 RUN apk add --no-cache ca-certificates
@@ -16,6 +17,7 @@ ENV CHILD_PORT=8080
 ENV CHILD_PRIVILEGED=true
 
 COPY --from=build /out/session-proxy /usr/local/bin/session-proxy
+COPY --from=build /out/tcp-proxy /usr/local/bin/tcp-proxy
 COPY userspace /opt/userspace
 COPY start.sh /start.sh
 RUN chmod +x /start.sh

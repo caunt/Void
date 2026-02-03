@@ -21,8 +21,10 @@ import (
 
 type Session struct {
 	ID             string
-	ChildName      string
-	ChildHostPort  int
+	ClientName     string
+	ProxyName      string
+	SessionNetwork string
+	ClientHostPort int
 	CreatedUtc     time.Time
 	ExpiresUtc     time.Time
 	DeleteTimer    *time.Timer
@@ -33,10 +35,10 @@ type Session struct {
 type Server struct {
 	listenAddr      string
 	sessionTTL      time.Duration
-	sessionNetwork  string
-	childImage      string
-	childPort       int
-	childPrivileged bool
+	backendNetwork  string
+	clientImage     string
+	proxyImage      string
+	clientPort      int
 
 	sessionsLock sync.RWMutex
 	sessions     map[string]*Session
@@ -44,21 +46,21 @@ type Server struct {
 
 func main() {
 	server := &Server{
-		listenAddr:      getEnvString("LISTEN_ADDR", "0.0.0.0:8080"),
-		sessionTTL:      time.Duration(getEnvInt("SESSION_TTL_SECONDS", 300)) * time.Second,
-		sessionNetwork:  getEnvString("SESSION_NETWORK", "session-proxy-net"),
-		childImage:      getEnvString("CHILD_IMAGE", "compose-isolated:latest"),
-		childPort:       getEnvInt("CHILD_PORT", 8080),
-		childPrivileged: getEnvBool("CHILD_PRIVILEGED", true),
-		sessions:        map[string]*Session{},
+		listenAddr:     getEnvString("LISTEN_ADDR", "0.0.0.0:8080"),
+		sessionTTL:     time.Duration(getEnvInt("SESSION_TTL_SECONDS", 300)) * time.Second,
+		backendNetwork: getEnvString("BACKEND_NETWORK", "backend"),
+		clientImage:    getEnvString("CLIENT_IMAGE", "client:latest"),
+		proxyImage:     getEnvString("PROXY_IMAGE", "tcp-proxy:latest"),
+		clientPort:     getEnvInt("CLIENT_PORT", 6080),
+		sessions:       map[string]*Session{},
 	}
 
-	if err := server.ensureNetworkExists(); err != nil {
-		log.Fatalf("Failed to ensure docker network exists: %v", err)
+	if err := server.ensureNetworkExists(server.backendNetwork); err != nil {
+		log.Fatalf("Failed to ensure backend network exists: %v", err)
 	}
 
-	if err := server.ensureChildImageAvailable(); err != nil {
-		log.Fatalf("Failed to ensure child image is available: %v", err)
+	if err := server.ensureClientImageAvailable(); err != nil {
+		log.Fatalf("Failed to ensure client image is available: %v", err)
 	}
 
 	mux := http.NewServeMux()
@@ -74,8 +76,9 @@ func main() {
 	}
 
 	log.Printf("Listening on http://%s", server.listenAddr)
-	log.Printf("Session network: %s", server.sessionNetwork)
-	log.Printf("Child image: %s (port %d)", server.childImage, server.childPort)
+	log.Printf("Backend network: %s", server.backendNetwork)
+	log.Printf("Client image: %s (port %d)", server.clientImage, server.clientPort)
+	log.Printf("Proxy image: %s", server.proxyImage)
 	log.Printf("Session TTL: %s", server.sessionTTL)
 
 	if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -105,17 +108,20 @@ func (server *Server) handleNewSession(writer http.ResponseWriter, request *http
 		return
 	}
 
+	sanitizedId := sanitizeForDockerName(sessionId)
 	session := &Session{
-		ID:            sessionId,
-		ChildName:     "session-" + sanitizeForDockerName(sessionId),
-		ChildHostPort: hostPort,
-		CreatedUtc:    time.Now().UTC(),
+		ID:             sessionId,
+		ClientName:     "client-" + sanitizedId,
+		ProxyName:      "proxy-" + sanitizedId,
+		SessionNetwork: "sess-" + sanitizedId,
+		ClientHostPort: hostPort,
+		CreatedUtc:     time.Now().UTC(),
 	}
 	session.ExpiresUtc = session.CreatedUtc.Add(server.sessionTTL)
 
-	if err := server.startChildContainer(session); err != nil {
-		log.Printf("Failed to start child container for session %s: %v", session.ID, err)
-		server.writeLiveHtml(writer, http.StatusServiceUnavailable, "Starting session", "Failed to start session container. Retrying…", "/new")
+	if err := server.createSessionInfrastructure(session); err != nil {
+		log.Printf("Failed to create session infrastructure for %s: %v", session.ID, err)
+		server.writeLiveHtml(writer, http.StatusServiceUnavailable, "Starting session", "Failed to start session containers. Retrying…", "/new")
 		return
 	}
 
@@ -193,7 +199,7 @@ func (server *Server) handleSessionProxy(writer http.ResponseWriter, request *ht
 
 	targetUrl := &url.URL{
 		Scheme: "http",
-		Host:   fmt.Sprintf("127.0.0.1:%d", session.ChildHostPort),
+		Host:   fmt.Sprintf("127.0.0.1:%d", session.ClientHostPort),
 	}
 
 	reverseProxy := httputil.NewSingleHostReverseProxy(targetUrl)
@@ -238,7 +244,7 @@ func (server *Server) isSessionReady(session *Session) bool {
 		return lastReady
 	}
 
-	address := fmt.Sprintf("127.0.0.1:%d", session.ChildHostPort)
+	address := fmt.Sprintf("127.0.0.1:%d", session.ClientHostPort)
 	connection, err := net.DialTimeout("tcp", address, 200*time.Millisecond)
 	readyValue := err == nil
 	if connection != nil {
@@ -430,23 +436,33 @@ func (server *Server) deleteSession(sessionId string) {
 		return
 	}
 
-	log.Printf("Deleting session %s (container %s)", session.ID, session.ChildName)
+	log.Printf("Deleting session %s (containers %s, %s, network %s)", session.ID, session.ClientName, session.ProxyName, session.SessionNetwork)
 
-	stopError := server.stopContainer(session.ChildName)
+	stopError := server.stopContainer(session.ClientName)
 	if stopError != nil {
-		log.Printf("Failed to stop container %s: %v", session.ChildName, stopError)
+		log.Printf("Failed to stop container %s: %v", session.ClientName, stopError)
+	}
+
+	stopError = server.stopContainer(session.ProxyName)
+	if stopError != nil {
+		log.Printf("Failed to stop container %s: %v", session.ProxyName, stopError)
+	}
+
+	removeError := server.removeNetwork(session.SessionNetwork)
+	if removeError != nil {
+		log.Printf("Failed to remove network %s: %v", session.SessionNetwork, removeError)
 	}
 }
 
-func (server *Server) ensureNetworkExists() error {
-	inspect := dockerCommand("network", "inspect", server.sessionNetwork)
+func (server *Server) ensureNetworkExists(networkName string) error {
+	inspect := dockerCommand("network", "inspect", networkName)
 	inspect.Stdout = nil
 	inspect.Stderr = nil
 	if err := inspect.Run(); err == nil {
 		return nil
 	}
 
-	create := dockerCommand("network", "create", server.sessionNetwork)
+	create := dockerCommand("network", "create", networkName)
 	outputBytes, err := create.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("docker network create failed: %v: %s", err, string(outputBytes))
@@ -455,8 +471,8 @@ func (server *Server) ensureNetworkExists() error {
 	return nil
 }
 
-func (server *Server) ensureChildImageAvailable() error {
-	inspect := dockerCommand("image", "inspect", server.childImage)
+func (server *Server) ensureClientImageAvailable() error {
+	inspect := dockerCommand("image", "inspect", server.clientImage)
 	inspect.Stdout = nil
 	inspect.Stderr = nil
 	if err := inspect.Run(); err == nil {
@@ -468,9 +484,9 @@ func (server *Server) ensureChildImageAvailable() error {
 		return fmt.Errorf("userspace directory not found at %s: %v", userspaceDirectory, err)
 	}
 
-	log.Printf("Child image %s not found. Building from %s ...", server.childImage, userspaceDirectory)
+	log.Printf("Client image %s not found. Building from %s/client ...", server.clientImage, userspaceDirectory)
 
-	build := dockerCommand("build", "-t", server.childImage, userspaceDirectory)
+	build := dockerCommand("build", "-t", server.clientImage, userspaceDirectory+"/client")
 	outputBytes, err := build.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("docker build failed: %v: %s", err, string(outputBytes))
@@ -479,25 +495,87 @@ func (server *Server) ensureChildImageAvailable() error {
 	return nil
 }
 
-func (server *Server) startChildContainer(session *Session) error {
+func (server *Server) createSessionInfrastructure(session *Session) error {
+	if err := server.ensureNetworkExists(session.SessionNetwork); err != nil {
+		return fmt.Errorf("failed to create session network: %v", err)
+	}
+
+	if err := server.startProxyContainer(session); err != nil {
+		_ = server.removeNetwork(session.SessionNetwork)
+		return fmt.Errorf("failed to start proxy container: %v", err)
+	}
+
+	if err := server.startClientContainer(session); err != nil {
+		_ = server.stopContainer(session.ProxyName)
+		_ = server.removeNetwork(session.SessionNetwork)
+		return fmt.Errorf("failed to start client container: %v", err)
+	}
+
+	return nil
+}
+
+func (server *Server) startProxyContainer(session *Session) error {
 	args := []string{
 		"run",
 		"-d",
 		"--rm",
-		"--name", session.ChildName,
-		"--network", server.sessionNetwork,
-		"-p", fmt.Sprintf("127.0.0.1:%d:%d", session.ChildHostPort, server.childPort),
+		"--name", session.ProxyName,
+		"--network", session.SessionNetwork,
+		"--network-alias", "proxy",
+		"-e", "UPSTREAM_HOST=mc-server",
+		"-e", "UPSTREAM_PORT=25565",
+		server.proxyImage,
 	}
-
-	if server.childPrivileged {
-		args = append(args, "--privileged")
-	}
-
-	args = append(args, server.childImage)
 
 	outputBytes, err := dockerCommand(args...).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("docker run failed: %v: %s", err, string(outputBytes))
+		return fmt.Errorf("docker run proxy failed: %v: %s", err, string(outputBytes))
+	}
+
+	connectArgs := []string{
+		"network",
+		"connect",
+		server.backendNetwork,
+		session.ProxyName,
+	}
+
+	outputBytes, err = dockerCommand(connectArgs...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("docker network connect failed: %v: %s", err, string(outputBytes))
+	}
+
+	return nil
+}
+
+func (server *Server) startClientContainer(session *Session) error {
+	args := []string{
+		"run",
+		"-d",
+		"--rm",
+		"--name", session.ClientName,
+		"--network", session.SessionNetwork,
+		"-p", fmt.Sprintf("127.0.0.1:%d:%d", session.ClientHostPort, server.clientPort),
+		"--shm-size", "512m",
+		"-e", "SERVER=proxy",
+		server.clientImage,
+	}
+
+	outputBytes, err := dockerCommand(args...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("docker run client failed: %v: %s", err, string(outputBytes))
+	}
+
+	return nil
+}
+
+func (server *Server) removeNetwork(networkName string) error {
+	outputBytes, err := dockerCommand("network", "rm", networkName).CombinedOutput()
+	if err != nil {
+		if strings.Contains(string(outputBytes), "not found") {
+			return nil
+		}
+
+		return fmt.Errorf("docker network rm failed: %v: %s", err, string(outputBytes))
 	}
 
 	return nil
@@ -622,14 +700,4 @@ func getEnvInt(name string, defaultValue int) int {
 	}
 
 	return parsedValue
-}
-
-func getEnvBool(name string, defaultValue bool) bool {
-	value := strings.TrimSpace(os.Getenv(name))
-	if value == "" {
-		return defaultValue
-	}
-
-	valueLower := strings.ToLower(value)
-	return valueLower == "1" || valueLower == "true" || valueLower == "yes" || valueLower == "on"
 }

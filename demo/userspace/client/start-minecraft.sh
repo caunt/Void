@@ -46,4 +46,4 @@ export MESA_GLSL_VERSION_OVERRIDE=330
 echo "--- Starting Minecraft ---"
 exec python3 -m portablemc start --demo release \
     --jvm-args "-XX:+UseG1GC -Djava.awt.headless=false" \
-	--server "$SERVER"
+	--server "${SERVER:-proxy}"
