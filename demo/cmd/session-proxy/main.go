@@ -705,6 +705,26 @@ func (server *Server) startSessionContainers(session *Session) error {
 	}
 	log.Printf("Session %s: Dashboard container %s started", session.ID, session.DashboardName)
 
+	// Wait briefly and verify dashboard container is still running before connecting to network
+	time.Sleep(500 * time.Millisecond)
+	
+	inspectArgs := []string{"inspect", "--format", "{{.State.Running}}", session.DashboardName}
+	inspectOutput, inspectErr := dockerCommand(inspectArgs...).Output()
+	if inspectErr != nil || strings.TrimSpace(string(inspectOutput)) != "true" {
+		log.Printf("Session %s: Dashboard container exited before network connection (running: %s, err: %v)", session.ID, strings.TrimSpace(string(inspectOutput)), inspectErr)
+		
+		// Get container logs to diagnose the issue
+		logsCmd := dockerCommand("logs", "--tail", "50", session.DashboardName)
+		if logsOutput, logsErr := logsCmd.CombinedOutput(); logsErr == nil {
+			log.Printf("Session %s: Dashboard container logs:\n%s", session.ID, string(logsOutput))
+		}
+		
+		_ = server.stopContainer(session.DashboardName)
+		_ = server.stopContainer(session.VoidName)
+		_ = server.stopContainer(session.ClientName)
+		return fmt.Errorf("dashboard container exited immediately after start")
+	}
+
 	// Connect dashboard to backend network to reach shared itzg
 	log.Printf("Session %s: Connecting dashboard to backend network", session.ID)
 	connectArgs = []string{
