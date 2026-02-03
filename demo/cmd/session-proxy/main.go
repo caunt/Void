@@ -923,8 +923,9 @@ func (server *Server) streamContainerLogs(containerName string) {
 		log.Printf("Starting log stream for container: %s", containerName)
 
 		logsCommand := dockerCommand("logs", "-f", containerName)
-		logsCommand.Stdout = newLogPrefixWriter("[" + containerName + "] ")
-		logsCommand.Stderr = newLogPrefixWriter("[" + containerName + "] ")
+		writer := newLogPrefixWriter("[" + containerName + "] ")
+		logsCommand.Stdout = writer
+		logsCommand.Stderr = writer
 
 		if err := logsCommand.Run(); err != nil {
 			// Only log if it's not a "No such container" error (container was stopped)
