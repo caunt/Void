@@ -28,6 +28,10 @@ const (
 	// containerLogTailLines is the number of log lines to retrieve when diagnosing
 	// container startup failures.
 	containerLogTailLines = 50
+
+	// containerLogsStartDelay is the time to wait before starting to stream container logs
+	// to ensure the container has fully started.
+	containerLogsStartDelay = 100 * time.Millisecond
 )
 
 type Session struct {
@@ -914,13 +918,13 @@ func (server *Server) streamContainerLogs(containerName string) {
 
 	go func() {
 		// Wait a moment for the container to start
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(containerLogsStartDelay)
 
 		log.Printf("Starting log stream for container: %s", containerName)
 
 		logsCommand := dockerCommand("logs", "-f", containerName)
-		logsCommand.Stdout = &logPrefixWriter{prefix: "[" + containerName + "] "}
-		logsCommand.Stderr = &logPrefixWriter{prefix: "[" + containerName + "] "}
+		logsCommand.Stdout = newLogPrefixWriter("[" + containerName + "] ")
+		logsCommand.Stderr = newLogPrefixWriter("[" + containerName + "] ")
 
 		if err := logsCommand.Run(); err != nil {
 			// Only log if it's not a "No such container" error (container was stopped)
@@ -934,9 +938,17 @@ func (server *Server) streamContainerLogs(containerName string) {
 type logPrefixWriter struct {
 	prefix     string
 	buffer     strings.Builder
+	mutex      sync.Mutex
+}
+
+func newLogPrefixWriter(prefix string) *logPrefixWriter {
+	return &logPrefixWriter{prefix: prefix}
 }
 
 func (writer *logPrefixWriter) Write(data []byte) (int, error) {
+	writer.mutex.Lock()
+	defer writer.mutex.Unlock()
+
 	writer.buffer.Write(data)
 	content := writer.buffer.String()
 
