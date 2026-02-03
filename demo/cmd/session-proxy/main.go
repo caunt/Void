@@ -919,8 +919,8 @@ func (server *Server) streamContainerLogs(containerName string) {
 		log.Printf("Starting log stream for container: %s", containerName)
 
 		logsCommand := dockerCommand("logs", "-f", containerName)
-		logsCommand.Stdout = &logPrefixWriter{prefix: "[" + containerName + "] ", isStdout: true}
-		logsCommand.Stderr = &logPrefixWriter{prefix: "[" + containerName + "] ", isStdout: false}
+		logsCommand.Stdout = &logPrefixWriter{prefix: "[" + containerName + "] "}
+		logsCommand.Stderr = &logPrefixWriter{prefix: "[" + containerName + "] "}
 
 		if err := logsCommand.Run(); err != nil {
 			// Only log if it's not a "No such container" error (container was stopped)
@@ -932,17 +932,33 @@ func (server *Server) streamContainerLogs(containerName string) {
 }
 
 type logPrefixWriter struct {
-	prefix   string
-	isStdout bool
+	prefix     string
+	buffer     strings.Builder
 }
 
 func (writer *logPrefixWriter) Write(data []byte) (int, error) {
-	lines := strings.Split(string(data), "\n")
+	writer.buffer.Write(data)
+	content := writer.buffer.String()
+
+	// Split by newlines and process complete lines
+	lines := strings.Split(content, "\n")
+
+	// Keep the last line in buffer if it doesn't end with newline
+	if !strings.HasSuffix(content, "\n") {
+		writer.buffer.Reset()
+		writer.buffer.WriteString(lines[len(lines)-1])
+		lines = lines[:len(lines)-1]
+	} else {
+		writer.buffer.Reset()
+	}
+
+	// Log all complete lines
 	for _, line := range lines {
 		if line != "" {
 			log.Printf("%s%s", writer.prefix, line)
 		}
 	}
+
 	return len(data), nil
 }
 
