@@ -9,7 +9,7 @@ The [**Essentials plugin**](https://github.com/caunt/Void/tree/main/src/Plugins/
 
 ## Server Redirection
 
-Use `/server [server-name]` to send yourself to another backend server. If no name is given, one is chosen at random. Register servers in the [**server configuration**](/docs/configuration/in-file/#proxy) or with the [**program argument**](/docs/configuration/program-arguments#servers) `--server`.
+Use `/server [server-name]` to send yourself to another backend server. If no name is given, one is chosen at random. Register servers in the [**server configuration**](/docs/configuration/in-file/#proxy) or with the [**program argument**](/docs/configuration/program-arguments/#servers) `--server`.
 
 ## Platform Commands
 

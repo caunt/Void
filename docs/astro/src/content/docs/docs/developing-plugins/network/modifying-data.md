@@ -16,7 +16,7 @@ On this page, we will proceed with this approach.
 
 ## Modifying Packets
 You can modify packets by canceling them and sending a modified copy manually.
-We will use previously defined [**Set Held Item (clientbound)**](/docs/developing-plugins/network/packets#defining-packets) packet as an example.
+We will use previously defined [**Set Held Item (clientbound)**](/docs/developing-plugins/network/packets/#defining-packets) packet as an example.
 ```csharp
 [Subscribe]
 public async ValueTask OnMessageReceived(MessageReceivedEvent @event, CancellationToken cancellationToken)
