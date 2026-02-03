@@ -20,17 +20,18 @@ import (
 )
 
 type Session struct {
-	ID                string
-	DashboardName     string
-	VoidName          string
-	ClientName        string
-	SessionNetworkName string
-	DashboardHostPort int
-	CreatedUtc        time.Time
-	ExpiresUtc        time.Time
-	DeleteTimer       *time.Timer
-	LastReadyCheckUtc time.Time
-	LastReady         bool
+	ID                  string
+	DashboardName       string
+	VoidName            string
+	ClientName          string
+	SessionNetworkName  string
+	DashboardHostPort   int
+	CreatedUtc          time.Time
+	ExpiresUtc          time.Time
+	DeleteTimer         *time.Timer
+	LastReadyCheckUtc   time.Time
+	LastReady           bool
+	LastNotReadyLogUtc  time.Time
 }
 
 type Server struct {
@@ -251,6 +252,7 @@ func (server *Server) isSessionReady(session *Session) bool {
 	server.sessionsLock.RLock()
 	lastCheckUtc := session.LastReadyCheckUtc
 	lastReady := session.LastReady
+	lastNotReadyLogUtc := session.LastNotReadyLogUtc
 	server.sessionsLock.RUnlock()
 
 	if !lastCheckUtc.IsZero() && now.Sub(lastCheckUtc) < 1*time.Second {
@@ -264,6 +266,9 @@ func (server *Server) isSessionReady(session *Session) bool {
 		_ = connection.Close()
 	}
 
+	server.sessionsLock.Lock()
+	defer server.sessionsLock.Unlock()
+
 	// Log state changes to help diagnose startup issues
 	if !lastReady && readyValue {
 		log.Printf("Session %s: Dashboard became ready on port %d", session.ID, session.DashboardHostPort)
@@ -271,15 +276,14 @@ func (server *Server) isSessionReady(session *Session) bool {
 		log.Printf("Session %s: Dashboard became unreachable on port %d", session.ID, session.DashboardHostPort)
 	} else if !readyValue && !lastCheckUtc.IsZero() {
 		// Only log every 10 seconds for "still not ready" to avoid spam
-		if now.Sub(lastCheckUtc) > 10*time.Second {
+		if lastNotReadyLogUtc.IsZero() || now.Sub(lastNotReadyLogUtc) >= 10*time.Second {
 			log.Printf("Session %s: Dashboard still not ready on port %d (error: %v)", session.ID, session.DashboardHostPort, err)
+			session.LastNotReadyLogUtc = now
 		}
 	}
 
-	server.sessionsLock.Lock()
 	session.LastReadyCheckUtc = now
 	session.LastReady = readyValue
-	server.sessionsLock.Unlock()
 
 	return readyValue
 }
