@@ -15,7 +15,6 @@ ENV DASHBOARD_IMAGE=dashboard:latest
 ENV VOID_IMAGE=terminal-void:latest
 ENV CLIENT_IMAGE=client:latest
 ENV ITZG_IMAGE=terminal-itzg:latest
-ENV DASHBOARD_PORT=8080
 
 COPY --from=build /out/session-proxy /usr/local/bin/session-proxy
 COPY userspace /opt/userspace
