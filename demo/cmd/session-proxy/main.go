@@ -700,7 +700,6 @@ func (server *Server) startSessionContainers(session *Session) error {
 		"--name", session.DashboardName,
 		"--network", session.SessionNetworkName,
 		"-p", fmt.Sprintf("127.0.0.1:%d:8080", session.DashboardHostPort),
-		"-e", fmt.Sprintf("VOID_CONTAINER_NAME=%s", session.VoidName),
 		"-e", fmt.Sprintf("CLIENT_CONTAINER_NAME=%s", session.ClientName),
 		server.dashboardImage,
 	}
