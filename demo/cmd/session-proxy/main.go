@@ -19,6 +19,17 @@ import (
 	"time"
 )
 
+const (
+	// dashboardStartupWaitDuration is the time to wait after starting the dashboard container
+	// before attempting to connect it to the backend network. This delay allows the container
+	// to initialize and prevents the "marked for removal" error if the container exits immediately.
+	dashboardStartupWaitDuration = 500 * time.Millisecond
+
+	// containerLogTailLines is the number of log lines to retrieve when diagnosing
+	// container startup failures.
+	containerLogTailLines = 50
+)
+
 type Session struct {
 	ID                  string
 	DashboardName       string
@@ -706,15 +717,31 @@ func (server *Server) startSessionContainers(session *Session) error {
 	log.Printf("Session %s: Dashboard container %s started", session.ID, session.DashboardName)
 
 	// Wait briefly and verify dashboard container is still running before connecting to network
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(dashboardStartupWaitDuration)
 	
 	inspectArgs := []string{"inspect", "--format", "{{.State.Running}}", session.DashboardName}
 	inspectOutput, inspectErr := dockerCommand(inspectArgs...).Output()
-	if inspectErr != nil || strings.TrimSpace(string(inspectOutput)) != "true" {
-		log.Printf("Session %s: Dashboard container exited before network connection (running: %s, err: %v)", session.ID, strings.TrimSpace(string(inspectOutput)), inspectErr)
+	
+	if inspectErr != nil {
+		log.Printf("Session %s: Failed to inspect dashboard container: %v", session.ID, inspectErr)
 		
 		// Get container logs to diagnose the issue
-		logsCmd := dockerCommand("logs", "--tail", "50", session.DashboardName)
+		logsCmd := dockerCommand("logs", "--tail", strconv.Itoa(containerLogTailLines), session.DashboardName)
+		if logsOutput, logsErr := logsCmd.CombinedOutput(); logsErr == nil {
+			log.Printf("Session %s: Dashboard container logs:\n%s", session.ID, string(logsOutput))
+		}
+		
+		_ = server.stopContainer(session.DashboardName)
+		_ = server.stopContainer(session.VoidName)
+		_ = server.stopContainer(session.ClientName)
+		return fmt.Errorf("failed to inspect dashboard container: %w", inspectErr)
+	}
+	
+	if strings.TrimSpace(string(inspectOutput)) != "true" {
+		log.Printf("Session %s: Dashboard container exited before network connection (running: %s)", session.ID, strings.TrimSpace(string(inspectOutput)))
+		
+		// Get container logs to diagnose the issue
+		logsCmd := dockerCommand("logs", "--tail", strconv.Itoa(containerLogTailLines), session.DashboardName)
 		if logsOutput, logsErr := logsCmd.CombinedOutput(); logsErr == nil {
 			log.Printf("Session %s: Dashboard container logs:\n%s", session.ID, string(logsOutput))
 		}
