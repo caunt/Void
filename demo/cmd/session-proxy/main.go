@@ -950,6 +950,7 @@ func (writer *logPrefixWriter) Write(data []byte) (int, error) {
 	writer.mutex.Lock()
 	defer writer.mutex.Unlock()
 
+	// strings.Builder.Write never returns an error
 	_, _ = writer.buffer.Write(data)
 	content := writer.buffer.String()
 
@@ -959,6 +960,7 @@ func (writer *logPrefixWriter) Write(data []byte) (int, error) {
 	// Keep the last line in buffer if it doesn't end with newline
 	if !strings.HasSuffix(content, "\n") {
 		writer.buffer.Reset()
+		// strings.Builder.WriteString never returns an error
 		_, _ = writer.buffer.WriteString(lines[len(lines)-1])
 		lines = lines[:len(lines)-1]
 	} else {
