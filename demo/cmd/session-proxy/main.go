@@ -41,7 +41,6 @@ type Server struct {
 	voidImage          string
 	clientImage        string
 	itzgImage          string
-	dashboardPort      int
 	sharedItzgStarted  bool
 	sharedItzgLock     sync.Mutex
 
@@ -58,7 +57,6 @@ func main() {
 		voidImage:         getEnvString("VOID_IMAGE", "terminal-void:latest"),
 		clientImage:       getEnvString("CLIENT_IMAGE", "client:latest"),
 		itzgImage:         getEnvString("ITZG_IMAGE", "terminal-itzg:latest"),
-		dashboardPort:     getEnvInt("DASHBOARD_PORT", 8080),
 		sharedItzgStarted: false,
 		sessions:          map[string]*Session{},
 	}
@@ -89,7 +87,7 @@ func main() {
 
 	log.Printf("Listening on http://%s", server.listenAddr)
 	log.Printf("Backend network: %s", server.backendNetwork)
-	log.Printf("Dashboard image: %s (port %d)", server.dashboardImage, server.dashboardPort)
+	log.Printf("Dashboard image: %s", server.dashboardImage)
 	log.Printf("Session TTL: %s", server.sessionTTL)
 
 	if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
