@@ -55,6 +55,7 @@ type Server struct {
 	itzgImage          string
 	sharedItzgStarted  bool
 	sharedItzgLock     sync.Mutex
+	redirectLogs       bool
 
 	sessionsLock sync.RWMutex
 	sessions     map[string]*Session
@@ -70,6 +71,7 @@ func main() {
 		clientImage:       getEnvString("CLIENT_IMAGE", "client:latest"),
 		itzgImage:         getEnvString("ITZG_IMAGE", "terminal-itzg:latest"),
 		sharedItzgStarted: false,
+		redirectLogs:      getEnvBool("REDIRECT_LOGS", false),
 		sessions:          map[string]*Session{},
 	}
 
@@ -101,6 +103,7 @@ func main() {
 	log.Printf("Backend network: %s", server.backendNetwork)
 	log.Printf("Dashboard image: %s", server.dashboardImage)
 	log.Printf("Session TTL: %s", server.sessionTTL)
+	log.Printf("Redirect logs: %v", server.redirectLogs)
 
 	if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("HTTP server failed: %v", err)
@@ -604,6 +607,9 @@ func (server *Server) ensureSharedItzgRunning() error {
 
 	server.sharedItzgStarted = true
 	log.Printf("Shared itzg server started: %s", containerName)
+
+	server.streamContainerLogs(containerName)
+
 	return nil
 }
 
@@ -655,6 +661,8 @@ func (server *Server) startSessionContainers(session *Session) error {
 	}
 	log.Printf("Session %s: Void-proxy container %s started", session.ID, session.VoidName)
 
+	server.streamContainerLogs(session.VoidName)
+
 	// Connect void to session network with alias "proxy"
 	log.Printf("Session %s: Connecting void-proxy to session network with alias 'proxy'", session.ID)
 	connectArgs := []string{
@@ -691,6 +699,8 @@ func (server *Server) startSessionContainers(session *Session) error {
 	}
 	log.Printf("Session %s: Client container %s started", session.ID, session.ClientName)
 
+	server.streamContainerLogs(session.ClientName)
+
 	// 4. Start dashboard container (connected to session network for routing)
 	// Note: We don't use --rm here so we can retrieve logs if it fails to start
 	log.Printf("Session %s: Starting dashboard container %s on port %d", session.ID, session.DashboardName, session.DashboardHostPort)
@@ -712,6 +722,8 @@ func (server *Server) startSessionContainers(session *Session) error {
 		return fmt.Errorf("failed to start dashboard container: %v: %s", err, string(outputBytes))
 	}
 	log.Printf("Session %s: Dashboard container %s started", session.ID, session.DashboardName)
+
+	server.streamContainerLogs(session.DashboardName)
 
 	// Wait briefly and verify dashboard container is still running before connecting to network
 	time.Sleep(dashboardStartupWaitDuration)
@@ -893,6 +905,45 @@ func dockerCommand(arguments ...string) *exec.Cmd {
 	command := exec.Command("docker", arguments...)
 	command.Env = os.Environ()
 	return command
+}
+
+func (server *Server) streamContainerLogs(containerName string) {
+	if !server.redirectLogs {
+		return
+	}
+
+	go func() {
+		// Wait a moment for the container to start
+		time.Sleep(100 * time.Millisecond)
+
+		log.Printf("Starting log stream for container: %s", containerName)
+
+		logsCommand := dockerCommand("logs", "-f", containerName)
+		logsCommand.Stdout = &logPrefixWriter{prefix: "[" + containerName + "] ", isStdout: true}
+		logsCommand.Stderr = &logPrefixWriter{prefix: "[" + containerName + "] ", isStdout: false}
+
+		if err := logsCommand.Run(); err != nil {
+			// Only log if it's not a "No such container" error (container was stopped)
+			if !strings.Contains(err.Error(), "No such container") {
+				log.Printf("Log streaming ended for %s: %v", containerName, err)
+			}
+		}
+	}()
+}
+
+type logPrefixWriter struct {
+	prefix   string
+	isStdout bool
+}
+
+func (writer *logPrefixWriter) Write(data []byte) (int, error) {
+	lines := strings.Split(string(data), "\n")
+	for _, line := range lines {
+		if line != "" {
+			log.Printf("%s%s", writer.prefix, line)
+		}
+	}
+	return len(data), nil
 }
 
 func withBasicLogging(next http.Handler) http.Handler {
