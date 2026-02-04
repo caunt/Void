@@ -29,7 +29,7 @@ export LD_LIBRARY_PATH=/usr/local/tmux/lib
 /usr/local/tmux/bin/tmux set-option -g -w window-size largest
 
 # Start ttyd
-exec /usr/local/bin/ttyd -R -p 80 sh -lc 'exec env LD_LIBRARY_PATH=/usr/local/tmux/lib /usr/local/tmux/bin/tmux attach -t main'
+exec /usr/local/bin/ttyd -W -p 80 sh -lc 'exec env LD_LIBRARY_PATH=/usr/local/tmux/lib /usr/local/tmux/bin/tmux attach -t main'
 EOF
 
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
