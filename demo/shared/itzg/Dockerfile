@@ -12,4 +12,23 @@ FROM itzg/minecraft-server
 COPY --from=ttyd_source /usr/bin/ttyd /usr/local/bin/ttyd
 COPY --from=tmux_source /out/usr/local/tmux /usr/local/tmux
 
-ENTRYPOINT ["sh","-lc","set -e; export LD_LIBRARY_PATH=/usr/local/tmux/lib; /usr/local/tmux/bin/tmux start-server; /usr/local/tmux/bin/tmux set-option -g -w aggressive-resize off; /usr/local/tmux/bin/tmux set-option -g -w window-size largest; /usr/local/tmux/bin/tmux has-session -t main 2>/dev/null || /usr/local/tmux/bin/tmux new-session -d -s main sh -lc 'unset LD_LIBRARY_PATH; exec /start'; exec /usr/local/bin/ttyd -R -p 80 sh -lc 'exec env LD_LIBRARY_PATH=/usr/local/tmux/lib /usr/local/tmux/bin/tmux attach -t main'"]
+COPY <<EOF /entrypoint.sh
+#!/bin/sh
+set -e
+
+# Point to our custom tmux libs
+export LD_LIBRARY_PATH=/usr/local/tmux/lib
+
+# Create the session (detached)
+/usr/local/tmux/bin/tmux new-session -d -s main -n shell sh -lc 'unset LD_LIBRARY_PATH; exec /start' || true
+
+# Set options
+/usr/local/tmux/bin/tmux set-option -g -w aggressive-resize off
+/usr/local/tmux/bin/tmux set-option -g -w window-size largest
+
+# Start ttyd
+exec /usr/local/bin/ttyd -R -p 80 sh -lc 'exec env LD_LIBRARY_PATH=/usr/local/tmux/lib /usr/local/tmux/bin/tmux attach -t main'
+EOF
+
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]

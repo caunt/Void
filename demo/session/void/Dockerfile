@@ -14,5 +14,23 @@ COPY --from=tmux_source /out/usr/local/tmux /usr/local/tmux
 
 ENV ARGUMENTS=""
 
-ENTRYPOINT ["/usr/local/bin/ttyd"]
-CMD ["-W","-p","80","sh","-lc","exec env LD_LIBRARY_PATH=/usr/local/tmux/lib /usr/local/tmux/bin/tmux new-session -A -s main sh -lc 'unset LD_LIBRARY_PATH; exec dotnet /app/Void.Proxy.dll $ARGUMENTS'"]
+COPY <<EOF /entrypoint.sh
+#!/bin/sh
+set -e
+
+# Point to our custom tmux libs
+export LD_LIBRARY_PATH=/usr/local/tmux/lib
+
+# Create the session (detached)
+/usr/local/tmux/bin/tmux new-session -d -s main -n shell sh -lc 'unset LD_LIBRARY_PATH; exec dotnet /app/Void.Proxy.dll $ARGUMENTS' || true
+
+# Set options
+/usr/local/tmux/bin/tmux set-option -g -w aggressive-resize off
+/usr/local/tmux/bin/tmux set-option -g -w window-size largest
+
+# Start ttyd
+exec /usr/local/bin/ttyd -R -p 80 sh -lc 'exec env LD_LIBRARY_PATH=/usr/local/tmux/lib /usr/local/tmux/bin/tmux attach -t main'
+EOF
+
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
