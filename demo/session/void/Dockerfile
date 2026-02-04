@@ -14,7 +14,7 @@ COPY --from=tmux_source /out/usr/local/tmux /usr/local/tmux
 
 ENV ARGUMENTS=""
 
-COPY <<EOF /entrypoint.sh
+COPY <<'EOF' /entrypoint.sh
 #!/bin/sh
 set -e
 

@@ -12,7 +12,7 @@ FROM itzg/minecraft-server
 COPY --from=ttyd_source /usr/bin/ttyd /usr/local/bin/ttyd
 COPY --from=tmux_source /out/usr/local/tmux /usr/local/tmux
 
-COPY <<EOF /entrypoint.sh
+COPY <<'EOF' /entrypoint.sh
 #!/bin/sh
 set -e
 
