@@ -22,7 +22,7 @@ set -e
 export LD_LIBRARY_PATH=/usr/local/tmux/lib
 
 # Create the session (detached)
-/usr/local/tmux/bin/tmux new-session -d -s main -n shell sh -lc 'unset LD_LIBRARY_PATH; exec dotnet /app/Void.Proxy.dll $ARGUMENTS' || true
+/usr/local/tmux/bin/tmux new-session -d -s main -n shell sh -lc 'trap "echo \"Why would you press Ctrl+C here?\"" INT; unset LD_LIBRARY_PATH; while true; do dotnet /app/Void.Proxy.dll $ARGUMENTS; done' || true
 
 # Set options
 /usr/local/tmux/bin/tmux set-option -g -w aggressive-resize off
