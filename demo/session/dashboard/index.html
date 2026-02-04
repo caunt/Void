@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, viewport-fit=cover" />
+  <title>Void + noVNC</title>
+  <style>
+    :root {
+      --bg-color: #0f0b1e;
+      --card-bg: #1a162d;
+      --card-border: #4c2f7a;
+      --accent: #d946ef;
+      --scrollbar-bg: #0f0b1e;
+      --scrollbar-thumb: #4c2f7a;
+      --scrollbar-thumb-hover: #6d28d9;
+    }
+
+    /* --- Scrollbar Styling --- */
+    /* Firefox */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-bg);
+    }
+
+    /* Chrome, Edge, Safari */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--scrollbar-bg);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background-color: var(--scrollbar-thumb);
+      border-radius: 6px;
+      border: 2px solid var(--scrollbar-bg);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background-color: var(--scrollbar-thumb-hover);
+    }
+
+    /* --- Core Layout --- */
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background-color: var(--bg-color);
+      /* Matching gradient from previous page */
+      background-image: radial-gradient(circle at 50% 0%, #2e1065 0%, #0f0b1e 75%);
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+      /* Prevent scrolling on PC/Fullscreen */
+    }
+
+    .root {
+      height: 100%;
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      box-sizing: border-box;
+      /* On mobile, we might need scrolling if content is too tall */
+      overflow: hidden;
+    }
+
+    .left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+      /* Ensure left column doesn't overflow horizontally */
+    }
+
+    .right {
+      flex: 2;
+      /* Gives VNC more space by default */
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pane {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      position: relative;
+      /* Context for absolute positioning if needed */
+    }
+
+    /* --- Iframe Styling --- */
+    iframe {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      background: #000;
+      /* Dark placeholder while loading */
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      transition: border-color 0.3s ease;
+    }
+
+    iframe:focus,
+    iframe:hover {
+      border-color: var(--accent);
+      outline: none;
+    }
+
+    /* --- Responsive / Mobile Tweak --- */
+    /* When width is narrow (phones/portrait tablets), stack everything vertically */
+    @media (max-width: 900px) {
+      .root {
+        flex-direction: column-reverse;
+        /* Put VNC (right) on top, controls (left) on bottom */
+        overflow-y: auto;
+        /* Allow scrolling on phone */
+      }
+
+      .left {
+        flex: none;
+        /* Let content determine height or fixed height */
+        height: 50vh;
+        /* Give controls half the screen height when scrolled */
+      }
+
+      .right {
+        flex: none;
+        height: 60vh;
+        /* VNC gets significant height */
+        min-height: 400px;
+      }
+
+      /* Reset global scroll blocking for mobile experience */
+      html,
+      body {
+        overflow: auto;
+        height: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="root">
+
+    <div class="left">
+      <div class="pane">
+        <iframe src="void/" title="Void Panel"></iframe>
+      </div>
+      <div class="pane">
+        <iframe src="itzg/" title="Itzg Panel"></iframe>
+      </div>
+    </div>
+
+    <div class="right">
+      <iframe src="vnc/vnc.html?autoconnect=true&reconnect=true&pointer_mode=relative&view_clip=true&resize=scale&path=__PATH__/websockify" title="noVNC Session" allow="clipboard-read; clipboard-write; fullscreen"></iframe>
+    </div>
+  </div>
+</body>
+
+</html>

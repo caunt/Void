@@ -1,0 +1,46 @@
+name: demo
+services:
+  controller:
+    container_name: controller
+    build:
+      context: .
+      dockerfile: shared/controller/Dockerfile
+    restart: unless-stopped
+    networks:
+      - controller_and_client
+      - controller_and_void
+      - controller_and_dashboard
+    environment:
+      REDIRECT_LOGS: ${REDIRECT_LOGS}
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  itzg:
+    container_name: itzg
+    build:
+      context: .
+      dockerfile: shared/itzg/Dockerfile
+    restart: unless-stopped
+    networks:
+      - itzg_and_void
+      - itzg_and_dashboard
+    environment:
+      EULA: "true"
+      TYPE: "PAPER"
+      ONLINE_MODE: "false"
+      RCON_CMDS_ON_CONNECT:  |-
+        time set day
+
+networks:
+  controller_and_client:
+    name: controller_and_client
+  controller_and_void:
+    name: controller_and_void
+  controller_and_dashboard:
+    name: controller_and_dashboard
+  itzg_and_void:
+    name: itzg_and_void
+  itzg_and_dashboard:
+    name: itzg_and_dashboard

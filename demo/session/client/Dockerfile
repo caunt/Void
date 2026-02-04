@@ -34,7 +34,7 @@ RUN sed -i "s/'view_only', false/'view_only', false/g" /opt/novnc/app/ui.js && \
     sed -i "s/showDotCursor: false/showDotCursor: true/g" /opt/novnc/app/ui.js
 
 # Splash Screen script
-RUN echo 'wm attributes . -fullscreen 1; . configure -bg black; label .l -text "Starting Minecraft..." -font {Helvetica 30} -fg white -bg black; pack .l -expand 1 -fill both' > /opt/splash.tcl
+RUN echo 'wm attributes . -fullscreen 1; . configure -bg black; label .l -text "Starting Minecraft...\n\n\nThis can take up to 1 minute." -font {Helvetica 30} -fg white -bg black; pack .l -expand 1 -fill both' > /opt/splash.tcl
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-minimal \
@@ -53,9 +53,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     binutils \
     # --- SURGERY ---
-    && find /usr/lib/x86_64-linux-gnu/dri/ -type f ! -name "swrast_dri.so" -delete \
-    && strip --strip-unneeded /usr/lib/x86_64-linux-gnu/libLLVM-15.so.1 \
-    && strip --strip-unneeded /usr/lib/x86_64-linux-gnu/dri/swrast_dri.so \
+    && find /usr/lib/*/dri/ -type f ! -name "swrast_dri.so" -delete \
+    && strip --strip-unneeded /usr/lib/*/libLLVM-15.so.1 \
+    && strip --strip-unneeded /usr/lib/*/dri/swrast_dri.so \
     # --- REFINED PYTHON PRUNING ---
     # We kept 'email' this time because http.client needs it!
     && rm -rf /usr/lib/python3.11/sqlite3 \
@@ -71,8 +71,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /usr/share/doc /usr/share/man /usr/share/info \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
-COPY start-minecraft.sh /start-minecraft.sh
-RUN sed -i 's/\r$//' /start-minecraft.sh && chmod +x /start-minecraft.sh
+COPY start.sh /start.sh
+RUN sed -i 's/\r$//' /start.sh && chmod +x /start.sh
 
-EXPOSE 6080
-CMD ["/start-minecraft.sh"]
+EXPOSE 80
+CMD ["/start.sh"]

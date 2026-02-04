@@ -7,10 +7,12 @@ RUN set -e; \
   cp /usr/bin/tmux /out/usr/local/tmux/bin/; \
   ldd /usr/bin/tmux | awk '$3 ~ /^\// {print $3}' | grep -vE '/ld-linux|/libc\.so' | while read -r libraryPath; do cp "$libraryPath" /out/usr/local/tmux/lib/; done
 
-FROM itzg/minecraft-server
+FROM caunt/void:dev
 
 COPY --from=ttyd_source /usr/bin/ttyd /usr/local/bin/ttyd
 COPY --from=tmux_source /out/usr/local/tmux /usr/local/tmux
 
+ENV ARGUMENTS=""
+
 ENTRYPOINT ["/usr/local/bin/ttyd"]
-CMD ["-p","7681","-W","sh","-lc","exec env LD_LIBRARY_PATH=/usr/local/tmux/lib /usr/local/tmux/bin/tmux new-session -A -s main sh -lc 'unset LD_LIBRARY_PATH; exec /start'"]
+CMD ["-W","-p","80","sh","-lc","exec env LD_LIBRARY_PATH=/usr/local/tmux/lib /usr/local/tmux/bin/tmux new-session -A -s main sh -lc 'unset LD_LIBRARY_PATH; exec dotnet /app/Void.Proxy.dll $ARGUMENTS'"]
