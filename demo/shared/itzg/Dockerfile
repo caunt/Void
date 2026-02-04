@@ -12,6 +12,4 @@ FROM itzg/minecraft-server
 COPY --from=ttyd_source /usr/bin/ttyd /usr/local/bin/ttyd
 COPY --from=tmux_source /out/usr/local/tmux /usr/local/tmux
 
-Will this work correctly to survive ttyd page refreshes?
-
 ENTRYPOINT ["sh","-lc","set -e; export LD_LIBRARY_PATH=/usr/local/tmux/lib; /usr/local/tmux/bin/tmux start-server; /usr/local/tmux/bin/tmux set-option -g -w aggressive-resize off; /usr/local/tmux/bin/tmux set-option -g -w window-size largest; /usr/local/tmux/bin/tmux has-session -t main 2>/dev/null || /usr/local/tmux/bin/tmux new-session -d -s main sh -lc 'unset LD_LIBRARY_PATH; exec /start'; exec /usr/local/bin/ttyd -R -p 80 sh -lc 'exec env LD_LIBRARY_PATH=/usr/local/tmux/lib /usr/local/tmux/bin/tmux attach -t main'"]
