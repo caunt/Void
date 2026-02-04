@@ -36,7 +36,7 @@ x11vnc -ncache_cr -display :0 -nopw -forever -shared -rfbport 5900 -bg \
 sleep 1
 
 # 6. Start Websockify
-/opt/websockify/run --web=/opt/novnc 6080 127.0.0.1:5900 &
+/opt/websockify/run --web=/opt/novnc 80 127.0.0.1:5900 &
 
 # 7. Start Minecraft
 export LIBGL_ALWAYS_SOFTWARE=1
@@ -46,4 +46,4 @@ export MESA_GLSL_VERSION_OVERRIDE=330
 echo "--- Starting Minecraft ---"
 exec python3 -m portablemc start --demo release \
     --jvm-args "-XX:+UseG1GC -Djava.awt.headless=false" \
-	--server "$SERVER"
+	$PORTABLEMC_ARGUMENTS

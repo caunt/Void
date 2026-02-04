@@ -1,0 +1,39 @@
+services:
+  dashboard:
+    build: session/dashboard
+    restart: unless-stopped
+    networks:
+      - default
+      - controller_and_dashboard
+      - itzg_and_dashboard
+  
+  client:
+    build: session/client
+    restart: unless-stopped
+    networks:
+      - default
+      - controller_and_client
+    environment:
+      PORTABLEMC_ARGUMENTS: --server void
+      
+  void:
+    build: session/void
+    restart: unless-stopped
+    networks:
+      - default
+      - itzg_and_void
+      - controller_and_void
+    environment:
+      ARGUMENTS: --offline --ignore-file-servers --server itzg
+
+networks:
+  controller_and_client:
+    external: true
+  controller_and_void:
+    external: true
+  controller_and_dashboard:
+    external: true
+  itzg_and_void:
+    external: true
+  itzg_and_dashboard:
+    external: true
