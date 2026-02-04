@@ -1,4 +1,4 @@
-FROM tsl0922/ttyd:latest AS ttyd_source
+FROM tsl0922/ttyd AS ttyd_source
 
 FROM debian:bookworm-slim AS tmux_source
 RUN apt-get update && apt-get install -y --no-install-recommends tmux && rm -rf /var/lib/apt/lists/*
