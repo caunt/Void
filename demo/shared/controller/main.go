@@ -243,6 +243,11 @@ func (server *Server) isSessionReady(session *Session) bool {
 	}
 
 	probe := func(host string) bool {
+		if strings.TrimSpace(host) == "" {
+			log.Printf("Host for probing is still empty, skipping probe")
+			return false
+		}
+
 		request, err := http.NewRequest(http.MethodGet, "http://"+host+"/", nil)
 		if err != nil {
 			log.Printf("Failed to create probe request for host %s: %v", host, err)
