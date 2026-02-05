@@ -8,6 +8,7 @@
       "pull-request-footer": "This PR was generated with Release Please.",
       "draft": false,
       "changelog-path": "CHANGELOG.md",
+	  "pull-request-title-pattern": "chore${scope}: 📝 release${component} ${version}",
 	
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true
