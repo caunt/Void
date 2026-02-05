@@ -20,15 +20,32 @@ wish /opt/splash.tcl &
 mkdir -p config
 
 cat <<EOF > options.txt
-rawMouseInput:false
-mouseSensitivity:0
-pauseOnLostFocus:false
-renderDistance:4
 ao:false
-particles:0
-maxFps:50
-touchscreen:true
+cloudRange:128
+cutoutLeaves:false
+enableVsync:false
+entityDistanceScaling:0.5
+entityShadows:false
+gamma:1.0
+graphicsPreset:"custom"
+joinedFirstServer:true
+maxAnisotropyBit:2
+maxFps:30
+mipmapLevels:0
+mouseSensitivity:0.0
 narrator:0
+particles:2
+pauseOnLostFocus:false
+prioritizeChunkUpdates:0
+rawMouseInput:false
+renderClouds:"fast"
+renderDistance:8
+simulationDistance:5
+syncChunkWrites:false
+textureFiltering:0
+touchscreen:true
+tutorialStep:find_tree
+vignette:false
 EOF
 
 cat <<EOF > config/sodium-options.json
