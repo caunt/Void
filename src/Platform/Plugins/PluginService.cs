@@ -37,7 +37,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
 
     public async ValueTask LoadPluginsAsync(string path = DefaultPluginsPath, CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("Loading environment plugins");
+        logger.LogDebug("Loading environment plugins");
         await LoadEnvironmentPluginsAsync(cancellationToken);
 
         logger.LogDebug("Loading embedded plugins");
