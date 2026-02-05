@@ -14,7 +14,8 @@ services:
       - default
       - controller_and_client
     environment:
-      PORTABLEMC_ARGUMENTS: --server void
+      PORTABLEMC_ARGUMENTS: --join-server void
+    cpus: 4.0
       
   void:
     build: session/void

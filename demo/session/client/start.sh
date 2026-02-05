@@ -4,7 +4,7 @@ set -e
 rm -f /tmp/.X0-lock
 
 # 1. Start Display
-Xvfb :0 -screen 0 1920x1080x24 &
+Xvfb :0 -screen 0 1280x720x24 &
 sleep 1
 
 # 2. Start Window Manager
@@ -17,8 +17,9 @@ wish /opt/splash.tcl &
 
 # 4. THE MAGIC: Pre-configure Minecraft for VNC
 # We force Raw Input OFF and drop render distance to 4 to save CPU
-mkdir -p /root/.minecraft
-cat <<EOF > /root/.minecraft/options.txt
+mkdir -p config
+
+cat <<EOF > options.txt
 rawMouseInput:false
 mouseSensitivity:0
 pauseOnLostFocus:false
@@ -27,6 +28,34 @@ ao:false
 particles:0
 maxFps:50
 touchscreen:true
+narrator:0
+EOF
+
+cat <<EOF > config/sodium-options.json
+{
+  "advanced": {
+    "enable_memory_tracing": false,
+    "use_advanced_staging_buffers": true,
+    "cpu_render_ahead_limit": 3
+  },
+  "performance": {
+    "chunk_builder_threads": 0,
+    "chunk_build_defer_mode": "ALWAYS",
+    "animate_only_visible_textures": true,
+    "use_entity_culling": true,
+    "use_fog_occlusion": true,
+    "use_block_face_culling": true,
+    "use_no_error_g_l_context": true,
+    "quad_splitting_mode": "SAFE"
+  },
+  "notifications": {
+    "has_cleared_donation_button": false,
+    "has_seen_donation_prompt": false
+  },
+  "debug": {
+    "terrain_sorting_enabled": true
+  }
+}
 EOF
 
 # 5. Start x11vnc with ONLY guaranteed options
@@ -38,12 +67,14 @@ sleep 1
 # 6. Start Websockify
 /opt/websockify/run --web=/opt/novnc 80 127.0.0.1:5900 &
 
-# 7. Start Minecraft
+# 7. Download Sodium
+mkdir -p mods
+curl -L -o mods/sodium.jar https://mediafilez.forgecdn.net/files/7527/475/sodium-neoforge-0.8.4%2Bmc1.21.11.jar
+
+# 8. Start Minecraft
 export LIBGL_ALWAYS_SOFTWARE=1
 export MESA_GL_VERSION_OVERRIDE=3.3
 export MESA_GLSL_VERSION_OVERRIDE=330
 
 echo "--- Starting Minecraft ---"
-exec python3 -m portablemc start --demo release \
-    --jvm-args "-XX:+UseG1GC -Djava.awt.headless=false" \
-	$PORTABLEMC_ARGUMENTS
+exec /opt/portablemc start neoforge:1.21.11:unstable --demo --mc-dir . --jvm-arg="-Djava.awt.headless=false" $PORTABLEMC_ARGUMENTS
