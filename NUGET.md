@@ -10,7 +10,7 @@
 
 ### **Getting Started**
 * [**Running Guide**](https://void.caunt.world/docs/getting-started/running/)
-* ❗ [**Supported Features**](https://void.caunt.world/docs/getting-started/features/)
+* [**Supported Features**](https://void.caunt.world/docs/getting-started/features/) ❗
 
 ### **Developing Plugins**
 * 🛠️ [Plugin Development Kit](https://github.com/caunt/Void/releases/latest/download/plugin-devkit.zip)
