@@ -42,6 +42,7 @@
 	<ItemGroup>
 		<PackageReference Include="DotNetGraph" Version="3.3.0" />
 		<PackageReference Include="DryIoc.Microsoft.DependencyInjection" Version="8.0.0-preview-04" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
 		<PackageReference Include="NuGet.PackageManagement" Version="7.0.1" />
 		<PackageReference Include="Samboy063.Tomlet" Version="6.2.0" />
 		<PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
