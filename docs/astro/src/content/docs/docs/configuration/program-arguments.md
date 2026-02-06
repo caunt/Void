@@ -18,28 +18,33 @@ Usage:
   Void.Proxy.Debug [options]
 
 Options:
-  -o, --override <override>                                        Register an additional server override to redirect players based on hostname they are connecting with.
-                                                                   Example:
-                                                                   --ignore-file-servers
-                                                                   --server 127.0.0.1:25565
-                                                                   --override vanilla.example.org=args-server-1
-                                                                   If you configured server in file:
-                                                                   --override vanilla.example.org=lobby
-  -p, --plugin <plugin>                                            Provides a path to the file, directory or URL to load plugin.
-  -r, --repository <repository>                                    Provides a URI to NuGet repository.
-                                                                   Examples:
-                                                                   --repository https://nuget.example.com/v3/index.json
-                                                                   --repository https://username:password@nuget.example.com/v3/index.json
-  --forwarding-modern-key <forwarding-modern-key>                  Sets the secret key for modern forwarding
-  --ignore-file-servers                                            Ignore servers specified in configuration files
-  --interface <interface>                                          Sets the listening network interface
-  --logging <Critical|Debug|Error|Information|None|Trace|Warning>  Sets the logging level
-  --offline                                                        Allows players to connect without Mojang authorization
-  --port <port>                                                    Sets the listening port
-  --read-only                                                      Disables saving changes to the configuration files
-  --server <server>                                                Registers an additional server in format <host>:<port> or <host> (port defaults to 25565)
-  -?, -h, --help                                                   Show help and usage information
-  --version                                                        Show version information
+  -o, --override <override>                              Register an additional server override to redirect players
+                                                         based on hostname they are connecting with.
+                                                         Example:
+                                                         --ignore-file-servers
+                                                         --server 127.0.0.1:25565
+                                                         --override vanilla.example.org=args-server-1
+                                                         If you configured server in file:
+                                                         --override vanilla.example.org=lobby
+  -p, --plugin <plugin>                                  Provides a path to the file, directory or URL to load plugin.
+  -r, --repository <repository>                          Provides a URI to NuGet repository.
+                                                         Examples:
+                                                         --repository https://nuget.example.com/v3/index.json
+                                                         --repository
+                                                         https://username:password@nuget.example.com/v3/index.json
+  --enable-nuget-logging                                 Enables detailed logging for NuGet operations.
+  --forwarding-modern-key <forwarding-modern-key>        Sets the secret key for modern forwarding
+  --ignore-file-servers                                  Ignore servers specified in configuration files
+  --interface <interface>                                Sets the listening network interface
+  --logging                                              Sets the logging level
+  <Critical|Debug|Error|Information|None|Trace|Warning>
+  --offline                                              Allows players to connect without Mojang authorization
+  --port <port>                                          Sets the listening port
+  --read-only                                            Disables saving changes to the configuration files
+  --server <server>                                      Registers an additional server in format <host>:<port> or
+                                                         <host> (port defaults to 25565)
+  -?, -h, --help                                         Show help and usage information
+  --version                                              Show version information
 ```
 
 ## Authentication
@@ -114,6 +119,8 @@ Options:
   Allows you to specify plugins to load.
 - `--repository`
   Provides a URI to a NuGet repository. You can specify multiple repositories and include credentials in the URI using the format `https://username:password@nuget.example.com/v3/index.json`.
+- `--enable-nuget-logging`
+  Enables detailed logging for NuGet operations. This is useful for troubleshooting plugin dependency resolution issues.
 
   ```bash title="Example Usage"
   ./void-linux-x64 \
@@ -126,6 +133,12 @@ Options:
   ./void-linux-x64 \
     --plugin /home/YourPlugin.dll \
     --repository https://username:password@nuget.example.com/v3/index.json
+  ```
+
+  ```bash title="Example with NuGet Logging"
+  ./void-linux-x64 \
+    --plugin /home/YourPlugin.dll \
+    --enable-nuget-logging
   ```
 
 ## Logging
