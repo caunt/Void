@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using Void.Minecraft.Commands.Brigadier.ArgumentTypes;
 using Void.Minecraft.Commands.Brigadier.Tree;
 using Void.Proxy.Api.Commands;
 
@@ -54,10 +55,31 @@ public record CommandContext(
         if (!Arguments.TryGetValue(name, out var argument))
             return false;
 
-        if (argument.GenericResult is not TType result)
-            throw new ArgumentException($"Argument '{name}' is defined as {argument.GenericResult}, not {typeof(TType)}");
-
-        type = result;
-        return true;
+        switch (argument.Result)
+        {
+            case BoolArgumentValue boolValue when typeof(TType) == typeof(bool):
+                type = (TType)(object)boolValue.Value;
+                return true;
+            case IntegerArgumentValue intValue when typeof(TType) == typeof(int):
+                type = (TType)(object)intValue.Value;
+                return true;
+            case FloatArgumentValue floatValue when typeof(TType) == typeof(float):
+                type = (TType)(object)floatValue.Value;
+                return true;
+            case LongArgumentValue longValue when typeof(TType) == typeof(long):
+                type = (TType)(object)longValue.Value;
+                return true;
+            case DoubleArgumentValue doubleValue when typeof(TType) == typeof(double):
+                type = (TType)(object)doubleValue.Value;
+                return true;
+            case StringArgumentValue stringValue when typeof(TType) == typeof(string):
+                type = (TType)(object)stringValue.Value;
+                return true;
+            case TType result:
+                type = result;
+                return true;
+            default:
+                throw new ArgumentException($"Argument '{name}' is defined as {argument.Result.GetType()}, not {typeof(TType)}");
+        }
     }
 }
