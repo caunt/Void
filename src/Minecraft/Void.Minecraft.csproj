@@ -1,22 +1,49 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<TargetFramework>net10.0</TargetFramework>
-		<Nullable>enable</Nullable>
-		<DebugType>embedded</DebugType>
-		<LangVersion>preview</LangVersion>
-	</PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <DebugType>embedded</DebugType>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
 
-	<PropertyGroup>
-		<PackageId>Void.Minecraft</PackageId>
-	</PropertyGroup>
+  <PropertyGroup>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>Void.Minecraft</PackageId>
+    <PackageTags>Minecraft;Server;Proxy;BungeeCord;Velocity;Void;Bedrock;Java</PackageTags>
+    <PackageProjectUrl>https://void.caunt.world/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/caunt/Void</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryBranch>main</RepositoryBranch>
 
-	<ItemGroup>
-	  <None Include="Nbt\SharpNBT\SharpNBT.csproj" />
-	</ItemGroup>
+    <Authors>caunt</Authors>
+    <Company>Void</Company>
+    <Description>⭐ Minecraft API for Void - Minecraft Proxy for Modded Servers - https://void.caunt.world/</Description>
 
-	<ItemGroup>
-		<ProjectReference Include="..\Api\Void.Proxy.Api.csproj" />
-	</ItemGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>logo.128x128.png</PackageIcon>
+
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)../../README.md" Pack="true" PackagePath="" />
+    <None Include="$(MSBuildThisFileDirectory)../../LICENSE" Pack="true" PackagePath="" />
+    <None Include="$(MSBuildThisFileDirectory)../../docs/astro/public/logo.128x128.png" Pack="true" PackagePath="" />
+    <None Include="Nbt\SharpNBT\SharpNBT.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Api\Void.Proxy.Api.csproj" />
+  </ItemGroup>
 
 </Project>
