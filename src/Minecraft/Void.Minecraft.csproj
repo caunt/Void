@@ -20,7 +20,7 @@
     <Company>Void</Company>
     <Description>⭐ Minecraft API for Void - Minecraft Proxy for Modded Servers - https://void.caunt.world/</Description>
 
-    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReadmeFile>NUGET.md</PackageReadmeFile>
     <PackageIcon>logo.128x128.png</PackageIcon>
 
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
@@ -32,7 +32,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)../../README.md" Pack="true" PackagePath="" />
+    <None Include="$(MSBuildThisFileDirectory)../../NUGET.md" Pack="true" PackagePath="" />
     <None Include="$(MSBuildThisFileDirectory)../../LICENSE" Pack="true" PackagePath="" />
     <None Include="$(MSBuildThisFileDirectory)../../docs/astro/public/logo.128x128.png" Pack="true" PackagePath="" />
     <None Include="Nbt\SharpNBT\SharpNBT.csproj" />
