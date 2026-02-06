@@ -37,7 +37,7 @@ public class Plugin(IDependencyService dependencies, IConfigurationService confi
         {
             services.AddSingleton(settings);
             services.AddScoped<ForwardingService>();
-        });
+        }, activate: false);
 
         console.EnsureOptionDiscovered(ForwardingModernKeyOption);
     }
