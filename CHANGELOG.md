@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.10](https://github.com/caunt/Void/compare/v0.5.9...v0.5.10) (2026-02-06)
+
+
+### Features
+
+* **commands:** ✨ improved argument type safety ([1edbc80](https://github.com/caunt/Void/commit/1edbc80927f3e5913f76bb2fd3693a124a3c93c0))
+* **plugins:** ✨ detect service dependency relationships ([ac41cde](https://github.com/caunt/Void/commit/ac41cdeb1c967adb9acf804fb8cc5d23fdaf3974))
+
+
+### Bug Fixes
+
+* **di:** 🐛 warn and disable eager activation for dependencies ([857f6c7](https://github.com/caunt/Void/commit/857f6c75ae96d347dcd053c3d35168a1bb371a97))
+* **logging:** 🐛 lowered log level for environment plugins loading ([72072d8](https://github.com/caunt/Void/commit/72072d8330ca95ca917d183505b59aefb96ca7bd))
+
 ## [0.5.9](https://github.com/caunt/Void/compare/v0.5.8...v0.5.9) (2026-02-05)
 
 
