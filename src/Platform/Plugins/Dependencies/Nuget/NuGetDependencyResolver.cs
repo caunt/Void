@@ -4,6 +4,7 @@ using System.Runtime.Loader;
 using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 using Nito.Disposables.Internals;
+using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Frameworks;
 using NuGet.PackageManagement;
@@ -22,22 +23,26 @@ namespace Void.Proxy.Plugins.Dependencies.Nuget;
 
 public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IRunOptions runOptions, IConsoleService console, HttpClient httpClient) : INuGetDependencyResolver, IEventListener
 {
-    private static readonly Option<string[]> _repositoryOption = new("--repository", "-r")
+    private static readonly Option<string[]> RepositoryOption = new("--repository", "-r")
     {
         Description = "Provides a URI to NuGet repository.\nExamples:\n--repository https://nuget.example.com/v3/index.json\n--repository https://username:password@nuget.example.com/v3/index.json"
     };
+    private static readonly Option<bool> EnableNugetLoggingOption = new("--enable-nuget-logging")
+    {
+        Description = "Enables detailed logging for NuGet operations.",
+        DefaultValueFactory = (argumentResult) => false
+    };
 
-    private static readonly string FrameworkName = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName
-        ?? throw new InvalidOperationException("Cannot determine the target framework.");
+    private static readonly string FrameworkName = Assembly.GetExecutingAssembly().GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName ?? throw new InvalidOperationException("Cannot determine the target framework.");
 
     private static readonly SourceRepository DefaultRepository = Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
     private static readonly SourceCacheContext Cache = new();
 
-    private readonly string PackagesPath = Path.Combine(runOptions.WorkingDirectory, SettingsUtility.DefaultGlobalPackagesFolderPath);
-    private readonly NuGet.Common.ILogger _nugetLogger = new NuGetLogger(logger);
+    private readonly string _packagesPath = Path.Combine(runOptions.WorkingDirectory, SettingsUtility.DefaultGlobalPackagesFolderPath);
+    private readonly NuGet.Common.ILogger _nugetLogger = console.GetOptionValue(EnableNugetLoggingOption) ? new NuGetLogger(logger) : NullLogger.Instance;
     private readonly HashSet<string> _repositories = [];
 
-    private IEnumerable<string> UriRepositories => UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";")).Concat(_repositories.Concat(console.GetOptionValue(_repositoryOption) ?? [])).Where(uri => !string.IsNullOrWhiteSpace(uri));
+    private IEnumerable<string> UriRepositories => UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";")).Concat(_repositories.Concat(console.GetOptionValue(RepositoryOption) ?? [])).Where(uri => !string.IsNullOrWhiteSpace(uri));
     private IEnumerable<SourceRepository> Repositories
     {
         get
@@ -69,7 +74,8 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     [Subscribe]
     public async ValueTask OnProxyStarting(ProxyStartingEvent @event, CancellationToken cancellationToken)
     {
-        console.EnsureOptionDiscovered(_repositoryOption);
+        console.EnsureOptionDiscovered(RepositoryOption);
+        console.EnsureOptionDiscovered(EnableNugetLoggingOption);
 
         try
         {
@@ -153,7 +159,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                 return null;
 
             // TODO: directory name does not guarantee NuGet package name 
-            var localPackagePath = Path.Combine(PackagesPath, assemblyName.Name.ToLower());
+            var localPackagePath = Path.Combine(_packagesPath, assemblyName.Name.ToLower());
 
             if (!Directory.Exists(localPackagePath))
             {
@@ -187,7 +193,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                 return null;
             }
 
-            var packagePath = Path.Combine(PackagesPath, identity.Id.ToLower(), identity.Version.ToString());
+            var packagePath = Path.Combine(_packagesPath, identity.Id.ToLower(), identity.Version.ToString());
             using var packageReader = new PackageFolderReader(packagePath);
 
             var assemblyPath = await ResolveAssemblyPathFromPackageAsync(packageReader, packagePath, assemblyName, identity.Id, identity.Version, cancellationToken).ConfigureAwait(false);
@@ -246,7 +252,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         {
             logger.LogInformation("Automatic update available for {PackageId}: {CurrentVersion} -> {NewVersion}. Downloading and applying update.", currentIdentity.Id, currentIdentity.Version, bestUpdate.Version);
 
-            var packagePath = Path.Combine(PackagesPath, bestUpdate.Id.ToLower(), bestUpdate.Version.ToString());
+            var packagePath = Path.Combine(_packagesPath, bestUpdate.Id.ToLower(), bestUpdate.Version.ToString());
 
             if (!Directory.Exists(packagePath))
             {
@@ -275,7 +281,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     {
         try
         {
-            var packagePath = Path.Combine(PackagesPath, identity.Id.ToLower(), identity.Version.ToString());
+            var packagePath = Path.Combine(_packagesPath, identity.Id.ToLower(), identity.Version.ToString());
 
             if (!Directory.Exists(packagePath))
             {
@@ -350,7 +356,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
                     continue;
                 }
 
-                var packagePath = Path.Combine(PackagesPath, identity.Id.ToLower(), identity.Version.ToString());
+                var packagePath = Path.Combine(_packagesPath, identity.Id.ToLower(), identity.Version.ToString());
 
                 if (Directory.Exists(packagePath))
                     throw new InvalidOperationException($"Dependency {identity.Id} version {identity.Version} already exists in the NuGet cache. This should have been resolved in the offline step.");
@@ -392,7 +398,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     {
         try
         {
-            using var result = await PackageDownloader.GetDownloadResourceResultAsync(repository, identity, new PackageDownloadContext(Cache), PackagesPath, _nugetLogger, cancellationToken).ConfigureAwait(false);
+            using var result = await PackageDownloader.GetDownloadResourceResultAsync(repository, identity, new PackageDownloadContext(Cache), _packagesPath, _nugetLogger, cancellationToken).ConfigureAwait(false);
             logger.LogTrace("Downloaded {PackageId} version {PackageVersion} dependency from {Repository}", identity.Id, identity.Version, repository.PackageSource.Name);
         }
         catch (FatalProtocolException exception)
