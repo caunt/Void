@@ -2,6 +2,10 @@
 _layout: landing
 ---
 
-# This documentation is under active development.
+# DocFX Test Documentation
 
-We're glad you're interested in this proxy. Visit this page later to see more information about configuring the proxy and developing your first plugin.
+**Note:** This documentation is maintained solely for testing purposes to track a DocFX bug. It is not the official documentation for Void Proxy.
+
+For the official Void Proxy documentation, please visit [**https://void.caunt.world**](https://void.caunt.world).
+
+The documentation is built using [**Astro with Starlight**](https://starlight.astro.build) and the source files are located in the `docs/astro` directory.

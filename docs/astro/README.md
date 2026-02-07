@@ -1,44 +1,31 @@
-# Starlight Starter Kit: Basics
+# Void Documentation Site
 
 [![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
 
-```
-npm create astro@latest -- --template starlight
-```
+This directory contains the source files for the Void Proxy documentation website, built with Astro and Starlight.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/starlight/tree/main/examples/basics)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/starlight/tree/main/examples/basics)
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/withastro/starlight&create_from_path=examples/basics)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fwithastro%2Fstarlight%2Ftree%2Fmain%2Fexamples%2Fbasics&project-name=my-starlight-docs&repository-name=my-starlight-docs)
-
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+The live documentation is available at [**https://void.caunt.world**](https://void.caunt.world).
 
 ## 🚀 Project Structure
 
-Inside of your Astro + Starlight project, you'll see the following folders and files:
-
 ```
 .
-├── public/
+├── public/               # Static assets (favicons, images)
 ├── src/
-│   ├── assets/
+│   ├── assets/          # Optimized images and assets
 │   ├── content/
-│   │   ├── docs/
+│   │   └── docs/        # Documentation content (.md and .mdx files)
 │   └── content.config.ts
-├── astro.config.mjs
+├── astro.config.mjs     # Astro configuration
 ├── package.json
 └── tsconfig.json
 ```
 
-Starlight looks for `.md` or `.mdx` files in the `src/content/docs/` directory. Each file is exposed as a route based on its file name.
-
-Images can be added to `src/assets/` and embedded in Markdown with a relative link.
-
-Static assets, like favicons, can be placed in the `public/` directory.
+Documentation files are located in `src/content/docs/`. Each file is exposed as a route based on its file name.
 
 ## 🧞 Commands
 
-All commands are run from the root of the project, from a terminal:
+All commands are run from this directory (`docs/astro`):
 
 | Command                   | Action                                           |
 | :------------------------ | :----------------------------------------------- |
@@ -49,6 +36,16 @@ All commands are run from the root of the project, from a terminal:
 | `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
 | `npm run astro -- --help` | Get help using the Astro CLI                     |
 
-## 👀 Want to learn more?
+## 📝 Contributing
 
-Check out [Starlight’s docs](https://starlight.astro.build/), read [the Astro documentation](https://docs.astro.build), or jump into the [Astro Discord server](https://astro.build/chat).
+When contributing to the documentation:
+
+- Follow the [**documentation guidelines**](../../AGENTS.md#documentation) in the repository.
+- Make link text bold: `[**link text**](https://example.com)`
+- Never include inline code or backticks inside a link caption.
+
+## 🔗 Resources
+
+- [**Starlight documentation**](https://starlight.astro.build/)
+- [**Astro documentation**](https://docs.astro.build)
+- [**Main repository**](https://github.com/caunt/Void)
