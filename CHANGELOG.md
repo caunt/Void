@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.11](https://github.com/caunt/Void/compare/v0.5.10...v0.5.11) (2026-02-08)
+
+
+### Features
+
+* **di:** ✨ support context-aware service resolution ([0af0e9b](https://github.com/caunt/Void/commit/0af0e9b6bdf9cfd7763bb5b9d84583ff974dacf1))
+* **nuget:** ✨ added option to enable NuGet logging ([387aa7b](https://github.com/caunt/Void/commit/387aa7bf11f1d90e420bbf2248f8cd41b5b22611))
+
+
+### Bug Fixes
+
+* **di:** ✨ activate dependency services later, after registration is complete ([a6eb07e](https://github.com/caunt/Void/commit/a6eb07eee33518ceaf5e5d81044f2f5a63a7be75))
+* **di:** ✨ skip open generic service registrations ([e332ee0](https://github.com/caunt/Void/commit/e332ee01171f77ac08b3c3b749f0963aef6bfb10))
+* **di:** 🐛 skip open generic types during registration ([864583e](https://github.com/caunt/Void/commit/864583e318ed7cba576feb753b7471d970cfb89e))
+
 ## [0.5.10](https://github.com/caunt/Void/compare/v0.5.9...v0.5.10) (2026-02-06)
 
 
