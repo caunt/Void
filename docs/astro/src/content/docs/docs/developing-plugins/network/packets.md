@@ -58,6 +58,17 @@ public class SetHeldItemClientboundPacket : IMinecraftClientboundPacket<SetHeldI
 ## Registering Packets
 Before receiving or sending packets, you need to register them specifying packet ids for each game protocol version.
 Packet registrations are made for each game phase, so you need to register them in the correct phase. Common phases are `Handshake`, `Login`, `Configuration` and `Play`.
+
+In this example we are using Void predefined packet id mappings in `PacketIdDefinitions`.
+```csharp
+[Subscribe]
+public void OnPlayerJoinedServer(PlayerJoinedServerEvent @event)
+{
+    @event.Player.RegisterPacket<SetHeldItemClientboundPacket>(PacketIdDefinitions.ClientboundSetHeldItem);
+}
+```
+
+You can also define your own mappings for packets you'd like to work with:
 ```csharp
 [Subscribe]
 public void OnPlayerJoinedServer(PlayerJoinedServerEvent @event)
@@ -132,7 +143,7 @@ await player.SendPacketAsync(new SetHeldItemClientboundPacket { Slot = slot }, c
 ### Sending Packets to the Server
 You can send packets to the server with `ILink.ServerChannel` instance.
 ```csharp
-await player.GetLink().ServerChannel.SendPacketAsync(new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
+await player.Link.ServerChannel.SendPacketAsync(new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
 ```
 
 ### Sending Packets to the [**`ILink`**](/docs/developing-plugins/network/links)
@@ -143,12 +154,12 @@ You can send packets to the link with `ILink.SendPacketAsync` method.
 - If the packet has both interfaces, it will be sent only to the client.
 - If the packet has neither interface, `InvalidOperationException` will be thrown.
 ```csharp
-await player.GetLink().SendPacketAsync(new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
+await player.Link.SendPacketAsync(new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
 ```
 
 When you want to explicitly send a packet to the server or client, `SendPacketAsync` has an overload that specifies the destination side.
 ```csharp
-await player.GetLink().SendPacketAsync(Side.Client, new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
+await player.Link.SendPacketAsync(Side.Client, new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
 ```
 
 ## Complete Example
