@@ -122,7 +122,10 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
         {
             foreach (var registration in GetServiceRegistrations(container))
             {
-                GetContainer(assembly, context.Player).GetRequiredService(registration.ServiceType);
+                if (registration.ServiceType.IsOpenGeneric())
+                    continue;
+
+                _ = GetContainer(assembly, context.Player).GetRequiredService(registration.ServiceType);
             }
         }
     }
