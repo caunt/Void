@@ -356,6 +356,9 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
         {
             var serviceType = registration.ServiceType;
 
+            if (serviceType.IsOpenGeneric())
+                continue;
+
             // Open generic types like ILogger<Something> to ILogger<>
             if (serviceType.IsGenericType)
                 serviceType = serviceType.GetGenericTypeDefinition();
