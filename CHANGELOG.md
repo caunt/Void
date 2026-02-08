@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.12](https://github.com/caunt/Void/compare/v0.5.11...v0.5.12) (2026-02-08)
+
+
+### Bug Fixes
+
+* **link:** 🐛 improved handshake error handling ([b406702](https://github.com/caunt/Void/commit/b406702b229ae59dddee25a66acfdb61df28d213))
+* **registries:** 🛡️ added thread safety to packet id plugins registry ([07eb228](https://github.com/caunt/Void/commit/07eb228f79d6b2c70c31c29bf7e516fb9473a102))
+
 ## [0.5.11](https://github.com/caunt/Void/compare/v0.5.10...v0.5.11) (2026-02-08)
 
 
