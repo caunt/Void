@@ -12,7 +12,7 @@
 <div align="center" id="toc">
   <ul style="list-style: none">
     <summary>
-      <h1>:star: Minecraft Proxy for Modded Servers</h1>
+      <h1>Minecraft Proxy for Modded Servers</h1>
     </summary>
   </ul>
 </div>
@@ -20,7 +20,7 @@
 <div align="middle"><a href="https://void-demo.caunt.world/"><img src="https://img.shields.io/badge/Live-Demo-7c3aed?style=for-the-badge"></a></div>
 
 ### :floppy_disk: **Download:**
-&nbsp;&nbsp;&nbsp;&nbsp; :+1: [**Latest Release**](https://void.caunt.world/download/)  
+&nbsp;&nbsp;&nbsp;&nbsp; :star: [**Latest Release**](https://void.caunt.world/download/)  
 &nbsp;&nbsp;&nbsp;&nbsp; :whale: [**Run with Docker**](https://void.caunt.world/docs/containers/)
 
 ### **Getting Started:**
