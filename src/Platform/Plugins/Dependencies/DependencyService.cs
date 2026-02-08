@@ -175,25 +175,23 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
         var services = new ServiceCollection();
         configure(services);
 
-        if (activate && services.HasDescriptorRelationships())
-        {
-            // TODO: Can we build a dependency graph and activate in order?
-            logger.LogWarning("Service registrations ({Names}) with relationships cannot be eagerly activated. Consider splitting them into separate Register calls, or disable this warning by passing {Activate}: false.", string.Join(", ", services.Select(descriptor => descriptor.ServiceType.Name)), nameof(activate));
-            activate = false;
-        }
+        foreach (var service in services)
+            GetContainer(service.ServiceType.Assembly).Add(service);
+
+        if (!activate)
+            return;
 
         foreach (var service in services)
         {
-            var serviceType = service.ServiceType;
-            var assembly = service.ServiceType.Assembly;
-
-            GetContainer(assembly).Add(service);
-
-            if (!activate)
+            if (service.Lifetime is ServiceLifetime.Transient)
                 continue;
+
+            var serviceType = service.ServiceType;
 
             if (serviceType.IsOpenGeneric())
                 continue;
+
+            var assembly = service.ServiceType.Assembly;
 
             if (service.Lifetime is ServiceLifetime.Singleton)
             {
