@@ -138,7 +138,8 @@ public void OnPhaseChanged(PhaseChangedEvent @event)
         new(0x67, ProtocolVersion.MINECRAFT_1_21_9)
     ]);
 
-    @event.Player.RegisterTransformations<SetHeldItemClientboundPacket>(Transformations);
+    // Register transformations for the channel that changed phase
+    @event.Player.RegisterTransformations<SetHeldItemClientboundPacket>(@event.Channel, Transformations);
 }
 ```
 
