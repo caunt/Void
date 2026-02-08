@@ -10,6 +10,7 @@ public class ListeningServiceProvider(IServiceProvider source, CancellationToken
 
     public IServiceProvider Source => source;
     public CancellationToken CancellationToken => cancellationToken;
+    public IContainer? AsDryIoc => source as IContainer;
 
     public static IServiceProvider Wrap(IServiceProvider serviceProvider, CancellationToken cancellationToken)
     {
