@@ -30,7 +30,19 @@ public class SimpleMinecraftChannelBuilderService(ILogger<SimpleMinecraftChannel
 
         var stream = player.Client.GetStream();
         var buffer = new byte[MaxHandshakeSize];
-        var length = await stream.ReadAsync(buffer, cancellationToken);
+        var length = -1;
+
+        try
+        {
+            length = await stream.ReadAsync(buffer, cancellationToken);
+        }
+        catch (Exception exception) when (exception is IOException or SocketException)
+        {
+            throw new EndOfStreamException($"Failed to read handshake data from {player}.", exception);
+        }
+
+        if (length <= 0)
+            throw new EndOfStreamException($"No handshake data is read data from {player}.");
 
         var searchProtocolCodec = new SearchChannelBuilderEvent(player, buffer.AsMemory(0, length));
         await events.ThrowAsync(searchProtocolCodec, cancellationToken);

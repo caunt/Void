@@ -149,7 +149,7 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
         logger.LogTrace("Connecting {Player} player to a {Server} server", unwrappedPlayer, server);
 
         var firstConnection = unwrappedPlayer.Context.Channel is null;
-        var playerChannelBuilder = await unwrappedPlayer.GetChannelBuilderAsync(cancellationToken);
+        _ = await unwrappedPlayer.GetChannelBuilderAsync(cancellationToken);
 
         // After searching for player channel builder, player might be upgraded to another implementation, unwrap proxy again
         unwrappedPlayer = player.Unwrap();
