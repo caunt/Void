@@ -23,24 +23,27 @@ public class MinecraftPacketIdPluginsRegistry : IMinecraftPacketIdPluginsRegistr
 
     public IMinecraftPacketIdRegistry Get(Operation operation, IPlugin plugin)
     {
-        if (ProtocolVersion is null)
-            throw new InvalidOperationException($"{nameof(ProtocolVersion)} is not set yet");
-
-        var map = operation switch
+        lock (this)
         {
-            Operation.Read => _read,
-            Operation.Write => _write,
-            Operation.Any => throw new ArgumentException($"Operation {operation} is not valid here, use {nameof(Get)} twice instead"),
-            _ => throw new ArgumentException($"Invalid operation {operation}", nameof(operation))
-        };
+            if (ProtocolVersion is null)
+                throw new InvalidOperationException($"{nameof(ProtocolVersion)} is not set yet");
 
-        if (!map.TryGetValue(plugin, out var registry))
-        {
-            lock (this)
-                map[plugin] = registry = new MinecraftPacketIdRegistry();
+            var map = operation switch
+            {
+                Operation.Read => _read,
+                Operation.Write => _write,
+                Operation.Any => throw new ArgumentException($"Operation {operation} is not valid here, use {nameof(Get)} twice instead"),
+                _ => throw new ArgumentException($"Invalid operation {operation}", nameof(operation))
+            };
+
+            if (!map.TryGetValue(plugin, out var registry))
+            {
+                lock (this)
+                    map[plugin] = registry = new MinecraftPacketIdRegistry();
+            }
+
+            return registry;
         }
-
-        return registry;
     }
 
     public bool TryGetPlugin<T>([MaybeNullWhen(false)] out IPlugin plugin) where T : IMinecraftPacket
@@ -55,18 +58,21 @@ public class MinecraftPacketIdPluginsRegistry : IMinecraftPacketIdPluginsRegistr
 
     public bool TryGetPlugin(Type type, [MaybeNullWhen(false)] out IPlugin plugin)
     {
-        plugin = null;
-
-        foreach (var (candidate, registry) in _read.Concat(_write))
+        lock (this)
         {
-            if (registry.Contains(type))
-            {
-                plugin = candidate;
-                return true;
-            }
-        }
+            plugin = null;
 
-        return false;
+            foreach (var (candidate, registry) in _read.Concat(_write))
+            {
+                if (registry.Contains(type))
+                {
+                    plugin = candidate;
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     public void Remove(IPlugin plugin)
@@ -80,17 +86,20 @@ public class MinecraftPacketIdPluginsRegistry : IMinecraftPacketIdPluginsRegistr
 
     public bool Contains<T>() where T : IMinecraftPacket
     {
-        return All.Any(registry => registry.Contains<T>());
+        lock (this)
+            return All.Any(registry => registry.Contains<T>());
     }
 
     public bool Contains(INetworkMessage message)
     {
-        return All.Any(registry => registry.Contains(message));
+        lock (this)
+            return All.Any(registry => registry.Contains(message));
     }
 
     public bool Contains(Type type)
     {
-        return All.Any(registry => registry.Contains(type));
+        lock (this)
+            return All.Any(registry => registry.Contains(type));
     }
 
     public void Clear()
@@ -104,16 +113,19 @@ public class MinecraftPacketIdPluginsRegistry : IMinecraftPacketIdPluginsRegistr
 
     public void Clear(Direction direction, Operation operation)
     {
-        if (operation.HasFlag(Operation.Read))
+        lock (this)
         {
-            foreach (var registry in Read)
-                registry.Clear(direction);
-        }
+            if (operation.HasFlag(Operation.Read))
+            {
+                foreach (var registry in Read)
+                    registry.Clear(direction);
+            }
 
-        if (operation.HasFlag(Operation.Write))
-        {
-            foreach (var registry in Write)
-                registry.Clear(direction);
+            if (operation.HasFlag(Operation.Write))
+            {
+                foreach (var registry in Write)
+                    registry.Clear(direction);
+            }
         }
     }
 
