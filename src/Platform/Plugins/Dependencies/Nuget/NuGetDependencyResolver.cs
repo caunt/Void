@@ -96,12 +96,6 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     {
         logger.LogTrace("Resolving {AssemblyName} dependency", assemblyName.Name);
 
-        if (assemblyName.FullName.StartsWith(nameof(Void) + '.'))
-        {
-            logger.LogCritical("Void package {AssemblyName} shouldn't be searched in NuGet", assemblyName.Name);
-            return null;
-        }
-
         if (ResolveAssemblyFromOfflineNuGetAsync(assemblyName, CancellationToken.None).GetAwaiter().GetResult() is { } offlineResult)
         {
             var updatedIdentity = CheckAndDownloadUpdateAsync(assemblyName, offlineResult.Identity, CancellationToken.None).GetAwaiter().GetResult();
