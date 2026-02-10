@@ -8,6 +8,7 @@ using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Logging;
+using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins;
@@ -184,7 +185,17 @@ public class Platform(
         logger.LogInformation("Stopping proxy");
         await events.ThrowAsync<ProxyStoppingEvent>(cancellationToken);
 
-        await players.ForEachAsync(async (player, cancellationToken) => await player.KickAsync("Proxy is shutting down", cancellationToken), cancellationToken);
+        await players.ForEachAsync(async (player, cancellationToken) =>
+        {
+            try
+            {
+                await player.KickAsync("Proxy is shutting down", cancellationToken);
+            }
+            catch (StreamClosedException)
+            {
+                // Player disconnected before we could kick them, ignore
+            }
+        }, cancellationToken);
 
         logger.LogInformation("Awaiting completion of connection listener");
         if (_backgroundTask is not null)
