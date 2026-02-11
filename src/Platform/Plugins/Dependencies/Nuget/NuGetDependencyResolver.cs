@@ -2,7 +2,6 @@
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.Versioning;
-using System.Text.RegularExpressions;
 using Nito.Disposables.Internals;
 using NuGet.Common;
 using NuGet.Configuration;

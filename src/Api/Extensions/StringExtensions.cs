@@ -33,7 +33,7 @@ public static partial class StringExtensions
     private static string[] SplitByDelimitersWithEscape(string input, char[] delimiters, char escapeCharacter, bool removeEmptyEntries)
     {
         var pattern = BuildEscapedDelimiterPattern(delimiters, escapeCharacter);
-        var regex = new Regex(pattern);
+        var regex = new Regex(pattern, RegexOptions.Compiled);
         var parts = regex.Split(input);
 
         var result = parts.Select(part => UnescapeDelimiters(part, delimiters, escapeCharacter).Trim()).ToArray();
