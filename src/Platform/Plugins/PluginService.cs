@@ -8,6 +8,7 @@ using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
+using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
 using Void.Proxy.Plugins.Containers;
@@ -125,7 +126,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
             if (string.IsNullOrWhiteSpace(args))
                 return [];
 
-            return args.Split(',', ';');
+            return args.SplitByDelimiters();
         }
     }
 

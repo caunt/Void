@@ -17,11 +17,12 @@ using Void.Proxy.Api;
 using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Proxy;
+using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Plugins.Dependencies;
 
 namespace Void.Proxy.Plugins.Dependencies.Nuget;
 
-public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IRunOptions runOptions, IConsoleService console, HttpClient httpClient) : INuGetDependencyResolver, IEventListener
+public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IRunOptions runOptions, IConsoleService console, HttpClient httpClient) : INuGetDependencyResolver, IEventListener
 {
     private static readonly Option<string[]> RepositoryOption = new("--repository", "-r")
     {
@@ -42,7 +43,7 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
     private readonly NuGet.Common.ILogger _nugetLogger = console.GetOptionValue(EnableNugetLoggingOption) ? new NuGetLogger(logger) : NullLogger.Instance;
     private readonly HashSet<string> _repositories = [];
 
-    private IEnumerable<string> UriRepositories => UnescapedSemicolonRegex().Split(Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").Select(repo => repo.Replace(@"\;", ";")).Concat(_repositories.Concat(console.GetOptionValue(RepositoryOption) ?? [])).Where(uri => !string.IsNullOrWhiteSpace(uri));
+    private IEnumerable<string> UriRepositories => (Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").SplitByDelimiters([';'], escapeCharacter: '\\').Concat(_repositories.Concat(console.GetOptionValue(RepositoryOption) ?? [])).Where(uri => !string.IsNullOrWhiteSpace(uri));
     private IEnumerable<SourceRepository> Repositories
     {
         get
@@ -543,7 +544,4 @@ public partial class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> lo
         foreach (var (url, status) in statuses)
             logger.LogInformation(" - {Url} [{Status}]", url, status);
     }
-
-    [GeneratedRegex(@"(?<!\\);")]
-    private static partial Regex UnescapedSemicolonRegex();
 }
