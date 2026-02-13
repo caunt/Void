@@ -11,6 +11,9 @@
   <a href="https://void.caunt.world/"><img alt="Greetings!" align="middle" width="250" src="https://raw.githubusercontent.com/caunt/Void/refs/heads/main/docs/astro/public/logo-text-horizontal.svg"></a>
 </div>
 
+<br>
+<br>
+
 <div align="middle">
   <a href="https://hub.docker.com/r/caunt/void/tags"><img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/caunt/void?color=4c1&style=for-the-badge"></a>
   <a href="https://github.com/caunt/Void/issues"><img alt="GitHub Issues" src="https://img.shields.io/github/issues/caunt/void?style=for-the-badge"></a>
@@ -36,12 +39,11 @@
 :mag_right: [Example Plugin](https://github.com/caunt/Void/blob/main/src/Plugins/ExamplePlugin/ExamplePlugin.cs)  
 
 <picture>
- <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=caunt/Void&type=date&theme=dark&legend=top-left" />
- <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=caunt/Void&type=date&legend=top-left" />
+ <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=caunt/Void&type=date&theme=dark&legend=top-left&transparent=true" />
+ <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=caunt/Void&type=date&legend=top-left&transparent=true" />
  <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=caunt/Void&type=date&legend=top-left" />
 </picture>
 
-<br>
 <br>
 <br>
 
