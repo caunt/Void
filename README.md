@@ -1,10 +1,4 @@
-<div align="middle" id="toc">
-  <ul style="list-style: none">
-    <summary>
-      <h1>Minecraft Proxy for Modded Servers</h1>
-    </summary>
-  </ul>
-</div>
+# ⭐ Void — Minecraft Proxy for Modded Servers
 
 <div align="middle" id="toc">
   <a href="https://void.caunt.world/"><img alt="Welcome to you!" align="middle" width="550" src="https://github.com/user-attachments/assets/889492b9-67a5-492c-8ac6-2a235bfe7605"></a>
