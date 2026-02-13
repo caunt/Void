@@ -19,7 +19,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
 {
     public const string DefaultPluginsPath = "plugins";
 
-    private static readonly Option<string[]> _pluginsOption = new("--plugin", "-p")
+    private static readonly Option<string[]> PluginsOption = new("--plugin", "-p")
     {
         Description = "Provides a path to the file, directory or URL to load plugin."
     };
@@ -116,7 +116,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
 
         await LoadPluginsAsync(plugins.WhereNotNull().SelectMany(x => x), cancellationToken);
 
-        string[] GetArgumentsPlugins() => consoleService.GetOptionValue(_pluginsOption) ?? [];
+        string[] GetArgumentsPlugins() => consoleService.GetOptionValue(PluginsOption) ?? [];
 
         static string[] GetVariablesPlugins()
         {
