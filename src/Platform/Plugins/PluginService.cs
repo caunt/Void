@@ -10,6 +10,7 @@ using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Plugins.Dependencies;
+using Void.Proxy.Extensions;
 using Void.Proxy.Plugins.Containers;
 using Void.Proxy.Plugins.Context;
 
@@ -118,14 +119,14 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
 
         string[] GetArgumentsPlugins() => consoleService.GetOptionValue(PluginsOption) ?? [];
 
-        static string[] GetVariablesPlugins()
+        static IEnumerable<string> GetVariablesPlugins()
         {
             var args = Environment.GetEnvironmentVariable("VOID_PLUGINS");
 
             if (string.IsNullOrWhiteSpace(args))
                 return [];
 
-            return args.Split(',', ';');
+            return args.SplitInput();
         }
     }
 
