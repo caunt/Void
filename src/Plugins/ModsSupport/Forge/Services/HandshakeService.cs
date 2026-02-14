@@ -93,7 +93,7 @@ public class HandshakeService(IPlayerContext context, IPluginService plugins, Pl
             if (!ignored)
             {
                 if (mods is { PendingLoginPluginResponse.Task.IsCompleted: false })
-                    throw new InvalidOperationException($"A new login plugin message request in {@event.Channel} to player {@event.Player} received, while it is already pending to response.");
+                    throw new InvalidOperationException($"A new login plugin message request in {@event.Channel} to player {@event.Player} received, while it is already pending a response.");
 
                 mods.PendingLoginPluginResponse = new TaskCompletionSource<ModdedLoginPluginResponsePacket>();
             }
