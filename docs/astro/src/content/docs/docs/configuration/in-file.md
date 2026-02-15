@@ -31,7 +31,7 @@ Offline = false
 LogLevel = "Information"
 
 # Predefined list of servers. 
-# Players will be connected to the first one, if not specified otherwise from plugins or not selected by overriden hostname.
+# Players will be connected to the first one, if not specified otherwise from plugins or not selected by overridden hostname.
 [[Servers]]
 Name = "lobby"
 Host = "127.0.0.1"
