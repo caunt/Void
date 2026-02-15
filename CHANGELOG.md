@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.12](https://github.com/caunt/Void/compare/v0.5.11...v0.5.12) (2026-02-15)
+
+
+### Bug Fixes
+
+* **extensions:** ✨ improved input arrays parsing ([d803d90](https://github.com/caunt/Void/commit/d803d905ea848bbeff270983a5eea8cf46eb6d66))
+* **link:** 🐛 improved handshake error handling ([b406702](https://github.com/caunt/Void/commit/b406702b229ae59dddee25a66acfdb61df28d213))
+* **mods-support:** 🐛 corrected handshake error message grammar ([53c3b90](https://github.com/caunt/Void/commit/53c3b90f434b368452df7ae2f85ea3c9668d7aaa))
+* **nuget:** 🐛 removed Void package exclusion logic ([82be530](https://github.com/caunt/Void/commit/82be530ebd48e9075fab5120dd960a1be0304e11))
+* **platform:** 🐛 ignore early disconnects when kicking players ([9c7b54d](https://github.com/caunt/Void/commit/9c7b54d8c47294a32246df46ae23bd54ab42171c))
+* **registries:** 🛡️ added thread safety to packet id plugins registry ([07eb228](https://github.com/caunt/Void/commit/07eb228f79d6b2c70c31c29bf7e516fb9473a102))
+
 ## [0.5.11](https://github.com/caunt/Void/compare/v0.5.10...v0.5.11) (2026-02-08)
 
 
