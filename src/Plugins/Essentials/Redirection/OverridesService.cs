@@ -62,9 +62,9 @@ public class OverridesService(ILogger<OverridesService> logger, IServerService s
             }
 
             if (!_queuedRedirections.TryAdd(@event.Link, server))
-                throw new InvalidOperationException("Failed to queue overriden redirection, player already has a queued redirection.");
+                throw new InvalidOperationException("Failed to queue overridden redirection, player already has a queued redirection.");
 
-            logger.LogTrace("Queued overriden redirection of player {Player} to server {Server}.", @event.Player, server.Name);
+            logger.LogTrace("Queued overridden redirection of player {Player} to server {Server}.", @event.Player, server.Name);
             break;
         }
     }
