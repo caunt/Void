@@ -485,7 +485,7 @@ public class TagReader : TagIO
     protected virtual void OnTagRead(Tag tag) => TagRead?.Invoke(this, new TagEventArgs(tag.Type, tag));
 
     /// <summary>
-    /// Invokes the <see cref="TagEncountered"/> event when the stream is positioned at the beginning of a an unread tag.
+    /// Invokes the <see cref="TagEncountered"/> event when the stream is positioned at the beginning of an unread tag.
     /// </summary>
     /// <param name="type">The type of tag next to be read from the stream.</param>
     /// <param name="named">Flag indicating if this tag is named.</param>
