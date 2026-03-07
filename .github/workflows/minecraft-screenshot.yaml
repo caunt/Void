@@ -1,0 +1,70 @@
+name: "Minecraft Screenshot"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            xfce4 \
+            xfce4-terminal \
+            xvfb \
+            x11-utils \
+            scrot \
+            openjdk-21-jre-headless
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+          key: cargo-portablemc-cli-${{ runner.os }}
+
+      - name: Install portablemc-cli
+        run: |
+          if ! command -v portablemc &> /dev/null; then
+            cargo install portablemc-cli
+          fi
+
+      - name: Start virtual display
+        run: |
+          Xvfb :99 -screen 0 1280x720x24 &
+          echo "DISPLAY=:99" >> "$GITHUB_ENV"
+          sleep 2
+
+      - name: Start Xfce window manager
+        run: |
+          xfwm4 --daemon --display=:99
+          sleep 1
+
+      - name: Launch Minecraft
+        env:
+          DISPLAY: ":99"
+        run: portablemc --main-dir "$HOME/.portablemc" start --jvm "$(which java)" -- latest &
+
+      # Allow the Minecraft process time to initialise before capturing the screen.
+      - name: Wait for game to start
+        run: sleep 10
+
+      - name: Take screenshot
+        env:
+          DISPLAY: ":99"
+        run: scrot --quality 90 minecraft-screenshot.png
+
+      - name: Upload screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: minecraft-screenshot
+          path: minecraft-screenshot.png
+          if-no-files-found: error
