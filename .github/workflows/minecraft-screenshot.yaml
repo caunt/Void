@@ -46,13 +46,15 @@ jobs:
 
       - name: Start Xfce window manager
         run: |
-          xfwm4 --daemon --display=:99
+          xfwm4 &
           sleep 1
 
       - name: Launch Minecraft
         env:
           DISPLAY: ":99"
-        run: portablemc --main-dir "$HOME/.portablemc" start --jvm "$(which java)" -- latest &
+        run: |
+          portablemc --main-dir "$HOME/.portablemc" start --jvm "$(which java)" -- latest &
+          echo "MINECRAFT_PID=$!" >> "$GITHUB_ENV"
 
       # Allow the Minecraft process time to initialise before capturing the screen.
       - name: Wait for game to start
@@ -61,7 +63,12 @@ jobs:
       - name: Take screenshot
         env:
           DISPLAY: ":99"
-        run: scrot --quality 90 minecraft-screenshot.png
+        run: |
+          if ! kill -0 "$MINECRAFT_PID" 2>/dev/null; then
+            echo "Minecraft process (PID $MINECRAFT_PID) is not running" >&2
+            exit 1
+          fi
+          scrot --quality 90 minecraft-screenshot.png
 
       - name: Upload screenshot
         uses: actions/upload-artifact@v4
