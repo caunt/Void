@@ -23,7 +23,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache cargo registry
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/registry
@@ -57,7 +57,7 @@ jobs:
 
       # Allow the Minecraft process time to initialise before capturing the screen.
       - name: Wait for game to start
-        run: sleep 10
+        run: sleep 30
 
       - name: Take screenshot
         env:
@@ -70,7 +70,7 @@ jobs:
           scrot --quality 90 minecraft-screenshot.png
 
       - name: Upload screenshot
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: minecraft-screenshot
           path: minecraft-screenshot.png
