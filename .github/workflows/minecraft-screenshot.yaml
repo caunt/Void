@@ -17,7 +17,8 @@ jobs:
             xfce4-terminal \
             xvfb \
             x11-utils \
-            scrot
+            scrot \
+            tesseract-ocr
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -69,9 +70,17 @@ jobs:
           fi
           scrot --quality 90 minecraft-screenshot.png
 
+      - name: OCR screenshot
+        run: |
+          tesseract minecraft-screenshot.png minecraft-screenshot-ocr txt
+          echo "=== OCR output ==="
+          cat minecraft-screenshot-ocr.txt
+
       - name: Upload screenshot
         uses: actions/upload-artifact@v7
         with:
           name: minecraft-screenshot
-          path: minecraft-screenshot.png
+          path: |
+            minecraft-screenshot.png
+            minecraft-screenshot-ocr.txt
           if-no-files-found: error
