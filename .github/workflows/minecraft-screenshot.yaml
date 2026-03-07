@@ -17,8 +17,7 @@ jobs:
             xfce4-terminal \
             xvfb \
             x11-utils \
-            scrot \
-            openjdk-21-jre-headless
+            scrot
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -53,7 +52,7 @@ jobs:
         env:
           DISPLAY: ":99"
         run: |
-          portablemc --main-dir "$HOME/.portablemc" start --jvm "$(which java)" -- latest &
+          portablemc --main-dir "$HOME/.portablemc" start -- release &
           echo "MINECRAFT_PID=$!" >> "$GITHUB_ENV"
 
       # Allow the Minecraft process time to initialise before capturing the screen.
