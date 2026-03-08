@@ -294,7 +294,7 @@ public class TagWriter : TagIO
     }
 
     /// <summary>
-    /// Asynchronously releases the unmanaged resources used by the <see cref="TagReader"/>.
+    /// Asynchronously releases the unmanaged resources used by the <see cref="TagWriter"/>.
     /// </summary>
     public override async ValueTask DisposeAsync()
     {
