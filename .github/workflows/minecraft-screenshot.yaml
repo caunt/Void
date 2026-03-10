@@ -1,0 +1,86 @@
+name: "Minecraft Screenshot"
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            xfce4 \
+            xfce4-terminal \
+            xvfb \
+            x11-utils \
+            scrot \
+            tesseract-ocr
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+          key: cargo-portablemc-cli-${{ runner.os }}
+
+      - name: Install portablemc-cli
+        run: |
+          if ! command -v portablemc &> /dev/null; then
+            cargo install portablemc-cli
+          fi
+
+      - name: Start virtual display
+        run: |
+          Xvfb :99 -screen 0 1280x720x24 &
+          echo "DISPLAY=:99" >> "$GITHUB_ENV"
+          sleep 2
+
+      - name: Start Xfce window manager
+        run: |
+          xfwm4 &
+          sleep 1
+
+      - name: Launch Minecraft
+        env:
+          DISPLAY: ":99"
+        run: |
+          portablemc --main-dir "$HOME/.portablemc" start -- release &
+          echo "MINECRAFT_PID=$!" >> "$GITHUB_ENV"
+
+      # Allow the Minecraft process time to initialise before capturing the screen.
+      - name: Wait for game to start
+        run: sleep 30
+
+      - name: Take screenshot
+        env:
+          DISPLAY: ":99"
+        run: |
+          if ! kill -0 "$MINECRAFT_PID" 2>/dev/null; then
+            echo "Minecraft process (PID $MINECRAFT_PID) is not running" >&2
+            exit 1
+          fi
+          scrot --quality 90 minecraft-screenshot.png
+
+      - name: OCR screenshot
+        run: |
+          tesseract minecraft-screenshot.png minecraft-screenshot-ocr txt
+          echo "=== OCR output ==="
+          cat minecraft-screenshot-ocr.txt
+
+      - name: Upload screenshot
+        uses: actions/upload-artifact@v7
+        with:
+          name: minecraft-screenshot
+          path: |
+            minecraft-screenshot.png
+            minecraft-screenshot-ocr.txt
+          if-no-files-found: error
