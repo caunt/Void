@@ -33,7 +33,7 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
     [Subscribe]
     public async Task OnPlayerJoinedServer(PlayerJoinedServerEvent @event)
     {
-        // This event triggers when player joins a server (not the proxy) and both sides become into Play phase.
+        // This event triggers when player joins a server (not the proxy) and both sides transition into Play phase.
 
         // Many packet ids and their properties can be found here:
         // https://minecraft.wiki/w/Java_Edition_protocol
