@@ -116,20 +116,20 @@ public static class NbtFile
     /// <summary>
     /// Opens an existing NBT file for reading, and returns a <see cref="TagReader"/> instance for it.
     /// </summary>
-    /// <param name="path">The path of the file to query write.</param>
+    /// <param name="path">The path of the file to open for reading.</param>
     /// <param name="options">Bitwise flags to configure how data should be handled for compatibility between different specifications.</param>
     /// <param name="compression">Indicates the compression algorithm used to compress the file.</param>
     /// <returns>A <see cref="TagReader"/> instance for the file stream.</returns>
-    /// <remarks>File compression will be automatically detected and used handled when necessary.</remarks>
+    /// <remarks>File compression will be automatically detected and handled when necessary.</remarks>
     public static TagReader OpenRead(string path, FormatOptions options, CompressionType compression = CompressionType.AutoDetect)
     {
         return new TagReader(GetReadStream(path, compression), options);
     }
 
     /// <summary>
-    /// Opens an existing NBT file or creates a new one if one if it does not exist, and returns a <see cref="TagWriter"/> instance for it.
+    /// Opens an existing NBT file or creates a new one if it does not exist, and returns a <see cref="TagWriter"/> instance for it.
     /// </summary>
-    /// <param name="path">The path of the file to query write.</param>
+    /// <param name="path">The path of the file to open for writing.</param>
     /// <param name="options">Bitwise flags to configure how data should be handled for compatibility between different specifications.</param>
     /// <param name="type">A flag indicating the type of compression to use.</param>
     /// <param name="level">A flag indicating the compression strategy that will be used, if any.</param>
