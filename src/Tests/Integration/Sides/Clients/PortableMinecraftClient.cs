@@ -53,13 +53,9 @@ public class PortableMinecraftClient : IntegrationSideBase
         var (host, port) = ParseAddress(address);
         var dockerHost = GetDockerHost(host);
         var networkArgs = GetDockerNetworkArgs();
-        var arch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
-        var volumeName = $"void-tests-portablemc-{arch}";
 
         var args = new List<string> { "run", "--rm" };
         args.AddRange(networkArgs);
-        args.Add("-v");
-        args.Add($"{volumeName}:/root/.portablemc");
 
         if (OperatingSystem.IsLinux() && Directory.Exists(HostCaCertsPath))
         {
@@ -152,17 +148,12 @@ public class PortableMinecraftClient : IntegrationSideBase
         ENV MESA_GL_VERSION_OVERRIDE=3.3
         ENV MESA_GLSL_VERSION_OVERRIDE=330
 
-        ARG PORTABLEMC_VERSION=5.0.2
-
         COPY host-ca-certs/ /usr/local/share/ca-certificates/
 
         RUN apt-get update && apt-get install -y \
             ca-certificates \
-         && update-ca-certificates \
-         && rm -rf /var/lib/apt/lists/*
-
-        RUN apt-get update && apt-get install -y \
-            curl \
+            python3 \
+            python3-pip \
             xvfb \
             xfwm4 \
             x11-utils \
@@ -174,16 +165,9 @@ public class PortableMinecraftClient : IntegrationSideBase
             libasound2 \
             libfreetype6 \
             libfontconfig1 \
-         && ARCH=$(uname -m) \
-         && case "$ARCH" in \
-              x86_64)   ARCH_LABEL="x86_64-gnu" ;; \
-              aarch64)  ARCH_LABEL="aarch64-gnu" ;; \
-              armv7l)   ARCH_LABEL="arm-gnueabihf" ;; \
-              i686)     ARCH_LABEL="i686-gnu" ;; \
-              *)        echo "Unsupported arch: $ARCH" >&2 && exit 1 ;; \
-            esac \
-         && curl -fsSL "https://github.com/mindstorm38/portablemc/releases/download/v${PORTABLEMC_VERSION}/portablemc-${PORTABLEMC_VERSION}-linux-${ARCH_LABEL}.tar.gz" \
-            | tar xz -C /usr/local/bin --strip-components=1 "portablemc-${PORTABLEMC_VERSION}-linux-${ARCH_LABEL}/portablemc" \
+         && update-ca-certificates \
+         && pip3 install portablemc --break-system-packages \
+         && portablemc --main-dir /root/.portablemc start --dry mojang:release \
          && rm -rf /var/lib/apt/lists/*
 
         RUN printf '%s\n' \
@@ -210,7 +194,8 @@ public class PortableMinecraftClient : IntegrationSideBase
          && chmod +x /entrypoint.sh
 
         ENTRYPOINT ["/entrypoint.sh"]
-        CMD ["release"]
+        CMD ["mojang:release"]
         """;
 }
+
 
