@@ -12,7 +12,8 @@ namespace Void.Tests.Integration.Sides.Clients;
 
 public class PortableMinecraftClient : IntegrationSideBase
 {
-    private const string ImageName = "void-tests-mc-client";
+    private const string ImageName = "minecraft-portablemc-void-tests";
+    private const string HostCaCertsPath = "/usr/local/share/ca-certificates";
     public const string Username = "VoidTestClient";
 
     private PortableMinecraftClient()
@@ -42,13 +43,29 @@ public class PortableMinecraftClient : IntegrationSideBase
         var (host, port) = ParseAddress(address);
         var dockerHost = GetDockerHost(host);
         var networkArgs = GetDockerNetworkArgs();
+        var arch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+        var volumeName = $"void-tests-portablemc-{arch}";
 
         var args = new List<string> { "run", "--rm" };
         args.AddRange(networkArgs);
+        args.Add("-v");
+        args.Add($"{volumeName}:/root/.portablemc");
+
+        if (OperatingSystem.IsLinux() && Directory.Exists(HostCaCertsPath))
+        {
+            args.Add("-v");
+            args.Add($"{HostCaCertsPath}:/host-ca-certs:ro");
+        }
+
         args.Add(ImageName);
-        args.Add(dockerHost);
-        args.Add(port.ToString());
+        args.Add("--username");
         args.Add(Username);
+        args.Add("--jvm-arg=-Djava.awt.headless=false");
+        args.Add("--join-server");
+        args.Add(dockerHost);
+        args.Add("--join-server-port");
+        args.Add(port.ToString());
+        args.Add("release");
 
         StartApplication("docker", hasInput: false, [.. args]);
 
@@ -114,29 +131,53 @@ public class PortableMinecraftClient : IntegrationSideBase
     }
 
     private const string DockerfileContent = """
-        FROM node:20-slim
+        FROM rust:bookworm AS builder
 
-        WORKDIR /app
+        RUN cargo install portablemc-cli
 
-        RUN npm install minecraft-protocol
+        FROM debian:bookworm-slim
+
+        ENV DEBIAN_FRONTEND=noninteractive
+        ENV DISPLAY=:99
+        ENV LIBGL_ALWAYS_SOFTWARE=1
+        ENV MESA_GL_VERSION_OVERRIDE=3.3
+        ENV MESA_GLSL_VERSION_OVERRIDE=330
+
+        COPY --from=builder /usr/local/cargo/bin/portablemc /usr/local/bin/portablemc
+
+        RUN apt-get update && apt-get install -y \
+            xvfb \
+            xfwm4 \
+            x11-utils \
+            libgl1-mesa-dri \
+            libxcursor1 \
+            libxrandr2 \
+            libxi6 \
+            libxtst6 \
+            libasound2 \
+            libfreetype6 \
+            libfontconfig1 \
+            ca-certificates \
+            ca-certificates-java \
+         && rm -rf /var/lib/apt/lists/*
 
         RUN printf '%s\n' \
-        'const mc = require("minecraft-protocol");' \
-        'const host = process.argv[2] || "localhost";' \
-        'const port = parseInt(process.argv[3]) || 25565;' \
-        'const username = process.argv[4] || "VoidTestClient";' \
-        '' \
-        'mc.ping({ host, port }, (err, response) => {' \
-        '  if (err) { console.error("Ping failed:", err.message); process.exit(1); }' \
-        '  const version = response.version.name;' \
-        '  console.log("Server version:", version);' \
-        '  const client = mc.createClient({ host, port, username, version, auth: "offline" });' \
-        '  client.on("login", () => console.log("Logged in:", username));' \
-        '  client.on("error", (err) => { console.error(err.message); process.exit(1); });' \
-        '  client.on("end", () => { console.log("Disconnected"); process.exit(0); });' \
-        '});' \
-        > /app/connect.js
+        '#!/usr/bin/env bash' \
+        'set -e' \
+        'if ls /host-ca-certs/*.crt 2>/dev/null 1>&2; then' \
+        '    cp /host-ca-certs/*.crt /usr/local/share/ca-certificates/' \
+        '    update-ca-certificates 2>/dev/null || true' \
+        '    export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStorePassword=changeit"' \
+        'fi' \
+        'Xvfb :99 -screen 0 1280x720x24 &' \
+        'sleep 2' \
+        'xfwm4 &' \
+        'sleep 1' \
+        'exec portablemc --main-dir "$HOME/.portablemc" start "$@"' \
+        > /entrypoint.sh \
+         && chmod +x /entrypoint.sh
 
-        ENTRYPOINT ["node", "/app/connect.js"]
+        ENTRYPOINT ["/entrypoint.sh"]
+        CMD ["release"]
         """;
 }
