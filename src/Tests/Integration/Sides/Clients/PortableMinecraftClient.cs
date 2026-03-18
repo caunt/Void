@@ -50,14 +50,14 @@ public class PortableMinecraftClient : IntegrationSideBase
         args.Add("-v");
         args.Add($"{volumeName}:/root/.portablemc");
         args.Add(ImageName);
-        args.Add("--auth");
-        args.Add($"offline:{Username}");
-        args.Add("--");
-        args.Add("release");
-        args.Add("--server");
+        args.Add("--username");
+        args.Add(Username);
+        args.Add("--jvm-arg=-Djava.awt.headless=false");
+        args.Add("--join-server");
         args.Add(dockerHost);
-        args.Add("--port");
+        args.Add("--join-server-port");
         args.Add(port.ToString());
+        args.Add("release");
 
         StartApplication("docker", hasInput: false, [.. args]);
 
@@ -69,9 +69,6 @@ public class PortableMinecraftClient : IntegrationSideBase
 
     private static async Task BuildImageAsync(string workingDirectory, CancellationToken cancellationToken)
     {
-        if (await ImageExistsAsync(cancellationToken))
-            return;
-
         var startInfo = new ProcessStartInfo("docker")
         {
             WorkingDirectory = workingDirectory,
@@ -97,27 +94,6 @@ public class PortableMinecraftClient : IntegrationSideBase
 
         if (process.ExitCode != 0)
             throw new IntegrationTestException($"Docker build failed with exit code {process.ExitCode}.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
-    }
-
-    private static async Task<bool> ImageExistsAsync(CancellationToken cancellationToken)
-    {
-        var startInfo = new ProcessStartInfo("docker")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        startInfo.ArgumentList.Add("image");
-        startInfo.ArgumentList.Add("inspect");
-        startInfo.ArgumentList.Add(ImageName);
-
-        using var process = Process.Start(startInfo);
-
-        if (process is null)
-            return false;
-
-        await process.WaitForExitAsync(cancellationToken);
-        return process.ExitCode == 0;
     }
 
     private static string GetDockerHost(string host)
@@ -155,6 +131,9 @@ public class PortableMinecraftClient : IntegrationSideBase
 
         ENV DEBIAN_FRONTEND=noninteractive
         ENV DISPLAY=:99
+        ENV LIBGL_ALWAYS_SOFTWARE=1
+        ENV MESA_GL_VERSION_OVERRIDE=3.3
+        ENV MESA_GLSL_VERSION_OVERRIDE=330
 
         COPY --from=builder /usr/local/cargo/bin/portablemc /usr/local/bin/portablemc
 
@@ -162,6 +141,15 @@ public class PortableMinecraftClient : IntegrationSideBase
             xvfb \
             xfwm4 \
             x11-utils \
+            libgl1-mesa-dri \
+            libxcursor1 \
+            libxrandr2 \
+            libxi6 \
+            libxtst6 \
+            libasound2 \
+            libfreetype6 \
+            libfontconfig1 \
+            ca-certificates \
          && rm -rf /var/lib/apt/lists/*
 
         RUN printf '%s\n' \
@@ -176,6 +164,6 @@ public class PortableMinecraftClient : IntegrationSideBase
          && chmod +x /entrypoint.sh
 
         ENTRYPOINT ["/entrypoint.sh"]
-        CMD ["--", "release"]
+        CMD ["release"]
         """;
 }
