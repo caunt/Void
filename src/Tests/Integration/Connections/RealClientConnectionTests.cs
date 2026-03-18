@@ -51,7 +51,7 @@ public class RealClientConnectionTests(RealClientConnectionTests.Fixture fixture
             var setupCancellationToken = setupCancellationTokenSource.Token;
 
             var portableMinecraftClientTask = PortableMinecraftClient.CreateAsync(_workingDirectory, setupCancellationToken);
-            var paperServerTask = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: setupCancellationToken);
+            var paperServerTask = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, plugins: PaperPlugins.None, cancellationToken: setupCancellationToken);
 
             _portableMinecraftClient = await portableMinecraftClientTask;
             _paperServer = await paperServerTask;
