@@ -66,6 +66,9 @@ public class PortableMinecraftClient : IntegrationSideBase
         args.Add("--join-server-port");
         args.Add(port.ToString());
         args.Add("release");
+        args.Add("--");
+        args.Add("--quickPlayPath");
+        args.Add("/tmp/quick-play.json");
 
         StartApplication("docker", hasInput: false, [.. args]);
 
@@ -158,7 +161,6 @@ public class PortableMinecraftClient : IntegrationSideBase
             libfreetype6 \
             libfontconfig1 \
             ca-certificates \
-            ca-certificates-java \
          && rm -rf /var/lib/apt/lists/*
 
         RUN printf '%s\n' \
@@ -167,7 +169,14 @@ public class PortableMinecraftClient : IntegrationSideBase
         'if ls /host-ca-certs/*.crt 2>/dev/null 1>&2; then' \
         '    cp /host-ca-certs/*.crt /usr/local/share/ca-certificates/' \
         '    update-ca-certificates 2>/dev/null || true' \
-        '    export JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStorePassword=changeit"' \
+        '    PORTABLEMC_KEYTOOL=$(find "$HOME/.portablemc/jvm" -name "keytool" 2>/dev/null | head -1)' \
+        '    if [ -n "$PORTABLEMC_KEYTOOL" ]; then' \
+        '        CACERTS=$(find "$HOME/.portablemc/jvm" -name "cacerts" -path "*/security/*" 2>/dev/null | head -1)' \
+        '        for cert in /host-ca-certs/*.crt; do' \
+        '            alias=$(basename "$cert" .crt | tr -cd "[:alnum:]-" | head -c 40)' \
+        '            "$PORTABLEMC_KEYTOOL" -importcert -noprompt -trustcacerts -alias "$alias" -file "$cert" -keystore "$CACERTS" -storepass changeit 2>/dev/null || true' \
+        '        done' \
+        '    fi' \
         'fi' \
         'Xvfb :99 -screen 0 1280x720x24 &' \
         'sleep 2' \
