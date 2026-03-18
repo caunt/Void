@@ -12,7 +12,7 @@ namespace Void.Tests.Integration.Sides.Clients;
 
 public class PortableMinecraftClient : IntegrationSideBase
 {
-    private const string ImageName = "minecraft-portablemc-void-tests";
+    private const string ImageName = "void-tests-mc-client";
     public const string Username = "VoidTestClient";
 
     private PortableMinecraftClient()
@@ -42,22 +42,13 @@ public class PortableMinecraftClient : IntegrationSideBase
         var (host, port) = ParseAddress(address);
         var dockerHost = GetDockerHost(host);
         var networkArgs = GetDockerNetworkArgs();
-        var arch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
-        var volumeName = $"void-tests-portablemc-{arch}";
 
         var args = new List<string> { "run", "--rm" };
         args.AddRange(networkArgs);
-        args.Add("-v");
-        args.Add($"{volumeName}:/root/.portablemc");
         args.Add(ImageName);
-        args.Add("--username");
-        args.Add(Username);
-        args.Add("--jvm-arg=-Djava.awt.headless=false");
-        args.Add("--join-server");
         args.Add(dockerHost);
-        args.Add("--join-server-port");
         args.Add(port.ToString());
-        args.Add("release");
+        args.Add(Username);
 
         StartApplication("docker", hasInput: false, [.. args]);
 
@@ -123,47 +114,29 @@ public class PortableMinecraftClient : IntegrationSideBase
     }
 
     private const string DockerfileContent = """
-        FROM rust:bookworm AS builder
+        FROM node:20-slim
 
-        RUN cargo install portablemc-cli
+        WORKDIR /app
 
-        FROM debian:bookworm-slim
-
-        ENV DEBIAN_FRONTEND=noninteractive
-        ENV DISPLAY=:99
-        ENV LIBGL_ALWAYS_SOFTWARE=1
-        ENV MESA_GL_VERSION_OVERRIDE=3.3
-        ENV MESA_GLSL_VERSION_OVERRIDE=330
-
-        COPY --from=builder /usr/local/cargo/bin/portablemc /usr/local/bin/portablemc
-
-        RUN apt-get update && apt-get install -y \
-            xvfb \
-            xfwm4 \
-            x11-utils \
-            libgl1-mesa-dri \
-            libxcursor1 \
-            libxrandr2 \
-            libxi6 \
-            libxtst6 \
-            libasound2 \
-            libfreetype6 \
-            libfontconfig1 \
-            ca-certificates \
-         && rm -rf /var/lib/apt/lists/*
+        RUN npm install minecraft-protocol
 
         RUN printf '%s\n' \
-        '#!/usr/bin/env bash' \
-        'set -e' \
-        'Xvfb :99 -screen 0 1280x720x24 &' \
-        'sleep 2' \
-        'xfwm4 &' \
-        'sleep 1' \
-        'exec portablemc --main-dir "$HOME/.portablemc" start "$@"' \
-        > /entrypoint.sh \
-         && chmod +x /entrypoint.sh
+        'const mc = require("minecraft-protocol");' \
+        'const host = process.argv[2] || "localhost";' \
+        'const port = parseInt(process.argv[3]) || 25565;' \
+        'const username = process.argv[4] || "VoidTestClient";' \
+        '' \
+        'mc.ping({ host, port }, (err, response) => {' \
+        '  if (err) { console.error("Ping failed:", err.message); process.exit(1); }' \
+        '  const version = response.version.name;' \
+        '  console.log("Server version:", version);' \
+        '  const client = mc.createClient({ host, port, username, version, auth: "offline" });' \
+        '  client.on("login", () => console.log("Logged in:", username));' \
+        '  client.on("error", (err) => { console.error(err.message); process.exit(1); });' \
+        '  client.on("end", () => { console.log("Disconnected"); process.exit(0); });' \
+        '});' \
+        > /app/connect.js
 
-        ENTRYPOINT ["/entrypoint.sh"]
-        CMD ["release"]
+        ENTRYPOINT ["node", "/app/connect.js"]
         """;
 }
