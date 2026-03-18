@@ -246,53 +246,77 @@ public abstract class IntegrationSideBase : IIntegrationSide
             if (!OperatingSystem.IsWindows())
                 File.SetUnixFileMode(javaPath, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
-            var proxyCertificatePath = Environment.GetEnvironmentVariable("CODEX_PROXY_CERT");
-
-            if (!string.IsNullOrWhiteSpace(proxyCertificatePath) && File.Exists(proxyCertificatePath) && Path.GetDirectoryName(javaPath) is { } javaBinariesPath && Directory.GetParent(javaBinariesPath) is { } javaHomePath)
-            {
-                var keytool = Path.Combine(javaBinariesPath, OperatingSystem.IsWindows() ? "keytool.exe" : "keytool");
-
-                if (File.Exists(keytool))
-                {
-                    var candidateKeystores = new[]
-                    {
-                        Path.Combine(javaHomePath.FullName, "lib", "security", "cacerts"),
-                        Path.Combine(javaHomePath.FullName, "jre", "lib", "security", "cacerts")
-                    };
-
-                    var keystore = candidateKeystores.FirstOrDefault(File.Exists);
-
-                    if (keystore is not null)
-                    {
-                        var startInfo = new ProcessStartInfo(keytool)
-                        {
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true
-                        };
-
-                        startInfo.ArgumentList.Add("-importcert");
-                        startInfo.ArgumentList.Add("-alias");
-                        startInfo.ArgumentList.Add("codexproxy");
-                        startInfo.ArgumentList.Add("-file");
-                        startInfo.ArgumentList.Add(proxyCertificatePath);
-                        startInfo.ArgumentList.Add("-keystore");
-                        startInfo.ArgumentList.Add(keystore);
-                        startInfo.ArgumentList.Add("-storepass");
-                        startInfo.ArgumentList.Add("changeit");
-                        startInfo.ArgumentList.Add("-noprompt");
-
-                        using var process = Process.Start(startInfo);
-
-                        if (process is not null)
-                            await process.WaitForExitAsync(cancellationToken);
-                    }
-                }
-            }
-
             existingJava = javaPath;
         }
 
+        await ImportTrustedCertificatesAsync(existingJava, cancellationToken);
+
         return existingJava;
+    }
+
+    private static async Task ImportTrustedCertificatesAsync(string javaPath, CancellationToken cancellationToken)
+    {
+        if (Path.GetDirectoryName(javaPath) is not { } javaBinariesPath || Directory.GetParent(javaBinariesPath) is not { } javaHomePath)
+            return;
+
+        var keytool = Path.Combine(javaBinariesPath, OperatingSystem.IsWindows() ? "keytool.exe" : "keytool");
+
+        if (!File.Exists(keytool))
+            return;
+
+        var candidateKeystores = new[]
+        {
+            Path.Combine(javaHomePath.FullName, "lib", "security", "cacerts"),
+            Path.Combine(javaHomePath.FullName, "jre", "lib", "security", "cacerts")
+        };
+
+        var keystore = candidateKeystores.FirstOrDefault(File.Exists);
+
+        if (keystore is null)
+            return;
+
+        var certsToImport = new List<(string Path, string Alias)>();
+
+        var proxyCertificatePath = Environment.GetEnvironmentVariable("CODEX_PROXY_CERT");
+
+        if (!string.IsNullOrWhiteSpace(proxyCertificatePath) && File.Exists(proxyCertificatePath))
+            certsToImport.Add((proxyCertificatePath, "codexproxy"));
+
+        if (OperatingSystem.IsLinux())
+        {
+            var systemCaDirectory = "/usr/local/share/ca-certificates";
+
+            if (Directory.Exists(systemCaDirectory))
+            {
+                foreach (var certFile in Directory.GetFiles(systemCaDirectory, "*.crt"))
+                    certsToImport.Add((certFile, Path.GetFileNameWithoutExtension(certFile).ToLowerInvariant()));
+            }
+        }
+
+        foreach (var (certPath, alias) in certsToImport)
+        {
+            var startInfo = new ProcessStartInfo(keytool)
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            startInfo.ArgumentList.Add("-importcert");
+            startInfo.ArgumentList.Add("-alias");
+            startInfo.ArgumentList.Add(alias);
+            startInfo.ArgumentList.Add("-file");
+            startInfo.ArgumentList.Add(certPath);
+            startInfo.ArgumentList.Add("-keystore");
+            startInfo.ArgumentList.Add(keystore);
+            startInfo.ArgumentList.Add("-storepass");
+            startInfo.ArgumentList.Add("changeit");
+            startInfo.ArgumentList.Add("-noprompt");
+
+            using var process = Process.Start(startInfo);
+
+            if (process is not null)
+                await process.WaitForExitAsync(cancellationToken);
+        }
     }
 
     protected static async Task<string> GetGitHubRepositoryLatestReleaseAssetAsync(string ownerName, string repositoryName, Predicate<string> assetFilter, CancellationToken cancellationToken = default)
