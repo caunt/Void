@@ -13,7 +13,7 @@ public enum TagType : byte
     /// <summary>
     /// Signifies the end of a <see cref="CompoundTag"/>.
     /// </summary>
-    /// <remarks>Some implementation may also use as the child type for an empty list.</remarks>
+    /// <remarks>Some implementations may also use this as the child type for an empty list.</remarks>
     End = 0x00,
 
     /// <summary>
