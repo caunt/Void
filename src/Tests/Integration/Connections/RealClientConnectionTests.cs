@@ -17,14 +17,10 @@ public class RealClientConnectionTests(RealClientConnectionTests.Fixture fixture
     [RealClientFact]
     public async Task PortableMinecraftClientConnectsToPaperServerThroughProxy()
     {
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(15));
-
-        await LoggedExecutorAsync(async () =>
+        await LoggedExecutorAsync(() =>
         {
-            await fixture.PortableMinecraftClient.StartConnectingAsync($"localhost:{ProxyPort}", cancellationTokenSource.Token);
-            await fixture.PaperServer.ExpectTextAsync(PortableMinecraftClient.Username, lookupHistory: true, cancellationTokenSource.Token);
-
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(PortableMinecraftClient.Username));
+            return Task.CompletedTask;
         }, fixture.PortableMinecraftClient, fixture.VoidProxy, fixture.PaperServer);
     }
 
@@ -56,6 +52,9 @@ public class RealClientConnectionTests(RealClientConnectionTests.Fixture fixture
             _portableMinecraftClient = await portableMinecraftClientTask;
             _paperServer = await paperServerTask;
             _voidProxy = await VoidProxy.CreateAsync(_workingDirectory, targetServer: $"localhost:{ServerPort}", proxyPort: ProxyPort, cancellationToken: setupCancellationToken);
+
+            await _portableMinecraftClient.StartConnectingAsync($"localhost:{ProxyPort}", setupCancellationToken);
+            await _paperServer.ExpectTextAsync(PortableMinecraftClient.Username, lookupHistory: true, setupCancellationToken);
         }
 
         public async Task DisposeAsync()
