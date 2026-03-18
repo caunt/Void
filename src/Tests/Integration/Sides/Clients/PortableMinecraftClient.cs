@@ -53,9 +53,13 @@ public class PortableMinecraftClient : IntegrationSideBase
         var (host, port) = ParseAddress(address);
         var dockerHost = GetDockerHost(host);
         var networkArgs = GetDockerNetworkArgs();
+        var arch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+        var volumeName = $"void-tests-portablemc-{arch}";
 
         var args = new List<string> { "run", "--rm" };
         args.AddRange(networkArgs);
+        args.Add("-v");
+        args.Add($"{volumeName}:/root/.portablemc");
 
         if (OperatingSystem.IsLinux() && Directory.Exists(HostCaCertsPath))
         {
@@ -64,17 +68,15 @@ public class PortableMinecraftClient : IntegrationSideBase
         }
 
         args.Add(ImageName);
-        args.Add("--username");
+        args.Add("-u");
         args.Add(Username);
-        args.Add("--jvm-arg=-Djava.awt.headless=false");
-        args.Add("--join-server");
+        args.Add("--jvm-args");
+        args.Add("-Djava.awt.headless=false");
+        args.Add("-s");
         args.Add(dockerHost);
-        args.Add("--join-server-port");
+        args.Add("-p");
         args.Add(port.ToString());
         args.Add("release");
-        args.Add("--");
-        args.Add("--quickPlayPath");
-        args.Add("/tmp/quick-play.json");
 
         StartApplication("docker", hasInput: false, [.. args]);
 
@@ -167,7 +169,6 @@ public class PortableMinecraftClient : IntegrationSideBase
             libfontconfig1 \
          && update-ca-certificates \
          && pip3 install portablemc --break-system-packages \
-         && portablemc --main-dir /root/.portablemc start --dry mojang:release \
          && rm -rf /var/lib/apt/lists/*
 
         RUN printf '%s\n' \
@@ -194,7 +195,7 @@ public class PortableMinecraftClient : IntegrationSideBase
          && chmod +x /entrypoint.sh
 
         ENTRYPOINT ["/entrypoint.sh"]
-        CMD ["mojang:release"]
+        CMD ["release"]
         """;
 }
 
