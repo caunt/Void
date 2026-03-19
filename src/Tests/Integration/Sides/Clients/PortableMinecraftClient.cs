@@ -156,6 +156,12 @@ public class PortableMinecraftClient : IntegrationSideBase
             StartApplication("docker", hasInput: false, "logs", "-f", _dockerContainerName);
             
             await ExpectTextAsync("Connecting to", lookupHistory: true, cancellationToken);
+
+            // Wait for silence in the logs
+            while (TimeSinceLastLog <= TimeSpan.FromSeconds(10))
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+            
+            await RunDockerAsync(["exec", _dockerContainerName, "send-chat", text], cancellationToken);
             
             if (_process is { HasExited: true })
                 throw new IntegrationTestException($"Docker client for {nameof(PortableMinecraftClient)} exited with code {_process.ExitCode}.\nLogs:\n{string.Join("\n", Logs)}");
