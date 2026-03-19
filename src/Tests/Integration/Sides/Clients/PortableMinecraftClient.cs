@@ -70,8 +70,7 @@ public class PortableMinecraftClient : IntegrationSideBase
         args.Add(ImageName);
         args.Add("-u");
         args.Add(Username);
-        args.Add("--jvm-args");
-        args.Add("-Djava.awt.headless=false");
+        args.Add("--jvm-args=-Djava.awt.headless=false");
         args.Add("-s");
         args.Add(dockerHost);
         args.Add("-p");
@@ -80,7 +79,7 @@ public class PortableMinecraftClient : IntegrationSideBase
 
         StartApplication("docker", hasInput: false, [.. args]);
 
-        await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
+        await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
 
         if (_process is { HasExited: true })
             throw new IntegrationTestException($"Docker container for {nameof(PortableMinecraftClient)} exited immediately with code {_process.ExitCode}.\nLogs:\n{string.Join("\n", Logs)}");
