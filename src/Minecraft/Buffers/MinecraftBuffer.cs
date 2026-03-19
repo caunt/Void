@@ -223,7 +223,7 @@ public ref struct MinecraftBuffer
     public Component ReadComponent(bool asNbt = true)
     {
         return asNbt
-            ? Component.ReadFrom(ref this)
+            ? Component.ReadFrom(ref this, readName: false)
             : Component.DeserializeJson(ReadJsonString());
     }
 
