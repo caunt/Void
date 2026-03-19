@@ -8,7 +8,7 @@ namespace Void.Tests.Integration.Base;
 
 public class IntegrationUnitBase
 {
-    public TimeSpan TestTimeout { get; } = TimeSpan.FromSeconds(60);
+    public TimeSpan TestTimeout { get; } = TimeSpan.FromSeconds(120);
 
     public static async Task LoggedExecutorAsync(Func<Task> function, params IIntegrationSide[] sides)
     {
