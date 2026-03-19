@@ -40,10 +40,15 @@ string[] arguments = [
     "--server", "127.0.0.1:25566",
     "--server", "127.0.0.1:25567",
     "--server", "127.0.0.1:25568",
+    "--server", "127.0.0.1:25569",
+    "--override", "s1=args-server-1",
+    "--override", "s2=args-server-2",
+    "--override", "s3=args-server-3",
+    "--override", "s4=args-server-4",
     "--offline"
 ];
 
-Console.WriteLine(@$"Starting {servers.Length} minecraft container(s)");
+Console.WriteLine($"Starting {servers.Length} minecraft container(s)");
 
 if (docker)
     await StartDockerEnvironmentAsync(servers, arguments: [.. arguments]);
