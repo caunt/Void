@@ -23,7 +23,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
         var server1First = $"server1-{Guid.NewGuid()}";
         var server2Text = $"server2-{Guid.NewGuid()}";
 
-        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
+        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
 
         await LoggedExecutorAsync(async () =>
         {
@@ -50,7 +50,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
         var server1First = $"server1-{Guid.NewGuid()}";
         var server2Text = $"server2-{Guid.NewGuid()}";
 
-        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
+        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
 
         await LoggedExecutorAsync(async () =>
         {
@@ -83,7 +83,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
 
         public async Task InitializeAsync()
         {
-            using var cancellationTokenSource = new CancellationTokenSource(Timeout);
+            using var cancellationTokenSource = new CancellationTokenSource(SetupTimeout);
 
             var mineflayerClientTask = MineflayerClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
             var paperServer1Task = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server1Port, name: "server1", cancellationToken: cancellationTokenSource.Token);
