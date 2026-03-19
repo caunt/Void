@@ -152,6 +152,9 @@ public class PortableMinecraftClient : IntegrationSideBase
 
         if (_process is { HasExited: true })
             throw new IntegrationTestException($"Docker container for {nameof(PortableMinecraftClient)} exited immediately with code {_process.ExitCode}.\nLogs:\n{string.Join("\n", Logs)}");
+
+        if (_process is { HasExited: false })
+            await _process.ExitAsync(entireProcessTree: true, cancellationToken);
     }
 
     private static async Task BuildImageAsync(string workingDirectory, CancellationToken cancellationToken)
