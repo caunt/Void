@@ -30,9 +30,9 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface for reading data.</typeparam>
     /// <param name="buffer">This parameter is the source from which data is read and processed for deserialization.</param>
     /// <returns>The method returns a Component object created from the deserialized data.</returns>
-    public static Component ReadFrom<TBuffer>(ref TBuffer buffer) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    public static Component ReadFrom<TBuffer>(ref TBuffer buffer, bool readName = true) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
-        return DeserializeNbt(buffer.ReadTag());
+        return DeserializeNbt(buffer.ReadTag(readName));
     }
 
     /// <summary>
@@ -40,9 +40,9 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     /// </summary>
     /// <param name="buffer">The buffer containing the data to be read and deserialized into a Component.</param>
     /// <returns>Returns a Component object created from the data in the buffer.</returns>
-    public static Component ReadFrom(ref MinecraftBuffer buffer)
+    public static Component ReadFrom(ref MinecraftBuffer buffer, bool readName = true)
     {
-        return DeserializeNbt(buffer.ReadTag());
+        return DeserializeNbt(buffer.ReadTag(readName));
     }
 
     /// <summary>

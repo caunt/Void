@@ -104,12 +104,12 @@ public abstract record NbtTag
             throw new FormatException($"Only NbtCompound and NbtList can be parsed from Snbt. Provided value: {data}");
     }
 
-    public static long Parse(ReadOnlyMemory<byte> data, out NbtTag result, bool readName = false, NbtFormatOptions formatOptions = NbtFormatOptions.Java)
+    public static long Parse(ReadOnlyMemory<byte> data, out NbtTag result, bool readName = true, NbtFormatOptions formatOptions = NbtFormatOptions.Java)
     {
         return Parse<NbtTag>(data, out result, readName, formatOptions);
     }
 
-    public static long Parse<T>(ReadOnlyMemory<byte> data, out T result, bool readName = false, NbtFormatOptions formatOptions = NbtFormatOptions.Java) where T : NbtTag
+    public static long Parse<T>(ReadOnlyMemory<byte> data, out T result, bool readName = true, NbtFormatOptions formatOptions = NbtFormatOptions.Java) where T : NbtTag
     {
         if (!MemoryMarshal.TryGetArray(data, out var segment) || segment.Array is null)
             throw new ArgumentException("Cannot get array segment from data", nameof(data));
@@ -129,7 +129,7 @@ public abstract record NbtTag
         return stream.Position;
     }
 
-    public static NbtTag ReadFrom<TBuffer>(ref TBuffer buffer, bool readName = false) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
+    public static NbtTag ReadFrom<TBuffer>(ref TBuffer buffer, bool readName = true) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
         var position = buffer.Position;
         var data = buffer.ReadToEnd();
@@ -142,7 +142,7 @@ public abstract record NbtTag
 
 public abstract record NbtTag<T> : NbtTag where T : NbtTag
 {
-    public static long Parse(ReadOnlyMemory<byte> data, out T result, bool readName = false, NbtFormatOptions formatOptions = NbtFormatOptions.Java)
+    public static long Parse(ReadOnlyMemory<byte> data, out T result, bool readName = true, NbtFormatOptions formatOptions = NbtFormatOptions.Java)
     {
         return Parse<T>(data, out result, readName, formatOptions);
     }

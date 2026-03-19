@@ -194,7 +194,7 @@ public static class ReadMinecraftBufferExtensions
     /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface for reading data.</typeparam>
     /// <param name="buffer">This parameter is a reference to the buffer from which the tag is read.</param>
     /// <returns>Returns an NbtTag object that represents the read tag.</returns>
-    public static NbtTag ReadTag<TBuffer>(ref this TBuffer buffer, bool readName = false)
+    public static NbtTag ReadTag<TBuffer>(ref this TBuffer buffer, bool readName = true)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>
         NbtTag.ReadFrom(ref buffer, readName);
