@@ -45,10 +45,11 @@ public class RealClientConnectionTests(RealClientConnectionTests.Fixture fixture
 
             var portableMinecraftClientTask = PortableMinecraftClient.CreateAsync(_workingDirectory, setupCancellationToken);
             var paperServerTask = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: setupCancellationToken);
-
+            var voidProxyTask = VoidProxy.CreateAsync(_workingDirectory, targetServer: $"localhost:{ServerPort}", proxyPort: ProxyPort, cancellationToken: setupCancellationToken);
+            
             PortableMinecraftClient = await portableMinecraftClientTask;
             PaperServer = await paperServerTask;
-            VoidProxy = await VoidProxy.CreateAsync(_workingDirectory, targetServer: $"localhost:{ServerPort}", proxyPort: ProxyPort, cancellationToken: setupCancellationToken);
+            VoidProxy = await voidProxyTask;
         }
 
         public async Task DisposeAsync()

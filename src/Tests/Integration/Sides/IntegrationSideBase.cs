@@ -131,6 +131,22 @@ public abstract class IntegrationSideBase : IIntegrationSide
         _process.BeginErrorReadLine();
     }
 
+    public async Task ExpectTextAsync(string text, bool lookupHistory = true, CancellationToken cancellationToken = default)
+    {
+        await ExpectTextAsync(line => line.Contains(text), lookupHistory, cancellationToken);
+    }
+
+    public async Task ExpectTextAsync(Func<string, bool> predicate, bool lookupHistory = true, CancellationToken cancellationToken = default)
+    {
+        if (_process is not { HasExited: false })
+            throw new IntegrationTestException("Application is not started.");
+
+        if (lookupHistory && Logs.Any(predicate))
+            return;
+
+        await ReceiveOutputAsync(predicate, cancellationToken);
+    }
+
     public async ValueTask DisposeAsync()
     {
         GC.SuppressFinalize(this);

@@ -64,20 +64,9 @@ public class PaperServer : IntegrationSideBase
         await File.WriteAllTextAsync(Path.Combine(workingDirectory, "server.properties"), $"server-port={port}\nonline-mode=false\ndifficulty=0\n", cancellationToken);
 
         var instance = new PaperServer(paperJarPath, jreBinaryPath);
-        await instance.ExpectTextAsync("For help, type \"help\"", lookupHistory: true, cancellationToken);
+        await instance.ExpectTextAsync(line => HandleConsole(line, "For help, type \"help\""), lookupHistory: true, cancellationToken);
 
         return instance;
-    }
-
-    public async Task ExpectTextAsync(string text, bool lookupHistory = true, CancellationToken cancellationToken = default)
-    {
-        if (_process is not { HasExited: false })
-            throw new IntegrationTestException("Failed to start Paper server.");
-
-        if (lookupHistory && Logs.Any(log => log.Contains(text)))
-            return;
-
-        await ReceiveOutputAsync(line => HandleConsole(line, text), cancellationToken);
     }
 
     private static bool HandleConsole(string line, string expectedText)
