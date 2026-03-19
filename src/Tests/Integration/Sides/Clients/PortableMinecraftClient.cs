@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,7 +14,9 @@ namespace Void.Tests.Integration.Sides.Clients;
 
 public class PortableMinecraftClient : IntegrationSideBase
 {
+    private const string DockerHost = "host.docker.internal";
     private const string ImageName = "minecraft-portablemc-void-tests";
+    
     public const string Username = "VoidTestClient";
 
     private PortableMinecraftClient()
@@ -29,48 +32,107 @@ public class PortableMinecraftClient : IntegrationSideBase
 
         var dockerfilePath = Path.Combine(workingDirectory, "Dockerfile");
 
-        await File.WriteAllTextAsync(dockerfilePath, DockerfileContent, cancellationToken);
+        await File.WriteAllTextAsync(dockerfilePath, 
+            """
+            FROM rust:bookworm AS builder
+
+            RUN cargo install portablemc-cli
+
+            FROM debian:bookworm-slim
+
+            ENV DEBIAN_FRONTEND=noninteractive
+            ENV DISPLAY=:99
+            ENV LIBGL_ALWAYS_SOFTWARE=1
+            ENV MESA_GL_VERSION_OVERRIDE=3.3
+            ENV MESA_GLSL_VERSION_OVERRIDE=330
+
+            COPY --from=builder /usr/local/cargo/bin/portablemc /usr/local/bin/portablemc
+
+            RUN apt-get update && apt-get install -y \
+                xvfb \
+                xfwm4 \
+                x11-utils \
+                libasound2 \
+                libflite1 \
+                libgl1-mesa-dri \
+                libxcursor1 \
+                libxrandr2 \
+                libxi6 \
+                libxtst6 \
+                libasound2 \
+                libfreetype6 \
+                libfontconfig1 \
+                ca-certificates \
+             && rm -rf /var/lib/apt/lists/*
+
+            RUN printf "pcm.!default { type null }\nctl.!default { type null }\n" > /etc/asound.conf
+
+            RUN printf '%s\n' \
+            '#!/usr/bin/env bash' \
+            'set -e' \
+            'mkdir -p "$HOME/.portablemc"' \
+            'touch "$HOME/.portablemc/options.txt"' \
+            'if grep -q "^onboardAccessibility:" "$HOME/.portablemc/options.txt"; then' \
+            '  sed -i "s/^onboardAccessibility:.*/onboardAccessibility:false/" "$HOME/.portablemc/options.txt"' \
+            'else' \
+            '  printf "onboardAccessibility:false\n" >> "$HOME/.portablemc/options.txt"' \
+            'fi' \
+            'Xvfb :99 -screen 0 1280x720x24 &' \
+            'sleep 2' \
+            'xfwm4 &' \
+            'sleep 1' \
+            'exec portablemc --main-dir "$HOME/.portablemc" "$@"' \
+            > /entrypoint.sh \
+             && chmod +x /entrypoint.sh
+
+            ENTRYPOINT ["/entrypoint.sh"]
+            CMD ["release"]
+            """, cancellationToken);
         await BuildImageAsync(workingDirectory, cancellationToken);
 
         return new PortableMinecraftClient();
     }
 
-    public async Task StartConnectingAsync(string address, CancellationToken cancellationToken = default)
+    public async Task StartConnectingAsync(EndPoint endPoint, CancellationToken cancellationToken = default)
     {
         if (_process is { HasExited: false })
             await _process.ExitAsync(entireProcessTree: true, cancellationToken);
 
-        var (host, port) = ParseAddress(address);
-        var dockerHost = GetDockerHost(host);
-        var networkArgs = GetDockerNetworkArgs();
+        (string host, int port) = endPoint switch
+        {
+            DnsEndPoint dnsEndPoint when !OperatingSystem.IsLinux() && string.Equals(dnsEndPoint.Host, "localhost", StringComparison.OrdinalIgnoreCase) => (DockerHost, dnsEndPoint.Port),
+            DnsEndPoint dnsEndPoint => (dnsEndPoint.Host, dnsEndPoint.Port),
+            IPEndPoint ipEndPoint when !OperatingSystem.IsLinux() && IPAddress.IsLoopback(ipEndPoint.Address) => (DockerHost, ipEndPoint.Port),
+            IPEndPoint ipEndPoint => (ipEndPoint.Address.ToString(), ipEndPoint.Port),
+            _ => throw new NotSupportedException($"Unsupported endpoint type: {endPoint.GetType()}")
+        };
+        
         var arch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
         var volumeName = $"void-tests-portablemc-{arch}";
 
-        var args = new List<string>
-        {
-            "run", 
-            "--rm"
-        };
+        // Docker arguments
+        var arguments = new List<string> { "run" };
         
         if (RuntimeInformation.OSArchitecture is not Architecture.X64 and not Architecture.X86)
-            args.AddRange(["--platform", "linux/amd64"]);
+            arguments.AddRange(["--platform", "linux/amd64"]);
         
-        args.AddRange(networkArgs);
-        args.Add("-v");
-        args.Add($"{volumeName}:/root/.portablemc");
-        args.Add(ImageName);
-        args.Add("start");
-        args.Add("--username");
-        args.Add(Username);
-        args.Add("--jvm-arg=-Djava.awt.headless=false");
-        args.Add("--join-server");
-        args.Add(dockerHost);
-        args.Add("--join-server-port");
-        args.Add(port.ToString());
-        args.Add("release");
+        if (OperatingSystem.IsLinux())
+            arguments.AddRange(["--network", "host"]);
+        
+        arguments.Add("--rm");
+        arguments.AddRange(["-v", $"{volumeName}:/root/.portablemc"]);
+        
+        arguments.Add(ImageName);
+        
+        // PortableMC CLI arguments
+        arguments.Add("start");
+        arguments.AddRange(["--username", Username]);
+        arguments.AddRange(["--join-server", host]);
+        arguments.AddRange(["--join-server-port", port.ToString()]);
+        arguments.Add("--jvm-arg=-Djava.awt.headless=false");
+        arguments.Add("release");
 
-        Console.WriteLine(string.Join(' ', args));
-        StartApplication("docker", hasInput: false, [.. args]);
+        StartApplication("docker", hasInput: false, [.. arguments]);
 
         await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
 
@@ -92,8 +154,7 @@ public class PortableMinecraftClient : IntegrationSideBase
         if (RuntimeInformation.OSArchitecture is not Architecture.X64 and not Architecture.X86)
             startInfo.ArgumentList.AddRange(["--platform", "linux/amd64"]);
         
-        startInfo.ArgumentList.Add("-t");
-        startInfo.ArgumentList.Add(ImageName);
+        startInfo.ArgumentList.AddRange(["-t", ImageName]);
         startInfo.ArgumentList.Add(".");
 
         using var process = Process.Start(startInfo)
@@ -110,86 +171,4 @@ public class PortableMinecraftClient : IntegrationSideBase
         if (process.ExitCode != 0)
             throw new IntegrationTestException($"Docker build failed with exit code {process.ExitCode}.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
     }
-
-    private static string GetDockerHost(string host)
-    {
-        if (OperatingSystem.IsLinux())
-            return host;
-
-        return host is "localhost" or "127.0.0.1" ? "host.docker.internal" : host;
-    }
-
-    private static string[] GetDockerNetworkArgs()
-    {
-        if (OperatingSystem.IsLinux())
-            return ["--network", "host"];
-
-        return [];
-    }
-
-    private static (string host, int port) ParseAddress(string address)
-    {
-        var lastColon = address.LastIndexOf(':');
-
-        if (lastColon >= 0 && int.TryParse(address[(lastColon + 1)..], out var parsedPort))
-            return (address[..lastColon], parsedPort);
-
-        return (address, 25565);
-    }
-
-    private const string DockerfileContent = """
-        FROM rust:bookworm AS builder
-        
-        RUN cargo install portablemc-cli
-        
-        FROM debian:bookworm-slim
-        
-        ENV DEBIAN_FRONTEND=noninteractive
-        ENV DISPLAY=:99
-        ENV LIBGL_ALWAYS_SOFTWARE=1
-        ENV MESA_GL_VERSION_OVERRIDE=3.3
-        ENV MESA_GLSL_VERSION_OVERRIDE=330
-        
-        COPY --from=builder /usr/local/cargo/bin/portablemc /usr/local/bin/portablemc
-        
-        RUN apt-get update && apt-get install -y \
-            xvfb \
-            xfwm4 \
-            x11-utils \
-            libasound2 \
-            libflite1 \
-            libgl1-mesa-dri \
-            libxcursor1 \
-            libxrandr2 \
-            libxi6 \
-            libxtst6 \
-            libasound2 \
-            libfreetype6 \
-            libfontconfig1 \
-            ca-certificates \
-         && rm -rf /var/lib/apt/lists/*
-        
-        RUN printf "pcm.!default { type null }\nctl.!default { type null }\n" > /etc/asound.conf
-        
-        RUN printf '%s\n' \
-        '#!/usr/bin/env bash' \
-        'set -e' \
-        'mkdir -p "$HOME/.portablemc"' \
-        'touch "$HOME/.portablemc/options.txt"' \
-        'if grep -q "^onboardAccessibility:" "$HOME/.portablemc/options.txt"; then' \
-        '  sed -i "s/^onboardAccessibility:.*/onboardAccessibility:false/" "$HOME/.portablemc/options.txt"' \
-        'else' \
-        '  printf "onboardAccessibility:false\n" >> "$HOME/.portablemc/options.txt"' \
-        'fi' \
-        'Xvfb :99 -screen 0 1280x720x24 &' \
-        'sleep 2' \
-        'xfwm4 &' \
-        'sleep 1' \
-        'exec portablemc --main-dir "$HOME/.portablemc" "$@"' \
-        > /entrypoint.sh \
-         && chmod +x /entrypoint.sh
-        
-        ENTRYPOINT ["/entrypoint.sh"]
-        CMD ["release"]
-        """;
 }

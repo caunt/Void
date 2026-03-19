@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Tests.Integration.Base;
@@ -24,8 +25,8 @@ public class RealClientConnectionTests(RealClientConnectionTests.Fixture fixture
         
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.PortableMinecraftClient.StartConnectingAsync($"localhost:{ProxyPort}", cancellationTokenSource.Token);
-            await fixture.PaperServer.ExpectTextAsync(PortableMinecraftClient.Username, lookupHistory: true, cancellationTokenSource.Token);
+            await fixture.PortableMinecraftClient.StartConnectingAsync(new DnsEndPoint("localhost", ProxyPort), cancellationTokenSource.Token);
+            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
         }, fixture.PortableMinecraftClient, fixture.VoidProxy, fixture.PaperServer);
