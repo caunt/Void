@@ -18,7 +18,7 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
     public async Task MccConnectsToPaperServer()
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
+        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
 
         await LoggedExecutorAsync(async () =>
         {
@@ -34,7 +34,7 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
     public async Task MccConnectsToPaperServer_WithProtocolVersion(ProtocolVersion protocolVersion)
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
+        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
 
         await LoggedExecutorAsync(async () =>
         {
@@ -49,7 +49,7 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
     public async Task MineflayerConnectsToPaperServer()
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
+        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
 
         await LoggedExecutorAsync(async () =>
         {
@@ -65,7 +65,7 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
     public async Task MineflayerConnectsToPaperServer_WithProtocolVersion(ProtocolVersion protocolVersion)
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(Timeout);
+        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
 
         await LoggedExecutorAsync(async () =>
         {
@@ -88,7 +88,7 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
 
         public async Task InitializeAsync()
         {
-            using var cancellationTokenSource = new CancellationTokenSource(Timeout);
+            using var cancellationTokenSource = new CancellationTokenSource(SetupTimeout);
 
             MinecraftConsoleClient = await MinecraftConsoleClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
             MineflayerClient = await MineflayerClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);

@@ -10,7 +10,7 @@ public abstract class IntegrationFixtureBase : IDisposable
     protected readonly string _workingDirectory;
     protected readonly HttpClient _httpClient;
 
-    public TimeSpan Timeout { get; } = TimeSpan.FromMinutes(10);
+    public TimeSpan SetupTimeout { get; } = TimeSpan.FromMinutes(10);
 
     public IntegrationFixtureBase(string workingDirectory)
     {

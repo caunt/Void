@@ -8,7 +8,7 @@ namespace Void.Tests.Integration.Base;
 
 public class IntegrationUnitBase
 {
-    public TimeSpan Timeout { get; } = TimeSpan.FromSeconds(60);
+    public TimeSpan TestTimeout { get; } = TimeSpan.FromSeconds(60);
 
     public static async Task LoggedExecutorAsync(Func<Task> function, params IIntegrationSide[] sides)
     {
@@ -18,12 +18,18 @@ public class IntegrationUnitBase
         }
         catch (Exception exception)
         {
-            throw new IntegrationTestException($"{exception}\nLogs:\n\n\n{string.Join("\n\n\n", sides.Select(side => $"{side} logs:\n{string.Join("\n", side.Logs)}"))}");
+            throw new IntegrationTestException($"{exception}\n{CollectLogs()}");
         }
         finally
         {
+            Console.WriteLine(CollectLogs());
+            
             foreach (var side in sides)
                 side.ClearLogs();
         }
+
+        return;
+
+        string CollectLogs() => $"Logs:\n\n\n{string.Join("\n\n\n", sides.Select(side => $"{side} logs:\n{string.Join("\n", side.Logs)}"))}";
     }
 }

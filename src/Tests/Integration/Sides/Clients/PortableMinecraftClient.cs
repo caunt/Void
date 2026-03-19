@@ -5,6 +5,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using NuGet.Packaging;
 using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
 
@@ -31,7 +32,7 @@ public class PortableMinecraftClient : IntegrationSideBase
         await File.WriteAllTextAsync(dockerfilePath, DockerfileContent, cancellationToken);
         await BuildImageAsync(workingDirectory, cancellationToken);
 
-        return new();
+        return new PortableMinecraftClient();
     }
 
     public async Task StartConnectingAsync(string address, CancellationToken cancellationToken = default)
@@ -45,11 +46,20 @@ public class PortableMinecraftClient : IntegrationSideBase
         var arch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
         var volumeName = $"void-tests-portablemc-{arch}";
 
-        var args = new List<string> { "run", "--rm" };
+        var args = new List<string>
+        {
+            "run", 
+            "--rm"
+        };
+        
+        if (RuntimeInformation.OSArchitecture is not Architecture.X64 and not Architecture.X86)
+            args.AddRange(["--platform", "linux/amd64"]);
+        
         args.AddRange(networkArgs);
         args.Add("-v");
         args.Add($"{volumeName}:/root/.portablemc");
         args.Add(ImageName);
+        args.Add("start");
         args.Add("--username");
         args.Add(Username);
         args.Add("--jvm-arg=-Djava.awt.headless=false");
@@ -59,6 +69,7 @@ public class PortableMinecraftClient : IntegrationSideBase
         args.Add(port.ToString());
         args.Add("release");
 
+        Console.WriteLine(string.Join(' ', args));
         StartApplication("docker", hasInput: false, [.. args]);
 
         await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
@@ -77,6 +88,10 @@ public class PortableMinecraftClient : IntegrationSideBase
         };
 
         startInfo.ArgumentList.Add("build");
+        
+        if (RuntimeInformation.OSArchitecture is not Architecture.X64 and not Architecture.X86)
+            startInfo.ArgumentList.AddRange(["--platform", "linux/amd64"]);
+        
         startInfo.ArgumentList.Add("-t");
         startInfo.ArgumentList.Add(ImageName);
         startInfo.ArgumentList.Add(".");
@@ -124,23 +139,25 @@ public class PortableMinecraftClient : IntegrationSideBase
 
     private const string DockerfileContent = """
         FROM rust:bookworm AS builder
-
+        
         RUN cargo install portablemc-cli
-
+        
         FROM debian:bookworm-slim
-
+        
         ENV DEBIAN_FRONTEND=noninteractive
         ENV DISPLAY=:99
         ENV LIBGL_ALWAYS_SOFTWARE=1
         ENV MESA_GL_VERSION_OVERRIDE=3.3
         ENV MESA_GLSL_VERSION_OVERRIDE=330
-
+        
         COPY --from=builder /usr/local/cargo/bin/portablemc /usr/local/bin/portablemc
-
+        
         RUN apt-get update && apt-get install -y \
             xvfb \
             xfwm4 \
             x11-utils \
+            libasound2 \
+            libflite1 \
             libgl1-mesa-dri \
             libxcursor1 \
             libxrandr2 \
@@ -151,18 +168,27 @@ public class PortableMinecraftClient : IntegrationSideBase
             libfontconfig1 \
             ca-certificates \
          && rm -rf /var/lib/apt/lists/*
-
+        
+        RUN printf "pcm.!default { type null }\nctl.!default { type null }\n" > /etc/asound.conf
+        
         RUN printf '%s\n' \
         '#!/usr/bin/env bash' \
         'set -e' \
+        'mkdir -p "$HOME/.portablemc"' \
+        'touch "$HOME/.portablemc/options.txt"' \
+        'if grep -q "^onboardAccessibility:" "$HOME/.portablemc/options.txt"; then' \
+        '  sed -i "s/^onboardAccessibility:.*/onboardAccessibility:false/" "$HOME/.portablemc/options.txt"' \
+        'else' \
+        '  printf "onboardAccessibility:false\n" >> "$HOME/.portablemc/options.txt"' \
+        'fi' \
         'Xvfb :99 -screen 0 1280x720x24 &' \
         'sleep 2' \
         'xfwm4 &' \
         'sleep 1' \
-        'exec portablemc --main-dir "$HOME/.portablemc" start "$@"' \
+        'exec portablemc --main-dir "$HOME/.portablemc" "$@"' \
         > /entrypoint.sh \
          && chmod +x /entrypoint.sh
-
+        
         ENTRYPOINT ["/entrypoint.sh"]
         CMD ["release"]
         """;
