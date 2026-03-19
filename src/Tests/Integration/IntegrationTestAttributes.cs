@@ -7,11 +7,9 @@ internal static class IntegrationTestEnvironment
 {
     public const string DirectTestsEnabledVariable = "VOID_INTEGRATION_DIRECT_TESTS_ENABLED";
     public const string ProxiedTestsEnabledVariable = "VOID_INTEGRATION_PROXIED_TESTS_ENABLED";
-    public const string RealClientTestsEnabledVariable = "VOID_INTEGRATION_REAL_CLIENT_TESTS_ENABLED";
 
     public static bool DirectTestsEnabled { get; } = bool.TryParse(Environment.GetEnvironmentVariable(DirectTestsEnabledVariable), out var enabled) && enabled;
     public static bool ProxiedTestsEnabled { get; } = bool.TryParse(Environment.GetEnvironmentVariable(ProxiedTestsEnabledVariable), out var enabled) && enabled;
-    public static bool RealClientTestsEnabled { get; } = bool.TryParse(Environment.GetEnvironmentVariable(RealClientTestsEnabledVariable), out var enabled) && enabled;
 }
 
 public sealed class DirectFactAttribute : FactAttribute
@@ -49,22 +47,3 @@ public sealed class ProxiedTheoryAttribute : TheoryAttribute
             Skip = $"Proxied integration tests are disabled. Set {IntegrationTestEnvironment.ProxiedTestsEnabledVariable}=true to enable.";
     }
 }
-
-public sealed class RealClientFactAttribute : FactAttribute
-{
-    public RealClientFactAttribute()
-    {
-        if (!IntegrationTestEnvironment.RealClientTestsEnabled)
-            Skip = $"Real client integration tests are disabled. Set {IntegrationTestEnvironment.RealClientTestsEnabledVariable}=true to enable.";
-    }
-}
-
-public sealed class RealClientTheoryAttribute : TheoryAttribute
-{
-    public RealClientTheoryAttribute()
-    {
-        if (!IntegrationTestEnvironment.RealClientTestsEnabled)
-            Skip = $"Real client integration tests are disabled. Set {IntegrationTestEnvironment.RealClientTestsEnabledVariable}=true to enable.";
-    }
-}
-

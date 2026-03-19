@@ -40,10 +40,11 @@ public class PaperServer : IntegrationSideBase
         using var versions = JsonDocument.Parse(versionsJson);
 
         var filteredSuffixes = new[] { "-pre", "-rc" };
-        var latestVersion = versions.RootElement.GetProperty("versions").EnumerateArray()
+        var latestVersion = versions.RootElement.GetProperty("versions")
+            .EnumerateArray()
             .Select(versionElement => versionElement.GetString())
-            .Where(version => version != null && !filteredSuffixes.Any(version.Contains))
-            .LastOrDefault() ?? versions.RootElement.GetProperty("versions").EnumerateArray().Last().GetString();
+            .LastOrDefault(version => version != null && !filteredSuffixes.Any(version.Contains)) 
+                            ?? versions.RootElement.GetProperty("versions").EnumerateArray().Last().GetString();
 
         var buildsJson = await client.GetStringAsync($"https://api.papermc.io/v2/projects/paper/versions/{latestVersion}/builds", cancellationToken);
         using var builds = JsonDocument.Parse(buildsJson);
