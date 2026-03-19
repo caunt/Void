@@ -171,6 +171,25 @@ public class PortableMinecraftClient : IntegrationSideBase
          && rm -rf /var/lib/apt/lists/*
 
         RUN printf '%s\n' \
+        '#!/usr/bin/env python3' \
+        'from portablemc.standard import Version, QuickPlayMultiplayer' \
+        '_orig_resolve = Version._resolve_features' \
+        'def _patched_resolve(self, watcher):' \
+        '    _orig_resolve(self, watcher)' \
+        '    if isinstance(self.quick_play, QuickPlayMultiplayer):' \
+        '        self._features["has_quick_plays_support"] = True' \
+        'Version._resolve_features = _patched_resolve' \
+        '_orig_add = QuickPlayMultiplayer.add_args_replacements' \
+        'def _patched_add(self, r):' \
+        '    _orig_add(self, r)' \
+        '    r["quickPlayPath"] = "quickPlay/mp-" + self.host + "-" + str(self.port) + ".json"' \
+        'QuickPlayMultiplayer.add_args_replacements = _patched_add' \
+        'from portablemc.cli import main' \
+        'main()' \
+        > /launch.py \
+         && chmod +x /launch.py
+
+        RUN printf '%s\n' \
         '#!/usr/bin/env bash' \
         'set -e' \
         'if ls /host-ca-certs/*.crt 2>/dev/null 1>&2; then' \
@@ -189,7 +208,7 @@ public class PortableMinecraftClient : IntegrationSideBase
         'sleep 2' \
         'xfwm4 &' \
         'sleep 1' \
-        'exec portablemc --main-dir "$HOME/.portablemc" start "$@"' \
+        'exec python3 /launch.py --main-dir "$HOME/.portablemc" start "$@"' \
         > /entrypoint.sh \
          && chmod +x /entrypoint.sh
 
