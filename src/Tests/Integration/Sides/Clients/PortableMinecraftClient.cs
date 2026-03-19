@@ -19,8 +19,13 @@ public class PortableMinecraftClient : IntegrationSideBase
     
     public const string Username = "VoidTestClient";
 
-    private PortableMinecraftClient()
+    private readonly string _workingDirectory;
+    private readonly string _dockerContainerName;
+    
+    private PortableMinecraftClient(string workingDirectory, string dockerContainerName)
     {
+        _workingDirectory = workingDirectory;
+        _dockerContainerName = dockerContainerName;
     }
 
     public static async Task<PortableMinecraftClient> CreateAsync(string workingDirectory, CancellationToken cancellationToken = default)
@@ -73,11 +78,11 @@ public class PortableMinecraftClient : IntegrationSideBase
             'set -e' \
             'export DISPLAY="${DISPLAY:-:99}"' \
             'windowId="$(xdotool search --onlyvisible --name "Minecraft" | head -n 1)"' \
-            'xdotool windowactivate --sync "$windowId"' \
-            'xdotool key t' \
+            'xdotool windowfocus "$windowId"' \
+            'xdotool key --window "$windowId" t' \
             'sleep 1' \
-            'xdotool type --delay 1 -- "$*"' \
-            'xdotool key Return' \
+            'xdotool type --window "$windowId" --delay 1 -- "$*"' \
+            'xdotool key --window "$windowId" Return' \
             > /usr/local/bin/send-chat \
              && chmod +x /usr/local/bin/send-chat
             
@@ -104,79 +109,110 @@ public class PortableMinecraftClient : IntegrationSideBase
             """, cancellationToken);
         await BuildImageAsync(workingDirectory, cancellationToken);
 
-        return new PortableMinecraftClient();
+        return new PortableMinecraftClient(workingDirectory, $"void-tests-portablemc-{Random.Shared.Next()}");
     }
 
     public async Task SendTextMessageAsync(EndPoint endPoint, string text, CancellationToken cancellationToken = default)
     {
-        if (_process is { HasExited: false })
-            await _process.ExitAsync(entireProcessTree: true, cancellationToken);
+        await StopContainerAsync(cancellationToken);
 
-        (string host, int port) = endPoint switch
+        try
         {
-            DnsEndPoint dnsEndPoint when !OperatingSystem.IsLinux() && string.Equals(dnsEndPoint.Host, "localhost", StringComparison.OrdinalIgnoreCase) => (DockerHost, dnsEndPoint.Port),
-            DnsEndPoint dnsEndPoint => (dnsEndPoint.Host, dnsEndPoint.Port),
-            IPEndPoint ipEndPoint when !OperatingSystem.IsLinux() && IPAddress.IsLoopback(ipEndPoint.Address) => (DockerHost, ipEndPoint.Port),
-            IPEndPoint ipEndPoint => (ipEndPoint.Address.ToString(), ipEndPoint.Port),
-            _ => throw new NotSupportedException($"Unsupported endpoint type: {endPoint.GetType()}")
-        };
-        
-        var arch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
-        var volumeName = $"void-tests-portablemc-{arch}";
+            (string host, int port) = endPoint switch
+            {
+                DnsEndPoint dnsEndPoint when !OperatingSystem.IsLinux() && string.Equals(dnsEndPoint.Host, "localhost", StringComparison.OrdinalIgnoreCase) => (DockerHost, dnsEndPoint.Port),
+                DnsEndPoint dnsEndPoint => (dnsEndPoint.Host, dnsEndPoint.Port),
+                IPEndPoint ipEndPoint when !OperatingSystem.IsLinux() && IPAddress.IsLoopback(ipEndPoint.Address) => (DockerHost, ipEndPoint.Port),
+                IPEndPoint ipEndPoint => (ipEndPoint.Address.ToString(), ipEndPoint.Port),
+                _ => throw new NotSupportedException($"Unsupported endpoint type: {endPoint.GetType()}")
+            };
 
-        // Docker arguments
-        var arguments = new List<string> { "run" };
-        
-        if (RuntimeInformation.OSArchitecture is not Architecture.X64 and not Architecture.X86)
-            arguments.AddRange(["--platform", "linux/amd64"]);
-        
-        if (OperatingSystem.IsLinux())
-            arguments.AddRange(["--network", "host"]);
-        
-        arguments.Add("--rm");
-        arguments.AddRange(["-v", $"{volumeName}:/root/.portablemc"]);
-        
-        arguments.Add(ImageName);
-        
-        // PortableMC CLI arguments
-        arguments.Add("start");
-        arguments.AddRange(["--username", Username]);
-        arguments.AddRange(["--join-server", host]);
-        arguments.AddRange(["--join-server-port", port.ToString()]);
-        arguments.Add("--jvm-arg=-Djava.awt.headless=false");
-        arguments.Add("release");
+            // Docker arguments
+            var arguments = new List<string> { "run" };
 
-        StartApplication("docker", hasInput: false, [.. arguments]);
+            if (RuntimeInformation.OSArchitecture is not Architecture.X64 and not Architecture.X86)
+                arguments.AddRange(["--platform", "linux/amd64"]);
 
-        await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
+            if (OperatingSystem.IsLinux())
+                arguments.AddRange(["--network", "host"]);
 
-        if (_process is { HasExited: true })
-            throw new IntegrationTestException($"Docker container for {nameof(PortableMinecraftClient)} exited immediately with code {_process.ExitCode}.\nLogs:\n{string.Join("\n", Logs)}");
+            arguments.AddRange(["--name", _dockerContainerName]);
+            arguments.AddRange(["-v", $"{_workingDirectory}/.portablemc:/root/.portablemc"]);
+            arguments.Add("--rm");
+            arguments.Add(ImageName);
 
-        if (_process is { HasExited: false })
-            await _process.ExitAsync(entireProcessTree: true, cancellationToken);
+            // PortableMC CLI arguments
+            arguments.Add("start");
+            arguments.AddRange(["--username", Username]);
+            arguments.AddRange(["--join-server", host]);
+            arguments.AddRange(["--join-server-port", port.ToString()]);
+            arguments.Add("--jvm-arg=-Djava.awt.headless=false");
+            arguments.Add("release");
+
+            StartApplication("docker", hasInput: false, [.. arguments]);
+            await ExpectTextAsync("Connecting to", lookupHistory: true, cancellationToken);
+            
+            if (_process is { HasExited: true })
+                throw new IntegrationTestException($"Docker client for {nameof(PortableMinecraftClient)} exited immediately with code {_process.ExitCode}.\nLogs:\n{string.Join("\n", Logs)}");
+        }
+        finally
+        {
+            await StopContainerAsync(cancellationToken);
+        }
+    }
+
+    public new async ValueTask DisposeAsync()
+    {
+        await base.DisposeAsync();
+        await RemoveImageAsync();
     }
 
     private static async Task BuildImageAsync(string workingDirectory, CancellationToken cancellationToken)
     {
-        var startInfo = new ProcessStartInfo("docker")
+        var arguments = new List<string> { "build" };
+        
+        if (RuntimeInformation.OSArchitecture is not Architecture.X64 and not Architecture.X86)
+            arguments.AddRange(["--platform", "linux/amd64"]);
+        
+        arguments.AddRange(["-t", ImageName]);
+        arguments.Add(".");
+
+        await RunDockerAsync(workingDirectory, arguments, cancellationToken);
+    }
+
+    private async Task StopContainerAsync(CancellationToken cancellationToken = default)
+    {
+        if (_process is not { HasExited: false })
+            return;
+        
+        await RunDockerAsync(["stop", _dockerContainerName], cancellationToken);
+        await _process.ExitAsync(entireProcessTree: true, cancellationToken);
+    }
+
+    private static async Task RemoveImageAsync(CancellationToken cancellationToken = default)
+    {
+        await RunDockerAsync(["rmi", "--force", ImageName], cancellationToken);
+    }
+    
+    private static async Task RunDockerAsync(IEnumerable<string> arguments, CancellationToken cancellationToken = default)
+    {
+        await RunDockerAsync(Directory.GetCurrentDirectory(), arguments, cancellationToken);
+    }
+
+    private static async Task RunDockerAsync(string workingDirectory, IEnumerable<string> arguments, CancellationToken cancellationToken = default)
+    {
+        var processStartInfo = new ProcessStartInfo("docker")
         {
             WorkingDirectory = workingDirectory,
             RedirectStandardOutput = true,
             RedirectStandardError = true
         };
-
-        startInfo.ArgumentList.Add("build");
         
-        if (RuntimeInformation.OSArchitecture is not Architecture.X64 and not Architecture.X86)
-            startInfo.ArgumentList.AddRange(["--platform", "linux/amd64"]);
+        processStartInfo.ArgumentList.AddRange(arguments);
         
-        startInfo.ArgumentList.AddRange(["-t", ImageName]);
-        startInfo.ArgumentList.Add(".");
-
-        using var process = Process.Start(startInfo)
-            ?? throw new IntegrationTestException("Failed to start Docker image build.");
-
+        using var process = Process.Start(processStartInfo) 
+                            ?? throw new IntegrationTestException($"Failed to start: docker {string.Join(' ', processStartInfo.ArgumentList)}.");
+        
         var stdOutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
         var stdErrTask = process.StandardError.ReadToEndAsync(cancellationToken);
 
@@ -186,20 +222,6 @@ public class PortableMinecraftClient : IntegrationSideBase
         var stdErr = await stdErrTask;
 
         if (process.ExitCode != 0)
-            throw new IntegrationTestException($"Docker build failed with exit code {process.ExitCode}.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
-    }
-
-    private static async Task RemoveImageAsync(CancellationToken cancellationToken = default)
-    {
-        using var process = Process.Start(new ProcessStartInfo("docker", ["rmi", "--force", ImageName]));
-
-        if (process is not null)
-            await process.WaitForExitAsync(cancellationToken);
-    }
-
-    public new async ValueTask DisposeAsync()
-    {
-        await base.DisposeAsync();
-        await RemoveImageAsync();
+            throw new IntegrationTestException($"Docker {string.Join(' ', processStartInfo.ArgumentList)} => failed with exit code {process.ExitCode}.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
     }
 }
