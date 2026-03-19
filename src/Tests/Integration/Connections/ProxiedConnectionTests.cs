@@ -101,6 +101,9 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : In
 
         public async Task DisposeAsync()
         {
+            if (!IntegrationTestEnvironment.ProxiedTestsEnabled)
+                return;
+            
             if (MinecraftConsoleClient is not null)
                 await MinecraftConsoleClient.DisposeAsync();
 

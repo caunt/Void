@@ -97,6 +97,9 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
 
         public async Task DisposeAsync()
         {
+            if (!IntegrationTestEnvironment.DirectTestsEnabled)
+                return;
+            
             if (MinecraftConsoleClient is not null)
                 await MinecraftConsoleClient.DisposeAsync();
 
