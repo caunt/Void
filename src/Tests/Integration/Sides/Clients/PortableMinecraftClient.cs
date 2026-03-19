@@ -118,6 +118,8 @@ public class PortableMinecraftClient : IntegrationSideBase
 
         try
         {
+            var potableMcWorkingDirectory = Directory.CreateDirectory(Path.Combine(_workingDirectory, ".portablemc"));
+            
             (string host, int port) = endPoint switch
             {
                 DnsEndPoint dnsEndPoint when !OperatingSystem.IsLinux() && string.Equals(dnsEndPoint.Host, "localhost", StringComparison.OrdinalIgnoreCase) => (DockerHost, dnsEndPoint.Port),
@@ -137,8 +139,9 @@ public class PortableMinecraftClient : IntegrationSideBase
                 arguments.AddRange(["--network", "host"]);
 
             arguments.AddRange(["--name", _dockerContainerName]);
-            arguments.AddRange(["-v", $"{_workingDirectory}/.portablemc:/root/.portablemc"]);
+            arguments.AddRange(["-v", $"{potableMcWorkingDirectory.FullName}:/root/.portablemc"]);
             arguments.Add("--rm");
+            arguments.Add("-d");
             arguments.Add(ImageName);
 
             // PortableMC CLI arguments
@@ -149,11 +152,13 @@ public class PortableMinecraftClient : IntegrationSideBase
             arguments.Add("--jvm-arg=-Djava.awt.headless=false");
             arguments.Add("release");
 
-            StartApplication("docker", hasInput: false, [.. arguments]);
+            await RunDockerAsync(arguments, cancellationToken);
+            StartApplication("docker", hasInput: false, "logs", "-f", _dockerContainerName);
+            
             await ExpectTextAsync("Connecting to", lookupHistory: true, cancellationToken);
             
             if (_process is { HasExited: true })
-                throw new IntegrationTestException($"Docker client for {nameof(PortableMinecraftClient)} exited immediately with code {_process.ExitCode}.\nLogs:\n{string.Join("\n", Logs)}");
+                throw new IntegrationTestException($"Docker client for {nameof(PortableMinecraftClient)} exited with code {_process.ExitCode}.\nLogs:\n{string.Join("\n", Logs)}");
         }
         finally
         {
@@ -164,6 +169,7 @@ public class PortableMinecraftClient : IntegrationSideBase
     public new async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
+        await StopContainerAsync();
         await RemoveImageAsync();
     }
 
