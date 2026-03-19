@@ -93,7 +93,7 @@ public class PortableMinecraftClient : IntegrationSideBase
         return new PortableMinecraftClient();
     }
 
-    public async Task StartConnectingAsync(EndPoint endPoint, CancellationToken cancellationToken = default)
+    public async Task SendTextMessageAsync(EndPoint endPoint, string text, CancellationToken cancellationToken = default)
     {
         if (_process is { HasExited: false })
             await _process.ExitAsync(entireProcessTree: true, cancellationToken);
@@ -170,5 +170,29 @@ public class PortableMinecraftClient : IntegrationSideBase
 
         if (process.ExitCode != 0)
             throw new IntegrationTestException($"Docker build failed with exit code {process.ExitCode}.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
+    }
+
+    private static async Task RemoveImageAsync(CancellationToken cancellationToken = default)
+    {
+        var startInfo = new ProcessStartInfo("docker")
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+
+        startInfo.ArgumentList.Add("rmi");
+        startInfo.ArgumentList.Add("--force");
+        startInfo.ArgumentList.Add(ImageName);
+
+        using var process = Process.Start(startInfo);
+
+        if (process is not null)
+            await process.WaitForExitAsync(cancellationToken);
+    }
+
+    public new async ValueTask DisposeAsync()
+    {
+        await base.DisposeAsync();
+        await RemoveImageAsync();
     }
 }
