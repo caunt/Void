@@ -25,7 +25,7 @@ public class RealClientConnectionTests(RealClientConnectionTests.Fixture fixture
         
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.PortableMinecraftClient.StartConnectingAsync(new DnsEndPoint("localhost", ProxyPort), cancellationTokenSource.Token);
+            await fixture.PortableMinecraftClient.SendTextMessageAsync(new DnsEndPoint("localhost", ProxyPort), expectedText, cancellationTokenSource.Token);
             await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
