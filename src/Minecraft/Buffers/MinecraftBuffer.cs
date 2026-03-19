@@ -210,7 +210,7 @@ public ref struct MinecraftBuffer
         _backingBuffer.WritePropertyArray(value ?? []);
     }
 
-    public NbtTag ReadTag(bool readName = false)
+    public NbtTag ReadTag(bool readName = true)
     {
         return _backingBuffer.ReadTag(readName);
     }

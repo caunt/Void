@@ -509,7 +509,7 @@ internal ref struct MinecraftBackingBuffer
             WriteProperty(property);
     }
 
-    public NbtTag ReadTag(bool readName = false)
+    public NbtTag ReadTag(bool readName = true)
     {
         var position = GetPosition();
         var data = ReadToEnd();
