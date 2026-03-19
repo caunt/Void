@@ -13,7 +13,6 @@ namespace Void.Tests.Integration.Sides.Clients;
 public class PortableMinecraftClient : IntegrationSideBase
 {
     private const string ImageName = "minecraft-portablemc-void-tests";
-    private const string HostCaCertsPath = "/usr/local/share/ca-certificates";
     public const string Username = "VoidTestClient";
 
     private PortableMinecraftClient()
@@ -28,16 +27,6 @@ public class PortableMinecraftClient : IntegrationSideBase
             Directory.CreateDirectory(workingDirectory);
 
         var dockerfilePath = Path.Combine(workingDirectory, "Dockerfile");
-        var caCertsDestDir = Path.Combine(workingDirectory, "host-ca-certs");
-
-        if (!Directory.Exists(caCertsDestDir))
-            Directory.CreateDirectory(caCertsDestDir);
-
-        if (OperatingSystem.IsLinux() && Directory.Exists(HostCaCertsPath))
-        {
-            foreach (var certFile in Directory.GetFiles(HostCaCertsPath, "*.crt"))
-                File.Copy(certFile, Path.Combine(caCertsDestDir, Path.GetFileName(certFile)), overwrite: true);
-        }
 
         await File.WriteAllTextAsync(dockerfilePath, DockerfileContent, cancellationToken);
         await BuildImageAsync(workingDirectory, cancellationToken);
@@ -60,26 +49,19 @@ public class PortableMinecraftClient : IntegrationSideBase
         args.AddRange(networkArgs);
         args.Add("-v");
         args.Add($"{volumeName}:/root/.portablemc");
-
-        if (OperatingSystem.IsLinux() && Directory.Exists(HostCaCertsPath))
-        {
-            args.Add("-v");
-            args.Add($"{HostCaCertsPath}:/host-ca-certs:ro");
-        }
-
         args.Add(ImageName);
-        args.Add("-u");
+        args.Add("--username");
         args.Add(Username);
-        args.Add("--jvm-args=-Djava.awt.headless=false");
-        args.Add("-s");
+        args.Add("--jvm-arg=-Djava.awt.headless=false");
+        args.Add("--join-server");
         args.Add(dockerHost);
-        args.Add("-p");
+        args.Add("--join-server-port");
         args.Add(port.ToString());
         args.Add("release");
 
         StartApplication("docker", hasInput: false, [.. args]);
 
-        await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
+        await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
 
         if (_process is { HasExited: true })
             throw new IntegrationTestException($"Docker container for {nameof(PortableMinecraftClient)} exited immediately with code {_process.ExitCode}.\nLogs:\n{string.Join("\n", Logs)}");
@@ -141,6 +123,10 @@ public class PortableMinecraftClient : IntegrationSideBase
     }
 
     private const string DockerfileContent = """
+        FROM rust:bookworm AS builder
+
+        RUN cargo install portablemc-cli
+
         FROM debian:bookworm-slim
 
         ENV DEBIAN_FRONTEND=noninteractive
@@ -149,12 +135,9 @@ public class PortableMinecraftClient : IntegrationSideBase
         ENV MESA_GL_VERSION_OVERRIDE=3.3
         ENV MESA_GLSL_VERSION_OVERRIDE=330
 
-        COPY host-ca-certs/ /usr/local/share/ca-certificates/
+        COPY --from=builder /usr/local/cargo/bin/portablemc /usr/local/bin/portablemc
 
         RUN apt-get update && apt-get install -y \
-            ca-certificates \
-            python3 \
-            python3-pip \
             xvfb \
             xfwm4 \
             x11-utils \
@@ -166,49 +149,17 @@ public class PortableMinecraftClient : IntegrationSideBase
             libasound2 \
             libfreetype6 \
             libfontconfig1 \
-         && update-ca-certificates \
-         && pip3 install portablemc --break-system-packages \
+            ca-certificates \
          && rm -rf /var/lib/apt/lists/*
-
-        RUN printf '%s\n' \
-        '#!/usr/bin/env python3' \
-        'from portablemc.standard import Version, QuickPlayMultiplayer' \
-        '_orig_resolve = Version._resolve_features' \
-        'def _patched_resolve(self, watcher):' \
-        '    _orig_resolve(self, watcher)' \
-        '    if isinstance(self.quick_play, QuickPlayMultiplayer):' \
-        '        self._features["has_quick_plays_support"] = True' \
-        'Version._resolve_features = _patched_resolve' \
-        '_orig_add = QuickPlayMultiplayer.add_args_replacements' \
-        'def _patched_add(self, r):' \
-        '    _orig_add(self, r)' \
-        '    r["quickPlayPath"] = "quickPlay/mp-" + self.host + "-" + str(self.port) + ".json"' \
-        'QuickPlayMultiplayer.add_args_replacements = _patched_add' \
-        'from portablemc.cli import main' \
-        'main()' \
-        > /launch.py \
-         && chmod +x /launch.py
 
         RUN printf '%s\n' \
         '#!/usr/bin/env bash' \
         'set -e' \
-        'if ls /host-ca-certs/*.crt 2>/dev/null 1>&2; then' \
-        '    cp /host-ca-certs/*.crt /usr/local/share/ca-certificates/' \
-        '    update-ca-certificates 2>/dev/null || true' \
-        '    PORTABLEMC_KEYTOOL=$(find "$HOME/.portablemc/jvm" -name "keytool" 2>/dev/null | head -1)' \
-        '    if [ -n "$PORTABLEMC_KEYTOOL" ]; then' \
-        '        CACERTS=$(find "$HOME/.portablemc/jvm" -name "cacerts" -path "*/security/*" 2>/dev/null | head -1)' \
-        '        for cert in /host-ca-certs/*.crt; do' \
-        '            alias=$(basename "$cert" .crt | tr -cd "[:alnum:]-" | head -c 40)' \
-        '            "$PORTABLEMC_KEYTOOL" -importcert -noprompt -trustcacerts -alias "$alias" -file "$cert" -keystore "$CACERTS" -storepass changeit 2>/dev/null || true' \
-        '        done' \
-        '    fi' \
-        'fi' \
         'Xvfb :99 -screen 0 1280x720x24 &' \
         'sleep 2' \
         'xfwm4 &' \
         'sleep 1' \
-        'exec python3 /launch.py --main-dir "$HOME/.portablemc" start "$@"' \
+        'exec portablemc --main-dir "$HOME/.portablemc" start "$@"' \
         > /entrypoint.sh \
          && chmod +x /entrypoint.sh
 
@@ -216,5 +167,3 @@ public class PortableMinecraftClient : IntegrationSideBase
         CMD ["release"]
         """;
 }
-
-
