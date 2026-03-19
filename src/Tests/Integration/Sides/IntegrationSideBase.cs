@@ -362,9 +362,6 @@ public abstract class IntegrationSideBase : IIntegrationSide
     private void OnDataReceived(object? sender, DataReceivedEventArgs eventArgs)
     {
         if (eventArgs.Data is not null)
-        {
-            Console.WriteLine(eventArgs.Data);
             _logs.Add(eventArgs.Data);
-        }
     }
 }
