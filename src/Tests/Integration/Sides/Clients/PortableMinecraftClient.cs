@@ -35,23 +35,24 @@ public class PortableMinecraftClient : IntegrationSideBase
         await File.WriteAllTextAsync(dockerfilePath, 
             """
             FROM rust:bookworm AS builder
-
+            
             RUN cargo install portablemc-cli
-
+            
             FROM debian:bookworm-slim
-
+            
             ENV DEBIAN_FRONTEND=noninteractive
             ENV DISPLAY=:99
             ENV LIBGL_ALWAYS_SOFTWARE=1
             ENV MESA_GL_VERSION_OVERRIDE=3.3
             ENV MESA_GLSL_VERSION_OVERRIDE=330
-
+            
             COPY --from=builder /usr/local/cargo/bin/portablemc /usr/local/bin/portablemc
-
+            
             RUN apt-get update && apt-get install -y \
                 xvfb \
                 xfwm4 \
                 x11-utils \
+                xdotool \
                 libasound2 \
                 libflite1 \
                 libgl1-mesa-dri \
@@ -64,9 +65,22 @@ public class PortableMinecraftClient : IntegrationSideBase
                 libfontconfig1 \
                 ca-certificates \
              && rm -rf /var/lib/apt/lists/*
-
+            
             RUN printf "pcm.!default { type null }\nctl.!default { type null }\n" > /etc/asound.conf
-
+            
+            RUN printf '%s\n' \
+            '#!/usr/bin/env bash' \
+            'set -e' \
+            'export DISPLAY="${DISPLAY:-:99}"' \
+            'windowId="$(xdotool search --onlyvisible --name "Minecraft" | head -n 1)"' \
+            'xdotool windowactivate --sync "$windowId"' \
+            'xdotool key t' \
+            'sleep 1' \
+            'xdotool type --delay 1 -- "$*"' \
+            'xdotool key Return' \
+            > /usr/local/bin/send-chat \
+             && chmod +x /usr/local/bin/send-chat
+            
             RUN printf '%s\n' \
             '#!/usr/bin/env bash' \
             'set -e' \
@@ -84,7 +98,7 @@ public class PortableMinecraftClient : IntegrationSideBase
             'exec portablemc --main-dir "$HOME/.portablemc" "$@"' \
             > /entrypoint.sh \
              && chmod +x /entrypoint.sh
-
+            
             ENTRYPOINT ["/entrypoint.sh"]
             CMD ["release"]
             """, cancellationToken);
@@ -174,17 +188,7 @@ public class PortableMinecraftClient : IntegrationSideBase
 
     private static async Task RemoveImageAsync(CancellationToken cancellationToken = default)
     {
-        var startInfo = new ProcessStartInfo("docker")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        startInfo.ArgumentList.Add("rmi");
-        startInfo.ArgumentList.Add("--force");
-        startInfo.ArgumentList.Add(ImageName);
-
-        using var process = Process.Start(startInfo);
+        using var process = Process.Start(new ProcessStartInfo("docker", ["rmi", "--force", ImageName]));
 
         if (process is not null)
             await process.WaitForExitAsync(cancellationToken);
