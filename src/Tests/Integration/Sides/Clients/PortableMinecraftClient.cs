@@ -7,8 +7,10 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using NuGet.Packaging;
+using Void.Minecraft.Network;
 using Void.Tests.Exceptions;
 using Void.Tests.Extensions;
+using Xunit;
 
 namespace Void.Tests.Integration.Sides.Clients;
 
@@ -17,10 +19,10 @@ public class PortableMinecraftClient : IntegrationSideBase
     private const string DockerHost = "host.docker.internal";
     private const string ImageName = "minecraft-portablemc-void-tests";
     
-    public const string Username = "VoidTestClient";
-
     private readonly string _workingDirectory;
     private readonly string _dockerContainerName;
+    
+    public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [..ProtocolVersion.Range()];
     
     private PortableMinecraftClient(string workingDirectory, string dockerContainerName)
     {
@@ -112,7 +114,7 @@ public class PortableMinecraftClient : IntegrationSideBase
         return new PortableMinecraftClient(workingDirectory, $"void-tests-portablemc-{Random.Shared.Next()}");
     }
 
-    public async Task SendTextMessageAsync(EndPoint endPoint, string text, CancellationToken cancellationToken = default)
+    public async Task SendTextMessageAsync(EndPoint endPoint, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
     {
         await StopContainerAsync(cancellationToken);
 
@@ -146,11 +148,11 @@ public class PortableMinecraftClient : IntegrationSideBase
 
             // PortableMC CLI arguments
             arguments.Add("start");
-            arguments.AddRange(["--username", Username]);
+            arguments.AddRange(["--username", nameof(PortableMinecraftClient)[..16]]);
             arguments.AddRange(["--join-server", host]);
             arguments.AddRange(["--join-server-port", port.ToString()]);
             arguments.Add("--jvm-arg=-Djava.awt.headless=false");
-            arguments.Add("release");
+            arguments.Add(protocolVersion.VersionIntroducedIn);
 
             await RunDockerAsync(arguments, cancellationToken);
             StartApplication("docker", hasInput: false, "logs", "-f", _dockerContainerName);

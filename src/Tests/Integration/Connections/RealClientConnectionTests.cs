@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Void.Minecraft.Network;
 using Void.Tests.Integration.Base;
 using Void.Tests.Integration.Sides.Clients;
 using Void.Tests.Integration.Sides.Proxies;
@@ -17,15 +18,16 @@ public class RealClientConnectionTests(RealClientConnectionTests.Fixture fixture
     private const int ServerPort = 37001;
     private const string ExpectedText = "hello proxied void!";
 
-    [Fact]
-    public async Task PortableMinecraftClientConnectsToPaperServerThroughProxy()
+    [Theory]
+    [MemberData(nameof(PortableMinecraftClient.SupportedVersions), MemberType = typeof(PortableMinecraftClient))]
+    public async Task PortableMinecraftClientConnectsToPaperServerThroughProxy(ProtocolVersion protocolVersion)
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
         
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.PortableMinecraftClient.SendTextMessageAsync(new DnsEndPoint("localhost", ProxyPort), expectedText, cancellationTokenSource.Token);
+            await fixture.PortableMinecraftClient.SendTextMessageAsync(new DnsEndPoint("localhost", ProxyPort), protocolVersion, expectedText, cancellationTokenSource.Token);
             await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
