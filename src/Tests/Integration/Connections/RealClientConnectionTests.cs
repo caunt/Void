@@ -14,7 +14,7 @@ public class RealClientConnectionTests(RealClientConnectionTests.Fixture fixture
     private const int ProxyPort = 37000;
     private const int ServerPort = 37001;
 
-    [RealClientFact]
+    [Fact]
     public async Task PortableMinecraftClientConnectsToPaperServerThroughProxy()
     {
         await LoggedExecutorAsync(() =>
@@ -40,15 +40,12 @@ public class RealClientConnectionTests(RealClientConnectionTests.Fixture fixture
 
         public async Task InitializeAsync()
         {
-            if (!IntegrationTestEnvironment.RealClientTestsEnabled)
-                return;
-
             using var setupCancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMinutes(30));
             var setupCancellationToken = setupCancellationTokenSource.Token;
 
             var portableMinecraftClientTask = PortableMinecraftClient.CreateAsync(_workingDirectory, setupCancellationToken);
-            var paperServerTask = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, plugins: PaperPlugins.None, cancellationToken: setupCancellationToken);
-
+            var paperServerTask = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: setupCancellationToken);
+            
             _portableMinecraftClient = await portableMinecraftClientTask;
             _paperServer = await paperServerTask;
             _voidProxy = await VoidProxy.CreateAsync(_workingDirectory, targetServer: $"localhost:{ServerPort}", proxyPort: ProxyPort, cancellationToken: setupCancellationToken);
@@ -59,9 +56,6 @@ public class RealClientConnectionTests(RealClientConnectionTests.Fixture fixture
 
         public async Task DisposeAsync()
         {
-            if (!IntegrationTestEnvironment.RealClientTestsEnabled)
-                return;
-
             if (_portableMinecraftClient is not null)
                 await _portableMinecraftClient.DisposeAsync();
 

@@ -23,8 +23,8 @@ public abstract class IntegrationSideBase : IIntegrationSide
     private const int MaxGitHubReleaseRetries = 5;
     private const int GitHubReleaseRetryDelaySeconds = 20;
 
-    private static readonly AsyncLock _lock = new();
-    private static readonly GitHubClient _gitHubClient = new(new ProductHeaderValue($"{nameof(Void)}.{nameof(Tests)}"));
+    private static readonly AsyncLock Lock = new();
+    private static readonly GitHubClient GitHubClient = new(new ProductHeaderValue($"{nameof(Void)}.{nameof(Tests)}"));
 
     protected string? _jreBinaryPath;
 
@@ -41,10 +41,10 @@ public abstract class IntegrationSideBase : IIntegrationSide
     static IntegrationSideBase()
     {
         if (Environment.GetEnvironmentVariable("GITHUB_TOKEN") is { } token)
-            _gitHubClient.Credentials = new Credentials(token);
+            GitHubClient.Credentials = new Credentials(token);
     }
 
-    public void StartApplication(string fileName, bool hasInput = false, params string[] userArguments)
+    protected void StartApplication(string fileName, bool hasInput = false, params string[] userArguments)
     {
         if (_process is { HasExited: false })
             throw new IntegrationTestException($"Process for {fileName} is already running.");
@@ -122,7 +122,8 @@ public abstract class IntegrationSideBase : IIntegrationSide
             processStartInfo.ArgumentList.Add(argument);
 
         _process = Process.Start(processStartInfo) ?? throw new IntegrationTestException($"Failed to start process for {fileName} with arguments: {string.Join(' ', arguments)}");
-
+        _process.EnableRaisingEvents = true;
+        
         _process.OutputDataReceived += OnDataReceived;
         _process.ErrorDataReceived += OnDataReceived;
 
@@ -150,31 +151,13 @@ public abstract class IntegrationSideBase : IIntegrationSide
     {
         if (_process is null)
             throw new InvalidOperationException("Application is not started.");
-
+        
         var taskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var registration = cancellationToken.Register(() => taskCompletionSource.TrySetCanceled(cancellationToken), useSynchronizationContext: false);
+        await using var registration = cancellationToken.Register(() => taskCompletionSource.TrySetCanceled(cancellationToken), useSynchronizationContext: false);
 
-        void OnProcessExited(object? sender, EventArgs eventArgs) => taskCompletionSource.TrySetCanceled(cancellationToken);
-        void OnDataReceived(object sender, DataReceivedEventArgs eventArgs)
-        {
-            try
-            {
-                if (eventArgs.Data is not null)
-                {
-                    if (handler(eventArgs.Data))
-                        taskCompletionSource.SetResult();
-                }
-            }
-            catch (Exception exception)
-            {
-                if (!taskCompletionSource.TrySetException(exception))
-                    Console.WriteLine($"Failed to set exception for task completion source in {nameof(IntegrationSideBase)}.{nameof(ReceiveOutputAsync)}: {exception}");
-            }
-        }
-
-        _process.OutputDataReceived += OnDataReceived;
-        _process.ErrorDataReceived += OnDataReceived;
-        _process.Exited += OnProcessExited;
+        _process.OutputDataReceived += OnLocalDataReceived;
+        _process.ErrorDataReceived += OnLocalDataReceived;
+        _process.Exited += OnLocalProcessExited;
 
         try
         {
@@ -182,15 +165,35 @@ public abstract class IntegrationSideBase : IIntegrationSide
         }
         finally
         {
-            _process.OutputDataReceived -= OnDataReceived;
-            _process.ErrorDataReceived -= OnDataReceived;
-            _process.Exited -= OnProcessExited;
+            _process.OutputDataReceived -= OnLocalDataReceived;
+            _process.ErrorDataReceived -= OnLocalDataReceived;
+            _process.Exited -= OnLocalProcessExited;
+        }
+
+        return;
+
+        void OnLocalProcessExited(object? sender, EventArgs eventArgs) => taskCompletionSource.TrySetCanceled(cancellationToken);
+        void OnLocalDataReceived(object sender, DataReceivedEventArgs eventArgs)
+        {
+            try
+            {
+                if (eventArgs.Data is null)
+                    return;
+
+                if (handler(eventArgs.Data))
+                    taskCompletionSource.SetResult();
+            }
+            catch (Exception exception)
+            {
+                if (!taskCompletionSource.TrySetException(exception))
+                    Console.WriteLine($@"Failed to set exception for task completion source in {nameof(IntegrationSideBase)}.{nameof(ReceiveOutputAsync)}: {exception}");
+            }
         }
     }
 
     protected static async Task<string> SetupJreAsync(string workingDirectory, HttpClient client, CancellationToken cancellationToken = default)
     {
-        using var disposable = await _lock.LockAsync(cancellationToken);
+        using var disposable = await Lock.LockAsync(cancellationToken);
 
         var jreWorkingDirectory = Path.Combine(workingDirectory, "jre21");
         var javaExecutableName = OperatingSystem.IsWindows() ? "java.exe" : "java";
@@ -231,13 +234,13 @@ public abstract class IntegrationSideBase : IIntegrationSide
 
             if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             {
-                ZipFile.ExtractToDirectory(archivePath, jreWorkingDirectory);
+                await ZipFile.ExtractToDirectoryAsync(archivePath, jreWorkingDirectory, cancellationToken);
             }
             else
             {
                 await using var fileStream = File.OpenRead(archivePath);
-                using var gzip = new GZipStream(fileStream, CompressionMode.Decompress);
-                TarFile.ExtractToDirectory(gzip, jreWorkingDirectory, overwriteFiles: true);
+                await using var gzip = new GZipStream(fileStream, CompressionMode.Decompress);
+                await TarFile.ExtractToDirectoryAsync(gzip, jreWorkingDirectory, overwriteFiles: true, cancellationToken: cancellationToken);
             }
 
             var javaPath = Directory.GetFiles(jreWorkingDirectory, javaExecutableName, SearchOption.AllDirectories).FirstOrDefault() ??
@@ -334,7 +337,7 @@ public abstract class IntegrationSideBase : IIntegrationSide
 
         while (--retries > 0)
         {
-            var releases = await _gitHubClient.Repository.Release.GetAll(ownerName, repositoryName, options);
+            var releases = await GitHubClient.Repository.Release.GetAll(ownerName, repositoryName, options);
 
             if (releases.Count is 0)
                 throw new IntegrationTestException($"No releases found for {ownerName}/{repositoryName}.");
@@ -359,6 +362,9 @@ public abstract class IntegrationSideBase : IIntegrationSide
     private void OnDataReceived(object? sender, DataReceivedEventArgs eventArgs)
     {
         if (eventArgs.Data is not null)
+        {
+            Console.WriteLine(eventArgs.Data);
             _logs.Add(eventArgs.Data);
+        }
     }
 }
