@@ -30,8 +30,10 @@ public abstract class IntegrationSideBase : IIntegrationSide
 
     protected Process? _process;
     protected readonly List<string> _logs = [];
+    protected DateTimeOffset _lastLogTimestamp;
 
     public IEnumerable<string> Logs => [.. _logs];
+    public TimeSpan TimeSinceLastLog => DateTimeOffset.UtcNow - _lastLogTimestamp;
 
     public void ClearLogs()
     {
@@ -377,7 +379,10 @@ public abstract class IntegrationSideBase : IIntegrationSide
 
     private void OnDataReceived(object? sender, DataReceivedEventArgs eventArgs)
     {
-        if (eventArgs.Data is not null)
-            _logs.Add(eventArgs.Data);
+        if (eventArgs.Data is null)
+            return;
+        
+        _lastLogTimestamp = DateTimeOffset.UtcNow;
+        _logs.Add(eventArgs.Data);
     }
 }
