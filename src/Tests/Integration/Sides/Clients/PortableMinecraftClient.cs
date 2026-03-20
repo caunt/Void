@@ -18,12 +18,12 @@ public class PortableMinecraftClient : IntegrationSideBase
 {
     private const string DockerHost = "host.docker.internal";
     private const string ImageName = "minecraft-portablemc-void-tests";
-    
+
     private readonly string _workingDirectory;
     private readonly string _dockerContainerName;
-    
-    public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [..ProtocolVersion.Range()];
-    
+
+    public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion.Range()];
+
     private PortableMinecraftClient(string workingDirectory, string dockerContainerName)
     {
         _workingDirectory = workingDirectory;
@@ -39,7 +39,7 @@ public class PortableMinecraftClient : IntegrationSideBase
 
         var dockerfilePath = Path.Combine(workingDirectory, "Dockerfile");
 
-        await File.WriteAllTextAsync(dockerfilePath, 
+        await File.WriteAllTextAsync(dockerfilePath,
             """
             FROM rust:bookworm AS builder
             
@@ -116,12 +116,17 @@ public class PortableMinecraftClient : IntegrationSideBase
 
     public async Task SendTextMessageAsync(EndPoint endPoint, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
     {
+
+    }
+
+    public async Task SendTextMessagesAsync(EndPoint endPoint, ProtocolVersion protocolVersion, IEnumerable<string> texts, CancellationToken cancellationToken = default)
+    {
         await StopContainerAsync(cancellationToken);
 
         try
         {
             var potableMcWorkingDirectory = Directory.CreateDirectory(Path.Combine(_workingDirectory, ".portablemc"));
-            
+
             (string host, int port) = endPoint switch
             {
                 DnsEndPoint dnsEndPoint when !OperatingSystem.IsLinux() && string.Equals(dnsEndPoint.Host, "localhost", StringComparison.OrdinalIgnoreCase) => (DockerHost, dnsEndPoint.Port),
@@ -156,15 +161,19 @@ public class PortableMinecraftClient : IntegrationSideBase
 
             await RunDockerAsync(arguments, cancellationToken);
             StartApplication("docker", hasInput: false, "logs", "-f", _dockerContainerName);
-            
+
             await ExpectTextAsync("Connecting to", lookupHistory: true, cancellationToken);
 
             // Wait for silence in the logs
             while (TimeSinceLastLog <= TimeSpan.FromSeconds(10))
                 await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
-            
-            await RunDockerAsync(["exec", _dockerContainerName, "send-chat", text], cancellationToken);
-            
+
+            foreach (var text in texts)
+            {
+                await RunDockerAsync(["exec", _dockerContainerName, "send-chat", text], cancellationToken);
+                await Task.Delay(3_000, cancellationToken);
+            }
+
             if (_process is { HasExited: true })
                 throw new IntegrationTestException($"Docker client for {nameof(PortableMinecraftClient)} exited with code {_process.ExitCode}.\nLogs:\n{string.Join("\n", Logs)}");
         }
@@ -184,10 +193,10 @@ public class PortableMinecraftClient : IntegrationSideBase
     private static async Task BuildImageAsync(string workingDirectory, CancellationToken cancellationToken)
     {
         var arguments = new List<string> { "build" };
-        
+
         if (RuntimeInformation.OSArchitecture is not Architecture.X64 and not Architecture.X86)
             arguments.AddRange(["--platform", "linux/amd64"]);
-        
+
         arguments.AddRange(["-t", ImageName]);
         arguments.Add(".");
 
@@ -198,7 +207,7 @@ public class PortableMinecraftClient : IntegrationSideBase
     {
         if (_process is not { HasExited: false })
             return;
-        
+
         await RunDockerAsync(["stop", _dockerContainerName], cancellationToken);
         await _process.ExitAsync(entireProcessTree: true, cancellationToken);
     }
@@ -207,7 +216,7 @@ public class PortableMinecraftClient : IntegrationSideBase
     {
         await RunDockerAsync(["rmi", "--force", ImageName], cancellationToken);
     }
-    
+
     private static async Task RunDockerAsync(IEnumerable<string> arguments, CancellationToken cancellationToken = default)
     {
         await RunDockerAsync(Directory.GetCurrentDirectory(), arguments, cancellationToken);
@@ -221,12 +230,12 @@ public class PortableMinecraftClient : IntegrationSideBase
             RedirectStandardOutput = true,
             RedirectStandardError = true
         };
-        
+
         processStartInfo.ArgumentList.AddRange(arguments);
-        
-        using var process = Process.Start(processStartInfo) 
+
+        using var process = Process.Start(processStartInfo)
                             ?? throw new IntegrationTestException($"Failed to start: docker {string.Join(' ', processStartInfo.ArgumentList)}.");
-        
+
         var stdOutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
         var stdErrTask = process.StandardError.ReadToEndAsync(cancellationToken);
 
