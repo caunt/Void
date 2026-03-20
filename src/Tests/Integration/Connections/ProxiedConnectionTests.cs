@@ -60,9 +60,13 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : In
         {
             using var cancellationTokenSource = new CancellationTokenSource(SetupTimeout);
 
-            PortableMinecraftClient = await PortableMinecraftClient.CreateAsync(_workingDirectory, cancellationTokenSource.Token);
-            PaperServer = await PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: cancellationTokenSource.Token);
-            VoidProxy = await VoidProxy.CreateAsync(_workingDirectory, targetServer: $"localhost:{ServerPort}", proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
+            var portableMinecraftClientTask = PortableMinecraftClient.CreateAsync(_workingDirectory, cancellationTokenSource.Token);
+            var paperServerTask = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: cancellationTokenSource.Token);
+            var voidProxyTask = VoidProxy.CreateAsync(_workingDirectory, targetServer: $"localhost:{ServerPort}", proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
+            
+            PortableMinecraftClient = await portableMinecraftClientTask;
+            PaperServer = await paperServerTask;
+            VoidProxy = await voidProxyTask;
         }
 
         public async Task DisposeAsync()
