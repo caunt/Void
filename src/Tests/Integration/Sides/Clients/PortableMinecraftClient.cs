@@ -41,11 +41,11 @@ public class PortableMinecraftClient : IntegrationSideBase
 
         await File.WriteAllTextAsync(dockerfilePath,
             """
-            FROM --platform=$BUILDPLATFORM rust:bookworm AS builder
+            FROM rust:bookworm AS builder
             
             RUN cargo install portablemc-cli
             
-            FROM --platform=$BUILDPLATFORM debian:bookworm-slim
+            FROM debian:bookworm-slim
             
             ENV DEBIAN_FRONTEND=noninteractive
             ENV DISPLAY=:99
