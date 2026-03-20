@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Network;
@@ -16,76 +17,42 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : In
     private const int ServerPort = 35001;
     private const string ExpectedText = "hello proxied void!";
 
-    [ProxiedFact]
-    public async Task MccConnectsToPaperServerThroughProxy()
+    private static readonly EndPoint ProxyEndPoint = new IPEndPoint(IPAddress.Loopback, ServerPort);
+
+    [Fact]
+    public async Task PortableMinecraftClientConnectsToPaperServerThroughProxy()
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
 
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.MinecraftConsoleClient.SendTextMessageAsync($"localhost:{ProxyPort}", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
+            await fixture.PortableMinecraftClient.SendTextMessageAsync(ProxyEndPoint, ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
             await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
-        }, fixture.MinecraftConsoleClient, fixture.VoidProxy, fixture.PaperServer);
+        }, fixture.PortableMinecraftClient, fixture.VoidProxy, fixture.PaperServer);
     }
 
-    [ProxiedTheory]
-    [MemberData(nameof(MinecraftConsoleClient.SupportedVersions), MemberType = typeof(MinecraftConsoleClient))]
-    public async Task MccConnectsToPaperServerThroughProxy_WithProtocolVersion(ProtocolVersion protocolVersion)
+    [Theory]
+    [MemberData(nameof(PortableMinecraftClient.SupportedVersions), MemberType = typeof(PortableMinecraftClient))]
+    public async Task PortableMinecraftClientConnectsToPaperServerThroughProxy_WithProtocolVersion(ProtocolVersion protocolVersion)
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
 
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.MinecraftConsoleClient.SendTextMessageAsync($"localhost:{ProxyPort}", protocolVersion, expectedText, cancellationTokenSource.Token);
+            await fixture.PortableMinecraftClient.SendTextMessageAsync(ProxyEndPoint, protocolVersion, expectedText, cancellationTokenSource.Token);
             await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
-        }, fixture.MinecraftConsoleClient, fixture.VoidProxy, fixture.PaperServer);
+        }, fixture.PortableMinecraftClient, fixture.VoidProxy, fixture.PaperServer);
     }
 
-    [ProxiedFact]
-    public async Task MineflayerConnectsToPaperServerThroughProxy()
+    public class Fixture() : IntegrationFixtureBase(nameof(ProxiedConnectionTests)), IAsyncLifetime
     {
-        var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
-
-        await LoggedExecutorAsync(async () =>
-        {
-            await fixture.MineflayerClient.SendTextMessageAsync($"localhost:{ProxyPort}", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
-            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
-
-            Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
-        }, fixture.MineflayerClient, fixture.VoidProxy, fixture.PaperServer);
-    }
-
-    [ProxiedTheory]
-    [MemberData(nameof(MineflayerClient.SupportedVersions), MemberType = typeof(MineflayerClient))]
-    public async Task MineflayerConnectsToPaperServerThroughProxy_WithProtocolVersion(ProtocolVersion protocolVersion)
-    {
-        var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
-
-        await LoggedExecutorAsync(async () =>
-        {
-            await fixture.MineflayerClient.SendTextMessageAsync($"localhost:{ProxyPort}", protocolVersion, expectedText, cancellationTokenSource.Token);
-            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
-
-            Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
-        }, fixture.MineflayerClient, fixture.VoidProxy, fixture.PaperServer);
-    }
-
-    public class Fixture : IntegrationFixtureBase, IAsyncLifetime
-    {
-        public Fixture() : base(nameof(ProxiedConnectionTests))
-        {
-        }
-
-        public MinecraftConsoleClient MinecraftConsoleClient { get => field ?? throw new InvalidOperationException($"{nameof(MinecraftConsoleClient)} is not initialized."); set; }
-        public MineflayerClient MineflayerClient { get => field ?? throw new InvalidOperationException($"{nameof(MineflayerClient)} is not initialized."); set; }
+        public PortableMinecraftClient PortableMinecraftClient { get => field ?? throw new InvalidOperationException($"{nameof(PortableMinecraftClient)} is not initialized."); set; }
         public PaperServer PaperServer { get => field ?? throw new InvalidOperationException($"{nameof(PaperServer)} is not initialized."); set; }
         public VoidProxy VoidProxy { get => field ?? throw new InvalidOperationException($"{nameof(VoidProxy)} is not initialized."); set; }
 
@@ -93,28 +60,16 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : In
         {
             using var cancellationTokenSource = new CancellationTokenSource(SetupTimeout);
 
-            MinecraftConsoleClient = await MinecraftConsoleClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
-            MineflayerClient = await MineflayerClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
+            PortableMinecraftClient = await PortableMinecraftClient.CreateAsync(_workingDirectory, cancellationTokenSource.Token);
             PaperServer = await PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: cancellationTokenSource.Token);
             VoidProxy = await VoidProxy.CreateAsync(_workingDirectory, targetServer: $"localhost:{ServerPort}", proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
         }
 
         public async Task DisposeAsync()
         {
-            if (!IntegrationTestEnvironment.ProxiedTestsEnabled)
-                return;
-            
-            if (MinecraftConsoleClient is not null)
-                await MinecraftConsoleClient.DisposeAsync();
-
-            if (MineflayerClient is not null)
-                await MineflayerClient.DisposeAsync();
-
-            if (PaperServer is not null)
-                await PaperServer.DisposeAsync();
-
-            if (VoidProxy is not null)
-                await VoidProxy.DisposeAsync();
+            await PortableMinecraftClient.DisposeAsync();
+            await PaperServer.DisposeAsync();
+            await VoidProxy.DisposeAsync();
         }
     }
 }

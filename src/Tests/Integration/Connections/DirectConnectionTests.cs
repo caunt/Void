@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.Minecraft.Network;
@@ -14,100 +15,56 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
     private const int ServerPort = 25000;
     private const string ExpectedText = "hello void!";
 
-    [DirectFact]
-    public async Task MccConnectsToPaperServer()
+    private static readonly EndPoint ServerEndPoint = new IPEndPoint(IPAddress.Loopback, ServerPort);
+
+    [Fact]
+    public async Task PortableMinecraftClientConnectsToPaperServer()
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
 
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.MinecraftConsoleClient.SendTextMessageAsync($"localhost:{ServerPort}", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
+            await fixture.PortableMinecraftClient.SendTextMessageAsync(ServerEndPoint, ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
             await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
-        }, fixture.MinecraftConsoleClient, fixture.PaperServer);
+        }, fixture.PortableMinecraftClient, fixture.PaperServer);
     }
 
-    [DirectTheory]
+    [Theory]
     [MemberData(nameof(MinecraftConsoleClient.SupportedVersions), MemberType = typeof(MinecraftConsoleClient))]
-    public async Task MccConnectsToPaperServer_WithProtocolVersion(ProtocolVersion protocolVersion)
+    public async Task PortableMinecraftClientConnectsToPaperServer_WithProtocolVersion(ProtocolVersion protocolVersion)
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
         using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
 
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.MinecraftConsoleClient.SendTextMessageAsync($"localhost:{ServerPort}", protocolVersion, expectedText, cancellationTokenSource.Token);
+            await fixture.PortableMinecraftClient.SendTextMessageAsync(ServerEndPoint, protocolVersion, expectedText, cancellationTokenSource.Token);
             await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
-        }, fixture.MinecraftConsoleClient, fixture.PaperServer);
+        }, fixture.PortableMinecraftClient, fixture.PaperServer);
     }
 
-    [DirectFact]
-    public async Task MineflayerConnectsToPaperServer()
+    public class Fixture() : IntegrationFixtureBase(nameof(DirectConnectionTests)), IAsyncLifetime
     {
-        var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
-
-        await LoggedExecutorAsync(async () =>
-        {
-            await fixture.MineflayerClient.SendTextMessageAsync($"localhost:{ServerPort}", ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
-            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
-
-            Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
-        }, fixture.MineflayerClient, fixture.PaperServer);
-    }
-
-    [DirectTheory]
-    [MemberData(nameof(MineflayerClient.SupportedVersions), MemberType = typeof(MineflayerClient))]
-    public async Task MineflayerConnectsToPaperServer_WithProtocolVersion(ProtocolVersion protocolVersion)
-    {
-        var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
-
-        await LoggedExecutorAsync(async () =>
-        {
-            await fixture.MineflayerClient.SendTextMessageAsync($"localhost:{ServerPort}", protocolVersion, expectedText, cancellationTokenSource.Token);
-            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
-
-            Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
-        }, fixture.MineflayerClient, fixture.PaperServer);
-    }
-
-    public class Fixture : IntegrationFixtureBase, IAsyncLifetime
-    {
-        public Fixture() : base(nameof(DirectConnectionTests))
-        {
-        }
-
-        public MinecraftConsoleClient MinecraftConsoleClient { get => field ?? throw new InvalidOperationException($"{nameof(MinecraftConsoleClient)} is not initialized."); set; }
-        public MineflayerClient MineflayerClient { get => field ?? throw new InvalidOperationException($"{nameof(MineflayerClient)} is not initialized."); set; }
+        public PortableMinecraftClient PortableMinecraftClient { get => field ?? throw new InvalidOperationException($"{nameof(PortableMinecraftClient)} is not initialized."); set; }
         public PaperServer PaperServer { get => field ?? throw new InvalidOperationException($"{nameof(PaperServer)} is not initialized."); set; }
 
         public async Task InitializeAsync()
         {
             using var cancellationTokenSource = new CancellationTokenSource(SetupTimeout);
 
-            MinecraftConsoleClient = await MinecraftConsoleClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
-            MineflayerClient = await MineflayerClient.CreateAsync(_workingDirectory, _httpClient, cancellationToken: cancellationTokenSource.Token);
+            PortableMinecraftClient = await PortableMinecraftClient.CreateAsync(_workingDirectory, cancellationTokenSource.Token);
             PaperServer = await PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: cancellationTokenSource.Token);
         }
 
         public async Task DisposeAsync()
         {
-            if (!IntegrationTestEnvironment.DirectTestsEnabled)
-                return;
-            
-            if (MinecraftConsoleClient is not null)
-                await MinecraftConsoleClient.DisposeAsync();
-
-            if (MineflayerClient is not null)
-                await MineflayerClient.DisposeAsync();
-
-            if (PaperServer is not null)
-                await PaperServer.DisposeAsync();
+            await PortableMinecraftClient.DisposeAsync();
+            await PaperServer.DisposeAsync();
         }
     }
 }

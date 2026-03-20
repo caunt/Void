@@ -125,7 +125,7 @@ public abstract class IntegrationSideBase : IIntegrationSide
 
         _process = Process.Start(processStartInfo) ?? throw new IntegrationTestException($"Failed to start process for {fileName} with arguments: {string.Join(' ', arguments)}");
         _process.EnableRaisingEvents = true;
-        
+
         _process.OutputDataReceived += OnDataReceived;
         _process.ErrorDataReceived += OnDataReceived;
 
@@ -169,7 +169,7 @@ public abstract class IntegrationSideBase : IIntegrationSide
     {
         if (_process is null)
             throw new InvalidOperationException("Application is not started.");
-        
+
         var taskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         await using var registration = cancellationToken.Register(() => taskCompletionSource.TrySetCanceled(cancellationToken), useSynchronizationContext: false);
 
@@ -180,6 +180,10 @@ public abstract class IntegrationSideBase : IIntegrationSide
         try
         {
             await taskCompletionSource.Task;
+        }
+        catch (TaskCanceledException exception)
+        {
+            throw new IntegrationTestException("Application exited before expected output was received.", exception);
         }
         finally
         {
@@ -381,7 +385,7 @@ public abstract class IntegrationSideBase : IIntegrationSide
     {
         if (eventArgs.Data is null)
             return;
-        
+
         _lastLogTimestamp = DateTimeOffset.UtcNow;
         _logs.Add(eventArgs.Data);
     }
