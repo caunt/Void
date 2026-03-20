@@ -6,7 +6,12 @@
     <DebugType>embedded</DebugType>
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
-
+  
+  <PropertyGroup>
+    <!--disable missing comment warning-->
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+  
   <PropertyGroup>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Void.Minecraft</PackageId>
