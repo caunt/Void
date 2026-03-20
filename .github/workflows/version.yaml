@@ -32,7 +32,7 @@ jobs:
       dotnet-version: ${{ steps.dotnet-version.outputs.result }}
       void-fallback-version: ${{ steps.void-fallback-version.outputs.result }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set .NET SDK version
         id: dotnet-version
         run: |
@@ -52,7 +52,7 @@ jobs:
       void-version: ${{ steps.release.outputs.version }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Create Release
         uses: googleapis/release-please-action@v4
         id: release
