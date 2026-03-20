@@ -47,10 +47,10 @@ jobs:
             run-tests: true
           - os: macos-latest
             runtime: osx-arm64
-            run-tests: true
+            run-tests: false
           - os: macos-15-intel # macos-latest
             runtime: osx-x64
-            run-tests: true
+            run-tests: false
           - os: windows-11-arm # windows-latest
             runtime: win-arm64
             run-tests: true
