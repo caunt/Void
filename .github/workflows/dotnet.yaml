@@ -64,7 +64,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
       - name: Build
@@ -83,7 +83,7 @@ jobs:
         shell: bash
         run: mv artifacts/Void.Proxy${{ steps.get_suffix.outputs.result }} artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
       - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
           path: artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
