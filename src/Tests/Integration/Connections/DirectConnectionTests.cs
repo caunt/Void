@@ -57,8 +57,11 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
         {
             using var cancellationTokenSource = new CancellationTokenSource(SetupTimeout);
 
-            PortableMinecraftClient = await PortableMinecraftClient.CreateAsync(_workingDirectory, cancellationTokenSource.Token);
-            PaperServer = await PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: cancellationTokenSource.Token);
+            var portableMinecraftClientTask = PortableMinecraftClient.CreateAsync(_workingDirectory, cancellationTokenSource.Token);
+            var paperServerTask = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: cancellationTokenSource.Token);
+            
+            PortableMinecraftClient = await portableMinecraftClientTask;
+            PaperServer = await paperServerTask;
         }
 
         public async Task DisposeAsync()
