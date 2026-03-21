@@ -73,7 +73,7 @@ public class HandshakeService(IPlayerContext context, IPluginService plugins, Pl
 
             context.Logger.LogTrace("Received Login Wrapper request message: Channel={Channel}, Id={Id}, Data={Data}", channel, id, Convert.ToHexString(data));
 
-            // Forge ignores first Plugin Message Request and does not respond to it. Why tho? (tested on 1.20)
+            // Forge ignores first Plugin Message Request and does not respond to it. Why though? (tested on 1.20)
             var ignored = channel is HandshakeChannel && id is 5;
 
             if (@event.Player.Phase is Phase.Play)
