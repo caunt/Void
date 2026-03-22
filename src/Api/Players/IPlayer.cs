@@ -17,7 +17,7 @@ public interface IPlayer : IEquatable<IPlayer>, ICommandSource, IAsyncDisposable
     public TcpClient Client { get; }
 
     /// <summary>
-    /// Gets the name of the player. Fallbacks to IP address if unavailable.
+    /// Gets the name of the player. Falls back to IP address if unavailable.
     /// </summary>
     public string Name { get; }
 
