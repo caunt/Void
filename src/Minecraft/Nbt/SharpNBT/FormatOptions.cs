@@ -7,7 +7,7 @@ namespace Void.Minecraft.Nbt;
 /// Describes the specification to use for reading/writing.
 /// </summary>
 /// <remarks>
-/// There are some major changes between the original Java version, and the Bedrock editions of Minecraft that makes them incompatible with one another.
+/// There are some major changes between the original Java version, and the Bedrock editions of Minecraft that make them incompatible with one another.
 /// Furthermore, the Bedrock editions use a different specification depending on whether it is writing to disk or sending over a network.
 /// </remarks>
 /// <seealso href="https://wiki.vg/NBT#Bedrock_edition"/>
