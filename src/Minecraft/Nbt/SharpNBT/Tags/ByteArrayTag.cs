@@ -7,7 +7,7 @@ using JetBrains.Annotations;
 namespace Void.Minecraft.Nbt;
 
 /// <summary>
-/// A tag that whose value is a contiguous sequence of 8-bit integers.
+/// A tag whose value is a contiguous sequence of 8-bit integers.
 /// </summary>
 /// <remarks>
 /// While this class uses the CLS compliant <see cref="byte"/> (0..255), the NBT specification uses a signed value with a range of -128..127, so ensure
