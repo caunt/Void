@@ -102,21 +102,21 @@ public abstract class ArrayTag<T> : Tag, IReadOnlyList<T> where T : unmanaged, I
     }
 
     /// <summary>
-    /// Implicit conversion of a an <see cref="ArrayTag{T}"/> to an array of <see cref="T"/>.
+    /// Implicit conversion of an <see cref="ArrayTag{T}"/> to an array of <see cref="T"/>.
     /// </summary>
     /// <param name="tag">The <see cref="ArrayTag{T}"/> to be converted.</param>
     /// <returns>The value of <paramref name="tag"/> as an array of <see cref="T"/>.</returns>
     public static implicit operator T[](ArrayTag<T> tag) => tag.array;
 
     /// <summary>
-    /// Implicit conversion of a an <see cref="ArrayTag{T}"/> to a <see cref="Span{T}"/>.
+    /// Implicit conversion of an <see cref="ArrayTag{T}"/> to a <see cref="Span{T}"/>.
     /// </summary>
     /// <param name="tag">The <see cref="ArrayTag{T}"/> to be converted.</param>
     /// <returns>The value of <paramref name="tag"/> as a <see cref="Span{T}"/>.</returns>
     public static implicit operator Span<T>(ArrayTag<T> tag) => new(tag.array);
 
     /// <summary>
-    /// Implicit conversion of a an <see cref="ArrayTag{T}"/> to a <see cref="Memory{T}"/>.
+    /// Implicit conversion of an <see cref="ArrayTag{T}"/> to a <see cref="Memory{T}"/>.
     /// </summary>
     /// <param name="tag">The <see cref="ArrayTag{T}"/> to be converted.</param>
     /// <returns>The value of <paramref name="tag"/> as a <see cref="Memory{T}"/>.</returns>
