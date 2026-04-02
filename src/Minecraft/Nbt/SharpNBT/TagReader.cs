@@ -43,7 +43,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Reads a <see cref="ByteTag"/> from the stream.
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <remarks>It is assumed that the stream is positioned at the beginning of the tag payload.</remarks>
     /// <returns>The deserialized <see cref="ByteTag"/> instance.</returns>
     public ByteTag ReadByte(bool named = true)
@@ -55,7 +55,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Reads a <see cref="ShortTag"/> from the stream.
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <remarks>It is assumed that the stream is positioned at the beginning of the tag payload.</remarks>
     /// <returns>The deserialized <see cref="ShortTag"/> instance.</returns>
     public ShortTag ReadShort(bool named = true)
@@ -82,7 +82,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Reads a <see cref="IntTag"/> from the stream.
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <remarks>It is assumed that the stream is positioned at the beginning of the tag payload.</remarks>
     /// <returns>The deserialized <see cref="IntTag"/> instance.</returns>
     public IntTag ReadInt(bool named = true)
@@ -94,7 +94,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Reads a <see cref="LongTag"/> from the stream.
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <remarks>It is assumed that the stream is positioned at the beginning of the tag payload.</remarks>
     /// <returns>The deserialized <see cref="LongTag"/> instance.</returns>
     public LongTag ReadLong(bool named = true)
@@ -121,7 +121,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Reads a <see cref="FloatTag"/> from the stream.
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <remarks>It is assumed that the stream is positioned at the beginning of the tag payload.</remarks>
     /// <returns>The deserialized <see cref="FloatTag"/> instance.</returns>
     public FloatTag ReadFloat(bool named = true)
@@ -139,7 +139,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Reads a <see cref="DoubleTag"/> from the stream.
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <remarks>It is assumed that the stream is positioned at the beginning of the tag payload.</remarks>
     /// <returns>The deserialized <see cref="DoubleTag"/> instance.</returns>
     public DoubleTag ReadDouble(bool named = true)
@@ -156,7 +156,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Reads a <see cref="StringTag"/> from the stream.
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <remarks>It is assumed that the stream is positioned at the beginning of the tag payload.</remarks>
     /// <returns>The deserialized <see cref="StringTag"/> instance.</returns>
     public StringTag ReadString(bool named = true)
@@ -169,7 +169,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Reads a <see cref="ByteArrayTag"/> from the stream.
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <remarks>It is assumed that the stream is positioned at the beginning of the tag payload.</remarks>
     /// <returns>The deserialized <see cref="ByteArrayTag"/> instance.</returns>
     public ByteArrayTag ReadByteArray(bool named = true)
@@ -184,7 +184,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Reads a <see cref="IntArrayTag"/> from the stream.
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <remarks>It is assumed that the stream is positioned at the beginning of the tag payload.</remarks>
     /// <returns>The deserialized <see cref="IntArrayTag"/> instance.</returns>
     public IntArrayTag ReadIntArray(bool named = true)
@@ -215,7 +215,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Reads a <see cref="LongArrayTag"/> from the stream.
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <remarks>It is assumed that the stream is positioned at the beginning of the tag payload.</remarks>
     /// <returns>The deserialized <see cref="LongArrayTag"/> instance.</returns>
     public LongArrayTag ReadLongArray(bool named = true)
@@ -246,7 +246,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Reads a <see cref="ListTag"/> from the stream.
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <remarks>It is assumed that the stream is positioned at the beginning of the tag payload.</remarks>
     /// <returns>The deserialized <see cref="ListTag"/> instance.</returns>
     public ListTag ReadList(bool named = true)
@@ -270,7 +270,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Reads a <see cref="CompoundTag"/> from the stream.
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <remarks>It is assumed that the stream is positioned at the beginning of the tag payload.</remarks>
     /// <returns>The deserialized <see cref="CompoundTag"/> instance.</returns>
     public CompoundTag ReadCompound(bool named = true)
@@ -293,7 +293,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Reads a <see cref="Tag"/> from the current position in the stream. 
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <returns>The tag instance that was read from the stream.</returns>
     public Tag ReadTag(bool named = true)
     {
@@ -304,7 +304,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Asynchronously reads a <see cref="Tag"/> from the current position in the stream. 
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <returns>The tag instance that was read from the stream.</returns>
     public async Task<Tag> ReadTagAsync(bool named = true)
     {
@@ -314,7 +314,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Convenience method to read a tag and cast it automatically.
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <typeparam name="T">The tag type that is being read from the stream.</typeparam>
     /// <returns>The tag instance that was read from the stream.</returns>
     /// <remarks>This is typically only used when reading the top-level <see cref="CompoundTag"/> of a document where the type is already known.</remarks>
@@ -326,7 +326,7 @@ public class TagReader : TagIO
     /// <summary>
     /// Convenience method to asynchronously read a tag and cast it automatically.
     /// </summary>
-    /// <param name="named">Flag indicating if this tag is named, only <see langowrd="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
+    /// <param name="named">Flag indicating if this tag is named, only <see langword="false"/> when a tag is a direct child of a <see cref="ListTag"/>.</param>
     /// <typeparam name="T">The tag type that is being read from the stream.</typeparam>
     /// <returns>The tag instance that was read from the stream.</returns>
     /// <remarks>This is typically only used when reading the top-level <see cref="CompoundTag"/> of a document where the type is already known.</remarks>
