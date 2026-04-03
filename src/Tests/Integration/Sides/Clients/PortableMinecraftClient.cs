@@ -23,7 +23,7 @@ public class PortableMinecraftClient : IIntegrationSide
     private readonly string _workingDirectory;
     private readonly IFutureDockerImage _image;
     private readonly List<string> _logs = [];
-    private readonly object _logsLock = new();
+    private readonly Lock _logsLock = new();
 
     public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion.Range()];
 
@@ -122,10 +122,14 @@ public class PortableMinecraftClient : IIntegrationSide
             CMD ["release"]
             """, cancellationToken);
 
-        var image = new ImageFromDockerfileBuilder()
+        var imageBuilder = new ImageFromDockerfileBuilder()
             .WithDockerfileDirectory(workingDirectory)
-            .WithDockerfile("Dockerfile")
-            .Build();
+            .WithDockerfile("Dockerfile");
+
+        if (RuntimeInformation.OSArchitecture is not Architecture.X64 and not Architecture.X86)
+            imageBuilder = imageBuilder.WithCreateParameterModifier(parameters => parameters.Platform = "linux/amd64");
+
+        var image = imageBuilder.Build();
 
         await image.CreateAsync(cancellationToken);
 
@@ -214,7 +218,7 @@ public class PortableMinecraftClient : IIntegrationSide
     private sealed class LogConsumer : IOutputConsumer, IAsyncDisposable
     {
         private readonly List<string> _logs;
-        private readonly object _logsLock;
+        private readonly Lock _logsLock;
         private readonly Pipe _stdoutPipe = new();
         private readonly Pipe _stderrPipe = new();
         private readonly Task _stdoutTask;
@@ -233,7 +237,7 @@ public class PortableMinecraftClient : IIntegrationSide
             }
         }
 
-        public LogConsumer(List<string> logs, object logsLock)
+        public LogConsumer(List<string> logs, Lock logsLock)
         {
             _logs = logs;
             _logsLock = logsLock;
