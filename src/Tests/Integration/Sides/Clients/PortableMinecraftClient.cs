@@ -53,9 +53,18 @@ public class PortableMinecraftClient : IIntegrationSide
 
         await File.WriteAllTextAsync(dockerfilePath,
             """
-            FROM rust:bookworm AS builder
+            FROM debian:bookworm-slim AS builder
             
-            RUN cargo install portablemc-cli
+            RUN apt-get update && apt-get install -y --no-install-recommends \
+                curl \
+                ca-certificates \
+             && rm -rf /var/lib/apt/lists/*
+            
+            RUN curl -fL -o /portablemc.tar.gz https://github.com/mindstorm38/portablemc/releases/download/v5.0.2/portablemc-5.0.2-linux-x86_64-gnu.tar.gz \
+                && tar -xzf /portablemc.tar.gz -C /tmp \
+                && mv /tmp/portablemc-*/portablemc /usr/local/bin/portablemc \
+                && chmod +x /usr/local/bin/portablemc \
+                && rm /portablemc.tar.gz
             
             FROM debian:bookworm-slim
             
@@ -65,7 +74,7 @@ public class PortableMinecraftClient : IIntegrationSide
             ENV MESA_GL_VERSION_OVERRIDE=3.3
             ENV MESA_GLSL_VERSION_OVERRIDE=330
             
-            COPY --from=builder /usr/local/cargo/bin/portablemc /usr/local/bin/portablemc
+            COPY --from=builder /usr/local/bin/portablemc /usr/local/bin/portablemc
             
             RUN apt-get update && apt-get install -y \
                 xvfb \
@@ -79,7 +88,6 @@ public class PortableMinecraftClient : IIntegrationSide
                 libxrandr2 \
                 libxi6 \
                 libxtst6 \
-                libasound2 \
                 libfreetype6 \
                 libfontconfig1 \
                 ca-certificates \
