@@ -32,9 +32,9 @@ jobs:
             container_image_tags: dev-windows
             container_base_image: mcr.microsoft.com/dotnet/runtime:10.0-nanoserver-ltsc2025
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
       - name: Login to Docker Hub
@@ -78,9 +78,9 @@ jobs:
             container_image_tags: ${{ inputs.void-version }}-windows;latest-windows
             container_base_image: mcr.microsoft.com/dotnet/runtime:10.0-nanoserver-ltsc2025
     steps: 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
       - name: Login to Docker Hub
