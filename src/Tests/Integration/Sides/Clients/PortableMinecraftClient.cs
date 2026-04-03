@@ -1,33 +1,37 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.IO.Pipelines;
 using System.Net;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using NuGet.Packaging;
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Configurations;
+using DotNet.Testcontainers.Containers;
+using DotNet.Testcontainers.Images;
 using Void.Minecraft.Network;
-using Void.Tests.Exceptions;
-using Void.Tests.Extensions;
 using Xunit;
 
 namespace Void.Tests.Integration.Sides.Clients;
 
-public class PortableMinecraftClient : IntegrationSideBase
+public class PortableMinecraftClient : IIntegrationSide
 {
     private const string DockerHost = "host.docker.internal";
-    private const string ImageName = "minecraft-portablemc-void-tests";
 
     private readonly string _workingDirectory;
-    private readonly string _dockerContainerName;
+    private readonly IFutureDockerImage _image;
+    private readonly List<string> _logs = [];
 
     public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion.Range()];
 
-    private PortableMinecraftClient(string workingDirectory, string dockerContainerName)
+    public IEnumerable<string> Logs => [.. _logs];
+
+    private PortableMinecraftClient(string workingDirectory, IFutureDockerImage image)
     {
         _workingDirectory = workingDirectory;
-        _dockerContainerName = dockerContainerName;
+        _image = image;
     }
 
     public static async Task<PortableMinecraftClient> CreateAsync(string workingDirectory, CancellationToken cancellationToken = default)
@@ -109,142 +113,197 @@ public class PortableMinecraftClient : IntegrationSideBase
             ENTRYPOINT ["/entrypoint.sh"]
             CMD ["release"]
             """, cancellationToken);
-        await BuildImageAsync(workingDirectory, cancellationToken);
 
-        return new PortableMinecraftClient(workingDirectory, $"void-tests-portablemc-{Random.Shared.Next()}");
+        var image = new ImageFromDockerfileBuilder()
+            .WithDockerfileDirectory(workingDirectory)
+            .WithDockerfile("Dockerfile")
+            .Build();
+
+        await image.CreateAsync(cancellationToken);
+
+        return new PortableMinecraftClient(workingDirectory, image);
     }
 
-    public async Task SendTextMessageAsync(EndPoint endPoint, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
+    public Task SendTextMessageAsync(EndPoint endPoint, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
     {
-
+        return SendTextMessagesAsync(endPoint, protocolVersion, [text], cancellationToken);
     }
 
     public async Task SendTextMessagesAsync(EndPoint endPoint, ProtocolVersion protocolVersion, IEnumerable<string> texts, CancellationToken cancellationToken = default)
     {
-        await StopContainerAsync(cancellationToken);
+        _logs.Clear();
+
+        var portableMcWorkingDirectory = Directory.CreateDirectory(Path.Combine(_workingDirectory, ".portablemc"));
+
+        (string host, int port) = endPoint switch
+        {
+            DnsEndPoint dnsEndPoint when !OperatingSystem.IsLinux() && string.Equals(dnsEndPoint.Host, "localhost", StringComparison.OrdinalIgnoreCase) => (DockerHost, dnsEndPoint.Port),
+            DnsEndPoint dnsEndPoint => (dnsEndPoint.Host, dnsEndPoint.Port),
+            IPEndPoint ipEndPoint when !OperatingSystem.IsLinux() && IPAddress.IsLoopback(ipEndPoint.Address) => (DockerHost, ipEndPoint.Port),
+            IPEndPoint ipEndPoint => (ipEndPoint.Address.ToString(), ipEndPoint.Port),
+            _ => throw new NotSupportedException($"Unsupported endpoint type: {endPoint.GetType()}")
+        };
+
+        await using var logConsumer = new LogConsumer(_logs);
+
+        var containerBuilder = new ContainerBuilder(_image)
+            .WithOutputConsumer(logConsumer)
+            .WithBindMount(portableMcWorkingDirectory.FullName, "/root/.portablemc")
+            .WithCommand(
+                "start",
+                "--username", nameof(PortableMinecraftClient)[..16],
+                "--join-server", host,
+                "--join-server-port", port.ToString(),
+                "--jvm-arg=-Djava.awt.headless=false",
+                protocolVersion.VersionIntroducedIn);
+
+        if (RuntimeInformation.OSArchitecture is not Architecture.X64 and not Architecture.X86)
+            containerBuilder = containerBuilder.WithCreateParameterModifier(parameters => parameters.Platform = "linux/amd64");
+
+        if (OperatingSystem.IsLinux())
+            containerBuilder = containerBuilder.WithCreateParameterModifier(parameters => parameters.HostConfig.NetworkMode = "host");
+
+        var container = containerBuilder.Build();
 
         try
         {
-            var potableMcWorkingDirectory = Directory.CreateDirectory(Path.Combine(_workingDirectory, ".portablemc"));
+            await container.StartAsync(cancellationToken);
 
-            (string host, int port) = endPoint switch
-            {
-                DnsEndPoint dnsEndPoint when !OperatingSystem.IsLinux() && string.Equals(dnsEndPoint.Host, "localhost", StringComparison.OrdinalIgnoreCase) => (DockerHost, dnsEndPoint.Port),
-                DnsEndPoint dnsEndPoint => (dnsEndPoint.Host, dnsEndPoint.Port),
-                IPEndPoint ipEndPoint when !OperatingSystem.IsLinux() && IPAddress.IsLoopback(ipEndPoint.Address) => (DockerHost, ipEndPoint.Port),
-                IPEndPoint ipEndPoint => (ipEndPoint.Address.ToString(), ipEndPoint.Port),
-                _ => throw new NotSupportedException($"Unsupported endpoint type: {endPoint.GetType()}")
-            };
-
-            // Docker arguments
-            var arguments = new List<string> { "run" };
-
-            if (RuntimeInformation.OSArchitecture is not Architecture.X64 and not Architecture.X86)
-                arguments.AddRange(["--platform", "linux/amd64"]);
-
-            if (OperatingSystem.IsLinux())
-                arguments.AddRange(["--network", "host"]);
-
-            arguments.AddRange(["--name", _dockerContainerName]);
-            arguments.AddRange(["-v", $"{potableMcWorkingDirectory.FullName}:/root/.portablemc"]);
-            arguments.Add("--rm");
-            arguments.Add("-d");
-            arguments.Add(ImageName);
-
-            // PortableMC CLI arguments
-            arguments.Add("start");
-            arguments.AddRange(["--username", nameof(PortableMinecraftClient)[..16]]);
-            arguments.AddRange(["--join-server", host]);
-            arguments.AddRange(["--join-server-port", port.ToString()]);
-            arguments.Add("--jvm-arg=-Djava.awt.headless=false");
-            arguments.Add(protocolVersion.VersionIntroducedIn);
-
-            await RunDockerAsync(arguments, cancellationToken);
-            StartApplication("docker", hasInput: false, "logs", "-f", _dockerContainerName);
-
-            await ExpectTextAsync("Connecting to", lookupHistory: true, cancellationToken);
+            await logConsumer.WaitForTextAsync("Connecting to", cancellationToken);
 
             // Wait for silence in the logs
-            while (TimeSinceLastLog <= TimeSpan.FromSeconds(10))
+            while (logConsumer.TimeSinceLastLog <= TimeSpan.FromSeconds(10))
                 await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
 
             foreach (var text in texts)
             {
-                await RunDockerAsync(["exec", _dockerContainerName, "send-chat", text], cancellationToken);
+                await container.ExecAsync(["send-chat", text], cancellationToken);
                 await Task.Delay(3_000, cancellationToken);
             }
-
-            if (_process is { HasExited: true })
-                throw new IntegrationTestException($"Docker client for {nameof(PortableMinecraftClient)} exited with code {_process.ExitCode}.\nLogs:\n{string.Join("\n", Logs)}");
         }
         finally
         {
-            await StopContainerAsync(cancellationToken);
+            await container.StopAsync(CancellationToken.None);
+            await container.DisposeAsync();
         }
     }
 
-    public new async ValueTask DisposeAsync()
+    public void ClearLogs()
     {
-        await base.DisposeAsync();
-        await StopContainerAsync();
-        await RemoveImageAsync();
+        _logs.Clear();
     }
 
-    private static async Task BuildImageAsync(string workingDirectory, CancellationToken cancellationToken)
+    public async ValueTask DisposeAsync()
     {
-        var arguments = new List<string> { "build" };
+        GC.SuppressFinalize(this);
 
-        if (RuntimeInformation.OSArchitecture is not Architecture.X64 and not Architecture.X86)
-            arguments.AddRange(["--platform", "linux/amd64"]);
-
-        arguments.AddRange(["-t", ImageName]);
-        arguments.Add(".");
-
-        await RunDockerAsync(workingDirectory, arguments, cancellationToken);
+        await _image.DeleteAsync();
+        await _image.DisposeAsync();
     }
 
-    private async Task StopContainerAsync(CancellationToken cancellationToken = default)
+    private sealed class LogConsumer : IOutputConsumer, IAsyncDisposable
     {
-        if (_process is not { HasExited: false })
-            return;
+        private readonly List<string> _logs;
+        private readonly Pipe _stdoutPipe = new();
+        private readonly Pipe _stderrPipe = new();
+        private readonly Task _stdoutTask;
+        private readonly Task _stderrTask;
+        private DateTimeOffset _lastLogTimestamp = DateTimeOffset.UtcNow;
 
-        await RunDockerAsync(["stop", _dockerContainerName], cancellationToken);
-        await _process.ExitAsync(entireProcessTree: true, cancellationToken);
-    }
+        public bool Enabled => true;
+        public Stream Stdout => _stdoutPipe.Writer.AsStream();
+        public Stream Stderr => _stderrPipe.Writer.AsStream();
+        public TimeSpan TimeSinceLastLog => DateTimeOffset.UtcNow - _lastLogTimestamp;
 
-    private static async Task RemoveImageAsync(CancellationToken cancellationToken = default)
-    {
-        await RunDockerAsync(["rmi", "--force", ImageName], cancellationToken);
-    }
-
-    private static async Task RunDockerAsync(IEnumerable<string> arguments, CancellationToken cancellationToken = default)
-    {
-        await RunDockerAsync(Directory.GetCurrentDirectory(), arguments, cancellationToken);
-    }
-
-    private static async Task RunDockerAsync(string workingDirectory, IEnumerable<string> arguments, CancellationToken cancellationToken = default)
-    {
-        var processStartInfo = new ProcessStartInfo("docker")
+        public LogConsumer(List<string> logs)
         {
-            WorkingDirectory = workingDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
+            _logs = logs;
+            _stdoutTask = ReadLinesAsync(_stdoutPipe.Reader);
+            _stderrTask = ReadLinesAsync(_stderrPipe.Reader);
+        }
 
-        processStartInfo.ArgumentList.AddRange(arguments);
+        public async Task WaitForTextAsync(string text, CancellationToken cancellationToken)
+        {
+            var checkedUpTo = 0;
 
-        using var process = Process.Start(processStartInfo)
-                            ?? throw new IntegrationTestException($"Failed to start: docker {string.Join(' ', processStartInfo.ArgumentList)}.");
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
 
-        var stdOutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var stdErrTask = process.StandardError.ReadToEndAsync(cancellationToken);
+                var count = _logs.Count;
 
-        await process.WaitForExitAsync(cancellationToken);
+                for (var i = checkedUpTo; i < count; i++)
+                {
+                    if (_logs[i].Contains(text, StringComparison.Ordinal))
+                        return;
+                }
 
-        var stdOut = await stdOutTask;
-        var stdErr = await stdErrTask;
+                checkedUpTo = count;
+                await Task.Delay(100, cancellationToken);
+            }
+        }
 
-        if (process.ExitCode != 0)
-            throw new IntegrationTestException($"Docker {string.Join(' ', processStartInfo.ArgumentList)} => failed with exit code {process.ExitCode}.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
+        private async Task ReadLinesAsync(PipeReader reader)
+        {
+            var lineBuilder = new StringBuilder();
+
+            try
+            {
+                while (true)
+                {
+                    var result = await reader.ReadAsync();
+                    var buffer = result.Buffer;
+
+                    foreach (var segment in buffer)
+                    {
+                        foreach (var b in segment.Span)
+                        {
+                            if (b == '\n')
+                            {
+                                var line = lineBuilder.ToString().TrimEnd('\r');
+                                lineBuilder.Clear();
+
+                                if (!string.IsNullOrEmpty(line))
+                                {
+                                    _logs.Add(line);
+                                    _lastLogTimestamp = DateTimeOffset.UtcNow;
+                                }
+                            }
+                            else
+                            {
+                                lineBuilder.Append((char)b);
+                            }
+                        }
+                    }
+
+                    reader.AdvanceTo(buffer.End);
+
+                    if (result.IsCompleted)
+                        break;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when the pipe is completed during cancellation
+            }
+            catch (Exception)
+            {
+                // Stream ended or error; stop reading
+            }
+        }
+
+        public void Dispose()
+        {
+            DisposeAsync().AsTask().GetAwaiter().GetResult();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            _stdoutPipe.Writer.Complete();
+            _stderrPipe.Writer.Complete();
+
+            await _stdoutTask;
+            await _stderrTask;
+        }
     }
 }
