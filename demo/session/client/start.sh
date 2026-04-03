@@ -86,7 +86,7 @@ sleep 1
 
 # 7. Download Sodium
 mkdir -p mods
-curl -L -o mods/sodium.jar https://mediafilez.forgecdn.net/files/7527/475/sodium-neoforge-0.8.4%2Bmc1.21.11.jar
+curl -L -o mods/sodium.jar https://mediafilez.forgecdn.net/files/7867/828/sodium-neoforge-0.8.9%2Bmc26.1.1.jar
 
 # 8. Start Minecraft
 export LIBGL_ALWAYS_SOFTWARE=1
@@ -94,4 +94,4 @@ export MESA_GL_VERSION_OVERRIDE=3.3
 export MESA_GLSL_VERSION_OVERRIDE=330
 
 echo "--- Starting Minecraft ---"
-exec /opt/portablemc start neoforge:1.21.11:unstable --demo --mc-dir . --jvm-arg="-Djava.awt.headless=false" $PORTABLEMC_ARGUMENTS
+exec /opt/portablemc start neoforge:26.1.1:unstable --demo --mc-dir . --jvm-arg="-Djava.awt.headless=false" $PORTABLEMC_ARGUMENTS
