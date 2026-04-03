@@ -23,10 +23,18 @@ public class PortableMinecraftClient : IIntegrationSide
     private readonly string _workingDirectory;
     private readonly IFutureDockerImage _image;
     private readonly List<string> _logs = [];
+    private readonly object _logsLock = new();
 
     public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion.Range()];
 
-    public IEnumerable<string> Logs => [.. _logs];
+    public IEnumerable<string> Logs
+    {
+        get
+        {
+            lock (_logsLock)
+                return [.. _logs];
+        }
+    }
 
     private PortableMinecraftClient(string workingDirectory, IFutureDockerImage image)
     {
@@ -131,7 +139,8 @@ public class PortableMinecraftClient : IIntegrationSide
 
     public async Task SendTextMessagesAsync(EndPoint endPoint, ProtocolVersion protocolVersion, IEnumerable<string> texts, CancellationToken cancellationToken = default)
     {
-        _logs.Clear();
+        lock (_logsLock)
+            _logs.Clear();
 
         var portableMcWorkingDirectory = Directory.CreateDirectory(Path.Combine(_workingDirectory, ".portablemc"));
 
@@ -144,7 +153,7 @@ public class PortableMinecraftClient : IIntegrationSide
             _ => throw new NotSupportedException($"Unsupported endpoint type: {endPoint.GetType()}")
         };
 
-        await using var logConsumer = new LogConsumer(_logs);
+        await using var logConsumer = new LogConsumer(_logs, _logsLock);
 
         var containerBuilder = new ContainerBuilder(_image)
             .WithOutputConsumer(logConsumer)
@@ -190,7 +199,8 @@ public class PortableMinecraftClient : IIntegrationSide
 
     public void ClearLogs()
     {
-        _logs.Clear();
+        lock (_logsLock)
+            _logs.Clear();
     }
 
     public async ValueTask DisposeAsync()
@@ -204,7 +214,7 @@ public class PortableMinecraftClient : IIntegrationSide
     private sealed class LogConsumer : IOutputConsumer, IAsyncDisposable
     {
         private readonly List<string> _logs;
-        private readonly object _logsLock = new();
+        private readonly object _logsLock;
         private readonly Pipe _stdoutPipe = new();
         private readonly Pipe _stderrPipe = new();
         private readonly Task _stdoutTask;
@@ -223,9 +233,10 @@ public class PortableMinecraftClient : IIntegrationSide
             }
         }
 
-        public LogConsumer(List<string> logs)
+        public LogConsumer(List<string> logs, object logsLock)
         {
             _logs = logs;
+            _logsLock = logsLock;
             _stdoutTask = ReadLinesAsync(_stdoutPipe.Reader);
             _stderrTask = ReadLinesAsync(_stderrPipe.Reader);
         }
@@ -342,9 +353,9 @@ public class PortableMinecraftClient : IIntegrationSide
             {
                 // Expected when the pipe is completed during cancellation
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-                // Stream ended or error; stop reading
+                Console.Error.WriteLine($"[LogConsumer] Unexpected error reading log stream: {exception}");
             }
             finally
             {
