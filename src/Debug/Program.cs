@@ -142,6 +142,7 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
     {
         var imageTag = server.ProtocolVersion switch
         {
+            _ when server.ProtocolVersion >= ProtocolVersion.MINECRAFT_26_1 => "java25-jdk",
             // _ when server.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_20_5 => "java21-jdk",
             // _ when server.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_18 => "java17-jdk", // doesn't support patches
             _ when server.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_18 => "java21-jdk",
