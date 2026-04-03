@@ -204,6 +204,7 @@ public class PortableMinecraftClient : IIntegrationSide
     private sealed class LogConsumer : IOutputConsumer, IAsyncDisposable
     {
         private readonly List<string> _logs;
+        private readonly object _logsLock = new();
         private readonly Pipe _stdoutPipe = new();
         private readonly Pipe _stderrPipe = new();
         private readonly Task _stdoutTask;
@@ -213,7 +214,14 @@ public class PortableMinecraftClient : IIntegrationSide
         public bool Enabled => true;
         public Stream Stdout => _stdoutPipe.Writer.AsStream();
         public Stream Stderr => _stderrPipe.Writer.AsStream();
-        public TimeSpan TimeSinceLastLog => DateTimeOffset.UtcNow - _lastLogTimestamp;
+        public TimeSpan TimeSinceLastLog
+        {
+            get
+            {
+                lock (_logsLock)
+                    return DateTimeOffset.UtcNow - _lastLogTimestamp;
+            }
+        }
 
         public LogConsumer(List<string> logs)
         {
@@ -230,21 +238,34 @@ public class PortableMinecraftClient : IIntegrationSide
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var count = _logs.Count;
+                int newCount;
+                var found = false;
 
-                for (var i = checkedUpTo; i < count; i++)
+                lock (_logsLock)
                 {
-                    if (_logs[i].Contains(text, StringComparison.Ordinal))
-                        return;
+                    newCount = _logs.Count;
+
+                    for (var i = checkedUpTo; i < newCount; i++)
+                    {
+                        if (_logs[i].Contains(text, StringComparison.Ordinal))
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
                 }
 
-                checkedUpTo = count;
+                if (found)
+                    return;
+
+                checkedUpTo = newCount;
                 await Task.Delay(100, cancellationToken);
             }
         }
 
         private async Task ReadLinesAsync(PipeReader reader)
         {
+            var decoder = Encoding.UTF8.GetDecoder();
             var lineBuilder = new StringBuilder();
 
             try
@@ -256,22 +277,32 @@ public class PortableMinecraftClient : IIntegrationSide
 
                     foreach (var segment in buffer)
                     {
-                        foreach (var b in segment.Span)
+                        var bytes = segment.Span;
+                        var charCount = decoder.GetCharCount(bytes, flush: false);
+                        var chars = charCount > 0 ? new char[charCount] : [];
+                        var charsDecoded = decoder.GetChars(bytes, chars, flush: false);
+
+                        for (var i = 0; i < charsDecoded; i++)
                         {
-                            if (b == '\n')
+                            var ch = chars[i];
+
+                            if (ch == '\n')
                             {
                                 var line = lineBuilder.ToString().TrimEnd('\r');
                                 lineBuilder.Clear();
 
                                 if (!string.IsNullOrEmpty(line))
                                 {
-                                    _logs.Add(line);
-                                    _lastLogTimestamp = DateTimeOffset.UtcNow;
+                                    lock (_logsLock)
+                                    {
+                                        _logs.Add(line);
+                                        _lastLogTimestamp = DateTimeOffset.UtcNow;
+                                    }
                                 }
                             }
                             else
                             {
-                                lineBuilder.Append((char)b);
+                                lineBuilder.Append(ch);
                             }
                         }
                     }
@@ -279,7 +310,32 @@ public class PortableMinecraftClient : IIntegrationSide
                     reader.AdvanceTo(buffer.End);
 
                     if (result.IsCompleted)
+                    {
+                        var flushCount = decoder.GetCharCount(ReadOnlySpan<byte>.Empty, flush: true);
+
+                        if (flushCount > 0)
+                        {
+                            var flushChars = new char[flushCount];
+                            decoder.GetChars(ReadOnlySpan<byte>.Empty, flushChars, flush: true);
+                            lineBuilder.Append(flushChars);
+                        }
+
+                        if (lineBuilder.Length > 0)
+                        {
+                            var line = lineBuilder.ToString().TrimEnd('\r');
+
+                            if (!string.IsNullOrEmpty(line))
+                            {
+                                lock (_logsLock)
+                                {
+                                    _logs.Add(line);
+                                    _lastLogTimestamp = DateTimeOffset.UtcNow;
+                                }
+                            }
+                        }
+
                         break;
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -289,6 +345,10 @@ public class PortableMinecraftClient : IIntegrationSide
             catch (Exception)
             {
                 // Stream ended or error; stop reading
+            }
+            finally
+            {
+                await reader.CompleteAsync();
             }
         }
 
