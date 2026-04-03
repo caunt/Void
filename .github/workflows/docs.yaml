@@ -54,7 +54,7 @@ jobs:
       #     Invoke-RestMethod -Uri $docfxDownloadUrl -OutFile $docfxLocalPackageFile -Headers @{ Authorization = "Bearer $env:GITHUB_TOKEN" }
       #     dotnet tool update -g docfx --prerelease --source ./
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: '24'
       - name: Clone DocFX repository
