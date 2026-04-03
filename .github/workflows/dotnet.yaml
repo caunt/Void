@@ -83,7 +83,7 @@ jobs:
         shell: bash
         run: mv artifacts/Void.Proxy${{ steps.get_suffix.outputs.result }} artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
       - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
           path: artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
