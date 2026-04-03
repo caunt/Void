@@ -7,7 +7,7 @@ RUN set -e; \
   cp /usr/bin/tmux /out/usr/local/tmux/bin/; \
   ldd /usr/bin/tmux | awk '$3 ~ /^\// {print $3}' | grep -vE '/ld-linux|/libc\.so' | while read -r libraryPath; do cp "$libraryPath" /out/usr/local/tmux/lib/; done
 
-FROM caunt/void:dev@sha256:fd90545c4b501273129488a1e720fa9f3492724c233c30bbf99220b389fb3dcd
+FROM caunt/void:dev@sha256:f9d1a6288db98fe57178e2aaa6ab84eeebec86ea48aac785f15cec93141aaf65
 
 COPY --from=ttyd_source /usr/bin/ttyd /usr/local/bin/ttyd
 COPY --from=tmux_source /out/usr/local/tmux /usr/local/tmux
