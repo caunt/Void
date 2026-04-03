@@ -4,5 +4,11 @@
     "config:best-practices"
   ],
   "prConcurrentLimit": 0,
-  "prHourlyLimit": 0
+  "prHourlyLimit": 0,
+  "packageRules": [
+    {
+      "matchFileNames": ["demo/session/void/Dockerfile"],
+      "pinDigests": false
+    }
+  ]
 }
