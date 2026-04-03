@@ -1,7 +1,7 @@
 # ==========================================
 # STAGE 1: Builder
 # ==========================================
-FROM debian:trixie-slim AS builder
+FROM debian:trixie-slim@sha256:26f98ccd92fd0a44d6928ce8ff8f4921b4d2f535bfa07555ee5d18f61429cf0c AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends curl unzip ca-certificates
 WORKDIR /src
 RUN curl -L -o novnc.zip https://github.com/novnc/noVNC/archive/refs/tags/v1.5.0.zip \
@@ -14,7 +14,7 @@ RUN curl -L -o portablemc.tar.gz https://github.com/mindstorm38/portablemc/relea
 # ==========================================
 # STAGE 2: Runtime
 # ==========================================
-FROM debian:trixie-slim
+FROM debian:trixie-slim@sha256:26f98ccd92fd0a44d6928ce8ff8f4921b4d2f535bfa07555ee5d18f61429cf0c
 
 ENV DISPLAY=:0 \
     LIBGL_ALWAYS_SOFTWARE=1 \
