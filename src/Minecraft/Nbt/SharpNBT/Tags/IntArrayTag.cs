@@ -7,7 +7,7 @@ using JetBrains.Annotations;
 namespace Void.Minecraft.Nbt;
 
 /// <summary>
-/// A tag that whose value is a contiguous sequence of 32-bit integers.
+/// A tag whose value is a contiguous sequence of 32-bit integers.
 /// </summary>
 [PublicAPI]
 public class IntArrayTag : ArrayTag<int>

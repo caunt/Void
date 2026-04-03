@@ -27,7 +27,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IR
     {
         Description = "Provides a URI to NuGet repository.\nExamples:\n--repository https://nuget.example.com/v3/index.json\n--repository https://username:password@nuget.example.com/v3/index.json"
     };
-    private static readonly Option<bool> EnableNugetLoggingOption = new("--enable-nuget-logging")
+    private static readonly Option<bool> EnableNuGetLoggingOption = new("--enable-nuget-logging")
     {
         Description = "Enables detailed logging for NuGet operations.",
         DefaultValueFactory = (argumentResult) => false
@@ -39,7 +39,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IR
     private static readonly SourceCacheContext Cache = new();
 
     private readonly string _packagesPath = Path.Combine(runOptions.WorkingDirectory, SettingsUtility.DefaultGlobalPackagesFolderPath);
-    private readonly NuGet.Common.ILogger _nugetLogger = console.GetOptionValue(EnableNugetLoggingOption) ? new NuGetLogger(logger) : NullLogger.Instance;
+    private readonly NuGet.Common.ILogger _nugetLogger = console.GetOptionValue(EnableNuGetLoggingOption) ? new NuGetLogger(logger) : NullLogger.Instance;
     private readonly HashSet<string> _repositories = [];
 
     private IEnumerable<string> UriRepositories => (Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").SplitInput(escapeCharacter: '\\').Select(repo => repo.Replace(@"\;", ";")).Concat(_repositories.Concat(console.GetOptionValue(RepositoryOption) ?? [])).Where(uri => !string.IsNullOrWhiteSpace(uri));
@@ -75,7 +75,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IR
     public async ValueTask OnProxyStarting(ProxyStartingEvent @event, CancellationToken cancellationToken)
     {
         console.EnsureOptionDiscovered(RepositoryOption);
-        console.EnsureOptionDiscovered(EnableNugetLoggingOption);
+        console.EnsureOptionDiscovered(EnableNuGetLoggingOption);
 
         try
         {
