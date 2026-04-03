@@ -15,7 +15,7 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
       - name: Install, build, and upload documentation site
-        uses: withastro/action@v4
+        uses: withastro/action@44706356b4eb735f8b9035699eb4796241a040c4 # v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
