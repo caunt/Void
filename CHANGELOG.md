@@ -1,5 +1,70 @@
 # Changelog
 
+## [0.5.12](https://github.com/caunt/Void/compare/v0.5.11...v0.5.12) (2026-04-04)
+
+
+### Features
+
+* **protocol:** ✨ added support for Minecraft 26.1 and 26.1.1 ([08104bf](https://github.com/caunt/Void/commit/08104bff9847c03e5d1d864bfa3e3c370a63a0f0))
+* **tests:** 🎨 add support for testing multiple protocol versions in `PortableMinecraftClient` ([3c1364c](https://github.com/caunt/Void/commit/3c1364c7969de925ff3c06e3778914e2c417c076))
+
+
+### Bug Fixes
+
+* **api:** 📝 corrected player name fallback wording ([f2a985a](https://github.com/caunt/Void/commit/f2a985ab81adea744835b80a9289a16dd3810fda))
+* **dependencies:** 🐛 corrected NuGet logging option casing ([3898183](https://github.com/caunt/Void/commit/389818317768790c77f861c810dfd1293cdb2b05))
+* **deps:** update astro monorepo ([dd5944f](https://github.com/caunt/Void/commit/dd5944f9aff5269853ed342216395359cf448fbf))
+* **deps:** update dependency @astrojs/starlight to ^0.38.0 ([98577a9](https://github.com/caunt/Void/commit/98577a912ee3b501271ee67f402088db800a7d1f))
+* **deps:** update dependency astro to v6 ([cfa603a](https://github.com/caunt/Void/commit/cfa603ac2c16d2b66bee19d8013248394403d93a))
+* **deps:** update dependency astro to v6 ([7f8b6ca](https://github.com/caunt/Void/commit/7f8b6ca4ccda2e924bc891810f016eaec6cd8b43))
+* **deps:** update dependency sharp to ^0.34.0 ([66fb4c5](https://github.com/caunt/Void/commit/66fb4c589d86870942730008418b83c9ed61aec4))
+* **deps:** update dependency starlight-links-validator to ^0.21.0 ([b07517b](https://github.com/caunt/Void/commit/b07517b04cbbce8cc0cef7ded7572cf3e6a13f82))
+* **essentials:** 🐛 corrected override redirection typo ([34350b9](https://github.com/caunt/Void/commit/34350b9ce7387807d8af5a68cf4b68c19fffb3b6))
+* **extensions:** ✨ improved input arrays parsing ([d803d90](https://github.com/caunt/Void/commit/d803d905ea848bbeff270983a5eea8cf46eb6d66))
+* **link:** 🐛 improved handshake error handling ([b406702](https://github.com/caunt/Void/commit/b406702b229ae59dddee25a66acfdb61df28d213))
+* **logging:** 🐛 update server args and improve output ([32fbf61](https://github.com/caunt/Void/commit/32fbf6187c5f9722bdaa2f82356be058e0014d0b))
+* **minecraft:** 🐛 corrected NbtFile XML documentation typos ([1af9811](https://github.com/caunt/Void/commit/1af981115971c138f51cc8c5b77a65e581f20e1e))
+* **minecraft:** 🐛 corrected TagType XML remark typo ([c8f17f5](https://github.com/caunt/Void/commit/c8f17f553bce99777f0d4cb0079fdccb54f861cb))
+* **minecraft:** 🐛 updated `ReadComponent` to default `readName` to `false` for consistency ([6694f94](https://github.com/caunt/Void/commit/6694f949c43ac98f1c635c2a5bc44327c997e17f))
+* **mods-support:** 🐛 corrected handshake error message grammar ([53c3b90](https://github.com/caunt/Void/commit/53c3b90f434b368452df7ae2f85ea3c9668d7aaa))
+* **nbt:** 🐛 corrected langword XML doc typos in TagReader ([9af7969](https://github.com/caunt/Void/commit/9af7969a7e651b6a849f9d122e0b2d9ad2e213bf))
+* **nbt:** 🐛 corrected typo in FormatOptions remarks ([7f383a0](https://github.com/caunt/Void/commit/7f383a06f79dd784994d11a88d8e5c8b294ac27b))
+* **nbt:** 🐛 default `readName` flag to `true` across Nbt APIs ([e24ee13](https://github.com/caunt/Void/commit/e24ee13bcba5c6dd8f9e074f1f8e683d2fd32f4e))
+* **nbt:** 🩹 corrected typo in TagReader XML comment ([b5595a2](https://github.com/caunt/Void/commit/b5595a2b39eeda6828144d0761cdc81e448b2c4e))
+* **nuget:** 🐛 removed Void package exclusion logic ([82be530](https://github.com/caunt/Void/commit/82be530ebd48e9075fab5120dd960a1be0304e11))
+* **platform:** 🐛 ignore early disconnects when kicking players ([9c7b54d](https://github.com/caunt/Void/commit/9c7b54d8c47294a32246df46ae23bd54ab42171c))
+* **platform:** 🩹 corrected MIME type typos in resources metadata ([213bb94](https://github.com/caunt/Void/commit/213bb94bb559d045a379c51b8846d001989fad17))
+* **registries:** 🛡️ added thread safety to packet id plugins registry ([07eb228](https://github.com/caunt/Void/commit/07eb228f79d6b2c70c31c29bf7e516fb9473a102))
+* **tests:** 🐛 add platform-specific base images in `PortableMinecraftClient` Dockerfile ([15c6cdc](https://github.com/caunt/Void/commit/15c6cdcf9bdd79e9e0f07d997ca912e5846ecd0e))
+* **tests:** 🐛 added environment check to DisposeAsync in integration tests ([e588aa7](https://github.com/caunt/Void/commit/e588aa724cbc79ed98f7b36898904b59ca4cf18e))
+* **tests:** 🐛 fix --jvm-args argparse failure by using = syntax ([b1b132f](https://github.com/caunt/Void/commit/b1b132f85a75cb580e6f389ab48c0d8477a0f8e0))
+* **tests:** 🐛 fixed image build platform and switched to System.Threading.Lock ([63b1bd5](https://github.com/caunt/Void/commit/63b1bd5b871fb2df7c10fd710119f93ac917d73c))
+* **tests:** 🐛 fixed thread-safety, UTF-8 decoding and pipe completion in LogConsumer ([77e1d06](https://github.com/caunt/Void/commit/77e1d0607bf074f3214b2a5f23ddda7a1df3afcc))
+* **tests:** 🐛 fixed unsynchronized Logs/ClearLogs access and silent exception swallowing ([06d5558](https://github.com/caunt/Void/commit/06d555814dc7d1196f20478fbca2ba489404086f))
+* **tests:** 🐛 improved `PortableMinecraftClient` Docker setup and test timeout ([59e1721](https://github.com/caunt/Void/commit/59e17213f2ad81e37c26897e33845b6ce20cf8fe))
+* **tests:** 🐛 improved Dockerfile setup and streamlined `RemoveImageAsync` process ([65be435](https://github.com/caunt/Void/commit/65be435c04fb76796c1b55737eb7c1261d0ef93d))
+* **tests:** 🐛 monkey-patch portablemc to emit --quickPlayPath for MC 1.21 auto-connect ([8ba7dad](https://github.com/caunt/Void/commit/8ba7dad74eba6a3832096195b9447679205e76e7))
+* **tests:** 🐛 refactored PortableMinecraftClient to use EndPoint and improved Docker argument handling ([d5499eb](https://github.com/caunt/Void/commit/d5499eb21a8fd0627cbedfb92945cfd058f45025))
+* **tests:** 🐛 removed redundant debug logging in `IntegrationSideBase` ([6b1b297](https://github.com/caunt/Void/commit/6b1b297072351635b28b484507b2181ef7b66d5c))
+* **tests:** 🐛 simplify Dockerfile base image definitions in `PortableMinecraftClient` ([5d5f7cd](https://github.com/caunt/Void/commit/5d5f7cdd271f175900799bdb28df91fe42ccb564))
+* **tests:** 🐛 standardized timeout variable names in integration tests ([be1da5f](https://github.com/caunt/Void/commit/be1da5f9236a9238ff1bf8306c42d312fb25c920))
+* **tests:** 🐛 track log timestamps and wait for silence in `PortableMinecraftClient` ([6834a3e](https://github.com/caunt/Void/commit/6834a3e055cd9dc76112c1a4a4b3f63e11642077))
+* **tests:** 🐛 updated integration tests for consistency and removed unused attributes ([046194c](https://github.com/caunt/Void/commit/046194c17ea99365a9ba4f90287abf842aa3ca3f))
+* **tests:** 🔧 add --quickPlayPath game arg and fix JRE CA cert import ([708d599](https://github.com/caunt/Void/commit/708d59916a5535b7d87bb36c6c41396bf33a751a))
+* **tests:** 🔧 fix Python portablemc CLI args and remove pre-bake dry-run step ([3866eea](https://github.com/caunt/Void/commit/3866eea060dc2b056258c3e42b95f725eedd741c))
+* **tests:** 🔧 import system CA certs into JRE truststore to fix SSL on proxy-intercepted environments ([caa62a3](https://github.com/caunt/Void/commit/caa62a388c0dbfac15368b3bb5245916542b92ee))
+* **tests:** 🔧 move client start and connection wait into fixture setup to fix cold-run timeout ([319e8fa](https://github.com/caunt/Void/commit/319e8fa9ac94d966c8592abb26d736654f08964d))
+* **tests:** 🔧 replace cargo install with GitHub release download for portablemc ([d88ffde](https://github.com/caunt/Void/commit/d88ffde92bf790850c866dd49108e02092a3a173))
+* **tests:** 🔧 replace portablemc with node-minecraft-protocol to eliminate asset download bottleneck ([8534b9b](https://github.com/caunt/Void/commit/8534b9b6d74195bd85f717f3b4f8f4c4b5e622e8))
+* **tests:** 🔧 restore portablemc client and fix Docker SSL trust for mkcert CA ([15a16a2](https://github.com/caunt/Void/commit/15a16a2b3d80870c48123d7e0944ae5213709ac6))
+* **tests:** 🔧 use PaperPlugins.None for real client test to avoid Via plugin downloads ([bfcd609](https://github.com/caunt/Void/commit/bfcd60925814682b6ce2e66aec419b112b56bf37))
+* **tests:** 🔧 use Python portablemc via pip and pre-bake MC download in image ([bf942fe](https://github.com/caunt/Void/commit/bf942fe764d0a0a1482e4052323886425f16460d))
+
+
+### Reverts
+
+* **tests:** ⏪ restore original Rust portablemc-cli Docker approach ([f789cde](https://github.com/caunt/Void/commit/f789cde8fba75f28de74f0f030c43c034d28c90e))
+
 ## [0.5.11](https://github.com/caunt/Void/compare/v0.5.10...v0.5.11) (2026-02-08)
 
 
