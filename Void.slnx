@@ -27,6 +27,9 @@
     <Project Path="src\Benchmarks\Void.Benchmarks.csproj" />
     <Project Path="src\Debug\Void.Proxy.Debug.csproj" />
     <Project Path="src\Playground\Void.Playground.csproj" />
-    <Project Path="src\Tests\Void.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests\Void.UnitTests\Void.UnitTests.csproj" />
+    <Project Path="tests\Void.IntegrationTests\Void.IntegrationTests.csproj" />
   </Folder>
 </Solution>

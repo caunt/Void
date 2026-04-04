@@ -94,4 +94,4 @@ jobs:
         # continue-on-error: true
         env:
           VOID_INTEGRATION_PROXIED_TESTS_ENABLED: true
-        run: dotnet test --runtime ${{ matrix.runtime }} --verbosity normal ${{ matrix.parameters }}
+        run: dotnet test tests/Void.UnitTests --runtime ${{ matrix.runtime }} --verbosity normal ${{ matrix.parameters }}
