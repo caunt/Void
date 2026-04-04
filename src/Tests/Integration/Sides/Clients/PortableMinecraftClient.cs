@@ -9,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
-using DotNet.Testcontainers.Containers;
 using DotNet.Testcontainers.Images;
 using Void.Minecraft.Network;
 using Xunit;
