@@ -57,25 +57,35 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: '24'
+
       - name: Clone DocFX repository
         run: |
           git clone https://github.com/dotnet/docfx.git
           cd docfx
           git fetch origin refs/pull/10561/head:pr-10561
           git checkout pr-10561
+
       - name: Build DocFX templates
         run: |
           cd docfx/templates
           npm install
           npm run build
+
       - name: Build and pack DocFX
         run: |
           cd docfx
           dotnet build
           dotnet pack src/docfx/docfx.csproj -c Release -o ./artifacts/nupkg
+
       - name: Install DocFX from local package
         run: dotnet tool install -g docfx --add-source ./docfx/artifacts/nupkg --prerelease
+
       - name: Build with DocFX
         run: docfx docs/docfx/docfx.json --verbose
         continue-on-error: true
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          path: docs/docfx
         
