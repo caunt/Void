@@ -4,8 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Void.IntegrationTests.Infrastructure.Fixtures;
 using Void.IntegrationTests.Infrastructure.Harness;
-using Void.IntegrationTests.Infrastructure.Harness.Sides.Clients;
-using Void.IntegrationTests.Infrastructure.Harness.Sides.Servers;
+using Void.IntegrationTests.Infrastructure.Harness.Sides;
 using Void.Minecraft.Network;
 using Xunit;
 
@@ -34,7 +33,7 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
     }
 
     [Theory]
-    [MemberData(nameof(MinecraftConsoleClient.SupportedVersions), MemberType = typeof(MinecraftConsoleClient))]
+    [MemberData(nameof(PortableMinecraftClient.SupportedVersions), MemberType = typeof(PortableMinecraftClient))]
     public async Task PortableMinecraftClientConnectsToPaperServer_WithProtocolVersion(ProtocolVersion protocolVersion)
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";

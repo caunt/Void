@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -6,9 +7,18 @@ using System.Threading;
 using System.Threading.Tasks;
 using Void.IntegrationTests.Infrastructure.Exceptions;
 using Void.IntegrationTests.Infrastructure.Extensions;
-using Void.IntegrationTests.Infrastructure.Harness;
 
-namespace Void.IntegrationTests.Infrastructure.Harness.Sides.Servers;
+namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
+
+[Flags]
+public enum PaperPlugins
+{
+    None = 0,
+    ViaVersion = 1,
+    ViaBackwards = 2,
+    ViaRewind = 4,
+    All = ViaVersion | ViaBackwards | ViaRewind
+}
 
 public class PaperServer : IntegrationSideBase
 {

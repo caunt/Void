@@ -10,11 +10,10 @@ using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Images;
-using Void.IntegrationTests.Infrastructure.Harness;
 using Void.Minecraft.Network;
 using Xunit;
 
-namespace Void.IntegrationTests.Infrastructure.Harness.Sides.Clients;
+namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
 
 public class PortableMinecraftClient : IIntegrationSide
 {

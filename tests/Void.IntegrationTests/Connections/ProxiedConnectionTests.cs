@@ -4,9 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Void.IntegrationTests.Infrastructure.Fixtures;
 using Void.IntegrationTests.Infrastructure.Harness;
-using Void.IntegrationTests.Infrastructure.Harness.Sides.Clients;
-using Void.IntegrationTests.Infrastructure.Harness.Sides.Proxies;
-using Void.IntegrationTests.Infrastructure.Harness.Sides.Servers;
+using Void.IntegrationTests.Infrastructure.Harness.Sides;
 using Void.Minecraft.Network;
 using Xunit;
 
