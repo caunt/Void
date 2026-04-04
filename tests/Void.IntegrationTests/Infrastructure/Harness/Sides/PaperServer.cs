@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using Void.IntegrationTests.Infrastructure.Extensions;
 
 namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
 
