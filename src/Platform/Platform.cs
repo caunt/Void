@@ -162,17 +162,7 @@ public class Platform(
 
         logger.LogInformation("Connection listener started on address {Address}:{Port}", Interface, Port);
 
-        _backgroundTask = ExecuteAsync(hostApplicationLifetime.ApplicationStopping).ContinueWith(backgroundTask =>
-        {
-            if (backgroundTask.IsCanceled)
-                return;
-
-            if (backgroundTask.IsCompletedSuccessfully)
-                return;
-
-            logger.LogCritical(backgroundTask.Exception?.Flatten().InnerException, "Platform background task completed with exception");
-            throw backgroundTask.Exception?.Flatten().InnerException ?? new Exception("Platform background task completed with unknown exception");
-        }, cancellationToken);
+        _backgroundTask = ExecuteAsync(hostApplicationLifetime.ApplicationStopping);
 
         var totalTime = Stopwatch.GetElapsedTime(startTime);
         logger.LogInformation("Proxy started in {StartTimeSeconds} seconds!", totalTime.TotalSeconds.ToString("F"));
@@ -213,30 +203,43 @@ public class Platform(
 
     private async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        await events.ThrowAsync<ProxyStartedEvent>(cancellationToken);
         ArgumentNullException.ThrowIfNull(_listener);
-        while (!cancellationToken.IsCancellationRequested)
+        await events.ThrowAsync<ProxyStartedEvent>(cancellationToken);
+
+        try
         {
-            if (Status is ProxyStatus.Stopping)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                break;
-            }
-            if (Status is ProxyStatus.Paused)
-            {
-                await Task.Delay(1_000, cancellationToken);
-                continue;
-            }
-            else
-            {
-                try
+                if (Status is ProxyStatus.Stopping)
                 {
-                    await players.AcceptPlayerAsync(await _listener.AcceptTcpClientAsync(cancellationToken), cancellationToken);
+                    break;
                 }
-                catch (SocketException exception) when (exception.SocketErrorCode is SocketError.OperationAborted)
+                if (Status is ProxyStatus.Paused)
                 {
+                    await Task.Delay(1_000, cancellationToken);
                     continue;
                 }
+                else
+                {
+                    try
+                    {
+                        await players.AcceptPlayerAsync(await _listener.AcceptTcpClientAsync(cancellationToken), cancellationToken);
+                    }
+                    catch (SocketException exception) when (exception.SocketErrorCode is SocketError.OperationAborted)
+                    {
+                        continue;
+                    }
+                }
             }
+        }
+        catch (Exception exception) when (exception is OperationCanceledException)
+        {
+            // Ignored
+        }
+        catch (Exception exception)
+        {
+            logger.LogCritical(exception, "Platform background task completed with exception");
+            throw;
         }
     }
 }
