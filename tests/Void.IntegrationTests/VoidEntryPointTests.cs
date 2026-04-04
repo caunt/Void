@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Void.IntegrationTests.Infrastructure.IO;
@@ -9,13 +10,17 @@ namespace Void.IntegrationTests;
 
 public class VoidEntryPointTests
 {
+    private const string EarlyExitString = "Proxy started";
+
     [Fact]
     public async Task EntryPoint_RunsStopsSuccessfully()
     {
         var logs = new CollectingTextWriter();
-
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { LogWriter = logs, WorkingDirectory = nameof(EntryPoint_RunsStopsSuccessfully) }, cancellationTokenSource.Token);
+        var exitCode = await RunVoidAsync(new VoidEntryPoint.RunOptions
+        {
+            LogWriter = logs,
+            WorkingDirectory = nameof(EntryPoint_RunsStopsSuccessfully)
+        }, EarlyExitString);
 
         try
         {
@@ -34,9 +39,12 @@ public class VoidEntryPointTests
     public async Task EntryPoint_UsesPortOption()
     {
         var logs = new CollectingTextWriter();
-
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { LogWriter = logs, Arguments = ["--port", "50000"], WorkingDirectory = nameof(EntryPoint_UsesPortOption) }, cancellationTokenSource.Token);
+        var exitCode = await RunVoidAsync(new VoidEntryPoint.RunOptions
+        {
+            LogWriter = logs,
+            Arguments = ["--port", "50000"],
+            WorkingDirectory = nameof(EntryPoint_UsesPortOption)
+        }, EarlyExitString);
 
         try
         {
@@ -55,9 +63,12 @@ public class VoidEntryPointTests
     public async Task EntryPoint_UsesInterfaceOption()
     {
         var logs = new CollectingTextWriter();
-
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { LogWriter = logs, Arguments = ["--interface", "127.0.0.1"], WorkingDirectory = nameof(EntryPoint_UsesInterfaceOption) }, cancellationTokenSource.Token);
+        var exitCode = await RunVoidAsync(new VoidEntryPoint.RunOptions
+        {
+            LogWriter = logs,
+            Arguments = ["--interface", "127.0.0.1"],
+            WorkingDirectory = nameof(EntryPoint_UsesInterfaceOption)
+        }, EarlyExitString);
 
         try
         {
@@ -76,14 +87,12 @@ public class VoidEntryPointTests
     public async Task EntryPoint_UsesServerOptionWithoutPort_DefaultsTo25565()
     {
         var logs = new CollectingTextWriter();
-
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions
+        var exitCode = await RunVoidAsync(new VoidEntryPoint.RunOptions
         {
             LogWriter = logs,
             Arguments = ["--server", "paper.default.svc.cluster.local"],
             WorkingDirectory = nameof(EntryPoint_UsesServerOptionWithoutPort_DefaultsTo25565)
-        }, cancellationTokenSource.Token);
+        }, EarlyExitString);
 
         try
         {
@@ -102,14 +111,12 @@ public class VoidEntryPointTests
     public async Task EntryPoint_UsesServerOptionWithPort_UsesSpecifiedPort()
     {
         var logs = new CollectingTextWriter();
-
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions
+        var exitCode = await RunVoidAsync(new VoidEntryPoint.RunOptions
         {
             LogWriter = logs,
             Arguments = ["--server", "localhost:25566"],
             WorkingDirectory = nameof(EntryPoint_UsesServerOptionWithPort_UsesSpecifiedPort)
-        }, cancellationTokenSource.Token);
+        }, EarlyExitString);
 
         try
         {
@@ -128,9 +135,7 @@ public class VoidEntryPointTests
     public async Task EntryPoint_UsesMultipleServersWithMixedFormats_ParsesAllCorrectly()
     {
         var logs = new CollectingTextWriter();
-
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions
+        var exitCode = await RunVoidAsync(new VoidEntryPoint.RunOptions
         {
             LogWriter = logs,
             Arguments = [
@@ -139,7 +144,7 @@ public class VoidEntryPointTests
                 "--server", "192.168.1.1"
             ],
             WorkingDirectory = nameof(EntryPoint_UsesMultipleServersWithMixedFormats_ParsesAllCorrectly)
-        }, cancellationTokenSource.Token);
+        }, EarlyExitString);
 
         try
         {
@@ -160,14 +165,12 @@ public class VoidEntryPointTests
     public async Task EntryPoint_UsesServerOptionWithIPv6_ParsesCorrectly()
     {
         var logs = new CollectingTextWriter();
-
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions
+        var exitCode = await RunVoidAsync(new VoidEntryPoint.RunOptions
         {
             LogWriter = logs,
             Arguments = ["--server", "[2001:db8::1]:25565"],
             WorkingDirectory = nameof(EntryPoint_UsesServerOptionWithIPv6_ParsesCorrectly)
-        }, cancellationTokenSource.Token);
+        }, EarlyExitString);
 
         try
         {
@@ -186,14 +189,12 @@ public class VoidEntryPointTests
     public async Task EntryPoint_UsesServerOptionWithIPv6WithoutPort_DefaultsTo25565()
     {
         var logs = new CollectingTextWriter();
-
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions
+        var exitCode = await RunVoidAsync(new VoidEntryPoint.RunOptions
         {
             LogWriter = logs,
             Arguments = ["--server", "[2001:db8::1]"],
             WorkingDirectory = nameof(EntryPoint_UsesServerOptionWithIPv6WithoutPort_DefaultsTo25565)
-        }, cancellationTokenSource.Token);
+        }, EarlyExitString);
 
         try
         {
@@ -212,14 +213,12 @@ public class VoidEntryPointTests
     public async Task EntryPoint_WithValidNuGetRepository_ProbesSuccessfully()
     {
         var logs = new CollectingTextWriter();
-
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions
+        var exitCode = await RunVoidAsync(new VoidEntryPoint.RunOptions
         {
             LogWriter = logs,
             Arguments = ["--repository", "https://api.nuget.org/v3/index.json"],
             WorkingDirectory = nameof(EntryPoint_WithValidNuGetRepository_ProbesSuccessfully)
-        }, cancellationTokenSource.Token);
+        }, EarlyExitString);
 
         try
         {
@@ -238,14 +237,12 @@ public class VoidEntryPointTests
     public async Task EntryPoint_WithInvalidNuGetRepository_ProbesUnsuccessfully()
     {
         var logs = new CollectingTextWriter();
-
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var exitCode = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions
+        var exitCode = await RunVoidAsync(new VoidEntryPoint.RunOptions
         {
             LogWriter = logs,
             Arguments = ["--repository", "http://127.0.0.1:1/v3/index.json"],
             WorkingDirectory = nameof(EntryPoint_WithInvalidNuGetRepository_ProbesUnsuccessfully)
-        }, cancellationTokenSource.Token);
+        }, EarlyExitString);
 
         try
         {
@@ -258,5 +255,36 @@ public class VoidEntryPointTests
         {
             Assert.Fail($"{nameof(VoidEntryPoint)} failed to run or stop successfully.\n{exception}\nLogs:\n{logs.Text}");
         }
+    }
+
+    private static async Task<int> RunVoidAsync(VoidEntryPoint.RunOptions runOptions, params string[] earlyExitLines)
+    {
+        return await RunVoidAsync(runOptions, TimeSpan.FromSeconds(10), earlyExitLines);
+    }
+
+    private static async Task<int> RunVoidAsync(VoidEntryPoint.RunOptions runOptions, TimeSpan timeout, params string[] earlyExitLines)
+    {
+        using var cancellationTokenSource = new CancellationTokenSource(timeout);
+
+        if (runOptions.LogWriter is CollectingTextWriter collectingTextWriter)
+        {
+            var proxyStarted = false;
+
+            collectingTextWriter.OnLine += line =>
+            {
+                if (!proxyStarted && line.Contains("Proxy started"))
+                    proxyStarted = true;
+
+                if (!proxyStarted)
+                    return;
+
+                if (!earlyExitLines.Any(line.Contains))
+                    return;
+
+                cancellationTokenSource.Cancel();
+            };
+        }
+
+        return await VoidEntryPoint.RunAsync(runOptions, cancellationTokenSource.Token);
     }
 }
