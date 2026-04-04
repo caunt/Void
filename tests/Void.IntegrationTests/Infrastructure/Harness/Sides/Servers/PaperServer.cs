@@ -8,7 +8,7 @@ using Void.IntegrationTests.Infrastructure.Exceptions;
 using Void.IntegrationTests.Infrastructure.Extensions;
 using Void.IntegrationTests.Infrastructure.Harness;
 
-namespace Void.IntegrationTests.Infrastructure.Sides.Servers;
+namespace Void.IntegrationTests.Infrastructure.Harness.Sides.Servers;
 
 public class PaperServer : IntegrationSideBase
 {

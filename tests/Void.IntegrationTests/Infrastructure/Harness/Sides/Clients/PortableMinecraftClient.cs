@@ -14,7 +14,7 @@ using Void.IntegrationTests.Infrastructure.Harness;
 using Void.Minecraft.Network;
 using Xunit;
 
-namespace Void.IntegrationTests.Infrastructure.Sides.Clients;
+namespace Void.IntegrationTests.Infrastructure.Harness.Sides.Clients;
 
 public class PortableMinecraftClient : IIntegrationSide
 {

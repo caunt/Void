@@ -1,4 +1,4 @@
-namespace Void.IntegrationTests.Infrastructure.Sides.Clients;
+namespace Void.IntegrationTests.Infrastructure.Harness.Sides.Clients;
 
 using System;
 using System.Collections.Generic;

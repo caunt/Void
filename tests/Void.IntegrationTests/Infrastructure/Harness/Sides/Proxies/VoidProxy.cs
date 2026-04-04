@@ -1,4 +1,4 @@
-namespace Void.IntegrationTests.Infrastructure.Sides.Proxies;
+namespace Void.IntegrationTests.Infrastructure.Harness.Sides.Proxies;
 
 using System;
 using System.Collections.Generic;

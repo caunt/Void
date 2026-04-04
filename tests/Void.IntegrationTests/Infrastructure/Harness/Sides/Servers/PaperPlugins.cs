@@ -1,4 +1,4 @@
-namespace Void.IntegrationTests.Infrastructure.Sides.Servers;
+namespace Void.IntegrationTests.Infrastructure.Harness.Sides.Servers;
 
 using System;
 
