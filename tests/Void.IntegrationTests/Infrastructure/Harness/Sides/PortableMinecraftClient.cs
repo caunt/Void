@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
-using Void.IntegrationTests.Infrastructure.Exceptions;
+using Void.IntegrationTests.Infrastructure.Extensions;
 using Void.Minecraft.Network;
 using Xunit;
 
@@ -40,19 +40,19 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
         await container.StartAsync(cancellationToken);
 
-        await RunCommandAsync(container, "apt-get update", cancellationToken);
-        await RunCommandAsync(container, "apt-get install -y xvfb xfwm4 x11-utils xdotool libasound2 libflite1 libgl1-mesa-dri libxcursor1 libxrandr2 libxi6 libxtst6 libfreetype6 libfontconfig1 ca-certificates", cancellationToken);
-        await RunCommandAsync(container, "rm -rf /var/lib/apt/lists/*", cancellationToken);
+        await container.RunCommandAsync("apt-get update", cancellationToken);
+        await container.RunCommandAsync("apt-get install -y xvfb xfwm4 x11-utils xdotool libasound2 libflite1 libgl1-mesa-dri libxcursor1 libxrandr2 libxi6 libxtst6 libfreetype6 libfontconfig1 ca-certificates", cancellationToken);
+        await container.RunCommandAsync("rm -rf /var/lib/apt/lists/*", cancellationToken);
 
-        await RunCommandAsync(container, "cargo install portablemc-cli", cancellationToken);
+        await container.RunCommandAsync("cargo install portablemc-cli", cancellationToken);
 
         // Fix sound errors by using the null audio driver
-        await RunCommandAsync(container, @"printf ""pcm.!default { type null }\nctl.!default { type null }\n"" > /etc/asound.conf", cancellationToken);
+        await container.RunCommandAsync(@"printf ""pcm.!default { type null }\nctl.!default { type null }\n"" > /etc/asound.conf", cancellationToken);
 
         // Skip Minecraft accessibility screen
-        await RunCommandAsync(container, "mkdir -p \"$HOME/.minecraft\"", cancellationToken);
-        await RunCommandAsync(container, "touch \"$HOME/.minecraft/options.txt\"", cancellationToken);
-        await RunCommandAsync(container, """
+        await container.RunCommandAsync("mkdir -p \"$HOME/.minecraft\"", cancellationToken);
+        await container.RunCommandAsync("touch \"$HOME/.minecraft/options.txt\"", cancellationToken);
+        await container.RunCommandAsync("""
             if grep -q "^onboardAccessibility:" "$HOME/.minecraft/options.txt"; then
               sed -i "s/^onboardAccessibility:.*/onboardAccessibility:false/" "$HOME/.minecraft/options.txt"
             else
@@ -61,7 +61,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
             """, cancellationToken);
 
         // Helper script to send chat messages
-        await RunCommandAsync(container, """
+        await container.RunCommandAsync("""
             cat >/usr/local/bin/send-chat <<'EOF'
             #!/usr/bin/env bash
             set -e
@@ -97,7 +97,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
         var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        var runTask = RunCommandAsync(Container, $$"""
+        var runTask = Container.RunCommandAsync($$"""
               export DISPLAY="${DISPLAY:-:99}"
               Xvfb :99 -screen 0 1280x720x24 &
               sleep 2
@@ -118,7 +118,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
             foreach (var text in texts)
             {
-                await RunCommandAsync(Container, command: ["send-chat", text], cancellationToken);
+                await Container.RunCommandAsync(["send-chat", text], cancellationToken);
                 await Task.Delay(3_000, cancellationToken);
             }
         }
@@ -166,21 +166,5 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         var (standardOutput, standardError) = await Container.GetLogsAsync(since, ct: cancellationToken);
         return Enumerate(standardError).Prepend("STDERR:").Append("STDOUT:").Concat(Enumerate(standardOutput));
         static IEnumerable<string> Enumerate(string text) => text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(line => line.Trim('\r'));
-    }
-
-    private static async Task RunCommandAsync(IContainer container, string[] command, CancellationToken cancellationToken = default)
-    {
-        var execResult = await container.ExecAsync(command, cancellationToken);
-
-        if (execResult.ExitCode != 0)
-            throw new IntegrationTestException($"Exit code {execResult.ExitCode}\nCommand {command}\nSTDOUT:\n{execResult.Stdout}\nSTDERR:\n{execResult.Stderr}");
-    }
-
-    private static async Task RunCommandAsync(IContainer container, string command, CancellationToken cancellationToken = default)
-    {
-        var execResult = await container.ExecAsync(["bash", "-c", command.ReplaceLineEndings("\n")], cancellationToken);
-
-        if (execResult.ExitCode != 0)
-            throw new IntegrationTestException($"Exit code {execResult.ExitCode}\nCommand {command}\nSTDOUT:\n{execResult.Stdout}\nSTDERR:\n{execResult.Stderr}");
     }
 }
