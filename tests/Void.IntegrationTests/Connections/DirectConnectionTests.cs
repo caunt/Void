@@ -12,10 +12,9 @@ namespace Void.IntegrationTests.Connections;
 
 public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : IntegrationUnitBase, IClassFixture<DirectConnectionTests.Fixture>
 {
-    private const int ServerPort = 25000;
     private const string ExpectedText = "hello void!";
 
-    private static readonly EndPoint ServerEndPoint = new IPEndPoint(IPAddress.Loopback, ServerPort);
+    private readonly EndPoint _serverEndPoint = new IPEndPoint(IPAddress.Loopback, fixture.PaperServer.Port);
 
     [Fact]
     public async Task PortableMinecraftClientConnectsToPaperServer()
@@ -25,7 +24,7 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
 
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.PortableMinecraftClient.SendTextMessageAsync(ServerEndPoint, ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
+            await fixture.PortableMinecraftClient.SendTextMessageAsync(_serverEndPoint, ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
             await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
@@ -41,7 +40,7 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
 
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.PortableMinecraftClient.SendTextMessageAsync(ServerEndPoint, protocolVersion, expectedText, cancellationTokenSource.Token);
+            await fixture.PortableMinecraftClient.SendTextMessageAsync(_serverEndPoint, protocolVersion, expectedText, cancellationTokenSource.Token);
             await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
@@ -57,8 +56,8 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
         {
             using var cancellationTokenSource = new CancellationTokenSource(SetupTimeout);
 
-            var portableMinecraftClientTask = PortableMinecraftClient.CreateAsync(_workingDirectory, cancellationTokenSource.Token);
-            var paperServerTask = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: ServerPort, cancellationToken: cancellationTokenSource.Token);
+            var portableMinecraftClientTask = PortableMinecraftClient.CreateAsync(cancellationTokenSource.Token);
+            var paperServerTask = PaperServer.CreateAsync(cancellationToken: cancellationTokenSource.Token);
 
             PortableMinecraftClient = await portableMinecraftClientTask;
             PaperServer = await paperServerTask;

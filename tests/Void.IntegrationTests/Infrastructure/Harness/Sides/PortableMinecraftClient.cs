@@ -1,138 +1,82 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.IO.Pipelines;
+using System.Linq;
 using System.Net;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Configurations;
-using DotNet.Testcontainers.Images;
+using DotNet.Testcontainers.Containers;
+using Void.IntegrationTests.Infrastructure.Exceptions;
 using Void.Minecraft.Network;
 using Xunit;
 
 namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
 
-public class PortableMinecraftClient : IIntegrationSide
+public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 {
     private const string DockerHost = "host.docker.internal";
 
-    private readonly string _workingDirectory;
-    private readonly IFutureDockerImage _image;
-    private readonly List<string> _logs = [];
-    private readonly Lock _logsLock = new();
-
     public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion.Range()];
 
-    public IEnumerable<string> Logs
+    private DateTime _readLogsSince = DateTime.UtcNow;
+
+    public IEnumerable<string> Logs => ReadLogsAsync(_readLogsSince).GetAwaiter().GetResult();
+
+    public static async Task<PortableMinecraftClient> CreateAsync(CancellationToken cancellationToken = default)
     {
-        get
-        {
-            lock (_logsLock)
-                return [.. _logs];
-        }
-    }
+        var builder = new ContainerBuilder(image: "rust:bookworm")
+            .WithEntrypoint("sleep")
+            .WithCommand("infinity")
+            .WithEnvironment("DEBIAN_FRONTEND", "noninteractive")
+            .WithEnvironment("DISPLAY", ":99")
+            .WithEnvironment("LIBGL_ALWAYS_SOFTWARE", "1")
+            .WithEnvironment("MESA_GL_VERSION_OVERRIDE", "3.3")
+            .WithEnvironment("MESA_GLSL_VERSION_OVERRIDE", "330");
 
-    private PortableMinecraftClient(string workingDirectory, IFutureDockerImage image)
-    {
-        _workingDirectory = workingDirectory;
-        _image = image;
-    }
+        if (OperatingSystem.IsLinux())
+            builder = builder.WithCreateParameterModifier(parameters => parameters.HostConfig.NetworkMode = "host");
 
-    public static async Task<PortableMinecraftClient> CreateAsync(string workingDirectory, CancellationToken cancellationToken = default)
-    {
-        workingDirectory = Path.Combine(workingDirectory, nameof(PortableMinecraftClient));
+        var container = builder.Build();
 
-        if (!Directory.Exists(workingDirectory))
-            Directory.CreateDirectory(workingDirectory);
+        await container.StartAsync(cancellationToken);
 
-        var dockerfilePath = Path.Combine(workingDirectory, "Dockerfile");
+        await RunCommandAsync(container, "apt-get update", cancellationToken);
+        await RunCommandAsync(container, "apt-get install -y xvfb xfwm4 x11-utils xdotool libasound2 libflite1 libgl1-mesa-dri libxcursor1 libxrandr2 libxi6 libxtst6 libfreetype6 libfontconfig1 ca-certificates", cancellationToken);
+        await RunCommandAsync(container, "rm -rf /var/lib/apt/lists/*", cancellationToken);
 
-        await File.WriteAllTextAsync(dockerfilePath,
-            """
-            FROM rust:bookworm AS builder
-            
-            RUN cargo install portablemc-cli
-            
-            FROM debian:bookworm-slim
-            
-            ENV DEBIAN_FRONTEND=noninteractive
-            ENV DISPLAY=:99
-            ENV LIBGL_ALWAYS_SOFTWARE=1
-            ENV MESA_GL_VERSION_OVERRIDE=3.3
-            ENV MESA_GLSL_VERSION_OVERRIDE=330
-            
-            COPY --from=builder /usr/local/cargo/bin/portablemc /usr/local/bin/portablemc
-            
-            RUN apt-get update && apt-get install -y \
-                xvfb \
-                xfwm4 \
-                x11-utils \
-                xdotool \
-                libasound2 \
-                libflite1 \
-                libgl1-mesa-dri \
-                libxcursor1 \
-                libxrandr2 \
-                libxi6 \
-                libxtst6 \
-                libasound2 \
-                libfreetype6 \
-                libfontconfig1 \
-                ca-certificates \
-             && rm -rf /var/lib/apt/lists/*
-            
-            RUN printf "pcm.!default { type null }\nctl.!default { type null }\n" > /etc/asound.conf
-            
-            RUN printf '%s\n' \
-            '#!/usr/bin/env bash' \
-            'set -e' \
-            'export DISPLAY="${DISPLAY:-:99}"' \
-            'windowId="$(xdotool search --onlyvisible --name "Minecraft" | head -n 1)"' \
-            'xdotool windowfocus "$windowId"' \
-            'xdotool key --window "$windowId" t' \
-            'sleep 1' \
-            'xdotool type --window "$windowId" --delay 1 -- "$*"' \
-            'xdotool key --window "$windowId" Return' \
-            > /usr/local/bin/send-chat \
-             && chmod +x /usr/local/bin/send-chat
-            
-            RUN printf '%s\n' \
-            '#!/usr/bin/env bash' \
-            'set -e' \
-            'mkdir -p "$HOME/.portablemc"' \
-            'touch "$HOME/.portablemc/options.txt"' \
-            'if grep -q "^onboardAccessibility:" "$HOME/.portablemc/options.txt"; then' \
-            '  sed -i "s/^onboardAccessibility:.*/onboardAccessibility:false/" "$HOME/.portablemc/options.txt"' \
-            'else' \
-            '  printf "onboardAccessibility:false\n" >> "$HOME/.portablemc/options.txt"' \
-            'fi' \
-            'Xvfb :99 -screen 0 1280x720x24 &' \
-            'sleep 2' \
-            'xfwm4 &' \
-            'sleep 1' \
-            'exec portablemc --main-dir "$HOME/.portablemc" "$@"' \
-            > /entrypoint.sh \
-             && chmod +x /entrypoint.sh
-            
-            ENTRYPOINT ["/entrypoint.sh"]
-            CMD ["release"]
+        await RunCommandAsync(container, "cargo install portablemc-cli", cancellationToken);
+
+        // Fix sound errors by using the null audio driver
+        await RunCommandAsync(container, @"printf ""pcm.!default { type null }\nctl.!default { type null }\n"" > /etc/asound.conf", cancellationToken);
+
+        // Skip Minecraft accessibility screen
+        await RunCommandAsync(container, "mkdir -p \"$HOME/.minecraft\"", cancellationToken);
+        await RunCommandAsync(container, "touch \"$HOME/.minecraft/options.txt\"", cancellationToken);
+        await RunCommandAsync(container, """
+            if grep -q "^onboardAccessibility:" "$HOME/.minecraft/options.txt"; then
+              sed -i "s/^onboardAccessibility:.*/onboardAccessibility:false/" "$HOME/.minecraft/options.txt"
+            else
+              printf "onboardAccessibility:false\n" >> "$HOME/.minecraft/options.txt"
+            fi
             """, cancellationToken);
 
-        var imageBuilder = new ImageFromDockerfileBuilder()
-            .WithDockerfileDirectory(workingDirectory)
-            .WithDockerfile("Dockerfile");
+        // Helper script to send chat messages
+        await RunCommandAsync(container, """
+            cat >/usr/local/bin/send-chat <<'EOF'
+            #!/usr/bin/env bash
+            set -e
+            export DISPLAY="${DISPLAY:-:99}"
+            windowId="$(xdotool search --onlyvisible --name "Minecraft" | head -n 1)"
+            xdotool windowfocus "$windowId"
+            xdotool key --window "$windowId" t
+            sleep 1
+            xdotool type --window "$windowId" --delay 1 -- "$*"
+            xdotool key --window "$windowId" Return
+            EOF
+            chmod +x /usr/local/bin/send-chat
+            """, cancellationToken);
 
-        if (RuntimeInformation.OSArchitecture is not Architecture.X64 and not Architecture.X86)
-            imageBuilder = imageBuilder.WithCreateParameterModifier(parameters => parameters.Platform = "linux/amd64");
-
-        var image = imageBuilder.Build();
-
-        await image.CreateAsync(cancellationToken);
-
-        return new PortableMinecraftClient(workingDirectory, image);
+        return new PortableMinecraftClient(container);
     }
 
     public Task SendTextMessageAsync(EndPoint endPoint, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
@@ -142,11 +86,6 @@ public class PortableMinecraftClient : IIntegrationSide
 
     public async Task SendTextMessagesAsync(EndPoint endPoint, ProtocolVersion protocolVersion, IEnumerable<string> texts, CancellationToken cancellationToken = default)
     {
-        lock (_logsLock)
-            _logs.Clear();
-
-        var portableMcWorkingDirectory = Directory.CreateDirectory(Path.Combine(_workingDirectory, ".portablemc"));
-
         (string host, int port) = endPoint switch
         {
             DnsEndPoint dnsEndPoint when !OperatingSystem.IsLinux() && string.Equals(dnsEndPoint.Host, "localhost", StringComparison.OrdinalIgnoreCase) => (DockerHost, dnsEndPoint.Port),
@@ -156,228 +95,92 @@ public class PortableMinecraftClient : IIntegrationSide
             _ => throw new NotSupportedException($"Unsupported endpoint type: {endPoint.GetType()}")
         };
 
-        await using var logConsumer = new LogConsumer(_logs, _logsLock);
+        var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        var containerBuilder = new ContainerBuilder(_image)
-            .WithOutputConsumer(logConsumer)
-            .WithBindMount(portableMcWorkingDirectory.FullName, "/root/.portablemc")
-            .WithCommand(
-                "start",
-                "--username", nameof(PortableMinecraftClient)[..16],
-                "--join-server", host,
-                "--join-server-port", port.ToString(),
-                "--jvm-arg=-Djava.awt.headless=false",
-                protocolVersion.VersionIntroducedIn);
-
-        if (RuntimeInformation.OSArchitecture is not Architecture.X64 and not Architecture.X86)
-            containerBuilder = containerBuilder.WithCreateParameterModifier(parameters => parameters.Platform = "linux/amd64");
-
-        if (OperatingSystem.IsLinux())
-            containerBuilder = containerBuilder.WithCreateParameterModifier(parameters => parameters.HostConfig.NetworkMode = "host");
-
-        var container = containerBuilder.Build();
+        var runTask = RunCommandAsync(Container, $$"""
+              export DISPLAY="${DISPLAY:-:99}"
+              Xvfb :99 -screen 0 1280x720x24 &
+              sleep 2
+              xfwm4 &
+              sleep 1
+              portablemc start --username "{{nameof(PortableMinecraftClient)[..16]}}" --join-server "{{host}}" --join-server-port "{{port}}" --jvm-arg=-Djava.awt.headless=false "{{protocolVersion.VersionIntroducedIn}}" >/proc/1/fd/1 2>/proc/1/fd/2
+            """, cancellationToken);
 
         try
         {
-            await container.StartAsync(cancellationToken);
-
-            await logConsumer.WaitForTextAsync("Connecting to", cancellationToken);
+            await ExpectTextAsync("Connecting to", cancellationToken);
 
             // Wait for silence in the logs
-            while (logConsumer.TimeSinceLastLog <= TimeSpan.FromSeconds(10))
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+            await Task.Delay(15_000, cancellationToken);
+
+            // while (logConsumer.TimeSinceLastLog <= TimeSpan.FromSeconds(10))
+            //     await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
 
             foreach (var text in texts)
             {
-                await container.ExecAsync(["send-chat", text], cancellationToken);
+                await RunCommandAsync(Container, command: ["send-chat", text], cancellationToken);
                 await Task.Delay(3_000, cancellationToken);
             }
         }
         finally
         {
-            await container.StopAsync(CancellationToken.None);
-            await container.DisposeAsync();
+            // TODO: Stop process here
+            await runTask;
+        }
+    }
+
+    public async Task ExpectTextAsync(string text, CancellationToken cancellationToken = default)
+    {
+        await ExpectTextAsync(text, lookupHistory: false, cancellationToken);
+    }
+
+    public async Task ExpectTextAsync(string text, bool lookupHistory = false, CancellationToken cancellationToken = default)
+    {
+        var since = lookupHistory ? _readLogsSince : DateTime.Now;
+
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var logs = await ReadLogsAsync(since, cancellationToken);
+
+            if (logs.Any(line => line.Contains(text)))
+                return;
+
+            await Task.Delay(100, cancellationToken);
         }
     }
 
     public void ClearLogs()
     {
-        lock (_logsLock)
-            _logs.Clear();
+        _readLogsSince = DateTime.UtcNow;
     }
 
     public async ValueTask DisposeAsync()
     {
-        GC.SuppressFinalize(this);
+        await Container.DisposeAsync();
 
-        await _image.DeleteAsync();
-        await _image.DisposeAsync();
+        GC.SuppressFinalize(this);
     }
 
-    private sealed class LogConsumer : IOutputConsumer, IAsyncDisposable
+    private async Task<IEnumerable<string>> ReadLogsAsync(DateTime since, CancellationToken cancellationToken = default)
     {
-        private readonly List<string> _logs;
-        private readonly Lock _logsLock;
-        private readonly Pipe _stdoutPipe = new();
-        private readonly Pipe _stderrPipe = new();
-        private readonly Task _stdoutTask;
-        private readonly Task _stderrTask;
-        private DateTimeOffset _lastLogTimestamp = DateTimeOffset.UtcNow;
+        var (standardOutput, standardError) = await Container.GetLogsAsync(since, ct: cancellationToken);
+        return Enumerate(standardError).Prepend("STDERR:").Append("STDOUT:").Concat(Enumerate(standardOutput));
+        static IEnumerable<string> Enumerate(string text) => text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(line => line.Trim('\r'));
+    }
 
-        public bool Enabled => true;
-        public Stream Stdout => _stdoutPipe.Writer.AsStream();
-        public Stream Stderr => _stderrPipe.Writer.AsStream();
-        public TimeSpan TimeSinceLastLog
-        {
-            get
-            {
-                lock (_logsLock)
-                    return DateTimeOffset.UtcNow - _lastLogTimestamp;
-            }
-        }
+    private static async Task RunCommandAsync(IContainer container, string[] command, CancellationToken cancellationToken = default)
+    {
+        var execResult = await container.ExecAsync(command, cancellationToken);
 
-        public LogConsumer(List<string> logs, Lock logsLock)
-        {
-            _logs = logs;
-            _logsLock = logsLock;
-            _stdoutTask = ReadLinesAsync(_stdoutPipe.Reader);
-            _stderrTask = ReadLinesAsync(_stderrPipe.Reader);
-        }
+        if (execResult.ExitCode != 0)
+            throw new IntegrationTestException($"Exit code {execResult.ExitCode}\nCommand {command}\nSTDOUT:\n{execResult.Stdout}\nSTDERR:\n{execResult.Stderr}");
+    }
 
-        public async Task WaitForTextAsync(string text, CancellationToken cancellationToken)
-        {
-            var checkedUpTo = 0;
+    private static async Task RunCommandAsync(IContainer container, string command, CancellationToken cancellationToken = default)
+    {
+        var execResult = await container.ExecAsync(["bash", "-c", command.ReplaceLineEndings("\n")], cancellationToken);
 
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                int newCount;
-                var found = false;
-
-                lock (_logsLock)
-                {
-                    newCount = _logs.Count;
-
-                    for (var i = checkedUpTo; i < newCount; i++)
-                    {
-                        if (_logs[i].Contains(text, StringComparison.Ordinal))
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (found)
-                    return;
-
-                checkedUpTo = newCount;
-                await Task.Delay(100, cancellationToken);
-            }
-        }
-
-        private async Task ReadLinesAsync(PipeReader reader)
-        {
-            var decoder = Encoding.UTF8.GetDecoder();
-            var lineBuilder = new StringBuilder();
-
-            try
-            {
-                while (true)
-                {
-                    var result = await reader.ReadAsync();
-                    var buffer = result.Buffer;
-
-                    foreach (var segment in buffer)
-                    {
-                        var bytes = segment.Span;
-                        var charCount = decoder.GetCharCount(bytes, flush: false);
-                        var chars = charCount > 0 ? new char[charCount] : [];
-                        var charsDecoded = decoder.GetChars(bytes, chars, flush: false);
-
-                        for (var i = 0; i < charsDecoded; i++)
-                        {
-                            var ch = chars[i];
-
-                            if (ch == '\n')
-                            {
-                                var line = lineBuilder.ToString().TrimEnd('\r');
-                                lineBuilder.Clear();
-
-                                if (!string.IsNullOrEmpty(line))
-                                {
-                                    lock (_logsLock)
-                                    {
-                                        _logs.Add(line);
-                                        _lastLogTimestamp = DateTimeOffset.UtcNow;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                lineBuilder.Append(ch);
-                            }
-                        }
-                    }
-
-                    reader.AdvanceTo(buffer.End);
-
-                    if (result.IsCompleted)
-                    {
-                        var flushCount = decoder.GetCharCount(ReadOnlySpan<byte>.Empty, flush: true);
-
-                        if (flushCount > 0)
-                        {
-                            var flushChars = new char[flushCount];
-                            decoder.GetChars(ReadOnlySpan<byte>.Empty, flushChars, flush: true);
-                            lineBuilder.Append(flushChars);
-                        }
-
-                        if (lineBuilder.Length > 0)
-                        {
-                            var line = lineBuilder.ToString().TrimEnd('\r');
-
-                            if (!string.IsNullOrEmpty(line))
-                            {
-                                lock (_logsLock)
-                                {
-                                    _logs.Add(line);
-                                    _lastLogTimestamp = DateTimeOffset.UtcNow;
-                                }
-                            }
-                        }
-
-                        break;
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // Expected when the pipe is completed during cancellation
-            }
-            catch (Exception exception)
-            {
-                Console.Error.WriteLine($"[LogConsumer] Unexpected error reading log stream: {exception}");
-            }
-            finally
-            {
-                await reader.CompleteAsync();
-            }
-        }
-
-        public void Dispose()
-        {
-            DisposeAsync().AsTask().GetAwaiter().GetResult();
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            _stdoutPipe.Writer.Complete();
-            _stderrPipe.Writer.Complete();
-
-            await _stdoutTask;
-            await _stderrTask;
-        }
+        if (execResult.ExitCode != 0)
+            throw new IntegrationTestException($"Exit code {execResult.ExitCode}\nCommand {command}\nSTDOUT:\n{execResult.Stdout}\nSTDERR:\n{execResult.Stderr}");
     }
 }

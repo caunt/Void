@@ -14,8 +14,6 @@ namespace Void.IntegrationTests.Connections;
 public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture fixture) : IntegrationUnitBase, IClassFixture<ProxiedServerRedirectionTests.Fixture>
 {
     private const int ProxyPort = 36000;
-    private const int Server1Port = 36001;
-    private const int Server2Port = 36002;
 
     private static readonly EndPoint ProxyEndPoint = new IPEndPoint(IPAddress.Loopback, ProxyPort);
 
@@ -83,15 +81,14 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
         {
             using var cancellationTokenSource = new CancellationTokenSource(SetupTimeout);
 
-            var portableMinecraftClientTask = PortableMinecraftClient.CreateAsync(_workingDirectory, cancellationTokenSource.Token);
-            var paperServer1Task = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server1Port, name: "server1", cancellationToken: cancellationTokenSource.Token);
-            var paperServer2Task = PaperServer.CreateAsync(_workingDirectory, _httpClient, port: Server2Port, name: "server2", cancellationToken: cancellationTokenSource.Token);
-            var voidProxyTask = VoidProxy.CreateAsync(_workingDirectory, [$"localhost:{Server1Port}", $"localhost:{Server2Port}"], proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
+            var portableMinecraftClientTask = PortableMinecraftClient.CreateAsync(cancellationTokenSource.Token);
+            var paperServer1Task = PaperServer.CreateAsync(cancellationTokenSource.Token);
+            var paperServer2Task = PaperServer.CreateAsync(cancellationTokenSource.Token);
 
             PortableMinecraftClient = await portableMinecraftClientTask;
             PaperServer1 = await paperServer1Task;
             PaperServer2 = await paperServer2Task;
-            VoidProxy = await voidProxyTask;
+            VoidProxy = await VoidProxy.CreateAsync(_workingDirectory, [$"localhost:{PaperServer1.Port}", $"localhost:{PaperServer2.Port}"], proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token); ;
         }
 
         public async Task DisposeAsync()
