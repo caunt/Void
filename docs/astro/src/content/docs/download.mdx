@@ -8,7 +8,9 @@ import { Aside, Badge, Card, LinkCard, CardGrid, Tabs, TabItem, Steps } from '@a
 import { Markdown } from 'astro-remote';
 import { getCollection } from 'astro:content';
 
-export const releases = await getCollection('releases');
+export const releases = (await getCollection('releases')).sort(
+    (leftRelease, rightRelease) => new Date(rightRelease.data.published_at).getTime() - new Date(leftRelease.data.published_at).getTime()
+);
 export const workflows = await getCollection('workflows');
 export const builds = workflows.find(entry => entry.data.path.endsWith('main.yaml')).data;
 export const platforms = [

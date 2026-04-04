@@ -30,9 +30,7 @@ export const collections = {
                 throw new Error('Unexpected response from GitHub Releases API');
             }
 
-            return data
-                .sort((leftRelease: any, rightRelease: any) => new Date(rightRelease.published_at).getTime() - new Date(leftRelease.published_at).getTime())
-                .map((item: any) => ({ ...item, id: item.id.toString() }));
+            return data.map((item: any) => ({ ...item, id: item.id.toString() }));
         }
     }),
     workflows: defineCollection({
