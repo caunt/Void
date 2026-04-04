@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Containers;
@@ -118,6 +120,13 @@ public static class ContainerExtensions
                     await container.ExecAsync(["rm", "-f", processGroupLeaderFilePath]);
                 }
             }
+        }
+
+        public async Task<IEnumerable<string>> ReadLogsAsync(DateTime since, CancellationToken cancellationToken = default)
+        {
+            var (standardOutput, standardError) = await container.GetLogsAsync(since, ct: cancellationToken);
+            return Enumerate(standardError).Prepend("STDERR:").Append("STDOUT:").Concat(Enumerate(standardOutput));
+            static IEnumerable<string> Enumerate(string text) => text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(line => line.Trim('\r'));
         }
     }
 }

@@ -13,7 +13,7 @@ public record PaperServer(IContainer Container) : IIntegrationSide
 {
     private DateTime _readLogsSince = DateTime.UtcNow;
 
-    public IEnumerable<string> Logs => ReadLogsAsync(_readLogsSince).GetAwaiter().GetResult();
+    public IEnumerable<string> Logs => Container.ReadLogsAsync(_readLogsSince).GetAwaiter().GetResult();
     public int Port => Container.GetMappedPublicPort(containerPort: 25565);
 
     public static async Task<PaperServer> CreateAsync(CancellationToken cancellationToken = default)
@@ -41,7 +41,7 @@ public record PaperServer(IContainer Container) : IIntegrationSide
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            var logs = await ReadLogsAsync(since, cancellationToken);
+            var logs = await Container.ReadLogsAsync(since, cancellationToken);
 
             if (logs.Any(line => line.Contains(text)))
                 return;
@@ -60,12 +60,5 @@ public record PaperServer(IContainer Container) : IIntegrationSide
         await Container.DisposeAsync();
 
         GC.SuppressFinalize(this);
-    }
-
-    private async Task<IEnumerable<string>> ReadLogsAsync(DateTime since, CancellationToken cancellationToken = default)
-    {
-        var (standardOutput, standardError) = await Container.GetLogsAsync(since, ct: cancellationToken);
-        return Enumerate(standardError).Prepend("STDERR:").Append("STDOUT:").Concat(Enumerate(standardOutput));
-        static IEnumerable<string> Enumerate(string text) => text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(line => line.Trim('\r'));
     }
 }
