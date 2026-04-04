@@ -104,7 +104,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
               xfwm4 &
               sleep 1
               portablemc start --username "{{nameof(PortableMinecraftClient)[..16]}}" --join-server "{{host}}" --join-server-port "{{port}}" --jvm-arg=-Djava.awt.headless=false "{{protocolVersion.VersionIntroducedIn}}" >/proc/1/fd/1 2>/proc/1/fd/2
-            """, cancellationToken);
+            """, cancellationTokenSource.Token);
 
         try
         {
@@ -124,8 +124,18 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         }
         finally
         {
-            // TODO: Stop process here
-            await runTask;
+            cancellationTokenSource.Cancel();
+
+            try
+            {
+                await runTask;
+            }
+            catch (OperationCanceledException)
+            {
+                // Ignored
+            }
+
+            cancellationTokenSource.Dispose();
         }
     }
 
