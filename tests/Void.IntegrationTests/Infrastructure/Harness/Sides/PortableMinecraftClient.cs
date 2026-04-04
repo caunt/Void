@@ -95,7 +95,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
             _ => throw new NotSupportedException($"Unsupported endpoint type: {endPoint.GetType()}")
         };
 
-        var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         var runTask = Container.RunCommandAsync($$"""
               export DISPLAY="${DISPLAY:-:99}"
@@ -124,7 +124,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         }
         finally
         {
-            cancellationTokenSource.Cancel();
+            await cancellationTokenSource.CancelAsync();
 
             try
             {
@@ -134,8 +134,6 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
             {
                 // Ignored
             }
-
-            cancellationTokenSource.Dispose();
         }
     }
 
