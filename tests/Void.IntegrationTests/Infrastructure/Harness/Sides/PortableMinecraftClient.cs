@@ -15,8 +15,9 @@ namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
 public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 {
     private const string DockerHost = "host.docker.internal";
+    private const string RedirectOutput = ">/proc/1/fd/1 2>/proc/1/fd/2";
 
-    public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion.Range()];
+    public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion.Range(ProtocolVersion.Latest, ProtocolVersion.Oldest)];
 
     private DateTime _readLogsSince = DateTime.UtcNow;
 
@@ -40,19 +41,19 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
         await container.StartAsync(cancellationToken);
 
-        await container.RunCommandAsync("apt-get update", cancellationToken);
-        await container.RunCommandAsync("apt-get install -y xvfb xfwm4 x11-utils xdotool libasound2 libflite1 libgl1-mesa-dri libxcursor1 libxrandr2 libxi6 libxtst6 libfreetype6 libfontconfig1 ca-certificates", cancellationToken);
-        await container.RunCommandAsync("rm -rf /var/lib/apt/lists/*", cancellationToken);
+        await container.RunCommandAsync($"apt-get update {RedirectOutput}", cancellationToken);
+        await container.RunCommandAsync($"apt-get install -y xvfb xfwm4 x11-utils xdotool libasound2 libflite1 libgl1-mesa-dri libxcursor1 libxrandr2 libxi6 libxtst6 libfreetype6 libfontconfig1 ca-certificates {RedirectOutput}", cancellationToken);
+        await container.RunCommandAsync($"rm -rf /var/lib/apt/lists/* {RedirectOutput}", cancellationToken);
 
-        await container.RunCommandAsync("cargo install portablemc-cli", cancellationToken);
+        await container.RunCommandAsync($"cargo install portablemc-cli {RedirectOutput}", cancellationToken);
 
         // Fix sound errors by using the null audio driver
         await container.RunCommandAsync(@"printf ""pcm.!default { type null }\nctl.!default { type null }\n"" > /etc/asound.conf", cancellationToken);
 
         // Skip Minecraft accessibility screen
-        await container.RunCommandAsync("mkdir -p \"$HOME/.minecraft\"", cancellationToken);
-        await container.RunCommandAsync("touch \"$HOME/.minecraft/options.txt\"", cancellationToken);
-        await container.RunCommandAsync("""
+        await container.RunCommandAsync($"mkdir -p \"$HOME/.minecraft\" {RedirectOutput}", cancellationToken);
+        await container.RunCommandAsync($"touch \"$HOME/.minecraft/options.txt\" {RedirectOutput}", cancellationToken);
+        await container.RunCommandAsync($"""
             if grep -q "^onboardAccessibility:" "$HOME/.minecraft/options.txt"; then
               sed -i "s/^onboardAccessibility:.*/onboardAccessibility:false/" "$HOME/.minecraft/options.txt"
             else
@@ -74,6 +75,15 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
             xdotool key --window "$windowId" Return
             EOF
             chmod +x /usr/local/bin/send-chat
+            """, cancellationToken);
+
+        // Start display
+        await container.RunCommandAsync($"""
+            export DISPLAY=:99
+            rm -f /tmp/.X99-lock
+            Xvfb :99 -screen 0 1280x720x24 {RedirectOutput} &
+            until xdpyinfo -display :99 >/dev/null 2>&1; do sleep 0.1; done
+            xfwm4 {RedirectOutput} &
             """, cancellationToken);
 
         return new PortableMinecraftClient(container);
@@ -98,28 +108,20 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         var runTask = Container.RunCommandAsync($$"""
-              export DISPLAY="${DISPLAY:-:99}"
-              Xvfb :99 -screen 0 1280x720x24 &
-              sleep 2
-              xfwm4 &
-              sleep 1
-              portablemc start --username "{{nameof(PortableMinecraftClient)[..16]}}" --join-server "{{host}}" --join-server-port "{{port}}" --jvm-arg=-Djava.awt.headless=false "{{protocolVersion.VersionIntroducedIn}}" >/proc/1/fd/1 2>/proc/1/fd/2
-            """, cancellationTokenSource.Token);
+            export DISPLAY=:99
+            echo "Starting Minecraft with protocol version {{protocolVersion.VersionIntroducedIn}} connecting to {{host}}:{{port}}" {{RedirectOutput}}
+            portablemc start --username "{{nameof(PortableMinecraftClient)[..16]}}" --join-server "{{host}}" --join-server-port "{{port}}" --jvm-arg=-Djava.awt.headless=false "{{protocolVersion.VersionIntroducedIn}}" {{RedirectOutput}}
+            """, cancellationToken, cancellationTokenSource.Token);
 
         try
         {
             await ExpectTextAsync("Connecting to", cancellationToken);
-
-            // Wait for silence in the logs
-            await Task.Delay(15_000, cancellationToken);
-
-            // while (logConsumer.TimeSinceLastLog <= TimeSpan.FromSeconds(10))
-            //     await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+            await Container.WaitForLogsSilenceAsync(TimeSpan.FromSeconds(10), cancellationToken);
 
             foreach (var text in texts)
             {
                 await Container.RunCommandAsync(["send-chat", text], cancellationToken);
-                await Task.Delay(3_000, cancellationToken);
+                await Container.WaitForLogsSilenceAsync(TimeSpan.FromSeconds(3), cancellationToken);
             }
         }
         finally
@@ -144,7 +146,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
     public async Task ExpectTextAsync(string text, bool lookupHistory = false, CancellationToken cancellationToken = default)
     {
-        var since = lookupHistory ? _readLogsSince : DateTime.Now;
+        var since = lookupHistory ? _readLogsSince : DateTime.UtcNow;
 
         while (!cancellationToken.IsCancellationRequested)
         {
