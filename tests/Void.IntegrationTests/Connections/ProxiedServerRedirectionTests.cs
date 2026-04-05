@@ -77,7 +77,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
         public PaperServer PaperServer2 { get => field ?? throw new InvalidOperationException($"{nameof(PaperServer2)} is not initialized."); set; }
         public VoidProxy VoidProxy { get => field ?? throw new InvalidOperationException($"{nameof(VoidProxy)} is not initialized."); set; }
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             using var cancellationTokenSource = new CancellationTokenSource(SetupTimeout);
 
@@ -91,7 +91,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
             VoidProxy = await VoidProxy.CreateAsync(_workingDirectory, [$"localhost:{PaperServer1.Port}", $"localhost:{PaperServer2.Port}"], proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token); ;
         }
 
-        public async Task DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             await PortableMinecraftClient.DisposeAsync();
             await PaperServer1.DisposeAsync();

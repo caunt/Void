@@ -54,7 +54,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : In
         public PaperServer PaperServer { get => field ?? throw new InvalidOperationException($"{nameof(PaperServer)} is not initialized."); set; }
         public VoidProxy VoidProxy { get => field ?? throw new InvalidOperationException($"{nameof(VoidProxy)} is not initialized."); set; }
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             using var cancellationTokenSource = new CancellationTokenSource(SetupTimeout);
 
@@ -66,7 +66,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : In
             VoidProxy = await VoidProxy.CreateAsync(_workingDirectory, targetServer: $"localhost:{PaperServer.Port}", proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
         }
 
-        public async Task DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             await PortableMinecraftClient.DisposeAsync();
             await PaperServer.DisposeAsync();
