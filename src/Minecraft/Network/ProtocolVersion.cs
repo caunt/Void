@@ -111,10 +111,7 @@ public class ProtocolVersion : IComparable
         var descending = left > right;
         var versions = Mapping.Where(pair => pair.Key >= start.Version && pair.Key <= end.Version).Select(pair => pair.Value);
 
-        if (descending)
-            return versions.OrderDescending();
-        else
-            return versions.Order();
+        return descending ? versions.OrderDescending() : versions.Order();
     }
 
     public static ProtocolVersion Min(ProtocolVersion version1, ProtocolVersion version2)
