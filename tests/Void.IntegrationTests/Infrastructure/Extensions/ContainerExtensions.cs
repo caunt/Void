@@ -117,7 +117,7 @@ public static class ContainerExtensions
         public async Task<IEnumerable<string>> ReadLogsAsync(DateTime since, CancellationToken cancellationToken = default)
         {
             var (standardOutput, standardError) = await container.GetLogsAsync(since, ct: cancellationToken);
-            return Enumerate(standardError).Prepend("STDERR:").Append("STDOUT:").Concat(Enumerate(standardOutput));
+            return Enumerate(standardOutput).Concat(Enumerate(standardError));
             static IEnumerable<string> Enumerate(string text) => text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(line => line.Trim('\r'));
         }
 
@@ -165,10 +165,22 @@ public static class ContainerExtensions
             return upperAge + (DateTime.UtcNow - snapshotTime);
         }
 
-        public async Task WaitForLogsSilenceAsync(TimeSpan time, CancellationToken cancellationToken = default)
+        public async Task WaitForLogsSilenceAsync(TimeSpan requiredSilenceDuration, CancellationToken cancellationToken = default)
         {
-            while (await container.GetTimeSinceLastLogAsync(cancellationToken) <= time)
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+            var checkInterval = TimeSpan.FromSeconds(1);
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var silenceThreshold = DateTime.UtcNow - requiredSilenceDuration;
+                var logs = await container.ReadLogsAsync(since: silenceThreshold, cancellationToken);
+
+                if (!logs.Any())
+                    return;
+
+                await Task.Delay(checkInterval, cancellationToken);
+            }
         }
     }
 }
