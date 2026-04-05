@@ -88,7 +88,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
             PortableMinecraftClient = await portableMinecraftClientTask;
             PaperServer1 = await paperServer1Task;
             PaperServer2 = await paperServer2Task;
-            VoidProxy = await VoidProxy.CreateAsync(_workingDirectory, [$"localhost:{PaperServer1.Port}", $"localhost:{PaperServer2.Port}"], proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token); ;
+            VoidProxy = await VoidProxy.CreateAsync(_workingDirectory, [$"localhost:{PaperServer1.Port}", $"localhost:{PaperServer2.Port}"], proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
         }
 
         public async ValueTask DisposeAsync()
