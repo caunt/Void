@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
@@ -37,17 +36,10 @@ public record PaperServer(IContainer Container) : IIntegrationSide
 
     public async Task ExpectTextAsync(string text, bool lookupHistory = false, CancellationToken cancellationToken = default)
     {
-        var since = lookupHistory ? _readLogsSince : DateTime.Now;
-
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            var logs = await Container.ReadLogsAsync(since, cancellationToken);
-
-            if (logs.Any(line => line.Contains(text)))
-                return;
-
-            await Task.Delay(100, cancellationToken);
-        }
+        if (lookupHistory)
+            await Container.ExpectTextAsync(text, since: _readLogsSince, cancellationToken);
+        else
+            await Container.ExpectTextAsync(text, cancellationToken);
     }
 
     public void ClearLogs()

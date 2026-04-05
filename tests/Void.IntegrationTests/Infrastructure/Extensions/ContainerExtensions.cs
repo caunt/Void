@@ -12,6 +12,24 @@ public static class ContainerExtensions
 {
     extension(IContainer container)
     {
+        public async Task ExpectTextAsync(string text, CancellationToken cancellationToken = default)
+        {
+            await container.ExpectTextAsync(text, since: DateTime.UtcNow, cancellationToken);
+        }
+
+        public async Task ExpectTextAsync(string text, DateTime since, CancellationToken cancellationToken = default)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var logs = await container.ReadLogsAsync(since, cancellationToken);
+
+                if (logs.Any(line => line.Contains(text)))
+                    return;
+
+                await Task.Delay(100, cancellationToken);
+            }
+        }
+
         public async Task RunCommandAsync(string[] command, CancellationToken cancellationToken = default)
         {
             var execResult = await container.ExecAsync(command, cancellationToken);
@@ -168,29 +186,49 @@ public static class ContainerExtensions
         public async Task WaitForLogsSilenceAsync(TimeSpan requiredSilenceDuration, CancellationToken cancellationToken = default)
         {
             var checkInterval = TimeSpan.FromSeconds(1);
-            var anchor = DateTime.UtcNow - requiredSilenceDuration;
+            var fixedSinceAnchor = DateTime.UtcNow - requiredSilenceDuration;
 
-            var logs = await container.ReadLogsAsync(since: anchor, cancellationToken);
-            var knownCount = logs.Count();
+            var logs = await container.ReadLogsAsync(since: fixedSinceAnchor, cancellationToken);
+            var previousLogCount = logs.Count();
 
-            if (knownCount == 0)
+            if (previousLogCount == 0)
                 return;
 
-            var lastChangeAt = DateTime.UtcNow;
+            var lastLogTime = DateTime.UtcNow;
 
-            while (DateTime.UtcNow - lastChangeAt < requiredSilenceDuration)
+            while (DateTime.UtcNow - lastLogTime < requiredSilenceDuration)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
                 await Task.Delay(checkInterval, cancellationToken);
 
-                logs = await container.ReadLogsAsync(since: anchor, cancellationToken);
-                var count = logs.Count();
+                logs = await container.ReadLogsAsync(since: fixedSinceAnchor, cancellationToken);
+                var currentLogCount = logs.Count();
 
-                if (count > knownCount)
+                if (currentLogCount > previousLogCount)
                 {
-                    lastChangeAt = DateTime.UtcNow;
-                    knownCount = count;
+                    lastLogTime = DateTime.UtcNow;
+                    previousLogCount = currentLogCount;
                 }
+            }
+        }
+
+        public async Task<Memory<byte>> TakeScreenshotAsync(CancellationToken cancellationToken = default)
+        {
+            var fileName = $"/tmp/screenshot-{Guid.NewGuid():N}.png";
+
+            await container.RunCommandAsync($"""
+                    export DISPLAY=:99
+                    import -display :99 -window root {fileName}
+                    """, cancellationToken);
+
+            try
+            {
+                return await container.ReadFileAsync(fileName, cancellationToken);
+            }
+            finally
+            {
+                await container.RunCommandAsync($"rm -f {fileName}", cancellationToken);
             }
         }
     }

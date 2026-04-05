@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using Nito.Disposables;
 using Void.IntegrationTests.Infrastructure.Extensions;
 using Void.Minecraft.Network;
 using Xunit;
@@ -14,10 +16,15 @@ namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
 
 public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 {
-    private const string DockerHost = "host.docker.internal";
     private const string RedirectOutput = ">/proc/1/fd/1 2>/proc/1/fd/2";
 
-    public static TheoryData<ProtocolVersion> SupportedVersions { get; } = [.. ProtocolVersion.Range(ProtocolVersion.Latest, ProtocolVersion.Oldest)];
+    public static TheoryData<ProtocolVersion> SupportedVersions { get; } =
+        [
+            .. ProtocolVersion
+            .Range(ProtocolVersion.Oldest, ProtocolVersion.Latest)
+            // These do connect to the server before the loading screen completes, causing MC-228828 crash on 1.14-1.19
+            .Where(version => version < ProtocolVersion.MINECRAFT_1_14 || version > ProtocolVersion.MINECRAFT_1_19)
+        ];
 
     private DateTime _readLogsSince = DateTime.UtcNow;
 
@@ -30,9 +37,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
             .WithCommand("infinity")
             .WithEnvironment("DEBIAN_FRONTEND", "noninteractive")
             .WithEnvironment("DISPLAY", ":99")
-            .WithEnvironment("LIBGL_ALWAYS_SOFTWARE", "1")
-            .WithEnvironment("MESA_GL_VERSION_OVERRIDE", "3.3")
-            .WithEnvironment("MESA_GLSL_VERSION_OVERRIDE", "330");
+            .WithEnvironment("LIBGL_ALWAYS_SOFTWARE", "1");
 
         if (OperatingSystem.IsLinux())
             builder = builder.WithCreateParameterModifier(parameters => parameters.HostConfig.NetworkMode = "host");
@@ -42,7 +47,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         await container.StartAsync(cancellationToken);
 
         await container.RunCommandAsync($"apt-get update {RedirectOutput}", cancellationToken);
-        await container.RunCommandAsync($"apt-get install -y xvfb xfwm4 x11-utils xdotool libasound2 libflite1 libgl1-mesa-dri libxcursor1 libxrandr2 libxi6 libxtst6 libfreetype6 libfontconfig1 ca-certificates {RedirectOutput}", cancellationToken);
+        await container.RunCommandAsync($"apt-get install -y xvfb xfwm4 x11-utils x11-xserver-utils xdotool libasound2 libflite1 libgl1-mesa-dri libxcursor1 libxrandr2 libxi6 libxtst6 libfreetype6 libfontconfig1 ca-certificates imagemagick {RedirectOutput}", cancellationToken);
         await container.RunCommandAsync($"rm -rf /var/lib/apt/lists/* {RedirectOutput}", cancellationToken);
 
         await container.RunCommandAsync($"cargo install portablemc-cli {RedirectOutput}", cancellationToken);
@@ -89,69 +94,14 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
     public async Task SendTextMessagesAsync(EndPoint endPoint, ProtocolVersion protocolVersion, IEnumerable<string> texts, CancellationToken cancellationToken = default)
     {
-        (string host, int port) = endPoint switch
+        var (dockerHost, dockerPort) = endPoint.AsDockerHostPort;
+        await using var game = await RunGameAsync(protocolVersion, dockerHost, dockerPort, cancellationToken);
+
+        foreach (var text in texts)
         {
-            DnsEndPoint dnsEndPoint when !OperatingSystem.IsLinux() && string.Equals(dnsEndPoint.Host, "localhost", StringComparison.OrdinalIgnoreCase) => (DockerHost, dnsEndPoint.Port),
-            DnsEndPoint dnsEndPoint => (dnsEndPoint.Host, dnsEndPoint.Port),
-            IPEndPoint ipEndPoint when !OperatingSystem.IsLinux() && IPAddress.IsLoopback(ipEndPoint.Address) => (DockerHost, ipEndPoint.Port),
-            IPEndPoint ipEndPoint => (ipEndPoint.Address.ToString(), ipEndPoint.Port),
-            _ => throw new NotSupportedException($"Unsupported endpoint type: {endPoint.GetType()}")
-        };
-
-        // Reset whole options.txt (since it is not backwards-compatible, it should reset each time this method executes)
-        await Container.RunCommandAsync($"printf \"onboardAccessibility:false\n\" > \"$HOME/.minecraft/options.txt\"", cancellationToken);
-
-        using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
-        var runTask = Container.RunCommandAsync($$"""
-            export DISPLAY=:99
-            echo "Starting Minecraft {{protocolVersion.VersionIntroducedIn}}" {{RedirectOutput}}
-            portablemc start --username "{{nameof(PortableMinecraftClient)[..16]}}" --join-server "{{host}}" --join-server-port "{{port}}" --jvm-arg=-Djava.awt.headless=false "{{protocolVersion.VersionIntroducedIn}}" {{RedirectOutput}}
-            """, cancellationToken, cancellationTokenSource.Token);
-
-        try
-        {
-            await ExpectTextAsync("Connecting to", cancellationToken);
-            await Container.WaitForLogsSilenceAsync(TimeSpan.FromSeconds(10), cancellationToken);
-
-            foreach (var text in texts)
-            {
-                await Container.RunCommandAsync(["send-chat", text], cancellationToken);
-                await ExpectTextAsync(text, cancellationToken);
-            }
-        }
-        finally
-        {
-            await cancellationTokenSource.CancelAsync();
-
-            try
-            {
-                await runTask;
-            }
-            catch (OperationCanceledException)
-            {
-                // Ignored
-            }
-        }
-    }
-
-    public async Task ExpectTextAsync(string text, CancellationToken cancellationToken = default)
-    {
-        await ExpectTextAsync(text, lookupHistory: false, cancellationToken);
-    }
-
-    public async Task ExpectTextAsync(string text, bool lookupHistory = false, CancellationToken cancellationToken = default)
-    {
-        var since = lookupHistory ? _readLogsSince : DateTime.UtcNow;
-
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            var logs = await Container.ReadLogsAsync(since, cancellationToken);
-
-            if (logs.Any(line => line.Contains(text)))
-                return;
-
-            await Task.Delay(100, cancellationToken);
+            await Container.RunCommandAsync(["send-chat", text], cancellationToken);
+            await File.WriteAllBytesAsync($"{protocolVersion.VersionIntroducedIn}.png", await Container.TakeScreenshotAsync(cancellationToken), cancellationToken);
+            await Container.ExpectTextAsync(text, cancellationToken);
         }
     }
 
@@ -165,5 +115,39 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         await Container.DisposeAsync();
 
         GC.SuppressFinalize(this);
+    }
+
+    private async Task<IAsyncDisposable> RunGameAsync(ProtocolVersion protocolVersion, string host, int port, CancellationToken cancellationToken = default)
+    {
+        // Reset whole options.txt (since it is not backwards-compatible, it should reset each time this method executes)
+        await Container.RunCommandAsync($"printf \"onboardAccessibility:false\npauseOnLostFocus:false\" > \"$HOME/.minecraft/options.txt\"", cancellationToken);
+
+        var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var runTask = Container.RunCommandAsync($$"""
+            export DISPLAY=:99
+            echo "Starting Minecraft {{protocolVersion.VersionIntroducedIn}}" {{RedirectOutput}}
+            portablemc start --username "{{nameof(PortableMinecraftClient)[..16]}}" --join-server "{{host}}" --join-server-port "{{port}}" --jvm-arg=-Djava.awt.headless=false "{{protocolVersion.VersionIntroducedIn}}" {{RedirectOutput}}
+            """, cancellationToken, cancellationTokenSource.Token);
+
+        await Container.ExpectTextAsync("Connecting to", cancellationToken);
+        await Container.WaitForLogsSilenceAsync(TimeSpan.FromSeconds(10), cancellationToken);
+
+        return AsyncDisposable.Create(async () =>
+        {
+            await cancellationTokenSource.CancelAsync();
+
+            try
+            {
+                await runTask;
+            }
+            catch (OperationCanceledException)
+            {
+                // Ignored
+            }
+            finally
+            {
+                cancellationTokenSource.Dispose();
+            }
+        });
     }
 }
