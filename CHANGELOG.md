@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.13](https://github.com/caunt/Void/compare/v0.5.12...v0.5.13) (2026-04-05)
+
+
+### Features
+
+* **content:** ✨ sort releases by published date ([dd05667](https://github.com/caunt/Void/commit/dd056671237e6f900a02d78a9805ee464e56e730))
+
+
+### Bug Fixes
+
+* **client:** 🐛 improve options reset and chat reliability ([2d4c5ec](https://github.com/caunt/Void/commit/2d4c5ecf9ee8dece19e91dea304c7a8124c0eadd))
+* **platform:** 🐛 improve background task error handling ([d0688d4](https://github.com/caunt/Void/commit/d0688d47818c51d6e86befbc73bbcc6b493a71d9))
+* **protocol:** ♻️ simplify version ordering logic ([31c2e03](https://github.com/caunt/Void/commit/31c2e03bac66daf23c09e67345804cc443afd993))
+
 ## [0.5.12](https://github.com/caunt/Void/compare/v0.5.11...v0.5.12) (2026-04-04)
 
 
