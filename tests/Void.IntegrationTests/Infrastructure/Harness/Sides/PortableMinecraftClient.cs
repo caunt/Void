@@ -53,13 +53,6 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         // Skip Minecraft accessibility screen
         await container.RunCommandAsync($"mkdir -p \"$HOME/.minecraft\" {RedirectOutput}", cancellationToken);
         await container.RunCommandAsync($"touch \"$HOME/.minecraft/options.txt\" {RedirectOutput}", cancellationToken);
-        await container.RunCommandAsync($"""
-            if grep -q "^onboardAccessibility:" "$HOME/.minecraft/options.txt"; then
-              sed -i "s/^onboardAccessibility:.*/onboardAccessibility:false/" "$HOME/.minecraft/options.txt"
-            else
-              printf "onboardAccessibility:false\n" >> "$HOME/.minecraft/options.txt"
-            fi
-            """, cancellationToken);
 
         // Helper script to send chat messages
         await container.RunCommandAsync("""
@@ -105,11 +98,14 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
             _ => throw new NotSupportedException($"Unsupported endpoint type: {endPoint.GetType()}")
         };
 
+        // Reset whole options.txt (since it is not backwards-compatible, it should reset each time this method executes)
+        await Container.RunCommandAsync($"printf \"onboardAccessibility:false\n\" > \"$HOME/.minecraft/options.txt\"", cancellationToken);
+
         using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         var runTask = Container.RunCommandAsync($$"""
             export DISPLAY=:99
-            echo "Starting Minecraft with protocol version {{protocolVersion.VersionIntroducedIn}} connecting to {{host}}:{{port}}" {{RedirectOutput}}
+            echo "Starting Minecraft {{protocolVersion.VersionIntroducedIn}} & Connecting to {{host}}:{{port}}" {{RedirectOutput}}
             portablemc start --username "{{nameof(PortableMinecraftClient)[..16]}}" --join-server "{{host}}" --join-server-port "{{port}}" --jvm-arg=-Djava.awt.headless=false "{{protocolVersion.VersionIntroducedIn}}" {{RedirectOutput}}
             """, cancellationToken, cancellationTokenSource.Token);
 
@@ -121,7 +117,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
             foreach (var text in texts)
             {
                 await Container.RunCommandAsync(["send-chat", text], cancellationToken);
-                await Container.WaitForLogsSilenceAsync(TimeSpan.FromSeconds(3), cancellationToken);
+                await ExpectTextAsync(text, cancellationToken);
             }
         }
         finally
