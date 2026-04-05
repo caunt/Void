@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -16,15 +15,16 @@ namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
 
 public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 {
+    private const string Display = ":99";
     private const string RedirectOutput = ">/proc/1/fd/1 2>/proc/1/fd/2";
 
     public static TheoryData<ProtocolVersion> SupportedVersions { get; } =
-        [
-            .. ProtocolVersion
-            .Range(ProtocolVersion.Oldest, ProtocolVersion.Latest)
-            // These do connect to the server before the loading screen completes, causing MC-228828 crash on 1.14-1.19
-            .Where(version => version < ProtocolVersion.MINECRAFT_1_14 || version > ProtocolVersion.MINECRAFT_1_19)
-        ];
+    [
+        .. ProtocolVersion
+        .Range(ProtocolVersion.Oldest, ProtocolVersion.Latest)
+        // These do connect to the server before the loading screen completes, causing MC-228828 crash on 1.14-1.19
+        .Where(version => version < ProtocolVersion.MINECRAFT_1_14 || version > ProtocolVersion.MINECRAFT_1_19)
+    ];
 
     private DateTime _readLogsSince = DateTime.UtcNow;
 
@@ -36,8 +36,8 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
             .WithEntrypoint("sleep")
             .WithCommand("infinity")
             .WithEnvironment("DEBIAN_FRONTEND", "noninteractive")
-            .WithEnvironment("DISPLAY", ":99")
-            .WithEnvironment("LIBGL_ALWAYS_SOFTWARE", "1");
+            .WithEnvironment("LIBGL_ALWAYS_SOFTWARE", "1")
+            .WithEnvironment("DISPLAY", Display);
 
         if (OperatingSystem.IsLinux())
             builder = builder.WithCreateParameterModifier(parameters => parameters.HostConfig.NetworkMode = "host");
@@ -59,12 +59,26 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         await container.RunCommandAsync($"mkdir -p \"$HOME/.minecraft\" {RedirectOutput}", cancellationToken);
         await container.RunCommandAsync($"touch \"$HOME/.minecraft/options.txt\" {RedirectOutput}", cancellationToken);
 
+        // Helper script to start display
+        await container.RunCommandAsync($$"""
+            cat >/usr/local/bin/start-display <<'EOF'
+            #!/usr/bin/env bash
+            set -e
+            export DISPLAY="${DISPLAY:-{{Display}}}"
+            rm -f "/tmp/.X${DISPLAY#:}-lock"
+            Xvfb "$DISPLAY" -screen 0 1280x720x24 {{RedirectOutput}} &
+            until xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; do sleep 0.1; done
+            xfwm4 {{RedirectOutput}} &
+            EOF
+            chmod +x /usr/local/bin/start-display
+            """, cancellationToken);
+
         // Helper script to send chat messages
-        await container.RunCommandAsync("""
+        await container.RunCommandAsync($$"""
             cat >/usr/local/bin/send-chat <<'EOF'
             #!/usr/bin/env bash
             set -e
-            export DISPLAY="${DISPLAY:-:99}"
+            export DISPLAY="${DISPLAY:-{{Display}}}"
             windowId="$(xdotool search --onlyvisible --name "Minecraft" | head -n 1)"
             xdotool windowfocus "$windowId"
             xdotool key --window "$windowId" t
@@ -76,23 +90,17 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
             """, cancellationToken);
 
         // Start display
-        await container.RunCommandAsync($"""
-            export DISPLAY=:99
-            rm -f /tmp/.X99-lock
-            Xvfb :99 -screen 0 1280x720x24 {RedirectOutput} &
-            until xdpyinfo -display :99 >/dev/null 2>&1; do sleep 0.1; done
-            xfwm4 {RedirectOutput} &
-            """, cancellationToken);
+        await container.RunCommandAsync(["start-display"], cancellationToken);
 
         return new PortableMinecraftClient(container);
     }
 
-    public Task SendTextMessageAsync(EndPoint endPoint, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
+    public async Task<Memory<byte>> SendTextMessageAsync(EndPoint endPoint, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
     {
-        return SendTextMessagesAsync(endPoint, protocolVersion, [text], cancellationToken);
+        return await SendTextMessagesAsync(endPoint, protocolVersion, [text], cancellationToken);
     }
 
-    public async Task SendTextMessagesAsync(EndPoint endPoint, ProtocolVersion protocolVersion, IEnumerable<string> texts, CancellationToken cancellationToken = default)
+    public async Task<Memory<byte>> SendTextMessagesAsync(EndPoint endPoint, ProtocolVersion protocolVersion, IEnumerable<string> texts, CancellationToken cancellationToken = default)
     {
         var (dockerHost, dockerPort) = endPoint.AsDockerHostPort;
         await using var game = await RunGameAsync(protocolVersion, dockerHost, dockerPort, cancellationToken);
@@ -100,9 +108,10 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         foreach (var text in texts)
         {
             await Container.RunCommandAsync(["send-chat", text], cancellationToken);
-            await File.WriteAllBytesAsync($"{protocolVersion.VersionIntroducedIn}.png", await Container.TakeScreenshotAsync(cancellationToken), cancellationToken);
             await Container.ExpectTextAsync(text, cancellationToken);
         }
+
+        return await Container.TakeScreenshotAsync(cancellationToken);
     }
 
     public void ClearLogs()
@@ -119,15 +128,13 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
     private async Task<IAsyncDisposable> RunGameAsync(ProtocolVersion protocolVersion, string host, int port, CancellationToken cancellationToken = default)
     {
+        await Container.RunCommandAsync($"echo \"Starting Minecraft {protocolVersion.VersionIntroducedIn}\" {RedirectOutput}", cancellationToken);
+
         // Reset whole options.txt (since it is not backwards-compatible, it should reset each time this method executes)
         await Container.RunCommandAsync($"printf \"onboardAccessibility:false\npauseOnLostFocus:false\" > \"$HOME/.minecraft/options.txt\"", cancellationToken);
 
         var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var runTask = Container.RunCommandAsync($$"""
-            export DISPLAY=:99
-            echo "Starting Minecraft {{protocolVersion.VersionIntroducedIn}}" {{RedirectOutput}}
-            portablemc start --username "{{nameof(PortableMinecraftClient)[..16]}}" --join-server "{{host}}" --join-server-port "{{port}}" --jvm-arg=-Djava.awt.headless=false "{{protocolVersion.VersionIntroducedIn}}" {{RedirectOutput}}
-            """, cancellationToken, cancellationTokenSource.Token);
+        var task = Container.RunCommandAsync($"portablemc start --username \"{nameof(PortableMinecraftClient)[..16]}\" --join-server \"{host}\" --join-server-port \"{port}\" --jvm-arg=-Djava.awt.headless=false \"{protocolVersion.VersionIntroducedIn}\" {RedirectOutput}", cancellationToken, cancellationTokenSource.Token);
 
         await Container.ExpectTextAsync("Connecting to", cancellationToken);
         await Container.WaitForLogsSilenceAsync(TimeSpan.FromSeconds(10), cancellationToken);
@@ -138,7 +145,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
             try
             {
-                await runTask;
+                await task;
             }
             catch (OperationCanceledException)
             {
