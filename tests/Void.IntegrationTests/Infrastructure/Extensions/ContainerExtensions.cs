@@ -168,18 +168,29 @@ public static class ContainerExtensions
         public async Task WaitForLogsSilenceAsync(TimeSpan requiredSilenceDuration, CancellationToken cancellationToken = default)
         {
             var checkInterval = TimeSpan.FromSeconds(1);
+            var anchor = DateTime.UtcNow - requiredSilenceDuration;
 
-            while (!cancellationToken.IsCancellationRequested)
+            var logs = await container.ReadLogsAsync(since: anchor, cancellationToken);
+            var knownCount = logs.Count();
+
+            if (knownCount == 0)
+                return;
+
+            var lastChangeAt = DateTime.UtcNow;
+
+            while (DateTime.UtcNow - lastChangeAt < requiredSilenceDuration)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-
-                var silenceThreshold = DateTime.UtcNow - requiredSilenceDuration;
-                var logs = await container.ReadLogsAsync(since: silenceThreshold, cancellationToken);
-
-                if (!logs.Any())
-                    return;
-
                 await Task.Delay(checkInterval, cancellationToken);
+
+                logs = await container.ReadLogsAsync(since: anchor, cancellationToken);
+                var count = logs.Count();
+
+                if (count > knownCount)
+                {
+                    lastChangeAt = DateTime.UtcNow;
+                    knownCount = count;
+                }
             }
         }
     }

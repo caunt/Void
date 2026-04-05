@@ -105,7 +105,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
         var runTask = Container.RunCommandAsync($$"""
             export DISPLAY=:99
-            echo "Starting Minecraft {{protocolVersion.VersionIntroducedIn}} & Connecting to {{host}}:{{port}}" {{RedirectOutput}}
+            echo "Starting Minecraft {{protocolVersion.VersionIntroducedIn}}" {{RedirectOutput}}
             portablemc start --username "{{nameof(PortableMinecraftClient)[..16]}}" --join-server "{{host}}" --join-server-port "{{port}}" --jvm-arg=-Djava.awt.headless=false "{{protocolVersion.VersionIntroducedIn}}" {{RedirectOutput}}
             """, cancellationToken, cancellationTokenSource.Token);
 
