@@ -52,7 +52,7 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
         public PortableMinecraftClient PortableMinecraftClient { get => field ?? throw new InvalidOperationException($"{nameof(PortableMinecraftClient)} is not initialized."); set; }
         public PaperServer PaperServer { get => field ?? throw new InvalidOperationException($"{nameof(PaperServer)} is not initialized."); set; }
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             using var cancellationTokenSource = new CancellationTokenSource(SetupTimeout);
 
@@ -63,7 +63,7 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
             PaperServer = await paperServerTask;
         }
 
-        public async Task DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             await PortableMinecraftClient.DisposeAsync();
             await PaperServer.DisposeAsync();
