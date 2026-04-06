@@ -111,7 +111,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
             await expectTask;
         }
 
-        return await Container.TakeScreenshotAsync(cancellationToken);
+        return await Container.TakeScreenshotAsync(Display, cancellationToken);
     }
 
     public async Task EnsureStableAsync(CancellationToken cancellationToken = default)

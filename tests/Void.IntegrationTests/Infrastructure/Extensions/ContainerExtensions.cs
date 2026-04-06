@@ -213,14 +213,11 @@ public static class ContainerExtensions
             }
         }
 
-        public async Task<Memory<byte>> TakeScreenshotAsync(CancellationToken cancellationToken = default)
+        public async Task<Memory<byte>> TakeScreenshotAsync(string display, CancellationToken cancellationToken = default)
         {
             var fileName = $"/tmp/screenshot-{Guid.NewGuid():N}.png";
 
-            await container.RunCommandAsync($"""
-                    export DISPLAY=:99
-                    import -display :99 -window root {fileName}
-                    """, cancellationToken);
+            await container.RunCommandAsync($"import -display {display} -window root {fileName}", cancellationToken);
 
             try
             {
