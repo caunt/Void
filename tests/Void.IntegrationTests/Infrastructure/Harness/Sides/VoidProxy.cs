@@ -19,11 +19,6 @@ public class VoidProxy : IIntegrationSide
 
     public IEnumerable<string> Logs => _logWriter.Lines;
 
-    public void ClearLogs()
-    {
-        _logWriter.Clear();
-    }
-
     private VoidProxy(CollectingTextWriter logWriter, Task task, CancellationTokenSource cancellationTokenSource)
     {
         _logWriter = logWriter;
@@ -80,6 +75,11 @@ public class VoidProxy : IIntegrationSide
         }
 
         return new VoidProxy(logWriter, task, cancellationTokenSource);
+    }
+
+    public void ClearLogs()
+    {
+        _logWriter.Clear();
     }
 
     public async ValueTask DisposeAsync()
