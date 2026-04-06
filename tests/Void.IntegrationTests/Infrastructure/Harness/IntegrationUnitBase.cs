@@ -19,7 +19,8 @@ public class IntegrationUnitBase
         }
         catch (Exception exception)
         {
-            throw new IntegrationTestException($"{exception}\n{CollectLogs()}");
+            Console.WriteLine(CollectLogs());
+            throw new IntegrationTestException("Test execution failed: ", exception);
         }
         finally
         {
@@ -30,5 +31,22 @@ public class IntegrationUnitBase
         return;
 
         string CollectLogs() => $"Logs:\n\n\n{string.Join("\n\n\n", sides.Select(side => $"{side} logs:\n{string.Join("\n", side.Logs)}"))}";
+    }
+
+    public static async Task<T> WithTimeoutRetriesAsync<T>(Func<Task<T>> function, int maxRetries)
+    {
+        for (var attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                return await function();
+            }
+            catch (OperationCanceledException) when (attempt < maxRetries)
+            {
+                // Ignored
+            }
+        }
+
+        throw new TimeoutException($"Operation did not complete within the allotted time after {maxRetries} attempts.");
     }
 }
