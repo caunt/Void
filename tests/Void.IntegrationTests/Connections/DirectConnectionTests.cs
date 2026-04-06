@@ -30,11 +30,13 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
 
         await LoggedExecutorAsync(async () =>
         {
-            using var gameCancellationTokenSource = new CancellationTokenSource(StepTimeout * 3); // Game should run enough time for all steps below
-            await using var game = await WithTimeoutRetriesAsync(async () => await fixture.PortableMinecraftClient.RunGameAsync(_serverEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 3);
+            using (var gameCancellationTokenSource = new CancellationTokenSource(StepTimeout * 3)) // Game should run enough time for all steps below
+            {
+                await using var game = await WithTimeoutRetriesAsync(async () => await fixture.PortableMinecraftClient.RunGameAsync(_serverEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 3);
 
-            await fixture.PortableMinecraftClient.SendTextMessageAsync(expectedText, StepTimeoutToken);
-            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, StepTimeoutToken);
+                await fixture.PortableMinecraftClient.SendTextMessageAsync(expectedText, StepTimeoutToken);
+                await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, StepTimeoutToken);
+            }
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
         }, fixture.PortableMinecraftClient, fixture.PaperServer);
