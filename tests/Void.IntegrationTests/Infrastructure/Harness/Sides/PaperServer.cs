@@ -22,6 +22,7 @@ public record PaperServer(IContainer Container) : IIntegrationSide
             .WithEnvironment("EULA", "TRUE")
             .WithEnvironment("TYPE", "PAPER")
             .WithEnvironment("VERSION", "1.21.4")
+            .WithEnvironment("DIFFICULTY", "peaceful")
             .WithEnvironment("ONLINE_MODE", "FALSE")
             .WithEnvironment("MODRINTH_PROJECTS", "viaversion,viabackwards,viarewind")
             .WithEnvironment("JVM_OPTS", "-Dpaper.playerconnection.keepalive=120")
