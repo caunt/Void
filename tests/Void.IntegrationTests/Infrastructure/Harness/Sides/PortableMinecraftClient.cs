@@ -126,14 +126,16 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         // Ensure the game is stable and not doing some background loading
         await Container.WaitForLogsSilenceAsync(duration, whitelist:
         [
+            // These are spam messages that can appear because of poor ViaVersion protocol support
             "Unable to play unknown soundEvent", // minecraft:mob.rabbit.hop (or .idle) for example - bunnies often do hop nearby
-            " has no item?!" // Item entity 72 has no item?!
+            " has no item?!", // Item entity 72 has no item?!
+            "Skipping Entity with id" // Skipping Entity with id minecraft:cave_spider
         ], cancellationToken);
     }
 
     public async Task<IAsyncDisposable> RunGameAsync(EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
     {
-        await Container.RunCommandAsync($"echo \"Starting Minecraft {protocolVersion.VersionIntroducedIn}\" {RedirectOutput}", cancellationToken);
+        await Container.RunCommandAsync($"echo \"Starting Minecraft {protocolVersion.FirstRelease}\" {RedirectOutput}", cancellationToken);
 
         // Reset whole options.txt (since it is not backwards-compatible, it should reset each time this method executes)
         await Container.RunCommandAsync($"printf \"onboardAccessibility:false\npauseOnLostFocus:false\" > \"$HOME/.minecraft/options.txt\"", cancellationToken);
@@ -141,7 +143,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         var (dockerHost, dockerPort) = endPoint.AsDockerHostPort;
 
         var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var task = Container.RunCommandAsync($"portablemc start --username \"{nameof(PortableMinecraftClient)[..16]}\" --join-server \"{dockerHost}\" --join-server-port \"{dockerPort}\" --jvm-arg=-Djava.awt.headless=false \"{protocolVersion.VersionIntroducedIn}\" {RedirectOutput}", cancellationToken, cancellationTokenSource.Token);
+        var task = Container.RunCommandAsync($"portablemc start --username \"{nameof(PortableMinecraftClient)[..16]}\" --join-server \"{dockerHost}\" --join-server-port \"{dockerPort}\" --jvm-arg=-Djava.awt.headless=false \"{protocolVersion.FirstRelease}\" {RedirectOutput}", cancellationToken, cancellationTokenSource.Token);
 
         await Container.ExpectTextAsync("Connecting to", cancellationToken);
         await EnsureStableAsync(cancellationToken);

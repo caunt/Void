@@ -59,24 +59,23 @@ public class ProtocolVersion : IComparable
     public static readonly ProtocolVersion MINECRAFT_1_21_11 = new(774, "1.21.11");
     public static readonly ProtocolVersion MINECRAFT_26_1 = new(775, "26.1", "26.1.1");
 
-    public ProtocolVersion(int version, params string[] names)
+    public ProtocolVersion(int value, params ReleaseVersion[] names)
     {
-        Version = version;
-        Names = names;
+        Value = value;
+        Releases = names;
 
-        if (!Mapping.TryAdd(version, this))
-            throw new InvalidOperationException($"ProtocolVersion {version} already registered, use Get(<version>) instead");
+        if (!Mapping.TryAdd(value, this))
+            throw new InvalidOperationException($"ProtocolVersion {value} already registered, use Get(<version>) instead");
     }
 
     public static ProtocolVersion Latest => Mapping.MaxBy(kv => kv.Key).Value;
 
     public static ProtocolVersion Oldest => Mapping.MinBy(kv => kv.Key).Value;
 
-    public int Version { get; }
-    public string[] Names { get; }
-    public string VersionIntroducedIn => Names[0];
-    public string MostRecentSupportedVersion => Names[^1];
-    public IEnumerable<string> VersionsSupportedBy => Names.AsReadOnly();
+    public int Value { get; }
+    public ReleaseVersion[] Releases { get; }
+    public string FirstRelease => Releases[0];
+    public string LastRelease => Releases[^1];
 
     public int CompareTo(object? obj)
     {
@@ -90,7 +89,7 @@ public class ProtocolVersion : IComparable
 
     public int CompareTo(ProtocolVersion? other)
     {
-        return other is null ? 1 : Version.CompareTo(other.Version); // null is considered greater than non-null
+        return other is null ? 1 : Value.CompareTo(other.Value); // null is considered greater than non-null
     }
 
     public static ProtocolVersion Get(int version)
@@ -109,7 +108,7 @@ public class ProtocolVersion : IComparable
         var end = Max(left, right);
 
         var descending = left > right;
-        var versions = Mapping.Where(pair => pair.Key >= start.Version && pair.Key <= end.Version).Select(pair => pair.Value);
+        var versions = Mapping.Where(pair => pair.Key >= start.Value && pair.Key <= end.Value).Select(pair => pair.Value);
 
         return descending ? versions.OrderDescending() : versions.Order();
     }
@@ -159,7 +158,7 @@ public class ProtocolVersion : IComparable
 
     public static ProtocolVersion operator +(ProtocolVersion protocolVersion, int offset)
     {
-        var sortedVersions = Mapping.Values.OrderBy(protocolVersion => protocolVersion.Version).ToList();
+        var sortedVersions = Mapping.Values.OrderBy(protocolVersion => protocolVersion.Value).ToList();
         var currentIndex = sortedVersions.IndexOf(protocolVersion);
         var newIndex = currentIndex + offset;
 
@@ -179,16 +178,16 @@ public class ProtocolVersion : IComparable
         if (obj is not ProtocolVersion version)
             return false;
 
-        return Version == version.Version;
+        return Value == version.Value;
     }
 
     public override int GetHashCode()
     {
-        return Version.GetHashCode();
+        return Value.GetHashCode();
     }
 
     public override string ToString()
     {
-        return Names.Length is 1 ? VersionIntroducedIn : $"{VersionIntroducedIn}-{MostRecentSupportedVersion}";
+        return Releases.Length is 1 ? FirstRelease : $"{FirstRelease}-{LastRelease}";
     }
 }

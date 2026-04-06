@@ -323,13 +323,13 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
     {
         return version switch
         {
-            var value when value == ProtocolVersion.MINECRAFT_1_21_2 => value.Names[1], // paper skipped 1.21.2
-            var value when value == ProtocolVersion.MINECRAFT_1_20_5 => value.Names[1], // paper skipped 1.20.5
-            var value when value == ProtocolVersion.MINECRAFT_1_20_3 => value.Names[1], // paper skipped 1.20.3
-            var value when value == ProtocolVersion.MINECRAFT_1_18 => value.Names[1], // paper skipped 1.18
-            var value when value == ProtocolVersion.MINECRAFT_1_8 => value.Names[8], // paper first release is 1.8.8
-            var value when value == ProtocolVersion.MINECRAFT_1_20 => value.Names[1], // refined storage requires forge 1.20.1
-            var value => value.VersionIntroducedIn,
+            var value when value == ProtocolVersion.MINECRAFT_1_21_2 => value.Releases[1], // paper skipped 1.21.2
+            var value when value == ProtocolVersion.MINECRAFT_1_20_5 => value.Releases[1], // paper skipped 1.20.5
+            var value when value == ProtocolVersion.MINECRAFT_1_20_3 => value.Releases[1], // paper skipped 1.20.3
+            var value when value == ProtocolVersion.MINECRAFT_1_18 => value.Releases[1], // paper skipped 1.18
+            var value when value == ProtocolVersion.MINECRAFT_1_8 => value.Releases[8], // paper first release is 1.8.8
+            var value when value == ProtocolVersion.MINECRAFT_1_20 => value.Releases[1], // refined storage requires forge 1.20.1
+            var value => value.FirstRelease,
         };
     }
 }

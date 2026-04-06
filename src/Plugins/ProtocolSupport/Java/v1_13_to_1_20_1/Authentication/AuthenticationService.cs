@@ -87,7 +87,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         await link.SendPacketAsync(packet ?? new HandshakePacket
         {
             NextState = nextState,
-            ProtocolVersion = link.Player.ProtocolVersion.Version,
+            ProtocolVersion = link.Player.ProtocolVersion.Value,
             ServerAddress = link.Server.Host,
             ServerPort = (ushort)link.Server.Port
         }, cancellationToken);

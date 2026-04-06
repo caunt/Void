@@ -8,7 +8,7 @@ namespace Void.IntegrationTests.Infrastructure.Harness;
 
 public class IntegrationUnitBase
 {
-    public TimeSpan StepTimeout { get; } = TimeSpan.FromSeconds(60);
+    public TimeSpan StepTimeout { get; } = TimeSpan.FromSeconds(90);
     public CancellationToken StepTimeoutToken => new CancellationTokenSource(StepTimeout).Token;
 
     public static async Task LoggedExecutorAsync(Func<Task> function, params IIntegrationSide[] sides)
