@@ -71,7 +71,7 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
             return;
 
         var link = @event.Player.Link ?? throw new InvalidOperationException($"Player has no link assigned in {nameof(Phase.Play)} phase.");
-        await events.ThrowAsync(new PlayerJoinedServerEvent(link.Player, link.Server, link), cancellationToken);
+        await events.ThrowAsync(new PlayerJoinedServerEvent(link.Player, link.Server, link, IsRedirected: false), cancellationToken);
     }
 
     [Subscribe]
@@ -83,7 +83,7 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
         if (@event.Player.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_20_2)
             return;
 
-        await events.ThrowAsync(new PlayerJoinedServerEvent(@event.Link.Player, @event.Link.Server, @event.Link), cancellationToken);
+        await events.ThrowAsync(new PlayerJoinedServerEvent(@event.Link.Player, @event.Link.Server, @event.Link, IsRedirected: !@event.IsFirstLink), cancellationToken);
     }
 
     [Subscribe]

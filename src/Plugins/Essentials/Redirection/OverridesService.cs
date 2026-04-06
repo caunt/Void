@@ -75,7 +75,7 @@ public class OverridesService(ILogger<OverridesService> logger, IServerService s
         if (!_queuedRedirections.TryRemove(@event.Link, out var server))
             return;
 
-        @event.IsRedirecting = true;
+        @event.WillBeRedirected = true;
 
         var previousServer = @event.Link.Server;
         var connectionTask = Task.Run(async () =>

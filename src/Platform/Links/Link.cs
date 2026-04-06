@@ -59,7 +59,6 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
         _onStoppingTask = Task.WhenAll(_playerToServerTask, _serverToPlayerTask).ContinueWith(task => OnStoppedAsync(task, cancellationToken).CatchExceptions(logger, $"{nameof(LinkStoppedEvent)} caused exception(s)"));
 
         logger.LogTrace("Started forwarding {Link} traffic", this);
-        await events.ThrowAsync(new LinkStartedEvent(this, Player), cancellationToken);
     }
 
     public async ValueTask StopAsync(CancellationToken cancellationToken)

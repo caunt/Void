@@ -204,6 +204,8 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
                     _activeLinks.Add(link);
 
                 await link.StartAsync(cancellationToken);
+                await events.ThrowAsync(new LinkStartedEvent(link, unwrappedPlayer, IsFirstLink: firstConnection), cancellationToken);
+
                 logger.LogInformation("Player {Player} connected to {Server} ({ProtocolVersion})", unwrappedPlayer, link.Server, unwrappedPlayer.ProtocolVersion);
 
                 return ConnectionResult.Connected;

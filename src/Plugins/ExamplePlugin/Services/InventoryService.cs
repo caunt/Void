@@ -33,7 +33,11 @@ public class InventoryService(IPlayerContext context, ILogger<InventoryService> 
     [Subscribe]
     public async Task OnPlayerJoinedServer(PlayerJoinedServerEvent @event)
     {
-        // This event triggers when player joins a server (not the proxy) and both sides transition into Play phase.
+        // This event triggers when player joins a game server and both sides are in Play phase.
+
+        // We want to register packet mappings only on first join, not on further redirects.
+        if (@event.IsRedirected)
+            return;
 
         // Many packet ids and their properties can be found here:
         // https://minecraft.wiki/w/Java_Edition_protocol
