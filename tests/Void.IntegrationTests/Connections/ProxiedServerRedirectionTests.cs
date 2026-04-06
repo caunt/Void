@@ -18,21 +18,22 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
     private static readonly EndPoint ProxyEndPoint = new IPEndPoint(IPAddress.Loopback, ProxyPort);
 
     [Fact]
-    public async Task MineflayerMovesBetweenPaperServersThroughProxy()
+    public async Task PortableMinecraftClientMovesBetweenPaperServersThroughProxy()
     {
-        await MineflayerMovesBetweenPaperServersThroughProxy_WithProtocolVersion(ProtocolVersion.MINECRAFT_1_21_6);
+        await PortableMinecraftClientMovesBetweenPaperServersThroughProxy_WithProtocolVersion(ProtocolVersion.MINECRAFT_1_21_6);
     }
 
     [Theory]
     [MemberData(nameof(PortableMinecraftClient.SupportedVersions), MemberType = typeof(PortableMinecraftClient))]
-    public async Task MineflayerMovesBetweenPaperServersThroughProxy_WithProtocolVersion(ProtocolVersion protocolVersion)
+    public async Task PortableMinecraftClientMovesBetweenPaperServersThroughProxy_WithProtocolVersion(ProtocolVersion protocolVersion)
     {
         var server1First = $"server1-{Guid.NewGuid()}";
         var server2Text = $"server2-{Guid.NewGuid()}";
 
         await LoggedExecutorAsync(async () =>
         {
-            await using var game = await fixture.PortableMinecraftClient.RunGameAsync(ProxyEndPoint, protocolVersion, StepTimeoutToken);
+            using var gameCancellationTokenSource = new CancellationTokenSource(StepTimeout * 4); // Game should run enough time for all steps below
+            await using var game = await fixture.PortableMinecraftClient.RunGameAsync(ProxyEndPoint, protocolVersion, gameCancellationTokenSource.Token);
 
             await fixture.PortableMinecraftClient.SendTextMessagesAsync(
             [

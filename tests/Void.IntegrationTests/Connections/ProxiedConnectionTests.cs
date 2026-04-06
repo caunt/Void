@@ -31,7 +31,8 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : In
 
         await LoggedExecutorAsync(async () =>
         {
-            await using var game = await fixture.PortableMinecraftClient.RunGameAsync(_proxyEndPoint, protocolVersion, StepTimeoutToken);
+            using var gameCancellationTokenSource = new CancellationTokenSource(StepTimeout * 3); // Game should run enough time for all steps below
+            await using var game = await fixture.PortableMinecraftClient.RunGameAsync(_proxyEndPoint, protocolVersion, gameCancellationTokenSource.Token);
 
             await fixture.PortableMinecraftClient.SendTextMessageAsync(expectedText, StepTimeoutToken);
             await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, StepTimeoutToken);
