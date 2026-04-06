@@ -23,8 +23,6 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
         var server1First = $"server1-{Guid.NewGuid()}";
         var server2Text = $"server2-{Guid.NewGuid()}";
 
-        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
-
         await LoggedExecutorAsync(async () =>
         {
             await fixture.PortableMinecraftClient.SendTextMessagesAsync(
@@ -36,7 +34,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
                     server2Text,
                     "/server args-server-1"
                 ],
-                cancellationTokenSource.Token);
+                StepTimeoutToken);
 
             Assert.Contains(fixture.VoidProxy.Logs, line => line.Contains("connected to args-server-2"));
             Assert.True(fixture.VoidProxy.Logs.Count(line => line.Contains("connected to args-server-1")) is >= 2); // TODO: sometimes, proxy prints multiple times "connected to" message
@@ -50,8 +48,6 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
         var server1First = $"server1-{Guid.NewGuid()}";
         var server2Text = $"server2-{Guid.NewGuid()}";
 
-        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
-
         await LoggedExecutorAsync(async () =>
         {
             await fixture.PortableMinecraftClient.SendTextMessagesAsync(
@@ -63,7 +59,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
                     server2Text,
                     "/server args-server-1"
                 ],
-                cancellationTokenSource.Token);
+                StepTimeoutToken);
 
             Assert.Contains(fixture.VoidProxy.Logs, line => line.Contains("connected to args-server-2"));
             Assert.True(fixture.VoidProxy.Logs.Count(line => line.Contains("connected to args-server-1")) is >= 2); // TODO: sometimes, proxy prints multiple times "connected to" message

@@ -21,12 +21,11 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : In
     public async Task PortableMinecraftClientConnectsToPaperServerThroughProxy()
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
 
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.PortableMinecraftClient.SendTextMessageAsync(_proxyEndPoint, ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
-            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
+            await fixture.PortableMinecraftClient.SendTextMessageAsync(_proxyEndPoint, ProtocolVersion.MINECRAFT_1_20_3, expectedText, StepTimeoutToken);
+            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, StepTimeoutToken);
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
         }, fixture.PortableMinecraftClient, fixture.VoidProxy, fixture.PaperServer);
@@ -37,12 +36,11 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : In
     public async Task PortableMinecraftClientConnectsToPaperServerThroughProxy_WithProtocolVersion(ProtocolVersion protocolVersion)
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
 
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.PortableMinecraftClient.SendTextMessageAsync(_proxyEndPoint, protocolVersion, expectedText, cancellationTokenSource.Token);
-            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
+            await fixture.PortableMinecraftClient.SendTextMessageAsync(_proxyEndPoint, protocolVersion, expectedText, StepTimeoutToken);
+            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, StepTimeoutToken);
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
         }, fixture.PortableMinecraftClient, fixture.VoidProxy, fixture.PaperServer);

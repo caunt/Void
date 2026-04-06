@@ -20,12 +20,11 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
     public async Task PortableMinecraftClientConnectsToPaperServer()
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
 
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.PortableMinecraftClient.SendTextMessageAsync(_serverEndPoint, ProtocolVersion.MINECRAFT_1_20_3, expectedText, cancellationTokenSource.Token);
-            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
+            await fixture.PortableMinecraftClient.SendTextMessageAsync(_serverEndPoint, ProtocolVersion.MINECRAFT_1_20_3, expectedText, StepTimeoutToken);
+            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, StepTimeoutToken);
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
         }, fixture.PortableMinecraftClient, fixture.PaperServer);
@@ -36,12 +35,11 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
     public async Task PortableMinecraftClientConnectsToPaperServer_WithProtocolVersion(ProtocolVersion protocolVersion)
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-        using var cancellationTokenSource = new CancellationTokenSource(TestTimeout);
 
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.PortableMinecraftClient.SendTextMessageAsync(_serverEndPoint, protocolVersion, expectedText, cancellationTokenSource.Token);
-            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, cancellationTokenSource.Token);
+            await fixture.PortableMinecraftClient.SendTextMessageAsync(_serverEndPoint, protocolVersion, expectedText, StepTimeoutToken);
+            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, StepTimeoutToken);
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
         }, fixture.PortableMinecraftClient, fixture.PaperServer);
