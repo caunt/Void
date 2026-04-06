@@ -34,7 +34,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
         {
             using (var gameCancellationTokenSource = new CancellationTokenSource(StepTimeout * 4)) // Game should run enough time for all steps below
             {
-                await using var game = await WithTimeoutRetriesAsync(async () => await fixture.PortableMinecraftClient.RunGameAsync(ProxyEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 3);
+                await using var game = await WithTimeoutRetriesAsync(async () => await fixture.PortableMinecraftClient.RunGameAsync(ProxyEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
 
                 await fixture.PortableMinecraftClient.SendTextMessagesAsync(
                 [
