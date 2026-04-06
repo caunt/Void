@@ -185,11 +185,18 @@ public static class ContainerExtensions
 
         public async Task WaitForLogsSilenceAsync(TimeSpan requiredSilenceDuration, CancellationToken cancellationToken = default)
         {
+            await container.WaitForLogsSilenceAsync(requiredSilenceDuration, whitelist: [], cancellationToken);
+        }
+
+        public async Task WaitForLogsSilenceAsync(TimeSpan requiredSilenceDuration, IEnumerable<string> whitelist, CancellationToken cancellationToken = default)
+        {
             var checkInterval = TimeSpan.FromSeconds(1);
             var fixedSinceAnchor = DateTime.UtcNow - requiredSilenceDuration;
 
+            bool IsWhitelisted(string log) => whitelist.Any(log.Contains);
+
             var logs = await container.ReadLogsAsync(since: fixedSinceAnchor, cancellationToken);
-            var previousLogCount = logs.Count();
+            var previousLogCount = logs.Count(log => !IsWhitelisted(log));
 
             if (previousLogCount == 0)
                 return;
@@ -203,7 +210,7 @@ public static class ContainerExtensions
                 await Task.Delay(checkInterval, cancellationToken);
 
                 logs = await container.ReadLogsAsync(since: fixedSinceAnchor, cancellationToken);
-                var currentLogCount = logs.Count();
+                var currentLogCount = logs.Count(log => !IsWhitelisted(log));
 
                 if (currentLogCount > previousLogCount)
                 {

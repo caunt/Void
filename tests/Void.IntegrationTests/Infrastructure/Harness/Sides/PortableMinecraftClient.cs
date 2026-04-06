@@ -123,7 +123,11 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
     public async Task EnsureStableAsync(TimeSpan duration, CancellationToken cancellationToken = default)
     {
-        await Container.WaitForLogsSilenceAsync(duration, cancellationToken);
+        // Ensure the game is stable and not doing some background loading
+        await Container.WaitForLogsSilenceAsync(duration, whitelist:
+        [
+            "Unable to play unknown soundEvent" // minecraft:mob.rabbit.hop (or .idle) for example - bunnies often do hop nearby
+        ], cancellationToken);
     }
 
     public async Task<IAsyncDisposable> RunGameAsync(EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
