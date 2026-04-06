@@ -12,7 +12,7 @@ public class CollectingTextWriter : TextWriter
     private readonly StringBuilder _currentLineBuilder = new();
     private readonly Lock _lock = new();
 
-    public IReadOnlyList<string> Lines => _lines;
+    public IReadOnlyList<string> Lines => [.. _lines];
     public string Text => string.Join('\n', Lines);
     public event Action<string>? OnLine;
     public override Encoding Encoding { get; } = Encoding.UTF8;
