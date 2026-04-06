@@ -20,15 +20,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : In
     [Fact]
     public async Task PortableMinecraftClientConnectsToPaperServerThroughProxy()
     {
-        var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-
-        await LoggedExecutorAsync(async () =>
-        {
-            await fixture.PortableMinecraftClient.SendTextMessageAsync(_proxyEndPoint, ProtocolVersion.MINECRAFT_1_20_3, expectedText, StepTimeoutToken);
-            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, StepTimeoutToken);
-
-            Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
-        }, fixture.PortableMinecraftClient, fixture.VoidProxy, fixture.PaperServer);
+        await PortableMinecraftClientConnectsToPaperServerThroughProxy_WithProtocolVersion(ProtocolVersion.MINECRAFT_1_20_3);
     }
 
     [Theory]
@@ -39,7 +31,9 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : In
 
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.PortableMinecraftClient.SendTextMessageAsync(_proxyEndPoint, protocolVersion, expectedText, StepTimeoutToken);
+            await using var game = await fixture.PortableMinecraftClient.RunGameAsync(_proxyEndPoint, protocolVersion, StepTimeoutToken);
+
+            await fixture.PortableMinecraftClient.SendTextMessageAsync(expectedText, StepTimeoutToken);
             await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, StepTimeoutToken);
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));

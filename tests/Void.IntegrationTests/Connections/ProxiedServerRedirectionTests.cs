@@ -20,25 +20,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
     [Fact]
     public async Task MineflayerMovesBetweenPaperServersThroughProxy()
     {
-        var server1First = $"server1-{Guid.NewGuid()}";
-        var server2Text = $"server2-{Guid.NewGuid()}";
-
-        await LoggedExecutorAsync(async () =>
-        {
-            await fixture.PortableMinecraftClient.SendTextMessagesAsync(
-                ProxyEndPoint,
-                ProtocolVersion.MINECRAFT_1_21_6,
-                [
-                    server1First,
-                    "/server args-server-2",
-                    server2Text,
-                    "/server args-server-1"
-                ],
-                StepTimeoutToken);
-
-            Assert.Contains(fixture.VoidProxy.Logs, line => line.Contains("connected to args-server-2"));
-            Assert.True(fixture.VoidProxy.Logs.Count(line => line.Contains("connected to args-server-1")) is >= 2); // TODO: sometimes, proxy prints multiple times "connected to" message
-        }, fixture.PortableMinecraftClient, fixture.VoidProxy, fixture.PaperServer1, fixture.PaperServer2);
+        await MineflayerMovesBetweenPaperServersThroughProxy_WithProtocolVersion(ProtocolVersion.MINECRAFT_1_21_6);
     }
 
     [Theory]
@@ -50,16 +32,21 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
 
         await LoggedExecutorAsync(async () =>
         {
+            await using var game = await fixture.PortableMinecraftClient.RunGameAsync(ProxyEndPoint, protocolVersion, StepTimeoutToken);
+
             await fixture.PortableMinecraftClient.SendTextMessagesAsync(
-                ProxyEndPoint,
-                protocolVersion,
-                [
-                    server1First,
-                    "/server args-server-2",
-                    server2Text,
-                    "/server args-server-1"
-                ],
-                StepTimeoutToken);
+            [
+                server1First,
+                "/server args-server-2"
+            ], StepTimeoutToken);
+
+            await fixture.PortableMinecraftClient.EnsureStableAsync(StepTimeoutToken);
+
+            await fixture.PortableMinecraftClient.SendTextMessagesAsync(
+            [
+                server2Text,
+                "/server args-server-1"
+            ], StepTimeoutToken);
 
             Assert.Contains(fixture.VoidProxy.Logs, line => line.Contains("connected to args-server-2"));
             Assert.True(fixture.VoidProxy.Logs.Count(line => line.Contains("connected to args-server-1")) is >= 2); // TODO: sometimes, proxy prints multiple times "connected to" message

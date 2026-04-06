@@ -19,15 +19,7 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
     [Fact]
     public async Task PortableMinecraftClientConnectsToPaperServer()
     {
-        var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
-
-        await LoggedExecutorAsync(async () =>
-        {
-            await fixture.PortableMinecraftClient.SendTextMessageAsync(_serverEndPoint, ProtocolVersion.MINECRAFT_1_20_3, expectedText, StepTimeoutToken);
-            await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, StepTimeoutToken);
-
-            Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
-        }, fixture.PortableMinecraftClient, fixture.PaperServer);
+        await PortableMinecraftClientConnectsToPaperServer_WithProtocolVersion(ProtocolVersion.MINECRAFT_1_20_3);
     }
 
     [Theory]
@@ -38,7 +30,9 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
 
         await LoggedExecutorAsync(async () =>
         {
-            await fixture.PortableMinecraftClient.SendTextMessageAsync(_serverEndPoint, protocolVersion, expectedText, StepTimeoutToken);
+            await using var game = await fixture.PortableMinecraftClient.RunGameAsync(_serverEndPoint, protocolVersion, StepTimeoutToken);
+
+            await fixture.PortableMinecraftClient.SendTextMessageAsync(expectedText, StepTimeoutToken);
             await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, StepTimeoutToken);
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));

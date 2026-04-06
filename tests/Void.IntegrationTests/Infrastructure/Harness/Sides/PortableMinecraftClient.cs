@@ -95,15 +95,13 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         return new PortableMinecraftClient(container);
     }
 
-    public async Task<Memory<byte>> SendTextMessageAsync(EndPoint endPoint, ProtocolVersion protocolVersion, string text, CancellationToken cancellationToken = default)
+    public async Task<Memory<byte>> SendTextMessageAsync(string text, CancellationToken cancellationToken = default)
     {
-        return await SendTextMessagesAsync(endPoint, protocolVersion, [text], cancellationToken);
+        return await SendTextMessagesAsync([text], cancellationToken);
     }
 
-    public async Task<Memory<byte>> SendTextMessagesAsync(EndPoint endPoint, ProtocolVersion protocolVersion, IEnumerable<string> texts, CancellationToken cancellationToken = default)
+    public async Task<Memory<byte>> SendTextMessagesAsync(IEnumerable<string> texts, CancellationToken cancellationToken = default)
     {
-        await using var game = await RunGameAsync(protocolVersion, endPoint, cancellationToken);
-
         foreach (var text in texts)
         {
             await Container.RunCommandAsync(["send-chat", text], cancellationToken);
@@ -113,19 +111,17 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         return await Container.TakeScreenshotAsync(cancellationToken);
     }
 
-    public void ClearLogs()
+    public async Task EnsureStableAsync(CancellationToken cancellationToken = default)
     {
-        _readLogsSince = DateTime.UtcNow;
+        await EnsureStableAsync(TimeSpan.FromSeconds(10), cancellationToken);
     }
 
-    public async ValueTask DisposeAsync()
+    public async Task EnsureStableAsync(TimeSpan duration, CancellationToken cancellationToken = default)
     {
-        await Container.DisposeAsync();
-
-        GC.SuppressFinalize(this);
+        await Container.WaitForLogsSilenceAsync(duration, cancellationToken);
     }
 
-    private async Task<IAsyncDisposable> RunGameAsync(ProtocolVersion protocolVersion, EndPoint endPoint, CancellationToken cancellationToken = default)
+    public async Task<IAsyncDisposable> RunGameAsync(EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
     {
         await Container.RunCommandAsync($"echo \"Starting Minecraft {protocolVersion.VersionIntroducedIn}\" {RedirectOutput}", cancellationToken);
 
@@ -138,7 +134,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         var task = Container.RunCommandAsync($"portablemc start --username \"{nameof(PortableMinecraftClient)[..16]}\" --join-server \"{dockerHost}\" --join-server-port \"{dockerPort}\" --jvm-arg=-Djava.awt.headless=false \"{protocolVersion.VersionIntroducedIn}\" {RedirectOutput}", cancellationToken, cancellationTokenSource.Token);
 
         await Container.ExpectTextAsync("Connecting to", cancellationToken);
-        await Container.WaitForLogsSilenceAsync(TimeSpan.FromSeconds(10), cancellationToken);
+        await EnsureStableAsync(cancellationToken);
 
         return AsyncDisposable.Create(async () =>
         {
@@ -157,5 +153,17 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
                 cancellationTokenSource.Dispose();
             }
         });
+    }
+
+    public void ClearLogs()
+    {
+        _readLogsSince = DateTime.UtcNow;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await Container.DisposeAsync();
+
+        GC.SuppressFinalize(this);
     }
 }
