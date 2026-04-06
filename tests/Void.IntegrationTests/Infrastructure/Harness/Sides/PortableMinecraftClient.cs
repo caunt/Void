@@ -126,7 +126,8 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         // Ensure the game is stable and not doing some background loading
         await Container.WaitForLogsSilenceAsync(duration, whitelist:
         [
-            "Unable to play unknown soundEvent" // minecraft:mob.rabbit.hop (or .idle) for example - bunnies often do hop nearby
+            "Unable to play unknown soundEvent", // minecraft:mob.rabbit.hop (or .idle) for example - bunnies often do hop nearby
+            " has no item?!" // Item entity 72 has no item?!
         ], cancellationToken);
     }
 
