@@ -104,8 +104,11 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
     {
         foreach (var text in texts)
         {
+            // Expect the text to appear in logs if it is not a Chat Command
+            var expectTask = text.StartsWith('/') ? Task.CompletedTask : Container.ExpectTextAsync(text, cancellationToken);
+
             await Container.RunCommandAsync(["send-chat", text], cancellationToken);
-            await Container.ExpectTextAsync(text, cancellationToken);
+            await expectTask;
         }
 
         return await Container.TakeScreenshotAsync(cancellationToken);
