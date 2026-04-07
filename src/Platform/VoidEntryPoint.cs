@@ -51,7 +51,20 @@ public static class VoidEntryPoint
         public TextWriter? LogWriter { get; init; } = null;
     }
 
-    public record RunResult(Task<int> CompletionTask, int ListeningPort);
+    public record RunResult(Task<int> CompletionTask, int ListeningPort) : IAsyncDisposable
+    {
+        public int ExitCode => !CompletionTask.IsCompleted
+                ? throw new InvalidOperationException("Cannot get exit code before completion.")
+                : !CompletionTask.IsCompletedSuccessfully
+                ? throw new InvalidOperationException("Cannot get exit code from a failed task.", CompletionTask.Exception)
+                : CompletionTask.Result;
+
+        public async ValueTask DisposeAsync()
+        {
+            await CompletionTask;
+            GC.SuppressFinalize(this);
+        }
+    }
 
     static VoidEntryPoint() => System.Console.Title = nameof(Void);
 

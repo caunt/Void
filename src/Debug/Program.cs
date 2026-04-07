@@ -296,8 +296,7 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
 
     try
     {
-        var result = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { Arguments = arguments ?? [] }, cancellationToken);
-        await result.CompletionTask;
+        await using var result = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { Arguments = arguments ?? [] }, cancellationToken);
     }
     finally
     {
