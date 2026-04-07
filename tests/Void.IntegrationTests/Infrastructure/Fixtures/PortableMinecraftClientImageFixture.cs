@@ -36,7 +36,8 @@ public class PortableMinecraftClientImageFixture : IAsyncLifetime
 
     public async ValueTask DisposeAsync()
     {
-        await DockerImage.DisposeAsync();
+        // Allow caching image layers
+        // await DockerImage.DisposeAsync();
 
         Directory.Delete(_temporaryContextDirectoryPath, recursive: true);
 
