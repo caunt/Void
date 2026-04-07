@@ -6,4 +6,3 @@ using Xunit;
 #endif
 
 [assembly: AssemblyFixture(typeof(PortableMinecraftClientImageFixture))]
-[assembly: CollectionBehavior(MaxParallelThreads = 4)]
