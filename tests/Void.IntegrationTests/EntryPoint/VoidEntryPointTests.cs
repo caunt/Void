@@ -6,7 +6,7 @@ using Void.IntegrationTests.Infrastructure.IO;
 using Void.Proxy;
 using Xunit;
 
-namespace Void.IntegrationTests;
+namespace Void.IntegrationTests.EntryPoint;
 
 public class VoidEntryPointTests
 {
