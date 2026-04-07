@@ -10,7 +10,6 @@ using Nito.Disposables;
 using Void.IntegrationTests.Infrastructure.Extensions;
 using Void.IntegrationTests.Infrastructure.Fixtures;
 using Void.Minecraft.Network;
-using Xunit;
 
 namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
 
@@ -19,13 +18,10 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
     private const string Display = ":99";
     private const string RedirectOutput = ">/proc/1/fd/1 2>/proc/1/fd/2";
 
-    public static TheoryData<ProtocolVersion> SupportedVersions { get; } =
-    [
-        .. ProtocolVersion
+    public IEnumerable<ProtocolVersion> SupportedVersions => ProtocolVersion
         .Range(ProtocolVersion.Oldest, ProtocolVersion.Latest)
         // These do connect to the server before the loading screen completes, causing MC-228828 crash on 1.14-1.19
-        .Where(version => version < ProtocolVersion.MINECRAFT_1_14 || version > ProtocolVersion.MINECRAFT_1_19)
-    ];
+        .Where(version => version < ProtocolVersion.MINECRAFT_1_14 || version > ProtocolVersion.MINECRAFT_1_19);
 
     private DateTime _readLogsSince = DateTime.UtcNow;
 

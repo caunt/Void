@@ -16,6 +16,9 @@ public abstract class ProxiedServerRedirectionTestBase(TwoServersProxyClientFixt
 
     protected async Task RunAsync(ProtocolVersion protocolVersion)
     {
+        if (!fixture.PortableMinecraftClient.SupportedVersions.Contains(protocolVersion))
+            Assert.Skip($"Protocol version {protocolVersion} is not supported by the client, skipping test.");
+
         var server1First = $"server1-{Guid.NewGuid()}";
         var server2Text = $"server2-{Guid.NewGuid()}";
 

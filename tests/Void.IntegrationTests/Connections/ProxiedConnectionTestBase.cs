@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,6 +18,9 @@ public abstract class ProxiedConnectionTestBase(ServerProxyClientFixture fixture
 
     protected async Task RunAsync(ProtocolVersion protocolVersion)
     {
+        if (!fixture.PortableMinecraftClient.SupportedVersions.Contains(protocolVersion))
+            Assert.Skip($"Protocol version {protocolVersion} is not supported by the client, skipping test.");
+
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
 
         await LoggedExecutorAsync(async () =>
