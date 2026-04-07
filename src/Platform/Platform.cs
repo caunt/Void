@@ -61,7 +61,13 @@ public class Platform(
     }
 
     private IPAddress Interface => console.TryGetOptionValue(_interfaceOption, out var value) && IPAddress.TryParse(value, out var address) ? address : settings.Address;
-    private int Port => console.TryGetOptionValue(_portOption, out var value) ? value : settings.Port;
+    private int Port => _listener switch
+    {
+        { LocalEndpoint: IPEndPoint ipEndPoint } => ipEndPoint.Port,
+        { LocalEndpoint: DnsEndPoint dnsEndPoint } => dnsEndPoint.Port,
+        _ when console.TryGetOptionValue(_portOption, out var value) => value,
+        _ => settings.Port
+    };
 
     public async ValueTask StartAcceptingConnectionsAsync(CancellationToken cancellationToken)
     {
