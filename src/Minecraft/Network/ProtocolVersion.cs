@@ -74,8 +74,8 @@ public class ProtocolVersion : IComparable
 
     public int Value { get; }
     public ReleaseVersion[] Releases { get; }
-    public string FirstRelease => Releases[0];
-    public string LastRelease => Releases[^1];
+    public ReleaseVersion FirstRelease => Releases[0];
+    public ReleaseVersion LastRelease => Releases[^1];
 
     public int CompareTo(object? obj)
     {

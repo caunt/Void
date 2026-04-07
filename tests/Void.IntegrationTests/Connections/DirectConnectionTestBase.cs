@@ -10,21 +10,13 @@ using Xunit;
 
 namespace Void.IntegrationTests.Connections;
 
-public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : IntegrationUnitBase, IClassFixture<DirectConnectionTests.Fixture>
+public abstract class DirectConnectionTestBase(DirectConnectionTestBase.Fixture fixture) : IntegrationUnitBase, IClassFixture<DirectConnectionTestBase.Fixture>
 {
     private const string ExpectedText = "hello void!";
 
     private readonly EndPoint _serverEndPoint = new IPEndPoint(IPAddress.Loopback, fixture.PaperServer.Port);
 
-    [Fact]
-    public async Task PortableMinecraftClientConnectsToPaperServer()
-    {
-        await PortableMinecraftClientConnectsToPaperServer_WithProtocolVersion(ProtocolVersion.MINECRAFT_1_20_3);
-    }
-
-    [Theory]
-    [MemberData(nameof(PortableMinecraftClient.SupportedVersions), MemberType = typeof(PortableMinecraftClient))]
-    public async Task PortableMinecraftClientConnectsToPaperServer_WithProtocolVersion(ProtocolVersion protocolVersion)
+    protected async Task RunAsync(ProtocolVersion protocolVersion)
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
 
@@ -42,7 +34,7 @@ public class DirectConnectionTests(DirectConnectionTests.Fixture fixture) : Inte
         }, fixture.PortableMinecraftClient, fixture.PaperServer);
     }
 
-    public class Fixture() : IntegrationFixtureBase(nameof(DirectConnectionTests)), IAsyncLifetime
+    public class Fixture() : IntegrationFixtureBase(nameof(DirectConnectionTestBase)), IAsyncLifetime
     {
         public PortableMinecraftClient PortableMinecraftClient { get => field ?? throw new InvalidOperationException($"{nameof(PortableMinecraftClient)} is not initialized."); set; }
         public PaperServer PaperServer { get => field ?? throw new InvalidOperationException($"{nameof(PaperServer)} is not initialized."); set; }
