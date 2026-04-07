@@ -1,4 +1,6 @@
-﻿namespace Void.Proxy.Api;
+﻿using System.Net;
+
+namespace Void.Proxy.Api;
 
 public interface IProxy
 {
@@ -6,6 +8,16 @@ public interface IProxy
     /// Gets a value indicating the current status of the proxy.
     /// </summary>
     public ProxyStatus Status { get; }
+
+    /// <summary>
+    /// Gets the IP address of the network interface on which the connection listener is bound.
+    /// </summary>
+    public IPAddress Interface { get; }
+
+    /// <summary>
+    /// Gets the network port number used for the connection listener.
+    /// </summary>
+    public int Port { get; }
 
     /// <summary>
     /// Starts accepting connections on the listener.

@@ -60,8 +60,8 @@ public class Platform(
         }
     }
 
-    private IPAddress Interface => console.TryGetOptionValue(_interfaceOption, out var value) && IPAddress.TryParse(value, out var address) ? address : settings.Address;
-    private int Port => _listener switch
+    public IPAddress Interface => console.TryGetOptionValue(_interfaceOption, out var value) && IPAddress.TryParse(value, out var address) ? address : settings.Address;
+    public int Port => _listener switch
     {
         { LocalEndpoint: IPEndPoint ipEndPoint } => ipEndPoint.Port,
         { LocalEndpoint: DnsEndPoint dnsEndPoint } => dnsEndPoint.Port,
