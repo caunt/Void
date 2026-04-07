@@ -43,7 +43,7 @@ public sealed class DirectConnectionReleaseGroupGenerator : ReleaseGroupGenerato
             generatedSourceBuilder.AppendLine($"public sealed class DirectConnectionTests_{key}(DirectConnectionTestBase.Fixture fixture) : DirectConnectionTestBase(fixture)");
             generatedSourceBuilder.AppendLine("{");
 
-            AppendTestMethodForReleases(generatedSourceBuilder, releases);
+            AppendTestMethodForReleases(generatedSourceBuilder, "PortableMinecraftClientConnectsToPaperServer_WithProtocolVersion", releases);
 
             generatedSourceBuilder.AppendLine("}");
             generatedSourceBuilder.AppendLine();

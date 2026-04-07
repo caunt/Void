@@ -7,7 +7,7 @@ public abstract class ReleaseGroupGeneratorBase : IIncrementalGenerator
 {
     public abstract void Initialize(IncrementalGeneratorInitializationContext context);
 
-    protected static void AppendTestMethodForReleases(StringBuilder sourceBuilder, IEnumerable<string> releases)
+    protected static void AppendTestMethodForReleases(StringBuilder sourceBuilder, string methodName, IEnumerable<string> releases)
     {
         sourceBuilder.AppendLine("    public static global::Xunit.TheoryData<global::Void.Minecraft.Network.ProtocolVersion> ProtocolVersions { get; } =");
         sourceBuilder.AppendLine("    [");
@@ -19,7 +19,7 @@ public abstract class ReleaseGroupGeneratorBase : IIncrementalGenerator
         sourceBuilder.AppendLine();
         sourceBuilder.AppendLine("    [global::Xunit.Theory]");
         sourceBuilder.AppendLine("    [global::Xunit.MemberData(nameof(ProtocolVersions))]");
-        sourceBuilder.AppendLine("    public async global::System.Threading.Tasks.Task PortableMinecraftClientConnectsToPaperServer_WithProtocolVersion(global::Void.Minecraft.Network.ProtocolVersion protocolVersion)");
+        sourceBuilder.AppendLine($"    public async global::System.Threading.Tasks.Task {methodName}(global::Void.Minecraft.Network.ProtocolVersion protocolVersion)");
         sourceBuilder.AppendLine("    {");
         sourceBuilder.AppendLine("        await base.RunAsync(protocolVersion);");
         sourceBuilder.AppendLine("    }");
