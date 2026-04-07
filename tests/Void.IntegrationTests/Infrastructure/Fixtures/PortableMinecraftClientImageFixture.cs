@@ -29,6 +29,7 @@ public class PortableMinecraftClientImageFixture : IAsyncLifetime
             .WithDockerfile(DockerFileName)
             .WithContextDirectory(_temporaryContextDirectoryPath)
             .WithName($"{nameof(PortableMinecraftClient).ToLower()}:latest")
+            .WithCleanUp(cleanUp: false)
             .Build();
 
         await DockerImage.CreateAsync();
@@ -36,8 +37,7 @@ public class PortableMinecraftClientImageFixture : IAsyncLifetime
 
     public async ValueTask DisposeAsync()
     {
-        // Allow caching image layers
-        // await DockerImage.DisposeAsync();
+        await DockerImage.DisposeAsync();
 
         Directory.Delete(_temporaryContextDirectoryPath, recursive: true);
 
