@@ -28,6 +28,7 @@ public class PortableMinecraftClientImageFixture : IAsyncLifetime
             .WithDockerfileDirectory(_temporaryContextDirectoryPath)
             .WithDockerfile(DockerFileName)
             .WithContextDirectory(_temporaryContextDirectoryPath)
+            .WithCreateParameterModifier(parameters => parameters.Platform = "linux/amd64")
             .WithName($"{nameof(PortableMinecraftClient).ToLower()}:latest")
             .WithCleanUp(cleanUp: false)
             .Build();
