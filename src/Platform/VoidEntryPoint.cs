@@ -51,20 +51,24 @@ public static class VoidEntryPoint
         public TextWriter? LogWriter { get; init; } = null;
     }
 
+    public record RunResult(Task<int> CompletionTask, int ListeningPort);
+
     static VoidEntryPoint() => System.Console.Title = nameof(Void);
 
     private static async Task<int> Main(string[] args)
     {
         var options = new RunOptions { Arguments = args };
-        return await RunAsync(options);
+        var result = await RunAsync(options);
+
+        return await result.CompletionTask;
     }
 
-    public static async Task<int> RunAsync(CancellationToken cancellationToken = default)
+    public static async Task<RunResult> RunAsync(CancellationToken cancellationToken = default)
     {
         return await RunAsync(RunOptions.Default, cancellationToken);
     }
 
-    public static async Task<int> RunAsync(RunOptions options, CancellationToken cancellationToken = default)
+    public static async Task<RunResult> RunAsync(RunOptions options, CancellationToken cancellationToken = default)
     {
         // If you set a custom working directory, you are responsible for ensuring everything follows it.
         // We are using the default working directory only for normal runs.
@@ -76,8 +80,8 @@ public static class VoidEntryPoint
         var command = new RootCommand("Runs the proxy");
         var loggingLevelSwitch = new LoggingLevelSwitch();
 
-        using var logger = CreateLogger(loggingLevelSwitch, options.LogWriter);
-        using var host = new HostBuilder()
+        var logger = CreateLogger(loggingLevelSwitch, options.LogWriter);
+        var host = new HostBuilder()
             .UseServiceProviderFactory(new DryIocServiceProviderFactory(new Container(DryIocAdapter.MicrosoftDependencyInjectionRules)))
             .UseConsoleLifetime(options => options.SuppressStatusMessages = true)
             .ConfigureServices((context, services) => services
@@ -127,14 +131,23 @@ public static class VoidEntryPoint
             }
         });
 
-        try
+        var proxy = host.Services.GetRequiredService<IProxy>();
+        var port = proxy.Port;
+
+        return new RunResult(CompletionTask: Task.Run(async () =>
         {
-            return await command.Parse(options.Arguments).InvokeAsync(cancellationToken: cancellationToken);
-        }
-        finally
-        {
-            await host.StopAsync(cancellationToken.IsCancellationRequested ? default : cancellationToken);
-        }
+            try
+            {
+                return await command.Parse(options.Arguments).InvokeAsync(cancellationToken: cancellationToken);
+            }
+            finally
+            {
+                await host.StopAsync(cancellationToken.IsCancellationRequested ? default : cancellationToken);
+
+                host.Dispose();
+                logger.Dispose();
+            }
+        }), ListeningPort: port);
     }
 
     private static Logger CreateLogger(LoggingLevelSwitch loggingLevelSwitch, TextWriter? logWriter)
