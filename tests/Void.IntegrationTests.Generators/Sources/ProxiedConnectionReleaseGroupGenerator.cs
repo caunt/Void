@@ -40,7 +40,7 @@ public sealed class DirectConnectionReleaseGroupGenerator : ReleaseGroupGenerato
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            generatedSourceBuilder.AppendLine($"public sealed class ProxiedConnectionTests_{key}(ProxiedConnectionTestBase.Fixture fixture) : ProxiedConnectionTestBase(fixture)");
+            generatedSourceBuilder.AppendLine($"public sealed class ProxiedConnectionTests_{key}(global::Void.IntegrationTests.Infrastructure.Fixtures.ServerProxyClientFixture fixture) : ProxiedConnectionTestBase(fixture)");
             generatedSourceBuilder.AppendLine("{");
 
             AppendTestMethodForReleases(generatedSourceBuilder, "PortableMinecraftClientConnectsToPaperServerThroughProxy_WithProtocolVersion", releases);

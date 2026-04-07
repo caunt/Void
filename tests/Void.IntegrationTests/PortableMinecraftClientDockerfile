@@ -1,0 +1,40 @@
+FROM rust:bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LIBGL_ALWAYS_SOFTWARE=1
+ENV DISPLAY=:99
+
+RUN apt-get update && apt-get install -y xvfb xfwm4 x11-utils x11-xserver-utils xdotool libasound2 libflite1 libgl1-mesa-dri libxcursor1 libxrandr2 libxi6 libxtst6 libfreetype6 libfontconfig1 ca-certificates imagemagick && rm -rf /var/lib/apt/lists/*
+
+RUN cargo install portablemc-cli
+
+# Fix sound errors by using the null audio driver
+RUN printf "pcm.!default { type null }\nctl.!default { type null }\n" > /etc/asound.conf
+
+# Skip Minecraft accessibility screen
+RUN mkdir -p "$HOME/.minecraft" && touch "$HOME/.minecraft/options.txt"
+
+RUN printf '%s\n' \
+'#!/usr/bin/env bash' \
+'set -e' \
+'export DISPLAY="${DISPLAY:-:99}"' \
+'rm -f "/tmp/.X${DISPLAY#:}-lock"' \
+'Xvfb "$DISPLAY" -screen 0 1280x720x24 >/proc/1/fd/1 2>/proc/1/fd/2 &' \
+'until xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; do sleep 0.1; done' \
+'xfwm4 >/proc/1/fd/1 2>/proc/1/fd/2 &' \
+> /usr/local/bin/start-display && chmod +x /usr/local/bin/start-display
+
+RUN printf '%s\n' \
+'#!/usr/bin/env bash' \
+'set -e' \
+'export DISPLAY="${DISPLAY:-:99}"' \
+'windowId="$(xdotool search --onlyvisible --name "Minecraft" | head -n 1)"' \
+'xdotool windowfocus "$windowId"' \
+'xdotool key --window "$windowId" t' \
+'sleep 1' \
+'xdotool type --window "$windowId" --delay 1 -- "$*"' \
+'xdotool key --window "$windowId" Return' \
+> /usr/local/bin/send-chat && chmod +x /usr/local/bin/send-chat
+
+ENTRYPOINT ["sleep"]
+CMD ["infinity"]

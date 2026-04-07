@@ -5,13 +5,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Void.IntegrationTests.Infrastructure.Fixtures;
 using Void.IntegrationTests.Infrastructure.Harness;
-using Void.IntegrationTests.Infrastructure.Harness.Sides;
 using Void.Minecraft.Network;
 using Xunit;
 
 namespace Void.IntegrationTests.Connections;
 
-public abstract class ProxiedServerRedirectionTestBase(ProxiedServerRedirectionTestBase.Fixture fixture) : IntegrationUnitBase, IClassFixture<ProxiedServerRedirectionTestBase.Fixture>
+public abstract class ProxiedServerRedirectionTestBase(TwoServersProxyClientFixture fixture) : IntegrationUnitBase, IClassFixture<TwoServersProxyClientFixture>
 {
     private readonly EndPoint _proxyEndPoint = new IPEndPoint(IPAddress.Loopback, fixture.VoidProxy.Port);
 
@@ -46,40 +45,5 @@ public abstract class ProxiedServerRedirectionTestBase(ProxiedServerRedirectionT
             Assert.Contains(fixture.VoidProxy.Logs, line => line.Contains("connected to args-server-2"));
             Assert.True(fixture.VoidProxy.Logs.Count(line => line.Contains("connected to args-server-1")) is >= 2); // TODO: sometimes, proxy prints multiple times "connected to" message
         }, fixture.PortableMinecraftClient, fixture.VoidProxy, fixture.PaperServer1, fixture.PaperServer2);
-    }
-
-    public class Fixture() : IntegrationFixtureBase(nameof(ProxiedServerRedirectionTestBase)), IAsyncLifetime
-    {
-        public PortableMinecraftClient PortableMinecraftClient { get => field ?? throw new InvalidOperationException($"{nameof(PortableMinecraftClient)} is not initialized."); set; }
-        public PaperServer PaperServer1 { get => field ?? throw new InvalidOperationException($"{nameof(PaperServer1)} is not initialized."); set; }
-        public PaperServer PaperServer2 { get => field ?? throw new InvalidOperationException($"{nameof(PaperServer2)} is not initialized."); set; }
-        public VoidProxy VoidProxy { get => field ?? throw new InvalidOperationException($"{nameof(VoidProxy)} is not initialized."); set; }
-
-        public async ValueTask InitializeAsync()
-        {
-            using var cancellationTokenSource = new CancellationTokenSource(SetupTimeout);
-
-            var portableMinecraftClientTask = PortableMinecraftClient.CreateAsync(cancellationTokenSource.Token);
-            var paperServer1Task = PaperServer.CreateAsync(cancellationTokenSource.Token);
-            var paperServer2Task = PaperServer.CreateAsync(cancellationTokenSource.Token);
-
-            PaperServer1 = await paperServer1Task;
-            PaperServer2 = await paperServer2Task;
-
-            var voidProxyTask = VoidProxy.CreateAsync(_workingDirectory, targetServers: [$"localhost:{PaperServer1.Port}", $"localhost:{PaperServer2.Port}"], cancellationToken: cancellationTokenSource.Token);
-
-            PortableMinecraftClient = await portableMinecraftClientTask;
-            VoidProxy = await voidProxyTask;
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            await PortableMinecraftClient.DisposeAsync();
-            await PaperServer1.DisposeAsync();
-            await PaperServer2.DisposeAsync();
-            await VoidProxy.DisposeAsync();
-
-            GC.SuppressFinalize(this);
-        }
     }
 }

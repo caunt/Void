@@ -8,6 +8,7 @@ using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using Nito.Disposables;
 using Void.IntegrationTests.Infrastructure.Extensions;
+using Void.IntegrationTests.Infrastructure.Fixtures;
 using Void.Minecraft.Network;
 using Xunit;
 
@@ -30,14 +31,10 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
     public IEnumerable<string> Logs => Container.ReadLogsAsync(_readLogsSince).GetAwaiter().GetResult();
 
-    public static async Task<PortableMinecraftClient> CreateAsync(CancellationToken cancellationToken = default)
+    public static async Task<PortableMinecraftClient> CreateAsync(PortableMinecraftClientImageFixture clientImageFixture, CancellationToken cancellationToken = default)
     {
         var builder = new ContainerBuilder(image: "rust:bookworm")
-            .WithEntrypoint("sleep")
-            .WithCommand("infinity")
-            .WithEnvironment("DEBIAN_FRONTEND", "noninteractive")
-            .WithEnvironment("LIBGL_ALWAYS_SOFTWARE", "1")
-            .WithEnvironment("DISPLAY", Display);
+            .WithImage(clientImageFixture.DockerImage);
 
         if (OperatingSystem.IsLinux())
             builder = builder.WithCreateParameterModifier(parameters => parameters.HostConfig.NetworkMode = "host");
@@ -45,51 +42,6 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         var container = builder.Build();
 
         await container.StartAsync(cancellationToken);
-
-        await container.RunCommandAsync($"apt-get update {RedirectOutput}", cancellationToken);
-        await container.RunCommandAsync($"apt-get install -y xvfb xfwm4 x11-utils x11-xserver-utils xdotool libasound2 libflite1 libgl1-mesa-dri libxcursor1 libxrandr2 libxi6 libxtst6 libfreetype6 libfontconfig1 ca-certificates imagemagick {RedirectOutput}", cancellationToken);
-        await container.RunCommandAsync($"rm -rf /var/lib/apt/lists/* {RedirectOutput}", cancellationToken);
-
-        await container.RunCommandAsync($"cargo install portablemc-cli {RedirectOutput}", cancellationToken);
-
-        // Fix sound errors by using the null audio driver
-        await container.RunCommandAsync(@"printf ""pcm.!default { type null }\nctl.!default { type null }\n"" > /etc/asound.conf", cancellationToken);
-
-        // Skip Minecraft accessibility screen
-        await container.RunCommandAsync($"mkdir -p \"$HOME/.minecraft\" {RedirectOutput}", cancellationToken);
-        await container.RunCommandAsync($"touch \"$HOME/.minecraft/options.txt\" {RedirectOutput}", cancellationToken);
-
-        // Helper script to start display
-        await container.RunCommandAsync($$"""
-            cat >/usr/local/bin/start-display <<'EOF'
-            #!/usr/bin/env bash
-            set -e
-            export DISPLAY="${DISPLAY:-{{Display}}}"
-            rm -f "/tmp/.X${DISPLAY#:}-lock"
-            Xvfb "$DISPLAY" -screen 0 1280x720x24 {{RedirectOutput}} &
-            until xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; do sleep 0.1; done
-            xfwm4 {{RedirectOutput}} &
-            EOF
-            chmod +x /usr/local/bin/start-display
-            """, cancellationToken);
-
-        // Helper script to send chat messages
-        await container.RunCommandAsync($$"""
-            cat >/usr/local/bin/send-chat <<'EOF'
-            #!/usr/bin/env bash
-            set -e
-            export DISPLAY="${DISPLAY:-{{Display}}}"
-            windowId="$(xdotool search --onlyvisible --name "Minecraft" | head -n 1)"
-            xdotool windowfocus "$windowId"
-            xdotool key --window "$windowId" t
-            sleep 1
-            xdotool type --window "$windowId" --delay 1 -- "$*"
-            xdotool key --window "$windowId" Return
-            EOF
-            chmod +x /usr/local/bin/send-chat
-            """, cancellationToken);
-
-        // Start display
         await container.RunCommandAsync(["start-display"], cancellationToken);
 
         return new PortableMinecraftClient(container);

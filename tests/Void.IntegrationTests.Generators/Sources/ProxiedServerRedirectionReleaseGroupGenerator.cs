@@ -40,7 +40,7 @@ public sealed class ProxiedServerRedirectionReleaseGroupGenerator : ReleaseGroup
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            generatedSourceBuilder.AppendLine($"public sealed class ProxiedServerRedirectionTests_{key}(ProxiedServerRedirectionTestBase.Fixture fixture) : ProxiedServerRedirectionTestBase(fixture)");
+            generatedSourceBuilder.AppendLine($"public sealed class ProxiedServerRedirectionTests_{key}(global::Void.IntegrationTests.Infrastructure.Fixtures.TwoServersProxyClientFixture fixture) : ProxiedServerRedirectionTestBase(fixture)");
             generatedSourceBuilder.AppendLine("{");
 
             AppendTestMethodForReleases(generatedSourceBuilder, "PortableMinecraftClientMovesBetweenPaperServersThroughProxy_WithProtocolVersion", releases);

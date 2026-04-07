@@ -4,13 +4,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Void.IntegrationTests.Infrastructure.Fixtures;
 using Void.IntegrationTests.Infrastructure.Harness;
-using Void.IntegrationTests.Infrastructure.Harness.Sides;
 using Void.Minecraft.Network;
 using Xunit;
 
 namespace Void.IntegrationTests.Connections;
 
-public abstract class DirectConnectionTestBase(DirectConnectionTestBase.Fixture fixture) : IntegrationUnitBase, IClassFixture<DirectConnectionTestBase.Fixture>
+public abstract class DirectConnectionTestBase(ServerClientFixture fixture) : IntegrationUnitBase, IClassFixture<ServerClientFixture>
 {
     private const string ExpectedText = "hello void!";
 
@@ -32,30 +31,5 @@ public abstract class DirectConnectionTestBase(DirectConnectionTestBase.Fixture 
 
             Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
         }, fixture.PortableMinecraftClient, fixture.PaperServer);
-    }
-
-    public class Fixture() : IntegrationFixtureBase(nameof(DirectConnectionTestBase)), IAsyncLifetime
-    {
-        public PortableMinecraftClient PortableMinecraftClient { get => field ?? throw new InvalidOperationException($"{nameof(PortableMinecraftClient)} is not initialized."); set; }
-        public PaperServer PaperServer { get => field ?? throw new InvalidOperationException($"{nameof(PaperServer)} is not initialized."); set; }
-
-        public async ValueTask InitializeAsync()
-        {
-            using var cancellationTokenSource = new CancellationTokenSource(SetupTimeout);
-
-            var portableMinecraftClientTask = PortableMinecraftClient.CreateAsync(cancellationTokenSource.Token);
-            var paperServerTask = PaperServer.CreateAsync(cancellationToken: cancellationTokenSource.Token);
-
-            PortableMinecraftClient = await portableMinecraftClientTask;
-            PaperServer = await paperServerTask;
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            await PortableMinecraftClient.DisposeAsync();
-            await PaperServer.DisposeAsync();
-
-            GC.SuppressFinalize(this);
-        }
     }
 }
