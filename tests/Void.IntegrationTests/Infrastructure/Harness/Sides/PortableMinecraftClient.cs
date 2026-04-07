@@ -34,7 +34,8 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
     public static async Task<PortableMinecraftClient> CreateAsync(PortableMinecraftClientImageFixture clientImageFixture, CancellationToken cancellationToken = default)
     {
         var builder = new ContainerBuilder(image: "rust:bookworm")
-            .WithImage(clientImageFixture.DockerImage);
+            .WithImage(clientImageFixture.DockerImage)
+            .WithEnvironment("DISPLAY", Display);
 
         if (OperatingSystem.IsLinux())
             builder = builder.WithCreateParameterModifier(parameters => parameters.HostConfig.NetworkMode = "host");

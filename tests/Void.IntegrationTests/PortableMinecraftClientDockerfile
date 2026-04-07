@@ -2,10 +2,11 @@ FROM rust:bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LIBGL_ALWAYS_SOFTWARE=1
-ENV DISPLAY=:99
 
+# Install dependencies
 RUN apt-get update && apt-get install -y xvfb xfwm4 x11-utils x11-xserver-utils xdotool libasound2 libflite1 libgl1-mesa-dri libxcursor1 libxrandr2 libxi6 libxtst6 libfreetype6 libfontconfig1 ca-certificates imagemagick && rm -rf /var/lib/apt/lists/*
 
+# Install portablemc
 RUN cargo install portablemc-cli
 
 # Fix sound errors by using the null audio driver
@@ -14,6 +15,7 @@ RUN printf "pcm.!default { type null }\nctl.!default { type null }\n" > /etc/aso
 # Skip Minecraft accessibility screen
 RUN mkdir -p "$HOME/.minecraft" && touch "$HOME/.minecraft/options.txt"
 
+# Start display utility
 RUN printf '%s\n' \
 '#!/usr/bin/env bash' \
 'set -e' \
@@ -24,6 +26,7 @@ RUN printf '%s\n' \
 'xfwm4 >/proc/1/fd/1 2>/proc/1/fd/2 &' \
 > /usr/local/bin/start-display && chmod +x /usr/local/bin/start-display
 
+# Send chat message utility
 RUN printf '%s\n' \
 '#!/usr/bin/env bash' \
 'set -e' \
