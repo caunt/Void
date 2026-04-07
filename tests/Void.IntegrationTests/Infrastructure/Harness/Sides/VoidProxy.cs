@@ -11,22 +11,12 @@ using Void.IntegrationTests.Infrastructure.IO;
 using Void.Proxy;
 using Xunit;
 
-public class VoidProxy : IIntegrationSide
+public record VoidProxy(CollectingTextWriter LogWriter, VoidEntryPoint.RunResult RunResult, CancellationTokenSource CancellationTokenSource) : IIntegrationSide
 {
-    private readonly CollectingTextWriter _logWriter;
-    private readonly Task _task;
-    private readonly CancellationTokenSource _cancellationTokenSource;
+    public IEnumerable<string> Logs => LogWriter.Lines;
+    public int Port => RunResult.ListeningPort;
 
-    public IEnumerable<string> Logs => _logWriter.Lines;
-
-    private VoidProxy(CollectingTextWriter logWriter, Task task, CancellationTokenSource cancellationTokenSource)
-    {
-        _logWriter = logWriter;
-        _task = task;
-        _cancellationTokenSource = cancellationTokenSource;
-    }
-
-    public static Task<VoidProxy> CreateAsync(string workingDirectory, string targetServer, int proxyPort, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
+    public static Task<VoidProxy> CreateAsync(string workingDirectory, string targetServer, int proxyPort = 0, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
     {
         return CreateAsync(workingDirectory, [targetServer], proxyPort, ignoreFileServers, offlineMode, cancellationToken);
     }
@@ -60,7 +50,7 @@ public class VoidProxy : IIntegrationSide
         if (offlineMode)
             args.Add("--offline");
 
-        var task = VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { WorkingDirectory = workingDirectory, Arguments = [.. args], LogWriter = logWriter }, cancellationTokenSource.Token);
+        var result = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { WorkingDirectory = workingDirectory, Arguments = [.. args], LogWriter = logWriter }, cancellationTokenSource.Token);
 
         // Wait for the proxy to start, because it takes some time to listen on the port
 
@@ -74,19 +64,20 @@ public class VoidProxy : IIntegrationSide
             Assert.Fail($"{nameof(VoidProxy)} failed to start. Logs:\n{logWriter.Text}\n{exception}");
         }
 
-        return new VoidProxy(logWriter, task, cancellationTokenSource);
+        return new VoidProxy(logWriter, result, cancellationTokenSource);
     }
 
     public void ClearLogs()
     {
-        _logWriter.Clear();
+        LogWriter.Clear();
     }
 
     public async ValueTask DisposeAsync()
     {
         GC.SuppressFinalize(this);
 
-        await _cancellationTokenSource.CancelAsync();
-        await _task;
+        await CancellationTokenSource.CancelAsync();
+        await RunResult.CompletionTask;
+        await RunResult.DisposeAsync();
     }
 }
