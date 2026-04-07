@@ -12,10 +12,9 @@ namespace Void.IntegrationTests.Connections;
 
 public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : IntegrationUnitBase, IClassFixture<ProxiedConnectionTests.Fixture>
 {
-    private const int ProxyPort = 35000;
     private const string ExpectedText = "hello proxied void!";
 
-    private readonly EndPoint _proxyEndPoint = new IPEndPoint(IPAddress.Loopback, fixture.PaperServer.Port);
+    private readonly EndPoint _proxyEndPoint = new IPEndPoint(IPAddress.Loopback, fixture.VoidProxy.Port);
 
     [Fact]
     public async Task PortableMinecraftClientConnectsToPaperServerThroughProxy()
@@ -56,9 +55,11 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : In
             var portableMinecraftClientTask = PortableMinecraftClient.CreateAsync(cancellationTokenSource.Token);
             var paperServerTask = PaperServer.CreateAsync(cancellationTokenSource.Token);
 
-            PortableMinecraftClient = await portableMinecraftClientTask;
             PaperServer = await paperServerTask;
-            VoidProxy = await VoidProxy.CreateAsync(_workingDirectory, targetServer: $"localhost:{PaperServer.Port}", proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
+            var voidProxyTask = VoidProxy.CreateAsync(_workingDirectory, targetServer: $"localhost:{PaperServer.Port}", cancellationToken: cancellationTokenSource.Token);
+
+            PortableMinecraftClient = await portableMinecraftClientTask;
+            VoidProxy = await voidProxyTask;
         }
 
         public async ValueTask DisposeAsync()
@@ -66,6 +67,8 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : In
             await PortableMinecraftClient.DisposeAsync();
             await PaperServer.DisposeAsync();
             await VoidProxy.DisposeAsync();
+
+            GC.SuppressFinalize(this);
         }
     }
 }

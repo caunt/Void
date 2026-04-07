@@ -13,9 +13,7 @@ namespace Void.IntegrationTests.Connections;
 
 public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture fixture) : IntegrationUnitBase, IClassFixture<ProxiedServerRedirectionTests.Fixture>
 {
-    private const int ProxyPort = 36000;
-
-    private static readonly EndPoint ProxyEndPoint = new IPEndPoint(IPAddress.Loopback, ProxyPort);
+    private readonly EndPoint _proxyEndPoint = new IPEndPoint(IPAddress.Loopback, fixture.VoidProxy.Port);
 
     [Fact]
     public async Task PortableMinecraftClientMovesBetweenPaperServersThroughProxy()
@@ -34,7 +32,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
         {
             using (var gameCancellationTokenSource = new CancellationTokenSource(StepTimeout * 5)) // Game should run enough time for all steps below
             {
-                await using var game = await WithTimeoutRetriesAsync(async () => await fixture.PortableMinecraftClient.RunGameAsync(ProxyEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
+                await using var game = await WithTimeoutRetriesAsync(async () => await fixture.PortableMinecraftClient.RunGameAsync(_proxyEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
 
                 await fixture.PortableMinecraftClient.SendTextMessagesAsync(
                 [
@@ -73,10 +71,13 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
             var paperServer1Task = PaperServer.CreateAsync(cancellationTokenSource.Token);
             var paperServer2Task = PaperServer.CreateAsync(cancellationTokenSource.Token);
 
-            PortableMinecraftClient = await portableMinecraftClientTask;
             PaperServer1 = await paperServer1Task;
             PaperServer2 = await paperServer2Task;
-            VoidProxy = await VoidProxy.CreateAsync(_workingDirectory, [$"localhost:{PaperServer1.Port}", $"localhost:{PaperServer2.Port}"], proxyPort: ProxyPort, cancellationToken: cancellationTokenSource.Token);
+
+            var voidProxyTask = VoidProxy.CreateAsync(_workingDirectory, targetServers: [$"localhost:{PaperServer1.Port}", $"localhost:{PaperServer2.Port}"], cancellationToken: cancellationTokenSource.Token);
+
+            PortableMinecraftClient = await portableMinecraftClientTask;
+            VoidProxy = await voidProxyTask;
         }
 
         public async ValueTask DisposeAsync()
@@ -85,6 +86,8 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
             await PaperServer1.DisposeAsync();
             await PaperServer2.DisposeAsync();
             await VoidProxy.DisposeAsync();
+
+            GC.SuppressFinalize(this);
         }
     }
 }

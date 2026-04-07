@@ -54,6 +54,8 @@ public abstract class DirectConnectionTestBase(DirectConnectionTestBase.Fixture 
         {
             await PortableMinecraftClient.DisposeAsync();
             await PaperServer.DisposeAsync();
+
+            GC.SuppressFinalize(this);
         }
     }
 }
