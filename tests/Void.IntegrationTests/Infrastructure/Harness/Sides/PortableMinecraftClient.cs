@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -99,6 +100,8 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
         return AsyncDisposable.Create(async () =>
         {
+            await File.WriteAllBytesAsync($"quit-{protocolVersion}.png", await Container.TakeScreenshotAsync(Display, cancellationToken), cancellationToken);
+
             await cancellationTokenSource.CancelAsync();
 
             try
