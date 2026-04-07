@@ -8,6 +8,4 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage(
     category: "MicrosoftCodeAnalysisCorrectness",
     checkId: "RS1041:Compiler extensions should be implemented in assemblies targeting netstandard2.0",
-    Justification = "Suppression is necessary for this project.",
-    Scope = "type",
-    Target = "~T:Void.IntegrationTests.Generators.DirectConnectionReleaseGroupGenerator")]
+    Justification = "Suppression is necessary for this project.")]

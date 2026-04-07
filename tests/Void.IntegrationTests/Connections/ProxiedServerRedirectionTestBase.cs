@@ -11,19 +11,11 @@ using Xunit;
 
 namespace Void.IntegrationTests.Connections;
 
-public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture fixture) : IntegrationUnitBase, IClassFixture<ProxiedServerRedirectionTests.Fixture>
+public abstract class ProxiedServerRedirectionTestBase(ProxiedServerRedirectionTestBase.Fixture fixture) : IntegrationUnitBase, IClassFixture<ProxiedServerRedirectionTestBase.Fixture>
 {
     private readonly EndPoint _proxyEndPoint = new IPEndPoint(IPAddress.Loopback, fixture.VoidProxy.Port);
 
-    [Fact]
-    public async Task PortableMinecraftClientMovesBetweenPaperServersThroughProxy()
-    {
-        await PortableMinecraftClientMovesBetweenPaperServersThroughProxy_WithProtocolVersion(ProtocolVersion.MINECRAFT_1_21_6);
-    }
-
-    [Theory]
-    [MemberData(nameof(PortableMinecraftClient.SupportedVersions), MemberType = typeof(PortableMinecraftClient))]
-    public async Task PortableMinecraftClientMovesBetweenPaperServersThroughProxy_WithProtocolVersion(ProtocolVersion protocolVersion)
+    protected async Task RunAsync(ProtocolVersion protocolVersion)
     {
         var server1First = $"server1-{Guid.NewGuid()}";
         var server2Text = $"server2-{Guid.NewGuid()}";
@@ -56,7 +48,7 @@ public class ProxiedServerRedirectionTests(ProxiedServerRedirectionTests.Fixture
         }, fixture.PortableMinecraftClient, fixture.VoidProxy, fixture.PaperServer1, fixture.PaperServer2);
     }
 
-    public class Fixture() : IntegrationFixtureBase(nameof(ProxiedServerRedirectionTests)), IAsyncLifetime
+    public class Fixture() : IntegrationFixtureBase(nameof(ProxiedServerRedirectionTestBase)), IAsyncLifetime
     {
         public PortableMinecraftClient PortableMinecraftClient { get => field ?? throw new InvalidOperationException($"{nameof(PortableMinecraftClient)} is not initialized."); set; }
         public PaperServer PaperServer1 { get => field ?? throw new InvalidOperationException($"{nameof(PaperServer1)} is not initialized."); set; }

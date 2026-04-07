@@ -10,21 +10,13 @@ using Xunit;
 
 namespace Void.IntegrationTests.Connections;
 
-public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : IntegrationUnitBase, IClassFixture<ProxiedConnectionTests.Fixture>
+public abstract class ProxiedConnectionTestBase(ProxiedConnectionTestBase.Fixture fixture) : IntegrationUnitBase, IClassFixture<ProxiedConnectionTestBase.Fixture>
 {
     private const string ExpectedText = "hello proxied void!";
 
     private readonly EndPoint _proxyEndPoint = new IPEndPoint(IPAddress.Loopback, fixture.VoidProxy.Port);
 
-    [Fact]
-    public async Task PortableMinecraftClientConnectsToPaperServerThroughProxy()
-    {
-        await PortableMinecraftClientConnectsToPaperServerThroughProxy_WithProtocolVersion(ProtocolVersion.MINECRAFT_1_20_3);
-    }
-
-    [Theory]
-    [MemberData(nameof(PortableMinecraftClient.SupportedVersions), MemberType = typeof(PortableMinecraftClient))]
-    public async Task PortableMinecraftClientConnectsToPaperServerThroughProxy_WithProtocolVersion(ProtocolVersion protocolVersion)
+    protected async Task RunAsync(ProtocolVersion protocolVersion)
     {
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
 
@@ -42,7 +34,7 @@ public class ProxiedConnectionTests(ProxiedConnectionTests.Fixture fixture) : In
         }, fixture.PortableMinecraftClient, fixture.VoidProxy, fixture.PaperServer);
     }
 
-    public class Fixture() : IntegrationFixtureBase(nameof(ProxiedConnectionTests)), IAsyncLifetime
+    public class Fixture() : IntegrationFixtureBase(nameof(ProxiedConnectionTestBase)), IAsyncLifetime
     {
         public PortableMinecraftClient PortableMinecraftClient { get => field ?? throw new InvalidOperationException($"{nameof(PortableMinecraftClient)} is not initialized."); set; }
         public PaperServer PaperServer { get => field ?? throw new InvalidOperationException($"{nameof(PaperServer)} is not initialized."); set; }

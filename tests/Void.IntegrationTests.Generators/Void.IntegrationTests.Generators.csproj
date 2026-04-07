@@ -22,9 +22,7 @@
 
   <Target Name="GetDependencyTargetPaths">
     <ItemGroup>
-      <TargetPathWithTargetPlatformMoniker
-        Include="..\..\src\Minecraft\bin\$(Configuration)\net10.0\Void.Minecraft.dll"
-        IncludeRuntimeDependency="false" />
+      <TargetPathWithTargetPlatformMoniker Include="..\..\src\Minecraft\bin\$(Configuration)\net10.0\Void.Minecraft.dll" IncludeRuntimeDependency="false" />
     </ItemGroup>
   </Target>
 
