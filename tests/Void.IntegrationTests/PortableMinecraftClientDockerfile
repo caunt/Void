@@ -4,10 +4,13 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV LIBGL_ALWAYS_SOFTWARE=1
 
 # Install dependencies
-RUN apt-get update && apt-get install -y xvfb xfwm4 x11-utils x11-xserver-utils xdotool libasound2 libflite1 libgl1-mesa-dri libxcursor1 libxrandr2 libxi6 libxtst6 libfreetype6 libfontconfig1 ca-certificates imagemagick && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y xvfb xfwm4 x11-utils x11-xserver-utils xdotool libasound2 libflite1 libgl1-mesa-dri libxcursor1 libxrandr2 libxi6 libxtst6 libfreetype6 libfontconfig1 ca-certificates imagemagick curl jq && rm -rf /var/lib/apt/lists/*
 
 # Install portablemc
 RUN cargo install portablemc-cli
+
+# Dry-run all release versions in reverse order (from oldest to latest)
+RUN curl -s https://launchermeta.mojang.com/mc/game/version_manifest_v2.json | jq -r '[.versions[] | select(.type == "release") | .id] | reverse[]' | while IFS= read -r versionId; do portablemc start --dry "mojang:$versionId"; done
 
 # Fix sound errors by using the null audio driver
 RUN printf "pcm.!default { type null }\nctl.!default { type null }\n" > /etc/asound.conf
