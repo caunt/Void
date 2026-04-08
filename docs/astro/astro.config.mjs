@@ -1,11 +1,12 @@
 // @ts-check
-import { defineConfig } from 'astro/config';
-import starlight from '@astrojs/starlight';
-import sitemap from '@astrojs/sitemap';
+import fs from 'node:fs';
 
-import { ExpressiveCodeTheme } from '@astrojs/starlight/expressive-code'
-import fs from 'node:fs'
-import starlightLinksValidator from 'starlight-links-validator'
+import starlight from '@astrojs/starlight';
+import { ExpressiveCodeTheme } from '@astrojs/starlight/expressive-code';
+import sitemap from '@astrojs/sitemap';
+import { defineConfig } from 'astro/config';
+import starlightLinksValidator from 'starlight-links-validator';
+
 import { getLatestCommit } from './src/update-time.ts';
 
 const googleAnalyticsId = 'G-3KT5D46L8T'
@@ -63,6 +64,11 @@ export default defineConfig({
                 ],
             },
             { slug: 'docs/faq' },
+            {
+                label: 'Reference',
+                collapsed: true,
+                autogenerate: { directory: 'reference', collapsed: true }
+            },
             { slug: 'docs/troubleshooting' }
         ],
         head: [

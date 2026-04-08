@@ -5,7 +5,7 @@
 
 # DocFX
 **/docfx/_site
-**/docfx/api
+**/docfx/reference
 
 # dotenv files
 .env

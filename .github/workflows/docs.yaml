@@ -25,18 +25,8 @@ jobs:
         run: docfx docs/docfx/docfx.json --verbose
 
       - name: Copy DocFX markdown into Astro pages
-        run: |
-          rm -rf docs/astro/src/pages/api
-          mkdir -p docs/astro/src/pages/api
-          cp -R docs/docfx/api/. docs/astro/src/pages/api/
-          find docs/astro/src/pages/api -type f ! -name '*.md' -delete
-
-      - name: Fix relative links in API pages
-        run: |
-          find docs/astro/src/pages/api -name '*.md' | xargs sed -i -E \
-            -e 's|\(([^)]+)\.md\\#([^)]+)\)|(/api/\1#\2)|g' \
-            -e 's|\(([^)]+)\.md\)|(/api/\1)|g'
-
+        run: mkdir -p docs/astro/src/reference && cp docs/docfx/reference/*.md docs/astro/src/reference/
+        
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
 

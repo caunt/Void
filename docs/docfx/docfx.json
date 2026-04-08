@@ -4,13 +4,14 @@
     {
       "src": [
         {
-          "src": "../../src",
+          "src": "../..",
           "files": [
-            "**/*.csproj"
+            "src/Api/Void.Proxy.Api.csproj",
+            "src/Minecraft/Void.Minecraft.csproj"
           ]
         }
       ],
-      "dest": "api",
+      "dest": "reference",
       "allowCompilationErrors": true,
       "outputFormat": "markdown"
     }
