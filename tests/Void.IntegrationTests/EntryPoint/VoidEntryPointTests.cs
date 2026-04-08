@@ -286,6 +286,8 @@ public class VoidEntryPointTests
         }
 
         await using var result = await VoidEntryPoint.RunAsync(runOptions, cancellationTokenSource.Token);
+        await result.CompletionTask;
+
         return result.ExitCode;
     }
 }
