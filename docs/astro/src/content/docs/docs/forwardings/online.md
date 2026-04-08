@@ -83,7 +83,7 @@ Never expose the key publicly or you risk compromising the server.
 
 Finally, provide the key to [**Void**](https://github.com/caunt/Void) when the player connects so the proxy can decrypt traffic and offer its protocol API.
 
-Void will automatically search for the private key if `AuthenticationSide` is set to `Server`.
+Void will automatically search for the private key if [**AuthenticationSide**](/reference/Void.Proxy.Api.Events.Authentication.AuthenticationSide) is set to `Server`.
 
 ```csharp
 [Subscribe(PostOrder.Last)]

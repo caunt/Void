@@ -9,7 +9,7 @@ Events are a great way to communicate between different plugins and the proxy.
 They allow you to respond to specific actions or changes in the game, such as [**a player joining or leaving**](/docs/developing-plugins/events/player-events).
 
 ## Subscribing to events
-You can subscribe to events by applying the `Subscribe` attribute to a method in your class that implements the `IEventListener` interface.
+You can subscribe to events by applying the [**Subscribe**](/reference/Void.Proxy.Api.Events.SubscribeAttribute) attribute to a method in your class that implements the [**IEventListener**](/reference/Void.Proxy.Api.Events.IEventListener) interface.
 ```csharp
 public class MyPlugin : IPlugin
 {
@@ -22,8 +22,8 @@ public class MyPlugin : IPlugin
 ```
 
 :::tip
-The `IPlugin` interface inherits `IEventListener` itself, so you can subscribe to events directly in your plugin class.
-However, in most cases, you must implement the `IEventListener` interface on your classes.
+The [**IPlugin**](/reference/Void.Proxy.Api.Plugins.IPlugin) interface inherits [**IEventListener**](/reference/Void.Proxy.Api.Events.IEventListener) itself, so you can subscribe to events directly in your plugin class.
+However, in most cases, you must implement the [**IEventListener**](/reference/Void.Proxy.Api.Events.IEventListener) interface on your classes.
 :::
 
 ## Async Events
@@ -39,7 +39,7 @@ public async ValueTask OnPlayerConnected(PlayerConnectedEvent @event, Cancellati
 ```
 
 ## Listening to events
-For your managed services, include the `IEventListener` interface on your service class.
+For your managed services, include the [**IEventListener**](/reference/Void.Proxy.Api.Events.IEventListener) interface on your service class.
 ```csharp
 public class MySingletonService : IEventListener
 {
@@ -51,11 +51,11 @@ public class MySingletonService : IEventListener
 ```
 
 ## Listening to events in Scoped services
-Just like with other services, you should implement the `IEventListener` interface on your scoped service class.
+Just like with other services, you should implement the [**IEventListener**](/reference/Void.Proxy.Api.Events.IEventListener) interface on your scoped service class.
 However, listening to events in [**scoped services**](/docs/developing-plugins/services/scoped) is a bit different.
 Scoped events are filtered by the player context, so you will only receive events that are relevant to the player that owns the service.
 All other types of events will not be filtered, since they are not scoped.
-Scoped event filtering can be disabled by applying `bypassScopedFilter: true` to the `Subscribe` attribute.
+Scoped event filtering can be disabled by applying `bypassScopedFilter: true` to the [**Subscribe**](/reference/Void.Proxy.Api.Events.SubscribeAttribute) attribute.
 ```csharp
 public class MyScopedService(IPlayerContext context, ILogger<MyScopedService> logger) : IEventListener
 {

@@ -21,7 +21,7 @@ class MySettings
 ```
 
 ## Loading Configuration
-Inject `IConfigurationService` into your plugin or service constructor.  
+Inject [**IConfigurationService**](/reference/Void.Proxy.Api.Configurations.IConfigurationService) into your plugin or service constructor.  
 Then use `GetAsync<T>()` method to get the configuration instance.
 ```csharp
 public class MyPlugin(IConfigurationService configs) : IPlugin
@@ -59,7 +59,7 @@ All changes to the instance will be automatically saved to the configuration fil
 :::
 
 ## Decoration
-It is possible to decorate configuration properties with `ConfigurationProperty` attribute.
+It is possible to decorate configuration properties with the [**ConfigurationPropertyAttribute**](/reference/Void.Proxy.Api.Configurations.Attributes.ConfigurationPropertyAttribute).
 ```csharp
 public class MySettings
 {

@@ -10,7 +10,7 @@ This means that a new instance of the service is created for each player, and it
 Scoped services are useful for managing player-specific state or resources that should not be shared across different players.
 
 ## Example Definition
-`IPlayerContext` may be injected into your scoped service to access the player context.
+[**IPlayerContext**](/reference/Void.Proxy.Api.Players.Contexts.IPlayerContext) may be injected into your scoped service to access the player context.
 You can get the player instance, other player-scoped services, or the network channel from it.
 
 ```csharp
@@ -66,8 +66,8 @@ public class MySingletonService(IPlayerService players)
 ```
 
 ## Events
-Scoped services subscribed to events that implement `IScopedEvent` interface will be automatically filtered to the current player context.
-For example, if you listen to `PlayerConnectedEvent`, the event will be automatically filtered to the current player's context only.
+Scoped services subscribed to events that implement [**IScopedEvent**](/reference/Void.Proxy.Api.Events.IScopedEvent) interface will be automatically filtered to the current player context.
+For example, if you listen to [**PlayerConnectedEvent**](/reference/Void.Proxy.Api.Events.Player.PlayerConnectedEvent), the event will be automatically filtered to the current player's context only.
 ```csharp
 public class MyScopedService(IPlayerContext context) : IEventListener
 {
@@ -134,11 +134,11 @@ public class TrackerService(IPlayerService players)
 }
 ```
 
-Most of the events that have Player property are already implemented as `IScopedEvent`.
+Most of the events that have Player property are already implemented as [**IScopedEvent**](/reference/Void.Proxy.Api.Events.IScopedEvent).
 While you can listen to them in Scoped services, they are still available for [**Singleton services**](/docs/developing-plugins/services/singleton).
 In Singleton context, you will receive events **not filtered**. Meaning you will receive events for all players in a single service.
 
-If you would like to not filter events in a scoped service, pass `bypassScopedFilter: true` to the `Subscribe` attribute.
+If you would like to not filter events in a scoped service, pass `bypassScopedFilter: true` to the [**Subscribe**](/reference/Void.Proxy.Api.Events.SubscribeAttribute) attribute.
 ```csharp
 public class MyScopedService(IPlayerContext context) : IEventListener
 {
