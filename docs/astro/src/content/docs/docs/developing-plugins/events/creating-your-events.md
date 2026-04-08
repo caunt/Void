@@ -5,11 +5,11 @@ sidebar:
   order: 2
 ---
 
-Many events are implemented by the proxy itself, but you can make your own events by implementing the `IEvent` interface or one of its derived interfaces.
+Many events are implemented by the proxy itself, but you can make your own events by implementing the [**IEvent**](/reference/Void.Proxy.Api.Events.IEvent) interface or one of its derived interfaces.
 
 ## Simple Event
 Simple events are just a wrapper around the event data. They are used to pass data between different parts of the code. 
-You can create a simple event by implementing the `IEvent` interface and adding properties to it.
+You can create a simple event by implementing the [**IEvent**](/reference/Void.Proxy.Api.Events.IEvent) interface and adding properties to it.
 ```csharp
 public record MyEvent(string Value1, int Value2, byte[] Value3) : IEvent;
 ```
@@ -36,10 +36,10 @@ public record MyEvent(string SomeValue) : IEventWithResult<bool>
 ```
 
 ## Scoped Event
-Your event can be scoped to a specific player. You can do this by implementing the `IScopedEvent` interface.
+Your event can be scoped to a specific player. You can do this by implementing the [**IScopedEvent**](/reference/Void.Proxy.Api.Events.IScopedEvent) interface.
 With this interface you are required to specify the Player to which this event is scoped.
 This event will be filtered across [**scoped listeners**](/docs/developing-plugins/services/scoped) and passed to all non-scoped listeners.
-However, scoped listeners can still receive that event out of their scope, by applying `bypassScopedFilter: true` to the `Subscribe` attribute.
+However, scoped listeners can still receive that event out of their scope, by applying `bypassScopedFilter: true` to the [**Subscribe**](/reference/Void.Proxy.Api.Events.SubscribeAttribute) attribute.
 ```csharp
 public record MyEvent(IPlayer Player, string SomeValue) : IScopedEvent;
 ```
@@ -54,7 +54,7 @@ public record MyEvent(IPlayer Player, string SomeValue) : IScopedEventWithResult
 ```
 
 ## Throwing your Events
-To throw your event, inject `IEventService` into your class.
+To throw your event, inject [**IEventService**](/reference/Void.Proxy.Api.Events.Services.IEventService) into your class.
 
 ```csharp
 public class MyService(IEventService events) : IEventListener

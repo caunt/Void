@@ -20,22 +20,22 @@ var tag = new NbtCompound
 ```
 
 ## Tag Types
-- `NbtByte`: Represents a byte value.
-- `NbtByteArray`: Represents an array of byte values.
-- `NbtCompound`: Represents a compound tag, which can contain other tags.
-- `NbtDouble`: Represents a double value.
-- `NbtEnd`: Represents the end of a compound tag.
-- `NbtFloat`: Represents a float value.
-- `NbtIntArray`: Represents an array of integer values.
-- `NbtInt`: Represents an integer value.
-- `NbtList`: Represents a list of tags.
-- `NbtLongArray`: Represents an array of long values.
-- `NbtLong`: Represents a long value.
-- `NbtShort`: Represents a short value.
-- `NbtString`: Represents a string value.
+- [**NbtByte**](/reference/Void.Minecraft.Nbt.Tags.NbtByte): Represents a byte value.
+- [**NbtByteArray**](/reference/Void.Minecraft.Nbt.Tags.NbtByteArray): Represents an array of byte values.
+- [**NbtCompound**](/reference/Void.Minecraft.Nbt.Tags.NbtCompound): Represents a compound tag, which can contain other tags.
+- [**NbtDouble**](/reference/Void.Minecraft.Nbt.Tags.NbtDouble): Represents a double value.
+- [**NbtEnd**](/reference/Void.Minecraft.Nbt.Tags.NbtEnd): Represents the end of a compound tag.
+- [**NbtFloat**](/reference/Void.Minecraft.Nbt.Tags.NbtFloat): Represents a float value.
+- [**NbtIntArray**](/reference/Void.Minecraft.Nbt.Tags.NbtIntArray): Represents an array of integer values.
+- [**NbtInt**](/reference/Void.Minecraft.Nbt.Tags.NbtInt): Represents an integer value.
+- [**NbtList**](/reference/Void.Minecraft.Nbt.Tags.NbtList): Represents a list of tags.
+- [**NbtLongArray**](/reference/Void.Minecraft.Nbt.Tags.NbtLongArray): Represents an array of long values.
+- [**NbtLong**](/reference/Void.Minecraft.Nbt.Tags.NbtLong): Represents a long value.
+- [**NbtShort**](/reference/Void.Minecraft.Nbt.Tags.NbtShort): Represents a short value.
+- [**NbtString**](/reference/Void.Minecraft.Nbt.Tags.NbtString): Represents a string value.
 
 ## Reading NBT Tag
-To read NBT data, you can use the `NbtTag` class.
+To read NBT data, you can use the [**NbtTag**](/reference/Void.Minecraft.Nbt.NbtTag) class.
 ```csharp
 var bytes = new byte[] { ... }; // Your NBT data as byte array
 

@@ -6,7 +6,7 @@ description: Learn how to define and listen to commands.
 Commands help users and administrators interact with the proxy and plugins.
 
 ## Defining a command
-Inject `ICommandService` service to begin working with commands.  
+Inject [**ICommandService**](/reference/Void.Proxy.Api.Commands.ICommandService) service to begin working with commands.  
 Commands are registered with the `Register` method in [**Mojang Brigadier**](https://github.com/Mojang/brigadier/)-like style.
 
 ```csharp

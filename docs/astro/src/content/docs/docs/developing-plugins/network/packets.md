@@ -11,7 +11,7 @@ These messages contain information about player actions, world events, and other
 Typically, you describe existing packets in game, so you can read, [**modify**](/docs/developing-plugins/network/modifying-data), or cancel them.
 However, you are not limited to this. You can also define your own packets for your own Minecraft mod or plugin.
 
-Packets can be defined with `IMinecraftClientboundPacket<TPacket>` or `IMinecraftServerboundPacket<TPacket>` interface. If your packet is the same for both client and server, you can use `IMinecraftPacket<TPacket>` interface.
+Packets can be defined with [**IMinecraftClientboundPacket**](/reference/Void.Minecraft.Network.Messages.Packets.IMinecraftClientboundPacket) or [**IMinecraftServerboundPacket**](/reference/Void.Minecraft.Network.Messages.Packets.IMinecraftServerboundPacket) interface. If your packet is the same for both client and server, you can use [**IMinecraftPacket**](/reference/Void.Minecraft.Network.Messages.Packets.IMinecraftPacket) interface.
 
 ## Defining Packets
 Your packet definition must specify how to Decode and Encode the packet data.  
@@ -59,7 +59,7 @@ public class SetHeldItemClientboundPacket : IMinecraftClientboundPacket<SetHeldI
 Before receiving or sending packets, you need to register them specifying packet ids for each game protocol version.
 Packet registrations are made for each game phase, so you need to register them in the correct phase. Common phases are `Handshake`, `Login`, `Configuration` and `Play`.
 
-In this example we are using Void predefined packet id mappings in `PacketIdDefinitions`.
+In this example we are using Void predefined packet id mappings in [**PacketIdDefinitions**](/reference/Void.Minecraft.Network.Definitions.PacketIdDefinitions).
 ```csharp
 [Subscribe]
 public void OnPlayerJoinedServer(PlayerJoinedServerEvent @event)
@@ -100,7 +100,7 @@ Each packet ID takes effect at its listed protocol version and remains valid unt
 :::
 
 ## Receiving Packets
-Now that we have defined our packet, we can receive it with the `MessageReceivedEvent` [**event**](/docs/developing-plugins/events/listening-to-events/).
+Now that we have defined our packet, we can receive it with the [**MessageReceivedEvent**](/reference/Void.Proxy.Api.Events.Network.MessageReceivedEvent) [**event**](/docs/developing-plugins/events/listening-to-events/).
 ```csharp
 [Subscribe]
 public void OnMessageReceived(MessageReceivedEvent @event)
@@ -114,7 +114,7 @@ public void OnMessageReceived(MessageReceivedEvent @event)
 }
 ```
 
-There is also a `MessageSentEvent` that is triggered when the packet is already sent to the receiver.
+There is also a [**MessageSentEvent**](/reference/Void.Proxy.Api.Events.Network.MessageSentEvent) that is triggered when the packet is already sent to the receiver.
 ```csharp
 [Subscribe]
 public void OnMessageSent(MessageSentEvent @event)
@@ -130,12 +130,12 @@ public void OnMessageSent(MessageSentEvent @event)
 
 ## Sending Packets
 There are 3 ways to send packets in Void:
-- Directly to the `IPlayer` instance
-- To the `INetworkChannel` of server or player 
-- To the [**`ILink`**](/docs/developing-plugins/network/links) connection between the server and player
+- Directly to the [**IPlayer**](/reference/Void.Proxy.Api.Players.IPlayer) instance
+- To the [**INetworkChannel**](/reference/Void.Proxy.Api.Network.Channels.INetworkChannel) of server or player 
+- To the [**ILink**](/docs/developing-plugins/network/links) connection between the server and player
 
 ### Sending Packets to the Player
-You can send packets to the player with `SendPacketAsync` method on `IPlayer` instance.
+You can send packets to the player with `SendPacketAsync` method on [**IPlayer**](/reference/Void.Proxy.Api.Players.IPlayer) instance.
 ```csharp
 await player.SendPacketAsync(new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
 ```
@@ -146,11 +146,11 @@ You can send packets to the server with `ILink.ServerChannel` instance.
 await player.Link.ServerChannel.SendPacketAsync(new SetHeldItemClientboundPacket { Slot = slot }, cancellationToken);
 ```
 
-### Sending Packets to the [**`ILink`**](/docs/developing-plugins/network/links)
+### Sending Packets to the [**ILink**](/docs/developing-plugins/network/links)
 You can send packets to the link with `ILink.SendPacketAsync` method.
-[**`ILink`**](/docs/developing-plugins/network/links) will automatically determine the destination of the packet based on the packet interface.  
-- If the packet has `IMinecraftClientboundPacket<TPacket>` interface, it will be sent to the client.
-- If the packet has `IMinecraftServerboundPacket<TPacket>` interface, it will be sent to the server.
+[**ILink**](/docs/developing-plugins/network/links) will automatically determine the destination of the packet based on the packet interface.  
+- If the packet has [**IMinecraftClientboundPacket**](/reference/Void.Minecraft.Network.Messages.Packets.IMinecraftClientboundPacket) interface, it will be sent to the client.
+- If the packet has [**IMinecraftServerboundPacket**](/reference/Void.Minecraft.Network.Messages.Packets.IMinecraftServerboundPacket) interface, it will be sent to the server.
 - If the packet has both interfaces, it will be sent only to the client.
 - If the packet has neither interface, `InvalidOperationException` will be thrown.
 ```csharp
@@ -167,7 +167,7 @@ Check out [**complete example**](https://github.com/caunt/Void/blob/main/src/Plu
 
 
 ## Cancelling Packets
-You can cancel packets in the `MessageReceivedEvent`.
+You can cancel packets in the [**MessageReceivedEvent**](/reference/Void.Proxy.Api.Events.Network.MessageReceivedEvent).
 Set the `IEvent.Result` value to `true` to prevent sending the packet to the receiver.
 ```csharp
 [Subscribe]
