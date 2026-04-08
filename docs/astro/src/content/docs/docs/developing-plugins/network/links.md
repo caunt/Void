@@ -6,7 +6,7 @@ sidebar:
 ---
 
 [**ILink**](/reference/Void.Proxy.Api.Links.ILink) is the core of the Void networking system.
-They define a connection between the player and server.
+It defines a connection between the player and server.
 
 ## Lifetime
 An [**ILink**](/reference/Void.Proxy.Api.Links.ILink) is created when a player connects to a server and is destroyed when they disconnect.

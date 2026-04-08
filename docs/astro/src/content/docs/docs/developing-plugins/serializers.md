@@ -6,7 +6,7 @@ description: Learn about serializers in Void.
 Serializers are used to convert structured data between different formats. 
 
 ## Text Components
-Prefer using [**`Serialize` methods**](/docs/developing-plugins/text-formatting/#converting-components) on [**Component**](/reference/Void.Minecraft.Components.Text.Component) for serialization.
+Prefer using the [**Serialize methods**](/docs/developing-plugins/text-formatting/#converting-components) on [**Component**](/reference/Void.Minecraft.Components.Text.Component) for serialization.
 - [**ComponentJsonSerializer**](/reference/Void.Minecraft.Components.Text.Serializers.ComponentJsonSerializer) 
   - Converts **[Text Component](/docs/developing-plugins/text-formatting) to Json** or **Json to [Text Component](/docs/developing-plugins/text-formatting)**.
 - [**ComponentLegacySerializer**](/reference/Void.Minecraft.Components.Text.Serializers.ComponentLegacySerializer) 
