@@ -11,41 +11,8 @@
         }
       ],
       "dest": "api",
-      "allowCompilationErrors": true
+      "allowCompilationErrors": true,
+      "outputFormat": "markdown"
     }
-  ],
-  "build": {
-    "content": [
-      {
-        "files": [
-          "**/*.{md,yml}"
-        ],
-        "exclude": [
-          "_site/**"
-        ]
-      }
-    ],
-    "resource": [
-      {
-        "files": [
-          "images/**"
-        ]
-      }
-    ],
-    "output": "_site",
-    "template": [
-      "default",
-      "modern"
-    ],
-    "globalMetadata": {
-      "_appName": "Void",
-      "_appTitle": "Void",
-      "_enableSearch": true,
-      "pdf": true
-    },
-    "sitemap": {
-      "baseUrl": "https://void.caunt.world",
-      "priority": 1.0
-    }
-  }
+  ]
 }
