@@ -66,7 +66,7 @@ public class MySingletonService(IPlayerService players)
 ```
 
 ## Events
-Scoped services subscribed to events that implement [**IScopedEvent**](/reference/Void.Proxy.Api.Events.IScopedEvent) interface will be automatically filtered to the current player context.
+Scoped services subscribed to events that implement the [**IScopedEvent**](/reference/Void.Proxy.Api.Events.IScopedEvent) interface will be automatically filtered to the current player context.
 For example, if you listen to [**PlayerConnectedEvent**](/reference/Void.Proxy.Api.Events.Player.PlayerConnectedEvent), the event will be automatically filtered to the current player's context only.
 ```csharp
 public class MyScopedService(IPlayerContext context) : IEventListener
@@ -134,7 +134,7 @@ public class TrackerService(IPlayerService players)
 }
 ```
 
-Most of the events that have Player property are already implemented as [**IScopedEvent**](/reference/Void.Proxy.Api.Events.IScopedEvent).
+Most of the events that have a Player property are already implemented as [**IScopedEvent**](/reference/Void.Proxy.Api.Events.IScopedEvent).
 While you can listen to them in Scoped services, they are still available for [**Singleton services**](/docs/developing-plugins/services/singleton).
 In Singleton context, you will receive events **not filtered**. Meaning you will receive events for all players in a single service.
 
