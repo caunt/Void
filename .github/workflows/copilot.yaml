@@ -22,7 +22,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PAT_COPILOT }}
           DEFAULT_PROMPT: |
-            Improve C# XML documentation in exactly 2 places only, limited to the Void.Proxy.Api and Void.Minecraft assemblies.
+            Improve C# XML documentation in exactly 2 places only, limited to the Void.Proxy.API and Void.Minecraft assemblies.
 
             First, build the relevant projects and check the build warnings for missing XML documentation. If there are any missing docs reported by the build, prioritize adding those instead of editing existing documentation. Only if there are no good missing-doc candidates should you improve existing XML docs.
 
