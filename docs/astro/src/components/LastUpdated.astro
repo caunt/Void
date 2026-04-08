@@ -10,7 +10,7 @@ const repoUrl = 'https://github.com/caunt/Void';
     <p>
         {Astro.locals.t('page.lastUpdated')}{' '}
 
-        <time datetime={commit.date.toISOString()}>
+        <time datetime={commit?.date.toISOString()}>
             {commit.date.toLocaleDateString(lang, { dateStyle: 'medium', timeZone: 'UTC' })}
         </time>{' '}
 
