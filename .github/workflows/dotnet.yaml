@@ -16,82 +16,102 @@ jobs:
   publish:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      COMMIT_MESSAGE: ${{ github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message }}
+      RUN_TESTS_FOR_COMMIT: ${{ !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'revert') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'docs') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'style') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'chore') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'refactor') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'build') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'ci') }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: ubuntu-24.04-arm
-            runtime: linux-arm
-            run-tests: false
+            runtime-identifier: linux-arm
+            run-unit-tests: true
+            run-integration-tests: true
           - os: ubuntu-24.04-arm
-            runtime: linux-arm64
-            run-tests: true
+            runtime-identifier: linux-arm64
+            run-unit-tests: true
+            run-integration-tests: true
           - os: ubuntu-24.04-arm
-            runtime: linux-bionic-arm64
-            run-tests: false
+            runtime-identifier: linux-bionic-arm64
+            run-unit-tests: true
+            run-integration-tests: true
           - os: ubuntu-latest
-            runtime: linux-bionic-x64
-            run-tests: true
+            runtime-identifier: linux-bionic-x64
+            run-unit-tests: false
+            run-integration-tests: false
           - os: ubuntu-24.04-arm
-            runtime: linux-musl-arm
-            run-tests: false
+            runtime-identifier: linux-musl-arm
+            run-unit-tests: true
+            run-integration-tests: true
           - os: ubuntu-24.04-arm
-            runtime: linux-musl-arm64
-            run-tests: true
+            runtime-identifier: linux-musl-arm64
+            run-unit-tests: false
+            run-integration-tests: false
           - os: ubuntu-latest
-            runtime: linux-musl-x64
-            run-tests: true
+            runtime-identifier: linux-musl-x64
+            run-unit-tests: false
+            run-integration-tests: false
           - os: ubuntu-latest
-            runtime: linux-x64
-            run-tests: true
+            runtime-identifier: linux-x64
+            run-unit-tests: true
+            run-integration-tests: true
           - os: macos-latest
-            runtime: osx-arm64
-            run-tests: false # does not support docker
+            runtime-identifier: osx-arm64
+            run-unit-tests: true
+            run-integration-tests: false
           - os: macos-15-intel
-            runtime: osx-x64
-            run-tests: false # does not support docker
+            runtime-identifier: osx-x64
+            run-unit-tests: true
+            run-integration-tests: false
           - os: windows-11-arm
-            runtime: win-arm64
-            run-tests: true
+            runtime-identifier: win-arm64
+            run-unit-tests: true
+            run-integration-tests: true
           - os: windows-latest
-            runtime: win-x64
-            run-tests: true
+            runtime-identifier: win-x64
+            run-unit-tests: true
+            run-integration-tests: true
           - os: windows-latest
-            runtime: win-x86
-            run-tests: false
+            runtime-identifier: win-x86
+            run-unit-tests: true
+            run-integration-tests: true
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
       - name: Setup .NET
-        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
+
       - name: Build
-        # Do not include runtime here
-        # error NETSDK1134: Building a solution with a specific RuntimeIdentifier is not supported. If you would like to publish for a single RID, specify the RID at the individual project level instead.
         run: dotnet build --configuration Release /p:Version=${{ inputs.void-version }} ${{ matrix.parameters }}
+
       - name: Build Platform
-        run: dotnet build src/Platform --runtime ${{ matrix.runtime }} --self-contained --configuration Release /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ inputs.void-version }} ${{ matrix.parameters }} 
+        run: dotnet build src/Platform --runtime ${{ matrix.runtime-identifier }} --self-contained --configuration Release /p:DebugType=embedded /p:PublishSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ inputs.void-version }} ${{ matrix.parameters }}
+
       - name: Publish
-        run: dotnet publish --runtime ${{ matrix.runtime }} --self-contained src/Platform --output artifacts --configuration Release --no-build /p:DebugType=embedded /p:PublishSingleFile=true /p:EnableCompressionInSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ inputs.void-version }} ${{ matrix.parameters }}
+        run: dotnet publish --runtime ${{ matrix.runtime-identifier }} --self-contained src/Platform --output artifacts --configuration Release --no-build /p:DebugType=embedded /p:PublishSingleFile=true /p:EnableCompressionInSingleFile=true /p:GenerateRuntimeConfigurationFiles=false /p:Version=${{ inputs.void-version }} ${{ matrix.parameters }}
+
       - name: Save Artifact Suffix
         id: get_suffix
         shell: bash
         run: echo "result=$([[ $OSTYPE == msys* ]] && echo .exe)" >> "$GITHUB_OUTPUT"
+
       - name: Rename Artifact
         shell: bash
-        run: mv artifacts/Void.Proxy${{ steps.get_suffix.outputs.result }} artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
+        run: mv artifacts/Void.Proxy${{ steps.get_suffix.outputs.result }} artifacts/void-${{ matrix.runtime-identifier }}${{ steps.get_suffix.outputs.result }}
+
       - name: Upload a Build Artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
-          name: void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
-          path: artifacts/void-${{ matrix.runtime }}${{ steps.get_suffix.outputs.result }}
+          name: void-${{ matrix.runtime-identifier }}${{ steps.get_suffix.outputs.result }}
+          path: artifacts/void-${{ matrix.runtime-identifier }}${{ steps.get_suffix.outputs.result }}
           compression-level: 9
           if-no-files-found: error
-      - name: Test
-        if: ${{ !inputs.skip-tests && matrix.run-tests && !startsWith(env.COMMIT_MESSAGE, 'revert') && !startsWith(env.COMMIT_MESSAGE, 'docs') && !startsWith(env.COMMIT_MESSAGE, 'style') && !startsWith(env.COMMIT_MESSAGE, 'chore') && !startsWith(env.COMMIT_MESSAGE, 'refactor') && !startsWith(env.COMMIT_MESSAGE, 'build') && !startsWith(env.COMMIT_MESSAGE, 'ci') }} # GitHub Actions are limited in runners architectures. Check http://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#standard-github-hosted-runners-for-public-repositories.
-        # continue-on-error: true
-        env:
-          VOID_INTEGRATION_PROXIED_TESTS_ENABLED: true
-        run: dotnet test tests/Void.UnitTests --runtime ${{ matrix.runtime }} --verbosity normal ${{ matrix.parameters }}
+
+      - name: Run Unit Tests
+        if: ${{ env.RUN_TESTS_FOR_COMMIT == 'true' && !inputs.skip-tests && matrix.run-unit-tests }}
+        run: dotnet test tests/Void.UnitTests --runtime ${{ matrix.runtime-identifier }} --verbosity normal ${{ matrix.parameters }}
+
+      - name: Run Integration Tests
+        if: ${{ env.RUN_TESTS_FOR_COMMIT == 'true' && !inputs.skip-tests && matrix.run-integration-tests }}
+        run: dotnet test tests/Void.IntegrationTests --runtime ${{ matrix.runtime-identifier }} --verbosity normal ${{ matrix.parameters }}
