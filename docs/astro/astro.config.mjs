@@ -236,7 +236,9 @@ export default defineConfig({
         },
         favicon: '/logo.svg',
         customCss: ['./src/assets/landing.css'],
-        plugins: [starlightLinksValidator()],
+        plugins: [starlightLinksValidator({
+            exclude: ({ file }) => file.includes('/src/pages/api/')
+        })],
         routeMiddleware: './src/seo-middleware.ts'
     }), sitemap({
         changefreq: 'daily',
