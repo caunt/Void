@@ -12,41 +12,42 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3ced7 # v5
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Install DocFX
+        run: dotnet tool install -g docfx
+
+      - name: Build DocFX
+        run: docfx docs/docfx/docfx.json --verbose
+
+      - name: Copy DocFX markdown into Astro pages
+        run: |
+          rm -rf docs/astro/src/pages/api
+          mkdir -p docs/astro/src/pages/api
+          cp -R docs/docfx/api/. docs/astro/src/pages/api/
+          find docs/astro/src/pages/api -type f ! -name '*.md' -delete
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+
       - name: Install, build, and upload documentation site
         uses: withastro/action@44706356b4eb735f8b9035699eb4796241a040c4 # v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           path: docs/astro
+
 #       - name: Validate links
 #         uses: lycheeverse/lychee-action@v2
 #         with:
 #           args: --github-token ${{ secrets.GITHUB_TOKEN }} --base-url dist --exclude-all-private --exclude 404 --include-fragments dist
 #           workingDirectory: docs/astro
 #           lycheeVersion: nightly
+
       - name: Deploy GitHub Pages site
         id: deployment
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
-
-  docfx-bug-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - name: Setup .NET
-        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5
-        with:
-          dotnet-version: ${{ inputs.dotnet-version }}
-      - name: Install DocFX
-        run: dotnet tool install -g docfx
-
-      - name: Build with DocFX
-        run: docfx docs/docfx/docfx.json --verbose
-        continue-on-error: true
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
-        with:
-          path: docs/docfx
-        
