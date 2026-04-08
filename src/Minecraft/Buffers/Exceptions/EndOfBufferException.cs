@@ -5,9 +5,9 @@ namespace Void.Minecraft.Buffers.Exceptions;
 /// <summary>
 /// Indicates an attempt to access data beyond the available buffer size.
 /// </summary>
-/// <param name="position">Specifies the starting point of the attempted access within the buffer.</param>
-/// <param name="length">Indicates the number of bytes that were attempted to be accessed.</param>
-/// <param name="size">Represents the total size of the buffer available for access.</param>
+/// <param name="bufferSize">The total size of the buffer in bytes.</param>
+/// <param name="bufferPosition">The current read position within the buffer at the time of the failed access.</param>
+/// <param name="requestedLength">The number of bytes that were requested but could not be satisfied.</param>
 public class EndOfBufferException(long bufferSize, long bufferPosition, long requestedLength) : Exception($"You tried to access {requestedLength} bytes from the buffer, but only {bufferSize - bufferPosition} bytes are available ({bufferPosition}/{bufferSize}).")
 {
     public long BufferSize { get; } = bufferSize;
