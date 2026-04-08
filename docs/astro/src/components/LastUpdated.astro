@@ -2,7 +2,7 @@
 import { getLatestCommit } from '../update-time.ts';
 const { lang, lastUpdated } = Astro.locals.starlightRoute;
 
-const commit = getLatestCommit(Astro.url.pathname);
+const commit = await getLatestCommit(Astro.url.pathname);
 const repoUrl = 'https://github.com/caunt/Void';
 ---
 

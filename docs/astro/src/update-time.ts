@@ -1,9 +1,12 @@
-import fs from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 
-const repoRoot = path.resolve(process.cwd(), '..', '..');
-const contentRoot = path.resolve(process.cwd(), 'src', 'content');
+const execFileAsync = promisify(execFile);
+
+const repositoryRootDirectory = path.resolve(process.cwd(), '..', '..');
+const contentRootDirectory = path.resolve(process.cwd(), 'src', 'content');
 
 interface Commit {
     shortHash: string;
@@ -12,47 +15,91 @@ interface Commit {
     date: Date;
 }
 
-const timeTable = new Map<string, Commit>();
+const commitTimeTable = new Map<string, Commit>();
 
-export function getLatestCommit(route: string): Commit | null {
-    route = URL.canParse(route) ? new URL(route).pathname : route;
+export async function getLatestCommit(routeUrl: string): Promise<Commit | null> {
+    var parsedRoutePath = URL.canParse(routeUrl) ? new URL(routeUrl).pathname : routeUrl;
+    var commitData = commitTimeTable.get(parsedRoutePath);
 
-    const commit = timeTable.get(route);
-
-    if (!commit) {
-        console.log(`[update-time] No commit found for route: ${route}`);
+    if (commitData == null) {
+        console.log(`[update-time] No commit found for route: ${parsedRoutePath}`);
         return null;
     }
 
-    return commit;
+    return commitData;
 }
 
-function collect(directory: string) {
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-        if (entry.isDirectory()) {
-            collect(path.join(directory, entry.name));
-        } else if (entry.isFile() && /\.mdx?$/.test(entry.name)) {
-            const fullPath = path.join(directory, entry.name);
-            const relativePath = path.relative(contentRoot, fullPath);
+async function collectCommitData(targetDirectory: string): Promise<void> {
+    var { stdout } = await execFileAsync('git', ['log', '--name-only', '--format=COMMIT|%h|%H|%an|%cI', '--', targetDirectory], { cwd: repositoryRootDirectory, maxBuffer: 1024 * 1024 * 25 });
 
-            let posix = relativePath.replace(/\.mdx?$/, '').split(path.sep).join('/');
+    var currentCommitBlock: Commit | null = null;
+    var logOutputLines = stdout.split('\n');
 
-            if (posix.startsWith('docs/'))
-                posix = posix.slice(5);
+    for (var currentLine of logOutputLines) {
+        var trimmedLine = currentLine.trim();
 
-            if (posix === 'index')
-                posix = '';
-            else if (posix.endsWith('/index'))
-                posix = posix.slice(0, -('/index'.length));
+        if (trimmedLine === '')
+            continue;
 
-            const urlPath = posix ? '/' + posix + '/' : '/';
-            const result = execFileSync('git', ['log', '-1', '--format=%h|%H|%an|%cI', '--', fullPath], { cwd: repoRoot }).toString().trim();
-            const [shortHash, fullHash, author, isoDate] = result.split('|');
+        if (trimmedLine.startsWith('COMMIT|')) {
+            var commitParts = trimmedLine.split('|');
+            currentCommitBlock = {
+                shortHash: commitParts[1],
+                fullHash: commitParts[2],
+                author: commitParts[3],
+                date: new Date(commitParts[4])
+            };
+        } else if (currentCommitBlock != null) {
+            var absoluteFilePath = path.resolve(repositoryRootDirectory, trimmedLine);
 
-            timeTable.set(urlPath, { shortHash, fullHash, author, date: new Date(isoDate) });
-            console.log(`[update-time] Commit for ${urlPath}: ${isoDate}`);
+            if (commitTimeTable.has(absoluteFilePath))
+                continue;
+
+            commitTimeTable.set(absoluteFilePath, currentCommitBlock);
         }
     }
+
+    async function traverseAndMap(currentDirectory: string): Promise<void> {
+        var directoryEntries = await fs.readdir(currentDirectory, { withFileTypes: true });
+
+        var processingPromises = directoryEntries.map(async function (fileEntry) {
+            var fullFilePath = path.join(currentDirectory, fileEntry.name);
+
+            if (fileEntry.isDirectory()) {
+                await traverseAndMap(fullFilePath);
+            } else if (fileEntry.isFile() && /\.mdx?$/.test(fileEntry.name)) {
+                // Absolute to relative path
+                var relativeFilePath = path.relative(contentRootDirectory, fullFilePath);
+
+                // Remove .md or .mdx extension
+                var normalizedPosixPath = relativeFilePath.replace(/\.mdx?$/, '');
+
+                // Replace path separators with '/'
+                normalizedPosixPath = normalizedPosixPath.split(path.sep).join('/');
+
+                // Remove Starlight 'docs/' prefix
+                normalizedPosixPath = normalizedPosixPath.replace(/^docs\//, '');
+
+                // Remove 'index' suffix from paths
+                normalizedPosixPath = normalizedPosixPath.replace(/(^|\/)index$/, '');
+
+                // Make the URL path start and end with a '/'
+                var formattedUrlPath = normalizedPosixPath ? `/${normalizedPosixPath}/` : '/';
+
+                var fileCommitData = commitTimeTable.get(fullFilePath);
+
+                if (!fileCommitData)
+                    return;
+
+                commitTimeTable.set(formattedUrlPath, fileCommitData);
+                console.log(`[update-time] Commit for ${formattedUrlPath}: ${fileCommitData.date.toISOString()}`);
+            }
+        });
+
+        await Promise.all(processingPromises);
+    }
+
+    await traverseAndMap(targetDirectory);
 }
 
-collect(contentRoot);
+await collectCommitData(contentRootDirectory);
