@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using DotNet.Testcontainers.Images;
 using Void.IntegrationTests.Infrastructure.Extensions;
 
 namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
@@ -18,6 +19,7 @@ public record PaperServer(IContainer Container) : IIntegrationSide
     public static async Task<PaperServer> CreateAsync(CancellationToken cancellationToken = default)
     {
         var container = new ContainerBuilder("itzg/minecraft-server:latest")
+            .WithImagePullPolicy(PullPolicy.Always)
             .WithPortBinding(port: 25565, assignRandomHostPort: true)
             .WithEnvironment("EULA", "TRUE")
             .WithEnvironment("TYPE", "PAPER")
