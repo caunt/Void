@@ -5,7 +5,7 @@ on:
 
 jobs:
   semver:
-    uses: ./.github/workflows/version.yaml
+    uses: ./.github/workflows/semver.yaml
     secrets: inherit
     with:
       release-please: false
