@@ -23,12 +23,16 @@ jobs:
           GH_TOKEN: ${{ secrets.PAT_COPILOT }}
           DEFAULT_PROMPT: |
             Improve C# XML documentation in exactly 2 places only, limited to the Void.Proxy.API and Void.Minecraft assemblies.
-
+            
             First, build the relevant projects and check the build warnings for missing XML documentation. If there are any missing docs reported by the build, prioritize adding those instead of editing existing documentation. Only if there are no good missing-doc candidates should you improve existing XML docs.
-
+            
             Before editing, analyze the real behavior of each chosen member from its implementation and relevant call sites. Document what it actually does, not what its name suggests.
-
-            For each of the exactly 2 chosen locations, add or improve all XML documentation tags that are genuinely applicable, including: <summary>, <param>, <returns>, <remarks>, <exception>, <typeparam>, <value>, <example>, <see>, and <seealso>.
+            
+            For each of the exactly 2 chosen locations, add or improve all XML documentation tags that are genuinely applicable, including: <summary>, <remarks>, <param>, <paramref>, <typeparam>, <typeparamref>, <returns>, <value>, <exception>, <example>, <see>, and <seealso>. Use accurate cref references wherever useful. Use <c> for inline code, <code> for code blocks, and <para> to structure longer remarks. Do not add tags that are not justified by the implementation.
+            
+            Write documentation that is precise, technical, and useful to API consumers. Cover actual behavior, nullability, side effects, important edge cases, exception conditions, return value semantics, and usage intent. Prefer strong references to related members and types when they improve clarity.
+            
+            Do not change code behavior. Do not edit more than exactly 2 documentation locations.
           CUSTOM_PROMPT: ${{ inputs.prompt }}
         run: |
           PROMPT="${CUSTOM_PROMPT:-$DEFAULT_PROMPT}"
