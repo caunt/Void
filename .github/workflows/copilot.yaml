@@ -35,5 +35,6 @@ jobs:
             Do not change code behavior. Do not edit more than exactly 2 documentation locations.
           CUSTOM_PROMPT: ${{ inputs.prompt }}
         run: |
+          echo "$GH_TOKEN" | gh auth login --with-token
           PROMPT="${CUSTOM_PROMPT:-$DEFAULT_PROMPT}"
           gh agent-task create "$PROMPT"
