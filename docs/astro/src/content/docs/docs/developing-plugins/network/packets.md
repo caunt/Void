@@ -11,7 +11,7 @@ These messages contain information about player actions, world events, and other
 Typically, you describe existing packets in game, so you can read, [**modify**](/docs/developing-plugins/network/modifying-data), or cancel them.
 However, you are not limited to this. You can also define your own packets for your own Minecraft mod or plugin.
 
-Packets can be defined with [**IMinecraftClientboundPacket\<TPacket\>**](/reference/Void.Minecraft.Network.Messages.Packets.IMinecraftClientboundPacket) or [**IMinecraftServerboundPacket\<TPacket\>**](/reference/Void.Minecraft.Network.Messages.Packets.IMinecraftServerboundPacket) interface. If your packet is the same for both client and server, you can use [**IMinecraftPacket\<TPacket\>**](/reference/Void.Minecraft.Network.Messages.Packets.IMinecraftPacket) interface.
+Packets can be defined with [**IMinecraftClientboundPacket\<TPacket\>**](/reference/Void.Minecraft.Network.Messages.Packets.IMinecraftClientboundPacket) or [**IMinecraftServerboundPacket\<TPacket\>**](/reference/Void.Minecraft.Network.Messages.Packets.IMinecraftServerboundPacket) interfaces. If your packet is the same for both client and server, you can use the [**IMinecraftPacket\<TPacket\>**](/reference/Void.Minecraft.Network.Messages.Packets.IMinecraftPacket) interface.
 
 ## Defining Packets
 Your packet definition must specify how to Decode and Encode the packet data.  
@@ -131,7 +131,7 @@ public void OnMessageSent(MessageSentEvent @event)
 ## Sending Packets
 There are 3 ways to send packets in Void:
 - Directly to the [**IPlayer**](/reference/Void.Proxy.Api.Players.IPlayer) instance
-- To the [**INetworkChannel**](/reference/Void.Proxy.Api.Network.Channels.INetworkChannel) of server or player 
+- To the [**INetworkChannel**](/reference/Void.Proxy.Api.Network.Channels.INetworkChannel) of server or player
 - To the [**ILink**](/docs/developing-plugins/network/links) connection between the server and player
 
 ### Sending Packets to the Player
