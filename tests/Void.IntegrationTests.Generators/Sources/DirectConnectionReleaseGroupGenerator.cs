@@ -40,7 +40,7 @@ public sealed class DirectConnectionReleaseGroupGenerator : ReleaseGroupGenerato
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            generatedSourceBuilder.AppendLine($"public sealed class DirectConnectionTests_{key}(global::Void.IntegrationTests.Infrastructure.Fixtures.ServerClientFixture fixture) : DirectConnectionTestBase(fixture)");
+            generatedSourceBuilder.AppendLine($"public sealed class DirectConnectionTests_{key}(global::Void.IntegrationTests.Infrastructure.Fixtures.PaperFixture paperFixture, global::Void.IntegrationTests.Infrastructure.Fixtures.PortableMinecraftClientFixture portableMinecraftClientFixture) : DirectConnectionTestBase(paperFixture, portableMinecraftClientFixture)");
             generatedSourceBuilder.AppendLine("{");
 
             AppendTestMethodForReleases(generatedSourceBuilder, "PortableMinecraftClientConnectsToPaperServer_WithProtocolVersion", releases);

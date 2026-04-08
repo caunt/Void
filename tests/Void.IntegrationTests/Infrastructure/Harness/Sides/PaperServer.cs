@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
@@ -28,8 +29,25 @@ public record PaperServer(IContainer Container) : IIntegrationSide
             .WithEnvironment("ONLINE_MODE", "FALSE")
             .WithEnvironment("MODRINTH_PROJECTS", "viaversion,viabackwards,viarewind")
             .WithEnvironment("JVM_OPTS", "-Dpaper.playerconnection.keepalive=120")
+            .WithEnvironment("PATCH_DEFINITIONS", "/patches")
             .WithWaitStrategy(Wait.ForUnixContainer()
                 .UntilMessageIsLogged("For help, type \"help\"", options => options.WithTimeout(TimeSpan.FromMinutes(5))))
+            .WithResourceMapping(
+                Encoding.UTF8.GetBytes("""
+                {
+                  "file": "/data/bukkit.yml",
+                  "ops": [
+                    {
+                      "$set": {
+                        "path": "$.settings['connection-throttle']",
+                        "value": -1,
+                        "value-type": "int"
+                      }
+                    }
+                  ]
+                }
+                """),
+                FilePath.Of("/patches/connection-throttle.json"))
             .Build();
 
         await container.StartAsync(cancellationToken);

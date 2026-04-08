@@ -10,13 +10,13 @@ using Xunit;
 
 namespace Void.IntegrationTests.Connections;
 
-public abstract class ProxiedServerRedirectionTestBase(TwoServersProxyClientFixture fixture) : IntegrationUnitBase, IClassFixture<TwoServersProxyClientFixture>
+public abstract class ProxiedServerRedirectionTestBase(PaperFixture paperFixture, VoidFixture voidFixture, PortableMinecraftClientFixture portableMinecraftClientFixture) : IntegrationUnitBase, IClassFixture<VoidFixture>, IClassFixture<PortableMinecraftClientFixture>
 {
-    private readonly EndPoint _proxyEndPoint = new IPEndPoint(IPAddress.Loopback, fixture.VoidProxy.Port);
+    private readonly EndPoint _proxyEndPoint = new IPEndPoint(IPAddress.Loopback, voidFixture.VoidProxy.Port);
 
     protected async Task RunAsync(ProtocolVersion protocolVersion)
     {
-        if (!fixture.PortableMinecraftClient.SupportedVersions.Contains(protocolVersion))
+        if (!portableMinecraftClientFixture.PortableMinecraftClient.SupportedVersions.Contains(protocolVersion))
             Assert.Skip($"Protocol version {protocolVersion} is not supported by the client, skipping test.");
 
         var server1First = $"server1-{Guid.NewGuid()}";
@@ -24,29 +24,29 @@ public abstract class ProxiedServerRedirectionTestBase(TwoServersProxyClientFixt
 
         await LoggedExecutorAsync(async () =>
         {
-            using (var gameCancellationTokenSource = new CancellationTokenSource(StepTimeout * 5)) // Game should run enough time for all steps below
+            using (var gameCancellationTokenSource = new CancellationTokenSource(Timeouts.StepTimeout * 5)) // Game should run enough time for all steps below
             {
-                await using var game = await WithTimeoutRetriesAsync(async () => await fixture.PortableMinecraftClient.RunGameAsync(_proxyEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
+                await using var game = await WithTimeoutRetriesAsync(async () => await portableMinecraftClientFixture.PortableMinecraftClient.RunGameAsync(_proxyEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
 
-                await fixture.PortableMinecraftClient.SendTextMessagesAsync(
+                await portableMinecraftClientFixture.PortableMinecraftClient.SendTextMessagesAsync(
                 [
                     server1First,
                     "/server args-server-2"
-                ], StepTimeoutToken);
+                ], Timeouts.StepTimeoutToken);
 
-                await fixture.PortableMinecraftClient.EnsureStableAsync(StepTimeoutToken);
+                await portableMinecraftClientFixture.PortableMinecraftClient.EnsureStableAsync(Timeouts.StepTimeoutToken);
 
-                await fixture.PortableMinecraftClient.SendTextMessagesAsync(
+                await portableMinecraftClientFixture.PortableMinecraftClient.SendTextMessagesAsync(
                 [
                     server2Text,
                     "/server args-server-1"
-                ], StepTimeoutToken);
+                ], Timeouts.StepTimeoutToken);
 
-                await fixture.PortableMinecraftClient.EnsureStableAsync(StepTimeoutToken);
+                await portableMinecraftClientFixture.PortableMinecraftClient.EnsureStableAsync(Timeouts.StepTimeoutToken);
             }
 
-            Assert.Contains(fixture.VoidProxy.Logs, line => line.Contains("connected to args-server-2"));
-            Assert.True(fixture.VoidProxy.Logs.Count(line => line.Contains("connected to args-server-1")) is >= 2); // TODO: sometimes, proxy prints multiple times "connected to" message
-        }, fixture.PortableMinecraftClient, fixture.VoidProxy, fixture.PaperServer1, fixture.PaperServer2);
+            Assert.Contains(voidFixture.VoidProxy.Logs, line => line.Contains("connected to args-server-2"));
+            Assert.True(voidFixture.VoidProxy.Logs.Count(line => line.Contains("connected to args-server-1")) is >= 2); // TODO: sometimes, proxy prints multiple times "connected to" message
+        }, portableMinecraftClientFixture.PortableMinecraftClient, voidFixture.VoidProxy, paperFixture.PaperServer1, paperFixture.PaperServer2);
     }
 }

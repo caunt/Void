@@ -10,30 +10,30 @@ using Xunit;
 
 namespace Void.IntegrationTests.Connections;
 
-public abstract class DirectConnectionTestBase(ServerClientFixture fixture) : IntegrationUnitBase, IClassFixture<ServerClientFixture>
+public abstract class DirectConnectionTestBase(PaperFixture paperFixture, PortableMinecraftClientFixture portableMinecraftClientFixture) : IntegrationUnitBase, IClassFixture<PortableMinecraftClientFixture>
 {
     private const string ExpectedText = "hello void!";
 
-    private readonly EndPoint _serverEndPoint = new IPEndPoint(IPAddress.Loopback, fixture.PaperServer.Port);
+    private readonly EndPoint _serverEndPoint = new IPEndPoint(IPAddress.Loopback, paperFixture.PaperServer1.Port);
 
     protected async Task RunAsync(ProtocolVersion protocolVersion)
     {
-        if (!fixture.PortableMinecraftClient.SupportedVersions.Contains(protocolVersion))
+        if (!portableMinecraftClientFixture.PortableMinecraftClient.SupportedVersions.Contains(protocolVersion))
             Assert.Skip($"Protocol version {protocolVersion} is not supported by the client, skipping test.");
 
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
 
         await LoggedExecutorAsync(async () =>
         {
-            using (var gameCancellationTokenSource = new CancellationTokenSource(StepTimeout * 3)) // Game should run enough time for all steps below
+            using (var gameCancellationTokenSource = new CancellationTokenSource(Timeouts.StepTimeout * 3)) // Game should run enough time for all steps below
             {
-                await using var game = await WithTimeoutRetriesAsync(async () => await fixture.PortableMinecraftClient.RunGameAsync(_serverEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
+                await using var game = await WithTimeoutRetriesAsync(async () => await portableMinecraftClientFixture.PortableMinecraftClient.RunGameAsync(_serverEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
 
-                await fixture.PortableMinecraftClient.SendTextMessageAsync(expectedText, StepTimeoutToken);
-                await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, StepTimeoutToken);
+                await portableMinecraftClientFixture.PortableMinecraftClient.SendTextMessageAsync(expectedText, Timeouts.StepTimeoutToken);
+                await paperFixture.PaperServer1.ExpectTextAsync(expectedText, lookupHistory: true, Timeouts.StepTimeoutToken);
             }
 
-            Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
-        }, fixture.PortableMinecraftClient, fixture.PaperServer);
+            Assert.Contains(paperFixture.PaperServer1.Logs, line => line.Contains(expectedText));
+        }, portableMinecraftClientFixture.PortableMinecraftClient, paperFixture.PaperServer1);
     }
 }

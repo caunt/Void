@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Void.IntegrationTests.Infrastructure.Exceptions;
 
@@ -8,9 +7,6 @@ namespace Void.IntegrationTests.Infrastructure.Harness;
 
 public class IntegrationUnitBase
 {
-    public TimeSpan StepTimeout { get; } = TimeSpan.FromSeconds(90);
-    public CancellationToken StepTimeoutToken => new CancellationTokenSource(StepTimeout).Token;
-
     public static async Task LoggedExecutorAsync(Func<Task> function, params IIntegrationSide[] sides)
     {
         try
@@ -21,11 +17,6 @@ public class IntegrationUnitBase
         {
             Console.WriteLine(CollectLogs());
             throw new IntegrationTestException("Test execution failed: ", exception);
-        }
-        finally
-        {
-            foreach (var side in sides)
-                side.ClearLogs();
         }
 
         return;

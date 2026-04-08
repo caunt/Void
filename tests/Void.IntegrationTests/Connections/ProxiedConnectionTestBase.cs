@@ -10,30 +10,30 @@ using Xunit;
 
 namespace Void.IntegrationTests.Connections;
 
-public abstract class ProxiedConnectionTestBase(ServerProxyClientFixture fixture) : IntegrationUnitBase, IClassFixture<ServerProxyClientFixture>
+public abstract class ProxiedConnectionTestBase(PaperFixture paperFixture, VoidFixture voidFixture, PortableMinecraftClientFixture portableMinecraftClientFixture) : IntegrationUnitBase, IClassFixture<VoidFixture>, IClassFixture<PortableMinecraftClientFixture>
 {
     private const string ExpectedText = "hello proxied void!";
 
-    private readonly EndPoint _proxyEndPoint = new IPEndPoint(IPAddress.Loopback, fixture.VoidProxy.Port);
+    private readonly EndPoint _proxyEndPoint = new IPEndPoint(IPAddress.Loopback, voidFixture.VoidProxy.Port);
 
     protected async Task RunAsync(ProtocolVersion protocolVersion)
     {
-        if (!fixture.PortableMinecraftClient.SupportedVersions.Contains(protocolVersion))
+        if (!portableMinecraftClientFixture.PortableMinecraftClient.SupportedVersions.Contains(protocolVersion))
             Assert.Skip($"Protocol version {protocolVersion} is not supported by the client, skipping test.");
 
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
 
         await LoggedExecutorAsync(async () =>
         {
-            using (var gameCancellationTokenSource = new CancellationTokenSource(StepTimeout * 3)) // Game should run enough time for all steps below
+            using (var gameCancellationTokenSource = new CancellationTokenSource(Timeouts.StepTimeout * 3)) // Game should run enough time for all steps below
             {
-                await using var game = await WithTimeoutRetriesAsync(async () => await fixture.PortableMinecraftClient.RunGameAsync(_proxyEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
+                await using var game = await WithTimeoutRetriesAsync(async () => await portableMinecraftClientFixture.PortableMinecraftClient.RunGameAsync(_proxyEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
 
-                await fixture.PortableMinecraftClient.SendTextMessageAsync(expectedText, StepTimeoutToken);
-                await fixture.PaperServer.ExpectTextAsync(expectedText, lookupHistory: true, StepTimeoutToken);
+                await portableMinecraftClientFixture.PortableMinecraftClient.SendTextMessageAsync(expectedText, Timeouts.StepTimeoutToken);
+                await paperFixture.PaperServer1.ExpectTextAsync(expectedText, lookupHistory: true, Timeouts.StepTimeoutToken);
             }
 
-            Assert.Contains(fixture.PaperServer.Logs, line => line.Contains(expectedText));
-        }, fixture.PortableMinecraftClient, fixture.VoidProxy, fixture.PaperServer);
+            Assert.Contains(paperFixture.PaperServer1.Logs, line => line.Contains(expectedText));
+        }, portableMinecraftClientFixture.PortableMinecraftClient, voidFixture.VoidProxy, paperFixture.PaperServer1);
     }
 }

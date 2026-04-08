@@ -5,5 +5,6 @@ using Xunit;
 [assembly: CaptureConsole]
 #endif
 
-[assembly: CollectionBehavior(MaxParallelThreads = 10)]
+[assembly: CollectionBehavior(MaxParallelThreads = 8)]
+[assembly: AssemblyFixture(typeof(PaperFixture))]
 [assembly: AssemblyFixture(typeof(PortableMinecraftClientImageFixture))]
