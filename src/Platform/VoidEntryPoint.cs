@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.Text;
 using DryIoc;
 using DryIoc.Microsoft.DependencyInjection;
 using Serilog;
@@ -63,6 +64,18 @@ public static class VoidEntryPoint
         {
             await CompletionTask;
             GC.SuppressFinalize(this);
+        }
+
+        protected virtual bool PrintMembers(StringBuilder builder)
+        {
+            builder.Append(nameof(CompletionTask));
+            builder.Append(" = ");
+            builder.Append(CompletionTask);
+            builder.Append(", ");
+            builder.Append(nameof(ListeningPort));
+            builder.Append(" = ");
+            builder.Append(ListeningPort);
+            return true;
         }
     }
 
