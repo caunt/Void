@@ -1,4 +1,4 @@
-FROM amd64/debian:bookworm
+FROM --platform=linux/amd64 amd64/debian:bookworm
 
 ARG FIRST_RELEASE_VERSION=1.7.2
 
