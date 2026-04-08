@@ -24,18 +24,49 @@ jobs:
       - name: Build DocFX
         run: docfx docs/docfx/docfx.json --verbose
 
-      - name: Copy DocFX markdown into Astro pages
+      - name: Copy DocFX markdown into Astro content
         run: |
-          rm -rf docs/astro/src/pages/api
-          mkdir -p docs/astro/src/pages/api
-          cp -R docs/docfx/api/. docs/astro/src/pages/api/
-          find docs/astro/src/pages/api -type f ! -name '*.md' -delete
+          rm -rf docs/astro/src/content/docs/api
+          mkdir -p docs/astro/src/content/docs/api
+          cp -R docs/docfx/api/. docs/astro/src/content/docs/api/
+          find docs/astro/src/content/docs/api -type f ! -name '*.md' -delete
 
-      - name: Fix relative links in API pages
+      - name: Fix links and add frontmatter in API pages
         run: |
-          find docs/astro/src/pages/api -name '*.md' | xargs sed -i -E \
-            -e 's|\(([^)]+)\.md\\#([^)]+)\)|(/api/\1#\2)|g' \
-            -e 's|\(([^)]+)\.md\)|(/api/\1)|g'
+          python3 << 'PYEOF'
+          import os, re
+
+          api_dir = 'docs/astro/src/content/docs/api'
+
+          def fix_links(content):
+              def replace_anchored(m):
+                  path = m.group(1).replace('\\', '')
+                  anchor = m.group(2).replace('\\', '')
+                  return f'(/api/{path}#{anchor})'
+              def replace_plain(m):
+                  path = m.group(1).replace('\\', '')
+                  return f'(/api/{path})'
+              content = re.sub(r'\(([A-Za-z0-9][A-Za-z0-9._\\-]*)\.md\\#([A-Za-z0-9._\\#-]+)\)', replace_anchored, content)
+              content = re.sub(r'\(([A-Za-z0-9][A-Za-z0-9._\\-]*)\.md\)', replace_plain, content)
+              return content
+
+          for fname in os.listdir(api_dir):
+              if not fname.endswith('.md'):
+                  continue
+              path = os.path.join(api_dir, fname)
+              with open(path, 'r', encoding='utf-8') as f:
+                  content = f.read()
+              m = re.match(r'^# (.+)', content)
+              if m:
+                  raw = m.group(1).strip()
+                  title = re.sub(r'<[^>]+>', '', raw).strip().replace('"', '\\"')
+              else:
+                  title = fname[:-3]
+              content = fix_links(content)
+              content = f'---\ntitle: "{title}"\n---\n\n' + content
+              with open(path, 'w', encoding='utf-8') as f:
+                  f.write(content)
+          PYEOF
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
