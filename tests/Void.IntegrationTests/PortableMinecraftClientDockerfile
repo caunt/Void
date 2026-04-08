@@ -1,12 +1,38 @@
-FROM rust:bookworm
+FROM amd64/debian:bookworm
 
 ARG FIRST_RELEASE_VERSION=1.7.2
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LIBGL_ALWAYS_SOFTWARE=1
+ENV PATH=/root/.cargo/bin:$PATH
 
 # Install dependencies
-RUN apt-get update && apt-get install -y xvfb xfwm4 x11-utils x11-xserver-utils xdotool libasound2 libflite1 libgl1-mesa-dri libxcursor1 libxrandr2 libxi6 libxtst6 libfreetype6 libfontconfig1 ca-certificates imagemagick curl jq && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    jq \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    imagemagick \
+    libasound2 \
+    libflite1 \
+    libfontconfig1 \
+    libfreetype6 \
+    libgl1-mesa-dri \
+    libxcursor1 \
+    libxi6 \
+    libxrandr2 \
+    libxtst6 \
+    x11-utils \
+    x11-xserver-utils \
+    xdotool \
+    xvfb \
+    xfwm4 \
+ && rm -rf /var/lib/apt/lists/*
+ 
+# Install Rust
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
 
 # Install portablemc
 RUN cargo install portablemc-cli
