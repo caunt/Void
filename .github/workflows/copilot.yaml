@@ -1,0 +1,35 @@
+name: Daily Copilot
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: Custom agent task prompt (leave empty to use the default daily task)
+        required: false
+        type: string
+
+jobs:
+  copilot:
+    runs-on: ubuntu-latest
+    permissions: {}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Copilot cloud agent task
+        env:
+          GH_TOKEN: ${{ secrets.PAT_COPILOT }}
+          DEFAULT_PROMPT: |
+            Improve C# XML documentation in exactly 2 places only, limited to the Void.Proxy.Api and Void.Minecraft assemblies.
+
+            First, build the relevant projects and check the build warnings for missing XML documentation. If there are any missing docs reported by the build, prioritize adding those instead of editing existing documentation. Only if there are no good missing-doc candidates should you improve existing XML docs.
+
+            Before editing, analyze the real behavior of each chosen member from its implementation and relevant call sites. Document what it actually does, not what its name suggests.
+
+            For each of the exactly 2 chosen locations, add or improve all XML documentation tags that are genuinely applicable, including: <summary>, <param>, <returns>, <remarks>, <exception>, <typeparam>, <value>, <example>, <see>, and <seealso>.
+          CUSTOM_PROMPT: ${{ inputs.prompt }}
+        run: |
+          PROMPT="${CUSTOM_PROMPT:-$DEFAULT_PROMPT}"
+          gh agent-task create "$PROMPT"
