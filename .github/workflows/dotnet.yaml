@@ -83,7 +83,7 @@ jobs:
 
           - os: windows-latest
             runtime-identifier: win-x86
-            run-unit-tests: true
+            run-unit-tests: false # does not support xUnit v3
             run-integration-tests: false # does not support docker
 
     runs-on: ${{ matrix.os }}
