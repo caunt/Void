@@ -247,6 +247,6 @@ export default defineConfig({
     }), sitemap({
         changefreq: 'daily',
         priority: 1,
-        serialize: sitemapItem => ({ ...sitemapItem, lastmod: getLatestCommit(sitemapItem.url)?.date.toISOString() })
+        serialize: sitemapItem => ({ ...sitemapItem, lastmod: getLatestCommit(sitemapItem.url)?.date?.toISOString() })
     })]
 });
