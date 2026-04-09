@@ -193,6 +193,7 @@ public static class ReadMinecraftBufferExtensions
     /// </summary>
     /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface for reading data.</typeparam>
     /// <param name="buffer">This parameter is a reference to the buffer from which the tag is read.</param>
+    /// <param name="readName">When <see langword="true"/> (the default), the two-byte length-prefixed name field is read from the binary data and stored on the returned tag. Pass <see langword="false"/> when reading from a context where the name field is absent, such as elements inside an NBT list.</param>
     /// <returns>Returns an NbtTag object that represents the read tag.</returns>
     public static NbtTag ReadTag<TBuffer>(ref this TBuffer buffer, bool readName = true)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,

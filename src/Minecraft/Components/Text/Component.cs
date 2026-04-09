@@ -29,6 +29,7 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     /// </summary>
     /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface for reading data.</typeparam>
     /// <param name="buffer">This parameter is the source from which data is read and processed for deserialization.</param>
+    /// <param name="readName">When <see langword="true"/> (the default), the NBT tag name field is read from the buffer before deserializing the component. Pass <see langword="false"/> when the name field is absent in the binary data, such as inside an NBT list.</param>
     /// <returns>The method returns a Component object created from the deserialized data.</returns>
     public static Component ReadFrom<TBuffer>(ref TBuffer buffer, bool readName = true) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
