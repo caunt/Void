@@ -189,11 +189,17 @@ public static class ReadMinecraftBufferExtensions
         ReadPropertyArrayCore(ref buffer, count);
 
     /// <summary>
-    /// Reads a tag from a buffer and returns it as an NbtTag object.
+    /// Reads a single NBT tag from the buffer, advancing the buffer position by the number of bytes consumed.
     /// </summary>
-    /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface for reading data.</typeparam>
-    /// <param name="buffer">This parameter is a reference to the buffer from which the tag is read.</param>
-    /// <returns>Returns an NbtTag object that represents the read tag.</returns>
+    /// <typeparam name="TBuffer">The buffer type. Must be a value type implementing <see cref="IMinecraftBuffer{TBuffer}"/>.</typeparam>
+    /// <param name="buffer">A reference to the buffer from which the NBT tag is read.</param>
+    /// <param name="readName">
+    /// When <see langword="true"/>, reads the tag's name prefix from the binary stream (a type byte followed
+    /// by a two-byte-length-prefixed UTF-8 name string). When <see langword="false"/>, only the type byte and
+    /// payload are read, which is appropriate for tags embedded inside a List where names are omitted.
+    /// Defaults to <see langword="true"/>.
+    /// </param>
+    /// <returns>The <see cref="NbtTag"/> parsed from the buffer.</returns>
     public static NbtTag ReadTag<TBuffer>(ref this TBuffer buffer, bool readName = true)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>
