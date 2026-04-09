@@ -25,11 +25,16 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     public string AsText => SerializeLegacy('\0');
 
     /// <summary>
-    /// Reads data from a buffer and deserializes it.
+    /// Reads an NBT tag from the buffer and deserializes it as a Minecraft text component.
     /// </summary>
-    /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface for reading data.</typeparam>
-    /// <param name="buffer">This parameter is the source from which data is read and processed for deserialization.</param>
-    /// <returns>The method returns a Component object created from the deserialized data.</returns>
+    /// <typeparam name="TBuffer">The buffer type. Must be a value type implementing <see cref="IMinecraftBuffer{TBuffer}"/>.</typeparam>
+    /// <param name="buffer">A reference to the buffer from which the NBT-encoded component is read.</param>
+    /// <param name="readName">
+    /// When <see langword="true"/>, reads the tag's name prefix from the binary stream before deserializing
+    /// the component. When <see langword="false"/>, the name field is skipped, which is appropriate for tags
+    /// embedded inside a List. Defaults to <see langword="true"/>.
+    /// </param>
+    /// <returns>The <see cref="Component"/> deserialized from the NBT data read out of the buffer.</returns>
     public static Component ReadFrom<TBuffer>(ref TBuffer buffer, bool readName = true) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
         return DeserializeNbt(buffer.ReadTag(readName));
