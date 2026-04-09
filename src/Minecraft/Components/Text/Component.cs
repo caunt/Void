@@ -44,6 +44,11 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     /// Reads data from a buffer and deserializes it into a Component.
     /// </summary>
     /// <param name="buffer">The buffer containing the data to be read and deserialized into a Component.</param>
+    /// <param name="readName">
+    /// When <see langword="true"/>, reads the tag's name prefix from the binary stream before deserializing
+    /// the component. When <see langword="false"/>, the name field is skipped, which is appropriate for tags
+    /// embedded inside a List. Defaults to <see langword="true"/>.
+    /// </param>
     /// <returns>Returns a Component object created from the data in the buffer.</returns>
     public static Component ReadFrom(ref MinecraftBuffer buffer, bool readName = true)
     {

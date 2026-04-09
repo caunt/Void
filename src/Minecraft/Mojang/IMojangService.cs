@@ -29,7 +29,7 @@ public interface IMojangService
     /// or <see langword="null"/> if the session server responds with HTTP 204 No Content, which
     /// indicates that the player has not joined the session and authentication should be refused.
     /// </returns>
-    /// <exception cref="ArgumentNullException">
+    /// <exception cref="System.ArgumentNullException">
     /// Thrown when the player's profile is <see langword="null"/>.
     /// </exception>
     public ValueTask<GameProfile?> VerifyAsync(IPlayer player, CancellationToken cancellationToken = default);
