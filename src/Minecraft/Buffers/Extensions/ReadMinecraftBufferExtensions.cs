@@ -200,12 +200,12 @@ public static class ReadMinecraftBufferExtensions
         NbtTag.ReadFrom(ref buffer, readName);
 
     /// <summary>
-    /// Reads a component from a specified buffer using a given protocol version.
+    /// Reads an NBT-encoded component from the specified buffer and deserializes it into a <see cref="Component"/>.
     /// </summary>
-    /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface for reading data.</typeparam>
-    /// <param name="buffer">This parameter is the data source from which the component is read.</param>
-    /// <param name="protocolVersion">This parameter indicates the version of the protocol to be used for reading the component.</param>
-    /// <returns>Returns the component that has been read from the buffer.</returns>
+    /// <typeparam name="TBuffer">The type of the buffer, which must be a value type that implements the
+    /// <see cref="IMinecraftBuffer{TBuffer}"/> interface.</typeparam>
+    /// <param name="buffer">A reference to the buffer from which the NBT-encoded component is read.</param>
+    /// <returns>The <see cref="Component"/> deserialized from the NBT tag read out of the buffer.</returns>
     public static Component ReadComponent<TBuffer>(ref this TBuffer buffer)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>

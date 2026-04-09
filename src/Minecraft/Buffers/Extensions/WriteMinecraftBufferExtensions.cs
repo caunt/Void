@@ -203,13 +203,12 @@ public static class WriteMinecraftBufferExtensions
         buffer.Write(value.AsStream(writeName: writeName));
 
     /// <summary>
-    /// Writes a component to a specified buffer using a given protocol version.
+    /// Serializes the specified component to its NBT representation and writes it to the buffer.
     /// </summary>
-    /// <typeparam name="TBuffer">This type parameter represents a structure that implements a specific buffer interface for Minecraft data
-    /// handling.</typeparam>
-    /// <param name="buffer">This parameter is a reference to the buffer where the component will be written.</param>
-    /// <param name="value">This parameter represents the component that will be written to the buffer.</param>
-    /// <param name="protocolVersion">This parameter indicates the version of the protocol to be used during the write operation.</param>
+    /// <typeparam name="TBuffer">The type of the buffer, which must be a value type that implements the
+    /// <see cref="IMinecraftBuffer{TBuffer}"/> interface.</typeparam>
+    /// <param name="buffer">A reference to the buffer to which the serialized component will be written.</param>
+    /// <param name="value">The component to serialize and write to the buffer.</param>
     public static void WriteComponent<TBuffer>(ref this TBuffer buffer, Component value)
         where TBuffer : struct, IMinecraftBuffer<TBuffer>,
         allows ref struct =>
