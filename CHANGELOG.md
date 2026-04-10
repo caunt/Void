@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.5.13](https://github.com/caunt/Void/compare/v0.5.12...v0.5.13) (2026-04-10)
+
+
+### Features
+
+* **api:** ✨ expose proxy interface and port properties ([67122a4](https://github.com/caunt/Void/commit/67122a4efe996cd3175d5dc91c6038f9a1c1bb81))
+* **content:** ✨ sort releases by published date ([dd05667](https://github.com/caunt/Void/commit/dd056671237e6f900a02d78a9805ee464e56e730))
+* **core:** ♻️ added async disposal for run results ([d46d76a](https://github.com/caunt/Void/commit/d46d76ae9586fbf67c8016012eee071564ed3af8))
+* **events:** ✨ improve handling of player redirects ([0620a4e](https://github.com/caunt/Void/commit/0620a4eba31c0fc9a7ec6249772ac2225c6b9c89))
+* **integration:** ✨ centralize display logic, improve scripts ([655981b](https://github.com/caunt/Void/commit/655981b90c22c7d02643f83955ca157727b2fc34))
+* **integration:** ✨ improve container log and screenshot handling ([01e1db2](https://github.com/caunt/Void/commit/01e1db2155559e1724d846ce1f7097e8268353fc))
+* **platform:** ✨ improve port detection logic ([357580d](https://github.com/caunt/Void/commit/357580d7747558d0efa3cedae6cdd202ace918af))
+* **protocol:** ✨ added support metadata for Minecraft 26.1.2 ([90f8060](https://github.com/caunt/Void/commit/90f8060ac4970ed6706d5b22b3dd8d1b23424b18))
+* **protocol:** ✨ implemented ReleaseVersion ([3ddc05d](https://github.com/caunt/Void/commit/3ddc05d9f1911130ecfbfe37d8be9844728ff3b0))
+
+
+### Bug Fixes
+
+* **ci:** 🐛 copy script files into docker build context and guard empty window id ([6873da2](https://github.com/caunt/Void/commit/6873da2241336ec50fc6361180cb2c4da18a61ae))
+* **client:** 🐛 improve options reset and chat reliability ([2d4c5ec](https://github.com/caunt/Void/commit/2d4c5ecf9ee8dece19e91dea304c7a8124c0eadd))
+* **core:** ✨ do not print lazy exit code property ([68e3656](https://github.com/caunt/Void/commit/68e365604a0d13b2e1b87c45643771f2a9377287))
+* **deps:** update dependency starlight-links-validator to ^0.22.0 ([9a34a1c](https://github.com/caunt/Void/commit/9a34a1cfdae72c77eb92204b099aa08bb742ec53))
+* **docker:** 🐳 preserve image layers for caching ([8eeaa7c](https://github.com/caunt/Void/commit/8eeaa7c16c1b419ff3d388683e7bbca8337c8e47))
+* **platform:** 🐛 improve background task error handling ([d0688d4](https://github.com/caunt/Void/commit/d0688d47818c51d6e86befbc73bbcc6b493a71d9))
+* **protocol:** ♻️ simplify version ordering logic ([31c2e03](https://github.com/caunt/Void/commit/31c2e03bac66daf23c09e67345804cc443afd993))
+* **sitemap:** 🐛 prevent error if commit date missing ([e2d101b](https://github.com/caunt/Void/commit/e2d101bdd09093e33d884150319e50d0c301aaf9))
+* **tests:** ⬇️ downgraded Microsoft.CodeAnalysis.CSharp from 5.3.0 to 4.14.0 ([0ad3ce4](https://github.com/caunt/Void/commit/0ad3ce432293cde6e249f8476f78a109db3a330e))
+* **voidentrypoint:** ✨ return run result with completion task ([441ad40](https://github.com/caunt/Void/commit/441ad408c2b3219b6765692edeb26bd0e552a551))
+
 ## [0.5.12](https://github.com/caunt/Void/compare/v0.5.11...v0.5.12) (2026-04-04)
 
 
