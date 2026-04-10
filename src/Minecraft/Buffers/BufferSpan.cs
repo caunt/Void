@@ -46,11 +46,11 @@ public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>, IDisposable
     /// Returns a writable view of <paramref name="length"/> bytes starting at the current <see cref="Position"/>.
     /// </summary>
     /// <remarks>
-    /// <para>This method does not advance <see cref="Position"/>; callers that consume or fill the returned span must move the cursor explicitly, for example with <see cref="Seek(int, SeekOrigin)"/>.</para>
+    /// <para>This method intentionally does not advance <see cref="Position"/>; callers that consume or fill the returned span must move the cursor explicitly, for example with <see cref="Seek(int, SeekOrigin)"/>.</para>
     /// <para>The returned span aliases the underlying buffer, so writing through it mutates the same storage owned by this <see cref="BufferSpan"/> instance.</para>
     /// </remarks>
     /// <param name="length">The number of bytes to expose from the current position.</param>
-    /// <returns>A writable <see cref="Span{T}"/> over the requested region. When <paramref name="length"/> is <c>0</c>, an empty span is returned.</returns>
+    /// <returns>A writable <see cref="Span{T}"/> over the requested region. When <paramref name="length"/> is <c>0</c>, an empty span at the current <see cref="Position"/> is returned.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="length"/> is negative.</exception>
     /// <exception cref="EndOfBufferException">Thrown when the requested range extends past the end of the underlying span.</exception>
     /// <example>
