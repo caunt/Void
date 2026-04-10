@@ -37,6 +37,27 @@ public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>, IDisposable
         _position = 0;
     }
 
+    /// <summary>
+    /// Creates a new <see cref="BufferSpan"/> over a sub-range of the current underlying storage.
+    /// </summary>
+    /// <remarks>
+    /// <para>The returned <see cref="BufferSpan"/> points to the same backing memory as this instance but is constrained to the requested region.</para>
+    /// <para>The new instance starts with <see cref="Position"/> set to <c>0</c> relative to the sliced region, while this instance's <see cref="Position"/> is not modified.</para>
+    /// </remarks>
+    /// <param name="position">The zero-based offset in the current underlying span where the slice begins.</param>
+    /// <param name="length">The number of bytes included in the slice.</param>
+    /// <returns>A new <see cref="BufferSpan"/> representing <paramref name="length"/> bytes starting at <paramref name="position"/>.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="position"/> or <paramref name="length"/> is negative.</exception>
+    /// <exception cref="EndOfBufferException">Thrown when <paramref name="position"/> + <paramref name="length"/> exceeds <see cref="Length"/>.</exception>
+    /// <example>
+    /// <code>
+    /// var source = new BufferSpan(stackalloc byte[8]);
+    /// var header = source.Slice(0, 2);
+    /// header.WriteUnsignedByte(0xAA);
+    /// </code>
+    /// </example>
+    /// <seealso cref="Access(int, int)"/>
+    /// <seealso cref="Position"/>
     public readonly BufferSpan Slice(int position, int length)
     {
         return new BufferSpan(Access(position, length));
@@ -141,6 +162,27 @@ public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>, IDisposable
         _position = position;
     }
 
+    /// <summary>
+    /// Validates that all bytes in this span were consumed before ending its usage scope.
+    /// </summary>
+    /// <remarks>
+    /// <para>This method is used as a guard: it does not release unmanaged resources.</para>
+    /// <para>When bytes remain unread or unwritten (<see cref="Remaining"/> &gt; <c>0</c>), it throws <see cref="BufferRemainingDataException"/> so callers can detect incomplete protocol parsing/serialization.</para>
+    /// <para>When <see cref="Remaining"/> is <c>0</c>, it returns normally.</para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <see cref="Remaining"/> is negative, which indicates an invalid cursor state.</exception>
+    /// <exception cref="BufferRemainingDataException">Thrown when there is unconsumed data left in the span.</exception>
+    /// <example>
+    /// <code>
+    /// var buffer = new BufferSpan(stackalloc byte[4]);
+    /// buffer.WriteInt(42);
+    /// buffer.Seek(0, SeekOrigin.Begin);
+    /// _ = buffer.ReadInt();
+    /// buffer.Dispose();
+    /// </code>
+    /// </example>
+    /// <seealso cref="Remaining"/>
+    /// <seealso cref="Seek(int, SeekOrigin)"/>
     public readonly void Dispose()
     {
         ArgumentOutOfRangeException.ThrowIfNegative(Remaining, nameof(Remaining));
