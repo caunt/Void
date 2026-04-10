@@ -61,6 +61,24 @@ public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>, IDisposable
         return _source.Slice(position, length);
     }
 
+    /// <summary>
+    /// Moves the current position within the underlying span relative to the specified origin.
+    /// </summary>
+    /// <param name="offset">
+    /// The byte offset applied from <paramref name="origin"/>.
+    /// </param>
+    /// <param name="origin">
+    /// The reference point used to compute the new position.
+    /// </param>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="origin"/> is not a supported <see cref="SeekOrigin"/> value.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when the resulting position would be negative.
+    /// </exception>
+    /// <exception cref="EndOfBufferException">
+    /// Thrown when the resulting position would move past the end of the span.
+    /// </exception>
     public void Seek(int offset, SeekOrigin origin = SeekOrigin.Current)
     {
         var position = origin switch
