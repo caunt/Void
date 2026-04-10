@@ -180,11 +180,71 @@ public ref struct MinecraftBuffer
         _backingBuffer.WriteUuidAsIntArray(value);
     }
 
+    /// <summary>
+    /// Reads a Minecraft protocol string encoded as a <c>VarInt</c> byte length followed by UTF-8 bytes.
+    /// </summary>
+    /// <param name="maxLength">
+    /// Maximum allowed character count for the decoded string.
+    /// </param>
+    /// <returns>
+    /// The decoded UTF-8 string. The returned value is never <see langword="null" />.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// This method validates the decoded character length, not the encoded byte length. If <paramref name="maxLength" /> is less than or equal to <c>0</c>, length validation is skipped.
+    /// </para>
+    /// <para>
+    /// The buffer read position advances by the size of the string length prefix and payload bytes.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// The length prefix is not a valid Minecraft <c>VarInt</c> value.
+    /// </exception>
+    /// <exception cref="IndexOutOfRangeException">
+    /// The decoded string length exceeds <paramref name="maxLength" />.
+    /// </exception>
+    /// <exception cref="System.Data.ReadOnlyException">
+    /// Propagated from the underlying buffer implementation in unsupported scenarios.
+    /// </exception>
+    /// <example>
+    /// <code>
+    /// var text = buffer.ReadString(16);
+    /// </code>
+    /// </example>
+    /// <see cref="WriteString(ReadOnlySpan{char})" />
+    /// <seealso cref="ReadVarInt()" />
     public string ReadString(int maxLength = 32767)
     {
         return _backingBuffer.ReadString(maxLength);
     }
 
+    /// <summary>
+    /// Writes a Minecraft protocol string as UTF-8 bytes prefixed by its byte length encoded as <c>VarInt</c>.
+    /// </summary>
+    /// <param name="value">
+    /// The characters to encode and write.
+    /// </param>
+    /// <remarks>
+    /// <para>
+    /// The method writes the UTF-8 byte count first, then writes the encoded bytes. An empty span writes a zero length prefix and no payload bytes.
+    /// </para>
+    /// <para>
+    /// This method mutates the buffer by advancing the current position and appending or overwriting data depending on the backing storage.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="System.Data.ReadOnlyException">
+    /// The underlying backing buffer is read-only.
+    /// </exception>
+    /// <exception cref="InternalBufferOverflowException">
+    /// The target writable span does not have enough capacity for the encoded payload.
+    /// </exception>
+    /// <example>
+    /// <code>
+    /// buffer.WriteString("minecraft:stone");
+    /// </code>
+    /// </example>
+    /// <see cref="ReadString(int)" />
+    /// <seealso cref="WriteVarInt(int)" />
     public void WriteString(ReadOnlySpan<char> value)
     {
         _backingBuffer.WriteString(value);
