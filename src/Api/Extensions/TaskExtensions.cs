@@ -18,7 +18,6 @@ public static class TaskExtensions
     /// The returned <see cref="Task"/> represents only the logging continuation, not the original task result. Because it does not rethrow antecedent failures, awaiting the returned task usually completes successfully unless logging itself throws.
     /// </para>
     /// </remarks>
-    /// <typeparam name="T">Not applicable to this overload.</typeparam>
     /// <param name="task">The task to observe for non-successful completion.</param>
     /// <param name="logger">The logger used to emit error messages.</param>
     /// <param name="message">A message prefix included in each error log entry.</param>
@@ -70,7 +69,6 @@ public static class TaskExtensions
     /// The returned <see cref="ValueTask"/> wraps the continuation task created for logging. As a result, awaiting it waits for logging completion rather than rethrowing the original failure from <paramref name="task"/>.
     /// </para>
     /// </remarks>
-    /// <typeparam name="T">Not applicable to this overload.</typeparam>
     /// <param name="task">The value task to observe for non-successful completion.</param>
     /// <param name="logger">The logger used to emit error messages.</param>
     /// <param name="message">A message prefix included in each error log entry.</param>
