@@ -14,8 +14,8 @@ public record AuthenticationResult(bool IsAuthenticated, string? Message = null)
     /// Gets a successful authentication result with a default human-readable message.
     /// </summary>
     /// <value>
-    /// A new <see cref="AuthenticationResult"/> instance where <see cref="IsAuthenticated"/> is <see langword="true"/>
-    /// and <see cref="Message"/> is <c>"Authenticated"</c>.
+    /// A new <see cref="AuthenticationResult"/> instance where <see cref="AuthenticationResult.IsAuthenticated"/> is <see langword="true"/>
+    /// and <see cref="AuthenticationResult.Message"/> is <c>"Authenticated"</c>.
     /// </value>
     /// <remarks>
     /// <para>
