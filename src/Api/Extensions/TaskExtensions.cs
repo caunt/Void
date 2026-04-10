@@ -12,7 +12,7 @@ public static class TaskExtensions
     /// The continuation is registered with <see cref="TaskContinuationOptions.NotOnRanToCompletion"/>, so it runs only when the antecedent task faults or is canceled.
     /// </para>
     /// <para>
-    /// For faulted tasks, this method logs <c>completedTask.Exception.InnerException</c>. For canceled tasks, it calls <see cref="Task.Wait()"/> to materialize <see cref="TaskCanceledException"/>, then logs that exception together with the call-site stack trace captured when this method was invoked.
+    /// For faulted tasks, this method logs <c>completedTask.Exception.InnerException</c> (the first inner exception from the task's <see cref="AggregateException"/>). For canceled tasks, it calls <see cref="Task.Wait()"/> to materialize <see cref="TaskCanceledException"/>, then logs that exception together with the call-site stack trace captured when this method was invoked.
     /// </para>
     /// <para>
     /// The returned <see cref="Task"/> represents only the logging continuation, not the original task result. Because it does not rethrow antecedent failures, awaiting the returned task usually completes successfully unless logging itself throws.
@@ -29,7 +29,7 @@ public static class TaskExtensions
     /// _ = backgroundTask.CatchExceptions(logger, "Background processing failed");
     /// </code>
     /// </example>
-    /// <see cref="Task.ContinueWith(Action{Task}, TaskContinuationOptions)"/>
+    /// <seealso cref="Task.ContinueWith(Action{Task}, TaskContinuationOptions)"/>
     /// <seealso cref="CatchExceptions(ValueTask, ILogger, string)"/>
     public static Task CatchExceptions(this Task task, ILogger logger, string message)
     {
