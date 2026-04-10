@@ -42,11 +42,54 @@ public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>, IDisposable
         return new BufferSpan(Access(position, length));
     }
 
+    /// <summary>
+    /// Returns a writable view of <paramref name="length"/> bytes starting at the current <see cref="Position"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>This method does not advance <see cref="Position"/>; callers that consume or fill the returned span must move the cursor explicitly, for example with <see cref="Seek(int, SeekOrigin)"/>.</para>
+    /// <para>The returned span aliases the underlying buffer, so writing through it mutates the same storage owned by this <see cref="BufferSpan"/> instance.</para>
+    /// </remarks>
+    /// <param name="length">The number of bytes to expose from the current position.</param>
+    /// <returns>A writable <see cref="Span{T}"/> over the requested region. When <paramref name="length"/> is <c>0</c>, an empty span is returned.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="length"/> is negative.</exception>
+    /// <exception cref="EndOfBufferException">Thrown when the requested range extends past the end of the underlying span.</exception>
+    /// <example>
+    /// <code>
+    /// var buffer = new BufferSpan(stackalloc byte[8]);
+    /// var payload = buffer.Access(4);
+    /// payload[0] = 0x01;
+    /// buffer.Seek(4);
+    /// </code>
+    /// </example>
+    /// <seealso cref="Access(int, int)"/>
+    /// <seealso cref="Seek(int, SeekOrigin)"/>
     public readonly Span<byte> Access(int length)
     {
         return Access(_position, length);
     }
 
+    /// <summary>
+    /// Returns a writable view of <paramref name="length"/> bytes starting at an absolute <paramref name="position"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>This overload performs bounds validation and then delegates to <see cref="Span{T}.Slice(int, int)"/> on the underlying storage.</para>
+    /// <para>It does not modify <see cref="Position"/>, which allows random access reads or writes without changing the current cursor.</para>
+    /// </remarks>
+    /// <param name="position">The zero-based index in the underlying span where the returned region begins.</param>
+    /// <param name="length">The number of bytes in the returned region.</param>
+    /// <returns>A writable <see cref="Span{T}"/> over the specified region. When <paramref name="length"/> is <c>0</c>, an empty span at <paramref name="position"/> is returned.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="position"/> or <paramref name="length"/> is negative.</exception>
+    /// <exception cref="EndOfBufferException">Thrown when <paramref name="position"/> + <paramref name="length"/> exceeds <see cref="Length"/>.</exception>
+    /// <example>
+    /// <code>
+    /// var buffer = new BufferSpan(stackalloc byte[16]);
+    /// var header = buffer.Access(0, 2);
+    /// header[0] = 0xAA;
+    /// header[1] = 0xBB;
+    /// </code>
+    /// </example>
+    /// <seealso cref="Access(int)"/>
+    /// <seealso cref="Position"/>
     public readonly Span<byte> Access(int position, int length)
     {
         if (position < 0)
