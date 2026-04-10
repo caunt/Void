@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -e
+
+# Ensure DISPLAY is set so X11 commands route to the correct virtual frame buffer
+export DISPLAY="${DISPLAY:-:99}"
+
+# Function to open the chat interface and visually verify it rendered
+openChat() {
+    local targetWindowId="$1"
+    local brightnessThreshold=5
+
+    # Capture the initial brightness of the bottom-left corner before pressing any keys
+    local baselineBrightness="$(import -window "$targetWindowId" miff:- | convert - -gravity SouthWest -crop 100x20+0+0 +repage -format "%[fx:int(mean*100)]" info:)"
+    local maximumPresses=100
+    local currentPressCount=0
+    local isChatOpen="false"
+
+    # Attempt to press the chat key and confirm it opened, up to a maximum number of retries
+    while [ "$currentPressCount" -lt "$maximumPresses" ] && [ "$isChatOpen" = "false" ]; do
+        # Send the "t" key to the specific window
+        xdotool key --clearmodifiers --window "$targetWindowId" t
+        currentPressCount=$((currentPressCount + 1))
+
+        # Rapidly poll the screen to detect the dark semi-transparent chat overlay
+        local currentBrightness="$(import -window "$targetWindowId" miff:- | convert - -gravity SouthWest -crop 100x20+0+0 +repage -format "%[fx:int(mean*100)]" info:)"
+        local brightnessDifference=$((baselineBrightness - currentBrightness))
+
+        # A significant drop in brightness means the chat box is now visible on screen
+        if [ "$brightnessDifference" -gt "$brightnessThreshold" ] || [ "$brightnessDifference" -lt "-$brightnessThreshold" ]; then
+            isChatOpen="true"
+            break
+        fi
+    done
+
+    # Return failure if all retries exhausted and chat is still closed
+    if [ "$isChatOpen" = "false" ]; then
+        return 1
+    fi
+
+    local currentBackspaceIndex=0
+    while [ "$currentBackspaceIndex" -lt "$currentPressCount" ]; do
+        xdotool key --clearmodifiers --window "$targetWindowId" --delay 50 BackSpace
+        currentBackspaceIndex=$((currentBackspaceIndex + 1))
+    done
+
+    return 0
+}
+
+# Locate the Minecraft window instance
+minecraftWindowId="$(xdotool search --onlyvisible --name "Minecraft" | head -n 1)"
+
+# Route input focus to the target window
+xdotool windowfocus "$minecraftWindowId"
+
+# Execute the chat sequence if the UI successfully opens
+if openChat "$minecraftWindowId"; then
+    # Type the arguments slowly to prevent lag from dropping characters
+    xdotool type --clearmodifiers --window "$minecraftWindowId" --delay 50 -- "$*"
+    xdotool key --clearmodifiers --window "$minecraftWindowId" Return
+    echo "Successfully sent chat message." >&1
+else
+    # Fail gracefully without pausing the game
+    echo "Error: Failed to open chat interface." >&2
+    exit 1
+fi
