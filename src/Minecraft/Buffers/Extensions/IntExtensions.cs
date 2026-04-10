@@ -30,7 +30,7 @@ public static class IntExtensions
     /// // payload can be used as a compact packet field representation.
     /// </code>
     /// </example>
-    /// <see cref="AsVarInt(int, Span{byte})" />
+    /// <see cref="AsVarInt(int, Span&lt;byte&gt;)" />
     /// <seealso cref="VarIntSize(int)" />
     public static byte[] AsVarInt(this int value)
     {
