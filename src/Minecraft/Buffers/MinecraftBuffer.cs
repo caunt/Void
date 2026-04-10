@@ -265,6 +265,32 @@ public ref struct MinecraftBuffer
         return _backingBuffer.ReadPropertyArray();
     }
 
+    /// <summary>
+    /// Writes a profile property array using Minecraft's length-prefixed format.
+    /// </summary>
+    /// <param name="value">
+    /// The properties to serialize. When <see langword="null"/>, an empty array is written.
+    /// </param>
+    /// <remarks>
+    /// <para>
+    /// This method writes a VarInt element count first, then serializes each <see cref="Property"/> by calling
+    /// <see cref="WriteProperty(Property)"/>.
+    /// </para>
+    /// <para>
+    /// Passing <see langword="null"/> is equivalent to passing <c>[]</c>, so the written count is <c>0</c>.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidDataException">
+    /// Propagated from <see cref="WriteProperty(Property)"/> when a property is marked as signed but has a missing
+    /// or whitespace signature.
+    /// </exception>
+    /// <example>
+    /// <code>
+    /// buffer.WritePropertyArray(profile.Properties);
+    /// </code>
+    /// </example>
+    /// <see cref="WriteProperty(Property)" />
+    /// <seealso cref="ReadPropertyArray()" />
     public void WritePropertyArray(Property[]? value)
     {
         _backingBuffer.WritePropertyArray(value ?? []);
