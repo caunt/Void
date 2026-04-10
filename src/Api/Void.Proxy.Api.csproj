@@ -10,11 +10,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!--disable missing comment warning-->
-    <NoWarn>$(NoWarn);1591</NoWarn>
-  </PropertyGroup>
-  
-  <PropertyGroup>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Void.Proxy.Api</PackageId>
     <PackageTags>Minecraft;Server;Proxy;BungeeCord;Velocity;Void;Bedrock;Java</PackageTags>
