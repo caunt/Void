@@ -20,9 +20,14 @@ public class PortableMinecraftClientImageFixture : IAsyncLifetime
     {
         Directory.CreateDirectory(_temporaryContextDirectoryPath);
 
-        File.Copy(
-            Path.Combine(CommonDirectoryPath.GetProjectDirectory().DirectoryPath, DockerFileName),
-            Path.Combine(_temporaryContextDirectoryPath, DockerFileName));
+        var projectDirectoryPath = CommonDirectoryPath.GetProjectDirectory().DirectoryPath;
+
+        foreach (var fileName in new[] { DockerFileName, "start-display", "send-chat" })
+        {
+            File.Copy(
+                Path.Combine(projectDirectoryPath, fileName),
+                Path.Combine(_temporaryContextDirectoryPath, fileName));
+        }
 
         DockerImage = new ImageFromDockerfileBuilder()
             .WithDockerfileDirectory(_temporaryContextDirectoryPath)

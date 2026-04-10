@@ -49,6 +49,12 @@ openChat() {
 # Locate the Minecraft window instance
 minecraftWindowId="$(xdotool search --onlyvisible --name "Minecraft" | head -n 1)"
 
+# Fail early if no visible Minecraft window was found
+if [ -z "$minecraftWindowId" ]; then
+    echo "Error: No visible Minecraft window found." >&2
+    exit 1
+fi
+
 # Route input focus to the target window
 xdotool windowfocus "$minecraftWindowId"
 
