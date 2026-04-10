@@ -12,7 +12,7 @@ namespace Void.Minecraft.Buffers.Exceptions;
 /// The final read position reached when the operation ended.
 /// </param>
 /// <remarks>
-/// This exception is thrown by <see cref="BufferSpan.Dispose"/> when the span is disposed before all bytes are consumed.
+/// This exception is thrown by <see cref="Void.Minecraft.Buffers.BufferSpan.Dispose"/> when the span is disposed before all bytes are consumed.
 /// </remarks>
 public class BufferRemainingDataException(long bufferSize, long bufferPosition) : Exception($"Buffer has remaining {bufferSize - bufferPosition} bytes of data (read {bufferPosition}/{bufferSize}).")
 {

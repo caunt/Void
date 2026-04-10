@@ -8,7 +8,7 @@
 /// Optional serialized key name used by the TOML serializer instead of the member name.
 /// </param>
 /// <remarks>
-/// During TOML mapping, null or whitespace values are ignored.
+/// During TOML mapping, null or whitespace values in <see cref="Name"/>, <see cref="InlineComment"/>, and <see cref="PrecedingComment"/> are ignored.
 /// </remarks>
 public class ConfigurationPropertyAttribute(string? name = null) : Attribute
 {
