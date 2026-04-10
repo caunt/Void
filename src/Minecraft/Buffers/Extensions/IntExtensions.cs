@@ -8,6 +8,30 @@ public static class IntExtensions
 {
     public static int VarIntSize(this int value) => (BitOperations.LeadingZeroCount((uint)value | 1) - 38) * -1171 >> 13;
 
+    /// <summary>
+    /// Encodes <paramref name="value"/> into a new byte array using the Minecraft VarInt format.
+    /// </summary>
+    /// <param name="value">The 32-bit signed value to encode.</param>
+    /// <returns>
+    /// A new array containing only the encoded VarInt bytes (length from <c>1</c> to <c>5</c>).
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// This method allocates a new array for every call and copies the encoded payload from an internal
+    /// stack buffer.
+    /// </para>
+    /// <para>
+    /// Negative values are encoded from their two's-complement bit pattern and therefore produce <c>5</c> bytes.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// byte[] payload = 300.AsVarInt();
+    /// // payload can be used as a compact packet field representation.
+    /// </code>
+    /// </example>
+    /// <see cref="AsVarInt(int, Span{byte})" />
+    /// <seealso cref="VarIntSize(int)" />
     public static byte[] AsVarInt(this int value)
     {
         Span<byte> buffer = stackalloc byte[5];

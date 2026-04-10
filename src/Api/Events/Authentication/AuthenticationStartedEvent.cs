@@ -10,6 +10,34 @@ public record AuthenticationStartedEvent(ILink Link, IPlayer Player, Authenticat
 
 public record AuthenticationResult(bool IsAuthenticated, string? Message = null)
 {
+    /// <summary>
+    /// Gets a successful authentication result with a default human-readable message.
+    /// </summary>
+    /// <value>
+    /// A new <see cref="AuthenticationResult"/> instance where <see cref="IsAuthenticated"/> is <see langword="true"/>
+    /// and <see cref="Message"/> is <c>"Authenticated"</c>.
+    /// </value>
+    /// <remarks>
+    /// <para>
+    /// Each access creates a new record instance instead of returning a cached object.
+    /// </para>
+    /// <para>
+    /// Use this value for successful authentication branches that should compare by record value semantics
+    /// (for example, checks against <see cref="NoResult"/> or other predefined outcomes).
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// var result = AuthenticationResult.Authenticated;
+    /// if (result.IsAuthenticated)
+    /// {
+    ///     // Continue login flow.
+    /// }
+    /// </code>
+    /// </example>
+    /// <see cref="IsAuthenticated" />
+    /// <seealso cref="AlreadyAuthenticated" />
+    /// <seealso cref="NoResult" />
     public static AuthenticationResult Authenticated => new(true, "Authenticated");
     public static AuthenticationResult AlreadyAuthenticated => new(true, "Already Authenticated");
     public static AuthenticationResult NotAuthenticatedPlayer => new(false, "Not Authenticated Player");
