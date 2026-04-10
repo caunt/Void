@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { remark } from 'remark';
 import { visit } from 'unist-util-visit';
@@ -156,8 +157,11 @@ const starlightVirtualCompositeLoader = () => {
                     }
                 });
 
-                var renderedDocument = await context.renderMarkdown(transformedDocument.body);
                 var spoofedFilePath = path.posix.join('src', 'content', 'docs', 'reference', splitTitle.groupLabel, posixRelativePath);
+                var markdownForRendering = `---\nslug: ${documentId}\n---\n\n${transformedDocument.body}`;
+                var renderedDocument = await context.renderMarkdown(markdownForRendering, {
+                    fileURL: pathToFileURL(fullFilePath)
+                });
 
                 astroStore.set({
                     id: documentId,
