@@ -104,7 +104,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         var (dockerHost, dockerPort) = endPoint.AsDockerHostPort;
 
         var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var task = Container.RunCommandAsync($"portablemc start --join-server \"{dockerHost}\" --join-server-port \"{dockerPort}\" --jvm-arg=-Djava.awt.headless=false \"{protocolVersion.FirstRelease}\" {RedirectOutput}", cancellationToken, cancellationTokenSource.Token);
+        var task = Container.RunCommandAsync($"portablemc start --fetch-exclude-all --join-server \"{dockerHost}\" --join-server-port \"{dockerPort}\" --jvm-arg=-Djava.awt.headless=false \"{protocolVersion.FirstRelease}\" {RedirectOutput}", cancellationToken, cancellationTokenSource.Token);
 
         await Container.ExpectTextAsync("Connecting to", cancellationToken);
         await EnsureStableAsync(cancellationToken);
