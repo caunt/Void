@@ -5,7 +5,7 @@ namespace Void.Proxy.Api.Extensions;
 public static class TaskExtensions
 {
     /// <summary>
-    /// Attaches a continuation that logs failures or cancellations from <paramref name="task"/> and returns that continuation.
+    /// Attaches a continuation that logs failures or cancellations from <paramref name="task"/> and returns the continuation task.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -24,9 +24,6 @@ public static class TaskExtensions
     /// <returns>
     /// A continuation task that completes after any required logging for <paramref name="task"/> has finished.
     /// </returns>
-    /// <exception cref="NullReferenceException">
-    /// Thrown when <paramref name="task"/> is <see langword="null"/> and this extension method is invoked as a static call.
-    /// </exception>
     /// <example>
     /// <code>
     /// _ = backgroundTask.CatchExceptions(logger, "Background processing failed");
@@ -75,9 +72,6 @@ public static class TaskExtensions
     /// <returns>
     /// A <see cref="ValueTask"/> wrapping the logging continuation produced from <paramref name="task"/>.
     /// </returns>
-    /// <exception cref="NullReferenceException">
-    /// Thrown when <paramref name="logger"/> is <see langword="null"/> and logging is attempted.
-    /// </exception>
     /// <example>
     /// <code>
     /// await valueTask.CatchExceptions(logger, "Link stop handler failed");
