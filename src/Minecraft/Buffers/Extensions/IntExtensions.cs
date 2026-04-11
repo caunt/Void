@@ -119,7 +119,6 @@ public static class IntExtensions
         return index;
     }
 
-    [Obsolete("Use AsVarInt instead.")]
     /// <summary>
     /// Lazily enumerates bytes of <paramref name="value"/> encoded as a Minecraft VarInt.
     /// </summary>
@@ -147,6 +146,7 @@ public static class IntExtensions
     /// </example>
     /// <seealso cref="VarIntSize(int)" />
     /// <seealso cref="AsVarInt(int)" />
+    [Obsolete("Use AsVarInt instead.")]
     public static IEnumerable<byte> EnumerateVarInt(int value)
     {
         var unsigned = (uint)value;
