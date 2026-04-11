@@ -7,13 +7,13 @@ public interface IConfigurationSerializer
     public string Serialize<TConfiguration>(TConfiguration? configuration) where TConfiguration : notnull;
     public string Serialize(object? configuration, Type configurationType);
     /// <summary>
-    /// Deserializes TOML text into an instance of <typeparamref name="TConfiguration" />.
+    /// Deserializes configuration text into an instance of <typeparamref name="TConfiguration" />.
     /// </summary>
     /// <typeparam name="TConfiguration">
     /// The expected configuration type.
     /// </typeparam>
     /// <param name="source">
-    /// The TOML source text to parse and map; this value must not be <see langword="null" />.
+    /// The serialized configuration text to parse and map; this value must not be <see langword="null" />.
     /// </param>
     /// <returns>
     /// A configuration instance cast to <typeparamref name="TConfiguration" />.
@@ -24,8 +24,8 @@ public interface IConfigurationSerializer
     /// <see langword="typeof" />(<typeparamref name="TConfiguration" />) as the target type.
     /// </para>
     /// <para>
-    /// The implementation parses the TOML input and maps it with the serializer's configured options,
-    /// then validates that the resulting object can be cast to <typeparamref name="TConfiguration" />.
+    /// The built-in serializer implementation parses TOML and maps it with configured options, then
+    /// validates that the resulting object can be cast to <typeparamref name="TConfiguration" />.
     /// </para>
     /// </remarks>
     /// <exception cref="Void.Proxy.Api.Configurations.Exceptions.InvalidConfigurationException">
@@ -35,16 +35,16 @@ public interface IConfigurationSerializer
     /// </exception>
     /// <example>
     /// <code>
-    /// var value = serializer.Deserialize&lt;NetworkConfiguration&gt;(tomlSource);
+    /// var value = serializer.Deserialize&lt;NetworkConfiguration&gt;(sourceText);
     /// </code>
     /// </example>
     /// <seealso cref="Deserialize(string, Type)" />
     public TConfiguration Deserialize<TConfiguration>(string source) where TConfiguration : notnull;
     /// <summary>
-    /// Deserializes TOML text into an instance of a runtime-specified configuration type.
+    /// Deserializes configuration text into an instance of a runtime-specified configuration type.
     /// </summary>
     /// <param name="source">
-    /// The TOML source text to parse and map; this value must not be <see langword="null" />.
+    /// The serialized configuration text to parse and map; this value must not be <see langword="null" />.
     /// </param>
     /// <param name="configurationType">
     /// The target configuration <see cref="Type" /> to materialize.
@@ -54,8 +54,8 @@ public interface IConfigurationSerializer
     /// </returns>
     /// <remarks>
     /// <para>
-    /// The implementation first parses <paramref name="source" /> as a TOML document, then maps
-    /// that document to <paramref name="configurationType" /> using the serializer options.
+    /// The built-in serializer implementation first parses <paramref name="source" /> as TOML, then maps
+    /// the parsed document to <paramref name="configurationType" /> using serializer options.
     /// </para>
     /// <para>
     /// This overload performs no compile-time type checks, so callers are responsible for casting
@@ -63,12 +63,12 @@ public interface IConfigurationSerializer
     /// </para>
     /// </remarks>
     /// <exception cref="Void.Proxy.Api.Configurations.Exceptions.InvalidConfigurationException">
-    /// Thrown when parsing fails or when the TOML document cannot be converted to
+    /// Thrown when parsing fails or when the serialized content cannot be converted to
     /// <paramref name="configurationType" />.
     /// </exception>
     /// <example>
     /// <code>
-    /// var value = serializer.Deserialize(tomlSource, typeof(NetworkConfiguration));
+    /// var value = serializer.Deserialize(sourceText, typeof(NetworkConfiguration));
     /// </code>
     /// </example>
     /// <seealso cref="Deserialize{TConfiguration}(string)" />
