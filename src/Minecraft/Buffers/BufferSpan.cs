@@ -25,6 +25,23 @@ public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>, IDisposable
     }
 
     public readonly int Length => _source.Length;
+    /// <summary>
+    /// Gets how many bytes can still be read or written from the current <see cref="Position"/> to the end of the span.
+    /// </summary>
+    /// <value>
+    /// The result of <c><see cref="Length"/> - <see cref="Position"/></c>.
+    /// </value>
+    /// <remarks>
+    /// <para>
+    /// Extension methods such as <see cref="Extensions.ReadMinecraftBufferExtensions.ReadToEnd{TBuffer}(ref TBuffer)"/> use this value to consume unread bytes.
+    /// </para>
+    /// <para>
+    /// <see cref="Dispose"/> uses this property as a completeness guard and throws <see cref="BufferRemainingDataException"/> when the value is greater than <c>0</c>.
+    /// </para>
+    /// </remarks>
+    /// <seealso cref="Length"/>
+    /// <seealso cref="Position"/>
+    /// <seealso cref="Dispose"/>
     public readonly int Remaining => _source.Length - _position;
 
     /// <summary>
