@@ -6,6 +6,34 @@ namespace Void.Minecraft.Buffers.Extensions;
 
 public static class IntExtensions
 {
+    /// <summary>
+    /// Computes the number of bytes required to encode <paramref name="value"/> as a Minecraft VarInt.
+    /// </summary>
+    /// <param name="value">The 32-bit signed integer to evaluate.</param>
+    /// <returns>
+    /// The encoded VarInt length in bytes, always between <c>1</c> and <c>5</c>.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// This method performs a branch-free bit operation and does not allocate.
+    /// </para>
+    /// <para>
+    /// The result matches the byte count written by <see cref="AsVarInt(int, Span{byte})" /> for the same value,
+    /// which allows callers to precompute packet offsets and payload lengths.
+    /// </para>
+    /// <para>
+    /// Because Minecraft VarInt uses the two's-complement bit pattern of signed integers, negative values always
+    /// require <c>5</c> bytes.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// var idLength = packetId.VarIntSize();
+    /// binaryMessage.Stream.Position = idLength;
+    /// </code>
+    /// </example>
+    /// <seealso cref="AsVarInt(int)" />
+    /// <seealso cref="AsVarInt(int, Span{byte})" />
     public static int VarIntSize(this int value) => (BitOperations.LeadingZeroCount((uint)value | 1) - 38) * -1171 >> 13;
 
     /// <summary>
@@ -92,6 +120,33 @@ public static class IntExtensions
     }
 
     [Obsolete("Use AsVarInt instead.")]
+    /// <summary>
+    /// Lazily enumerates bytes of <paramref name="value"/> encoded as a Minecraft VarInt.
+    /// </summary>
+    /// <param name="value">The 32-bit signed integer to encode.</param>
+    /// <returns>
+    /// An <see cref="IEnumerable{T}" /> that yields encoded bytes in wire order, from first to last byte.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// This API is obsolete; prefer <see cref="AsVarInt(int)" /> or <see cref="AsVarInt(int, Span{byte})" /> for
+    /// clearer ownership and lower overhead.
+    /// </para>
+    /// <para>
+    /// Enumeration executes the encoding loop on demand each time the sequence is iterated. The sequence length is
+    /// from <c>1</c> to <c>5</c> bytes, and negative values produce <c>5</c> bytes.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// foreach (var b in IntExtensions.EnumerateVarInt(300))
+    /// {
+    ///     // consume each encoded VarInt byte
+    /// }
+    /// </code>
+    /// </example>
+    /// <seealso cref="VarIntSize(int)" />
+    /// <seealso cref="AsVarInt(int)" />
     public static IEnumerable<byte> EnumerateVarInt(int value)
     {
         var unsigned = (uint)value;
