@@ -71,7 +71,7 @@ public interface IConfigurationSerializer
     /// var value = serializer.Deserialize(tomlSource, typeof(NetworkConfiguration));
     /// </code>
     /// </example>
-    /// <see cref="Deserialize{TConfiguration}(string)" />
+    /// <seealso cref="Deserialize{TConfiguration}(string)" />
     /// <seealso cref="Type" />
     public object Deserialize(string source, Type configurationType);
 }
