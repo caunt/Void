@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.14](https://github.com/caunt/Void/compare/v0.5.13...v0.5.14) (2026-04-13)
+
+
+### Bug Fixes
+
+* **deps:** update dependency starlight-links-validator to ^0.23.0 ([fac5ae7](https://github.com/caunt/Void/commit/fac5ae76cb831a6203d389101082e1d2835299c9))
+
 ## [0.5.13](https://github.com/caunt/Void/compare/v0.5.12...v0.5.13) (2026-04-10)
 
 
