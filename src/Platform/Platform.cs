@@ -153,7 +153,7 @@ public class Platform(
             settings.Offline = offlineOptionValue;
 
         if (settings.Offline)
-            logger.LogWarning("Offline mode is enabled. Players will be able to connect without Mojang authorization.");
+            logger.LogWarning("Offline mode is enabled. Players will be able to connect without Mojang authentication.");
 
         logger.LogInformation("Loading plugins");
         await plugins.LoadPluginsAsync(cancellationToken: cancellationToken);
