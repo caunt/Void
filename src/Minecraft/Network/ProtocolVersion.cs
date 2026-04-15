@@ -77,6 +77,11 @@ public class ProtocolVersion : IComparable
     public ReleaseVersion FirstRelease => Releases[0];
     public ReleaseVersion LastRelease => Releases[^1];
 
+    public IEnumerable<ProtocolVersion> RangeTo(ProtocolVersion other)
+    {
+        return Range(this, other);
+    }
+
     public int CompareTo(object? obj)
     {
         return obj switch
