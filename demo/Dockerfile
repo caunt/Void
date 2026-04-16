@@ -1,4 +1,4 @@
-FROM docker:dind@sha256:f80c26212befc1c1988b529495532c6b9180d9b1dab1611f4a1efbe9da8ec821
+FROM docker:dind@sha256:a6dd5322747a95cd8e3207bd8d415a8fd20ec34e9c00f06dc019cbd912013489
 
 WORKDIR /demo
 COPY . /demo
