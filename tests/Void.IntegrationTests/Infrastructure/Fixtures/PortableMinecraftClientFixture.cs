@@ -12,6 +12,7 @@ public class PortableMinecraftClientFixture(PortableMinecraftClientImageFixture 
 
     public async ValueTask InitializeAsync()
     {
+        await clientImageFixture.EnsureInitializedAsync();
         PortableMinecraftClient = await PortableMinecraftClient.CreateAsync(clientImageFixture, Timeouts.SetupTimeoutToken);
     }
 

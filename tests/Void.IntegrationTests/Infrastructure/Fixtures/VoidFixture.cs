@@ -13,6 +13,7 @@ public class VoidFixture(PaperFixture fixture) : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
+        await fixture.EnsureInitializedAsync();
         VoidProxy = await VoidProxy.CreateAsync(Path.Combine(Path.GetTempPath(), nameof(VoidFixture), Path.GetRandomFileName()), targetServers: [$"localhost:{fixture.PaperServer1.Port}", $"localhost:{fixture.PaperServer2.Port}"], cancellationToken: Timeouts.SetupTimeoutToken); ;
     }
 
