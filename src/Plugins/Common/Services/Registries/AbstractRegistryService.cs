@@ -210,18 +210,18 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
         events.UnregisterListeners(this);
 
-        foreach (var player in players.All)
+        await players.ForEachAsync(async (player, eachCancellationToken) =>
         {
-            var channel = await player.GetChannelAsync(cancellationToken);
+            var channel = await player.GetChannelAsync(eachCancellationToken);
 
             if (!channel.TryGet<IMinecraftPacketMessageStream>(out _))
-                continue;
+                return;
 
             if (links.TryGetLink(player, out var link))
                 link.ServerChannel.DisposeRegistries(plugin);
 
             channel.DisposeRegistries(plugin);
-        }
+        }, cancellationToken);
     }
 
     protected static IEnumerable<IMinecraftPacket> DecodeBinaryMessage(ILink link, Operation operation, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketTransformationsPluginsRegistry transformationsMappings, IMinecraftBinaryMessage binaryMessage)
