@@ -61,7 +61,10 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
             {
                 // TODO: This list can be modified while we scan it, so we can't safely index it until we build a stable snapshot
                 // Consider making copies not on ThrowAsync, but on Register/Unregister instead, rebuild whole List on each modification
-                var entry = _entries[entryIndex];
+                var entry = (uint)entryIndex < (uint)_entries.Count ? _entries[entryIndex] : null;
+
+                if (entry is null)
+                    continue;
 
                 var invokedKey = new InvokedListenerMethod(entry.Listener, entry.Method);
 
