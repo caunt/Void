@@ -50,28 +50,31 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
     }
 
     [Subscribe]
+    public void OnLinkStopping(LinkStoppingEvent @event)
+    {
+        if (!@event.Player.IsMinecraft)
+            return;
+
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
+            return;
+        
+        RemoveKeepAliveTracker(@event.Player);
+    }
+    
+    [Subscribe]
     public async ValueTask OnPhaseChanged(PhaseChangedEvent @event, CancellationToken cancellationToken)
     {
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
-        if (@event.Phase is Phase.Handshake && @event.Side is Side.Server)
-            RemoveKeepAliveTracker(@event.Player);
-
         if (@event.Phase is Phase.Configuration or Phase.Play)
             await PongKeepAliveTracker(@event.Player, cancellationToken: cancellationToken);
 
-        if (@event.Phase is not Phase.Play)
-            return;
-
-        if (@event.Player.ProtocolVersion < ProtocolVersion.MINECRAFT_1_20_2)
-            return;
-
-        if (@event.Side is not Side.Server)
-            return;
-
-        var link = @event.Player.Link ?? throw new InvalidOperationException($"Player has no link assigned in {nameof(Phase.Play)} phase.");
-        await events.ThrowAsync(new PlayerJoinedServerEvent(link.Player, link.Server, link, IsRedirected: false), cancellationToken);
+        if (@event.Phase is Phase.Play && @event.Side is Side.Server && @event.Player.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_20_2)
+        {
+            var link = @event.Player.Link ?? throw new InvalidOperationException($"Player has no link assigned in {nameof(Phase.Play)} phase.");
+            await events.ThrowAsync(new PlayerJoinedServerEvent(link.Player, link.Server, link, IsRedirected: false), cancellationToken);
+        }
     }
 
     [Subscribe]
@@ -170,13 +173,13 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
 
         if (!_keepAliveTrackers.TryGetValue(key, out var tracker))
         {
-            tracker = _keepAliveTrackers[key] = new KeepAliveTracker(async id =>
+            tracker = _keepAliveTrackers[key] = new KeepAliveTracker(async requestId =>
             {
-                player.Logger.LogTrace("Sending Keep Alive request {Id}", id);
+                player.Logger.LogTrace("Sending Keep Alive request {Id}", requestId);
 
                 try
                 {
-                    await player.SendPacketAsync(new KeepAliveRequestPacket { Id = id }, cancellationToken);
+                    await player.SendPacketAsync(new KeepAliveRequestPacket { Id = requestId }, cancellationToken);
                 }
                 catch (StreamClosedException)
                 {
@@ -184,7 +187,7 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
                 }
                 catch (Exception exception)
                 {
-                    player.Logger.LogError(exception, "Failed to send Keep Alive request {Id}", id);
+                    player.Logger.LogError(exception, "Failed to send Keep Alive request {Id}", requestId);
                 }
             }, _keepAliveInterval);
         }

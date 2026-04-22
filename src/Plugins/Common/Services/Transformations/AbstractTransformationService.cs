@@ -21,6 +21,7 @@ public abstract class AbstractTransformationService : IPluginCommonService
         if (@event is { Side: Side.Client })
             return;
 
+        // Register transformations for Link when Server phase changed from Handshake
         NetworkTransformations.Register(@event.Link, @event.Player, @event.Phase);
     }
 
