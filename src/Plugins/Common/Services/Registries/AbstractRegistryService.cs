@@ -71,12 +71,16 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         {
             playerPacketStream.Registries.PacketTransformationsSystem.Clear();
             playerPacketStream.Registries.PacketTransformationsPlugins.Clear();
+            
+            logger.LogTrace("Cleared transformations registries for player channel in {Link} link", @event.Link);
         }
 
         if (@event.Link.ServerChannel.TryGet<IMinecraftPacketMessageStream>(out var serverPacketStream))
         {
             serverPacketStream.Registries.PacketTransformationsSystem.Clear();
             serverPacketStream.Registries.PacketTransformationsPlugins.Clear();
+            
+            logger.LogTrace("Cleared transformations registries for server channel in {Link} link", @event.Link);       
         }
     }
 
