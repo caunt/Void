@@ -193,8 +193,6 @@ public static class ContainerExtensions
             var checkInterval = TimeSpan.FromSeconds(1);
             var fixedSinceAnchor = DateTime.UtcNow - requiredSilenceDuration;
 
-            bool IsWhitelisted(string log) => whitelist.Any(log.Contains);
-
             var logs = await container.ReadLogsAsync(since: fixedSinceAnchor, cancellationToken);
             var previousLogCount = logs.Count(log => !IsWhitelisted(log));
 
@@ -212,12 +210,16 @@ public static class ContainerExtensions
                 logs = await container.ReadLogsAsync(since: fixedSinceAnchor, cancellationToken);
                 var currentLogCount = logs.Count(log => !IsWhitelisted(log));
 
-                if (currentLogCount > previousLogCount)
-                {
-                    lastLogTime = DateTime.UtcNow;
-                    previousLogCount = currentLogCount;
-                }
+                if (currentLogCount <= previousLogCount)
+                    continue;
+
+                lastLogTime = DateTime.UtcNow;
+                previousLogCount = currentLogCount;
             }
+
+            return;
+
+            bool IsWhitelisted(string log) => whitelist.Any(log.Contains);
         }
 
         public async Task<Memory<byte>> TakeScreenshotAsync(string display, CancellationToken cancellationToken = default)

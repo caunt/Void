@@ -1,4 +1,5 @@
-﻿using Void.Minecraft.Network;
+﻿using Microsoft.Extensions.Logging;
+using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Network.Registries.Transformations.Extensions;
@@ -47,7 +48,7 @@ public static class NetworkTransformations
         // Not really possible, but just to be sure
         link ??= player.Link;
 
-        ArgumentNullException.ThrowIfNull(link, nameof(link));
+        ArgumentNullException.ThrowIfNull(link);
 
         switch (phase)
         {
@@ -58,12 +59,23 @@ public static class NetworkTransformations
                 RegisterMappings<SystemChatMessagePacket>(link, SystemChatMessage.SelectMany(systemChatMessage => systemChatMessage.Mappings));
                 RegisterMappings<NbtDisconnectPacket>(link, PlayDisconnect.SelectMany(playDisconnect => playDisconnect.Mappings));
                 break;
+            case Phase.Handshake:
+            case Phase.Status:
+            case Phase.Login:
+            case Phase.Configuration:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(phase), phase, null);
         }
     }
 
     private static void RegisterMappings<T>(ILink link, params IEnumerable<MinecraftPacketTransformationMapping> mappings) where T : IMinecraftPacket
     {
+        var logger = link.Player.Logger;
         var protocolVersion = link.Player.ProtocolVersion;
+        
+        logger.LogTrace("Registering {PacketType} packet transformations", typeof(T));
+
         link.PlayerChannel.MinecraftRegistries.PacketTransformationsSystem.All.RegisterTransformations<T>(protocolVersion, mappings);
         link.ServerChannel.MinecraftRegistries.PacketTransformationsSystem.All.RegisterTransformations<T>(protocolVersion, mappings);
     }

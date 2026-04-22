@@ -25,7 +25,7 @@ public abstract class DirectConnectionTestBase(PaperFixture paperFixture, Portab
 
         await LoggedExecutorAsync(async () =>
         {
-            using (var gameCancellationTokenSource = new CancellationTokenSource(Timeouts.StepTimeout * 3)) // Game should run enough time for all steps below
+            using (var gameCancellationTokenSource = new CancellationTokenSource())
             {
                 await using var game = await WithTimeoutRetriesAsync(async () => await portableMinecraftClientFixture.PortableMinecraftClient.RunGameAsync(_serverEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
 

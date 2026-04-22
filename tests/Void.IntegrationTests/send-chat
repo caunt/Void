@@ -21,6 +21,9 @@ openChat() {
         xdotool key --clearmodifiers --window "$targetWindowId" t
         currentPressCount=$((currentPressCount + 1))
 
+        # If running at 15 FPS (66 ms per frame) - sleep for at least two frames
+        sleep 0.132
+
         # Rapidly poll the screen to detect the dark semi-transparent chat overlay
         local currentBrightness="$(import -window "$targetWindowId" miff:- | convert - -gravity SouthWest -crop 100x20+0+0 +repage -format "%[fx:int(mean*100)]" info:)"
         local brightnessDifference=$((baselineBrightness - currentBrightness))

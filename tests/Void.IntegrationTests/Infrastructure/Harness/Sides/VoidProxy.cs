@@ -24,10 +24,9 @@ public record VoidProxy(CollectingTextWriter LogWriter, VoidEntryPoint.RunResult
     public static async Task<VoidProxy> CreateAsync(string workingDirectory, IEnumerable<string> targetServers, int proxyPort = 0, bool ignoreFileServers = true, bool offlineMode = true, CancellationToken cancellationToken = default)
     {
         var logWriter = new CollectingTextWriter();
-        var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var cancellationTokenSource = new CancellationTokenSource();
 
         workingDirectory = Path.Combine(workingDirectory, nameof(VoidProxy));
-        cancellationToken = cancellationTokenSource.Token;
 
         if (!Directory.Exists(workingDirectory))
             Directory.CreateDirectory(workingDirectory);
