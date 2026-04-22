@@ -25,7 +25,7 @@ public abstract class ProxiedConnectionTestBase(PaperFixture paperFixture, VoidF
 
         await LoggedExecutorAsync(async () =>
         {
-            await using (var game = await portableMinecraftClientFixture.Api.RunGameAsync(_proxyEndPoint, protocolVersion, Timeouts.SetupTimeoutToken))
+            await using (var game = await portableMinecraftClientFixture.Api.RunGameAsync(nameof(ProxiedConnectionTestBase), _proxyEndPoint, protocolVersion, Timeouts.SetupTimeoutToken))
             {
                 await game.SendTextMessageAsync(expectedText, Timeouts.StepTimeoutToken);
                 await paperFixture.Server1.ExpectTextAsync(expectedText, lookupHistory: true, Timeouts.StepTimeoutToken);

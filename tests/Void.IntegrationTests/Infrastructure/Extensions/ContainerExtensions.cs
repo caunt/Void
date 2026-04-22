@@ -222,11 +222,11 @@ public static class ContainerExtensions
             bool IsWhitelisted(string log) => whitelist.Any(log.Contains);
         }
 
-        public async Task<Memory<byte>> TakeScreenshotAsync(string display, CancellationToken cancellationToken = default)
+        public async Task<Memory<byte>> TakeScreenshotAsync(string windowName, CancellationToken cancellationToken = default)
         {
             var fileName = $"/tmp/screenshot-{Guid.NewGuid():N}.png";
 
-            await container.RunCommandAsync($"import -display {display} -window root {fileName}", cancellationToken);
+            await container.RunCommandAsync($"import -window \"$(xdotool search --onlyvisible --name '{windowName}' | head -n 1)\" {fileName}", cancellationToken);
 
             try
             {

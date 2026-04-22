@@ -47,13 +47,13 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         return new PortableMinecraftClient(container);
     }
 
-    public async Task<Game> RunGameAsync(EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
+    public async Task<Game> RunGameAsync(string testName, EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
     {
         for (var attempt = 1; attempt <= SetupRetries; attempt++)
         {
             try
             {
-                return await Game.RunAsync(Container, logsDateTimeGetter: () => _readLogsSince, endPoint, protocolVersion, cancellationToken);
+                return await Game.RunAsync(testName, Container, logsDateTimeGetter: () => _readLogsSince, endPoint, protocolVersion, cancellationToken);
             }
             catch (OperationCanceledException) when (attempt < SetupRetries)
             {
@@ -76,14 +76,14 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         GC.SuppressFinalize(this);
     }
 
-    public record Game(IContainer Container, Func<DateTime> LogsDateTimeGetter, ProtocolVersion ProtocolVersion, string Username, Task RunTask, CancellationTokenSource CancellationTokenSource) : IAsyncDisposable
+    public record Game(string TestName, IContainer Container, Func<DateTime> LogsDateTimeGetter, ProtocolVersion ProtocolVersion, string Username, Task RunTask, CancellationTokenSource CancellationTokenSource) : IAsyncDisposable
     {
-        private readonly string _workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), "steps", ProtocolVersion.ToString(), Username);
+        private readonly string _workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), "steps", TestName, ProtocolVersion.ToString(), Username);
         private int _step = 0;
         
         public DateTime ReadLogsSince => LogsDateTimeGetter();
         
-        public static async Task<Game> RunAsync(IContainer container, Func<DateTime> logsDateTimeGetter, EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
+        public static async Task<Game> RunAsync(string testName, IContainer container, Func<DateTime> logsDateTimeGetter, EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
         {
             var (dockerHost, dockerPort) = endPoint.AsDockerHostPort;
             var username = Convert.ToHexString(BitConverter.GetBytes(Random.Shared.Next()));
@@ -102,7 +102,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
                 cancellationToken);
             
             var task = container.RunCommandAsync($"portablemc start --fetch-exclude-all --username \"{username}\" --join-server \"{dockerHost}\" --join-server-port \"{dockerPort}\" --jvm-arg=-Djava.awt.headless=false \"{protocolVersion.FirstRelease}\" {RedirectOutput}", cancellationToken, cancellationTokenSource.Token);
-            var game = new Game(container, logsDateTimeGetter, protocolVersion, username, task, cancellationTokenSource);
+            var game = new Game(testName, container, logsDateTimeGetter, protocolVersion, username, task, cancellationTokenSource);
             
             await game.LogAsync($"Starting Minecraft {protocolVersion.FirstRelease}", cancellationToken);
             await container.ExpectTextAsync("Connecting to", cancellationToken);
@@ -194,7 +194,8 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
         private async Task MakeStepAsync(string action, CancellationToken cancellationToken = default)
         {
-            await File.WriteAllBytesAsync(Path.Combine(_workingDirectory, $"step-{++_step}-{action}.png"), await Container.TakeScreenshotAsync(Display, cancellationToken), cancellationToken);
+            _ = Directory.CreateDirectory(_workingDirectory);
+            await File.WriteAllBytesAsync(Path.Combine(_workingDirectory, $"step-{++_step}-{action}.png"), await Container.TakeScreenshotAsync(windowName: "Minecraft", cancellationToken), cancellationToken);
         }
     }
 }
