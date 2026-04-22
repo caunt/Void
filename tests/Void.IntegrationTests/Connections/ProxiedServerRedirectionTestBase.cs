@@ -24,25 +24,23 @@ public abstract class ProxiedServerRedirectionTestBase(PaperFixture paperFixture
 
         await LoggedExecutorAsync(async () =>
         {
-            using (var gameCancellationTokenSource = new CancellationTokenSource())
+            await using (var game = await portableMinecraftClientFixture.Api.RunGameAsync(_proxyEndPoint, protocolVersion, Timeouts.SetupTimeoutToken))
             {
-                await using var game = await WithTimeoutRetriesAsync(async () => await portableMinecraftClientFixture.Api.RunGameAsync(_proxyEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
-
-                await portableMinecraftClientFixture.Api.SendTextMessagesAsync(
+                await game.SendTextMessagesAsync(
                 [
                     server1First,
                     "/server args-server-2"
                 ], Timeouts.StepTimeoutToken);
 
-                await portableMinecraftClientFixture.Api.EnsureStableAsync(Timeouts.StepTimeoutToken);
+                await game.EnsureStableAsync(Timeouts.StepTimeoutToken);
 
-                await portableMinecraftClientFixture.Api.SendTextMessagesAsync(
+                await game.SendTextMessagesAsync(
                 [
                     server2Text,
                     "/server args-server-1"
                 ], Timeouts.StepTimeoutToken);
 
-                await portableMinecraftClientFixture.Api.EnsureStableAsync(Timeouts.StepTimeoutToken);
+                await game.EnsureStableAsync(Timeouts.StepTimeoutToken);
             }
 
             Assert.Contains(voidFixture.VoidProxy.Logs, line => line.Contains("connected to args-server-2"));

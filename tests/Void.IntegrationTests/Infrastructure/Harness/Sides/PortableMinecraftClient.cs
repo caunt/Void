@@ -17,6 +17,7 @@ namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
 
 public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 {
+    private const int SetupRetries = 5;
     private const string Display = ":99";
     private const string RedirectOutput = ">/proc/1/fd/1 2>/proc/1/fd/2";
     private const string LogMessagePrefix = $"[{nameof(Void)}.{nameof(IntegrationTests)}]";
@@ -46,103 +47,21 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         return new PortableMinecraftClient(container);
     }
 
-    public async Task<Memory<byte>> SendTextMessageAsync(string text, CancellationToken cancellationToken = default)
+    public async Task<Game> RunGameAsync(EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
     {
-        return await SendTextMessagesAsync([text], cancellationToken);
-    }
-
-    public async Task<Memory<byte>> SendTextMessagesAsync(IEnumerable<string> texts, CancellationToken cancellationToken = default)
-    {
-        foreach (var text in texts)
+        for (var attempt = 1; attempt <= SetupRetries; attempt++)
         {
-            // Is it a Chat Command?
-            var expectTask = text.StartsWith('/')
-                ? Task.Delay(3_000, cancellationToken) // Give some room delay for client-server reaction
-                : Container.ExpectTextAsync(text, cancellationToken); // Expect the text to appear in logs
-
-            await LogContainerAsync($"Sending chat input: {text}", cancellationToken);
-            await Container.RunCommandAsync(["send-chat", text], cancellationToken);
-            await expectTask;
-        }
-
-        return await Container.TakeScreenshotAsync(Display, cancellationToken);
-    }
-
-    public async Task EnsureStableAsync(CancellationToken cancellationToken = default)
-    {
-        await EnsureStableAsync(TimeSpan.FromSeconds(10), cancellationToken);
-    }
-
-    public async Task EnsureStableAsync(TimeSpan duration, CancellationToken cancellationToken = default)
-    {
-        var timestamp = Stopwatch.GetTimestamp();
-        await LogContainerAsync($"Waiting for logs to become stable for {duration.TotalSeconds:F2} seconds", cancellationToken);
-        
-        // Ensure the game is stable and not doing some background loading
-        await Container.WaitForLogsSilenceAsync(duration, whitelist:
-        [
-            // Ignore log messages
-            LogMessagePrefix,
-            
-            // Ignore chat messages (might be many clients on a single server)
-            "[CHAT]",
-
-            // Ignore spam messages that can appear because of poor ViaVersion protocol support
-            "Unable to play unknown soundEvent", // Unable to play unknown soundEvent minecraft:mob.rabbit.hop (or .idle)
-            " has no item?!", // Item entity 72 has no item?!
-            "Skipping Entity with id" // Skipping Entity with id minecraft:cave_spider
-        ], cancellationToken);
-        
-        await LogContainerAsync($"Logs are stable after {Stopwatch.GetElapsedTime(timestamp).TotalSeconds:F2} seconds", cancellationToken);
-    }
-
-    public async Task<IAsyncDisposable> RunGameAsync(EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
-    {
-        await LogContainerAsync($"Starting Minecraft {protocolVersion.FirstRelease}", cancellationToken);
-
-        // Reset whole options.txt
-        await Container.RunCommandAsync(
-            $"""
-            printf "
-            maxFps:15
-            renderDistance:2
-            {(protocolVersion >= ProtocolVersion.MINECRAFT_1_19_4 ? "onboardAccessibility:false" : string.Empty)}
-            pauseOnLostFocus:false
-            " > "$HOME/.minecraft/options.txt"
-            """,
-            cancellationToken);
-
-        var username = Convert.ToHexString(BitConverter.GetBytes(Random.Shared.Next()));
-        var (dockerHost, dockerPort) = endPoint.AsDockerHostPort;
-
-        var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var task = Container.RunCommandAsync($"portablemc start --fetch-exclude-all --username \"{username}\" --join-server \"{dockerHost}\" --join-server-port \"{dockerPort}\" --jvm-arg=-Djava.awt.headless=false \"{protocolVersion.FirstRelease}\" {RedirectOutput}", cancellationToken, cancellationTokenSource.Token);
-
-        await Container.ExpectTextAsync("Connecting to", cancellationToken);
-        await EnsureStableAsync(cancellationToken);
-
-        return AsyncDisposable.Create(async () =>
-        {
-            await LogContainerAsync($"Stopping Minecraft {protocolVersion.FirstRelease}", cancellationToken);
-            
-            await File.WriteAllBytesAsync($"quit-{username}-{protocolVersion}.png", await Container.TakeScreenshotAsync(Display, cancellationToken), cancellationToken);
-            await File.WriteAllLinesAsync($"quit-{username}-{protocolVersion}.txt", await Container.ReadLogsAsync(_readLogsSince, cancellationToken), cancellationToken);
-            
-            await cancellationTokenSource.CancelAsync();
-
             try
             {
-                await task;
+                return await Game.RunAsync(Container, logsDateTimeGetter: () => _readLogsSince, endPoint, protocolVersion, cancellationToken);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (attempt < SetupRetries)
             {
                 // Ignored
             }
-            finally
-            {
-                cancellationTokenSource.Dispose();
-            }
-        });
+        }
+
+        throw new TimeoutException($"Failed to setup {protocolVersion} after {SetupRetries} attempts");
     }
 
     public void ClearLogs()
@@ -157,8 +76,125 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         GC.SuppressFinalize(this);
     }
 
-    private async Task LogContainerAsync(string message, CancellationToken cancellationToken = default)
+    public record Game(IContainer Container, Func<DateTime> LogsDateTimeGetter, ProtocolVersion ProtocolVersion, string Username, Task RunTask, CancellationTokenSource CancellationTokenSource) : IAsyncDisposable
     {
-        await Container.RunCommandAsync($"printf '{LogMessagePrefix} %s\n' '{message.Replace("'", "'\"'\"'")}' {RedirectOutput}", cancellationToken);
+        private readonly string _workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), "steps", ProtocolVersion.ToString(), Username);
+        private int _step = 0;
+        
+        public DateTime ReadLogsSince => LogsDateTimeGetter();
+        
+        public static async Task<Game> RunAsync(IContainer container, Func<DateTime> logsDateTimeGetter, EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
+        {
+            var (dockerHost, dockerPort) = endPoint.AsDockerHostPort;
+            var username = Convert.ToHexString(BitConverter.GetBytes(Random.Shared.Next()));
+            var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            
+            // Reset whole options.txt
+            await container.RunCommandAsync(
+                $"""
+                 printf "
+                 maxFps:15
+                 renderDistance:2
+                 {(protocolVersion >= ProtocolVersion.MINECRAFT_1_19_4 ? "onboardAccessibility:false" : string.Empty)}
+                 pauseOnLostFocus:false
+                 " > "$HOME/.minecraft/options.txt"
+                 """,
+                cancellationToken);
+            
+            var task = container.RunCommandAsync($"portablemc start --fetch-exclude-all --username \"{username}\" --join-server \"{dockerHost}\" --join-server-port \"{dockerPort}\" --jvm-arg=-Djava.awt.headless=false \"{protocolVersion.FirstRelease}\" {RedirectOutput}", cancellationToken, cancellationTokenSource.Token);
+            var game = new Game(container, logsDateTimeGetter, protocolVersion, username, task, cancellationTokenSource);
+            
+            await game.LogAsync($"Starting Minecraft {protocolVersion.FirstRelease}", cancellationToken);
+            await container.ExpectTextAsync("Connecting to", cancellationToken);
+            await game.EnsureStableAsync(cancellationToken);
+
+            return game;
+        }
+        
+        public async Task SendTextMessageAsync(string text, CancellationToken cancellationToken = default)
+        { 
+            await SendTextMessagesAsync([text], cancellationToken);
+        }
+
+        public async Task SendTextMessagesAsync(IEnumerable<string> texts, CancellationToken cancellationToken = default)
+        {
+            foreach (var text in texts)
+            {
+                // Is it a Chat Command?
+                var expectTask = text.StartsWith('/')
+                    ? Task.Delay(3_000, cancellationToken) // Give some room delay for client-server reaction
+                    : Container.ExpectTextAsync(text, cancellationToken); // Expect the text to appear in logs
+
+                await LogAsync($"Sending chat input: {text}", cancellationToken);
+                await Container.RunCommandAsync(["send-chat", text], cancellationToken);
+                await expectTask;
+                
+                await MakeStepAsync("chat", cancellationToken);
+            }
+        }
+
+        public async Task EnsureStableAsync(CancellationToken cancellationToken = default)
+        {
+            await EnsureStableAsync(TimeSpan.FromSeconds(10), cancellationToken);
+        }
+
+        public async Task EnsureStableAsync(TimeSpan duration, CancellationToken cancellationToken = default)
+        {
+            var timestamp = Stopwatch.GetTimestamp();
+            await LogAsync($"Waiting for logs to become stable for {duration.TotalSeconds:F2} seconds", cancellationToken);
+            
+            // Ensure the game is stable and not doing some background loading
+            await Container.WaitForLogsSilenceAsync(duration, whitelist:
+            [
+                // Ignore log messages
+                LogMessagePrefix,
+                
+                // Ignore chat messages (might be many clients on a single server)
+                "[CHAT]",
+
+                // Ignore spam messages that can appear because of poor ViaVersion protocol support
+                "Unable to play unknown soundEvent", // Unable to play unknown soundEvent minecraft:mob.rabbit.hop (or .idle)
+                " has no item?!", // Item entity 72 has no item?!
+                "Skipping Entity with id" // Skipping Entity with id minecraft:cave_spider
+            ], cancellationToken);
+            
+            await LogAsync($"Logs are stable after {Stopwatch.GetElapsedTime(timestamp).TotalSeconds:F2} seconds", cancellationToken);
+            await MakeStepAsync("stable", cancellationToken);
+        }
+        
+        public async ValueTask DisposeAsync()
+        {
+            await LogAsync($"Stopping Minecraft {ProtocolVersion.FirstRelease}", Timeouts.StepTimeoutToken);
+            
+            await MakeStepAsync("exit", Timeouts.StepTimeoutToken);
+            await File.WriteAllLinesAsync(Path.Combine(_workingDirectory, "logs.txt"), await Container.ReadLogsAsync(ReadLogsSince, Timeouts.StepTimeoutToken), Timeouts.StepTimeoutToken);
+            
+            await CancellationTokenSource.CancelAsync();
+
+            try
+            {
+                await RunTask;
+            }
+            catch (OperationCanceledException)
+            {
+                // Ignored
+            }
+            finally
+            {
+                CancellationTokenSource.Dispose();
+            }
+            
+            GC.SuppressFinalize(this);
+        }
+
+        private async Task LogAsync(string message, CancellationToken cancellationToken = default)
+        {
+            await Container.RunCommandAsync($"printf '{LogMessagePrefix} %s\n' '{message.Replace("'", "'\"'\"'")}' {RedirectOutput}", cancellationToken);
+        }
+
+        private async Task MakeStepAsync(string action, CancellationToken cancellationToken = default)
+        {
+            await File.WriteAllBytesAsync(Path.Combine(_workingDirectory, $"step-{++_step}-{action}.png"), await Container.TakeScreenshotAsync(Display, cancellationToken), cancellationToken);
+        }
     }
 }

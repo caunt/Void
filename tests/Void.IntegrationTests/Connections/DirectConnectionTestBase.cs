@@ -25,11 +25,9 @@ public abstract class DirectConnectionTestBase(PaperFixture paperFixture, Portab
 
         await LoggedExecutorAsync(async () =>
         {
-            using (var gameCancellationTokenSource = new CancellationTokenSource())
+            await using (var game = await portableMinecraftClientFixture.Api.RunGameAsync(_serverEndPoint, protocolVersion, Timeouts.SetupTimeoutToken))
             {
-                await using var game = await WithTimeoutRetriesAsync(async () => await portableMinecraftClientFixture.Api.RunGameAsync(_serverEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
-
-                await portableMinecraftClientFixture.Api.SendTextMessageAsync(expectedText, Timeouts.StepTimeoutToken);
+                await game.SendTextMessageAsync(expectedText, Timeouts.StepTimeoutToken);
                 await paperFixture.Server1.ExpectTextAsync(expectedText, lookupHistory: true, Timeouts.StepTimeoutToken);
             }
 
