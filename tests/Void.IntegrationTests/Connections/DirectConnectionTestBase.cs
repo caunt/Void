@@ -14,11 +14,11 @@ public abstract class DirectConnectionTestBase(PaperFixture paperFixture, Portab
 {
     private const string ExpectedText = "hello void!";
 
-    private readonly EndPoint _serverEndPoint = new IPEndPoint(IPAddress.Loopback, paperFixture.PaperServer1.Port);
+    private readonly EndPoint _serverEndPoint = new IPEndPoint(IPAddress.Loopback, paperFixture.Server1.Port);
 
     protected async Task RunAsync(ProtocolVersion protocolVersion)
     {
-        if (!portableMinecraftClientFixture.PortableMinecraftClient.SupportedVersions.Contains(protocolVersion))
+        if (!portableMinecraftClientFixture.Api.SupportedVersions.Contains(protocolVersion))
             Assert.Skip($"Protocol version {protocolVersion} is not supported by the client, skipping test.");
 
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
@@ -27,13 +27,13 @@ public abstract class DirectConnectionTestBase(PaperFixture paperFixture, Portab
         {
             using (var gameCancellationTokenSource = new CancellationTokenSource())
             {
-                await using var game = await WithTimeoutRetriesAsync(async () => await portableMinecraftClientFixture.PortableMinecraftClient.RunGameAsync(_serverEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
+                await using var game = await WithTimeoutRetriesAsync(async () => await portableMinecraftClientFixture.Api.RunGameAsync(_serverEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
 
-                await portableMinecraftClientFixture.PortableMinecraftClient.SendTextMessageAsync(expectedText, Timeouts.StepTimeoutToken);
-                await paperFixture.PaperServer1.ExpectTextAsync(expectedText, lookupHistory: true, Timeouts.StepTimeoutToken);
+                await portableMinecraftClientFixture.Api.SendTextMessageAsync(expectedText, Timeouts.StepTimeoutToken);
+                await paperFixture.Server1.ExpectTextAsync(expectedText, lookupHistory: true, Timeouts.StepTimeoutToken);
             }
 
-            Assert.Contains(paperFixture.PaperServer1.Logs, line => line.Contains(expectedText));
-        }, portableMinecraftClientFixture.PortableMinecraftClient, paperFixture.PaperServer1);
+            Assert.Contains(paperFixture.Server1.Logs, line => line.Contains(expectedText));
+        }, portableMinecraftClientFixture.Api, paperFixture.Server1);
     }
 }

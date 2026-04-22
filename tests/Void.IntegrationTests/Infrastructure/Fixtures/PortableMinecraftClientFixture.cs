@@ -8,16 +8,16 @@ namespace Void.IntegrationTests.Infrastructure.Fixtures;
 
 public class PortableMinecraftClientFixture(PortableMinecraftClientImageFixture clientImageFixture) : IAsyncLifetime
 {
-    public PortableMinecraftClient PortableMinecraftClient { get => field ?? throw new InvalidOperationException($"{nameof(PortableMinecraftClient)} is not initialized."); set; }
+    public PortableMinecraftClient Api { get => field ?? throw new InvalidOperationException($"{nameof(Api)} is not initialized."); set; }
 
     public async ValueTask InitializeAsync()
     {
-        PortableMinecraftClient = await PortableMinecraftClient.CreateAsync(clientImageFixture, Timeouts.SetupTimeoutToken);
+        Api = await PortableMinecraftClient.CreateAsync(clientImageFixture, Timeouts.SetupTimeoutToken);
     }
 
     public async ValueTask DisposeAsync()
     {
-        await PortableMinecraftClient.DisposeAsync();
+        await Api.DisposeAsync();
         GC.SuppressFinalize(this);
     }
 }

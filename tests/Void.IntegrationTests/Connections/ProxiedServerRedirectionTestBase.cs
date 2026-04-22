@@ -16,7 +16,7 @@ public abstract class ProxiedServerRedirectionTestBase(PaperFixture paperFixture
 
     protected async Task RunAsync(ProtocolVersion protocolVersion)
     {
-        if (!portableMinecraftClientFixture.PortableMinecraftClient.SupportedVersions.Contains(protocolVersion))
+        if (!portableMinecraftClientFixture.Api.SupportedVersions.Contains(protocolVersion))
             Assert.Skip($"Protocol version {protocolVersion} is not supported by the client, skipping test.");
 
         var server1First = $"server1-{Guid.NewGuid()}";
@@ -26,27 +26,27 @@ public abstract class ProxiedServerRedirectionTestBase(PaperFixture paperFixture
         {
             using (var gameCancellationTokenSource = new CancellationTokenSource())
             {
-                await using var game = await WithTimeoutRetriesAsync(async () => await portableMinecraftClientFixture.PortableMinecraftClient.RunGameAsync(_proxyEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
+                await using var game = await WithTimeoutRetriesAsync(async () => await portableMinecraftClientFixture.Api.RunGameAsync(_proxyEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
 
-                await portableMinecraftClientFixture.PortableMinecraftClient.SendTextMessagesAsync(
+                await portableMinecraftClientFixture.Api.SendTextMessagesAsync(
                 [
                     server1First,
                     "/server args-server-2"
                 ], Timeouts.StepTimeoutToken);
 
-                await portableMinecraftClientFixture.PortableMinecraftClient.EnsureStableAsync(Timeouts.StepTimeoutToken);
+                await portableMinecraftClientFixture.Api.EnsureStableAsync(Timeouts.StepTimeoutToken);
 
-                await portableMinecraftClientFixture.PortableMinecraftClient.SendTextMessagesAsync(
+                await portableMinecraftClientFixture.Api.SendTextMessagesAsync(
                 [
                     server2Text,
                     "/server args-server-1"
                 ], Timeouts.StepTimeoutToken);
 
-                await portableMinecraftClientFixture.PortableMinecraftClient.EnsureStableAsync(Timeouts.StepTimeoutToken);
+                await portableMinecraftClientFixture.Api.EnsureStableAsync(Timeouts.StepTimeoutToken);
             }
 
             Assert.Contains(voidFixture.VoidProxy.Logs, line => line.Contains("connected to args-server-2"));
             Assert.True(voidFixture.VoidProxy.Logs.Count(line => line.Contains("connected to args-server-1")) is >= 2); // TODO: sometimes, proxy prints multiple times "connected to" message
-        }, portableMinecraftClientFixture.PortableMinecraftClient, voidFixture.VoidProxy, paperFixture.PaperServer1, paperFixture.PaperServer2);
+        }, portableMinecraftClientFixture.Api, voidFixture.VoidProxy, paperFixture.Server1, paperFixture.Server2);
     }
 }

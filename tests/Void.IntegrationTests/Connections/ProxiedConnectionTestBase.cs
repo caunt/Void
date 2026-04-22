@@ -18,7 +18,7 @@ public abstract class ProxiedConnectionTestBase(PaperFixture paperFixture, VoidF
 
     protected async Task RunAsync(ProtocolVersion protocolVersion)
     {
-        if (!portableMinecraftClientFixture.PortableMinecraftClient.SupportedVersions.Contains(protocolVersion))
+        if (!portableMinecraftClientFixture.Api.SupportedVersions.Contains(protocolVersion))
             Assert.Skip($"Protocol version {protocolVersion} is not supported by the client, skipping test.");
 
         var expectedText = $"{ExpectedText} test #{Random.Shared.Next()}";
@@ -27,13 +27,13 @@ public abstract class ProxiedConnectionTestBase(PaperFixture paperFixture, VoidF
         {
             using (var gameCancellationTokenSource = new CancellationTokenSource())
             {
-                await using var game = await WithTimeoutRetriesAsync(async () => await portableMinecraftClientFixture.PortableMinecraftClient.RunGameAsync(_proxyEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
+                await using var game = await WithTimeoutRetriesAsync(async () => await portableMinecraftClientFixture.Api.RunGameAsync(_proxyEndPoint, protocolVersion, gameCancellationTokenSource.Token), maxRetries: 5);
 
-                await portableMinecraftClientFixture.PortableMinecraftClient.SendTextMessageAsync(expectedText, Timeouts.StepTimeoutToken);
-                await paperFixture.PaperServer1.ExpectTextAsync(expectedText, lookupHistory: true, Timeouts.StepTimeoutToken);
+                await portableMinecraftClientFixture.Api.SendTextMessageAsync(expectedText, Timeouts.StepTimeoutToken);
+                await paperFixture.Server1.ExpectTextAsync(expectedText, lookupHistory: true, Timeouts.StepTimeoutToken);
             }
 
-            Assert.Contains(paperFixture.PaperServer1.Logs, line => line.Contains(expectedText));
-        }, portableMinecraftClientFixture.PortableMinecraftClient, voidFixture.VoidProxy, paperFixture.PaperServer1);
+            Assert.Contains(paperFixture.Server1.Logs, line => line.Contains(expectedText));
+        }, portableMinecraftClientFixture.Api, voidFixture.VoidProxy, paperFixture.Server1);
     }
 }
