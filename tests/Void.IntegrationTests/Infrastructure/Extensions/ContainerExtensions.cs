@@ -48,13 +48,13 @@ public static class ContainerExtensions
             var processGroupLeaderFilePath = $"/tmp/run-command-process-group-{Guid.NewGuid():N}";
             var heredocMarker = $"RUN_COMMAND_{Guid.NewGuid():N}_{Guid.NewGuid():N}";
 
-            var executionTask = container.ExecAsync(["setsid", "--wait", "bash", "-c", $$"""
+            var executionTask = container.ExecAsync(["setsid", "--wait", "bash", "-c", $"""
                 set -euo pipefail
-                trap 'rm -f "{{processGroupLeaderFilePath}}"' EXIT
-                printf '%s\n' "$$" > "{{processGroupLeaderFilePath}}"
-                bash -seuo pipefail <<'{{heredocMarker}}'
-                {{command}}
-                {{heredocMarker}}
+                trap 'rm -f "{processGroupLeaderFilePath}"' EXIT
+                printf '%s\n' "$$" > "{processGroupLeaderFilePath}"
+                bash -seuo pipefail <<'{heredocMarker}'
+                {command}
+                {heredocMarker}
                 """.ReplaceLineEndings("\n")], cancellationToken);
 
             try

@@ -18,12 +18,28 @@ namespace Void.Proxy.Links;
 
 public class Link(IPlayer player, IServer server, INetworkChannel playerChannel, INetworkChannel serverChannel, ILogger logger, IEventService events, CancellationToken cancellationToken) : ILink
 {
+    private enum State
+    {
+        ReadStart,
+        ReadEnd,
+        MessageReceivedEventStart,
+        MessageReceivedEventEnd,
+        WriteStart,
+        WriteEnd,
+        MessageSentEventStart,
+        MessageSentEventEnd,
+        Stopping,
+        Disposing,
+        Completed
+    }
+    
     private readonly CancellationTokenSource _ctsPlayerToServer = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
     private readonly CancellationTokenSource _ctsPlayerToServerForce = new();
     private readonly CancellationTokenSource _ctsServerToPlayer = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
     private readonly CancellationTokenSource _ctsServerToPlayerForce = new();
     private readonly AsyncLock _lock = new();
-
+    private readonly Dictionary<Direction, State> _states = [];
+    
     private Task? _playerToServerTask;
     private Task? _serverToPlayerTask;
     private Task<Task>? _onStoppingTask;
@@ -90,7 +106,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
             if (await WaitWithTimeout(_playerToServerTask))
             {
-                logger.LogTrace("Timed out waiting for Player {Player} disconnection from Server {Server} manually, closing forcefully", Player, Server);
+                logger.LogTrace("Timed out waiting for Player {Player} disconnection from Server {Server} manually, cancelling forcefully [States: {States}]", Player, Server, string.Join(", ", _states.Select(x => $"{x.Key}={x.Value}")));
                 await _ctsPlayerToServerForce.CancelAsync();
 
                 if (await WaitWithTimeout(_playerToServerTask))
@@ -115,7 +131,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
             if (await WaitWithTimeout(_serverToPlayerTask))
             {
-                logger.LogTrace("Timed out waiting for Server {Server} disconnection from Player {Player} manually, closing forcefully", Server, Player);
+                logger.LogTrace("Timed out waiting for Server {Server} disconnection from Player {Player} manually, cancelling forcefully [States: {States}]", Server, Player, string.Join(", ", _states.Select(x => $"{x.Key}={x.Value}")));
                 await _ctsServerToPlayerForce.CancelAsync();
 
                 if (await WaitWithTimeout(_serverToPlayerTask))
@@ -145,14 +161,22 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
             try
             {
-                message = await sourceChannel.ReadMessageAsync(forceCancellationToken);
+                _states[direction] = State.ReadStart;
+                message = await sourceChannel.ReadMessageAsync(forceCancellationToken); // maybe do cancellationToken instead? we've changed SimpleNetworkStream to support safe cancellation
+                _states[direction] = State.ReadEnd;
 
+                _states[direction] = State.MessageReceivedEventStart;
                 var cancelled = await events.ThrowWithResultAsync(new MessageReceivedEvent(sourceSide, sourceSide, Side.Proxy, direction, message, this, Player), cancellationToken);
+                _states[direction] = State.MessageReceivedEventEnd;
 
                 if (cancelled)
                     continue;
             }
-            catch (Exception exception) when (exception is StreamException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
+            catch (Exception exception) when (exception is TaskCanceledException or OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception exception) when (exception is StreamException or ObjectDisposedException)
             {
                 _stopReason = direction switch
                 {
@@ -173,11 +197,19 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
             try
             {
+                _states[direction] = State.WriteStart;
                 await destinationChannel.WriteMessageAsync(message, forceCancellationToken);
+                _states[direction] = State.WriteEnd;
 
+                _states[direction] = State.MessageSentEventStart;
                 await events.ThrowAsync(new MessageSentEvent(sourceSide, Side.Proxy, destinationSide, direction, message, this, Player), cancellationToken);
+                _states[direction] = State.MessageSentEventEnd;
             }
-            catch (Exception exception) when (exception is StreamException or TaskCanceledException or OperationCanceledException or ObjectDisposedException)
+            catch (Exception exception) when (exception is TaskCanceledException or OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception exception) when (exception is StreamException or ObjectDisposedException)
             {
                 _stopReason = direction switch
                 {
@@ -214,6 +246,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             {
                 if (!_stopping)
                 {
+                    _states[direction] = State.Stopping;
                     _stopping = true;
                     await events.ThrowAsync(new LinkStoppingEvent(this, Player, _stopReason ?? throw new LinkInternalException("Stopping reason is unset")), forceCancellationToken);
                 }
@@ -221,6 +254,8 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
             if (destinationChannel.CanWrite)
                 await destinationChannel.FlushAsync(forceCancellationToken);
+
+            _states[direction] = State.Disposing;
 
             switch (direction)
             {
@@ -238,7 +273,11 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
         }
         catch (Exception exception)
         {
-            logger.LogCritical("Link {Link} cannot be stopped:\n{Exception}", this, exception);
+            logger.LogCritical(exception, "Link {Link} cannot be stopped", this);
+        }
+        finally
+        {
+            _states[direction] = State.Completed;
         }
     }
 

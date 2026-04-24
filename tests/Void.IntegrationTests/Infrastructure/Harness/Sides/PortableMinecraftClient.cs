@@ -79,7 +79,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
     public record Game(string TestName, IContainer Container, Func<DateTime> LogsDateTimeGetter, ProtocolVersion ProtocolVersion, string Username, Task RunTask, CancellationTokenSource CancellationTokenSource) : IAsyncDisposable
     {
         private readonly string _workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), "steps", TestName, ProtocolVersion.ToString(), Username);
-        private int _step = 0;
+        private int _step;
         
         public DateTime ReadLogsSince => LogsDateTimeGetter();
         
@@ -122,7 +122,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
             {
                 // Is it a Chat Command?
                 var expectTask = text.StartsWith('/')
-                    ? Task.Delay(3_000, cancellationToken) // Give some room delay for client-server reaction
+                    ? Task.Delay(3_000, cancellationToken) // Give some room for client-server reaction
                     : Container.ExpectTextAsync(text, cancellationToken); // Expect the text to appear in logs
 
                 await LogAsync($"Sending chat input: {text}", cancellationToken);
