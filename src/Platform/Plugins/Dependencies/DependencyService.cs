@@ -288,13 +288,12 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
             }
             else
             {
-                // TODO: Bug, need to change reuse of factory to singleton
                 playerContainer.Register(
-                    registrationFactory,
                     registration.ServiceType,
-                    registration.OptionalServiceKey,
-                    IfAlreadyRegistered.Throw,
-                    false);
+                    registration.ImplementationType,
+                    Reuse.Singleton,
+                    registrationFactory.Made,
+                    serviceKey: registration.OptionalServiceKey);
             }
         }
 
