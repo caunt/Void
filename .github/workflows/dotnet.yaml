@@ -109,7 +109,7 @@ jobs:
       - name: Save Artifact Suffix
         id: get_suffix
         shell: bash
-        run: echo "result=$([[ $OSTYPE == msys* ]] && echo .exe)" >> "$GITHUB_OUTPUT"
+        run: echo "result=$([[ $RUNNER_OS == Windows ]] && echo .exe)" >> "$GITHUB_OUTPUT"
 
       - name: Rename Artifact
         shell: bash
