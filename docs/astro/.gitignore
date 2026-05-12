@@ -2,6 +2,8 @@
 dist/
 # generated types
 .astro/
+# auto-generated API reference (produced by DocFX in CI)
+src/reference/
 
 # dependencies
 node_modules/
