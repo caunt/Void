@@ -43,7 +43,7 @@ public static class ObjectExtensions
 
             while (baseType != null)
             {
-                propertyInfo = type.GetProperty(propertyName, DefaultFlags | BindingFlags.GetProperty);
+                propertyInfo = baseType.GetProperty(propertyName, DefaultFlags | BindingFlags.GetProperty);
 
                 if (propertyInfo != null)
                 {
@@ -109,7 +109,7 @@ public static class ObjectExtensions
 
             while (baseType != null)
             {
-                propertyInfo = type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.GetProperty);
+                propertyInfo = baseType.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.GetProperty);
 
                 if (propertyInfo != null)
                 {
