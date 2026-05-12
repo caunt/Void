@@ -23,15 +23,15 @@ export default defineConfig({
         sidebar: [
             {
                 label: 'Getting Started',
-                autogenerate: { directory: 'docs/getting-started' }
+                items: [{ autogenerate: { directory: 'docs/getting-started' } }]
             },
             {
                 label: 'Configuration',
-                autogenerate: { directory: 'docs/configuration' }
+                items: [{ autogenerate: { directory: 'docs/configuration' } }]
             },
             {
                 label: 'Forwarding',
-                autogenerate: { directory: 'docs/forwardings' }
+                items: [{ autogenerate: { directory: 'docs/forwardings' } }]
             },
             { slug: 'docs/essentials' },
             { slug: 'docs/containers' },
@@ -43,12 +43,12 @@ export default defineConfig({
                     {
                         label: 'Events',
                         collapsed: true,
-                        autogenerate: { directory: 'docs/developing-plugins/events' }
+                        items: [{ autogenerate: { directory: 'docs/developing-plugins/events' } }]
                     },
                     {
                         label: 'Services',
                         collapsed: true,
-                        autogenerate: { directory: 'docs/developing-plugins/services' }
+                        items: [{ autogenerate: { directory: 'docs/developing-plugins/services' } }]
                     },
                     { slug: 'docs/developing-plugins/commands' },
                     { slug: 'docs/developing-plugins/text-formatting' },
@@ -58,7 +58,7 @@ export default defineConfig({
                         label: 'Network',
                         collapsed: true,
                         badge: { text: 'expert', variant: 'danger' },
-                        autogenerate: { directory: 'docs/developing-plugins/network' }
+                        items: [{ autogenerate: { directory: 'docs/developing-plugins/network' } }]
                     },
                     { slug: 'docs/developing-plugins/serializers' }
                 ],
@@ -67,7 +67,7 @@ export default defineConfig({
             {
                 label: 'Reference',
                 collapsed: true,
-                autogenerate: { directory: 'reference', collapsed: true }
+                items: [{ autogenerate: { directory: 'reference', collapsed: true } }]
             },
             { slug: 'docs/troubleshooting' }
         ],
