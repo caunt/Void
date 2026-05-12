@@ -28,8 +28,8 @@ jobs:
 
           - os: ubuntu-24.04-arm
             runtime-identifier: linux-arm64
-            run-unit-tests: true
-            run-integration-tests: true
+            run-unit-tests: true 
+            run-integration-tests: false # TODO: investigate - cannot build portablemc docker image
 
           - os: ubuntu-24.04-arm
             runtime-identifier: linux-bionic-arm64
