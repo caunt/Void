@@ -31,6 +31,7 @@ public class Plugin(IDependencyService dependencies, IConsoleService console) : 
             services.AddSingleton<ModerationService>();
             services.AddSingleton<PlatformService>();
             services.AddSingleton<TraceService>();
+            services.AddSingleton<GreetingPlugin>(); // Register the new greeting plugin
         });
 
         var overrides = dependencies.GetRequiredService<OverridesService>();
