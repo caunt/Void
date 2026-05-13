@@ -323,6 +323,7 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
     {
         return version switch
         {
+            var value when value == ProtocolVersion.MINECRAFT_26_1 => value.Releases[2], // paper skipped 26.1
             var value when value == ProtocolVersion.MINECRAFT_1_21_2 => value.Releases[1], // paper skipped 1.21.2
             var value when value == ProtocolVersion.MINECRAFT_1_20_5 => value.Releases[1], // paper skipped 1.20.5
             var value when value == ProtocolVersion.MINECRAFT_1_20_3 => value.Releases[1], // paper skipped 1.20.3
