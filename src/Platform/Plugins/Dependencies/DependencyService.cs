@@ -313,9 +313,9 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
 
     private Container CreateCompositeContainer(string name, params IEnumerable<IContainer> containers)
     {
-        var childContainers = containers.ToArray();
+        Container? compositeContainer = null;
 
-        var compositeContainer = new Container(container.Rules
+        compositeContainer = new Container(container.Rules
             .WithUnknownServiceResolvers(request =>
             {
                 var serviceKey = request.ServiceKey;
@@ -328,16 +328,19 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
 
                 bool IsKnownRegistration(IContainer childContainer)
                 {
+                    if (ReferenceEquals(childContainer, compositeContainer))
+                        return false;
+
                     return childContainer.IsRegistered(serviceTypeClosedGeneric, serviceKey: serviceKey) ||
                         serviceTypeOpenGeneric != serviceTypeClosedGeneric && childContainer.IsRegistered(serviceTypeOpenGeneric, serviceKey: serviceKey);
                 }
 
-                if (!childContainers.Any(IsKnownRegistration))
+                if (!containers.Any(IsKnownRegistration))
                     return null;
 
                 return DelegateFactory.Of(_ =>
                 {
-                    foreach (var childContainer in childContainers)
+                    foreach (var childContainer in containers)
                     {
                         if (!IsKnownRegistration(childContainer))
                             continue;
