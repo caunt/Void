@@ -29,4 +29,14 @@ public interface IPlayerContext : IDisposable, IAsyncDisposable
     /// Gets the current state of the player context.
     /// </summary>
     public bool IsDisposed { get; }
+
+    /// <summary>
+    /// Gets the connection state of the player's network channel.
+    /// </summary>
+    public ChannelState ChannelState { get; }
+
+    /// <summary>
+    /// Gets the timestamp of the last channel activity.
+    /// </summary>
+    public DateTimeOffset LastActivityAt { get; }
 }

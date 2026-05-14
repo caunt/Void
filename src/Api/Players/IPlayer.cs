@@ -42,8 +42,32 @@ public interface IPlayer : IEquatable<IPlayer>, ICommandSource, IAsyncDisposable
     /// </summary>
     /// <remarks>The hash code is based on the <see cref="Client"/> property.</remarks>
     /// <returns>An integer representing the hash code of the current instance, derived from the <see cref="Client"/> property.</returns>
+    /// <summary>
+    /// Gets a unique identifier for the player based on connection properties.
+    /// </summary>
+    public string ConnectionId => $"{Client.Client.RemoteEndPoint}#{ConnectedAt.Ticks}";
+
+    /// <summary>
+    /// Gets a performance monitoring counter for the player.
+    /// </summary>
+    public PerformanceCounter PerformanceCounter { get; }
+
+    /// <summary>
+    /// Computes a stable hash code for the current instance. This is useful when the instance is upgraded or replaced to another implementation.
+    /// </summary>
+    /// <remarks>The hash code is based on the <see cref="Client"/> property.</remarks>
+    /// <returns>An integer representing the hash code of the current instance, derived from the <see cref="Client"/> property.</returns>
     public int GetStableHashCode()
     {
         return Client.GetHashCode();
+    }
+
+    /// <summary>
+    /// Optimized hash code calculation that uses connection ID for better distribution.
+    /// </summary>
+    /// <returns>The hash code based on connection properties.</returns>
+    public override int GetHashCode()
+    {
+        return ConnectionId.GetHashCode();
     }
 }

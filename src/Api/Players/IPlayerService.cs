@@ -20,6 +20,14 @@ public interface IPlayerService
     public void ForEach(Action<IPlayer> action);
 
     /// <summary>
+    /// Executes the specified <paramref name="action" /> for each player asynchronously.
+    /// </summary>
+    /// <param name="action">The action to perform for each player.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>A ValueTask representing the asynchronous operation.</returns>
+    public ValueTask ForEachAsync(Func<IPlayer, CancellationToken, ValueTask> action, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Executes the specified asynchronous <paramref name="action" /> for each player.
     /// </summary>
     /// <param name="action">The asynchronous action to execute for each player.</param>
