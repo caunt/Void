@@ -313,9 +313,9 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
 
     private Container CreateCompositeContainer(string name, params IEnumerable<IContainer> containers)
     {
-        Container? compositeContainer = null;
+        var childContainers = containers.ToArray();
 
-        compositeContainer = new Container(container.Rules
+        var compositeContainer = new Container(container.Rules
             .WithUnknownServiceResolvers(request =>
             {
                 var serviceKey = request.ServiceKey;
@@ -326,21 +326,20 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
                 if (serviceTypeOpenGeneric.IsGenericType)
                     serviceTypeOpenGeneric = serviceTypeOpenGeneric.GetGenericTypeDefinition();
 
-                if (!containers.Any(childContainer =>
-                    !ReferenceEquals(childContainer, compositeContainer) &&
-                    (childContainer.IsRegistered(serviceTypeClosedGeneric, serviceKey) ||
-                    serviceTypeOpenGeneric != serviceTypeClosedGeneric && childContainer.IsRegistered(serviceTypeOpenGeneric, serviceKey))))
+                bool IsKnownRegistration(IContainer childContainer)
+                {
+                    return childContainer.IsRegistered(serviceTypeClosedGeneric, serviceKey: serviceKey) ||
+                        serviceTypeOpenGeneric != serviceTypeClosedGeneric && childContainer.IsRegistered(serviceTypeOpenGeneric, serviceKey: serviceKey);
+                }
+
+                if (!childContainers.Any(IsKnownRegistration))
                     return null;
 
-                return DelegateFactory.Of(context =>
+                return DelegateFactory.Of(_ =>
                 {
-                    foreach (var childContainer in containers)
+                    foreach (var childContainer in childContainers)
                     {
-                        if (ReferenceEquals(childContainer, compositeContainer))
-                            continue;
-
-                        if (!childContainer.IsRegistered(serviceTypeClosedGeneric, serviceKey) &&
-                            (serviceTypeOpenGeneric == serviceTypeClosedGeneric || !childContainer.IsRegistered(serviceTypeOpenGeneric, serviceKey)))
+                        if (!IsKnownRegistration(childContainer))
                             continue;
 
                         // TODO: Add OptionalServiceKey?
