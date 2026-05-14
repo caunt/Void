@@ -313,9 +313,12 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
 
     private Container CreateCompositeContainer(string name, params IEnumerable<IContainer> containers)
     {
-        var compositeContainer = new Container(container.Rules
+        Container? compositeContainer = null;
+
+        compositeContainer = new Container(container.Rules
             .WithUnknownServiceResolvers(request =>
             {
+                var serviceKey = request.ServiceKey;
                 var serviceTypeClosedGeneric = request.ServiceType;
                 var serviceTypeOpenGeneric = serviceTypeClosedGeneric;
 
@@ -324,14 +327,22 @@ public class DependencyService(ILogger<DependencyService> logger, IRunOptions ru
                     serviceTypeOpenGeneric = serviceTypeOpenGeneric.GetGenericTypeDefinition();
 
                 if (!containers.Any(childContainer =>
-                    childContainer.GetService(serviceTypeClosedGeneric) is not null ||
-                    serviceTypeOpenGeneric != serviceTypeClosedGeneric && childContainer.GetService(serviceTypeOpenGeneric) is not null))
+                    !ReferenceEquals(childContainer, compositeContainer) &&
+                    (childContainer.IsRegistered(serviceTypeClosedGeneric, serviceKey) ||
+                    serviceTypeOpenGeneric != serviceTypeClosedGeneric && childContainer.IsRegistered(serviceTypeOpenGeneric, serviceKey))))
                     return null;
 
                 return DelegateFactory.Of(context =>
                 {
                     foreach (var childContainer in containers)
                     {
+                        if (ReferenceEquals(childContainer, compositeContainer))
+                            continue;
+
+                        if (!childContainer.IsRegistered(serviceTypeClosedGeneric, serviceKey) &&
+                            (serviceTypeOpenGeneric == serviceTypeClosedGeneric || !childContainer.IsRegistered(serviceTypeOpenGeneric, serviceKey)))
+                            continue;
+
                         // TODO: Add OptionalServiceKey?
                         var instance = childContainer.GetService(serviceTypeClosedGeneric);
 
