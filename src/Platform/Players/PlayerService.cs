@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Net.Sockets;
 using Nito.AsyncEx;
-using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Api.Events.Player;
@@ -42,7 +41,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
 
     public async ValueTask AcceptPlayerAsync(TcpClient client, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("Accepted client from {RemoteEndPoint}", client.Client.RemoteEndPoint);
+        logger.LogTrace("Accepted client from {@RemoteEndPoint}", client.Client.RemoteEndPoint);
 
         var player = new PlayerProxy(await events.ThrowWithResultAsync(new PlayerConnectingEvent(client, dependencies.CreatePlayerComposite), cancellationToken) ??
             throw new InvalidOperationException("Player is not instantiated"));
