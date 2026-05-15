@@ -84,14 +84,6 @@ public static class VoidEntryPoint
 
     private static async Task<int> Main(string[] args)
     {
-        args = [
-            "-r", "http://minecraft.bagetter.svc.cluster.local:80/v3/index.json",
-            "-p", "https://github.com/Shonz1/Void.Plugins/releases/latest/download/void-tab-lists.dll",
-            "-p", "https://github.com/Shonz1/Void.Plugins/releases/latest/download/void-player-positions.dll",
-            "-p", "https://github.com/Shonz1/Void.Plugins/releases/latest/download/void-menus.dll",
-            "-p", "https://pub-637ef13bcc21413ab47c77dd6e1399cf.r2.dev/ExamplePlugin.dll",
-        ];
-        
         var options = new RunOptions { Arguments = args };
         var result = await RunAsync(options);
 
