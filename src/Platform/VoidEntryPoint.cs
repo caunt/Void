@@ -5,6 +5,7 @@ using DryIoc.Microsoft.DependencyInjection;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
+using Serilog.Sinks.SystemConsole.Themes;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Configurations;
@@ -83,6 +84,14 @@ public static class VoidEntryPoint
 
     private static async Task<int> Main(string[] args)
     {
+        args = [
+            "-r", "http://minecraft.bagetter.svc.cluster.local:80/v3/index.json",
+            "-p", "https://github.com/Shonz1/Void.Plugins/releases/latest/download/void-tab-lists.dll",
+            "-p", "https://github.com/Shonz1/Void.Plugins/releases/latest/download/void-player-positions.dll",
+            "-p", "https://github.com/Shonz1/Void.Plugins/releases/latest/download/void-menus.dll",
+            "-p", "https://pub-637ef13bcc21413ab47c77dd6e1399cf.r2.dev/ExamplePlugin.dll",
+        ];
+        
         var options = new RunOptions { Arguments = args };
         var result = await RunAsync(options);
 
@@ -144,7 +153,7 @@ public static class VoidEntryPoint
             var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
 
             var token = lifetime.ApplicationStopping;
-            using var registration = cancellationToken.Register(lifetime.StopApplication);
+            await using var registration = cancellationToken.Register(lifetime.StopApplication);
 
             try
             {
@@ -187,7 +196,7 @@ public static class VoidEntryPoint
         const string template = "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj} {NewLine}{Exception}";
 
         if (logWriter is null)
-            configuration = configuration.WriteTo.Console(outputTemplate: template);
+            configuration = configuration.WriteTo.Console(outputTemplate: template, theme: AnsiConsoleTheme.Sixteen);
         else
             configuration = configuration.WriteTo.TextWriter(logWriter, outputTemplate: template);
 
