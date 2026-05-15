@@ -2,9 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Tags;
 
 /// <summary>
 /// A tag whose value is a contiguous sequence of 8-bit integers.
@@ -13,7 +12,6 @@ namespace Void.Minecraft.Nbt;
 /// While this class uses the CLS compliant <see cref="byte"/> (0..255), the NBT specification uses a signed value with a range of -128..127, so ensure
 /// the bits are equivalent for your values.
 /// </remarks>
-[PublicAPI]
 public class ByteArrayTag : ArrayTag<byte>
 {
     /// <summary>

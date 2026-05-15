@@ -1,12 +1,10 @@
 using System.Text.Json;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Tags;
 
 /// <summary>
 /// A tag that contains a single 32-bit integer value.
 /// </summary>
-[PublicAPI]
 public class IntTag : NumericTag<int>
 {
     /// <summary>

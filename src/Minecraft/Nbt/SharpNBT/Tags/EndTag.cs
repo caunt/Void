@@ -1,13 +1,11 @@
 using System.Text;
 using System.Text.Json;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Tags;
 
 /// <summary>
 /// Represents the end of <see cref="CompoundTag"/>.
 /// </summary>
-[PublicAPI]
 public sealed class EndTag : Tag
 {
     /// <summary>

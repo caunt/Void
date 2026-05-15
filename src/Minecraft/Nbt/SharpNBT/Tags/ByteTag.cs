@@ -1,8 +1,7 @@
 using System;
 using System.Text.Json;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Tags;
 
 /// <summary>
 /// A tag that contains a single 8-bit integer value.
@@ -12,7 +11,6 @@ namespace Void.Minecraft.Nbt;
 /// recommended to use the <see cref="SignedValue"/> property if your language supports a signed 8-bit value, otherwise simply ensure the bits are
 /// equivalent.
 /// </remarks>
-[PublicAPI]
 [Serializable]
 public class ByteTag : NumericTag<byte>
 {

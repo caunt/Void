@@ -1,8 +1,7 @@
 using System;
 using System.Text.Json;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Tags;
 
 /// <summary>
 /// A tag that contains a single 8-bit integer value.
@@ -11,7 +10,6 @@ namespace Void.Minecraft.Nbt;
 /// This tag type does not exist in the NBT specification, and is included for convenience to differentiate it from the <see cref="ByteTag"/> that it is
 /// actually serialized as.
 /// </remarks>
-[PublicAPI]
 [Obsolete("Use the IsBool and Bool properties of ByteTag. This class will be removed in a future version.")]
 public class BoolTag : Tag
 {

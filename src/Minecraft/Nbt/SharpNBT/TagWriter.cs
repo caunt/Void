@@ -5,14 +5,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
+using Void.Minecraft.Nbt.SharpNBT.Tags;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT;
 
 /// <summary>
 /// Provides methods for writing NBT tags to a stream.
 /// </summary>
-[PublicAPI]
 public class TagWriter : TagIO
 {
     private readonly bool leaveOpen;

@@ -6,7 +6,9 @@ using Void.Minecraft.Buffers;
 using Void.Minecraft.Buffers.Extensions;
 using Void.Minecraft.Nbt.Serializers.Json;
 using Void.Minecraft.Nbt.Serializers.String;
-using Void.Minecraft.Nbt.Snbt;
+using Void.Minecraft.Nbt.SharpNBT;
+using Void.Minecraft.Nbt.SharpNBT.Snbt;
+using Void.Minecraft.Nbt.SharpNBT.Tags;
 using Void.Minecraft.Nbt.Tags;
 
 namespace Void.Minecraft.Nbt;

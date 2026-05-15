@@ -4,14 +4,13 @@ using System.Data;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
-using JetBrains.Annotations;
+using Void.Minecraft.Nbt.SharpNBT.Tags;
 
-namespace Void.Minecraft.Nbt.Snbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Snbt;
 
 /// <summary>
 /// Provides static methods for parsing string-NBT (SNBT) source text into a complete <see cref="CompoundTag"/>.
 /// </summary>
-[PublicAPI]
 public static class StringNbt
 {
     /// <summary>

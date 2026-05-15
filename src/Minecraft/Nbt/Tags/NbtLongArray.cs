@@ -1,3 +1,5 @@
+using Void.Minecraft.Nbt.SharpNBT.Tags;
+
 namespace Void.Minecraft.Nbt.Tags;
 
 public record NbtLongArray(long[] Data) : NbtTag

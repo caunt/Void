@@ -1,6 +1,6 @@
 using System;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Events;
 
 /// <summary>
 /// Handler for events used with the <see cref="TagReader"/> class.

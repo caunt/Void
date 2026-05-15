@@ -4,9 +4,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Tags;
 
 /// <summary>
 /// Represents a collection of a tags.
@@ -14,7 +13,6 @@ namespace Void.Minecraft.Nbt;
 /// <remarks>
 /// All child tags <b>must</b> be have the same <see cref="Tag.Type"/> value, and their <see cref="Tag.Name"/> value will be omitted during serialization.
 /// </remarks>
-[PublicAPI]
 public class ListTag : Tag, IList<Tag>
 {
     /// <summary>

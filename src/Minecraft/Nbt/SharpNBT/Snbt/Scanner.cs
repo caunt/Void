@@ -3,7 +3,7 @@ using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
-namespace Void.Minecraft.Nbt.Snbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Snbt;
 
 internal ref struct Scanner
 {

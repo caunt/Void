@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using JetBrains.Annotations;
+using Void.Minecraft.Nbt.SharpNBT.Tags;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT;
 
 /// <summary>
 /// Provides a mechanism for easily building a tree of NBT objects by handling the intermediate step of creating tags, allowing the direct adding of their
@@ -12,7 +12,6 @@ namespace Void.Minecraft.Nbt;
 /// <para/>
 /// All methods return the <see cref="TagBuilder"/> instance itself, allowing for easily chaining calls to build a document.
 /// </summary>
-[PublicAPI]
 public class TagBuilder
 {
     private readonly CompoundTag root;
@@ -405,7 +404,6 @@ public class TagBuilder
     /// Represents the context of a single "level" of depth into a <see cref="TagBuilder"/> AST.
     /// </summary>
     /// <remarks>Implements <see cref="IDisposable"/> to that each node can used with <c>using</c> statements for easily distinguishable scope.</remarks>
-    [PublicAPI]
     public class Context : IDisposable
     {
         internal delegate TagBuilder CloseHandler();

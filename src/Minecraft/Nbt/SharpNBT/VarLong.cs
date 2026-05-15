@@ -1,13 +1,11 @@
 using System;
 using System.IO;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT;
 
 /// <summary>
 /// Provides static methods for reading and writing variable-length integers that are up to 10 bytes from both streams and buffers.
 /// </summary>
-[PublicAPI]
 public static class VarLong
 {
     /// <summary>

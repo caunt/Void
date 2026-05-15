@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Void.Minecraft.Nbt.SharpNBT.Tags;
 
 namespace Void.Minecraft.Nbt.Tags;
 

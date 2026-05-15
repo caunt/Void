@@ -1,13 +1,11 @@
 using System;
 using System.Runtime.CompilerServices;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT;
 
 /// <summary>
 /// Contains extension methods dealing with endianness of numeric types.
 /// </summary>
-[PublicAPI]
 public static class NumberExtensions
 {
     /// <summary>

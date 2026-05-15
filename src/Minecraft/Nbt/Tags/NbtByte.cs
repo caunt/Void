@@ -1,4 +1,5 @@
 using System;
+using Void.Minecraft.Nbt.SharpNBT.Tags;
 
 namespace Void.Minecraft.Nbt.Tags;
 

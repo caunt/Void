@@ -1,7 +1,6 @@
 using System;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT;
 
 /// <summary>
 /// Describes the specification to use for reading/writing.
@@ -11,7 +10,6 @@ namespace Void.Minecraft.Nbt;
 /// Furthermore, the Bedrock editions use a different specification depending on whether it is writing to disk or sending over a network.
 /// </remarks>
 /// <seealso href="https://wiki.vg/NBT#Bedrock_edition"/>
-[PublicAPI]
 [Flags]
 public enum FormatOptions
 {

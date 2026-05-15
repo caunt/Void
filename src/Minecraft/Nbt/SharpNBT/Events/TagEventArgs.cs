@@ -1,12 +1,11 @@
 using System;
-using JetBrains.Annotations;
+using Void.Minecraft.Nbt.SharpNBT.Tags;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Events;
 
 /// <summary>
 /// Arguments supplied with tag-related events.
 /// </summary>
-[PublicAPI]
 public class TagEventArgs : EventArgs
 {
     /// <summary>

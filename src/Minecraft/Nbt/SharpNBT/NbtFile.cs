@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
+using Void.Minecraft.Nbt.SharpNBT.Tags;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT;
 
 /// <summary>
 /// Provides static convenience methods for working with NBT-formatted files, including both reading and writing.
 /// </summary>
-[PublicAPI]
 public static class NbtFile
 {
 

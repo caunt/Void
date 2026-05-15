@@ -3,15 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Tags;
 
 /// <summary>
 /// Base class for NBT tags that contain a fixed-size array of numeric types.
 /// </summary>
 /// <typeparam name="T">A value type that implements <see cref="INumber{TSelf}"/>.</typeparam>
-[PublicAPI]
 public abstract class ArrayTag<T> : Tag, IReadOnlyList<T> where T : unmanaged, INumber<T>
 {
     /// <summary>

@@ -1,14 +1,12 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT;
 
 /// <summary>
 /// Abstract base class for the <see cref="TagReader"/> and <see cref="TagWriter"/> classes, providing shared functionality.
 /// </summary>
-[PublicAPI]
 public abstract class TagIO : IDisposable
 {
     /// <summary>

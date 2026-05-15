@@ -5,9 +5,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Tags;
 
 /// <summary>
 /// Top-level tag that acts as a container for other <b>named</b> tags. 
@@ -16,7 +15,6 @@ namespace Void.Minecraft.Nbt;
 /// This along with the <see cref="ListTag"/> class define the structure of the NBT format. Children are not order-dependent, nor is order guaranteed. The
 /// closing <see cref="EndTag"/> does not require to be explicitly added, it will be added automatically during serialization. 
 /// </remarks>
-[PublicAPI]
 public class CompoundTag : Tag, IDictionary<string, Tag>, ICollection<Tag>
 {
     private readonly Dictionary<string, Tag> dict;

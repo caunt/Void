@@ -1,11 +1,8 @@
-using JetBrains.Annotations;
-
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT;
 
 /// <summary>
 /// Describes compression formats supported by the NBT specification.
 /// </summary>
-[PublicAPI]
 public enum CompressionType : byte
 {
     /// <summary>

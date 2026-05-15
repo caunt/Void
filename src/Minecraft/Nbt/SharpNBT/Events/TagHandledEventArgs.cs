@@ -1,14 +1,13 @@
 using System;
 using System.ComponentModel;
 using System.IO;
-using JetBrains.Annotations;
+using Void.Minecraft.Nbt.SharpNBT.Tags;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Events;
 
 /// <summary>
 /// Arguments supplied when an event that can be handled by an event subscriber.
 /// </summary>
-[PublicAPI]
 public class TagHandledEventArgs : HandledEventArgs
 {
     /// <summary>

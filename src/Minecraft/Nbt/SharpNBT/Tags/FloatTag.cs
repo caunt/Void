@@ -1,12 +1,10 @@
 using System.Text.Json;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Tags;
 
 /// <summary>
 /// A tag that contains a single IEEE-754 single-precision floating point number.
 /// </summary>
-[PublicAPI]
 public class FloatTag : NumericTag<float>
 {
     /// <summary>

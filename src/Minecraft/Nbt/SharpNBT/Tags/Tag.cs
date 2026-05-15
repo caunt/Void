@@ -4,14 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Tags;
 
 /// <summary>
 /// Abstract base class that all NBT tags inherit from.
 /// </summary>
-[PublicAPI]
 public abstract class Tag : IEquatable<Tag>, ICloneable
 {
     /// <summary>

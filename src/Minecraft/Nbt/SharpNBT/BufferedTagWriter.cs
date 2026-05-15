@@ -2,16 +2,14 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT;
 
 /// <summary>
 /// Provides a <see cref="TagWriter"/> object that writes to an internal buffer instead of a <see cref="Stream"/> object, which then can be retrieved as
 /// an array of bytes or written directly to a stream. This is especially convenient when creating packets to be sent over a network, where the size of
 /// the packet must be pre-determined before sending.
 /// </summary>
-[PublicAPI]
 public class BufferedTagWriter : TagWriter
 {
     private readonly MemoryStream buffer;
@@ -78,7 +76,6 @@ public class BufferedTagWriter : TagWriter
     /// Gets the internal buffer as an array of bytes containing the NBT data written so far.
     /// </summary>
     /// <returns>An array of bytes containing the NBT data.</returns>
-    [Pure]
     public byte[] ToArray()
     {
         BaseStream.Flush();

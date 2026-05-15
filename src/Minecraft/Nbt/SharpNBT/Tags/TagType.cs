@@ -1,12 +1,10 @@
 using System;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Tags;
 
 /// <summary>
 /// Strongly-typed numerical constants that are prefixed to tags to denote their type.
 /// </summary>
-[PublicAPI]
 [Serializable]
 public enum TagType : byte
 {

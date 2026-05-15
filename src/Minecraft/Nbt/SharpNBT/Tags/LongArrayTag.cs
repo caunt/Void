@@ -2,14 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Tags;
 
 /// <summary>
 /// A tag whose value is a contiguous sequence of 64-bit integers.
 /// </summary>
-[PublicAPI]
 public class LongArrayTag : ArrayTag<long>
 {
     /// <summary>

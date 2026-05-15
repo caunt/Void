@@ -3,14 +3,14 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
+using Void.Minecraft.Nbt.SharpNBT.Events;
+using Void.Minecraft.Nbt.SharpNBT.Tags;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT;
 
 /// <summary>
 /// Provides methods for reading NBT data from a stream.
 /// </summary>
-[PublicAPI]
 public class TagReader : TagIO
 {
     /// <summary>

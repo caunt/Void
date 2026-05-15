@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Tags;
 
 /// <summary>
 /// Abstract base class for <see cref="Tag"/> types that contain a single numeric value.
 /// </summary>
 /// <typeparam name="T">A value type that implements <see cref="INumber{TSelf}"/>.</typeparam>
-[PublicAPI]
 public abstract class NumericTag<T> : Tag, IEquatable<NumericTag<T>>, IComparable<NumericTag<T>>, IComparable where T : unmanaged, INumber<T>
 {
     /// <summary>

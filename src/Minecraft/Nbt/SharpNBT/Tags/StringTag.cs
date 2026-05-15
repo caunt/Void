@@ -1,13 +1,11 @@
 using System;
 using System.Text.Json;
-using JetBrains.Annotations;
 
-namespace Void.Minecraft.Nbt;
+namespace Void.Minecraft.Nbt.SharpNBT.Tags;
 
 /// <summary>
 /// A tag the contains a UTF-8 string.
 /// </summary>
-[PublicAPI]
 public class StringTag : Tag, IEquatable<StringTag>
 {
     /// <summary>
