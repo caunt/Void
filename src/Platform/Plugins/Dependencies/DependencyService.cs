@@ -117,20 +117,26 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         var serviceType = instance.GetType();
         context = null;
 
-        var queues = _plugins.Values.Select(container => new Queue<KeyValuePair<int, IResolverContext>>(container.Scopes.AsEnumerable()));
-        foreach (var queue in queues)
+        foreach (var (assembly, plugin) in _plugins)
         {
-            while (queue.TryDequeue(out var pair))
+            var container = plugin.Root.GetRequiredService<IContainer>();
+            
+            if (!container.CanGetService(serviceType))
+                continue;
+            
+            foreach (var (_, playerScope) in plugin.Scopes)
             {
-                var (playerStableHashCode, playerScope) = pair;
+                if (playerScope.Resolve(serviceType, IfUnresolved.ReturnDefault) != instance)
+                    continue;
+
                 context = playerScope.GetService<IPlayerContext>();
-                
+
                 if (context is not null)
-                    break;
+                    return true;
             }
         }
 
-        return context is not null;
+        return false;
     }
 
     public void ActivatePlayerScope(IPlayerContext context)
@@ -153,14 +159,26 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
 
     public void DisposePlayerScope(IPlayerContext context)
     {
+        var events = rootContainer.Resolve<IEventService>();
         var playerStableHashCode = context.Player.GetStableHashCode();
 
         foreach (var plugin in _plugins.Values)
         {
-            if (!plugin.Scopes.Remove(playerStableHashCode, out var scope))
+            if (!plugin.Scopes.Remove(playerStableHashCode, out var resolverContext))
                 continue;
 
-            scope.Dispose();
+            foreach (var scope in resolverContext.CurrentScope)
+            {
+                foreach (var service in scope.GetSnapshotOfServicesWithFactoryIDs())
+                {
+                    if (service.Value is not IEventListener listener)
+                        continue;
+                    
+                    events.UnregisterListeners(listener);
+                }
+            }
+            
+            resolverContext.Dispose();
         }
     }
 
