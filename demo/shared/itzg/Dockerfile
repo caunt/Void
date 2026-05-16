@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends tmux && rm -rf 
 RUN set -e; \
   mkdir -p /out/usr/local/tmux/bin /out/usr/local/tmux/lib; \
   cp /usr/bin/tmux /out/usr/local/tmux/bin/; \
-  ldd /usr/bin/tmux | awk '$3 ~ /^\// {print $3}' | grep -vE '/ld-linux|/libc\.so' | while read -r libraryPath; do cp "$libraryPath" /out/usr/local/tmux/lib/; done
+  ldd /usr/bin/tmux | awk '$3 ~ /^\// {print $3}' | grep -vE '/ld-linux|/libc\.so|/libm\.so|/libpthread\.so|/librt\.so|/libdl\.so|/libresolv\.so|/libnsl\.so|/libutil\.so' | while read -r libraryPath; do cp "$libraryPath" /out/usr/local/tmux/lib/; done
 
 FROM itzg/minecraft-server@sha256:4f9b852cd29ce98e5735c9c4da7dd70b536ded3e77ac280b8874284ceee1598a
 
@@ -16,18 +16,19 @@ COPY <<'EOF' /entrypoint.sh
 #!/bin/sh
 set -e
 
-# Point to our custom tmux libs
-export LD_LIBRARY_PATH=/usr/local/tmux/lib
+tmux() {
+  env LD_LIBRARY_PATH=/usr/local/tmux/lib /usr/local/tmux/bin/tmux "$@"
+}
 
 # Create the session (detached)
-/usr/local/tmux/bin/tmux new-session -d -s main -n shell sh -lc 'unset LD_LIBRARY_PATH; exec /start' || true
+tmux new-session -d -s main -n shell sh -lc 'unset LD_LIBRARY_PATH; exec /start' || true
 
 # Set options
-/usr/local/tmux/bin/tmux set-option -g -w aggressive-resize off
-/usr/local/tmux/bin/tmux set-option -g -w window-size largest
+tmux set-option -g -w aggressive-resize off
+tmux set-option -g -w window-size largest
 
 # Start ttyd
-exec /usr/local/bin/ttyd -R -p 80 sh -lc 'exec env LD_LIBRARY_PATH=/usr/local/tmux/lib /usr/local/tmux/bin/tmux attach -t main'
+exec /usr/local/bin/ttyd -R -p 80 env LD_LIBRARY_PATH=/usr/local/tmux/lib /usr/local/tmux/bin/tmux attach -t main
 EOF
 
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
