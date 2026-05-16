@@ -90,7 +90,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
                         var players = rootContainer.GetRequiredService<IPlayerService>();
 
                         foreach (var player in players.All)
-                            GetPlayerScope(assembly, player.GetStableHashCode(), () => player.Context).GetRequiredService(serviceType);
+                            GetEntryPoint(player, assembly).GetRequiredService(serviceType);
                         break;
                     }
                 case ServiceLifetime.Singleton:
