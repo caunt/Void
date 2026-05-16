@@ -8,6 +8,7 @@ services:
       - itzg_and_dashboard
   
   client:
+    platform: linux/amd64 # portablemc
     build: session/client
     restart: unless-stopped
     networks:
