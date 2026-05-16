@@ -27,11 +27,11 @@ services:
       - itzg_and_void
       - itzg_and_dashboard
     environment:
-      EULA: "true"
+      EULA: "TRUE"
       TYPE: "PAPER"
-      ONLINE_MODE: "false"
-      RCON_CMDS_ON_CONNECT:  |-
-        time set day
+      ONLINE_MODE: "FALSE"
+      MODRINTH_PROJECTS: "viaversion,viabackwards,viarewind"
+      RCON_CMDS_ON_CONNECT:  "time set day"
 
 networks:
   controller_and_client:
