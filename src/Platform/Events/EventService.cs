@@ -149,7 +149,7 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
 
             if (!entry.BypassScopedFilter && @event is IScopedEvent scopedEvent)
             {
-                if (dependencies.TryGetScopedPlayerContext(listener, out var context))
+                if (dependencies.TryGetPlayerContext(listener, out var context))
                 {
                     if (context.Player != scopedEvent.Player)
                         continue;

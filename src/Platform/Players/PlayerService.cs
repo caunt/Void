@@ -43,10 +43,10 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
     {
         logger.LogTrace("Accepted client from {@RemoteEndPoint}", client.Client.RemoteEndPoint);
 
-        var player = new PlayerProxy(await events.ThrowWithResultAsync(new PlayerConnectingEvent(client, dependencies.CreatePlayerComposite), cancellationToken) ??
+        var player = new PlayerProxy(await events.ThrowWithResultAsync(new PlayerConnectingEvent(client, player => dependencies.GetEntryPoint(player)), cancellationToken) ??
             throw new InvalidOperationException("Player is not instantiated"));
 
-        dependencies.ActivatePlayerContext(player.Context);
+        dependencies.ActivatePlayerScope(player.Context);
 
         try
         {
@@ -166,7 +166,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
 
         logger.LogInformation("Player {Player} disconnected", @event.Player);
 
-        dependencies.DisposePlayerContext(@event.Player.Context);
+        dependencies.DisposePlayerScope(@event.Player.Context);
         await @event.Player.DisposeAsync();
     }
 }
