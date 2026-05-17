@@ -127,6 +127,9 @@ public static class HostingExtensions
             const IfAlreadyRegistered ifAlreadyRegistered = IfAlreadyRegistered.Replace;
 
             var setup = Setup.With(weaklyReferenced: false, asResolutionCall: true);
+            var reuse = descriptor.Lifetime == ServiceLifetime.Scoped 
+                ? Reuse.Scoped // By default, it is ScopeOrSingleton
+                : descriptor.Lifetime.ToReuse();
             var serviceType = descriptor.ServiceType;
             var implementationType = descriptor.ImplementationType;
 
@@ -135,7 +138,7 @@ public static class HostingExtensions
                 container.Register(
                     ReflectionFactory.Of(
                         implementationType,
-                        descriptor.Lifetime.ToReuse(),
+                        reuse,
                         setup: setup),
                     serviceType,
                     serviceKey,
@@ -147,7 +150,7 @@ public static class HostingExtensions
                 container.Register(
                     DelegateFactory.Of(
                         descriptor.ImplementationFactory.ToFactoryDelegate,
-                        descriptor.Lifetime.ToReuse(),
+                        reuse,
                         setup: setup),
                     serviceType,
                     serviceKey,
