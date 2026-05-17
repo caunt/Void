@@ -20,3 +20,7 @@ If you're looking for a examples of how to run Void proxy locally, follow [**thi
 ## Testing
 `docker volume rm demo-dind || true && docker rm -f void-demo || true && docker build -t caunt/void-demo:latest . && docker run --name void-demo --rm --privileged -v demo-dind:/var/lib/docker -p 8080:80 -e REDIRECT_LOGS=true caunt/void-demo:latest`  
 → [**localhost:8080**](http://localhost:8080/)
+
+## Publish
+- `docker buildx create --name multiarch --driver docker-container --use && docker buildx inspect --bootstrap`
+- `docker buildx build --platform linux/amd64,linux/arm64 -t caunt/void-demo:latest --push .`
