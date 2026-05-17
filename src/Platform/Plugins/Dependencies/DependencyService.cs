@@ -111,34 +111,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
     {
         return GetEntryPoint(preferredAssembly: typeof(TService).Assembly).GetService<TService>();
     }
-
-    public bool TryGetPlayerContext(IEventListener instance, [MaybeNullWhen(false)] out IPlayerContext context)
-    {
-        var serviceType = instance.GetType();
-        context = null;
-
-        foreach (var (assembly, plugin) in _plugins)
-        {
-            var container = plugin.Root.GetRequiredService<IContainer>();
-            
-            if (!container.CanGetService(serviceType))
-                continue;
-            
-            foreach (var (_, playerScope) in plugin.Scopes)
-            {
-                if (playerScope.Resolve(serviceType, IfUnresolved.ReturnDefault) != instance)
-                    continue;
-
-                context = playerScope.GetService<IPlayerContext>();
-
-                if (context is not null)
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
+    
     public void ActivatePlayerScope(IPlayerContext context)
     {
         var playerStableHashCode = context.Player.GetStableHashCode();
@@ -246,36 +219,45 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
     private Container Combine(params IEnumerable<IServiceProvider> containers)
     {
         var events = rootContainer.Resolve<IEventService>();
-        
-        return new Container(containers.Aggregate(rootContainer.Rules, (rootRules, rootServiceProvider) => rootRules.WithUnknownServiceResolvers(request =>
+        return new Container(rootContainer.Rules.WithUnknownServiceResolvers(request => ResolveFactory(request.ServiceType)));
+
+        InstanceFactory? ResolveFactory(Type serviceType)
         {
-            var container = rootServiceProvider.GetRequiredService<IContainer>();
-
-            if (!container.CanGetService(request.ServiceType))
-                return null;
-
-            var service = container
-                .With(dependencyRules => dependencyRules
-                    .WithUnknownServiceResolvers(dependencyRequest =>
-                    {
-                        if (GetService(dependencyRequest.ServiceType) is not { } dependency)
-                            return null;
-
-                        if (dependency is IEventListener dependencyListener)
-                            events.RegisterListeners(dependencyListener);
-
-                        return new InstanceFactory(dependency);
-                    }))
-                .GetService(request.ServiceType);
+            var service = ResolveService(serviceType);
 
             if (service is null)
                 return null;
 
-            if (service is IEventListener serviceListener)
-                events.RegisterListeners(serviceListener);
-
             return new InstanceFactory(service);
-        })));
+        }
+
+        object? ResolveService(Type serviceType)
+        {
+            // ReSharper disable once PossibleMultipleEnumeration
+            foreach (var serviceProvider in containers)
+            {
+                var container = serviceProvider.GetRequiredService<IContainer>();
+
+                if (!container.CanGetService(serviceType))
+                    continue;
+
+                var service = container
+                    .With(dependencyRules => dependencyRules
+                        .WithUnknownServiceResolvers(dependencyRequest => 
+                            ResolveFactory(dependencyRequest.ServiceType)))
+                    .GetService(serviceType);
+
+                if (service is null)
+                    continue;
+
+                if (service is IEventListener listener)
+                    events.RegisterListeners(listener);
+
+                return service;
+            }
+
+            return null;
+        }
     }
     
     private record PluginContainer(IServiceProvider Root, Dictionary<int, IResolverContext> Scopes);

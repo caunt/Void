@@ -149,13 +149,10 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
 
             if (!entry.BypassScopedFilter && @event is IScopedEvent scopedEvent)
             {
-                if (dependencies.TryGetPlayerContext(listener, out var context))
-                {
-                    if (context.Player != scopedEvent.Player)
-                        continue;
-
-                    // Allow invocation of scoped events only if the scoped player matches
-                }
+                if (dependencies.GetEntryPoint(scopedEvent.Player).GetService(listener.GetType()) != listener)
+                    continue;
+                
+                // Allow invocation of scoped events only if the scoped player matches
             }
 
             var parameters = method.GetParameters();
