@@ -17,7 +17,7 @@ internal static class VarIntUtil
     {
         if ((value & 0x1) == 0x1)
         {
-            return (-1 * ((long)(value >> 1) + 1));
+            return -((long)(value >> 1) + 1);
         }
         return (long)(value >> 1);
     }
