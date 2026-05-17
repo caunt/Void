@@ -94,4 +94,4 @@ export MESA_GL_VERSION_OVERRIDE=3.3
 export MESA_GLSL_VERSION_OVERRIDE=330
 
 echo "--- Starting Minecraft ---"
-exec /opt/portablemc start neoforge:1.21.11:unstable --demo --mc-dir . --jvm-arg="-Djava.awt.headless=false" $PORTABLEMC_ARGUMENTS
+exec /opt/portablemc start neoforge:release:unstable --demo --mc-dir . --jvm-arg="-Djava.awt.headless=false" $PORTABLEMC_ARGUMENTS
