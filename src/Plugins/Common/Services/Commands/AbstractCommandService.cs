@@ -28,6 +28,12 @@ public abstract class AbstractCommandService(ILogger logger, IEventService event
         await events.ThrowAsync(new AvailableCommandsEvent(@event.Link, @event.Player, packet.RootNode), cancellationToken);
     }
 
+    [Subscribe]
+    public async ValueTask OnAvailableCommands(AvailableCommandsEvent @event, CancellationToken cancellationToken)
+    {
+        await commands.CopyToAsync(@event.Node, @event.Player, cancellationToken);
+    }
+
     public async ValueTask<bool> HandleCommandAsync(ILink link, string command, bool isSigned, CancellationToken cancellationToken)
     {
         var cancelled = await events.ThrowWithResultAsync(new ChatCommandEvent(link, link.Player, command, isSigned), cancellationToken);

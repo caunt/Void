@@ -92,6 +92,11 @@ public abstract class CommandNode(CommandExecutor? executor = null, CommandRequi
         return _children[name];
     }
 
+    public bool RemoveChild(string name)
+    {
+        return _children.Remove(name);
+    }
+
     public IEnumerable<CommandNode> GetRelevantNodes(StringReader reader)
     {
         if (_literals.Count > 0)

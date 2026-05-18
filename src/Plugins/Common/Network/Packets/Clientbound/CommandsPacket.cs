@@ -21,7 +21,7 @@ public class CommandsPacket : IMinecraftClientboundPacket<CommandsPacket>
     {
         Root = 0x00,
         Literal = 0x01,
-        Argument = 0x02,
+        Argument = 0x02
     }
 
     [Flags]
@@ -32,14 +32,14 @@ public class CommandsPacket : IMinecraftClientboundPacket<CommandsPacket>
         IsExecutable = 0x04,
         HasRedirect = 0x08,
         HasSuggestionsType = 0x10,
-        IsRestricted = 0x20,
+        IsRestricted = 0x20
     }
 
     #endregion
 
-    private static readonly CommandExecutor _executeNothing = (context, cancellationToken) => ValueTask.FromResult(0);
-    private static readonly CommandRequirement _requireNothing = (context, cancellationToken) => ValueTask.FromResult(true);
-    private static readonly Dictionary<string, SuggestionProvider> _suggestionProvidersNames = [];
+    private static readonly CommandExecutor ExecuteNothing = (context, cancellationToken) => ValueTask.FromResult(0);
+    private static readonly CommandRequirement RequireNothing = (context, cancellationToken) => ValueTask.FromResult(true);
+    private static readonly Dictionary<string, SuggestionProvider> SuggestionProvidersNames = [];
 
     public required RootCommandNode RootNode { get; set; }
 
@@ -135,10 +135,10 @@ public class CommandsPacket : IMinecraftClientboundPacket<CommandsPacket>
         if (commandNode.RedirectTarget is not null)
             flags |= ProtocolCommandNodeFlags.HasRedirect;
 
-        if (commandNode is ArgumentCommandNode { CustomSuggestions: { } })
+        if (commandNode is ArgumentCommandNode { CustomSuggestions: not null })
             flags |= ProtocolCommandNodeFlags.HasSuggestionsType;
 
-        if (commandNode.Requirement == _requireNothing)
+        if (commandNode.Requirement == RequireNothing)
             flags |= ProtocolCommandNodeFlags.IsRestricted;
 
         buffer.WriteUnsignedByte((byte)flags);
@@ -147,13 +147,20 @@ public class CommandsPacket : IMinecraftClientboundPacket<CommandsPacket>
         foreach (var childCommandNode in commandNode.Children)
             buffer.WriteVarInt(indices[childCommandNode]);
 
-        if (commandNode.RedirectTarget is { } RedirectCommandNode)
-            buffer.WriteVarInt(indices[RedirectCommandNode]);
+        if (commandNode.RedirectTarget is { } redirectCommandNode)
+            buffer.WriteVarInt(indices[redirectCommandNode]);
 
-        if (commandNode is LiteralCommandNode { } literalCommandNode)
-            SerializeLiteralNode(ref buffer, literalCommandNode);
-        else if (commandNode is ArgumentCommandNode { } argumentCommandNode)
-            SerializeArgumentNode(ref buffer, argumentCommandNode);
+        switch (commandNode)
+        {
+            case LiteralCommandNode literalCommandNode:
+                SerializeLiteralNode(ref buffer, literalCommandNode);
+                break;
+            case ArgumentCommandNode argumentCommandNode:
+                SerializeArgumentNode(ref buffer, argumentCommandNode);
+                break;
+        }
+        
+        return;
 
         void SerializeLiteralNode(ref BufferSpan buffer, LiteralCommandNode literalCommandNode)
         {
@@ -165,16 +172,16 @@ public class CommandsPacket : IMinecraftClientboundPacket<CommandsPacket>
             buffer.WriteString(argumentCommandNode.Name);
             ArgumentSerializerRegistry.Serialize(ref buffer, argumentCommandNode.Type, protocolVersion);
 
-            if (argumentCommandNode.CustomSuggestions is not null)
-            {
-                var provider = argumentCommandNode.CustomSuggestions;
-                var name = "minecraft:ask_server";
+            if (argumentCommandNode.CustomSuggestions is null)
+                return;
 
-                if (_suggestionProvidersNames.TryGetKey(provider, out var foundName))
-                    name = foundName;
+            var provider = argumentCommandNode.CustomSuggestions;
+            var name = "minecraft:ask_server";
 
-                buffer.WriteString(name);
-            }
+            if (SuggestionProvidersNames.TryGetKey(provider, out var foundName))
+                name = foundName;
+
+            buffer.WriteString(name);
         }
     }
 
@@ -211,17 +218,17 @@ public class CommandsPacket : IMinecraftClientboundPacket<CommandsPacket>
             var argumentType = ArgumentSerializerRegistry.Deserialize(ref buffer, protocolVersion);
             var argumentBuilder = RequiredArgumentBuilder.Create(name, argumentType);
 
-            if (flags.HasFlag(ProtocolCommandNodeFlags.HasSuggestionsType))
-            {
-                if (argumentBuilder is not RequiredArgumentBuilder requiredArgumentBuilder)
-                    throw new InvalidDataException($"Argument node has suggestions type but deserialized builder is not a {nameof(RequiredArgumentBuilder)}.");
+            if (!flags.HasFlag(ProtocolCommandNodeFlags.HasSuggestionsType))
+                return new ProtocolCommandNode(index, nodeType, flags, childrenIndices, redirectToIndex, argumentBuilder);
 
-                var providerName = buffer.ReadString();
-                var provider = new SuggestionProvider((context, builder, cancellationToken) => builder.BuildAsync(cancellationToken));
+            if (argumentBuilder is null)
+                throw new InvalidDataException($"Argument node has suggestions type but deserialized builder is not a {nameof(RequiredArgumentBuilder)}.");
 
-                _ = _suggestionProvidersNames.TryAdd(providerName, provider);
-                requiredArgumentBuilder.Suggests(provider);
-            }
+            var providerName = buffer.ReadString();
+            var provider = new SuggestionProvider((context, builder, cancellationToken) => builder.BuildAsync(cancellationToken));
+
+            _ = SuggestionProvidersNames.TryAdd(providerName, provider);
+            argumentBuilder.Suggests(provider);
 
             return new ProtocolCommandNode(index, nodeType, flags, childrenIndices, redirectToIndex, argumentBuilder);
         }
@@ -260,10 +267,10 @@ public class CommandsPacket : IMinecraftClientboundPacket<CommandsPacket>
                     }
 
                     if (Flags.HasFlag(ProtocolCommandNodeFlags.IsExecutable))
-                        ArgumentBuilder.Executes(_executeNothing);
+                        ArgumentBuilder.Executes(ExecuteNothing);
 
                     if (Flags.HasFlag(ProtocolCommandNodeFlags.IsRestricted))
-                        ArgumentBuilder.Requires(_requireNothing);
+                        ArgumentBuilder.Requires(RequireNothing);
 
                     Built = ArgumentBuilder.Build();
                 }

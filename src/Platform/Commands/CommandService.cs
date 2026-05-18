@@ -14,11 +14,15 @@ using Void.Proxy.Api.Extensions.Reflection;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players;
+using StringReader = Void.Minecraft.Commands.Brigadier.StringReader;
 
 namespace Void.Proxy.Commands;
 
 public class CommandService(ILogger<ICommandService> logger, IEventService events) : ICommandService, IEventListener
 {
+    private static readonly StringRange AliasRange = StringRange.At(0);
+    private static readonly StringReader AliasReader = new(string.Empty);
+    
     private readonly CommandDispatcher _dispatcher = new();
     private readonly Dictionary<ParseResults, Task<int>> _executions = [];
 
@@ -46,7 +50,7 @@ public class CommandService(ILogger<ICommandService> logger, IEventService event
             var player = source as IPlayer;
             player?.Logger.LogInformation("Entered command: {Command}", command);
 
-            var results = await _dispatcher.ParseAsync(new(command), source, cancellationToken);
+            var results = await _dispatcher.ParseAsync(new StringReader(command), source, cancellationToken);
 
             if (results.Reader.CanRead || ContextChain.TryFlatten(results.Context.Build(results.Reader.Source)) is null)
             {
@@ -70,14 +74,14 @@ public class CommandService(ILogger<ICommandService> logger, IEventService event
                 }
                 catch (Exception exception)
                 {
-                    logger.LogCritical(exception, "An exception occurred while executing command {Command} from {Source}.", command, source);
+                    logger.LogCritical(exception, "An exception occurred while executing command {Command} from {Source}", command, source);
                     return int.MinValue;
                 }
                 finally
                 {
                     if (!_executions.Remove(results, out var resultTask))
                     {
-                        logger.LogCritical("Failed to remove command {Command} execution task from {Source} in tracking dictionary.", command, source);
+                        logger.LogCritical("Failed to remove command {Command} execution task from {Source} in tracking dictionary", command, source);
                     }
                     else
                     {
@@ -87,7 +91,7 @@ public class CommandService(ILogger<ICommandService> logger, IEventService event
                         // TODO: Handle error codes appropriately
                     }
                 }
-            });
+            }, cancellationToken);
 
             _executions.Add(results, commandTask);
             return CommandExecutionResult.Executed;
@@ -111,6 +115,21 @@ public class CommandService(ILogger<ICommandService> logger, IEventService event
             result[i] = suggestions.All[i].Text;
 
         return result;
+    }
+
+    public async ValueTask CopyToAsync(ICommandNode commandNode, ICommandSource commandSource, CancellationToken cancellationToken = default)
+    {
+        if (commandNode is not RootCommandNode destinationRoot)
+            throw new ArgumentException(@"Command node must be a root node", nameof(commandNode));
+        
+        foreach (var node in _dispatcher.Root.Children)
+        {
+            if (!await node.CanUseAsync(commandSource, cancellationToken))
+                continue;
+            
+            destinationRoot.RemoveChild(node.Name);
+            destinationRoot.AddChild(node);
+        }
     }
 
     private void ClearByAssembly(Assembly assembly)

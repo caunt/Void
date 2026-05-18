@@ -11,7 +11,6 @@ namespace Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 
 public class LiteralCommandNode(string literal, CommandExecutor? executor, CommandRequirement? requirement, CommandNode? redirectTarget, RedirectModifier? redirectModifier, bool isForks) : CommandNode(executor, requirement, redirectTarget, redirectModifier, isForks)
 {
-
     public string Literal { get; } = literal;
     public override string Name => Literal;
     public override string UsageText => Literal;
