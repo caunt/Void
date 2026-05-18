@@ -8,7 +8,7 @@ using Void.Proxy.Api.Plugins.Dependencies;
 
 namespace Void.Proxy.Events;
 
-public class EventService(ILogger<EventService> logger, IContainer container) : IEventService
+public partial class EventService(ILogger<EventService> logger, IContainer container) : IEventService
 {
     private readonly ConcurrentDictionary<Func<IEvent, bool>, TaskCompletionSource> _waiters = [];
     private readonly List<Entry> _entries = [];
@@ -132,7 +132,7 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
         var dependencies = container.Resolve<IDependencyService>();
 
         var eventType = @event.GetType();
-        logger.LogTrace("Invoking {TypeName} event", eventType.Name);
+        LogInvokingTypeEvent(eventType.Name);
 
         foreach (var entry in entries)
         {
@@ -159,7 +159,7 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
                 }
                 catch (Exception exception)
                 {
-                    logger.LogError(exception, "Failed to resolve {ServiceType} for scoped event {EventType}", serviceType.Name, eventType.Name);
+                    LogFailedToResolveServiceTypeForScopedEventEventTypeReason(serviceType.FullName, eventType.FullName, exception);
                 }
 
                 var scoped = scope.GetService(serviceType);
@@ -194,7 +194,7 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
             }
         }
 
-        logger.LogTrace("Completed invoking {TypeName} event", eventType.Name);
+        LogCompletedInvokingTypeEvent(eventType.Name);
     }
 
     public async ValueTask WaitAsync(Func<IEvent, bool> condition, CancellationToken cancellationToken = default)
@@ -234,7 +234,7 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
                 if (_entries.Any(entry => entry.Listener == listener))
                     continue;
 
-                logger.LogTrace("Registering {Type} event listener", listener);
+                LogRegisteringTypeEventListener(listener);
 
                 var type = listener.GetType();
                 while (type != null)
@@ -250,7 +250,7 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
 
                     foreach (var method in methods)
                     {
-                        logger.LogTrace("Registering {Type} event listener method {Name}", listener, method.Name);
+                        LogRegisteringTypeEventListenerMethodName(listener, method.Name);
                         SubscribeAttribute.SanityChecks(method);
 
                         var attribute = method.GetCustomAttribute<SubscribeAttribute>()
@@ -276,7 +276,7 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
         {
             foreach (var listener in listeners)
             {
-                logger.LogTrace("Unregistering {ListenerType} event listener", listener);
+                LogUnregisteringListenerTypeEventListener(listener);
 
                 for (var i = _entries.Count - 1; i >= 0; i--)
                 {
@@ -322,4 +322,22 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
             return HashCode.Combine(RuntimeHelpers.GetHashCode(value.Listener), RuntimeHelpers.GetHashCode(value.Method));
         }
     }
+
+    [LoggerMessage(LogLevel.Trace, "Invoking {TypeName} event")]
+    partial void LogInvokingTypeEvent(string typeName);
+
+    [LoggerMessage(LogLevel.Trace, "Completed invoking {TypeName} event")]
+    partial void LogCompletedInvokingTypeEvent(string typeName);
+
+    [LoggerMessage(LogLevel.Trace, "Registering {Type} event listener")]
+    partial void LogRegisteringTypeEventListener(IEventListener type);
+
+    [LoggerMessage(LogLevel.Trace, "Registering {Type} event listener method {Name}")]
+    partial void LogRegisteringTypeEventListenerMethodName(IEventListener type, string name);
+
+    [LoggerMessage(LogLevel.Trace, "Unregistering {ListenerType} event listener")]
+    partial void LogUnregisteringListenerTypeEventListener(IEventListener listenerType);
+
+    [LoggerMessage(LogLevel.Error, "Failed to resolve {ServiceType} for scoped event {EventType}. Reason:")]
+    partial void LogFailedToResolveServiceTypeForScopedEventEventTypeReason(string? serviceType, string? eventType, Exception exception);
 }
