@@ -227,14 +227,23 @@ public class Platform(
                 }
                 else
                 {
-                    try
+                    var client = await _listener.AcceptTcpClientAsync(cancellationToken);
+
+                    _ = Task.Run(async () =>
                     {
-                        await players.AcceptPlayerAsync(await _listener.AcceptTcpClientAsync(cancellationToken), cancellationToken);
-                    }
-                    catch (SocketException exception) when (exception.SocketErrorCode is SocketError.OperationAborted)
-                    {
-                        continue;
-                    }
+                        try
+                        {
+                            await players.AcceptPlayerAsync(client, cancellationToken);
+                        }
+                        catch (SocketException exception) when (exception.SocketErrorCode is SocketError.OperationAborted)
+                        {
+                            // Ignored
+                        }
+                        catch (Exception exception)
+                        {
+                            logger.LogError(exception, "An error occurred while accepting a player connection");
+                        }
+                    }, cancellationToken);
                 }
             }
         }
