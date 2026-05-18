@@ -152,7 +152,16 @@ public class EventService(ILogger<EventService> logger, IContainer container) : 
                 var serviceType = listener.GetType();
                 var scope = dependencies.GetEntryPoint(scopedEvent.Player);
                 
-                var singleton = dependencies.GetService(serviceType);
+                object? singleton = null;
+                try
+                {
+                    singleton = dependencies.GetService(serviceType);
+                }
+                catch (Exception exception)
+                {
+                    logger.LogError(exception, "Failed to resolve {ServiceType} for scoped event {EventType}", serviceType.Name, eventType.Name);
+                }
+
                 var scoped = scope.GetService(serviceType);
 
                 // Listener should be exactly Scoped and NOT Singleton
