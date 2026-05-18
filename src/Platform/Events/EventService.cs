@@ -150,23 +150,16 @@ public partial class EventService(ILogger<EventService> logger, IContainer conta
             if (!entry.BypassScopedFilter && @event is IScopedEvent scopedEvent)
             {
                 var serviceType = listener.GetType();
-                var scope = dependencies.GetEntryPoint(scopedEvent.Player);
-                
-                object? singleton = null;
-                try
-                {
-                    singleton = dependencies.GetService(serviceType);
-                }
-                catch (Exception exception)
-                {
-                    LogFailedToResolveServiceTypeForScopedEventEventTypeReason(serviceType.FullName, eventType.FullName, exception);
-                }
 
-                var scoped = scope.GetService(serviceType);
-
-                // Listener should be exactly Scoped and NOT Singleton
-                if (singleton is null && scoped is not null)
+                // Listener should be exactly Scoped
+                if (dependencies.TryGetServiceReuse(serviceType, out var lifetime) && lifetime is ServiceLifetime.Scoped)
                 {
+                    var scope = dependencies.GetEntryPoint(scopedEvent.Player).GetRequiredService<IContainer>();
+                    var scoped = scope.GetService(serviceType);
+
+                    if (scoped is null)
+                        throw new InvalidOperationException($"Failed to resolve scoped listener of type {serviceType.FullName} for event {eventType.FullName}.");
+                    
                     // Skip wrong scopes
                     if (scoped != listener)
                         continue;
