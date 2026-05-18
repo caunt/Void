@@ -67,7 +67,7 @@ public class ProtocolVersion : IComparable
         if (!Mapping.TryAdd(value, this))
             throw new InvalidOperationException($"ProtocolVersion {value} already registered, use Get(<version>) instead");
     }
-
+    
     public static ProtocolVersion Latest => Mapping.MaxBy(kv => kv.Key).Value;
 
     public static ProtocolVersion Oldest => Mapping.MinBy(kv => kv.Key).Value;
@@ -100,6 +100,14 @@ public class ProtocolVersion : IComparable
     public static ProtocolVersion Get(int version)
     {
         return Mapping[version];
+    }
+
+    public static ProtocolVersion From(int value)
+    {
+        if (Mapping.TryGetValue(value, out var version))
+            return version;
+        
+        return new ProtocolVersion(value);
     }
 
     public static IEnumerable<ProtocolVersion> Range()
