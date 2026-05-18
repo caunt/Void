@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.5.14](https://github.com/caunt/Void/compare/v0.5.13...v0.5.14) (2026-05-18)
+
+
+### Features
+
+* **debug:** add paper 26 support ([e7ad678](https://github.com/caunt/Void/commit/e7ad6786f2142458cf754be3b99e764f74b4ab50))
+* **logging:** ✨ enhanced console logging with a custom theme and improved argument parsing ([88d1983](https://github.com/caunt/Void/commit/88d198393a46f0a6da5aff514703d17b58c438b5))
+* **protocol:** ✨ added RangeTo method to ProtocolVersion ([74ac790](https://github.com/caunt/Void/commit/74ac7903ae9c55b3287ffbf85c6f231b00cf509d))
+
+
+### Bug Fixes
+
+* **api:** 🐛 fix base class property search in ObjectExtensions ([ebe4c2c](https://github.com/caunt/Void/commit/ebe4c2ca063a6ee8e2e2a52c8a02f42301f640b0))
+* **deps:** update dependency @astrojs/starlight to ^0.39.0 ([245f59b](https://github.com/caunt/Void/commit/245f59b77086a94a1c1873cd176435e28436a942))
+* **deps:** update dependency starlight-links-validator to ^0.23.0 ([fac5ae7](https://github.com/caunt/Void/commit/fac5ae76cb831a6203d389101082e1d2835299c9))
+* **deps:** update dependency starlight-links-validator to ^0.24.0 ([7894d0c](https://github.com/caunt/Void/commit/7894d0ceba0d79eccb5bd22e3b8a63965504595f))
+* **events:** 🐛 handle potential `null` entries ([d7f0d46](https://github.com/caunt/Void/commit/d7f0d46f8508d82fb0a91069471db2efe93e0af5))
+* **lifecycle:** 🐛 improve phase change handling and streamline keep-alive tracker logic ([7d4f93f](https://github.com/caunt/Void/commit/7d4f93fae530dc4502ec613239f2ee60de8ed65a))
+* **logging:** 🐛 correct offline mode warning message ([3b16864](https://github.com/caunt/Void/commit/3b1686451a3cf63783cecb3fd9400b79f6142841))
+* **network:** 🐛 enhance exception handling and buffer logic in `SimpleNetworkStream` ([96ff14d](https://github.com/caunt/Void/commit/96ff14dcd026f03a407b1a562507425a09118b4b))
+* **registry:** 🐛 add trace logs for clearing transformation registries in player and server channels ([847519a](https://github.com/caunt/Void/commit/847519aee8f138a74af157458674c574a4295f81))
+* **registry:** 🐛 fix async player iteration and ensure proper cancellation token usage ([0b16d33](https://github.com/caunt/Void/commit/0b16d33581c1b69c924e3dfe6f2551c8c620c227))
+* **tests:** 🐛 adjust cancellation token usage, update log stability checks, and refine packet transformation handling ([4bae9e4](https://github.com/caunt/Void/commit/4bae9e4febbeedf96305b95ac2813f559e438681))
+* **tests:** 🐛 renamed inconsistent fixture properties for clarity and stability ([7554aeb](https://github.com/caunt/Void/commit/7554aebea603e916991de1a2af4f0bc529138a41))
+
 ## [0.5.13](https://github.com/caunt/Void/compare/v0.5.12...v0.5.13) (2026-04-10)
 
 
