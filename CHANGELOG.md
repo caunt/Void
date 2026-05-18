@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.15](https://github.com/caunt/Void/compare/v0.5.14...v0.5.15) (2026-05-18)
+
+
+### Features
+
+* **command:** 🔧 added CopyToAsync method for command node management ([8213a8c](https://github.com/caunt/Void/commit/8213a8c6c8eb00d4945467030fc57f1ff6f896ab))
+
 ## [0.5.14](https://github.com/caunt/Void/compare/v0.5.13...v0.5.14) (2026-05-18)
 
 
