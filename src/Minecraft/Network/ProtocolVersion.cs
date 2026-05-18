@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
+using Void.Minecraft.Serializers;
 
 namespace Void.Minecraft.Network;
 
+[JsonConverter(typeof(ProtocolVersionJsonConverter))]
 public class ProtocolVersion : IComparable
 {
     private static readonly Dictionary<int, ProtocolVersion> Mapping = [];
