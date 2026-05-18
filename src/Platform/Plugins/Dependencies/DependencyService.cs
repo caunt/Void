@@ -115,8 +115,9 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
     public void ActivatePlayerScope(IPlayerContext context)
     {
         var playerStableHashCode = context.Player.GetStableHashCode();
+        var queues = new Queue<Assembly>(_plugins.Keys);
         
-        foreach (var (assembly, container) in _plugins)
+        while (queues.TryDequeue(out var assembly))
         {
             var playerScope = GetPlayerScope(assembly, playerStableHashCode, () => context);
             
@@ -153,6 +154,23 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
             
             resolverContext.Dispose();
         }
+    }
+
+    public bool TryGetServiceReuse(Type serviceType, out ServiceLifetime reuse)
+    {
+        var pluginContainer = GetPluginContainer(serviceType.Assembly);
+        var container = pluginContainer.Root.GetRequiredService<IContainer>();
+        var registration = container.GetServiceRegistrations().FirstOrDefault(registration => registration.ServiceType == serviceType);
+        var registered = registration.Factory is not null;
+        
+        reuse = registration.Factory?.Reuse switch
+        {
+            SingletonReuse => ServiceLifetime.Singleton,
+            CurrentScopeReuse => ServiceLifetime.Scoped,
+            _ => ServiceLifetime.Transient
+        };
+        
+        return registered;
     }
 
     public IServiceProvider GetEntryPoint(IPlayer player, Assembly? preferredAssembly = null)

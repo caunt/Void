@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Players;
@@ -13,6 +14,7 @@ public interface IDependencyService : IEventListener, IServiceProvider
     public object CreateInstance(Type serviceType, CancellationToken cancellationToken = default, params object[] parameters);
     public IServiceProvider GetEntryPoint(IPlayer player, Assembly? preferredAssembly = null);
     public IServiceProvider GetEntryPoint(Assembly? preferredAssembly = null);
+    public bool TryGetServiceReuse(Type serviceType, out ServiceLifetime reuse);
     public void ActivatePlayerScope(IPlayerContext context);
     public void DisposePlayerScope(IPlayerContext context);
     public TService? GetService<TService>();
