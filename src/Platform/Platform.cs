@@ -217,37 +217,34 @@ public class Platform(
             while (!cancellationToken.IsCancellationRequested)
             {
                 if (Status is ProxyStatus.Stopping)
-                {
                     break;
-                }
+                    
                 if (Status is ProxyStatus.Paused)
                 {
                     await Task.Delay(1_000, cancellationToken);
                     continue;
                 }
-                else
-                {
-                    var client = await _listener.AcceptTcpClientAsync(cancellationToken);
+                
+                var client = await _listener.AcceptTcpClientAsync(cancellationToken);
 
-                    _ = Task.Run(async () =>
+                _ = Task.Run(async () =>
+                {
+                    try
                     {
-                        try
-                        {
-                            await players.AcceptPlayerAsync(client, cancellationToken);
-                        }
-                        catch (SocketException exception) when (exception.SocketErrorCode is SocketError.OperationAborted)
-                        {
-                            // Ignored
-                        }
-                        catch (Exception exception)
-                        {
-                            logger.LogError(exception, "An error occurred while accepting a player connection");
-                        }
-                    }, cancellationToken);
-                }
+                        await players.AcceptPlayerAsync(client, cancellationToken);
+                    }
+                    catch (Exception exception) when (IsIgnored(exception))
+                    {
+                        // Ignored
+                    }
+                    catch (Exception exception)
+                    {
+                        logger.LogError(exception, "An error occurred while accepting a player connection");
+                    }
+                }, cancellationToken);
             }
         }
-        catch (Exception exception) when (exception is OperationCanceledException)
+        catch (Exception exception) when (IsIgnored(exception))
         {
             // Ignored
         }
@@ -256,5 +253,13 @@ public class Platform(
             logger.LogCritical(exception, "Platform background task completed with exception");
             throw;
         }
+
+        return;
+
+        static bool IsIgnored(Exception exception) => exception switch
+        {
+            OperationCanceledException or SocketException { SocketErrorCode: SocketError.OperationAborted } => true,
+            _ => false
+        };
     }
 }
