@@ -219,11 +219,11 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
     private Container Combine(params IEnumerable<IServiceProvider> containers)
     {
         var events = rootContainer.Resolve<IEventService>();
-        return new Container(rootContainer.Rules.WithUnknownServiceResolvers(request => ResolveFactory(request.ServiceType)));
+        return new Container(rootContainer.Rules.WithUnknownServiceResolvers(ResolveFactory));
 
-        InstanceFactory? ResolveFactory(Type serviceType)
+        InstanceFactory? ResolveFactory(Request request)
         {
-            var service = ResolveService(serviceType);
+            var service = ResolveService(request.ServiceType);
 
             if (service is null)
                 return null;
@@ -242,9 +242,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
                     continue;
 
                 var service = container
-                    .With(dependencyRules => dependencyRules
-                        .WithUnknownServiceResolvers(dependencyRequest => 
-                            ResolveFactory(dependencyRequest.ServiceType)))
+                    .With(dependencyRules => dependencyRules.WithUnknownServiceResolvers(ResolveFactory))
                     .GetService(serviceType);
 
                 if (service is null)
