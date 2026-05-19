@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.16](https://github.com/caunt/Void/compare/v0.5.15...v0.5.16) (2026-05-19)
+
+
+### Features
+
+* **command:** ✨ added command suggestion functionality and improved command handling ([89d691b](https://github.com/caunt/Void/commit/89d691bee1f48f79a3ec3fa650f99f8e118c18be))
+
+
+### Performance Improvements
+
+* **trace:** 🔧 improved logging methods for message handling ([d0ee38e](https://github.com/caunt/Void/commit/d0ee38e8fdf35370978f43ad73e2eac65499ebd8))
+
 ## [0.5.15](https://github.com/caunt/Void/compare/v0.5.14...v0.5.15) (2026-05-18)
 
 
