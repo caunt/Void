@@ -32,6 +32,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfontconfig1 \
     ca-certificates \
     binutils \
+    xxd \
     && rm -rf /var/lib/apt/lists/*
 
 RUN ln -s /usr/share/novnc /opt/novnc && ln -s /opt/novnc/vnc.html /opt/novnc/index.html
@@ -39,7 +40,7 @@ RUN ln -s /usr/share/novnc /opt/novnc && ln -s /opt/novnc/vnc.html /opt/novnc/in
 RUN portablemc start neoforge:release:unstable --dry --demo --mc-dir .
 
 # Create a server list with one visible "void" entry.
-RUN python3 -c "import sys; sys.stdout.buffer.write(bytes.fromhex('0a0000090007736572766572730a0000000101000668696464656e000800026970000a766f69643a32353536350800046e616d65000a566f69642050726f78790000'))" > servers.dat
+RUN printf '%s' '0a0000090007736572766572730a0000000101000668696464656e000800026970000a766f69643a32353536350800046e616d65000a566f69642050726f78790000' | xxd -r -p > servers.dat
 
 RUN mkdir -p mods && sh -c 'url="$(curl -fsSL "https://api.modrinth.com/v2/project/AANobbMI/version?loaders=%5B%22neoforge%22%5D&game_versions=%5B%22$(curl -fsSL https://piston-meta.mojang.com/mc/game/version_manifest_v2.json | jq -r ".latest.release")%22%5D" | jq -r "first(.[0].files[]? | select(.primary == true).url) // empty")"; [ -n "$url" ] && curl -fL -o mods/sodium.jar "$url" || echo "Warning: Sodium jar not found for latest NeoForge Minecraft" >&2'
 
