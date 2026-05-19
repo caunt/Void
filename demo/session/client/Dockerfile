@@ -37,6 +37,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN ln -s /usr/share/novnc /opt/novnc && ln -s /opt/novnc/vnc.html /opt/novnc/index.html
 
 RUN portablemc start neoforge:release:unstable --dry --demo --mc-dir .
+
+# servers.dat — NBT binary that pre-populates the multiplayer server list with
+# the "void" server (Void Proxy). Structure: one TAG_Compound entry with
+# name="Void Proxy" and ip="void".
+RUN printf '\x0a\x00\x00\x09\x00\x07\x73\x65\x72\x76\x65\x72\x73\x0a\x00\x00\x00\x01\x08\x00\x04\x6e\x61\x6d\x65\x00\x0a\x56\x6f\x69\x64\x20\x50\x72\x6f\x78\x79\x08\x00\x02\x69\x70\x00\x04\x76\x6f\x69\x64\x00\x00' > servers.dat
+
 RUN mkdir -p mods && sh -c 'url="$(curl -fsSL "https://api.modrinth.com/v2/project/AANobbMI/version?loaders=%5B%22neoforge%22%5D&game_versions=%5B%22$(curl -fsSL https://piston-meta.mojang.com/mc/game/version_manifest_v2.json | jq -r ".latest.release")%22%5D" | jq -r "first(.[0].files[]? | select(.primary == true).url) // empty")"; [ -n "$url" ] && curl -fL -o mods/sodium.jar "$url" || echo "Warning: Sodium jar not found for latest NeoForge Minecraft" >&2'
 
 COPY <<'EOF' options.txt
