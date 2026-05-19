@@ -15,17 +15,17 @@ public class ServerService(ILogger<ServerService> logger, ISettings settings, IC
     /// </summary>
     private const int DefaultPort = 25565;
 
-    private static readonly Option<bool> _ignoreFileServersOption = new("--ignore-file-servers")
+    private static readonly Option<bool> IgnoreFileServersOption = new("--ignore-file-servers")
     {
         Description = "Ignore servers specified in configuration files"
     };
 
-    private static readonly Option<string[]> _serversOption = new("--server")
+    private static readonly Option<string[]> ServersOption = new("--server")
     {
         Description = "Registers an additional server in format <host>:<port> or <host> (port defaults to 25565)"
     };
 
-    public IEnumerable<IServer> All => GetArgumentsServers().Concat(console.GetOptionValue(_ignoreFileServersOption) ? [] : settings.Servers);
+    public IEnumerable<IServer> All => GetArgumentsServers().Concat(console.GetOptionValue(IgnoreFileServersOption) ? [] : settings.Servers);
 
     [Subscribe]
     public void OnProxyStarted(ProxyStartingEvent @event)
@@ -57,7 +57,7 @@ public class ServerService(ILogger<ServerService> logger, ISettings settings, IC
 
     private IEnumerable<Server> GetArgumentsServers()
     {
-        var servers = console.GetOptionValue(_serversOption);
+        var servers = console.GetOptionValue(ServersOption);
 
         if (servers == null)
             yield break;
