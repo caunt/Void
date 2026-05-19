@@ -45,13 +45,7 @@ string[] arguments = [
     "--override", "s2=args-server-2",
     "--override", "s3=args-server-3",
     "--override", "s4=args-server-4",
-    "--offline",
-    
-    "-r", "http://minecraft.bagetter.svc.cluster.local:80/v3/index.json",
-    "-p", "https://github.com/Shonz1/Void.Plugins/releases/latest/download/void-tab-lists.dll",
-    "-p", "https://github.com/Shonz1/Void.Plugins/releases/latest/download/void-player-positions.dll",
-    "-p", "https://github.com/Shonz1/Void.Plugins/releases/latest/download/void-menus.dll",
-    "-p", "https://pub-637ef13bcc21413ab47c77dd6e1399cf.r2.dev/ExamplePlugin.dll"
+    "--offline"
 ];
 
 Environment.SetEnvironmentVariable("MINECRAFT_API_BASE_URL", "http://minecraft.api.svc.cluster.local:80/");
