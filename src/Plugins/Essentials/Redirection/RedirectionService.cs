@@ -2,6 +2,7 @@
 using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Extensions;
+using Void.Minecraft.Commands.Brigadier.Suggestion;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
@@ -25,6 +26,7 @@ public class RedirectionService(ILogger<RedirectionService> logger, Plugin plugi
             .Literal("server")
             .Then(builder => builder
                 .Argument("server", Arguments.GreedyString())
+                .Suggests(SuggestServer)
                 .Executes(ChangeServerAsync))
             .Executes(ChangeServerAsync));
     }
@@ -60,5 +62,13 @@ public class RedirectionService(ILogger<RedirectionService> logger, Plugin plugi
         player.Context.Logger.LogInformation("Redirected from server {PreviousServer} to server {CurrentServer}", previousServer, currentServer);
 
         return 0;
+    }
+
+    private Suggestions SuggestServer(CommandContext context, SuggestionsBuilder builder)
+    {
+        return servers.All
+            .Select(server => server.Name)
+            .Aggregate(builder, (suggestionsBuilder, name) => suggestionsBuilder.Suggest(name))
+            .Build();
     }
 }
