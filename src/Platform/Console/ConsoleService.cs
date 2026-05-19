@@ -115,8 +115,13 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
             return;
         }
 
-        var command = await _reader.ReadLineAsync(SuggestAsync, cancellationToken);
-        logger.LogInformation("Proxy issued command: {command}", command);
+        var command = await _reader.ReadLineAsync(async (input, readLineCancellationToken) =>
+        {
+            var suggestions = await SuggestAsync(input, readLineCancellationToken);
+            return suggestions.Select(suggestion => suggestion.Text).ToArray();
+        }, cancellationToken);
+        
+        logger.LogInformation("Proxy issued command: {Command}", command);
 
         if (string.IsNullOrWhiteSpace(command))
             return;
@@ -140,8 +145,8 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
         return nameof(Console);
     }
 
-    private async ValueTask<string[]> SuggestAsync(string input, CancellationToken cancellationToken = default)
+    private async ValueTask<IEnumerable<ICommandSuggestion>> SuggestAsync(string input, CancellationToken cancellationToken = default)
     {
-        return await commands.CompleteAsync(input, this, cancellationToken);
+        return await commands.SuggestAsync(input, this, cancellationToken);
     }
 }

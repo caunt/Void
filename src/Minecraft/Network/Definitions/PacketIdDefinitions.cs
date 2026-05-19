@@ -205,6 +205,24 @@ public static class PacketIdDefinitions
         new(0x16, ProtocolVersion.MINECRAFT_26_1)
     ];
 
+    public static readonly MinecraftPacketIdMapping[] ServerboundCommandSuggestionsRequest = [
+        new(0x14, ProtocolVersion.MINECRAFT_1_7_2),
+        new(0x01, ProtocolVersion.MINECRAFT_1_9),
+        new(0x02, ProtocolVersion.MINECRAFT_1_12),
+        new(0x01, ProtocolVersion.MINECRAFT_1_12_1),
+        new(0x05, ProtocolVersion.MINECRAFT_1_13),
+        new(0x06, ProtocolVersion.MINECRAFT_1_14),
+        new(0x08, ProtocolVersion.MINECRAFT_1_19),
+        new(0x09, ProtocolVersion.MINECRAFT_1_19_1),
+        new(0x08, ProtocolVersion.MINECRAFT_1_19_3),
+        new(0x09, ProtocolVersion.MINECRAFT_1_19_4),
+        new(0x0A, ProtocolVersion.MINECRAFT_1_20_2),
+        new(0x0B, ProtocolVersion.MINECRAFT_1_20_5),
+        new(0x0D, ProtocolVersion.MINECRAFT_1_21_2),
+        new(0x0E, ProtocolVersion.MINECRAFT_1_21_6),
+        new(0x0F, ProtocolVersion.MINECRAFT_26_1)
+    ];
+
     #endregion
     #region Play - Clientbound
 
@@ -346,6 +364,21 @@ public static class PacketIdDefinitions
         new(0x10, ProtocolVersion.MINECRAFT_1_19_4),
         new(0x11, ProtocolVersion.MINECRAFT_1_20_2),
         new(0x10, ProtocolVersion.MINECRAFT_1_21_5)
+    ];
+
+    public static readonly MinecraftPacketIdMapping[] ClientboundCommandSuggestionsResponse = [
+        new(0x3A, ProtocolVersion.MINECRAFT_1_7_2),
+        new(0x0E, ProtocolVersion.MINECRAFT_1_9),
+        new(0x10, ProtocolVersion.MINECRAFT_1_13),
+        new(0x11, ProtocolVersion.MINECRAFT_1_15),
+        new(0x10, ProtocolVersion.MINECRAFT_1_16),
+        new(0x0F, ProtocolVersion.MINECRAFT_1_16_2),
+        new(0x11, ProtocolVersion.MINECRAFT_1_17),
+        new(0x0E, ProtocolVersion.MINECRAFT_1_19),
+        new(0x0D, ProtocolVersion.MINECRAFT_1_19_3),
+        new(0x0F, ProtocolVersion.MINECRAFT_1_19_4),
+        new(0x10, ProtocolVersion.MINECRAFT_1_20_2),
+        new(0x0F, ProtocolVersion.MINECRAFT_1_21_5)
     ];
 
     #endregion

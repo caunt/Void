@@ -43,13 +43,15 @@ public static class Registry
         { PacketIdDefinitions.ClientboundJoinGame, typeof(JoinGamePacket) },
         { PacketIdDefinitions.ClientboundRespawn, typeof(RespawnPacket) },
         { PacketIdDefinitions.ClientboundChatMessage, typeof(Common.Network.Packets.Clientbound.ChatMessagePacket) },
-        { PacketIdDefinitions.ClientboundCommands, typeof(CommandsPacket) }
+        { PacketIdDefinitions.ClientboundCommands, typeof(CommandsPacket) },
+        { PacketIdDefinitions.ClientboundCommandSuggestionsResponse, typeof(CommandSuggestionsResponsePacket) }
     };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundPlayMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
     {
         { PacketIdDefinitions.ServerboundPlayKeepAliveResponse, typeof(KeepAliveResponsePacket) },
-        { PacketIdDefinitions.ServerboundChatMessage, typeof(Packets.Serverbound.ChatMessagePacket) }
+        { PacketIdDefinitions.ServerboundChatMessage, typeof(Packets.Serverbound.ChatMessagePacket) },
+        { PacketIdDefinitions.ServerboundCommandSuggestionsRequest, typeof(CommandSuggestionsRequestPacket) }
     };
 
     public static void Fill()

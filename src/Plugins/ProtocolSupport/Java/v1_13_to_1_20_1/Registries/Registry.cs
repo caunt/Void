@@ -45,7 +45,8 @@ public static class Registry
         { PacketIdDefinitions.ClientboundRespawn, typeof(RespawnPacket) },
         { PacketIdDefinitions.ClientboundSystemChatMessage, typeof(SystemChatMessagePacket) },
         { PacketIdDefinitions.ClientboundChatMessage, typeof(Common.Network.Packets.Clientbound.ChatMessagePacket) },
-        { PacketIdDefinitions.ClientboundCommands, typeof(CommandsPacket) }
+        { PacketIdDefinitions.ClientboundCommands, typeof(CommandsPacket) },
+        { PacketIdDefinitions.ClientboundCommandSuggestionsResponse, typeof(CommandSuggestionsResponsePacket) }
     };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundPlayMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
@@ -53,7 +54,8 @@ public static class Registry
         { PacketIdDefinitions.ServerboundPlayKeepAliveResponse, typeof(KeepAliveResponsePacket) },
         { PacketIdDefinitions.ServerboundChatMessage, typeof(Packets.Serverbound.ChatMessagePacket) },
         { PacketIdDefinitions.ServerboundKeyedChatCommand, typeof(KeyedChatCommandPacket) },
-        { PacketIdDefinitions.ServerboundSignedChatCommand, typeof(SignedChatCommandPacket) }
+        { PacketIdDefinitions.ServerboundSignedChatCommand, typeof(SignedChatCommandPacket) },
+        { PacketIdDefinitions.ServerboundCommandSuggestionsRequest, typeof(CommandSuggestionsRequestPacket) }
     };
 
     public static void Fill()

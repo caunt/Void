@@ -38,7 +38,7 @@ public interface ICommandService
     /// <param name="source">The initiator requesting completion suggestions.</param>
     /// <param name="cancellationToken">Token used to cancel the completion operation.</param>
     /// <returns>An array of possible completions.</returns>
-    public ValueTask<string[]> CompleteAsync(string input, ICommandSource source, CancellationToken cancellationToken = default);
+    public ValueTask<IEnumerable<ICommandSuggestion>> SuggestAsync(string input, ICommandSource source, CancellationToken cancellationToken = default);
 
     public ValueTask CopyToAsync(ICommandNode commandNode, ICommandSource commandSource, CancellationToken cancellationToken = default);
 }

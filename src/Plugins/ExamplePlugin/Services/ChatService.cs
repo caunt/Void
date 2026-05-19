@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Void.Minecraft.Commands.Brigadier;
 using Void.Minecraft.Commands.Brigadier.Context;
 using Void.Minecraft.Commands.Brigadier.Extensions;
+using Void.Minecraft.Commands.Brigadier.Suggestion;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Configurations;
@@ -11,7 +12,6 @@ using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Players;
-using Void.Proxy.Api.Players.Extensions;
 
 namespace Void.Proxy.Plugins.ExamplePlugin.Services;
 
@@ -71,7 +71,17 @@ public class ChatService(ExamplePlugin plugin, ILogger<ChatService> logger, ICon
             .Executes(SlotCommandAsync)
             .Then(builder => builder
                 .Argument("index", Arguments.Integer())
+                .Suggests(SuggestSlotIndex)
                 .Executes(SlotCommandAsync)));
+        
+        Suggestions SuggestSlotIndex(CommandContext context, SuggestionsBuilder builder)
+        {
+            return builder
+                .Suggest(1)
+                .Suggest(2)
+                .Suggest(3)
+                .Build();
+        }
 
         async ValueTask<int> SlotCommandAsync(CommandContext context, CancellationToken cancellationToken)
         {

@@ -20,6 +20,8 @@ namespace Void.Proxy.Commands;
 
 public class CommandService(ILogger<ICommandService> logger, IEventService events) : ICommandService, IEventListener
 {
+    private record CommandSuggestion(int Start, string Text, string? Tooltip) : ICommandSuggestion;
+    
     private static readonly StringRange AliasRange = StringRange.At(0);
     private static readonly StringReader AliasReader = new(string.Empty);
     
@@ -105,16 +107,10 @@ public class CommandService(ILogger<ICommandService> logger, IEventService event
         }
     }
 
-    public async ValueTask<string[]> CompleteAsync(string input, ICommandSource source, CancellationToken cancellationToken = default)
+    public async ValueTask<IEnumerable<ICommandSuggestion>> SuggestAsync(string input, ICommandSource source, CancellationToken cancellationToken = default)
     {
         var suggestions = await _dispatcher.SuggestAsync(input, source, cancellationToken);
-
-        var result = new string[suggestions.All.Count];
-
-        for (var i = 0; i < suggestions.All.Count; i++)
-            result[i] = suggestions.All[i].Text;
-
-        return result;
+        return suggestions.All.Select(suggestion => new CommandSuggestion(suggestion.Range.Start, suggestion.Text, suggestion.Tooltip?.Value));
     }
 
     public async ValueTask CopyToAsync(ICommandNode commandNode, ICommandSource commandSource, CancellationToken cancellationToken = default)

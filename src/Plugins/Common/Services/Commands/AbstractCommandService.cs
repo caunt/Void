@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
+using Void.Minecraft.Components.Text;
+using Void.Minecraft.Components.Text.Properties.Content;
 using Void.Minecraft.Events.Chat;
 using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
@@ -11,6 +13,7 @@ using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
+using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.Common.Services.Commands;
 
@@ -22,10 +25,37 @@ public abstract class AbstractCommandService(ILogger logger, IEventService event
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
-        if (@event.Message is not CommandsPacket packet)
-            return;
+        switch (@event.Message)
+        {
+            case CommandsPacket packet:
+                await events.ThrowAsync(new AvailableCommandsEvent(@event.Link, @event.Player, packet.RootNode), cancellationToken);
+                break;
+            
+            case CommandSuggestionsRequestPacket packet:
+                // TODO: Suggest player names if completing not command
+                var isCommand = packet.AssumeCommand == true || packet.Command.StartsWith('/');
 
-        await events.ThrowAsync(new AvailableCommandsEvent(@event.Link, @event.Player, packet.RootNode), cancellationToken);
+                var suggestions = await commands.SuggestAsync(packet.Command.TrimStart('/'), @event.Player, cancellationToken);
+                var materialized = suggestions.ToArray();
+                
+                var startPosition = materialized.Select(suggestion => suggestion.Start).DefaultIfEmpty(-1).Min();
+                var length = packet.Command.Length - startPosition - 1;
+                var offers = materialized.ToDictionary(suggestion => suggestion.Text, suggestion => string.IsNullOrWhiteSpace(suggestion.Tooltip) ? null : Component.Default with { Content = new TextContent(suggestion.Tooltip)});
+                
+                if (offers.Count is 0)
+                    return;
+
+                @event.Cancel();
+                
+                await @event.Player.SendPacketAsync(new CommandSuggestionsResponsePacket
+                {
+                    TransactionId = packet.TransactionId,
+                    Start = startPosition + 1,
+                    Length = length,
+                    Offers = offers
+                }, cancellationToken);
+                break;
+        }
     }
 
     [Subscribe]

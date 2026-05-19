@@ -48,7 +48,6 @@ public class CommandContextBuilder
 
     public CommandContextBuilder WithNode(CommandNode node, StringRange range)
     {
-
         Nodes.Add(new ParsedCommandNode(node, range));
         Range = StringRange.Encompassing(Range, range);
         RedirectModifier = node.RedirectModifier;

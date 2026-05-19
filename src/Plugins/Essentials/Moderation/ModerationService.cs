@@ -71,16 +71,12 @@ public class ModerationService(IPlayerService players, ICommandService commands,
 
     private Suggestions SuggestPlayer(CommandContext context, SuggestionsBuilder builder)
     {
-        return Suggestions.Create(context.Input, players.All.Select(player =>
-        {
-            if (!player.IsMinecraft)
-                return null;
-
-            if (player.Profile is not { } profile)
-                return null;
-
-            var name = profile.Username;
-            return new Suggestion(StringRange.Between(0, context.Input.Length), name);
-        }).WhereNotNull());
+        return players.All
+            .Where(player => player.IsMinecraft)
+            .Select(player => player.Profile)
+            .WhereNotNull()
+            .Select(profile => profile.Username)
+            .Aggregate(builder, (suggestionsBuilder, name) => suggestionsBuilder.Suggest(name))
+            .Build();
     }
 }
