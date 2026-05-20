@@ -5,7 +5,7 @@ WORKDIR /src
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates pkg-config libssl-dev
 RUN cargo install portablemc-cli --root /src
 
-FROM debian:trixie-slim@sha256:109e2c65005bf160609e4ba6acf7783752f8502ad218e298253428690b9eaa4b
+FROM debian:trixie-slim@sha256:b6e2a152f22a40ff69d92cb397223c906017e1391a73c952b588e51af8883bf8
 
 ENV DISPLAY=:0 LIBGL_ALWAYS_SOFTWARE=1 DEBIAN_FRONTEND=noninteractive
 COPY --from=builder /src/bin/portablemc /usr/local/bin/portablemc
