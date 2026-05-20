@@ -3,9 +3,17 @@
   "extends": [
     "config:best-practices"
   ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": true
+  },
   "prConcurrentLimit": 0,
   "prHourlyLimit": 0,
   "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true
+    },
     {
       "matchFileNames": ["demo/session/void/Dockerfile"],
       "pinDigests": false
