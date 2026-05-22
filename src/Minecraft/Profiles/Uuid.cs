@@ -312,6 +312,16 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
         return !left.Equals(right);
     }
 
+    public static implicit operator Guid(Uuid uuid)
+    {
+        return uuid.AsGuid;
+    }
+
+    public static implicit operator Uuid(Guid guid)
+    {
+        return new Uuid(guid);
+    }
+    
     [StructLayout(LayoutKind.Explicit, Size = 16)]
     private struct Int128
     {
