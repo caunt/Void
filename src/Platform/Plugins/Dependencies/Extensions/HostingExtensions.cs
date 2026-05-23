@@ -125,7 +125,7 @@ public static class HostingExtensions
 
             object? serviceKey = null;
             var ifAlreadyRegistered = descriptor.ServiceType.IsGenericType
-                ? IfAlreadyRegistered.AppendNotKeyed // Allow Microsoft configuration interfaces
+                ? IfAlreadyRegistered.AppendNotKeyed // Allow multiple Microsoft configuration like services.AddHttpClient<TClient>(ConfigureHttpClient)
                 : IfAlreadyRegistered.Replace;
             
             var setup = Setup.With(weaklyReferenced: false, asResolutionCall: true);
