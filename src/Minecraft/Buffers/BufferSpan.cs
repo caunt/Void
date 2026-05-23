@@ -53,6 +53,11 @@ public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>, IDisposable
         _source = source;
         _position = 0;
     }
+    
+    public readonly BufferSpan Slice(int position)
+    {
+        return new BufferSpan(Access(position, Length - position));
+    }
 
     /// <summary>
     /// Creates a new <see cref="BufferSpan"/> over a sub-range of the current underlying storage.
