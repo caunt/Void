@@ -48,9 +48,6 @@ string[] arguments = [
     "--offline"
 ];
 
-Environment.SetEnvironmentVariable("MINECRAFT_API_BASE_URL", "http://minecraft.api.svc.cluster.local:80/");
-Environment.SetEnvironmentVariable("MINECRAFT_RABBITMQ_CONNECTION_STRING", "amqp://user:yUXnX8uqp0LUp18m2n242L1jrFiGiNVB@minecraft-rabbitmq.rabbitmq.svc.cluster.local:5672/");
-
 Console.WriteLine($"Starting {servers.Length} minecraft container(s)");
 
 if (docker)
