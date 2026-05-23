@@ -216,7 +216,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         var container = GetPluginContainer(assembly);
         
         if (!container.Scopes.TryGetValue(playerStableHashCode, out var playerScope))
-            container.Scopes[playerStableHashCode] = playerScope = GetPluginContainer(assembly).Root.GetRequiredService<IContainer>().OpenScope();
+            container.Scopes[playerStableHashCode] = playerScope = GetPluginContainer(assembly).Root.GetRequiredService<IContainer>().OpenScope(nameof(IPlayer));
 
         playerScope.Add(ServiceDescriptor.Singleton(_ => getContext()));
         
