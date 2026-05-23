@@ -47,31 +47,38 @@ public class CommandsPacket : IMinecraftClientboundPacket<CommandsPacket>
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
-        var queue = new Queue<CommandNode>([RootNode]);
-        var indices = new Dictionary<CommandNode, int>(ReferenceEqualityComparer.Instance);
-
-        while (queue.Count > 0)
+        if (RootNode is not null)
         {
-            var commandNode = queue.Dequeue();
+            var queue = new Queue<CommandNode>([RootNode]);
+            var indices = new Dictionary<CommandNode, int>(ReferenceEqualityComparer.Instance);
 
-            if (!indices.TryAdd(commandNode, indices.Count))
-                continue;
+            while (queue.Count > 0)
+            {
+                var commandNode = queue.Dequeue();
 
-            foreach (var childCommandNode in commandNode.Children)
-                queue.Enqueue(childCommandNode);
+                if (!indices.TryAdd(commandNode, indices.Count))
+                    continue;
 
-            if (commandNode.RedirectTarget is not null)
-                queue.Enqueue(commandNode.RedirectTarget);
+                foreach (var childCommandNode in commandNode.Children)
+                    queue.Enqueue(childCommandNode);
+
+                if (commandNode.RedirectTarget is not null)
+                    queue.Enqueue(commandNode.RedirectTarget);
+            }
+
+            buffer.WriteVarInt(indices.Count);
+
+            var span = new BufferSpan(stackalloc byte[128 * 1024]);
+            foreach (var node in indices.Keys)
+                SerializeNode(node, ref span, indices, protocolVersion);
+
+            buffer.Write(span.Access(0, span.Position));
+            buffer.WriteVarInt(indices[RootNode]);
         }
-
-        buffer.WriteVarInt(indices.Count);
-
-        var span = new BufferSpan(stackalloc byte[128 * 1024]);
-        foreach (var node in indices.Keys)
-            SerializeNode(node, ref span, indices, protocolVersion);
-
-        buffer.Write(span.Access(0, span.Position));
-        buffer.WriteVarInt(indices[RootNode]);
+        else
+        {
+            buffer.Write(FallbackNode.Span);
+        }
     }
 
     public static CommandsPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
