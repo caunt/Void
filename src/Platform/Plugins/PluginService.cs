@@ -62,7 +62,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
                     try
                     {
                         await using var stream = File.OpenRead(url.LocalPath);
-                        return LoadContainer(name, stream);
+                        return await LoadContainerAsync(name, stream, cancellationToken: cancellationToken);
                     }
                     catch (Exception exception)
                     {
@@ -85,7 +85,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
                     }
 
                     await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                    return LoadContainer(remoteName, stream);
+                    return await LoadContainerAsync(remoteName, stream, cancellationToken: cancellationToken);
                 }
                 catch (Exception exception)
                 {
@@ -103,7 +103,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
                 logger.LogTrace("Found {Name} local plugin", name);
 
                 await using var stream = File.OpenRead(variable);
-                return LoadContainer(name, stream);
+                return await LoadContainerAsync(name, stream, cancellationToken: cancellationToken);
             }
             else if (Directory.Exists(variable))
             {
@@ -135,7 +135,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
         var assembly = Assembly.GetExecutingAssembly();
         var resources = assembly.GetManifestResourceNames().Where(name => name.Contains(nameof(Plugins)));
 
-        var plugins = resources.SelectMany(name =>
+        var plugins = await Task.WhenAll(resources.Select(async name =>
         {
             logger.LogTrace("Found {Name} embedded plugin", name);
 
@@ -147,15 +147,15 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
 
             try
             {
-                return LoadContainer(name, stream, ignoreEmpty: true);
+                return await LoadContainerAsync(name, stream, ignoreEmpty: true, cancellationToken);
             }
             finally
             {
                 stream.Close();
             }
-        });
+        }));
 
-        await LoadPluginsAsync(plugins, cancellationToken);
+        await LoadPluginsAsync(plugins.SelectMany(x => x), cancellationToken);
     }
 
     public async ValueTask LoadDirectoryPluginsAsync(string path = DefaultPluginsPath, CancellationToken cancellationToken = default)
@@ -192,7 +192,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
                 logger.LogTrace("Found {Name} plugin", Path.GetFileName(fileName));
 
                 await using var stream = File.OpenRead(fileName);
-                return LoadContainer(Path.GetFileName(fileName), stream);
+                return await LoadContainerAsync(Path.GetFileName(fileName), stream, cancellationToken: cancellationToken);
             })
             .WhenAll()
             .ContinueWith(task => task.Result.SelectMany(plugins => plugins), cancellationToken);
@@ -227,7 +227,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
         logger.LogDebug("Loaded {Name} plugin from {AssemblyName} ", plugin.Name, container.Context.PluginAssembly.GetName().Name);
     }
 
-    public IEnumerable<Type> LoadContainer(string name, Stream stream, bool ignoreEmpty = false)
+    public async ValueTask<IEnumerable<Type>> LoadContainerAsync(string name, Stream stream, bool ignoreEmpty = false, CancellationToken cancellationToken = default)
     {
         logger.LogTrace("Loading {Name} plugins", name);
 

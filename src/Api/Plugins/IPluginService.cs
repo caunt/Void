@@ -77,7 +77,7 @@ public interface IPluginService
     /// when the assembly contains no <see cref="IPlugin"/> implementations.
     /// </param>
     /// <returns>The non-abstract types that implement <see cref="IPlugin"/> found in the loaded assembly.</returns>
-    public IEnumerable<Type> LoadContainer(string name, Stream stream, bool ignoreEmpty = false);
+    public ValueTask<IEnumerable<Type>> LoadContainerAsync(string name, Stream stream, bool ignoreEmpty = false, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns all non-abstract types in <paramref name="assembly"/> that implement <see cref="IPlugin"/>.
