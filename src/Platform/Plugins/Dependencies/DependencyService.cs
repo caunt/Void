@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
+﻿using System.Reflection;
 using DryIoc;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
@@ -63,7 +62,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         configure(services);
 
         var assembly = configure.Method.DeclaringType?.Assembly ?? GetType().Assembly;
-        
+
         foreach (var service in services)
             GetPluginContainer(assembly).Root.Add(service);
 
