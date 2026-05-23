@@ -6,13 +6,14 @@ using Void.Proxy.Api.Players.Contexts;
 
 namespace Void.Proxy.Plugins.Common.Players.Contexts;
 
-internal record PlayerContext(IServiceProvider Services) : IPlayerContext
+internal record PlayerContext(Func<IServiceProvider> GetServices) : IPlayerContext
 {
     // Setter is allowed to upgrade the player into different implementations when required.
     public required IPlayer Player { get; internal set; }
     public ILogger Logger => Player.Logger;
     public INetworkChannel? Channel { get; set; }
     public bool IsDisposed { get; private set; }
+    public IServiceProvider Services => GetServices();
 
     public void Dispose()
     {

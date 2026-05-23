@@ -118,7 +118,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         
         while (queues.TryDequeue(out var assembly))
         {
-            var playerScope = GetPlayerScope(assembly, playerStableHashCode, () => context);
+            var playerScope = GetPlayerScope(assembly, playerStableHashCode, context);
             
             foreach (var registration in playerScope.GetRequiredService<IContainer>().GetServiceRegistrations())
             {
@@ -177,7 +177,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         var playerStableHashCode = player.GetStableHashCode();
         return Combine(
         [
-            .. _plugins.Keys.OrderByDescending(assembly => assembly == preferredAssembly).Select(assembly => GetPlayerScope(assembly, playerStableHashCode, () => player.Context)),
+            .. _plugins.Keys.OrderByDescending(assembly => assembly == preferredAssembly).Select(assembly => GetPlayerScope(assembly, playerStableHashCode, player.Context)),
             GetEntryPoint(preferredAssembly)
         ]);
     }
@@ -210,14 +210,14 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
             scope.Dispose();
     }
 
-    private IServiceProvider GetPlayerScope(Assembly assembly, int playerStableHashCode, Func<IPlayerContext> getContext)
+    private IServiceProvider GetPlayerScope(Assembly assembly, int playerStableHashCode, IPlayerContext context)
     {
         var container = GetPluginContainer(assembly);
         
         if (!container.Scopes.TryGetValue(playerStableHashCode, out var playerScope))
             container.Scopes[playerStableHashCode] = playerScope = GetPluginContainer(assembly).Root.GetRequiredService<IContainer>().OpenScope(nameof(IPlayer));
 
-        playerScope.Add(ServiceDescriptor.Singleton(_ => getContext()));
+        playerScope.Add(ServiceDescriptor.Singleton(context));
         
         return playerScope;
     }
