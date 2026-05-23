@@ -117,8 +117,7 @@ public class CommandsPacket : IMinecraftClientboundPacket<CommandsPacket>
                 foreach (var node in unbuiltProtocolCommandNodes)
                     queue.Enqueue(node);
             }
-
-
+            
             var rootIndex = span.ReadVarInt();
             return new CommandsPacket { RootNode = nodes[rootIndex].Built as RootCommandNode ?? throw new InvalidDataException("Root node is not a instance of root command node!"), };
         }

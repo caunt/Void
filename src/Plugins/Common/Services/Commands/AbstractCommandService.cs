@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Components.Text.Properties.Content;
 using Void.Minecraft.Events.Chat;
@@ -29,9 +30,20 @@ public abstract class AbstractCommandService(ILogger logger, IEventService event
         {
             case CommandsPacket packet:
                 if (packet.RootNode is null)
+                {
                     logger.LogWarning(packet.FallbackReason, "Player {Player} will have no commands suggestions due to inability to parse the command tree", @event.Player);
+                    
+                    var unavailableCommandsEvent = new UnavailableCommandsEvent(@event.Link, @event.Player, packet.FallbackReason);
+                    await events.ThrowAsync(unavailableCommandsEvent, cancellationToken);
+                    
+                    if (unavailableCommandsEvent.CustomCommandNode is not null)
+                        packet.RootNode = unavailableCommandsEvent.CustomCommandNode;
+                }
                 else
+                {
                     await events.ThrowAsync(new AvailableCommandsEvent(@event.Link, @event.Player, packet.RootNode), cancellationToken);
+                }
+
                 break;
             
             case CommandSuggestionsRequestPacket packet:
