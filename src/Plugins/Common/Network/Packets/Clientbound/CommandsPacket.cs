@@ -124,7 +124,7 @@ public class CommandsPacket : IMinecraftClientboundPacket<CommandsPacket>
         }
         catch (Exception exception)
         {
-            return new CommandsPacket { FallbackNode = span.Dump()[(int)start..].ToArray(), FallbackReason = exception };
+            return new CommandsPacket { FallbackNode = buffer.DumpBytes()[(int)start..].ToArray(), FallbackReason = exception };
         }
     }
 
