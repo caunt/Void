@@ -5,8 +5,8 @@ using Void.Proxy.Plugins.Containers;
 
 namespace Void.Proxy.Plugins.Dependencies;
 
-public class DependencyResolver(
-    ILogger<DependencyResolver> logger,
+public class ManagedDependencyResolver(
+    ILogger<ManagedDependencyResolver> logger,
     INuGetDependencyResolver nuget,
     IEmbeddedDependencyResolver embedded,
     IFileDependencyResolver file,

@@ -35,6 +35,7 @@ using Void.Proxy.Plugins.Dependencies.Extensions;
 using Void.Proxy.Plugins.Dependencies.File;
 using Void.Proxy.Plugins.Dependencies.Nuget;
 using Void.Proxy.Servers;
+using Logger = Serilog.Core.Logger;
 
 namespace Void.Proxy;
 
@@ -131,7 +132,7 @@ public static class VoidEntryPoint
                 .AddSingletonAndListen<IConfigurationService, ConfigurationService>()
                 .AddSingletonAndListen<IDependencyService, DependencyService>()
                 .AddSingletonAndListen<IProxy, Platform>()
-                .AddSingletonAndListen<INuGetDependencyResolver, NuGetDependencyResolver>()
+                .AddSingletonAndListen<INuGetDependencyResolver, DependencyResolver>()
                 .AddSingleton<IFileDependencyResolver, FileDependencyResolver>()
                 .AddSingleton<IEmbeddedDependencyResolver, EmbeddedDependencyResolver>()
                 .AddHostedService(services => services.GetRequiredService<IConfigurationService>())

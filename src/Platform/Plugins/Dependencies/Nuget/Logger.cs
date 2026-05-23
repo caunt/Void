@@ -5,7 +5,7 @@ namespace Void.Proxy.Plugins.Dependencies.Nuget;
 
 [SuppressMessage("CodeQuality", "IDE0079:Remove unnecessary suppression", Justification = "Why would I remove the suppression message if I need it?")]
 [SuppressMessage("Usage", "CA2254:Template should be a static expression", Justification = "Do not template NuGet messages")]
-public class NuGetLogger(Microsoft.Extensions.Logging.ILogger logger) : NuGet.Common.ILogger
+public class Logger(Microsoft.Extensions.Logging.ILogger logger) : NuGet.Common.ILogger
 {
     public void Log(NuGet.Common.LogLevel level, string data)
     {

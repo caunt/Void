@@ -9,14 +9,14 @@ namespace Void.Proxy.Plugins.Context;
 public class PluginAssemblyLoadContext : AssemblyLoadContext
 {
     private readonly ILogger<PluginAssemblyLoadContext> _logger;
-    private readonly DependencyResolver _resolver;
+    private readonly ManagedDependencyResolver _resolver;
 
     public Assembly PluginAssembly { get; }
 
     public PluginAssemblyLoadContext(ILogger<PluginAssemblyLoadContext> logger, IDependencyService dependencies, string name, Stream assemblyStream, IReadOnlyCollection<WeakPluginContainer> containers) : base(name, true)
     {
         _logger = logger;
-        _resolver = dependencies.CreateInstance<DependencyResolver>(default, this, containers);
+        _resolver = dependencies.CreateInstance<ManagedDependencyResolver>(default, this, containers);
 
         PluginAssembly = LoadFromStream(assemblyStream);
     }

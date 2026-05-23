@@ -21,7 +21,7 @@ using Void.Proxy.Extensions;
 
 namespace Void.Proxy.Plugins.Dependencies.Nuget;
 
-public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IRunOptions runOptions, IConsoleService console, HttpClient httpClient) : INuGetDependencyResolver, IEventListener
+public class DependencyResolver(ILogger<DependencyResolver> logger, IRunOptions runOptions, IConsoleService console, HttpClient httpClient) : INuGetDependencyResolver, IEventListener
 {
     private static readonly Option<string[]> RepositoryOption = new("--repository", "-r")
     {
@@ -39,7 +39,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IR
     private static readonly SourceCacheContext Cache = new();
 
     private readonly string _packagesPath = Path.Combine(runOptions.WorkingDirectory, SettingsUtility.DefaultGlobalPackagesFolderPath);
-    private readonly NuGet.Common.ILogger _nugetLogger = console.GetOptionValue(EnableLoggingOption) ? new NuGetLogger(logger) : NullLogger.Instance;
+    private readonly NuGet.Common.ILogger _nugetLogger = console.GetOptionValue(EnableLoggingOption) ? new Logger(logger) : NullLogger.Instance;
     private readonly HashSet<string> _repositories = [];
 
     private IEnumerable<string> UriRepositories => (Environment.GetEnvironmentVariable("VOID_NUGET_REPOSITORIES") ?? "").SplitInput(escapeCharacter: '\\').Select(repo => repo.Replace(@"\;", ";")).Concat(_repositories.Concat(console.GetOptionValue(RepositoryOption) ?? [])).Where(uri => !string.IsNullOrWhiteSpace(uri));
