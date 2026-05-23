@@ -321,7 +321,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IR
             return Path.Combine(packagePath, assembly);
         }
 
-        logger.LogWarning("Assembly {AssemblyName} not found in any compatible framework for target framework {TargetFramework} in package {PackageId} version {Version}", assemblyName.Name, targetFramework, packageId, packageVersion);
+        logger.LogTrace("Assembly {AssemblyName} not found in any compatible framework for target framework {TargetFramework} in package {PackageId} version {Version}", assemblyName.Name, targetFramework, packageId, packageVersion);
         return null;
     }
 
@@ -344,7 +344,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IR
                 if (Directory.Exists(packagePath))
                     throw new InvalidOperationException($"Dependency {identity.Id} version {identity.Version} already exists in the NuGet cache. This should have been resolved in the offline step.");
 
-                await DownloadPackageWithDependenciesAsync(repository, identity, cancellationToken).ConfigureAwait(false);
+                await TryDownloadAsync(repository, identity, cancellationToken).ConfigureAwait(false);
 
                 if (!Directory.Exists(packagePath))
                 {
@@ -387,53 +387,22 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IR
         }
     }
 
-    private async Task DownloadPackageWithDependenciesAsync(SourceRepository repository, PackageIdentity identity, CancellationToken cancellationToken)
-    {
-        var visited = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
-        await DownloadPackageWithDependenciesAsync(repository, identity, visited, cancellationToken).ConfigureAwait(false);
-    }
-
-    private async Task DownloadPackageWithDependenciesAsync(SourceRepository repository, PackageIdentity identity, HashSet<string> visited, CancellationToken cancellationToken)
-    {
-        var identityKey = identity.ToString();
-
-        if (!visited.Add(identityKey))
-            return;
-
-        await TryDownloadAsync(repository, identity, cancellationToken).ConfigureAwait(false);
-
-        var packagePath = Path.Combine(_packagesPath, identity.Id.ToLower(), identity.Version.ToString());
-
-        if (!Directory.Exists(packagePath))
-            return;
-
-        using var packageReader = new PackageFolderReader(packagePath);
-        var dependencies = await GetCompatibleDependenciesAsync(packageReader, cancellationToken).ConfigureAwait(false);
-
-        foreach (var dependency in dependencies)
-        {
-            var dependencyAssemblyName = new AssemblyName(dependency.Id);
-            var dependencyIdentity = await TryResolvePackageIdAsync(repository, dependencyAssemblyName, cancellationToken).ConfigureAwait(false);
-
-            if (dependencyIdentity is null)
-                continue;
-
-            await DownloadPackageWithDependenciesAsync(repository, dependencyIdentity, visited, cancellationToken).ConfigureAwait(false);
-        }
-    }
-
     private async Task<string?> ResolveAssemblyFromDependencyPackagesAsync(PackageFolderReader packageReader, AssemblyName assemblyName, CancellationToken cancellationToken)
     {
         var dependencies = await GetCompatibleDependenciesAsync(packageReader, cancellationToken).ConfigureAwait(false);
 
         foreach (var dependency in dependencies)
         {
-            var dependencyIdentity = SelectBestPackageVersion([new PackageIdentity(dependency.Id, dependency.VersionRange.MinVersion)], null);
+            var dependencyAssemblyName = new AssemblyName(dependency.Id);
+            var dependencyIdentity = await TryResolvePackageIdAsync(DefaultRepository, dependencyAssemblyName, cancellationToken).ConfigureAwait(false);
 
             if (dependencyIdentity is null)
                 continue;
 
             var dependencyPackagePath = Path.Combine(_packagesPath, dependencyIdentity.Id.ToLower(), dependencyIdentity.Version.ToString());
+
+            if (!Directory.Exists(dependencyPackagePath))
+                await TryDownloadAsync(DefaultRepository, dependencyIdentity, cancellationToken).ConfigureAwait(false);
 
             if (!Directory.Exists(dependencyPackagePath))
                 continue;
