@@ -41,7 +41,9 @@ public class CommandsPacket : IMinecraftClientboundPacket<CommandsPacket>
     private static readonly CommandRequirement RequireNothing = (context, cancellationToken) => ValueTask.FromResult(true);
     private static readonly Dictionary<string, SuggestionProvider> SuggestionProvidersNames = [];
 
-    public required RootCommandNode RootNode { get; set; }
+    public RootCommandNode? RootNode { get; set; }
+    public Memory<byte> FallbackNode { get; set; }
+    public Exception? FallbackReason { get; set; }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -74,44 +76,49 @@ public class CommandsPacket : IMinecraftClientboundPacket<CommandsPacket>
 
     public static CommandsPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
+        var start = buffer.Position;
         var span = buffer.CopyAsBufferSpan(read: true);
 
-        var commands = span.ReadVarInt();
-        var nodes = new ProtocolCommandNode[commands];
-
-        for (int i = 0; i < commands; i++)
-            nodes[i] = DeserializeNode(ref span, i, protocolVersion);
-
-        var queue = new Queue<ProtocolCommandNode>(nodes);
-        while (queue.Count > 0)
+        try
         {
-            var builtAnyNode = false;
-            var unbuiltProtocolCommandNodes = new List<ProtocolCommandNode>(queue.Count);
+            var commands = span.ReadVarInt();
+            var nodes = new ProtocolCommandNode[commands];
 
-            while (queue.TryDequeue(out var protocolCommandNode))
+            for (int i = 0; i < commands; i++)
+                nodes[i] = DeserializeNode(ref span, i, protocolVersion);
+
+            var queue = new Queue<ProtocolCommandNode>(nodes);
+            while (queue.Count > 0)
             {
-                if (protocolCommandNode.TryBuild(nodes))
+                var builtAnyNode = false;
+                var unbuiltProtocolCommandNodes = new List<ProtocolCommandNode>(queue.Count);
+
+                while (queue.TryDequeue(out var protocolCommandNode))
                 {
-                    builtAnyNode = true;
-                    continue;
+                    if (protocolCommandNode.TryBuild(nodes))
+                    {
+                        builtAnyNode = true;
+                        continue;
+                    }
+
+                    unbuiltProtocolCommandNodes.Add(protocolCommandNode);
                 }
 
-                unbuiltProtocolCommandNodes.Add(protocolCommandNode);
+                if (!builtAnyNode)
+                    throw new InvalidOperationException($"Broken command node graph detected; unable to build any more nodes, {queue.Count(protocolCommandNode => protocolCommandNode.Built is null)} is left unbuilt.");
+
+                foreach (var node in unbuiltProtocolCommandNodes)
+                    queue.Enqueue(node);
             }
 
-            if (!builtAnyNode)
-                throw new InvalidOperationException($"Broken command node graph detected; unable to build any more nodes, {queue.Count(protocolCommandNode => protocolCommandNode.Built is null)} is left unbuilt.");
 
-            foreach (var node in unbuiltProtocolCommandNodes)
-                queue.Enqueue(node);
+            var rootIndex = span.ReadVarInt();
+            return new CommandsPacket { RootNode = nodes[rootIndex].Built as RootCommandNode ?? throw new InvalidDataException("Root node is not a instance of root command node!"), };
         }
-
-
-        var rootIndex = span.ReadVarInt();
-        return new CommandsPacket
+        catch (Exception exception)
         {
-            RootNode = nodes[rootIndex].Built as RootCommandNode ?? throw new InvalidDataException("Root node is not a instance of root command node!"),
-        };
+            return new CommandsPacket { FallbackNode = span.Dump()[(int)start..].ToArray(), FallbackReason = exception };
+        }
     }
 
     public void Dispose()

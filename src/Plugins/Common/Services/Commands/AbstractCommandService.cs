@@ -28,7 +28,10 @@ public abstract class AbstractCommandService(ILogger logger, IEventService event
         switch (@event.Message)
         {
             case CommandsPacket packet:
-                await events.ThrowAsync(new AvailableCommandsEvent(@event.Link, @event.Player, packet.RootNode), cancellationToken);
+                if (packet.RootNode is null)
+                    logger.LogWarning(packet.FallbackReason, "Player {Player} will have no commands suggestions due to inability to parse the command tree", @event.Player);
+                else
+                    await events.ThrowAsync(new AvailableCommandsEvent(@event.Link, @event.Player, packet.RootNode), cancellationToken);
                 break;
             
             case CommandSuggestionsRequestPacket packet:
