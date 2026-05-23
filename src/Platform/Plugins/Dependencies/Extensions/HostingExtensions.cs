@@ -124,8 +124,10 @@ public static class HostingExtensions
             // container.RegisterDescriptor(descriptor);
 
             object? serviceKey = null;
-            const IfAlreadyRegistered ifAlreadyRegistered = IfAlreadyRegistered.Replace;
-
+            var ifAlreadyRegistered = descriptor.ServiceType.IsGenericType
+                ? IfAlreadyRegistered.AppendNotKeyed // Allow Microsoft configuration interfaces
+                : IfAlreadyRegistered.Replace;
+            
             var setup = Setup.With(weaklyReferenced: false, asResolutionCall: true);
             var reuse = descriptor.Lifetime == ServiceLifetime.Scoped 
                 ? Reuse.Scoped // By default, it is ScopeOrSingleton
