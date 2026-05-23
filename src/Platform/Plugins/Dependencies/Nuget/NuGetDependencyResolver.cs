@@ -428,15 +428,23 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IR
 
         foreach (var dependency in dependencies)
         {
-            var dependencyAssemblyName = new AssemblyName(dependency.Id)
-            {
-                Version = assemblyName.Version
-            };
+            var dependencyIdentity = SelectBestPackageVersion([new PackageIdentity(dependency.Id, dependency.VersionRange.MinVersion)], null);
 
-            var dependencyAssemblyPath = await ResolveAssemblyOfflineAsync(dependencyAssemblyName, cancellationToken).ConfigureAwait(false);
+            if (dependencyIdentity is null)
+                continue;
+
+            var dependencyPackagePath = Path.Combine(_packagesPath, dependencyIdentity.Id.ToLower(), dependencyIdentity.Version.ToString());
+
+            if (!Directory.Exists(dependencyPackagePath))
+                continue;
+
+            using var dependencyPackageReader = new PackageFolderReader(dependencyPackagePath);
+
+            var dependencyAssemblyPath = await ResolveAssemblyPathAsync(dependencyPackageReader, dependencyPackagePath, assemblyName, dependencyIdentity.Id, dependencyIdentity.Version, cancellationToken).ConfigureAwait(false)
+                                         ?? await ResolveAssemblyFromDependencyPackagesAsync(dependencyPackageReader, assemblyName, cancellationToken).ConfigureAwait(false);
 
             if (dependencyAssemblyPath is not null)
-                return dependencyAssemblyPath.Value.AssemblyPath;
+                return dependencyAssemblyPath;
         }
 
         return null;
