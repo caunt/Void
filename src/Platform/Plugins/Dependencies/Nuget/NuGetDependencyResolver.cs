@@ -307,7 +307,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IR
 
         if (compatibleFrameworks.Count == 0)
         {
-            logger.LogWarning("No compatible framework found for target framework {TargetFramework} in package {PackageId} version {Version}", targetFramework, packageId, packageVersion);
+            logger.LogTrace("Package {PackageId} version {Version} has no compatible lib assemblies", packageId, packageVersion);
             return null;
         }
 
@@ -316,19 +316,7 @@ public class NuGetDependencyResolver(ILogger<NuGetDependencyResolver> logger, IR
             var assembly = framework.Items.FirstOrDefault(fileName => Path.GetFileName(fileName).Equals(assemblyName.Name + ".dll", StringComparison.InvariantCultureIgnoreCase));
 
             if (assembly is null)
-            {
-                assembly = framework.Items.FirstOrDefault();
-
-                if (assembly is not null)
-                {
-                    logger.LogWarning("Using fallback assembly {FallbackAssembly} from framework {Framework} for requested assembly {RequestedAssembly} in package {PackageId} version {Version}", Path.GetFileName(assembly), framework.TargetFramework, assemblyName.Name, packageId, packageVersion);
-                }
-            }
-
-            if (assembly is null)
-            {
                 continue;
-            }
 
             return Path.Combine(packagePath, assembly);
         }
