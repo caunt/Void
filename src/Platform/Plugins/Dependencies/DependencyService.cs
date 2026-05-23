@@ -62,8 +62,10 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         var services = new ServiceCollection();
         configure(services);
 
+        var assembly = configure.Method.DeclaringType?.Assembly ?? GetType().Assembly;
+        
         foreach (var service in services)
-            GetPluginContainer(service.ServiceType.Assembly).Root.Add(service);
+            GetPluginContainer(assembly).Root.Add(service);
 
         if (!activate)
             return;
@@ -78,8 +80,6 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
             if (serviceType.IsOpenGeneric())
                 continue;
 
-            var assembly = service.ServiceType.Assembly;
-            
             switch (service.Lifetime)
             {
                 case ServiceLifetime.Transient:
