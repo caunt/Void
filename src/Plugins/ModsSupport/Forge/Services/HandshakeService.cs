@@ -25,14 +25,6 @@ namespace Void.Proxy.Plugins.ModsSupport.Forge.Services;
 
 public class HandshakeService(IPlayerContext context, IPluginService plugins, Plugin plugin) : IEventListener
 {
-    private class PlayerCachedMods
-    {
-        public required ModdedHandshakePacket HandshakePacket { get; set; }
-        public TaskCompletionSource<ModdedLoginPluginResponsePacket>? PendingLoginPluginResponse { get; set; }
-        public int LoginPluginRequestCounter { get; set; }
-        public Dictionary<int, byte[]> FmlHandshakeResponses { get; set; } = [];
-    }
-
     private readonly ConcurrentDictionary<IPlayer, PlayerCachedMods> _playerMods = [];
 
     [Subscribe]
@@ -53,13 +45,13 @@ public class HandshakeService(IPlayerContext context, IPluginService plugins, Pl
     [Subscribe]
     public async ValueTask OnLoginPluginMessageEvent(LoginPluginMessageEvent @event, CancellationToken cancellationToken)
     {
-        const string LoginWrapperChannel = "fml:loginwrapper";
-        const string HandshakeChannel = "fml:handshake";
+        const string loginWrapperChannel = "fml:loginwrapper";
+        const string handshakeChannel = "fml:handshake";
 
         if (!_playerMods.TryGetValue(@event.Player, out var mods))
             return;
 
-        if (@event is { Channel: LoginWrapperChannel })
+        if (@event is { Channel: loginWrapperChannel })
         {
             var buffer = new BufferSpan(@event.Data);
 
@@ -69,12 +61,12 @@ public class HandshakeService(IPlayerContext context, IPluginService plugins, Pl
             var data = buffer.Read(length - id.VarIntSize());
 
             if (buffer.Remaining > 0)
-                throw new InvalidOperationException($"Extra data remaining after parsing {LoginWrapperChannel} message.");
+                throw new InvalidOperationException($"Extra data remaining after parsing {loginWrapperChannel} message.");
 
             context.Logger.LogTrace("Received Login Wrapper request message: Channel={Channel}, Id={Id}, Data={Data}", channel, id, Convert.ToHexString(data));
 
             // Forge ignores first Plugin Message Request and does not respond to it. Why though? (tested on 1.20)
-            var ignored = channel is HandshakeChannel && id is 5;
+            var ignored = channel is handshakeChannel && id is 5;
 
             if (@event.Player.Phase is Phase.Play)
             {
@@ -222,5 +214,13 @@ public class HandshakeService(IPlayerContext context, IPluginService plugins, Pl
     private int GetLoginPluginRequestIdFor(IPlayer player)
     {
         return _playerMods[player].LoginPluginRequestCounter++;
+    }
+
+    private class PlayerCachedMods
+    {
+        public required ModdedHandshakePacket HandshakePacket { get; init; }
+        public TaskCompletionSource<ModdedLoginPluginResponsePacket>? PendingLoginPluginResponse { get; set; }
+        public int LoginPluginRequestCounter { get; set; }
+        public Dictionary<int, byte[]> FmlHandshakeResponses { get; set; } = [];
     }
 }
