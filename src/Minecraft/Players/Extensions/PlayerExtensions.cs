@@ -8,7 +8,6 @@ using Microsoft.Extensions.Logging;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Events;
 using Void.Minecraft.Events.Chat;
-using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Network.Messages;
@@ -32,13 +31,14 @@ public static class PlayerExtensions
 {
     extension(IPlayer player)
     {
-        private MinecraftPlayer AsMinecraft => TryGetMinecraftPlayer(player, out var minecraftPlayer) ? minecraftPlayer : throw new InvalidOperationException($"Player is not a {nameof(MinecraftPlayer)}.");
+        private MinecraftPlayer AsMinecraft => player.TryGetMinecraftPlayer(out var minecraftPlayer) ? minecraftPlayer : throw new InvalidOperationException($"Player is not a {nameof(MinecraftPlayer)}.");
 
         public bool IsMinecraft => player is MinecraftPlayer;
         public ProtocolVersion ProtocolVersion => player.AsMinecraft.ProtocolVersion;
         public Phase Phase { get => player.AsMinecraft.Phase; set => player.AsMinecraft.Phase = value; }
         public GameProfile? Profile { get => player.AsMinecraft.Profile; set => player.AsMinecraft.Profile = value; }
         public IdentifiedKey? IdentifiedKey { get => player.AsMinecraft.IdentifiedKey; set => player.AsMinecraft.IdentifiedKey = value; }
+
         public ILogger Logger
         {
             get
@@ -152,8 +152,10 @@ public static class PlayerExtensions
 
         public void RegisterPacket<T>(INetworkChannel channel, Operation operation, params MinecraftPacketIdMapping[] mappings) where T : IMinecraftPacket
         {
-            channel.MinecraftRegistries.PacketIdPlugins
-                .Get(operation, player.Context.Services
+            channel
+                .MinecraftRegistries.PacketIdPlugins
+                .Get(operation, player
+                    .Context.Services
                     .GetRequiredService<IPluginService>()
                     .GetPluginFromType<T>())
                 .RegisterPacket<T>(player.AsMinecraft.ProtocolVersion, mappings);
