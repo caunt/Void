@@ -45,15 +45,19 @@ public class PlatformService(ILogger<PlatformService> logger, IHostApplicationLi
 
     private async ValueTask<int> ListContainersAsync(CommandContext context, CancellationToken cancellationToken)
     {
-        var names = string.Join(", ", plugins.Containers);
-
         if (context.Source is IPlayer player)
         {
-            await player.SendChatMessageAsync($"Loaded plugins: {names}", cancellationToken);
+            await player.SendChatMessageAsync("Loaded plugins:", cancellationToken);
+            
+            foreach (var name in plugins.Containers)
+                await player.SendChatMessageAsync($"&7- &b{name}", cancellationToken);
         }
         else
         {
-            logger.LogInformation("Loaded plugins: {List}", names);
+            logger.LogInformation("Loaded plugins:");
+            
+            foreach (var name in plugins.Containers)
+                logger.LogInformation("- {Name}", name);
         }
 
         return 0;
