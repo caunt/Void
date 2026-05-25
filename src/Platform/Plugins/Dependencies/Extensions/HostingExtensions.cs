@@ -8,20 +8,26 @@ namespace Void.Proxy.Plugins.Dependencies.Extensions;
 
 public static class HostingExtensions
 {
-    /// <param name="serviceCollection">The collection of service descriptors to inspect for constructor-based relationships. This collection must not
-    /// be null.</param>
+    /// <param name="serviceCollection">
+    ///     The collection of service descriptors to inspect for constructor-based relationships. This collection must not
+    ///     be null.
+    /// </param>
     extension(IServiceCollection serviceCollection)
     {
         /// <summary>
-        /// Determines whether any registered service in the specified service collection has a constructor dependency on
-        /// another registered service type. Does not consider factory or instance registrations.
+        ///     Determines whether any registered service in the specified service collection has a constructor dependency on
+        ///     another registered service type. Does not consider factory or instance registrations.
         /// </summary>
-        /// <remarks>This method examines the constructors of each registered implementation type in the service
-        /// collection. It identifies relationships where a service's constructor depends on another registered service,
-        /// including both concrete and open generic types. Factory and instance registrations are not inspected, as their
-        /// dependencies cannot be determined statically.</remarks>
-        /// <returns>true if at least one registered service has a constructor parameter that matches another registered service
-        /// type; otherwise, false.</returns>
+        /// <remarks>
+        ///     This method examines the constructors of each registered implementation type in the service
+        ///     collection. It identifies relationships where a service's constructor depends on another registered service,
+        ///     including both concrete and open generic types. Factory and instance registrations are not inspected, as their
+        ///     dependencies cannot be determined statically.
+        /// </remarks>
+        /// <returns>
+        ///     true if at least one registered service has a constructor parameter that matches another registered service
+        ///     type; otherwise, false.
+        /// </returns>
         public bool HasDescriptorRelationships()
         {
             var registeredServiceTypes = serviceCollection.Select(serviceDescriptor => serviceDescriptor.ServiceType).ToHashSet();
@@ -99,7 +105,7 @@ public static class HostingExtensions
             }
         }
     }
-    
+
     extension(IContainer container)
     {
         public bool CanGetService(Type serviceType, object? serviceKey = null)
@@ -127,9 +133,9 @@ public static class HostingExtensions
             var ifAlreadyRegistered = descriptor.ServiceType.IsGenericType
                 ? IfAlreadyRegistered.AppendNotKeyed // Allow multiple Microsoft configuration like services.AddHttpClient<TClient>(ConfigureHttpClient)
                 : IfAlreadyRegistered.Replace;
-            
+
             var setup = Setup.With(weaklyReferenced: false, asResolutionCall: true);
-            var reuse = descriptor.Lifetime == ServiceLifetime.Scoped 
+            var reuse = descriptor.Lifetime == ServiceLifetime.Scoped
                 ? Reuse.Scoped // By default, it is ScopeOrSingleton
                 : descriptor.Lifetime.ToReuse();
             var serviceType = descriptor.ServiceType;
