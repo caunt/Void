@@ -360,7 +360,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
 
                 var configuredContainer = container.With(dependencyRules => dependencyRules.WithUnknownServiceResolvers(ResolveFactory));
 
-                IResolverContext resolver = serviceProvider is IResolverContext resolverContext && resolverContext.CurrentScope is not null
+                var resolver = serviceProvider is IResolverContext { CurrentScope: not null } resolverContext
                     ? configuredContainer.WithCurrentScope(resolverContext.CurrentScope)
                     : configuredContainer;
 
