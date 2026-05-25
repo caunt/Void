@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Void.Minecraft.Buffers;
@@ -26,6 +27,9 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
     [Subscribe]
     public void OnPhaseChanged(PhaseChangedEvent @event)
     {
+        Debugger.Break();
+        context.Logger.LogInformation("HELLO!!!");
+
         if (@event.Phase is not Phase.Login)
             return;
 
@@ -60,13 +64,13 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
             {
                 disconnectPacket.Reason =
                     $"""
-                    Forwarding setup required
+                         Forwarding setup required
 
-                    The {@event.Link.Server} needs a Velocity (Modern) forwarding secret key.
+                         The {@event.Link.Server} needs a Velocity (Modern) forwarding secret key.
 
 
-                    If you're using Proxy Compatible Forge, set it up in ./config/proxy-compatible-forge.toml
-                    """.ReplaceLineEndings("\n");
+                         If you're using Proxy Compatible Forge, set it up in ./config/proxy-compatible-forge.toml
+                         """.ReplaceLineEndings("\n");
             }
         }
 
@@ -98,7 +102,7 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
 
         if (context.Player.Profile is not { } profile)
         {
-            logger.LogWarning("Player profile is null, velocity forwarding will not work.");
+            logger.LogWarning("Player profile is null, velocity forwarding will not work");
             return;
         }
 
@@ -106,7 +110,7 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
         buffer.WriteString(profile.Username);
         buffer.WritePropertyArray(profile.Properties);
 
-        if (actualVersion >= ForwardingVersion.WithKey && actualVersion < ForwardingVersion.LazySession)
+        if (actualVersion is >= ForwardingVersion.WithKey and < ForwardingVersion.LazySession)
         {
             if (context.Player.IdentifiedKey is not { } identifiedKey)
                 throw new Exception("Player identified key cannot be forwarded");
@@ -152,29 +156,23 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
     {
         requested = (ForwardingVersion)Math.Min((int)requested, MaxForwarding);
 
-        if (requested > ForwardingVersion.Default)
-        {
-            if (context.Player.ProtocolVersion > ProtocolVersion.MINECRAFT_1_19_3)
-                return requested >= ForwardingVersion.LazySession ? ForwardingVersion.LazySession : ForwardingVersion.Default;
+        if (requested <= ForwardingVersion.Default)
+            return ForwardingVersion.Default;
 
-            var identifiedKey = context.Player.IdentifiedKey;
+        if (context.Player.ProtocolVersion > ProtocolVersion.MINECRAFT_1_19_3)
+            return requested >= ForwardingVersion.LazySession ? ForwardingVersion.LazySession : ForwardingVersion.Default;
 
-            if (identifiedKey is not null)
-            {
-                if (identifiedKey.Revision == IdentifiedKeyRevision.GenericV1Revision)
-                    return ForwardingVersion.WithKey;
+        var identifiedKey = context.Player.IdentifiedKey;
 
-                if (identifiedKey.Revision == IdentifiedKeyRevision.LinkedV2Revision)
-                    return requested >= ForwardingVersion.WithKeyV2 ? ForwardingVersion.WithKeyV2 : ForwardingVersion.Default;
+        if (identifiedKey is null)
+            return ForwardingVersion.Default;
 
-                throw new NotSupportedException($"Unknown key revision {identifiedKey.Revision}");
-            }
-            else
-            {
-                return ForwardingVersion.Default;
-            }
-        }
+        if (identifiedKey.Revision == IdentifiedKeyRevision.GenericV1Revision)
+            return ForwardingVersion.WithKey;
 
-        return ForwardingVersion.Default;
+        if (identifiedKey.Revision == IdentifiedKeyRevision.LinkedV2Revision)
+            return requested >= ForwardingVersion.WithKeyV2 ? ForwardingVersion.WithKeyV2 : ForwardingVersion.Default;
+
+        throw new NotSupportedException($"Unknown key revision {identifiedKey.Revision}");
     }
 }
