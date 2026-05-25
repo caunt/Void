@@ -10,17 +10,13 @@ using Void.Proxy;
 if (OperatingSystem.IsWindows())
     Console.Clear();
 
-var patchModernForwarding = false;
-var docker = true;
-var version = ProtocolVersion.Latest;
-var timeout = TimeSpan.FromMinutes(30);
+var ttl = TimeSpan.FromMinutes(30);
 
 IDockerMinecraftServer[] servers =
 [
-    // ProtocolVersion.Latest
-    new VanillaServer(version, 25566),
-    new VanillaServer(version, 25567),
-    new VanillaServer(version, 25568)
+    new PaperServer(ProtocolVersion.Latest, 25566),
+    new PaperServer(ProtocolVersion.Latest, 25567),
+    new PaperServer(ProtocolVersion.Latest, 25568)
     // ProtocolVersion.MINECRAFT_1_21
     // new NeoForgeServer(version, 25566, ["https://mediafilez.forgecdn.net/files/7039/43/refinedstorage-neoforge-2.0.0.jar"]),
     // new NeoForgeServer(version, 25567, ["https://mediafilez.forgecdn.net/files/7039/43/refinedstorage-neoforge-2.0.0.jar"]),
@@ -45,98 +41,20 @@ string[] arguments = [
     "--override", "s2=args-server-2",
     "--override", "s3=args-server-3",
     "--override", "s4=args-server-4",
-    "--offline"
+    // "--offline"
 ];
 
-Console.WriteLine($"Starting {servers.Length} minecraft container(s)");
+Console.WriteLine(@$"Starting {servers.Length} minecraft container(s)");
 
-if (docker)
-    await StartDockerEnvironmentAsync(servers, arguments: [.. arguments]);
-else
-    await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { Arguments = [.. arguments] });
+await StartDockerEnvironmentAsync();
+// await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { Arguments = [.. arguments] });
 
 return;
 
-async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> servers, string[]? arguments = null, CancellationToken cancellationToken = default)
+async ValueTask StartDockerEnvironmentAsync(CancellationToken cancellationToken = default)
 {
-
     const string imageName = "itzg/minecraft-server";
-    var patches =
-        $$"""
-        {
-           "patches": [
-            {{(
-            patchModernForwarding ?
-            """
-               {
-                  "file":"/data/config/paper-global.yml",
-                  "ops":[
-                     {
-                        "$set":{
-                           "path":"$.proxies.velocity.enabled",
-                           "value":true
-                        }
-                     },
-                     {
-                        "$set":{
-                           "path":"$.proxies.velocity.secret",
-                           "value":"aaa"
-                        }
-                     }
-                  ]
-               },
-            """
-            : string.Empty
-            )}}
-
-            {{(
-            patchModernForwarding ?
-            """
-               {
-                  "file":"/data/config/paper.yml",
-                  "ops":[
-                     {
-                        "$set":{
-                           "path":"$.settings.velocity-support.enabled",
-                           "value":true
-                        }
-                     },
-                     {
-                        "$set":{
-                           "path":"$.proxies.velocity.online-mode",
-                           "value":true
-                        }
-                     },
-                     {
-                        "$set":{
-                           "path":"$.settings.velocity-support.secret",
-                           "value":"aaa"
-                        }
-                     }
-                  ]
-               },
-            """
-            : string.Empty
-            )}}
-
-            {{"""
-               {
-                  "file":"/data/config/spigot.yml",
-                  "ops":[
-                     {
-                        "$set":{
-                           "path":"$.settings.debug",
-                           "value":true
-                        }
-                     }
-                  ]
-               }
-            """}}
-           ]
-        }
-        """;
-
-    using var docker = new DockerClientConfiguration().CreateClient();
+    var dockerClient = new DockerClientConfiguration().CreateClient();
 
     var containers = await servers.Select(async server =>
     {
@@ -154,42 +72,48 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
         {
             "EULA=TRUE",
             "TYPE=" + server.ItzgType,
+            "VERSION=" + VersionStringName(server.ProtocolVersion),
             "MODE=CREATIVE",
             "ONLINE_MODE=FALSE",
             "OPS=caunt,Shonz1",
             "MAX_TICK_TIME=-1",
-            "VERSION=" + VersionStringName(server.ProtocolVersion)
+            "PATCH_DEFINITIONS=patches",
+            "DOWNLOAD_EXTRA_CONFIGS=patches<https://raw.githubusercontent.com/caunt/ItzgTemplates/refs/heads/main/config--paper-global-yml.patch.json,patches<https://raw.githubusercontent.com/caunt/ItzgTemplates/refs/heads/main/config--paper-yml.patch.json",
+            "CFG_VELOCITY_ENABLED=TRUE",
+            "CFG_VELOCITY_ONLINE_MODE=TRUE",
+            "CFG_VELOCITY_SECRET=aaa"
         };
-
+        
         variables.AddRange(server.EnvironmentVariables.AsEnumerable().Select(keyPair => $"{keyPair.Key}={keyPair.Value}"));
 
-        if (server is PaperServer)
+        switch (server)
         {
-            variables.Add("PAPER_CONFIG_REPO=https://raw.githubusercontent.com/Shonz1/minecraft-default-configs/main");
-            variables.Add("PATCH_DEFINITIONS=/tmp/patch.json");
+            case PaperServer:
+                {
+                    variables.Add("PAPER_CONFIG_REPO=https://raw.githubusercontent.com/Shonz1/minecraft-default-configs/main");
 
-            if (server.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_21_5)
-                variables.Add("PAPER_CHANNEL=experimental");
+                    if (server.ProtocolVersion >= ProtocolVersion.MINECRAFT_1_21_5)
+                        variables.Add("PAPER_CHANNEL=experimental");
 
-            if (server.ProtocolVersion == ProtocolVersion.MINECRAFT_1_17)
-                variables.Add("PAPER_DOWNLOAD_URL=https://api.papermc.io/v2/projects/paper/versions/1.17/builds/79/downloads/paper-1.17-79.jar");
-            else if (server.ProtocolVersion == ProtocolVersion.MINECRAFT_1_17_1)
-                variables.Add("PAPER_DOWNLOAD_URL=https://api.papermc.io/v2/projects/paper/versions/1.17.1/builds/411/downloads/paper-1.17.1-411.jar");
-        }
-        else if (server is ForgeServer forge && forge.Mods.Count > 0)
-        {
-            variables.Add("MODS=" + string.Join(',', forge.Mods));
-        }
-        else if (server is NeoForgeServer neoForge && neoForge.Mods.Count > 0)
-        {
-            variables.Add("MODS=" + string.Join(',', neoForge.Mods));
+                    if (server.ProtocolVersion == ProtocolVersion.MINECRAFT_1_17)
+                        variables.Add("PAPER_DOWNLOAD_URL=https://api.papermc.io/v2/projects/paper/versions/1.17/builds/79/downloads/paper-1.17-79.jar");
+                    else if (server.ProtocolVersion == ProtocolVersion.MINECRAFT_1_17_1)
+                        variables.Add("PAPER_DOWNLOAD_URL=https://api.papermc.io/v2/projects/paper/versions/1.17.1/builds/411/downloads/paper-1.17.1-411.jar");
+                    break;
+                }
+            case ForgeServer { Mods.Count: > 0 } forge:
+                variables.Add("MODS=" + string.Join(',', forge.Mods));
+                break;
+            case NeoForgeServer { Mods.Count: > 0 } neoForge:
+                variables.Add("MODS=" + string.Join(',', neoForge.Mods));
+                break;
         }
 
-        var images = await docker.Images.ListImagesAsync(new ImagesListParameters { All = true }, cancellationToken);
+        var images = await dockerClient.Images.ListImagesAsync(new ImagesListParameters { All = true }, cancellationToken);
 
         if (images.All(image => !image.RepoTags.Any(imageName.Equals)))
         {
-            await docker.Images.CreateImageAsync(new ImagesCreateParameters
+            await dockerClient.Images.CreateImageAsync(new ImagesCreateParameters
             {
                 FromImage = imageName,
                 Tag = imageTag
@@ -201,7 +125,7 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
 
         while (true)
         {
-            var found = await GetContainerAsync(name, cancellationToken);
+            var found = await GetContainerAsync(name);
 
             if (found is null)
                 break;
@@ -209,27 +133,27 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
             switch (found.State)
             {
                 case "running":
-                    var inspect = await docker.Containers.InspectContainerAsync(found.ID, cancellationToken);
+                    var inspect = await dockerClient.Containers.InspectContainerAsync(found.ID, cancellationToken);
 
                     if (variables.All(inspect.Config.Env.Contains))
                     {
-                        var exec = await docker.Exec.ExecCreateContainerAsync(found.ID, new ContainerExecCreateParameters
+                        var exec = await dockerClient.Exec.ExecCreateContainerAsync(found.ID, new ContainerExecCreateParameters
                         {
                             AttachStdin = true,
                             AttachStdout = true,
                             AttachStderr = true,
                             Tty = true,
-                            Cmd = ["/bin/bash", "-c", $"echo {(int)timeout.TotalSeconds} > /tmp/timeout"]
+                            Cmd = ["/bin/bash", "-c", $"echo {(int)ttl.TotalSeconds} > /tmp/timeout"]
                         }, cancellationToken);
 
-                        await docker.Exec.StartContainerExecAsync(exec.ID, cancellationToken);
+                        await dockerClient.Exec.StartContainerExecAsync(exec.ID, cancellationToken);
                         return found.ID;
                     }
 
-                    await docker.Containers.StopContainerAsync(found.ID, new ContainerStopParameters(), cancellationToken);
+                    await dockerClient.Containers.StopContainerAsync(found.ID, new ContainerStopParameters(), cancellationToken);
                     break;
                 case "stopped":
-                    await docker.Containers.RemoveContainerAsync(found.ID, new ContainerRemoveParameters(), cancellationToken);
+                    await dockerClient.Containers.RemoveContainerAsync(found.ID, new ContainerRemoveParameters(), cancellationToken);
                     break;
             }
 
@@ -256,22 +180,22 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
                     { "25565/tcp", [new PortBinding { HostPort = port.ToString() }] }
                 }
             },
-            Entrypoint = ["/bin/bash", "-c", $"echo '{patches}' > /tmp/patch.json && echo {(int)timeout.TotalSeconds} > /tmp/timeout && /start & proc=$!; while kill -0 $proc 2>/dev/null; do sleep 5; timeleft=$(cat /tmp/timeout 2>/dev/null || echo 0); newtime=$((timeleft-5)); echo $newtime > /tmp/timeout; if [ $newtime -le 0 ]; then kill $proc; break; fi; done; wait $proc"]
+            Entrypoint = ["/bin/bash", "-c", $"echo {(int)ttl.TotalSeconds} > /tmp/timeout && /start & proc=$!; while kill -0 $proc 2>/dev/null; do sleep 5; timeleft=$(cat /tmp/timeout 2>/dev/null || echo 0); newtime=$((timeleft-5)); echo $newtime > /tmp/timeout; if [ $newtime -le 0 ]; then kill $proc; break; fi; done; wait $proc"]
         };
 
-        var created = await docker.Containers.CreateContainerAsync(createContainerParameters, cancellationToken);
+        var created = await dockerClient.Containers.CreateContainerAsync(createContainerParameters, cancellationToken);
 
-        if (!await docker.Containers.StartContainerAsync(created.ID, new ContainerStartParameters(), cancellationToken))
+        if (!await dockerClient.Containers.StartContainerAsync(created.ID, new ContainerStartParameters(), cancellationToken))
             throw new Exception($"Could not start #{created.ID} container");
 
-        using var logStream = await docker.Containers.GetContainerLogsAsync(created.ID, createContainerParameters.Tty, new ContainerLogsParameters { ShowStdout = true, ShowStderr = true }, cancellationToken);
+        using var logStream = await dockerClient.Containers.GetContainerLogsAsync(created.ID, createContainerParameters.Tty, new ContainerLogsParameters { ShowStdout = true, ShowStderr = true }, cancellationToken);
 
         StatusResponse status = default;
         while (status == default)
         {
             try
             {
-                if (await GetContainerAsync(name, cancellationToken) is null)
+                if (await GetContainerAsync(name) is null)
                 {
                     var (stdout, stderr) = await logStream.ReadOutputToEndAsync(cancellationToken);
                     throw new Exception($"Cannot start {name} container:\n\nstdout:\n{stdout}\n\nstderr:\n{stderr}");
@@ -286,7 +210,7 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
             }
             catch (Exception exception) when (exception.Message.Contains("Unexpected packet id"))
             {
-                // TODO temporary ignore, library seems to not support 1.13- versions
+                // Library does not support 1.13 and lower versions
                 break;
             }
         }
@@ -294,18 +218,13 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
         return created.ID;
     }).WhenAll();
 
-    try
-    {
-        await using var result = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { Arguments = arguments ?? [] }, cancellationToken);
-    }
-    finally
-    {
-        // await containers.Select(async id => await docker.Containers.StopContainerAsync(id, new ContainerStopParameters())).WhenAll();
-    }
+    await using var result = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { Arguments = arguments }, cancellationToken);
+    
+    return;
 
-    async ValueTask<ContainerListResponse?> GetContainerAsync(string name, CancellationToken cancellationToken)
+    async ValueTask<ContainerListResponse?> GetContainerAsync(string name)
     {
-        var containers = await docker.Containers.ListContainersAsync(new ContainersListParameters
+        var list = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters
         {
             All = true,
             Filters = new Dictionary<string, IDictionary<string, bool>>
@@ -316,12 +235,12 @@ async ValueTask StartDockerEnvironmentAsync(IEnumerable<IDockerMinecraftServer> 
             }
         }, cancellationToken);
 
-        return containers.FirstOrDefault(container => container.Names.Any(n => n.EndsWith(name)));
+        return list.FirstOrDefault(container => container.Names.Any(n => n.EndsWith(name)));
     }
 
-    string VersionStringName(ProtocolVersion version)
+    string VersionStringName(ProtocolVersion protocolVersion)
     {
-        return version switch
+        return protocolVersion switch
         {
             var value when value == ProtocolVersion.MINECRAFT_26_1 => value.Releases[2], // paper skipped 26.1
             var value when value == ProtocolVersion.MINECRAFT_1_21_2 => value.Releases[1], // paper skipped 1.21.2
