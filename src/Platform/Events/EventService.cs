@@ -10,8 +10,8 @@ namespace Void.Proxy.Events;
 
 public partial class EventService(ILogger<EventService> logger, IContainer container) : IEventService
 {
-    private readonly ConcurrentDictionary<Func<IEvent, bool>, TaskCompletionSource> _waiters = [];
     private readonly List<Entry> _entries = [];
+    private readonly ConcurrentDictionary<Func<IEvent, bool>, TaskCompletionSource> _waiters = [];
 
     public IEnumerable<IEventListener> Listeners
     {
@@ -127,80 +127,17 @@ public partial class EventService(ILogger<EventService> logger, IContainer conta
         }
     }
 
-    private async ValueTask ThrowOnceAsync<T>(WeakEntry[] entries, T @event, CancellationToken cancellationToken = default) where T : IEvent
-    {
-        var dependencies = container.Resolve<IDependencyService>();
-
-        var eventType = @event.GetType();
-        LogInvokingTypeEvent(eventType.Name);
-
-        foreach (var entry in entries)
-        {
-            var listener = entry.Listener;
-            var method = entry.Method;
-
-            if (listener is null || method is null)
-                continue;
-
-            if (!entry.IsCompatible(eventType))
-                continue;
-
-            await Task.Yield();
-
-            if (!entry.BypassScopedFilter && @event is IScopedEvent scopedEvent)
-            {
-                var serviceType = listener.GetType();
-
-                // Listener should be exactly Scoped
-                if (dependencies.TryGetServiceReuse(serviceType, out var lifetime) && lifetime is ServiceLifetime.Scoped)
-                {
-                    var scope = dependencies.GetEntryPoint(scopedEvent.Player).GetRequiredService<IContainer>();
-                    var scoped = scope.GetService(serviceType);
-
-                    if (scoped is null)
-                        throw new InvalidOperationException($"Failed to resolve scoped listener of type {serviceType.FullName} for event {eventType.FullName}.");
-                    
-                    // Skip wrong scopes
-                    if (scoped != listener)
-                        continue;
-                }
-            }
-
-            var parameters = method.GetParameters();
-
-            try
-            {
-                using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, entry.CancellationToken);
-                var value = method.Invoke(listener, parameters.Length == 1 ? [@event] : [@event, cancellationTokenSource.Token]);
-                var handle = value switch
-                {
-                    Task task => new ValueTask(task),
-                    ValueTask task => task,
-                    _ => ValueTask.CompletedTask
-                };
-
-                await handle;
-            }
-            catch (TargetInvocationException exception)
-            {
-                logger.LogError(exception.InnerException, "{EventName} cannot be invoked on {ListenerName}", eventType.Name, entry.Listener);
-            }
-        }
-
-        LogCompletedInvokingTypeEvent(eventType.Name);
-    }
-
     public async ValueTask WaitAsync(Func<IEvent, bool> condition, CancellationToken cancellationToken = default)
     {
         var taskCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         _waiters[condition] = taskCompletionSource;
 
-        using var registration = cancellationToken.Register(() =>
+        await using var registration = cancellationToken.Register(() =>
         {
             if (!_waiters.Remove(condition, out _))
                 return;
 
-            taskCompletionSource.SetCanceled();
+            taskCompletionSource.SetCanceled(cancellationToken);
         });
 
         await taskCompletionSource.Task;
@@ -247,7 +184,7 @@ public partial class EventService(ILogger<EventService> logger, IContainer conta
                         SubscribeAttribute.SanityChecks(method);
 
                         var attribute = method.GetCustomAttribute<SubscribeAttribute>()
-                                         ?? throw new InvalidOperationException($"Method {method.Name} does not define {nameof(SubscribeAttribute)}.");
+                                        ?? throw new InvalidOperationException($"Method {method.Name} does not define {nameof(SubscribeAttribute)}.");
                         _entries.Add(new Entry(listener, method, attribute.Order, attribute.BypassScopedFilter, cancellationToken));
                     }
 
@@ -287,6 +224,87 @@ public partial class EventService(ILogger<EventService> logger, IContainer conta
         }
     }
 
+    private async ValueTask ThrowOnceAsync<T>(WeakEntry[] entries, T @event, CancellationToken cancellationToken = default) where T : IEvent
+    {
+        var dependencies = container.Resolve<IDependencyService>();
+
+        var eventType = @event.GetType();
+        LogInvokingTypeEvent(eventType.Name);
+
+        foreach (var entry in entries)
+        {
+            var listener = entry.Listener;
+            var method = entry.Method;
+
+            if (listener is null || method is null)
+                continue;
+
+            if (!entry.IsCompatible(eventType))
+                continue;
+
+            await Task.Yield();
+
+            if (!entry.BypassScopedFilter && @event is IScopedEvent scopedEvent)
+            {
+                var serviceType = listener.GetType();
+
+                // Listener should be exactly Scoped
+                if (dependencies.TryGetServiceReuse(serviceType, out var lifetime) && lifetime is ServiceLifetime.Scoped)
+                {
+                    var scope = dependencies.GetEntryPoint(scopedEvent.Player).GetRequiredService<IContainer>();
+                    var scoped = scope.GetService(serviceType);
+
+                    if (scoped is null)
+                        throw new InvalidOperationException($"Failed to resolve scoped listener of type {serviceType.FullName} for event {eventType.FullName}.");
+
+                    // Skip wrong scopes
+                    if (scoped != listener)
+                        continue;
+                }
+            }
+
+            var parameters = method.GetParameters();
+
+            try
+            {
+                using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, entry.CancellationToken);
+                var value = method.Invoke(listener, parameters.Length == 1 ? [@event] : [@event, cancellationTokenSource.Token]);
+                var handle = value switch
+                {
+                    Task task => new ValueTask(task),
+                    ValueTask task => task,
+                    _ => ValueTask.CompletedTask
+                };
+
+                await handle;
+            }
+            catch (TargetInvocationException exception)
+            {
+                logger.LogError(exception.InnerException, "{EventName} cannot be invoked on {ListenerName}", eventType.Name, entry.Listener);
+            }
+        }
+
+        LogCompletedInvokingTypeEvent(eventType.Name);
+    }
+
+    [LoggerMessage(LogLevel.Trace, "Invoking {TypeName} event")]
+    partial void LogInvokingTypeEvent(string typeName);
+
+    [LoggerMessage(LogLevel.Trace, "Completed invoking {TypeName} event")]
+    partial void LogCompletedInvokingTypeEvent(string typeName);
+
+    [LoggerMessage(LogLevel.Trace, "Registering {Type} event listener")]
+    partial void LogRegisteringTypeEventListener(IEventListener type);
+
+    [LoggerMessage(LogLevel.Trace, "Registering {Type} event listener method {Name}")]
+    partial void LogRegisteringTypeEventListenerMethodName(IEventListener type, string name);
+
+    [LoggerMessage(LogLevel.Trace, "Unregistering {ListenerType} event listener")]
+    partial void LogUnregisteringListenerTypeEventListener(IEventListener listenerType);
+
+    [LoggerMessage(LogLevel.Error, "Failed to resolve {ServiceType} for scoped event {EventType}. Reason:")]
+    partial void LogFailedToResolveServiceTypeForScopedEventEventTypeReason(string? serviceType, string? eventType, Exception exception);
+
     private record WeakEntry(WeakReference<IEventListener> ListenerReference, WeakReference<MethodInfo> MethodReference, PostOrder Order, bool BypassScopedFilter, CancellationToken CancellationToken)
     {
         public IEventListener? Listener => ListenerReference.TryGetTarget(out var listener) ? listener : null;
@@ -315,22 +333,4 @@ public partial class EventService(ILogger<EventService> logger, IContainer conta
             return HashCode.Combine(RuntimeHelpers.GetHashCode(value.Listener), RuntimeHelpers.GetHashCode(value.Method));
         }
     }
-
-    [LoggerMessage(LogLevel.Trace, "Invoking {TypeName} event")]
-    partial void LogInvokingTypeEvent(string typeName);
-
-    [LoggerMessage(LogLevel.Trace, "Completed invoking {TypeName} event")]
-    partial void LogCompletedInvokingTypeEvent(string typeName);
-
-    [LoggerMessage(LogLevel.Trace, "Registering {Type} event listener")]
-    partial void LogRegisteringTypeEventListener(IEventListener type);
-
-    [LoggerMessage(LogLevel.Trace, "Registering {Type} event listener method {Name}")]
-    partial void LogRegisteringTypeEventListenerMethodName(IEventListener type, string name);
-
-    [LoggerMessage(LogLevel.Trace, "Unregistering {ListenerType} event listener")]
-    partial void LogUnregisteringListenerTypeEventListener(IEventListener listenerType);
-
-    [LoggerMessage(LogLevel.Error, "Failed to resolve {ServiceType} for scoped event {EventType}. Reason:")]
-    partial void LogFailedToResolveServiceTypeForScopedEventEventTypeReason(string? serviceType, string? eventType, Exception exception);
 }
