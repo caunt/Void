@@ -29,7 +29,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
     public object CreateInstance(Type serviceType, CancellationToken cancellationToken = default, params object[] parameters)
     {
         var assembly = serviceType.Assembly;
-        
+
         if (serviceType.IsAssignableTo(typeof(IPlugin)))
         {
             logger.LogTrace("Injecting {PluginType}", serviceType);
@@ -110,19 +110,22 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
     {
         return GetEntryPoint(preferredAssembly: typeof(TService).Assembly).GetService<TService>();
     }
-    
+
     public void ActivatePlayerScope(IPlayerContext context)
     {
         var playerStableHashCode = context.Player.GetStableHashCode();
         var queues = new Queue<Assembly>(_plugins.Keys);
-        
+
         while (queues.TryDequeue(out var assembly))
         {
             var playerScope = GetPlayerScope(assembly, playerStableHashCode, context);
-            
+
             foreach (var registration in playerScope.GetRequiredService<IContainer>().GetServiceRegistrations())
             {
                 if (registration.ServiceType.IsOpenGeneric())
+                    continue;
+
+                if (registration.Factory?.Reuse is not CurrentScopeReuse)
                     continue;
 
                 _ = GetEntryPoint(context.Player, assembly).GetRequiredService(registration.ServiceType);
@@ -146,11 +149,11 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
                 {
                     if (service.Value is not IEventListener listener)
                         continue;
-                    
+
                     events.UnregisterListeners(listener);
                 }
             }
-            
+
             resolverContext.Dispose();
         }
     }
@@ -161,38 +164,91 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         var container = pluginContainer.Root.GetRequiredService<IContainer>();
         var registration = container.GetServiceRegistrations().FirstOrDefault(registration => registration.ServiceType == serviceType);
         var registered = registration.Factory is not null;
-        
+
         reuse = registration.Factory?.Reuse switch
         {
             SingletonReuse => ServiceLifetime.Singleton,
             CurrentScopeReuse => ServiceLifetime.Scoped,
             _ => ServiceLifetime.Transient
         };
-        
+
         return registered;
     }
 
     public IServiceProvider GetEntryPoint(IPlayer player, Assembly? preferredAssembly = null)
     {
         var playerStableHashCode = player.GetStableHashCode();
-        return Combine(
-        [
-            .. _plugins.Keys.OrderByDescending(assembly => assembly == preferredAssembly).Select(assembly => GetPlayerScope(assembly, playerStableHashCode, player.Context)),
-            GetEntryPoint(preferredAssembly)
-        ]);
+        EnsurePlayerScopes();
+
+        return CombineLazy(GetScopedContainers, GetSingletonContainers);
+
+        IEnumerable<IServiceProvider> GetScopedContainers()
+        {
+            foreach (var assembly in GetPluginAssemblies())
+            {
+                if (!_plugins.TryGetValue(assembly, out var pluginContainer))
+                    continue;
+
+                if (!pluginContainer.Scopes.TryGetValue(playerStableHashCode, out var playerScope))
+                    continue;
+
+                yield return playerScope;
+            }
+
+            yield return rootContainer;
+
+            foreach (var assembly in GetPluginAssemblies())
+                yield return GetPluginContainer(assembly).Root;
+        }
+
+        IEnumerable<IServiceProvider> GetSingletonContainers()
+        {
+            yield return rootContainer;
+
+            foreach (var assembly in GetPluginAssemblies())
+                yield return GetPluginContainer(assembly).Root;
+        }
+
+        IEnumerable<Assembly> GetPluginAssemblies()
+        {
+            var assemblies = _plugins.Keys.AsEnumerable();
+
+            if (preferredAssembly is not null)
+                assemblies = assemblies.OrderByDescending(assembly => assembly == preferredAssembly);
+
+            return assemblies;
+        }
+
+        void EnsurePlayerScopes()
+        {
+            foreach (var assembly in _plugins.Keys)
+                GetPlayerScope(assembly, playerStableHashCode, player.Context);
+        }
     }
 
     public IServiceProvider GetEntryPoint(Assembly? preferredAssembly = null)
     {
-        var assemblies = _plugins.Keys.AsEnumerable();
-        
-        if (preferredAssembly is not null)
-            assemblies = assemblies.OrderByDescending(assembly => assembly == preferredAssembly);
-        
-        var containers = assemblies.Select(assembly => GetPluginContainer(assembly).Root);
-        return Combine([..containers, rootContainer]);
+        return CombineLazy(GetRootContainers);
+
+        IEnumerable<IServiceProvider> GetRootContainers()
+        {
+            yield return rootContainer;
+
+            foreach (var assembly in GetPluginAssemblies())
+                yield return GetPluginContainer(assembly).Root;
+        }
+
+        IEnumerable<Assembly> GetPluginAssemblies()
+        {
+            var assemblies = _plugins.Keys.AsEnumerable();
+
+            if (preferredAssembly is not null)
+                assemblies = assemblies.OrderByDescending(assembly => assembly == preferredAssembly);
+
+            return assemblies;
+        }
     }
-    
+
     [Subscribe(PostOrder.First)]
     public void OnPluginUnloading(PluginUnloadingEvent @event)
     {
@@ -213,34 +269,49 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
     private IServiceProvider GetPlayerScope(Assembly assembly, int playerStableHashCode, IPlayerContext context)
     {
         var container = GetPluginContainer(assembly);
-        
-        if (!container.Scopes.TryGetValue(playerStableHashCode, out var playerScope))
-            container.Scopes[playerStableHashCode] = playerScope = GetPluginContainer(assembly).Root.GetRequiredService<IContainer>().OpenScope(nameof(IPlayer));
+
+        if (container.Scopes.TryGetValue(playerStableHashCode, out var playerScope))
+            return playerScope;
+
+        playerScope = GetPluginContainer(assembly).Root.GetRequiredService<IContainer>().OpenScope(nameof(IPlayer));
+        container.Scopes[playerStableHashCode] = playerScope;
 
         playerScope.Add(ServiceDescriptor.Singleton(context));
-        
+
         return playerScope;
     }
-    
+
     private PluginContainer GetPluginContainer(Assembly pluginAssembly, CancellationToken cancellationToken = default)
     {
         if (_plugins.TryGetValue(pluginAssembly, out var pluginContainer))
             return pluginContainer;
 
         var emptyContainer = Combine();
+        emptyContainer.Add(ServiceDescriptor.Singleton<IServiceScopeFactory>(serviceProvider => new DependencyServiceScopeFactory((IResolverContext)serviceProvider)));
         _plugins.Add(pluginAssembly, pluginContainer = new PluginContainer(Root: emptyContainer, Scopes: []));
-        
+
         return pluginContainer;
     }
-    
-    private Container Combine(params IEnumerable<IServiceProvider> containers)
+
+    private Container Combine(params IServiceProvider[] containers)
+    {
+        return CombineLazy(() => containers);
+    }
+
+    private Container CombineLazy(Func<IEnumerable<IServiceProvider>> getContainers, Func<IEnumerable<IServiceProvider>>? getSingletonContainers = null)
     {
         var events = rootContainer.Resolve<IEventService>();
+        var getSingletonResolutionContainers = getSingletonContainers ?? getContainers;
+
         return new Container(rootContainer.Rules.WithUnknownServiceResolvers(ResolveFactory));
 
         InstanceFactory? ResolveFactory(Request request)
         {
-            var service = ResolveService(request.ServiceType);
+            var isSingletonResolution =
+                (request.Flags & RequestFlags.IsSingletonOrDependencyOfSingleton) != 0 ||
+                IsSingletonService(request.ServiceType);
+
+            var service = ResolveService(request.ServiceType, isSingletonResolution ? getSingletonResolutionContainers : getContainers);
 
             if (service is null)
                 return null;
@@ -248,19 +319,52 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
             return new InstanceFactory(service);
         }
 
-        object? ResolveService(Type serviceType)
+        bool IsSingletonService(Type serviceType)
         {
-            // ReSharper disable once PossibleMultipleEnumeration
-            foreach (var serviceProvider in containers)
+            foreach (var serviceProvider in getSingletonResolutionContainers())
+            {
+                var container = serviceProvider.GetRequiredService<IContainer>();
+
+                foreach (var registration in container.GetServiceRegistrations())
+                {
+                    if (!Matches(serviceType, registration.ServiceType))
+                        continue;
+
+                    if (registration.Factory?.Reuse is SingletonReuse)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        static bool Matches(Type requestedServiceType, Type registeredServiceType)
+        {
+            if (requestedServiceType == registeredServiceType)
+                return true;
+
+            if (!requestedServiceType.IsConstructedGenericType)
+                return false;
+
+            return requestedServiceType.GetGenericTypeDefinition() == registeredServiceType;
+        }
+
+        object? ResolveService(Type serviceType, Func<IEnumerable<IServiceProvider>> getServiceProviders)
+        {
+            foreach (var serviceProvider in getServiceProviders())
             {
                 var container = serviceProvider.GetRequiredService<IContainer>();
 
                 if (!container.CanGetService(serviceType))
                     continue;
 
-                var service = container
-                    .With(dependencyRules => dependencyRules.WithUnknownServiceResolvers(ResolveFactory))
-                    .GetService(serviceType);
+                var configuredContainer = container.With(dependencyRules => dependencyRules.WithUnknownServiceResolvers(ResolveFactory));
+
+                IResolverContext resolver = serviceProvider is IResolverContext resolverContext && resolverContext.CurrentScope is not null
+                    ? configuredContainer.WithCurrentScope(resolverContext.CurrentScope)
+                    : configuredContainer;
+
+                var service = resolver.Resolve(serviceType, IfUnresolved.ReturnDefault);
 
                 if (service is null)
                     continue;
@@ -274,6 +378,24 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
             return null;
         }
     }
-    
+
+    private sealed class DependencyServiceScopeFactory(IResolverContext resolverContext) : IServiceScopeFactory
+    {
+        public IServiceScope CreateScope()
+        {
+            return new DependencyServiceScope(resolverContext.OpenScope());
+        }
+    }
+
+    private sealed class DependencyServiceScope(IResolverContext resolverContext) : IServiceScope
+    {
+        public IServiceProvider ServiceProvider => resolverContext;
+
+        public void Dispose()
+        {
+            resolverContext.Dispose();
+        }
+    }
+
     private record PluginContainer(IServiceProvider Root, Dictionary<int, IResolverContext> Scopes);
 }
