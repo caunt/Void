@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Void.Minecraft.Buffers;
@@ -27,8 +26,6 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
     [Subscribe]
     public void OnPhaseChanged(PhaseChangedEvent @event)
     {
-        context.Logger.LogInformation("HELLO!!!");
-
         if (@event.Phase is not Phase.Login)
             return;
 
