@@ -25,6 +25,7 @@ internal record PlayerContext(Func<IServiceProvider> GetServices) : IPlayerConte
     public async ValueTask DisposeAsync()
     {
         IsDisposed = true;
+        Player = null!;
 
         if (Channel is not null)
             await Channel.DisposeAsync();
