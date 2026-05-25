@@ -27,7 +27,6 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
     [Subscribe]
     public void OnPhaseChanged(PhaseChangedEvent @event)
     {
-        Debugger.Break();
         context.Logger.LogInformation("HELLO!!!");
 
         if (@event.Phase is not Phase.Login)
