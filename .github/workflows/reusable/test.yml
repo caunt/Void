@@ -31,11 +31,14 @@ jobs:
   integration-test:
     needs: [test, integration-test-matrix]
     if: ${{ !inputs.skip-tests }}
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
+        os:
+          # Add more platforms here when docker support is available
+          - ubuntu-latest
         shard: ${{ fromJSON(needs.integration-test-matrix.outputs.shards) }}
+    runs-on: ${{ matrix.os }}
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       RUN_TESTS_FOR_COMMIT: ${{ !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'revert') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'docs') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'style') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'chore') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'refactor') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'build') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'ci') }}
@@ -77,21 +80,27 @@ jobs:
         include:
           - os: ubuntu-24.04-arm
             run-unit-tests: true
+            run-integration-tests: false # TODO: investigate - cannot build portablemc docker image
 
           - os: ubuntu-latest
             run-unit-tests: true
+            run-integration-tests: true
 
           - os: macos-latest
             run-unit-tests: true
+            run-integration-tests: false # does not support docker
 
           - os: macos-15-intel
             run-unit-tests: true
+            run-integration-tests: false # does not support docker
 
           - os: windows-11-arm
             run-unit-tests: true
+            run-integration-tests: false # does not support docker
 
           - os: windows-latest
             run-unit-tests: true
+            run-integration-tests: false # does not support docker
 
     runs-on: ${{ matrix.os }}
     steps:
