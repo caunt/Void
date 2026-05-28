@@ -102,6 +102,17 @@ jobs:
         if: ${{ matrix.test-kind == 'integration' }}
         run: dotnet test tests/Void.IntegrationTests --configuration Release --filter "$TEST_FILTER" --logger "console;verbosity=detailed"
 
+      - name: Upload integration steps
+        if: ${{ always() && matrix.test-kind == 'integration' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-steps-${{ matrix.os }}-${{ matrix.shard }}
+          path: |
+            steps/**
+            **/steps/**
+          if-no-files-found: ignore
+          compression-level: 9
+
       - name: Run unit tests
         if: ${{ matrix.test-kind == 'unit' }}
         run: dotnet test tests/Void.UnitTests --verbosity normal
