@@ -37,7 +37,7 @@ jobs:
 
   github:
     needs: [build,version]
-    uses: ./.github/workflows/reusable-publish-github.yml
+    uses: ./.github/workflows/publish-github.yml
     secrets: inherit
     with:
       tag_name: ${{ needs.version.outputs.tag_name }}
@@ -45,7 +45,7 @@ jobs:
 
   docker:
     needs: [build,version]
-    uses: ./.github/workflows/reusable-publish-docker.yml
+    uses: ./.github/workflows/publish-docker.yml
     secrets: inherit
     with:
       dotnet-version: ${{ needs.version.outputs.dotnet-version }}
@@ -54,7 +54,7 @@ jobs:
 
   nuget:
     needs: [build,version]
-    uses: ./.github/workflows/reusable-publish-nuget.yml
+    uses: ./.github/workflows/publish-nuget.yml
     secrets: inherit
     if: ${{ fromJSON(needs.version.outputs.release) }}
     with:

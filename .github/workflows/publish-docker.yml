@@ -1,0 +1,104 @@
+on:
+  workflow_call:
+    inputs:
+      dotnet-version:
+        type: string
+        required: true
+      void-version:
+        type: string
+        required: true
+      release:
+        type: string
+        required: true
+
+jobs:
+  push-dev:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-arm;linux-arm64;linux-x64
+            container_image_tags: dev
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-bionic-arm64;linux-bionic-x64
+            container_image_tags: dev-android
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-musl-arm;linux-musl-arm64;linux-musl-x64
+            container_image_tags: dev-alpine
+          - os: windows-latest
+            container_runtime_identifiers: win-x64
+            container_image_tags: dev-windows
+            container_base_image: mcr.microsoft.com/dotnet/runtime:10.0-nanoserver-ltsc2025
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Setup .NET
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Publish ${{ matrix.container_image_tags }} tags
+        shell: bash
+        env:
+          MSYS_NO_PATHCONV: 1
+          MSYS2_ARG_CONV_EXCL: '*'
+        run: |
+          dotnet publish src/Platform \
+            /t:PublishContainer \
+            /p:RuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
+            /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
+            /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
+            /p:ContainerBaseImage='"${{ matrix.container_base_image }}"' \
+            /p:EnableCompressionInSingleFile=true \
+            /p:Version=${{ inputs.void-version }}
+
+  push:
+    if: ${{ fromJson(inputs.release) }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-arm;linux-arm64;linux-x64
+            container_image_tags: ${{ inputs.void-version }};latest
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-bionic-arm64;linux-bionic-x64
+            container_image_tags: ${{ inputs.void-version }}-android;latest-android
+          - os: ubuntu-latest
+            container_runtime_identifiers: linux-musl-arm;linux-musl-arm64;linux-musl-x64
+            container_image_tags: ${{ inputs.void-version }}-alpine;latest-alpine
+          - os: windows-latest
+            container_runtime_identifiers: win-x64
+            container_image_tags: ${{ inputs.void-version }}-windows;latest-windows
+            container_base_image: mcr.microsoft.com/dotnet/runtime:10.0-nanoserver-ltsc2025
+    steps: 
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Setup .NET
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Publish ${{ matrix.container_image_tags }} tags
+        shell: bash
+        env:
+          MSYS_NO_PATHCONV: 1
+          MSYS2_ARG_CONV_EXCL: '*'
+        run: |
+          dotnet publish src/Platform \
+            /t:PublishContainer \
+            /p:RuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
+            /p:ContainerRuntimeIdentifiers='"${{ matrix.container_runtime_identifiers }}"' \
+            /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
+            /p:ContainerBaseImage='"${{ matrix.container_base_image }}"' \
+            /p:EnableCompressionInSingleFile=true \
+            /p:Version=${{ inputs.void-version }}
