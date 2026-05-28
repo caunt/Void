@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nito.AsyncEx;
 using Void.Proxy.Api.Events.Channels;
@@ -55,28 +54,6 @@ public static class PlayerExtensions
             }
         }
 
-        [Obsolete("Use property Server instead")]
-        public IServer? GetServer()
-        {
-            return player.Server;
-        }
-
-        [Obsolete("Use property Link instead")]
-        public bool TryGetLink([MaybeNullWhen(false)] out ILink link)
-        {
-            var links = player.GetRequiredService<ILinkService>();
-            return links.TryGetLink(player, out link);
-        }
-
-        [Obsolete("Use property Link instead")]
-        public ILink GetLink()
-        {
-            if (player.Link is not { } link)
-                throw new InvalidOperationException("Player is not linked to any server");
-
-            return link;
-        }
-
         public void TrafficPause(Direction direction = Direction.Clientbound | Direction.Serverbound, Operation operation = Operation.Any)
         {
             if (player.Link is not { } link)
@@ -118,6 +95,7 @@ public static class PlayerExtensions
                     player.Context.Logger.LogTrace("Pausing link {Link} reading traffic from player for player {Player}", link, player);
                     link.PlayerChannel.Pause(operation);
                 }
+
                 if (operation.HasFlag(Operation.Write))
                 {
                     player.Context.Logger.LogTrace("Pausing link {Link} writing traffic to player for player {Player}", link, player);
@@ -152,6 +130,7 @@ public static class PlayerExtensions
                     player.Context.Logger.LogTrace("Continuing link {Link} reading traffic from server for player {Player}", link, player);
                     link.ServerChannel.Resume(operation);
                 }
+
                 if (operation.HasFlag(Operation.Write))
                 {
                     player.Context.Logger.LogTrace("Continuing link {Link} writing traffic to server for player {Player}", link, player);
@@ -166,6 +145,7 @@ public static class PlayerExtensions
                     player.Context.Logger.LogTrace("Continuing link {Link} reading traffic from player for player {Player}", link, player);
                     link.PlayerChannel.Resume(operation);
                 }
+
                 if (operation.HasFlag(Operation.Write))
                 {
                     player.Context.Logger.LogTrace("Continuing link {Link} writing traffic to player for player {Player}", link, player);
@@ -208,7 +188,7 @@ public static class PlayerExtensions
             player.Context.Channel = channel;
 
             var events = player.GetRequiredService<IEventService>();
-            await events.ThrowAsync(new ChannelCreatedEvent(player, Network.Side.Client, player.Context.Channel), cancellationToken);
+            await events.ThrowAsync(new ChannelCreatedEvent(player, Side.Client, player.Context.Channel), cancellationToken);
 
             return player.Context.Channel;
         }
