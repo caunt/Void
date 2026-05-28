@@ -27,7 +27,8 @@ IDockerMinecraftServer[] servers =
     // new ForgeServer(version, 25568, ["https://mediafilez.forgecdn.net/files/4844/585/refinedstorage-1.12.4.jar"])
 ];
 
-string[] arguments = [
+string[] arguments =
+[
     "--read-only",
     "--logging", nameof(LogLevel.Debug),
     "--forwarding-modern-key", "aaa",
@@ -40,9 +41,14 @@ string[] arguments = [
     "--override", "s1=args-server-1",
     "--override", "s2=args-server-2",
     "--override", "s3=args-server-3",
-    "--override", "s4=args-server-4",
+    "--override", "s4=args-server-4"
     // "--offline"
 ];
+
+Environment.SetEnvironmentVariable("MINECRAFT_API_BASE_URL", "http://minecraft.api.svc.cluster.local:80/");
+Environment.SetEnvironmentVariable("MINECRAFT_RABBITMQ_CONNECTION_STRING", "amqp://user:BU5bnxzotvfWkygJ8KdBOHKszT5sFSHO@minecraft-rabbitmq.rabbitmq.svc.cluster.local:5672/");
+Environment.SetEnvironmentVariable("VOID_NUGET_REPOSITORIES", "http://minecraft.bagetter.svc.cluster.local:80/v3/index.json");
+Environment.SetEnvironmentVariable("VOID_PLUGINS", "https://github.com/Shonz1/Void.Plugins/releases/latest/download/void-tab-lists.dll,https://github.com/Shonz1/Void.Plugins/releases/latest/download/void-player-positions.dll,https://github.com/Shonz1/Void.Plugins/releases/latest/download/void-menus.dll,https://pub-637ef13bcc21413ab47c77dd6e1399cf.r2.dev/ExamplePlugin.dll");
 
 Console.WriteLine(@$"Starting {servers.Length} minecraft container(s)");
 
@@ -83,7 +89,7 @@ async ValueTask StartDockerEnvironmentAsync(CancellationToken cancellationToken 
             "CFG_VELOCITY_ONLINE_MODE=TRUE",
             "CFG_VELOCITY_SECRET=aaa"
         };
-        
+
         variables.AddRange(server.EnvironmentVariables.AsEnumerable().Select(keyPair => $"{keyPair.Key}={keyPair.Value}"));
 
         switch (server)
@@ -113,11 +119,7 @@ async ValueTask StartDockerEnvironmentAsync(CancellationToken cancellationToken 
 
         if (images.All(image => !image.RepoTags.Any(imageName.Equals)))
         {
-            await dockerClient.Images.CreateImageAsync(new ImagesCreateParameters
-            {
-                FromImage = imageName,
-                Tag = imageTag
-            }, null, new Progress<JSONMessage>(), cancellationToken);
+            await dockerClient.Images.CreateImageAsync(new ImagesCreateParameters { FromImage = imageName, Tag = imageTag }, null, new Progress<JSONMessage>(), cancellationToken);
         }
 
         var name = $"void-{server.Port}";
@@ -168,18 +170,8 @@ async ValueTask StartDockerEnvironmentAsync(CancellationToken cancellationToken 
             OpenStdin = true,
             AttachStdin = true,
             Tty = true,
-            ExposedPorts = new Dictionary<string, EmptyStruct>
-            {
-                { "25565/tcp", default }
-            },
-            HostConfig = new HostConfig
-            {
-                AutoRemove = true,
-                PortBindings = new Dictionary<string, IList<PortBinding>>
-                {
-                    { "25565/tcp", [new PortBinding { HostPort = port.ToString() }] }
-                }
-            },
+            ExposedPorts = new Dictionary<string, EmptyStruct> { { "25565/tcp", default } },
+            HostConfig = new HostConfig { AutoRemove = true, PortBindings = new Dictionary<string, IList<PortBinding>> { { "25565/tcp", [new PortBinding { HostPort = port.ToString() }] } } },
             Entrypoint = ["/bin/bash", "-c", $"echo {(int)ttl.TotalSeconds} > /tmp/timeout && /start & proc=$!; while kill -0 $proc 2>/dev/null; do sleep 5; timeleft=$(cat /tmp/timeout 2>/dev/null || echo 0); newtime=$((timeleft-5)); echo $newtime > /tmp/timeout; if [ $newtime -le 0 ]; then kill $proc; break; fi; done; wait $proc"]
         };
 
@@ -219,21 +211,12 @@ async ValueTask StartDockerEnvironmentAsync(CancellationToken cancellationToken 
     }).WhenAll();
 
     await using var result = await VoidEntryPoint.RunAsync(new VoidEntryPoint.RunOptions { Arguments = arguments }, cancellationToken);
-    
+
     return;
 
     async ValueTask<ContainerListResponse?> GetContainerAsync(string name)
     {
-        var list = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters
-        {
-            All = true,
-            Filters = new Dictionary<string, IDictionary<string, bool>>
-            {
-                {
-                    "name", new Dictionary<string, bool> { ["/" + name] = true }
-                }
-            }
-        }, cancellationToken);
+        var list = await dockerClient.Containers.ListContainersAsync(new ContainersListParameters { All = true, Filters = new Dictionary<string, IDictionary<string, bool>> { { "name", new Dictionary<string, bool> { ["/" + name] = true } } } }, cancellationToken);
 
         return list.FirstOrDefault(container => container.Names.Any(n => n.EndsWith(name)));
     }
@@ -249,7 +232,7 @@ async ValueTask StartDockerEnvironmentAsync(CancellationToken cancellationToken 
             var value when value == ProtocolVersion.MINECRAFT_1_18 => value.Releases[1], // paper skipped 1.18
             var value when value == ProtocolVersion.MINECRAFT_1_8 => value.Releases[8], // paper first release is 1.8.8
             var value when value == ProtocolVersion.MINECRAFT_1_20 => value.Releases[1], // refined storage requires forge 1.20.1
-            var value => value.FirstRelease,
+            var value => value.FirstRelease
         };
     }
 }
@@ -275,7 +258,7 @@ record ForgeServer(ProtocolVersion ProtocolVersion, int Port, params IReadOnlyLi
 record NeoForgeServer(ProtocolVersion ProtocolVersion, int Port, params IReadOnlyList<string> Mods) : IDockerMinecraftServer
 {
     public string ItzgType => "NEOFORGE";
-    public Dictionary<string, string> EnvironmentVariables => ProtocolVersion == ProtocolVersion.MINECRAFT_1_21 ? new Dictionary<string, string>() { { "NEOFORGE_VERSION", "21.1.216" } } : [];
+    public Dictionary<string, string> EnvironmentVariables => ProtocolVersion == ProtocolVersion.MINECRAFT_1_21 ? new Dictionary<string, string> { { "NEOFORGE_VERSION", "21.1.216" } } : [];
 }
 
 interface IDockerMinecraftServer
