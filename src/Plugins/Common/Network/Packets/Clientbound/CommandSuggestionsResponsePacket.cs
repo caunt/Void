@@ -5,7 +5,7 @@ using Void.Minecraft.Network.Messages.Packets;
 
 namespace Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
 
-public class CommandSuggestionsResponsePacket : IMinecraftServerboundPacket<CommandSuggestionsResponsePacket>
+public class CommandSuggestionsResponsePacket : IMinecraftClientboundPacket<CommandSuggestionsResponsePacket>
 {
     public int? TransactionId { get; set; }
     public int? Start { get; set; }
