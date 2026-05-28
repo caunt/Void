@@ -293,7 +293,10 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
 
         object? ResolveService(Type serviceType, Func<IEnumerable<IServiceProvider>> getServiceProviders, IContainer entryPointContainer)
         {
-            foreach (var serviceProvider in getServiceProviders())
+            var serviceProviders = getServiceProviders()
+                .OrderByDescending(serviceProvider => GetServiceProviderPriority(serviceProvider.Container, serviceType));
+
+            foreach (var serviceProvider in serviceProviders)
             {
                 var container = serviceProvider.Container;
 
@@ -326,6 +329,38 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
 
             return null;
         }
+
+        static int GetServiceProviderPriority(IContainer container, Type serviceType)
+        {
+            if (!serviceType.IsConstructedGenericType)
+                return 0;
+
+            if (container.IsRegistered(serviceType))
+                return 3;
+
+            if (HasRelatedClosedGenericRegistration(container, serviceType))
+                return 2;
+
+            if (container.IsRegistered(serviceType.GetGenericTypeDefinition()))
+                return 1;
+
+            return 0;
+        }
+
+        static bool HasRelatedClosedGenericRegistration(IContainer container, Type serviceType)
+        {
+            var genericArguments = serviceType.GetGenericArguments();
+
+            return container
+                .GetServiceRegistrations()
+                .Any(registration =>
+                {
+                    if (!registration.ServiceType.IsConstructedGenericType)
+                        return false;
+
+                    return registration.ServiceType.GetGenericArguments().Any(genericArguments.Contains);
+                });
+        }    
 
         bool IsSingletonService(Type serviceType)
         {
