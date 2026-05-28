@@ -122,7 +122,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
         channel.Close();
         player.Client.Close();
 
-        if (!player.HasLink)
+        if (!links.HasLink(player))
             await events.ThrowAsync(new PlayerDisconnectedEvent(player), cancellationToken);
 
         logger.LogTrace("Player {Player} kicked", player);
