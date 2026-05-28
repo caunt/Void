@@ -252,7 +252,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         playerScope = container.Root.Container.OpenScope(nameof(IPlayer));
         container.Scopes[playerStableHashCode] = playerScope;
 
-        playerScope.Add(ServiceDescriptor.Singleton(context));
+        playerScope.Use(context);
 
         return playerScope;
     }
@@ -360,7 +360,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
 
                     return registration.ServiceType.GetGenericArguments().Any(genericArguments.Contains);
                 });
-        }    
+        }
 
         bool IsSingletonService(Type serviceType)
         {

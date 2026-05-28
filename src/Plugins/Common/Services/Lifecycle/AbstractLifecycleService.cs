@@ -33,7 +33,7 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
     [Subscribe]
     public void OnPlayerConnecting(PlayerConnectingEvent @event)
     {
-        @event.Result ??= new SimplePlayer(@event.Client, instance => new PlayerContext(() => @event.GetServices(instance)) { Player = instance });
+        @event.Result ??= new SimplePlayer(@event.Client, instance => new PlayerContext(@event.GetServices) { Player = instance });
         logger.LogTrace("Player connecting: {Player}", @event.Result);
     }
 
@@ -57,10 +57,10 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
 
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
-        
+
         RemoveKeepAliveTracker(@event.Player);
     }
-    
+
     [Subscribe]
     public async ValueTask OnPhaseChanged(PhaseChangedEvent @event, CancellationToken cancellationToken)
     {
