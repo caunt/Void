@@ -46,7 +46,7 @@ jobs:
           # ubuntu-24.04-arm
           
           integration_operating_systems='[
-            "ubuntu-latest",
+            "ubuntu-latest"
           ]'
         
           matrix=$(
