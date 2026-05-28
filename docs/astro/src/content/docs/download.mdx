@@ -12,7 +12,7 @@ export const releases = (await getCollection('releases')).sort(
     (leftRelease, rightRelease) => new Date(rightRelease.data.published_at).getTime() - new Date(leftRelease.data.published_at).getTime()
 );
 export const workflows = await getCollection('workflows');
-export const builds = workflows.find(entry => entry.data.path.endsWith('main.yaml')).data;
+export const builds = workflows.find(entry => entry.data.path.endsWith('runnable-commit.yml'))?.data ?? { runs: [] };
 export const platforms = [
     { "id": "windows",      "title": "Windows",         "pattern": "-win-",          "icon": "seti:windows" },
     { "id": "linux",        "title": "Linux",           "pattern": "-linux-",        "icon": "linux"        },
