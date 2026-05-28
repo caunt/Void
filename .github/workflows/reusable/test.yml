@@ -1,0 +1,66 @@
+on:
+  workflow_call:
+    inputs:
+      dotnet-version:
+        type: string
+        required: true
+      void-version:
+        type: string
+        required: true
+      skip-tests:
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  test:
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RUN_TESTS_FOR_COMMIT: ${{ !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'revert') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'docs') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'style') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'chore') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'refactor') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'build') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'ci') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04-arm
+            run-unit-tests: true
+            run-integration-tests: false # TODO: investigate - cannot build portablemc docker image
+
+          - os: ubuntu-latest
+            run-unit-tests: true
+            run-integration-tests: true
+
+          - os: macos-latest
+            run-unit-tests: true
+            run-integration-tests: false # does not support docker
+
+          - os: macos-15-intel
+            run-unit-tests: true
+            run-integration-tests: false # does not support docker
+
+          - os: windows-11-arm
+            run-unit-tests: true
+            run-integration-tests: false # does not support docker
+
+          - os: windows-latest
+            run-unit-tests: true
+            run-integration-tests: false # does not support docker
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Build
+        run: dotnet build --configuration Release /p:Version=${{ inputs.void-version }} ${{ matrix.parameters }}
+
+      - name: Run Unit Tests
+        if: ${{ env.RUN_TESTS_FOR_COMMIT == 'true' && !inputs.skip-tests && matrix.run-unit-tests }}
+        run: dotnet test tests/Void.UnitTests --verbosity normal ${{ matrix.parameters }}
+
+      - name: Run Integration Tests
+        if: ${{ env.RUN_TESTS_FOR_COMMIT == 'true' && !inputs.skip-tests && matrix.run-integration-tests }}
+        run: dotnet test tests/Void.IntegrationTests --verbosity normal ${{ matrix.parameters }}

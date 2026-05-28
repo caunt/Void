@@ -7,84 +7,53 @@ on:
       void-version:
         type: string
         required: true
-      skip-tests:
-        type: boolean
-        required: false
-        default: false
 
 jobs:
   publish:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      RUN_TESTS_FOR_COMMIT: ${{ !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'revert') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'docs') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'style') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'chore') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'refactor') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'build') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'ci') }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: ubuntu-24.04-arm
             runtime-identifier: linux-arm
-            run-unit-tests: false # does not support xUnit v3
-            run-integration-tests: false # does not support xUnit v3
 
           - os: ubuntu-24.04-arm
             runtime-identifier: linux-arm64
-            run-unit-tests: true 
-            run-integration-tests: false # TODO: investigate - cannot build portablemc docker image
 
           - os: ubuntu-24.04-arm
             runtime-identifier: linux-bionic-arm64
-            run-unit-tests: false # does not support xUnit v3
-            run-integration-tests: false # does not support xUnit v3
 
           - os: ubuntu-latest
             runtime-identifier: linux-bionic-x64
-            run-unit-tests: false # does not support xUnit v3
-            run-integration-tests: false # does not support xUnit v3
 
           - os: ubuntu-24.04-arm
             runtime-identifier: linux-musl-arm
-            run-unit-tests: false # does not support xUnit v3
-            run-integration-tests: false # does not support xUnit v3
 
           - os: ubuntu-24.04-arm
             runtime-identifier: linux-musl-arm64
-            run-unit-tests: false # does not support xUnit v3
-            run-integration-tests: false # does not support xUnit v3
 
           - os: ubuntu-latest
             runtime-identifier: linux-musl-x64
-            run-unit-tests: false # does not support xUnit v3
-            run-integration-tests: false # does not support xUnit v3
 
           - os: ubuntu-latest
             runtime-identifier: linux-x64
-            run-unit-tests: true
-            run-integration-tests: true
 
           - os: macos-latest
             runtime-identifier: osx-arm64
-            run-unit-tests: true
-            run-integration-tests: false # does not support docker
 
           - os: macos-15-intel
             runtime-identifier: osx-x64
-            run-unit-tests: true
-            run-integration-tests: false # does not support docker
 
           - os: windows-11-arm
             runtime-identifier: win-arm64
-            run-unit-tests: true
-            run-integration-tests: false # does not support docker
 
           - os: windows-latest
             runtime-identifier: win-x64
-            run-unit-tests: true
-            run-integration-tests: false # does not support docker
 
           - os: windows-latest
             runtime-identifier: win-x86
-            run-unit-tests: false # does not support xUnit v3
-            run-integration-tests: false # does not support docker
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -122,11 +91,3 @@ jobs:
           path: artifacts/void-${{ matrix.runtime-identifier }}${{ steps.get_suffix.outputs.result }}
           compression-level: 9
           if-no-files-found: error
-
-      - name: Run Unit Tests
-        if: ${{ env.RUN_TESTS_FOR_COMMIT == 'true' && !inputs.skip-tests && matrix.run-unit-tests }}
-        run: dotnet test tests/Void.UnitTests --runtime ${{ matrix.runtime-identifier }} --verbosity normal ${{ matrix.parameters }}
-
-      - name: Run Integration Tests
-        if: ${{ env.RUN_TESTS_FOR_COMMIT == 'true' && !inputs.skip-tests && matrix.run-integration-tests }}
-        run: dotnet test tests/Void.IntegrationTests --runtime ${{ matrix.runtime-identifier }} --verbosity normal ${{ matrix.parameters }}
