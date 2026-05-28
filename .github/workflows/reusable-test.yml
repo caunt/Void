@@ -33,12 +33,20 @@ jobs:
             "windows-11-arm",
             "windows-latest"
           ]'
-        
+          
+          # Do not have docker:
+          # macos-latest
+          # macos-15-intel
+          # windows-11-arm
+          
+          # Itzg does not support windows:
+          # windows-latest
+          
+          # Testcontainers: "Docker image portableminecraftclient:latest has not been created."
+          # ubuntu-24.04-arm
+          
           integration_operating_systems='[
-            "ubuntu-24.04-arm",
             "ubuntu-latest",
-            "windows-11-arm",
-            "windows-latest"
           ]'
         
           matrix=$(
