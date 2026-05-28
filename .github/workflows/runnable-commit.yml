@@ -15,21 +15,21 @@ on:
 
 jobs:
   version:
-    uses: ./.github/workflows/reusable/version.yml
+    uses: ./.github/workflows/reusable-version.yml
     secrets: inherit
     with:
       dotnet-version: ${{ github.event.inputs.dotnet-version }}
 
   build:
     needs: version
-    uses: ./.github/workflows/reusable/build.yml
+    uses: ./.github/workflows/reusable-build.yml
     with:
       dotnet-version: ${{ needs.version.outputs.dotnet-version }}
       void-version: ${{ needs.version.outputs.void-version }}
 
   test:
     needs: version
-    uses: ./.github/workflows/reusable/test.yml
+    uses: ./.github/workflows/reusable-test.yml
     with:
       dotnet-version: ${{ needs.version.outputs.dotnet-version }}
       void-version: ${{ needs.version.outputs.void-version }}
@@ -37,7 +37,7 @@ jobs:
 
   github:
     needs: [build,version]
-    uses: ./.github/workflows/reusable/publish/github.yml
+    uses: ./.github/workflows/reusable-publish-github.yml
     secrets: inherit
     with:
       tag_name: ${{ needs.version.outputs.tag_name }}
@@ -45,7 +45,7 @@ jobs:
 
   docker:
     needs: [build,version]
-    uses: ./.github/workflows/reusable/publish/docker.yml
+    uses: ./.github/workflows/reusable-publish-docker.yml
     secrets: inherit
     with:
       dotnet-version: ${{ needs.version.outputs.dotnet-version }}
@@ -54,7 +54,7 @@ jobs:
 
   nuget:
     needs: [build,version]
-    uses: ./.github/workflows/reusable/publish/nuget.yml
+    uses: ./.github/workflows/reusable-publish-nuget.yml
     secrets: inherit
     if: ${{ fromJSON(needs.version.outputs.release) }}
     with:
@@ -63,7 +63,7 @@ jobs:
 
   docs:
     needs: [build,version]
-    uses: ./.github/workflows/reusable/docs.yml
+    uses: ./.github/workflows/reusable-docs.yml
     secrets: inherit
     with:
       dotnet-version: ${{ needs.version.outputs.dotnet-version }}
