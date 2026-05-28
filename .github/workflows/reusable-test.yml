@@ -24,33 +24,33 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
-  steps:
-    - id: matrix
-      run: |
-        operating_systems='[
-          "ubuntu-24.04-arm",
-          "ubuntu-latest",
-          "macos-latest",
-          "macos-15-intel",
-          "windows-11-arm",
-          "windows-latest"
-        ]'
-  
-        matrix=$(
-          jq -cn \
-            --argjson operating_systems "$operating_systems" \
-            --argjson shardCount "${{ inputs.shard-count }}" \
-            '{
-              include:
-                (
-                  [range(0; $shardCount) as $shard | $operating_systems[] as $operating_system | { "test-kind": "integration", "os": $operating_system, "shard": $shard }]
-                  +
-                  [$operating_systems[] as $operating_system | { "test-kind": "unit", "os": $operating_system }]
-                )
-            }'
-        )
+    steps:
+      - id: matrix
+        run: |
+          operating_systems='[
+            "ubuntu-24.04-arm",
+            "ubuntu-latest",
+            "macos-latest",
+            "macos-15-intel",
+            "windows-11-arm",
+            "windows-latest"
+          ]'
+    
+          matrix=$(
+            jq -cn \
+              --argjson operating_systems "$operating_systems" \
+              --argjson shardCount "${{ inputs.shard-count }}" \
+              '{
+                include:
+                  (
+                    [range(0; $shardCount) as $shard | $operating_systems[] as $operating_system | { "test-kind": "integration", "os": $operating_system, "shard": $shard }]
+                    +
+                    [$operating_systems[] as $operating_system | { "test-kind": "unit", "os": $operating_system }]
+                  )
+              }'
+          )
 
-        echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   tests:
     needs: test-matrix
