@@ -16,13 +16,10 @@ on:
         required: false
         default: 16
 
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  RUN_TESTS_FOR_COMMIT: ${{ !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'revert') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'docs') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'style') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'chore') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'refactor') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'build') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'ci') }}
 jobs:
   test-matrix:
     runs-on: ubuntu-latest
-    if: ${{ !inputs.skip-tests && env.RUN_TESTS_FOR_COMMIT == 'true' }}
+    if: ${{ !inputs.skip-tests && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'revert') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'docs') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'style') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'chore') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'refactor') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'build') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'ci') }}
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
