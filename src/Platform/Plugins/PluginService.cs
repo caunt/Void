@@ -5,7 +5,6 @@ using Nito.AsyncEx;
 using Nito.Disposables.Internals;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Console;
-using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Plugins;
@@ -20,14 +19,12 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
 {
     public const string DefaultPluginsPath = "plugins";
 
-    private static readonly Option<string[]> PluginsOption = new("--plugin", "-p")
-    {
-        Description = "Provides a path to the file, directory or URL to load plugin."
-    };
+    private static readonly Option<string[]> PluginsOption = new("--plugin", "-p") { Description = "Provides a path to the file, directory or URL to load plugin." };
 
-    private readonly AsyncLock _lock = new();
     private readonly List<WeakPluginContainer> _containers = [];
     private readonly TimeSpan _gcRate = TimeSpan.FromMilliseconds(500);
+
+    private readonly AsyncLock _lock = new();
     private readonly TimeSpan _unloadTimeout = TimeSpan.FromSeconds(10);
 
     public IEnumerable<IPlugin> All => _containers.SelectMany(container => container.Plugins);
@@ -50,70 +47,73 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
 
     public async ValueTask LoadEnvironmentPluginsAsync(CancellationToken cancellationToken = default)
     {
-        var plugins = await GetArgumentsPlugins().Concat(GetVariablesPlugins()).Select(async variable =>
-        {
-            if (Uri.TryCreate(variable, UriKind.Absolute, out var url))
+        var plugins = await GetArgumentsPlugins()
+            .Concat(GetVariablesPlugins())
+            .Select(async variable =>
             {
-                if (url.IsFile)
+                if (Uri.TryCreate(variable, UriKind.Absolute, out var url))
                 {
-                    var name = Path.GetFileName(url.LocalPath);
-                    logger.LogTrace("Found {Name} local plugin", name);
+                    if (url.IsFile)
+                    {
+                        var name = Path.GetFileName(url.LocalPath);
+                        logger.LogTrace("Found {Name} local plugin", name);
+
+                        try
+                        {
+                            await using var stream = File.OpenRead(url.LocalPath);
+                            return LoadContainer(name, stream);
+                        }
+                        catch (Exception exception)
+                        {
+                            logger.LogWarning("Local plugin {Name} couldn't be loaded: {Message}", name, exception.Message);
+                            return null;
+                        }
+                    }
+
+                    var remoteName = url.LocalPath;
+                    logger.LogTrace("Found {Name} remote plugin", remoteName);
 
                     try
                     {
-                        await using var stream = File.OpenRead(url.LocalPath);
-                        return await LoadContainerAsync(name, stream, cancellationToken: cancellationToken);
+                        using var response = await httpClient.GetAsync(url, cancellationToken);
+
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            logger.LogWarning("Remote plugin {Uri} couldn't be loaded: {StatusCode}", url, response.StatusCode);
+                            return null;
+                        }
+
+                        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                        return LoadContainer(remoteName, stream);
                     }
                     catch (Exception exception)
                     {
-                        logger.LogWarning("Local plugin {Name} couldn't be loaded: {Message}", name, exception.Message);
+                        logger.LogWarning("Remote plugin {Uri} couldn't be loaded: {Message}", url, exception.Message);
                         return null;
                     }
                 }
 
-                var remoteName = url.LocalPath;
-                logger.LogTrace("Found {Name} remote plugin", remoteName);
+                if (!Path.IsPathRooted(variable))
+                    variable = Path.Combine(runOptions.WorkingDirectory, variable);
 
-                try
+                if (File.Exists(variable))
                 {
-                    using var response = await httpClient.GetAsync(url, cancellationToken);
+                    var name = Path.GetFileName(variable);
+                    logger.LogTrace("Found {Name} local plugin", name);
 
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        logger.LogWarning("Remote plugin {Uri} couldn't be loaded: {StatusCode}", url, response.StatusCode);
-                        return null;
-                    }
-
-                    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                    return await LoadContainerAsync(remoteName, stream, cancellationToken: cancellationToken);
+                    await using var stream = File.OpenRead(variable);
+                    return LoadContainer(name, stream);
                 }
-                catch (Exception exception)
+                else if (Directory.Exists(variable))
                 {
-                    logger.LogWarning("Remote plugin {Uri} couldn't be loaded: {Message}", url, exception.Message);
+                    return await LoadDirectoryPluginTypesAsync(new DirectoryInfo(variable), cancellationToken);
+                }
+                else
+                {
                     return null;
                 }
-            }
-
-            if (!Path.IsPathRooted(variable))
-                variable = Path.Combine(runOptions.WorkingDirectory, variable);
-
-            if (File.Exists(variable))
-            {
-                var name = Path.GetFileName(variable);
-                logger.LogTrace("Found {Name} local plugin", name);
-
-                await using var stream = File.OpenRead(variable);
-                return await LoadContainerAsync(name, stream, cancellationToken: cancellationToken);
-            }
-            else if (Directory.Exists(variable))
-            {
-                return await LoadDirectoryPluginTypesAsync(new DirectoryInfo(variable), cancellationToken);
-            }
-            else
-            {
-                return null;
-            }
-        }).WhenAll();
+            })
+            .WhenAll();
 
         await LoadPluginsAsync(plugins.WhereNotNull().SelectMany(x => x), cancellationToken);
 
@@ -135,7 +135,7 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
         var assembly = Assembly.GetExecutingAssembly();
         var resources = assembly.GetManifestResourceNames().Where(name => name.Contains(nameof(Plugins)));
 
-        var plugins = await Task.WhenAll(resources.Select(async name =>
+        var plugins = resources.SelectMany(name =>
         {
             logger.LogTrace("Found {Name} embedded plugin", name);
 
@@ -147,15 +147,15 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
 
             try
             {
-                return await LoadContainerAsync(name, stream, ignoreEmpty: true, cancellationToken);
+                return LoadContainer(name, stream, ignoreEmpty: true);
             }
             finally
             {
                 stream.Close();
             }
-        }));
+        });
 
-        await LoadPluginsAsync(plugins.SelectMany(x => x), cancellationToken);
+        await LoadPluginsAsync(plugins, cancellationToken);
     }
 
     public async ValueTask LoadDirectoryPluginsAsync(string path = DefaultPluginsPath, CancellationToken cancellationToken = default)
@@ -183,21 +183,6 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
         await LoadPluginsAsync(plugins, cancellationToken);
     }
 
-    public async ValueTask<IEnumerable<Type>> LoadDirectoryPluginTypesAsync(DirectoryInfo directoryInfo, CancellationToken cancellationToken = default)
-    {
-        return await directoryInfo.GetFiles("*.dll")
-            .Select(fileInfo => fileInfo.FullName)
-            .Select(async fileName =>
-            {
-                logger.LogTrace("Found {Name} plugin", Path.GetFileName(fileName));
-
-                await using var stream = File.OpenRead(fileName);
-                return await LoadContainerAsync(Path.GetFileName(fileName), stream, cancellationToken: cancellationToken);
-            })
-            .WhenAll()
-            .ContinueWith(task => task.Result.SelectMany(plugins => plugins), cancellationToken);
-    }
-
     public async ValueTask LoadPluginsAsync(IEnumerable<Type> plugins, CancellationToken cancellationToken = default)
     {
         plugins = plugins.OrderByDescending(plugin => plugin.IsAssignableTo(typeof(IApiPlugin)));
@@ -208,8 +193,11 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
 
     public async ValueTask LoadPluginAsync(Type pluginType, CancellationToken cancellationToken = default)
     {
-        var container = _containers.FirstOrDefault(reference => reference.Context.PluginAssembly == pluginType.Assembly) ??
-            throw new Exception($"No container found for {pluginType.Name} plugin");
+        WeakPluginContainer container;
+
+        lock (_containers)
+            container = _containers.FirstOrDefault(reference => reference.Context.PluginAssembly == pluginType.Assembly) ??
+                        throw new Exception($"No container found for {pluginType.Name} plugin");
 
         var plugin = dependencies.CreateInstance<IPlugin>(pluginType, container.CancellationTokenSource.Token);
 
@@ -227,63 +215,6 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
         logger.LogDebug("Loaded {Name} plugin from {AssemblyName} ", plugin.Name, container.Context.PluginAssembly.GetName().Name);
     }
 
-    public async ValueTask<IEnumerable<Type>> LoadContainerAsync(string name, Stream stream, bool ignoreEmpty = false, CancellationToken cancellationToken = default)
-    {
-        logger.LogTrace("Loading {Name} plugins", name);
-
-        try
-        {
-            var context = dependencies.CreateInstance<PluginAssemblyLoadContext>(default, name, stream, _containers.AsReadOnly());
-
-            var plugins = GetPlugins(context.PluginAssembly);
-
-            if (!plugins.Any())
-            {
-                logger.Log(ignoreEmpty ? LogLevel.Trace : LogLevel.Warning, "Plugin {ContextName} has no IPlugin implementations", context.Name);
-                return plugins;
-            }
-
-            _containers.Add(new WeakPluginContainer(context));
-
-            return plugins;
-        }
-        catch (Exception exception)
-        {
-            logger.LogWarning(exception, "Plugin {Name} couldn't be loaded", name);
-            return [];
-        }
-    }
-
-    public IEnumerable<Type> GetPlugins(Assembly assembly)
-    {
-        var assemblyName = assembly.GetName().Name;
-
-        logger.LogTrace("Looking for IPlugin interfaces in {Name}", assemblyName);
-
-        try
-        {
-            var plugins = assembly.GetTypes()
-                .Where(typeof(IPlugin).IsAssignableFrom)
-                .Where(type => !type.IsAbstract);
-
-            return plugins;
-        }
-        catch (ReflectionTypeLoadException exception)
-        {
-            logger.LogError(exception, "Assembly {Name} cannot be loaded:", assemblyName);
-
-            // TODO: prints empty exception?
-            // var noStackTrace = exception.LoaderExceptions.WhereNotNull().Where(loaderException => string.IsNullOrWhiteSpace(loaderException.StackTrace)).ToArray();
-            // 
-            // if (noStackTrace.Length == exception.LoaderExceptions.Length)
-            //     logger.LogError("{Exceptions}", string.Join(", ", noStackTrace.Select(loaderException => loaderException.Message)));
-            // else
-            //     logger.LogError(exception, "Multiple Exceptions:");
-        }
-
-        return [];
-    }
-
     public async ValueTask UnloadContainersAsync(CancellationToken cancellationToken = default)
     {
         logger.LogInformation("Unloading all plugins");
@@ -296,8 +227,11 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
 
     public async ValueTask UnloadContainerAsync(string name, CancellationToken cancellationToken = default)
     {
-        var container = _containers.FirstOrDefault(reference => reference.Context.Name == name) ??
-            throw new Exception($"Plugin container {name} not found");
+        WeakPluginContainer container;
+
+        lock (_containers)
+            container = _containers.FirstOrDefault(reference => reference.Context.Name == name) ??
+                        throw new Exception($"Plugin container {name} not found");
 
         if (!container.IsAlive)
             throw new Exception("Plugin context already unloaded");
@@ -316,9 +250,9 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
             }
         }
 
-        events.UnregisterListeners(container.Plugins.Cast<IEventListener>());
+        events.UnregisterListeners(container.Plugins);
 
-        container.CancellationTokenSource.Cancel();
+        await container.CancellationTokenSource.CancelAsync();
         container.Context.Unload();
 
         var collectionTime = Stopwatch.GetTimestamp();
@@ -339,7 +273,74 @@ public class PluginService(ILogger<PluginService> logger, IRunOptions runOptions
 
         logger.LogInformation("Unloaded {ContextName} {Count} plugin(s)", name, count);
 
-        using (var _ = await _lock.LockAsync(cancellationToken))
+        lock (_containers)
             _containers.RemoveAll(reference => !reference.IsAlive);
+    }
+
+    public IEnumerable<Type> LoadContainer(string name, Stream stream, bool ignoreEmpty = false)
+    {
+        logger.LogTrace("Loading {Name} plugins", name);
+
+        try
+        {
+            var context = dependencies.CreateInstance<PluginAssemblyLoadContext>(CancellationToken.None, name, stream, _containers.AsReadOnly());
+
+            var plugins = GetPlugins(context.PluginAssembly);
+
+            if (plugins.Count is 0)
+            {
+                logger.Log(ignoreEmpty ? LogLevel.Trace : LogLevel.Warning, "Plugin {ContextName} has no IPlugin implementations", context.Name);
+                return plugins;
+            }
+
+            lock (_containers)
+                _containers.Add(new WeakPluginContainer(context));
+
+            return plugins;
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Plugin {Name} couldn't be loaded", name);
+            return [];
+        }
+    }
+
+    public IReadOnlyList<Type> GetPlugins(Assembly assembly)
+    {
+        var assemblyName = assembly.GetName().Name;
+
+        logger.LogTrace("Looking for IPlugin interfaces in {Name}", assemblyName);
+
+        try
+        {
+            var plugins = assembly
+                .GetTypes()
+                .Where(typeof(IPlugin).IsAssignableFrom)
+                .Where(type => !type.IsAbstract);
+
+            return [..plugins];
+        }
+        catch (ReflectionTypeLoadException exception)
+        {
+            logger.LogError(exception, "Assembly {Name} cannot be loaded:", assemblyName);
+        }
+
+        return [];
+    }
+
+    public async ValueTask<IEnumerable<Type>> LoadDirectoryPluginTypesAsync(DirectoryInfo directoryInfo, CancellationToken cancellationToken = default)
+    {
+        return await directoryInfo
+            .GetFiles("*.dll")
+            .Select(fileInfo => fileInfo.FullName)
+            .Select(async fileName =>
+            {
+                logger.LogTrace("Found {Name} plugin", Path.GetFileName(fileName));
+
+                await using var stream = File.OpenRead(fileName);
+                return LoadContainer(Path.GetFileName(fileName), stream);
+            })
+            .WhenAll()
+            .ContinueWith(task => task.Result.SelectMany(plugins => plugins), cancellationToken);
     }
 }
