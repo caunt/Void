@@ -87,6 +87,8 @@ public static class HostingExtensions
 
     extension(IServiceProvider serviceProvider)
     {
+        public IContainer Container => serviceProvider as IContainer ?? serviceProvider.GetRequiredService<IContainer>();
+
         public void Add(ServiceDescriptor descriptor)
         {
             serviceProvider.GetRequiredService<IContainer>().Add(descriptor);
@@ -108,7 +110,7 @@ public static class HostingExtensions
 
     extension(IContainer container)
     {
-        public bool CanGetService(Type serviceType, object? serviceKey = null)
+        public bool CanGetService(Type serviceType)
         {
             var serviceProviderIsService = container.Resolve<IServiceProviderIsService>(IfUnresolved.ReturnDefaultIfNotRegistered);
 

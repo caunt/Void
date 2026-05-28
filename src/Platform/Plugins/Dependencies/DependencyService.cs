@@ -118,7 +118,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         {
             var playerScope = GetPlayerScope(assembly, playerStableHashCode, context);
 
-            foreach (var registration in playerScope.GetRequiredService<IContainer>().GetServiceRegistrations())
+            foreach (var registration in playerScope.Container.GetServiceRegistrations())
             {
                 if (registration.ServiceType.IsOpenGeneric())
                     continue;
@@ -159,7 +159,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
     public bool TryGetServiceReuse(Type serviceType, out ServiceLifetime reuse)
     {
         var pluginContainer = GetPluginContainer(serviceType.Assembly);
-        var container = pluginContainer.Root.GetRequiredService<IContainer>();
+        var container = pluginContainer.Root.Container;
         var registration = container.GetServiceRegistrations().FirstOrDefault(registration => registration.ServiceType == serviceType);
         var registered = registration.Factory is not null;
 
@@ -201,7 +201,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         if (!_plugins.Remove(assembly, out var container))
             return;
 
-        container.Root.GetRequiredService<IContainer>().Dispose();
+        container.Root.Container.Dispose();
 
         foreach (var scope in container.Scopes.Values)
             scope.Dispose();
@@ -249,7 +249,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         if (container.Scopes.TryGetValue(playerStableHashCode, out var playerScope))
             return playerScope;
 
-        playerScope = container.Root.GetRequiredService<IContainer>().OpenScope(nameof(IPlayer));
+        playerScope = container.Root.Container.OpenScope(nameof(IPlayer));
         container.Scopes[playerStableHashCode] = playerScope;
 
         playerScope.Add(ServiceDescriptor.Singleton(context));
@@ -263,8 +263,6 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
             return pluginContainer;
 
         var emptyContainer = Combine();
-        emptyContainer.Add(ServiceDescriptor.Singleton<IServiceScopeFactory>(serviceProvider => new DependencyServiceScopeFactory((IResolverContext)serviceProvider)));
-
         _plugins.Add(pluginAssembly, pluginContainer = new PluginContainer(Root: emptyContainer, Scopes: []));
 
         return pluginContainer;
@@ -300,9 +298,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         {
             foreach (var serviceProvider in getSingletonResolutionContainers())
             {
-                var container = serviceProvider.GetRequiredService<IContainer>();
-
-                foreach (var registration in container.GetServiceRegistrations())
+                foreach (var registration in serviceProvider.Container.GetServiceRegistrations())
                 {
                     if (!Matches(serviceType, registration.ServiceType))
                         continue;
@@ -325,12 +321,10 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         {
             foreach (var serviceProvider in getServiceProviders())
             {
-                var container = serviceProvider.GetRequiredService<IContainer>();
-
-                if (!container.CanGetService(serviceType))
+                if (!serviceProvider.Container.CanGetService(serviceType))
                     continue;
 
-                var configuredContainer = container.With(dependencyRules => dependencyRules.WithUnknownServiceResolvers(ResolveFactory));
+                var configuredContainer = serviceProvider.Container.With(dependencyRules => dependencyRules.WithUnknownServiceResolvers(ResolveFactory));
 
                 var resolver = serviceProvider is IResolverContext { CurrentScope: not null } resolverContext
                     ? configuredContainer.WithCurrentScope(resolverContext.CurrentScope)
@@ -348,24 +342,6 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
             }
 
             return null;
-        }
-    }
-
-    private sealed class DependencyServiceScopeFactory(IResolverContext resolverContext) : IServiceScopeFactory
-    {
-        public IServiceScope CreateScope()
-        {
-            return new DependencyServiceScope(resolverContext.OpenScope());
-        }
-    }
-
-    private sealed class DependencyServiceScope(IResolverContext resolverContext) : IServiceScope
-    {
-        public IServiceProvider ServiceProvider => resolverContext;
-
-        public void Dispose()
-        {
-            resolverContext.Dispose();
         }
     }
 
