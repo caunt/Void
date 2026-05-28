@@ -11,37 +11,54 @@ on:
         type: boolean
         required: false
         default: false
-      integration-test-shard-count:
+      shard-count:
         type: number
         required: false
         default: 16
 
 env:
-  INTEGRATION_TEST_PROJECT: tests/Void.IntegrationTests
-
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  RUN_TESTS_FOR_COMMIT: ${{ !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'revert') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'docs') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'style') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'chore') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'refactor') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'build') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'ci') }}
 jobs:
-  integration-test-matrix:
+  test-matrix:
     runs-on: ubuntu-latest
     outputs:
-      shards: ${{ steps.shards.outputs.shards }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
-      - id: shards
-        run: echo "shards=$(seq 0 $((${{ inputs.integration-test-shard-count }} - 1)) | jq -sc '.')" >> "$GITHUB_OUTPUT"
+      - id: matrix
+        run: |
+          operating_systems='[
+            "ubuntu-24.04-arm",
+            "ubuntu-latest",
+            "macos-latest",
+            "macos-15-intel",
+            "windows-11-arm",
+            "windows-latest"
+          ]'
 
-  integration-test:
-    needs: [test, integration-test-matrix]
+          matrix=$(
+            jq -cn \
+              --argjson oses "$operating_systems" \
+              --argjson shardCount "${{ inputs.shard-count }}" \
+              '{
+                include:
+                  (
+                    [range(0; $shardCount) as $shard | $operating_systems[] as $os | { "test-kind": "integration", "os": $os, "shard": $shard }]
+                    +
+                    [$operating_systems[] as $os | { "test-kind": "unit", "os": $os }]
+                  )
+              }'
+          )
+
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  tests:
+    needs: test-matrix
     if: ${{ !inputs.skip-tests }}
     strategy:
       fail-fast: false
-      matrix:
-        os:
-          # Add more platforms here when docker support is available
-          - ubuntu-latest
-        shard: ${{ fromJSON(needs.integration-test-matrix.outputs.shards) }}
+      matrix: ${{ fromJSON(needs.test-matrix.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      RUN_TESTS_FOR_COMMIT: ${{ !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'revert') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'docs') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'style') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'chore') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'refactor') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'build') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'ci') }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
@@ -51,69 +68,26 @@ jobs:
           dotnet-version: ${{ inputs.dotnet-version }}
 
       - name: Build
-        run: dotnet build ${{ env.INTEGRATION_TEST_PROJECT }} --configuration Release /p:Version=${{ inputs.void-version }}
+        if: ${{ matrix.test-kind == 'unit' }}
+        run: dotnet build --configuration Release /p:Version=${{ inputs.void-version }}
 
       - name: Create shard filter
-        if: ${{ env.RUN_TESTS_FOR_COMMIT == 'true' }}
+        if: ${{ matrix.test-kind == 'integration' && env.RUN_TESTS_FOR_COMMIT == 'true' }}
         run: |
           filter=$(
-            dotnet test ${{ env.INTEGRATION_TEST_PROJECT }} --configuration Release --no-build --list-tests \
+            dotnet test tests/Void.IntegrationTests --configuration Release --list-tests \
               | awk '/The following Tests are available:/{started=1; next} started {gsub(/^[ \t]+/, ""); if ($0) print}' \
               | sort -u \
-              | awk -v shard=${{ matrix.shard }} -v total=${{ inputs.integration-test-shard-count }} '((NR - 1) % total) == shard { print "FullyQualifiedName=" $0 }' \
+              | awk -v shard=${{ matrix.shard }} -v total=${{ inputs.shard-count }} '((NR - 1) % total) == shard { print "FullyQualifiedName=" $0 }' \
               | paste -sd '|' -
           )
 
           echo "TEST_FILTER=$filter" >> "$GITHUB_ENV"
 
-      - name: Run shard
-        if: ${{ env.RUN_TESTS_FOR_COMMIT == 'true' }}
-        run: dotnet test ${{ env.INTEGRATION_TEST_PROJECT }} --configuration Release --no-build --filter "$TEST_FILTER"
+      - name: Run integration shard
+        if: ${{ matrix.test-kind == 'integration' && env.RUN_TESTS_FOR_COMMIT == 'true' }}
+        run: dotnet test tests/Void.IntegrationTests --configuration Release --filter "$TEST_FILTER"
 
-  test:
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      RUN_TESTS_FOR_COMMIT: ${{ !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'revert') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'docs') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'style') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'chore') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'refactor') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'build') && !startsWith(github.event_name == 'pull_request' && github.event.pull_request.title || github.event.head_commit.message, 'ci') }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-24.04-arm
-            run-unit-tests: true
-            run-integration-tests: false # TODO: investigate - cannot build portablemc docker image
-
-          - os: ubuntu-latest
-            run-unit-tests: true
-            run-integration-tests: true
-
-          - os: macos-latest
-            run-unit-tests: true
-            run-integration-tests: false # does not support docker
-
-          - os: macos-15-intel
-            run-unit-tests: true
-            run-integration-tests: false # does not support docker
-
-          - os: windows-11-arm
-            run-unit-tests: true
-            run-integration-tests: false # does not support docker
-
-          - os: windows-latest
-            run-unit-tests: true
-            run-integration-tests: false # does not support docker
-
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
-        with:
-          dotnet-version: ${{ inputs.dotnet-version }}
-
-      - name: Build
-        run: dotnet build --configuration Release /p:Version=${{ inputs.void-version }} ${{ matrix.parameters }}
-
-      - name: Run Unit Tests
-        if: ${{ env.RUN_TESTS_FOR_COMMIT == 'true' && !inputs.skip-tests && matrix.run-unit-tests }}
-        run: dotnet test tests/Void.UnitTests --verbosity normal ${{ matrix.parameters }}
+      - name: Run unit tests
+        if: ${{ matrix.test-kind == 'unit' && env.RUN_TESTS_FOR_COMMIT == 'true' }}
+        run: dotnet test tests/Void.UnitTests --verbosity normal
