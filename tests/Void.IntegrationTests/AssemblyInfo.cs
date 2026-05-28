@@ -5,6 +5,6 @@ using Xunit;
 [assembly: CaptureConsole]
 #endif
 
-[assembly: CollectionBehavior(MaxParallelThreads = 3)]
+[assembly: CollectionBehavior(MaxParallelThreads = 0)] // 0 means Environment.ProcessorCount
 [assembly: AssemblyFixture(typeof(PaperFixture))]
 [assembly: AssemblyFixture(typeof(PortableMinecraftClientImageFixture))]
