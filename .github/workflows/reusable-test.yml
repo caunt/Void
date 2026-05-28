@@ -22,7 +22,7 @@ env:
 jobs:
   test-matrix:
     runs-on: ubuntu-latest
-    if: ${{ !inputs.skip-tests }}
+    if: ${{ !inputs.skip-tests && env.RUN_TESTS_FOR_COMMIT == 'true' }}
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
@@ -72,7 +72,7 @@ jobs:
         run: dotnet build --configuration Release /p:Version=${{ inputs.void-version }}
 
       - name: Create shard filter
-        if: ${{ matrix.test-kind == 'integration' && env.RUN_TESTS_FOR_COMMIT == 'true' }}
+        if: ${{ matrix.test-kind == 'integration' }}
         run: |
           filter=$(
             dotnet test tests/Void.IntegrationTests --configuration Release --list-tests \
@@ -85,9 +85,9 @@ jobs:
           echo "TEST_FILTER=$filter" >> "$GITHUB_ENV"
 
       - name: Run integration shard
-        if: ${{ matrix.test-kind == 'integration' && env.RUN_TESTS_FOR_COMMIT == 'true' }}
+        if: ${{ matrix.test-kind == 'integration' }}
         run: dotnet test tests/Void.IntegrationTests --configuration Release --filter "$TEST_FILTER"
 
       - name: Run unit tests
-        if: ${{ matrix.test-kind == 'unit' && env.RUN_TESTS_FOR_COMMIT == 'true' }}
+        if: ${{ matrix.test-kind == 'unit' }}
         run: dotnet test tests/Void.UnitTests --verbosity normal
