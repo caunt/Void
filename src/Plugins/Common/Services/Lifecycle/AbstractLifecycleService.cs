@@ -133,12 +133,8 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
             return;
 
         var reason = @event is MinecraftPlayerKickEvent minecraftPlayerKick
-            ? minecraftPlayerKick.Reason is null
-                ? DefaultKickMessage
-                : minecraftPlayerKick.Reason
-            : @event.Text is null
-                ? DefaultKickMessage
-                : @event.Text;
+            ? minecraftPlayerKick.Reason ?? DefaultKickMessage
+            : @event.Text ?? DefaultKickMessage;
 
         try
         {
