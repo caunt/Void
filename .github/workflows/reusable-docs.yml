@@ -5,6 +5,10 @@ on:
         type: string
         required: true
 
+permissions:
+  pages: write
+  id-token: write
+
 jobs:
   push:
     runs-on: ubuntu-latest
