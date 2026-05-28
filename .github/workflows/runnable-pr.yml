@@ -5,7 +5,7 @@ on:
 
 jobs:
   version:
-    uses: ./.github/workflows/reusable-version.yaml
+    uses: ./.github/workflows/reusable-version.yml
     secrets: inherit
     with:
       release-please: false
