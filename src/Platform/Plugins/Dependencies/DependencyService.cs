@@ -282,49 +282,32 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
 
         InstanceFactory? ResolveFactory(Request request)
         {
-            var isSingletonResolution =
-                request.Flags.HasFlag(RequestFlags.IsSingletonOrDependencyOfSingleton) ||
-                IsSingletonService(request.ServiceType);
+            var getResolutionContainers =
+                request.Flags.HasFlag(RequestFlags.IsSingletonOrDependencyOfSingleton) || IsSingletonService(request.ServiceType)
+                    ? getSingletonResolutionContainers
+                    : getContainers;
 
-            var service = ResolveService(request.ServiceType, isSingletonResolution ? getSingletonResolutionContainers : getContainers);
-
-            if (service is null)
-                return null;
-
-            return new InstanceFactory(service);
+            var service = ResolveService(request.ServiceType, getResolutionContainers, request.Container);
+            return service is null ? null : new InstanceFactory(service);
         }
 
-        bool IsSingletonService(Type serviceType)
-        {
-            foreach (var serviceProvider in getSingletonResolutionContainers())
-            {
-                foreach (var registration in serviceProvider.Container.GetServiceRegistrations())
-                {
-                    if (!Matches(serviceType, registration.ServiceType))
-                        continue;
-
-                    if (registration.Factory?.Reuse is SingletonReuse)
-                        return true;
-                }
-            }
-
-            return false;
-        }
-
-        static bool Matches(Type requestedServiceType, Type registeredServiceType)
-        {
-            return requestedServiceType == registeredServiceType ||
-                   requestedServiceType.IsConstructedGenericType && requestedServiceType.GetGenericTypeDefinition() == registeredServiceType;
-        }
-
-        object? ResolveService(Type serviceType, Func<IEnumerable<IServiceProvider>> getServiceProviders)
+        object? ResolveService(Type serviceType, Func<IEnumerable<IServiceProvider>> getServiceProviders, IContainer entryPointContainer)
         {
             foreach (var serviceProvider in getServiceProviders())
             {
-                if (!serviceProvider.Container.CanGetService(serviceType))
+                var container = serviceProvider.Container;
+
+                if (!container.CanGetService(serviceType))
                     continue;
 
-                var configuredContainer = serviceProvider.Container.With(dependencyRules => dependencyRules.WithUnknownServiceResolvers(ResolveFactory));
+                var configuredContainer = container.With(
+                    parent: entryPointContainer,
+                    rules: container.Rules.WithUnknownServiceResolvers(ResolveFactory),
+                    scopeContext: null,
+                    registrySharing: RegistrySharing.Share,
+                    singletonScope: container.SingletonScope,
+                    currentScope: null,
+                    isRegistryChangePermitted: null);
 
                 var resolver = serviceProvider is IResolverContext { CurrentScope: not null } resolverContext
                     ? configuredContainer.WithCurrentScope(resolverContext.CurrentScope)
@@ -342,6 +325,19 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
             }
 
             return null;
+        }
+
+        bool IsSingletonService(Type serviceType)
+        {
+            return getSingletonResolutionContainers()
+                .Select(serviceProvider => serviceProvider.Container)
+                .SelectMany(container => container.GetServiceRegistrations())
+                .Any(registration => Matches(serviceType, registration.ServiceType) && registration.Factory?.Reuse is SingletonReuse);
+        }
+
+        static bool Matches(Type requestedServiceType, Type registeredServiceType)
+        {
+            return requestedServiceType == registeredServiceType || requestedServiceType.IsConstructedGenericType && requestedServiceType.GetGenericTypeDefinition() == registeredServiceType;
         }
     }
 
