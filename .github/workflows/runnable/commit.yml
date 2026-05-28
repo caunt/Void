@@ -1,0 +1,62 @@
+name: "Commit Workflow"
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      dotnet-version:
+        description: Full version of .NET SDK
+      skip-tests:
+        description: Skip running dotnet tests
+        default: true
+        type: boolean
+
+jobs:
+  version:
+    uses: ./.github/workflows/reusable/version.yml
+    secrets: inherit
+    with:
+      dotnet-version: ${{ github.event.inputs.dotnet-version }}
+
+  build:
+    needs: version
+    uses: ./.github/workflows/reusable/dotnet.yml
+    with:
+      dotnet-version: ${{ needs.version.outputs.dotnet-version }}
+      void-version: ${{ needs.version.outputs.void-version }}
+      skip-tests: ${{ fromJSON(github.event.inputs.skip-tests || 'false') }}
+
+  github:
+    needs: [build,version]
+    uses: ./.github/workflows/reusable/publish/github.yml
+    secrets: inherit
+    with:
+      tag_name: ${{ needs.version.outputs.tag_name }}
+      release: ${{ needs.version.outputs.release }}
+
+  docker:
+    needs: [build,version]
+    uses: ./.github/workflows/reusable/publish/docker.yml
+    secrets: inherit
+    with:
+      dotnet-version: ${{ needs.version.outputs.dotnet-version }}
+      void-version: ${{ needs.version.outputs.void-version }}
+      release: ${{ needs.version.outputs.release }}
+
+  nuget:
+    needs: [build,version]
+    uses: ./.github/workflows/reusable/publish/nuget.yml
+    secrets: inherit
+    if: ${{ fromJSON(needs.version.outputs.release) }}
+    with:
+      dotnet-version: ${{ needs.version.outputs.dotnet-version }}
+      void-version: ${{ needs.version.outputs.void-version }}
+
+  docs:
+    needs: [build,version]
+    uses: ./.github/workflows/reusable/docs.yml
+    secrets: inherit
+    with:
+      dotnet-version: ${{ needs.version.outputs.dotnet-version }}
