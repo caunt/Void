@@ -8,11 +8,6 @@ public class WeakPluginContainer
 {
     private readonly List<WeakReference<IPlugin>> _references;
 
-    public IEnumerable<IPlugin> Plugins => GetReferences();
-    public bool IsAlive => _references.All(plugin => plugin.TryGetTarget(out _));
-    public PluginAssemblyLoadContext Context { get; }
-    public CancellationTokenSource CancellationTokenSource { get; } = new();
-
     [SuppressMessage("Style", "IDE0290:Use primary constructor", Justification = "They keep a strict reference to parameters")]
     public WeakPluginContainer(PluginAssemblyLoadContext context, params IPlugin[] plugins)
     {
@@ -20,12 +15,17 @@ public class WeakPluginContainer
         _references = [.. plugins.Select(plugin => new WeakReference<IPlugin>(plugin, true))];
     }
 
+    public IEnumerable<IPlugin> Plugins => GetReferences();
+    public bool IsAlive => _references.All(plugin => plugin.TryGetTarget(out _));
+    public PluginAssemblyLoadContext Context { get; }
+    public CancellationTokenSource CancellationTokenSource { get; } = new();
+
     public void Add(IPlugin plugin)
     {
-        if (Plugins.Any(plugin => plugin.GetType().Assembly != plugin.GetType().Assembly))
+        if (Plugins.Any(existingPlugin => existingPlugin.GetType().Assembly != plugin.GetType().Assembly))
             throw new InvalidOperationException($"Plugin {plugin.Name} is not from the same assembly as the others");
 
-        _references.Add(new(plugin, true));
+        _references.Add(new WeakReference<IPlugin>(plugin, true));
     }
 
     private IEnumerable<IPlugin> GetReferences()
