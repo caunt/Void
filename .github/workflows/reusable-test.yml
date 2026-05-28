@@ -100,7 +100,7 @@ jobs:
 
       - name: Run integration shard
         if: ${{ matrix.test-kind == 'integration' }}
-        run: dotnet test tests/Void.IntegrationTests --configuration Release --filter "$TEST_FILTER"
+        run: dotnet test tests/Void.IntegrationTests --configuration Release --filter "$TEST_FILTER" --logger "console;verbosity=detailed"
 
       - name: Run unit tests
         if: ${{ matrix.test-kind == 'unit' }}
