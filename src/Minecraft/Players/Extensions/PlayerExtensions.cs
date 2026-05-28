@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Void.Minecraft.Components.Text;
 using Void.Minecraft.Events;
 using Void.Minecraft.Events.Chat;
+using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Network.Messages;
@@ -70,10 +71,10 @@ public static class PlayerExtensions
                 await players.KickPlayerAsync(player, reason?.SerializeLegacy(), cancellationToken);
         }
 
-        public async ValueTask SendPacketAsync<T>(T packet, CancellationToken cancellationToken = default) where T : IMinecraftMessage
+        public async ValueTask SendPacketAsync<T>(T packet, CancellationToken cancellationToken = default) where T : class, IMinecraftMessage
         {
-            var channel = await player.GetChannelAsync(cancellationToken);
-            await channel.SendPacketAsync(packet, cancellationToken);
+            var link = player.Link ?? throw new InvalidOperationException("Player is not linked to any server.");
+            await link.SendPacketAsync(packet, cancellationToken);
         }
 
         public void RegisterPacket<T>(params MinecraftPacketIdMapping[] mappings) where T : IMinecraftPacket
