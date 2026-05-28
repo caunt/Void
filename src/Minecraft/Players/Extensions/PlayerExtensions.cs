@@ -73,8 +73,17 @@ public static class PlayerExtensions
 
         public async ValueTask SendPacketAsync<T>(T packet, CancellationToken cancellationToken = default) where T : class, IMinecraftMessage
         {
-            var link = player.Link ?? throw new InvalidOperationException("Player is not linked to any server.");
-            await link.SendPacketAsync(packet, cancellationToken);
+            var channel = packet switch
+            {
+                IMinecraftClientboundPacket => await player.GetChannelAsync(cancellationToken),
+                IMinecraftServerboundPacket when player.Link is { } link => link.ServerChannel,
+                _ => null
+            };
+
+            if (channel is null)
+                throw new InvalidOperationException("Player is not linked to any server.");
+
+            await channel.SendPacketAsync(packet, cancellationToken);
         }
 
         public void RegisterPacket<T>(params MinecraftPacketIdMapping[] mappings) where T : IMinecraftPacket
