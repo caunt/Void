@@ -69,6 +69,7 @@ jobs:
         run: dotnet build --configuration Release /p:Version=${{ inputs.void-version }}
 
       - name: Create shard filter
+        shell: bash
         if: ${{ matrix.test-kind == 'integration' }}
         run: |
           filter=$(
