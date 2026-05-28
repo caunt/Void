@@ -14,7 +14,7 @@ on:
       shard-count:
         type: number
         required: false
-        default: 16
+        default: 32
 
 jobs:
   test-matrix:
