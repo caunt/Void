@@ -12,4 +12,3 @@ using Xunit;
 #endif
 
 [assembly: AssemblyFixture(typeof(PaperFixture))]
-[assembly: AssemblyFixture(typeof(PortableMinecraftClientImageFixture))]

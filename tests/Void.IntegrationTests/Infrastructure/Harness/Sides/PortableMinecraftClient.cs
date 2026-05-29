@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using Void.IntegrationTests.Infrastructure.Extensions;
-using Void.IntegrationTests.Infrastructure.Fixtures;
 using Void.Minecraft.Network;
 
 namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
@@ -42,10 +41,11 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         GC.SuppressFinalize(this);
     }
 
-    public static async Task<PortableMinecraftClient> CreateAsync(PortableMinecraftClientImageFixture clientImageFixture, CancellationToken cancellationToken = default)
+    public static async Task<PortableMinecraftClient> CreateAsync(CancellationToken cancellationToken = default)
     {
-        var builder = new ContainerBuilder(PortableMinecraftClientImageFixture.ImageName)
-            .WithEnvironment("DISPLAY", Display);
+        var builder = new ContainerBuilder("ghcr.io/caunt/portable-minecraft-client:latest")
+            .WithEnvironment("DISPLAY", Display)
+            .WithCreateParameterModifier(parameters => parameters.Platform = "linux/amd64");
 
         if (OperatingSystem.IsLinux())
             builder = builder.WithCreateParameterModifier(parameters => parameters.HostConfig?.NetworkMode = "host");
