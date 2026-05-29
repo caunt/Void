@@ -1,17 +1,27 @@
+# Builder stage: compile portablemc from source
+FROM --platform=linux/amd64 rust:1.96-slim-trixie AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config \
+    libssl-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN cargo install portablemc-cli --root /usr/local
+
+# Runtime stage
 FROM --platform=linux/amd64 amd64/debian:trixie-20260518@sha256:b91d9b2c1738c0cb7f2c7440eaebc9f40e3e411a0e7ce768dd4e1879cf0cd141 AS latest
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LIBGL_ALWAYS_SOFTWARE=1
-ENV PATH=/root/.cargo/bin:$PATH
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
+# Copy pre-built portablemc binary from builder
+COPY --from=builder /usr/local/bin/portablemc /usr/local/bin/portablemc
+
+# Install only runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     jq \
-    build-essential \
-    pkg-config \
-    libssl-dev \
     imagemagick \
     libasound2 \
     libflite1 \
@@ -28,12 +38,6 @@ RUN apt-get update && apt-get install -y \
     xvfb \
     xfwm4 \
  && rm -rf /var/lib/apt/lists/*
- 
-# Install Rust
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
-
-# Install portablemc
-RUN cargo install portablemc-cli
 
 # Fix sound errors by using the null audio driver
 RUN printf "pcm.!default { type null }\nctl.!default { type null }\n" > /etc/asound.conf
