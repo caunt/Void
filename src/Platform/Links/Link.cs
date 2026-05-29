@@ -1,5 +1,4 @@
 ﻿using Nito.AsyncEx;
-using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
@@ -18,32 +17,17 @@ namespace Void.Proxy.Links;
 
 public class Link(IPlayer player, IServer server, INetworkChannel playerChannel, INetworkChannel serverChannel, ILogger logger, IEventService events, CancellationToken cancellationToken) : ILink
 {
-    private enum State
-    {
-        ReadStart,
-        ReadEnd,
-        MessageReceivedEventStart,
-        MessageReceivedEventEnd,
-        WriteStart,
-        WriteEnd,
-        MessageSentEventStart,
-        MessageSentEventEnd,
-        Stopping,
-        Disposing,
-        Completed
-    }
-    
     private readonly CancellationTokenSource _ctsPlayerToServer = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
     private readonly CancellationTokenSource _ctsPlayerToServerForce = new();
     private readonly CancellationTokenSource _ctsServerToPlayer = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
     private readonly CancellationTokenSource _ctsServerToPlayerForce = new();
     private readonly AsyncLock _lock = new();
     private readonly Dictionary<Direction, State> _states = [];
-    
-    private Task? _playerToServerTask;
-    private Task? _serverToPlayerTask;
     private Task<Task>? _onStoppingTask;
+
+    private Task? _playerToServerTask;
     private bool _playerToServerTaskDisposed;
+    private Task? _serverToPlayerTask;
     private bool _serverToPlayerTaskDisposed;
     private bool _stopping;
     private LinkStopReason? _stopReason;
@@ -54,11 +38,6 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
     public INetworkChannel ServerChannel { get; init; } = serverChannel;
 
     public bool IsAlive => this is { _playerToServerTask.IsCompleted: false, _serverToPlayerTask.IsCompleted: false };
-
-    ~Link()
-    {
-        _onStoppingTask?.GetAwaiter().GetResult();
-    }
 
     public async ValueTask StartAsync(CancellationToken cancellationToken)
     {
@@ -93,6 +72,11 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
         await DisposeServerboundAsync();
 
         GC.SuppressFinalize(this);
+    }
+
+    ~Link()
+    {
+        _onStoppingTask?.GetAwaiter().GetResult();
     }
 
     protected async ValueTask DisposeServerboundAsync()
@@ -298,5 +282,20 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
         // do not wait for completion as this may start initiating a new ILink instance
         await events.ThrowAsync(new LinkStoppedEvent(this, Player, _stopReason ?? throw new LinkInternalException("Stopped reason is unset")), cancellationToken);
+    }
+
+    private enum State
+    {
+        ReadStart,
+        ReadEnd,
+        MessageReceivedEventStart,
+        MessageReceivedEventEnd,
+        WriteStart,
+        WriteEnd,
+        MessageSentEventStart,
+        MessageSentEventEnd,
+        Stopping,
+        Disposing,
+        Completed
     }
 }
