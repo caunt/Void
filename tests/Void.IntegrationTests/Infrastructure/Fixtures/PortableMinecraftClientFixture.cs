@@ -6,13 +6,13 @@ using Xunit;
 
 namespace Void.IntegrationTests.Infrastructure.Fixtures;
 
-public class PortableMinecraftClientFixture(PortableMinecraftClientImageFixture clientImageFixture) : IAsyncLifetime
+public class PortableMinecraftClientFixture : IAsyncLifetime
 {
     public PortableMinecraftClient Api { get => field ?? throw new InvalidOperationException($"{nameof(Api)} is not initialized."); set; }
 
     public async ValueTask InitializeAsync()
     {
-        Api = await PortableMinecraftClient.CreateAsync(clientImageFixture, Timeouts.SetupTimeoutToken);
+        Api = await PortableMinecraftClient.CreateAsync(Timeouts.SetupTimeoutToken);
     }
 
     public async ValueTask DisposeAsync()
