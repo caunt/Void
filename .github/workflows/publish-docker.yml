@@ -25,10 +25,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push client image
+      - name: Build and push client images
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:latest src/Client
+          docker build --target latest -t ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:latest src/Client
+          docker build --target offline -t ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:offline src/Client
           docker push ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:latest
+          docker push ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:offline
 
 
   push-dev:

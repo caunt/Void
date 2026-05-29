@@ -43,7 +43,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
     public static async Task<PortableMinecraftClient> CreateAsync(CancellationToken cancellationToken = default)
     {
-        var builder = new ContainerBuilder("ghcr.io/caunt/portable-minecraft-client:latest")
+        var builder = new ContainerBuilder("ghcr.io/caunt/portable-minecraft-client:offline")
             .WithEnvironment("DISPLAY", Display)
             .WithCreateParameterModifier(parameters => parameters.Platform = "linux/amd64");
 
