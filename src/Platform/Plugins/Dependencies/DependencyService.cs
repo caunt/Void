@@ -227,10 +227,18 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
 
     private IEnumerable<IServiceProvider> GetRootContainers(Assembly? preferredAssembly = null)
     {
+        if (preferredAssembly is not null && _plugins.ContainsKey(preferredAssembly))
+            yield return GetPluginContainer(preferredAssembly).Root;
+
         yield return rootContainer;
 
         foreach (var assembly in GetPluginAssemblies(preferredAssembly))
+        {
+            if (assembly == preferredAssembly)
+                continue;
+
             yield return GetPluginContainer(assembly).Root;
+        }
     }
 
     private IEnumerable<Assembly> GetPluginAssemblies(Assembly? preferredAssembly = null)
