@@ -86,7 +86,7 @@ jobs:
 
       - name: Pull portable-minecraft-client image
         if: ${{ matrix.test-kind == 'integration' }}
-        run: docker pull ghcr.io/caunt/portable-minecraft-client:latest
+        run: docker pull ghcr.io/caunt/portable-minecraft-client:offline
 
       - name: Create shard filter
         shell: bash
