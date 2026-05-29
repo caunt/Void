@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 amd64/debian:bookworm
+FROM --platform=linux/amd64 amd64/debian:trixie-20260518@sha256:b91d9b2c1738c0cb7f2c7440eaebc9f40e3e411a0e7ce768dd4e1879cf0cd141
 
 ARG FIRST_RELEASE_VERSION=1.7.2
 
