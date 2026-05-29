@@ -2,13 +2,10 @@
 using Void.Minecraft.Network;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
-using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Plugins.Dependencies;
-using Void.Proxy.Plugins.Common.Crypto;
-using Void.Proxy.Plugins.Common.Network.Channels.Services;
+using Void.Proxy.Plugins.Common.Network.Bundles;
 using Void.Proxy.Plugins.Common.Plugins;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Authentication;
-using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Bundles;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Channels;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Commands;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Compression;
@@ -16,6 +13,7 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Encryption;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Lifecycle;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Registries;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Transformations;
+using BundleService = Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Bundles.BundleService;
 
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1;
 
@@ -46,9 +44,7 @@ public class Plugin(IDependencyService dependencies) : IProtocolPlugin
             services.AddSingleton<BundleService>();
             services.AddSingleton<LifecycleService>();
 
-            services.AddScoped<Common.Network.Bundles.IBundleService, Common.Network.Bundles.BundleService>();
-            services.AddScoped<IChannelBuilderService, SimpleMinecraftChannelBuilderService>();
-            services.AddScoped<ITokenHolder, SimpleTokenHolder>();
+            services.AddScoped<IBundleService, Common.Network.Bundles.BundleService>();
         });
     }
 }
