@@ -74,6 +74,7 @@ jobs:
             /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
             /p:ContainerBaseImage='"${{ matrix.container_base_image }}"' \
             /p:EnableCompressionInSingleFile=true \
+            /p:GeneratePackageOnBuild=false \
             /p:Version=${{ inputs.void-version }} \
             -v:diag \
             -bl:publish.binlog
@@ -129,6 +130,7 @@ jobs:
             /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
             /p:ContainerBaseImage='"${{ matrix.container_base_image }}"' \
             /p:EnableCompressionInSingleFile=true \
+            /p:GeneratePackageOnBuild=false \
             /p:Version=${{ inputs.void-version }} \
             -v:diag \
             -bl:publish.binlog
