@@ -32,6 +32,41 @@ jobs:
           docker push ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:latest
           docker push ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:offline
 
+  list-minecraft-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.versions.outputs.versions }}
+    steps:
+      - name: Fetch Minecraft release versions
+        id: versions
+        run: |
+          versions=$(
+            curl -fsSL https://launchermeta.mojang.com/mc/game/version_manifest_v2.json |
+              jq -c '[.versions[] | select(.type == "release") | .id] | reverse | .[index("1.7.2"): ]'
+          )
+          echo "versions=$versions" >> "$GITHUB_OUTPUT"
+
+  push-client-versions:
+    needs: [push-client, list-minecraft-versions]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        minecraft-version: ${{ fromJson(needs.list-minecraft-versions.outputs.versions) }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push client version image
+        run: |
+          docker build --target version --build-arg MINECRAFT_VERSION="${{ matrix.minecraft-version }}" -t ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:${{ matrix.minecraft-version }} src/Client
+          docker push ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:${{ matrix.minecraft-version }}
+
 
   push-dev:
     runs-on: ${{ matrix.os }}
