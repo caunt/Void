@@ -20,22 +20,10 @@ namespace Void.Proxy.Commands;
 
 public class CommandService(ILogger<ICommandService> logger, IEventService events) : ICommandService, IEventListener
 {
-    private record CommandSuggestion(int Start, string Text, string? Tooltip) : ICommandSuggestion;
-    
-    private static readonly StringRange AliasRange = StringRange.At(0);
-    private static readonly StringReader AliasReader = new(string.Empty);
-    
     private readonly CommandDispatcher _dispatcher = new();
     private readonly Dictionary<ParseResults, Task<int>> _executions = [];
 
     public ICommandDispatcher Dispatcher => _dispatcher;
-
-    [Subscribe]
-    public void OnPluginUnloading(PluginUnloadingEvent @event)
-    {
-        lock (this)
-            ClearByAssembly(@event.Plugin.GetType().Assembly);
-    }
 
     public async ValueTask<CommandExecutionResult> ExecuteAsync(ICommandSource source, string command, CancellationToken cancellationToken = default)
     {
@@ -117,15 +105,22 @@ public class CommandService(ILogger<ICommandService> logger, IEventService event
     {
         if (commandNode is not RootCommandNode destinationRoot)
             throw new ArgumentException(@"Command node must be a root node", nameof(commandNode));
-        
+
         foreach (var node in _dispatcher.Root.Children)
         {
             if (!await node.CanUseAsync(commandSource, cancellationToken))
                 continue;
-            
+
             destinationRoot.RemoveChild(node.Name);
             destinationRoot.AddChild(node);
         }
+    }
+
+    [Subscribe]
+    public void OnPluginUnloading(PluginUnloadingEvent @event)
+    {
+        lock (this)
+            ClearByAssembly(@event.Plugin.GetType().Assembly);
     }
 
     private void ClearByAssembly(Assembly assembly)
@@ -181,4 +176,6 @@ public class CommandService(ILogger<ICommandService> logger, IEventService event
             }
         }
     }
+
+    private record CommandSuggestion(int Start, string Text, string? Tooltip) : ICommandSuggestion;
 }
