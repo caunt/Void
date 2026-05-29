@@ -18,9 +18,9 @@ namespace Void.Proxy.Links;
 
 public class LinkService(ILogger<LinkService> logger, IServerService servers, IEventService events, IHostApplicationLifetime hostApplicationLifetime) : ILinkService, IEventListener
 {
-    private readonly List<ILink> _weakLinks = [];
     private readonly List<ILink> _activeLinks = [];
     private readonly AsyncLock _lock = new();
+    private readonly List<ILink> _weakLinks = [];
 
     public IReadOnlyList<ILink> All => _activeLinks.AsReadOnly();
 
@@ -88,6 +88,25 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
         return result;
     }
 
+    public bool TryGetLink(IPlayer player, [NotNullWhen(true)] out ILink? link)
+    {
+        player = player.Unwrap();
+        link = _activeLinks.FirstOrDefault(link => link.Player == player);
+        return link is not null;
+    }
+
+    public bool TryGetWeakLink(IPlayer player, [NotNullWhen(true)] out ILink? link)
+    {
+        player = player.Unwrap();
+        link = _weakLinks.FirstOrDefault(link => link.Player == player);
+        return link is not null;
+    }
+
+    public bool HasLink(IPlayer player)
+    {
+        return _activeLinks.Any(link => link.Player == player);
+    }
+
     [Subscribe(PostOrder.First)]
     public async ValueTask OnLinkStopped(LinkStoppedEvent @event, CancellationToken cancellationToken)
     {
@@ -111,25 +130,6 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
             @event.Link.PlayerChannel.Close();
 
         logger.LogTrace("Stopped forwarding {Link} traffic", @event.Link);
-    }
-
-    public bool TryGetLink(IPlayer player, [NotNullWhen(true)] out ILink? link)
-    {
-        player = player.Unwrap();
-        link = _activeLinks.FirstOrDefault(link => link.Player == player);
-        return link is not null;
-    }
-
-    public bool TryGetWeakLink(IPlayer player, [NotNullWhen(true)] out ILink? link)
-    {
-        player = player.Unwrap();
-        link = _weakLinks.FirstOrDefault(link => link.Player == player);
-        return link is not null;
-    }
-
-    public bool HasLink(IPlayer player)
-    {
-        return _activeLinks.Any(link => link.Player == player);
     }
 
     private async ValueTask<ConnectionResult> ConnectCoreAsync(IPlayer player, IServer server, CancellationToken cancellationToken = default)
@@ -164,7 +164,7 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
         }
         catch (Exception exception)
         {
-            logger.LogWarning("Player {Player} cannot connect to a {Server} server because it is unavailable: {Message}", unwrappedPlayer, server, exception.Message);
+            logger.LogWarning("Player {Player} cannot connect to a {Server} server: {Exception}", unwrappedPlayer, server, exception);
             return ConnectionResult.NotConnected;
         }
 
@@ -174,7 +174,7 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
                 await events.ThrowAsync(new PlayerConnectedEvent(unwrappedPlayer), cancellationToken);
 
             link = await events.ThrowWithResultAsync(new CreateLinkEvent(unwrappedPlayer, server, playerChannel, serverChannel), cancellationToken)
-                        ?? new Link(unwrappedPlayer, server, playerChannel, serverChannel, logger, events, cancellationToken);
+                   ?? new Link(unwrappedPlayer, server, playerChannel, serverChannel, logger, events, cancellationToken);
 
             _weakLinks.Add(link);
 
@@ -189,7 +189,7 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
             }
 
             var result = await events.ThrowWithResultAsync(new AuthenticationStartedEvent(link, unwrappedPlayer, side), cancellationToken)
-                ?? AuthenticationResult.NoResult;
+                         ?? AuthenticationResult.NoResult;
 
             await events.ThrowAsync(new AuthenticationFinishedEvent(link, unwrappedPlayer, side, result), cancellationToken);
 
