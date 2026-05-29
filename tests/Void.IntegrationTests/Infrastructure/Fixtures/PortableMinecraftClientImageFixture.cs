@@ -41,22 +41,24 @@ public class PortableMinecraftClientImageFixture : IAsyncLifetime
             .WithCleanUp(cleanUp: false)
             .Build();
 
-        var createAttempt = 0;
-
-        do
+        for (var currentAttempt = 1; currentAttempt <= DockerImageCreateRetries; currentAttempt++)
         {
             try
             {
-                createAttempt++;
                 await DockerImage.CreateAsync();
                 return;
             }
-            catch when (createAttempt < DockerImageCreateRetries)
+            catch when (currentAttempt < DockerImageCreateRetries)
             {
                 await Task.Delay(DockerImageCreateRetryDelay);
             }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException(
+                    $"Failed to create portable Minecraft client Docker image after {DockerImageCreateRetries} attempts.",
+                    exception);
+            }
         }
-        while (createAttempt < DockerImageCreateRetries);
     }
 
     public async ValueTask DisposeAsync()
