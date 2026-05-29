@@ -12,6 +12,9 @@ public class PortableMinecraftClientImageFixture : IAsyncLifetime
 {
     public const string DockerFileName = "PortableMinecraftClientDockerfile";
 
+    private const int DockerImageCreateRetries = 5;
+    private static readonly TimeSpan DockerImageCreateRetryDelay = TimeSpan.FromSeconds(10);
+
     private readonly string _temporaryContextDirectoryPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
     public IFutureDockerImage DockerImage { get => field ?? throw new InvalidOperationException($"{nameof(DockerImage)} is not initialized."); set; }
@@ -38,7 +41,22 @@ public class PortableMinecraftClientImageFixture : IAsyncLifetime
             .WithCleanUp(cleanUp: false)
             .Build();
 
-        await DockerImage.CreateAsync();
+        var createAttempt = 0;
+
+        do
+        {
+            try
+            {
+                createAttempt++;
+                await DockerImage.CreateAsync();
+                return;
+            }
+            catch when (createAttempt < DockerImageCreateRetries)
+            {
+                await Task.Delay(DockerImageCreateRetryDelay);
+            }
+        }
+        while (createAttempt < DockerImageCreateRetries);
     }
 
     public async ValueTask DisposeAsync()
