@@ -43,7 +43,7 @@ Follow the existing C# style rules:
 
 - Indentation uses four spaces, with tab width set to four.
 - Private fields prefixed with an underscore and method parameters use camelCase.
-- Braces sit on their own lines with a blank line before loops and conditional statements.
+- Braces sit on their own lines when used, but never use braces for single-line statement bodies.
 - Method signatures remain on a single line.
 - Identifier names are fully descriptive and never abbreviated.
 - Async methods carry an `Async` suffix.
