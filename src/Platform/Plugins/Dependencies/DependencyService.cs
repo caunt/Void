@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Collections.Concurrent;
+using System.Reflection;
 using DryIoc;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
@@ -13,7 +14,7 @@ namespace Void.Proxy.Plugins.Dependencies;
 
 public class DependencyService(ILogger<DependencyService> logger, IContainer rootContainer) : IDependencyService
 {
-    private readonly Dictionary<Assembly, PluginContainer> _plugins = [];
+    private readonly ConcurrentDictionary<Assembly, PluginContainer> _plugins = [];
 
     public TService CreateInstance<TService>(CancellationToken cancellationToken = default, params object[] parameters)
     {
@@ -198,7 +199,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         var events = rootContainer.GetRequiredService<IEventService>();
         events.UnregisterListeners(events.Listeners.Where(listener => listener.GetType().Assembly == assembly));
 
-        if (!_plugins.Remove(assembly, out var container))
+        if (!_plugins.TryRemove(assembly, out var container))
             return;
 
         container.Root.Container.Dispose();
@@ -259,13 +260,19 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
 
     private PluginContainer GetPluginContainer(Assembly pluginAssembly)
     {
-        if (_plugins.TryGetValue(pluginAssembly, out var pluginContainer))
-            return pluginContainer;
+        while (true)
+        {
+            if (_plugins.TryGetValue(pluginAssembly, out var pluginContainer))
+                return pluginContainer;
 
-        var emptyContainer = Combine();
-        _plugins.Add(pluginAssembly, pluginContainer = new PluginContainer(Root: emptyContainer, Scopes: []));
+            var emptyContainer = Combine();
+            pluginContainer = new PluginContainer(Root: emptyContainer, Scopes: []);
 
-        return pluginContainer;
+            if (_plugins.TryAdd(pluginAssembly, pluginContainer))
+                return pluginContainer;
+
+            emptyContainer.Dispose();
+        }
     }
 
     private Container Combine(params IServiceProvider[] containers)
