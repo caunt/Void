@@ -55,7 +55,16 @@ jobs:
             /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
             /p:ContainerBaseImage='"${{ matrix.container_base_image }}"' \
             /p:EnableCompressionInSingleFile=true \
-            /p:Version=${{ inputs.void-version }}
+            /p:Version=${{ inputs.void-version }} \
+            -v:diag \
+            -bl:publish.binlog
+
+      - name: Upload publish binlog
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-binlog-dev-${{ matrix.container_image_tags }}-${{ matrix.container_runtime_identifiers }}
+          path: publish.binlog
 
   push:
     if: ${{ fromJson(inputs.release) }}
@@ -101,4 +110,13 @@ jobs:
             /p:ContainerImageTags='"${{ matrix.container_image_tags }}"' \
             /p:ContainerBaseImage='"${{ matrix.container_base_image }}"' \
             /p:EnableCompressionInSingleFile=true \
-            /p:Version=${{ inputs.void-version }}
+            /p:Version=${{ inputs.void-version }} \
+            -v:diag \
+            -bl:publish.binlog
+
+      - name: Upload publish binlog
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-binlog-release-${{ matrix.container_image_tags }}-${{ matrix.container_runtime_identifiers }}
+          path: publish.binlog
