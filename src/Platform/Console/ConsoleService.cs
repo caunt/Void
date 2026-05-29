@@ -1,7 +1,6 @@
 ﻿using System.CommandLine;
 using System.Diagnostics.CodeAnalysis;
 using Nito.AsyncEx;
-using Void.Minecraft.Commands.Brigadier.Exceptions;
 using Void.Proxy.Api;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Console;
@@ -14,39 +13,11 @@ namespace Void.Proxy.Console;
 
 public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration consoleConfiguration, IRunOptions runOptions, ICommandService commands) : IConsoleService, IEventListener
 {
-    public static bool IsEnabled => !SystemConsole.IsInputRedirected && !SystemConsole.IsOutputRedirected;
-    public IEnumerable<Option> DiscoveredOptions => consoleConfiguration.RootCommand.Options;
-
-    private readonly PromptReader _reader = new();
     private readonly AsyncLock _optionDiscoveryLock = new();
 
-    [Subscribe(PostOrder.Last)]
-    public void OnProxyStarting(ProxyStartingEvent @event)
-    {
-        if (!consoleConfiguration.HasTerminal)
-            return;
-
-        SystemConsole.SetOut(_reader.TextWriter);
-
-        if (!IsEnabled)
-            return;
-
-        _reader.ResetStyle();
-        _reader.HideCursor();
-    }
-
-    [Subscribe]
-    public void OnProxyStopping(ProxyStoppingEvent @event)
-    {
-        if (!consoleConfiguration.HasTerminal)
-            return;
-
-        if (!IsEnabled)
-            return;
-
-        _reader.ResetStyle();
-        _reader.ShowCursor();
-    }
+    private readonly PromptReader _reader = new();
+    public static bool IsEnabled => !SystemConsole.IsInputRedirected && !SystemConsole.IsOutputRedirected;
+    public IEnumerable<Option> DiscoveredOptions => consoleConfiguration.RootCommand.Options;
 
     public bool TryGetOptionValue<TValue>(Option<TValue> option, [MaybeNullWhen(false)] out TValue value)
     {
@@ -87,8 +58,8 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
                 continue;
 
             throw new InvalidOperationException($"Option with name or alias '{option.Name}' already exists. " +
-                $"Discovered: {option.Name} ({string.Join(", ", optionAliases)}), " +
-                $"Existing: {existingOption.Name} ({string.Join(", ", existingAliases)})");
+                                                $"Discovered: {option.Name} ({string.Join(", ", optionAliases)}), " +
+                                                $"Existing: {existingOption.Name} ({string.Join(", ", existingAliases)})");
         }
 
         var options = consoleConfiguration.RootCommand.Options;
@@ -120,7 +91,7 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
             var suggestions = await SuggestAsync(input, readLineCancellationToken);
             return suggestions.Select(suggestion => suggestion.Text).ToArray();
         }, cancellationToken);
-        
+
         logger.LogInformation("Proxy issued command: {Command}", command);
 
         if (string.IsNullOrWhiteSpace(command))
@@ -130,14 +101,38 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
         {
             await commands.ExecuteAsync(this, command, cancellationToken);
         }
-        catch (CommandSyntaxException exception)
-        {
-            logger.LogError("{Message}", exception.Message);
-        }
         catch (Exception exception)
         {
             logger.LogError("{Exception}", exception);
         }
+    }
+
+    [Subscribe(PostOrder.Last)]
+    public void OnProxyStarting(ProxyStartingEvent @event)
+    {
+        if (!consoleConfiguration.HasTerminal)
+            return;
+
+        SystemConsole.SetOut(_reader.TextWriter);
+
+        if (!IsEnabled)
+            return;
+
+        _reader.ResetStyle();
+        _reader.HideCursor();
+    }
+
+    [Subscribe]
+    public void OnProxyStopping(ProxyStoppingEvent @event)
+    {
+        if (!consoleConfiguration.HasTerminal)
+            return;
+
+        if (!IsEnabled)
+            return;
+
+        _reader.ResetStyle();
+        _reader.ShowCursor();
     }
 
     public override string ToString()
