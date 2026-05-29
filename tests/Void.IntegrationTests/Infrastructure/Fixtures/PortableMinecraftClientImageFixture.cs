@@ -1,70 +1,21 @@
 ﻿using System;
-using System.IO;
 using System.Threading.Tasks;
-using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Images;
-using Void.IntegrationTests.Infrastructure.Harness.Sides;
 using Xunit;
 
 namespace Void.IntegrationTests.Infrastructure.Fixtures;
 
 public class PortableMinecraftClientImageFixture : IAsyncLifetime
 {
-    public const string DockerFileName = "PortableMinecraftClientDockerfile";
+    public const string ImageName = "ghcr.io/caunt/portable-minecraft-client:latest";
 
-    private const int DockerImageCreateRetries = 5;
-    private static readonly TimeSpan DockerImageCreateRetryDelay = TimeSpan.FromSeconds(10);
-
-    private readonly string _temporaryContextDirectoryPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-
-    public IFutureDockerImage DockerImage { get => field ?? throw new InvalidOperationException($"{nameof(DockerImage)} is not initialized."); set; }
-
-    public async ValueTask InitializeAsync()
+    public ValueTask InitializeAsync()
     {
-        Directory.CreateDirectory(_temporaryContextDirectoryPath);
-
-        var projectDirectoryPath = CommonDirectoryPath.GetProjectDirectory().DirectoryPath;
-
-        foreach (var fileName in new[] { DockerFileName, "start-display", "send-chat" })
-        {
-            File.Copy(
-                Path.Combine(projectDirectoryPath, fileName),
-                Path.Combine(_temporaryContextDirectoryPath, fileName));
-        }
-
-        DockerImage = new ImageFromDockerfileBuilder()
-            .WithDockerfileDirectory(_temporaryContextDirectoryPath)
-            .WithDockerfile(DockerFileName)
-            .WithContextDirectory(_temporaryContextDirectoryPath)
-            .WithCreateParameterModifier(parameters => parameters.Platform = "linux/amd64")
-            .WithName($"{nameof(PortableMinecraftClient).ToLower()}:latest")
-            .WithCleanUp(cleanUp: false)
-            .Build();
-
-        var attempt = 0;
-
-        do
-        {
-            try
-            {
-                attempt++;
-                await DockerImage.CreateAsync();
-                return;
-            }
-            catch when (attempt < DockerImageCreateRetries)
-            {
-                await Task.Delay(DockerImageCreateRetryDelay);
-            }
-        }
-        while (attempt < DockerImageCreateRetries);
+        return ValueTask.CompletedTask;
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        await DockerImage.DisposeAsync();
-
-        Directory.Delete(_temporaryContextDirectoryPath, recursive: true);
-
         GC.SuppressFinalize(this);
+        return ValueTask.CompletedTask;
     }
 }
