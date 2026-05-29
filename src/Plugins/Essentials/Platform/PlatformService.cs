@@ -6,6 +6,7 @@ using Void.Minecraft.Commands.Brigadier.Extensions;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Commands;
 using Void.Proxy.Api.Events;
+using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Plugins;
@@ -15,6 +16,12 @@ namespace Void.Proxy.Plugins.Essentials.Platform;
 
 public class PlatformService(ILogger<PlatformService> logger, IHostApplicationLifetime hostApplicationLifetime, IPluginService plugins, ICommandService commands, Plugin plugin) : IPluginCommonService
 {
+    [Subscribe]
+    public void OnPlayerJoinedServer(PlayerJoinedServerEvent @event)
+    {
+        logger.LogInformation("Player {Player} connected to {Server} ({ProtocolVersion})", @event.Player, @event.Link.Server, @event.Player.ProtocolVersion);
+    }
+
     [Subscribe]
     public void OnPluginLoading(PluginLoadingEvent @event)
     {
@@ -48,14 +55,14 @@ public class PlatformService(ILogger<PlatformService> logger, IHostApplicationLi
         if (context.Source is IPlayer player)
         {
             await player.SendChatMessageAsync("Loaded plugins:", cancellationToken);
-            
+
             foreach (var name in plugins.Containers)
                 await player.SendChatMessageAsync($"&7- &b{name}", cancellationToken);
         }
         else
         {
             logger.LogInformation("Loaded plugins:");
-            
+
             foreach (var name in plugins.Containers)
                 logger.LogInformation("- {Name}", name);
         }
