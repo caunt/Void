@@ -1,5 +1,6 @@
 ﻿using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
+using Nito.AsyncEx;
 using Void.Proxy.Api.Events.Channels;
 using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Network;
@@ -15,6 +16,7 @@ public class SimpleMinecraftChannelBuilderService(ILogger<SimpleMinecraftChannel
 {
     public const int MaxHandshakeSize = 4096;
 
+    private readonly AsyncLock _lock = new();
     private Memory<byte> _buffer = Memory<byte>.Empty;
     private ChannelBuilder? _builder;
     private bool _executed;
@@ -23,6 +25,8 @@ public class SimpleMinecraftChannelBuilderService(ILogger<SimpleMinecraftChannel
 
     public async ValueTask SearchChannelBuilderAsync(IPlayer player, CancellationToken cancellationToken = default)
     {
+        using var _ = await _lock.LockAsync(cancellationToken);
+
         if (_executed)
             return;
 
@@ -30,7 +34,8 @@ public class SimpleMinecraftChannelBuilderService(ILogger<SimpleMinecraftChannel
 
         var stream = player.Client.GetStream();
         var buffer = new byte[MaxHandshakeSize];
-        var length = -1;
+
+        int length;
 
         try
         {
