@@ -297,7 +297,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
                     : getContainers;
 
             var service = ResolveService(request.ServiceType, getResolutionContainers, request.Container);
-            return service is null ? null : new InstanceFactory(service);
+            return service is null ? null : InstanceFactory.Of(service);
         }
 
         object? ResolveService(Type serviceType, Func<IEnumerable<IServiceProvider>> getServiceProviders, IContainer entryPointContainer)
@@ -316,7 +316,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
                     parent: entryPointContainer,
                     rules: container.Rules.WithUnknownServiceResolvers(ResolveFactory),
                     scopeContext: null,
-                    registrySharing: RegistrySharing.Share,
+                    registrySharing: RegistrySharing.CloneAndDropCache,
                     singletonScope: container.SingletonScope,
                     currentScope: null,
                     isRegistryChangePermitted: null);
