@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Collections.Concurrent;
+using System.Reflection;
 using DryIoc;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Plugins;
@@ -13,7 +14,7 @@ namespace Void.Proxy.Plugins.Dependencies;
 
 public class DependencyService(ILogger<DependencyService> logger, IContainer rootContainer) : IDependencyService
 {
-    private readonly Dictionary<Assembly, PluginContainer> _plugins = [];
+    private readonly ConcurrentDictionary<Assembly, PluginContainer> _plugins = [];
 
     public TService CreateInstance<TService>(CancellationToken cancellationToken = default, params object[] parameters)
     {
@@ -198,7 +199,7 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         var events = rootContainer.GetRequiredService<IEventService>();
         events.UnregisterListeners(events.Listeners.Where(listener => listener.GetType().Assembly == assembly));
 
-        if (!_plugins.Remove(assembly, out var container))
+        if (!_plugins.TryRemove(assembly, out var container))
             return;
 
         container.Root.Container.Dispose();
@@ -246,26 +247,17 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
     {
         var container = GetPluginContainer(assembly);
 
-        if (container.Scopes.TryGetValue(playerStableHashCode, out var playerScope))
+        return container.Scopes.GetOrAdd(playerStableHashCode, _ =>
+        {
+            var playerScope = container.Root.Container.OpenScope(nameof(IPlayer));
+            playerScope.Use(context);
             return playerScope;
-
-        playerScope = container.Root.Container.OpenScope(nameof(IPlayer));
-        container.Scopes[playerStableHashCode] = playerScope;
-
-        playerScope.Use(context);
-
-        return playerScope;
+        });
     }
 
     private PluginContainer GetPluginContainer(Assembly pluginAssembly)
     {
-        if (_plugins.TryGetValue(pluginAssembly, out var pluginContainer))
-            return pluginContainer;
-
-        var emptyContainer = Combine();
-        _plugins.Add(pluginAssembly, pluginContainer = new PluginContainer(Root: emptyContainer, Scopes: []));
-
-        return pluginContainer;
+        return _plugins.GetOrAdd(pluginAssembly, _ => new PluginContainer(Root: Combine(), Scopes: []));
     }
 
     private Container Combine(params IServiceProvider[] containers)
@@ -376,5 +368,5 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         }
     }
 
-    private record PluginContainer(IServiceProvider Root, Dictionary<int, IResolverContext> Scopes);
+    private record PluginContainer(IServiceProvider Root, ConcurrentDictionary<int, IResolverContext> Scopes);
 }
