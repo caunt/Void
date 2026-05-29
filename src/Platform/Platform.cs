@@ -185,7 +185,7 @@ public class Platform(
         {
             try
             {
-                await player.KickAsync("Proxy is shutting down", cancellationToken);
+                await players.KickPlayerAsync(player, "Proxy is shutting down", cancellationToken);
             }
             catch (StreamClosedException)
             {
