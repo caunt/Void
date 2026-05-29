@@ -58,3 +58,9 @@ ARG FIRST_RELEASE_VERSION=1.7.2
 
 # Dry-run all release versions in reverse order (from oldest to latest)
 RUN curl -s https://launchermeta.mojang.com/mc/game/version_manifest_v2.json | jq -r '[.versions[] | select(.type == "release") | .id] | reverse[]' | grep -A99999 "^$FIRST_RELEASE_VERSION$" | while IFS= read -r versionId; do portablemc start --dry "mojang:$versionId"; done
+
+FROM latest AS version
+
+ARG MINECRAFT_VERSION
+RUN test -n "$MINECRAFT_VERSION"
+RUN portablemc start --dry "mojang:$MINECRAFT_VERSION"
