@@ -37,13 +37,11 @@ jobs:
     outputs:
       versions: ${{ steps.versions.outputs.versions }}
     steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Fetch Minecraft release versions
         id: versions
         run: |
-          versions=$(
-            curl -fsSL https://launchermeta.mojang.com/mc/game/version_manifest_v2.json |
-              jq -c '[.versions[] | select(.type == "release") | .id] | reverse | .[index("1.7.2"): ]'
-          )
+          versions="$(bash src/Client/list-minecraft-release-versions --json 1.7.2)"
           echo "versions=$versions" >> "$GITHUB_OUTPUT"
 
   push-client-versions:
