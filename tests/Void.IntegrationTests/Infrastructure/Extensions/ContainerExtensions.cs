@@ -42,20 +42,22 @@ public static class ContainerExtensions
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (commandCancellationToken == default)
+            if (commandCancellationToken == CancellationToken.None)
                 commandCancellationToken = cancellationToken;
 
             var processGroupLeaderFilePath = $"/tmp/run-command-process-group-{Guid.NewGuid():N}";
             var heredocMarker = $"RUN_COMMAND_{Guid.NewGuid():N}_{Guid.NewGuid():N}";
 
-            var executionTask = container.ExecAsync(["setsid", "--wait", "bash", "-c", $"""
-                set -euo pipefail
-                trap 'rm -f "{processGroupLeaderFilePath}"' EXIT
-                printf '%s\n' "$$" > "{processGroupLeaderFilePath}"
-                bash -seuo pipefail <<'{heredocMarker}'
-                {command}
-                {heredocMarker}
-                """.ReplaceLineEndings("\n")], cancellationToken);
+            var executionTask = container.ExecAsync([
+                "setsid", "--wait", "bash", "-c", $"""
+                                                   set -euo pipefail
+                                                   trap 'rm -f "{processGroupLeaderFilePath}"' EXIT
+                                                   printf '%s\n' "$$" > "{processGroupLeaderFilePath}"
+                                                   bash -seuo pipefail <<'{heredocMarker}'
+                                                   {command}
+                                                   {heredocMarker}
+                                                   """.ReplaceLineEndings("\n")
+            ], cancellationToken);
 
             try
             {
@@ -65,32 +67,32 @@ public static class ContainerExtensions
                 {
                     throw new IntegrationTestException($"Exit code {executionResult.ExitCode}\nCommand {command}\nSTDOUT:\n{executionResult.Stdout}\nSTDERR:\n{executionResult.Stderr}");
                 }
-
-                return;
             }
             catch (OperationCanceledException)
             {
                 try
                 {
-                    var killResult = await container.ExecAsync(["bash", "-c", $$"""
-                        for currentAttempt in {1..30}; do
-                            if [ -s "{{processGroupLeaderFilePath}}" ]; then
-                                break
-                            fi
-                            sleep 0.2
-                        done
-                        if [ ! -e "{{processGroupLeaderFilePath}}" ]; then
-                            exit 2
-                        fi
-                        processGroupLeaderProcessId="$(cat "{{processGroupLeaderFilePath}}")"
-                        if [ -z "$processGroupLeaderProcessId" ]; then
-                            exit 2
-                        fi
-                        if ! kill -0 -- "-$processGroupLeaderProcessId" 2>/dev/null; then
-                            exit 3
-                        fi
-                        kill -KILL -- "-$processGroupLeaderProcessId"
-                        """.ReplaceLineEndings("\n")], CancellationToken.None);
+                    var killResult = await container.ExecAsync([
+                        "bash", "-c", $$"""
+                                        for currentAttempt in {1..30}; do
+                                            if [ -s "{{processGroupLeaderFilePath}}" ]; then
+                                                break
+                                            fi
+                                            sleep 0.2
+                                        done
+                                        if [ ! -e "{{processGroupLeaderFilePath}}" ]; then
+                                            exit 2
+                                        fi
+                                        processGroupLeaderProcessId="$(cat "{{processGroupLeaderFilePath}}")"
+                                        if [ -z "$processGroupLeaderProcessId" ]; then
+                                            exit 2
+                                        fi
+                                        if ! kill -0 -- "-$processGroupLeaderProcessId" 2>/dev/null; then
+                                            exit 3
+                                        fi
+                                        kill -KILL -- "-$processGroupLeaderProcessId"
+                                        """.ReplaceLineEndings("\n")
+                    ], CancellationToken.None);
 
                     switch (killResult.ExitCode)
                     {
