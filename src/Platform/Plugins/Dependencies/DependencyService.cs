@@ -260,19 +260,21 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
 
     private PluginContainer GetPluginContainer(Assembly pluginAssembly)
     {
-        while (true)
-        {
-            if (_plugins.TryGetValue(pluginAssembly, out var pluginContainer))
-                return pluginContainer;
+        if (_plugins.TryGetValue(pluginAssembly, out var pluginContainer))
+            return pluginContainer;
 
-            var emptyContainer = Combine();
-            pluginContainer = new PluginContainer(Root: emptyContainer, Scopes: []);
+        var emptyContainer = Combine();
+        pluginContainer = new PluginContainer(Root: emptyContainer, Scopes: []);
 
-            if (_plugins.TryAdd(pluginAssembly, pluginContainer))
-                return pluginContainer;
+        if (_plugins.TryAdd(pluginAssembly, pluginContainer))
+            return pluginContainer;
 
-            emptyContainer.Dispose();
-        }
+        emptyContainer.Dispose();
+
+        if (_plugins.TryGetValue(pluginAssembly, out pluginContainer))
+            return pluginContainer;
+
+        throw new InvalidOperationException($"Failed to get or create plugin container for {pluginAssembly.FullName}.");
     }
 
     private Container Combine(params IServiceProvider[] containers)
