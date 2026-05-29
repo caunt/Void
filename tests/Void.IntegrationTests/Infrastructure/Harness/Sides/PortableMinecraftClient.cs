@@ -44,7 +44,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
     public static async Task<PortableMinecraftClient> CreateAsync(PortableMinecraftClientImageFixture clientImageFixture, CancellationToken cancellationToken = default)
     {
-        var builder = new ContainerBuilder(clientImageFixture.DockerImage)
+        var builder = new ContainerBuilder(PortableMinecraftClientImageFixture.ImageName)
             .WithEnvironment("DISPLAY", Display);
 
         if (OperatingSystem.IsLinux())

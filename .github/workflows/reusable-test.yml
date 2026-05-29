@@ -84,6 +84,10 @@ jobs:
         if: ${{ matrix.test-kind == 'unit' }}
         run: dotnet build --configuration Release /p:Version=${{ inputs.void-version }}
 
+      - name: Pull portable-minecraft-client image
+        if: ${{ matrix.test-kind == 'integration' }}
+        run: docker pull ghcr.io/caunt/portable-minecraft-client:latest
+
       - name: Create shard filter
         shell: bash
         if: ${{ matrix.test-kind == 'integration' }}

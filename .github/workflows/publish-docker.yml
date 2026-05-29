@@ -11,7 +11,26 @@ on:
         type: string
         required: true
 
+permissions:
+  packages: write
+
 jobs:
+  push-client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push client image
+        run: |
+          docker build -t ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:latest src/Client
+          docker push ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:latest
+
+
   push-dev:
     runs-on: ${{ matrix.os }}
     strategy:
