@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 amd64/debian:bookworm
+FROM --platform=linux/amd64 amd64/debian:bookworm-20260518@sha256:353b3c470968efadd454f4bf17ba2027aa2773fa30149071a4e8432bf1c8764a
 
 ARG FIRST_RELEASE_VERSION=1.7.2
 
