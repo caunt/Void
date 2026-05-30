@@ -50,7 +50,21 @@ openChat() {
 }
 
 # Locate the Minecraft window instance
-minecraftWindowId="$(xdotool search --onlyvisible --name "Minecraft" | head -n 1)"
+minecraftWindowId="$(
+    xdotool search --onlyvisible --name '.*' | while read -r windowId; do
+        windowName="$(xdotool getwindowname "$windowId")"
+
+        if [ -z "$windowName" ]; then
+            continue
+        fi
+
+        eval "$(xdotool getwindowgeometry --shell "$windowId")"
+
+        windowArea=$((WIDTH * HEIGHT))
+
+        echo "$windowArea $windowId"
+    done | sort -nr | head -n 1 | awk '{print $2}'
+)"
 
 # Fail early if no visible Minecraft window was found
 if [ -z "$minecraftWindowId" ]; then
