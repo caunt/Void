@@ -109,8 +109,8 @@ else
   jq -r '.files[] | select(.required != false) | (.fileID // .fileId)' "$manifestFile" > "$fileIdsFile"
   if [ -s "$fileIdsFile" ]
   then
-    requiredFileCount="$(wc -l < "$fileIdsFile" | tr -d ' ')"
-    writeLog "Resolving $requiredFileCount CurseForge files"
+    requiredFileIdsCount="$(wc -l < "$fileIdsFile" | tr -d ' ')"
+    writeLog "Resolving $requiredFileIdsCount CurseForge files"
 
     split -l "$curseForgeFilesBatchSize" "$fileIdsFile" "$temporaryDirectory/file-ids-"
 
@@ -120,10 +120,10 @@ else
       curl -fsS -H "x-api-key: $CURSEFORGE_API_KEY" -H "Content-Type: application/json" -X POST -d "$fileIdsJson" https://api.curseforge.com/v1/mods/files | jq -c '.data[]' >> "$metadataFile"
     done
 
-    totalDownloadFiles="$(wc -l < "$metadataFile" | tr -d ' ')"
+    totalDownloadFileCount="$(wc -l < "$metadataFile" | tr -d ' ')"
     downloadFileIndex=0
 
-    jq -r '[.modId, .id, .fileName, (.downloadUrl // "")] | @tsv' "$metadataFile" | while IFS="$(printf '\t')" read -r modId fileId fileName downloadUrl
+    while IFS="$(printf '\t')" read -r modId fileId fileName downloadUrl
     do
       downloadFileIndex=$((downloadFileIndex + 1))
 
@@ -158,11 +158,11 @@ else
 
       if [ -f "$targetFile" ]
       then
-        writeLog "[$downloadFileIndex/$totalDownloadFiles] Already exists: $safeFileName"
+        writeLog "[$downloadFileIndex/$totalDownloadFileCount] Already exists: $safeFileName"
         continue
       fi
 
-      writeLog "[$downloadFileIndex/$totalDownloadFiles] Downloading: $safeFileName"
+      writeLog "[$downloadFileIndex/$totalDownloadFileCount] Downloading: $safeFileName"
 
       if [ -n "$downloadUrl" ]
       then
@@ -178,7 +178,7 @@ else
           exit 1
         fi
       fi
-    done
+    done < <(jq -r '[.modId, .id, .fileName, (.downloadUrl // "")] | @tsv' "$metadataFile")
   else
     writeLog "No CurseForge files to download"
   fi
