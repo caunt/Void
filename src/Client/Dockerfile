@@ -59,6 +59,10 @@ RUN chmod +x /usr/local/bin/send-chat
 COPY list-minecraft-release-versions /usr/local/bin/list-minecraft-release-versions
 RUN chmod +x /usr/local/bin/list-minecraft-release-versions
 
+# Ferium modpack upgrade with CurseForge blocked-download fallback
+COPY ferium-modpack-upgrade /usr/local/bin/ferium-modpack-upgrade
+RUN chmod +x /usr/local/bin/ferium-modpack-upgrade
+
 ENTRYPOINT ["sleep"]
 CMD ["infinity"]
 

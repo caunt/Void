@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+set -u
+set -o pipefail
+
+if [ -z "${CURSEFORGE_API_KEY:-}" ]
+then
+  echo "CURSEFORGE_API_KEY is not set"
+  exit 1
+fi
+
+feriumConfigFile="${FERIUM_CONFIG_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/ferium/config.json}"
+outputDirectory="$(jq -r '.modpacks[.active_modpack // 0].output_dir // "/root/.minecraft"' "$feriumConfigFile")"
+upgradeLogFile="$(mktemp)"
+downloadMappingsFile="$(mktemp)"
+
+ferium modpack upgrade 2>&1 | tee "$upgradeLogFile"
+feriumExitCode="${PIPESTATUS[0]}"
+
+grep -Eo 'https://www[.]curseforge[.]com/minecraft/[^ ]+/[^ ]+/download/[0-9]+' "$upgradeLogFile" | while read -r downloadUrl
+do
+  fileId="${downloadUrl##*/}"
+  category="$(echo "$downloadUrl" | cut -d/ -f6)"
+
+  case "$category" in
+    mc-mods)
+      targetDirectory="$outputDirectory/mods"
+      ;;
+    texture-packs)
+      targetDirectory="$outputDirectory/resourcepacks"
+      ;;
+    shaders)
+      targetDirectory="$outputDirectory/shaderpacks"
+      ;;
+    *)
+      targetDirectory="$outputDirectory/mods"
+      ;;
+  esac
+
+  echo "$fileId $targetDirectory" > "$downloadMappingsFile"
+done
+
+if [ ! -s "$downloadMappingsFile" ]
+then
+  exit "$feriumExitCode"
+fi
+
+fileIdsJson="$(awk '{ print $1 }' "$downloadMappingsFile" | sort -u | jq -R . | jq -s '{fileIds: map(tonumber)}')"
+curseForgeFilesResponseFile="$(mktemp)"
+
+curl -fsS -H "x-api-key: $CURSEFORGE_API_KEY" -H "Content-Type: application/json" -X POST -d "$fileIdsJson" https://api.curseforge.com/v1/mods/files > "$curseForgeFilesResponseFile"
+
+jq -r '.data[] | [.modId, .id, .fileName] | @tsv' "$curseForgeFilesResponseFile" | while IFS="$(printf '\t')" read -r projectId fileId fileName
+do
+  targetDirectory="$(awk -v fileId="$fileId" '$1 == fileId { print $2; exit }' "$downloadMappingsFile")"
+  mkdir -p "$targetDirectory"
+  curl -fL -H "x-api-key: $CURSEFORGE_API_KEY" -o "$targetDirectory/$fileName" "https://www.curseforge.com/api/v1/mods/$projectId/files/$fileId/download"
+done
+
+ferium modpack upgrade
