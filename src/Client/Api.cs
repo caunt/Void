@@ -86,10 +86,10 @@ application.MapPost("/send-chat", async (HttpContext context) =>
     var windowId = await FindLargestWindow();
     if (windowId is null) return Results.Problem("no visible window found");
     await Run("xdotool", "windowfocus", windowId);
-    await Run("xdotool", "key", "--window", windowId, "t");
+    await Run("xdotool", "key", "--clearmodifiers", "--window", windowId, "t");
     await Task.Delay(200);
-    await Run("xdotool", "type", "--delay", "50", "--", request.Message);
-    await Run("xdotool", "key", "Return");
+    await Run("xdotool", "type", "--clearmodifiers", "--window", windowId, "--delay", "50", "--", request.Message);
+    await Run("xdotool", "key", "--clearmodifiers", "--window", windowId, "Return");
     return Results.Ok(new { status = "sent" });
 });
 
