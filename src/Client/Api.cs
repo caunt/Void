@@ -404,6 +404,10 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
 
     var overridesFolder = manifest.Overrides ?? "overrides";
 
+    DeleteDirectoryIfExists(Path.Combine(minecraftDirectory, "mods"));
+    DeleteDirectoryIfExists(Path.Combine(minecraftDirectory, "resourcepacks"));
+    DeleteDirectoryIfExists(Path.Combine(minecraftDirectory, "shaderpacks"));
+
     foreach (var entry in archive.Entries)
     {
         if (!entry.FullName.StartsWith(overridesFolder + "/") || entry.FullName.Length <= overridesFolder.Length + 1)
@@ -422,10 +426,6 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
         Directory.CreateDirectory(Path.GetDirectoryName(targetPath) ?? minecraftDirectory);
         entry.ExtractToFile(targetPath, overwrite: true);
     }
-
-    DeleteDirectoryIfExists(Path.Combine(minecraftDirectory, "mods"));
-    DeleteDirectoryIfExists(Path.Combine(minecraftDirectory, "resourcepacks"));
-    DeleteDirectoryIfExists(Path.Combine(minecraftDirectory, "shaderpacks"));
 
     var modsDirectory = Path.Combine(minecraftDirectory, "mods");
     Directory.CreateDirectory(modsDirectory);
