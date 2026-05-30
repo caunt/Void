@@ -313,6 +313,9 @@ async Task EnsureDisplay()
 
 async Task<bool> OpenChatAsync(string windowId, string display)
 {
+    // Just in case, ensure chat window is closed
+    await RunOrThrow("xdotool", "key", "--clearmodifiers", "--window", windowId, "Return");
+
     var baselineBrightness = await CaptureBrightnessAsync(windowId, display);
     var currentPressCount = 0;
 
@@ -326,13 +329,13 @@ async Task<bool> OpenChatAsync(string windowId, string display)
         var currentBrightness = await CaptureBrightnessAsync(windowId, display);
         var brightnessDifference = Math.Abs(baselineBrightness - currentBrightness);
 
-        if (brightnessDifference > brightnessThreshold)
-        {
-            for (var backspaceIndex = 0; backspaceIndex < currentPressCount; backspaceIndex++)
-                await RunOrThrow("xdotool", "key", "--clearmodifiers", "--window", windowId, "--delay", "50", "BackSpace");
+        if (brightnessDifference <= brightnessThreshold)
+            continue;
 
-            return true;
-        }
+        for (var backspaceIndex = 0; backspaceIndex < currentPressCount; backspaceIndex++)
+            await RunOrThrow("xdotool", "key", "--clearmodifiers", "--window", windowId, "--delay", "50", "BackSpace");
+
+        return true;
     }
 
     return false;
