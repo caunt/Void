@@ -91,65 +91,68 @@ else
   fi
 
   jq -r '.files[] | select(.required != false) | (.fileID // .fileId)' "$manifestFile" > "$fileIdsFile"
-  split -l "$curseForgeFilesBatchSize" "$fileIdsFile" "$temporaryDirectory/file-ids-"
+  if [ -s "$fileIdsFile" ]
+  then
+    split -l "$curseForgeFilesBatchSize" "$fileIdsFile" "$temporaryDirectory/file-ids-"
 
-  for batchFile in "$temporaryDirectory"/file-ids-*
-  do
-    fileIdsJson="$(jq -R . "$batchFile" | jq -s '{fileIds: map(tonumber)}')"
-    curl -fsS -H "x-api-key: $CURSEFORGE_API_KEY" -H "Content-Type: application/json" -X POST -d "$fileIdsJson" https://api.curseforge.com/v1/mods/files | jq -c '.data[]' >> "$metadataFile"
-  done
+    for batchFile in "$temporaryDirectory"/file-ids-*
+    do
+      fileIdsJson="$(jq -R . "$batchFile" | jq -s '{fileIds: map(tonumber)}')"
+      curl -fsS -H "x-api-key: $CURSEFORGE_API_KEY" -H "Content-Type: application/json" -X POST -d "$fileIdsJson" https://api.curseforge.com/v1/mods/files | jq -c '.data[]' >> "$metadataFile"
+    done
 
-  jq -r '[.modId, .id, .fileName, (.downloadUrl // "")] | @tsv' "$metadataFile" | while IFS="$(printf '\t')" read -r modId fileId fileName downloadUrl
-  do
-    case "$fileName" in
-      *.jar)
-        targetDirectory="$minecraftDirectory/mods"
-        ;;
-      *.zip)
-        lowerFileName="$(printf '%s' "$fileName" | tr '[:upper:]' '[:lower:]')"
+    jq -r '[.modId, .id, .fileName, (.downloadUrl // "")] | @tsv' "$metadataFile" | while IFS="$(printf '\t')" read -r modId fileId fileName downloadUrl
+    do
+      case "$fileName" in
+        *.jar)
+          targetDirectory="$minecraftDirectory/mods"
+          ;;
+        *.zip)
+          lowerFileName="$(printf '%s' "$fileName" | tr '[:upper:]' '[:lower:]')"
 
-        if [[ "$lowerFileName" == *shader* ]]
+          if [[ "$lowerFileName" == *shader* ]]
+          then
+            targetDirectory="$minecraftDirectory/shaderpacks"
+          else
+            targetDirectory="$minecraftDirectory/resourcepacks"
+          fi
+          ;;
+        *)
+          targetDirectory="$minecraftDirectory/mods"
+          ;;
+      esac
+
+      safeFileName="$(basename -- "$fileName")"
+
+      if [ "$safeFileName" != "$fileName" ] || [ -z "$safeFileName" ] || [ "$safeFileName" = "." ] || [ "$safeFileName" = ".." ] || [[ "$safeFileName" =~ [[:cntrl:]] ]] || [[ "$safeFileName" == */* ]]
+      then
+        echo "Unexpected CurseForge file name '$fileName' for mod id '$modId' and file id '$fileId'"
+        exit 1
+      fi
+
+      targetFile="$targetDirectory/$safeFileName"
+
+      if [ -f "$targetFile" ]
+      then
+        continue
+      fi
+
+      if [ -n "$downloadUrl" ]
+      then
+        if ! curl -fL -o "$targetFile" "$downloadUrl"
         then
-          targetDirectory="$minecraftDirectory/shaderpacks"
-        else
-          targetDirectory="$minecraftDirectory/resourcepacks"
+          echo "Failed to download CurseForge file '$fileName' (mod id: $modId, file id: $fileId, url: $downloadUrl)"
+          exit 1
         fi
-        ;;
-      *)
-        targetDirectory="$minecraftDirectory/mods"
-        ;;
-    esac
-
-    safeFileName="$(basename -- "$fileName")"
-
-    if [ "$safeFileName" != "$fileName" ] || [ -z "$safeFileName" ] || [ "$safeFileName" = "." ] || [ "$safeFileName" = ".." ] || [[ "$safeFileName" =~ [[:cntrl:]] ]] || [[ "$safeFileName" == */* ]]
-    then
-      echo "Unexpected CurseForge file name '$fileName' for mod id '$modId' and file id '$fileId'"
-      exit 1
-    fi
-
-    targetFile="$targetDirectory/$safeFileName"
-
-    if [ -f "$targetFile" ]
-    then
-      continue
-    fi
-
-    if [ -n "$downloadUrl" ]
-    then
-      if ! curl -fL -o "$targetFile" "$downloadUrl"
-      then
-        echo "Failed to download CurseForge file '$fileName' (mod id: $modId, file id: $fileId, url: $downloadUrl)"
-        exit 1
+      else
+        if ! curl -fL -H "x-api-key: $CURSEFORGE_API_KEY" -o "$targetFile" "https://www.curseforge.com/api/v1/mods/$modId/files/$fileId/download"
+        then
+          echo "Failed to download CurseForge file '$fileName' (mod id: $modId, file id: $fileId) via authenticated CurseForge download endpoint"
+          exit 1
+        fi
       fi
-    else
-      if ! curl -fL -H "x-api-key: $CURSEFORGE_API_KEY" -o "$targetFile" "https://www.curseforge.com/api/v1/mods/$modId/files/$fileId/download"
-      then
-        echo "Failed to download CurseForge file '$fileName' (mod id: $modId, file id: $fileId) via authenticated CurseForge download endpoint"
-        exit 1
-      fi
-    fi
-  done
+    done
+  fi
 
   portableMinecraftVersion="$(jq -r --arg curseForgeSlug "$curseForgeSlug" --arg curseForgeFileId "$curseForgeFileId" '
     .minecraft.version as $minecraftVersion |
