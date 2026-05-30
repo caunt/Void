@@ -2,6 +2,23 @@
 
 namespace Void.Proxy.Api;
 
+/// <summary>
+/// Represents the running proxy instance and exposes listener endpoint, listener state, and lifecycle control for API consumers.
+/// </summary>
+/// <remarks>
+/// <para>
+/// The proxy owns the TCP listener that accepts Minecraft client connections. <see cref="Status"/> reports the
+/// externally visible lifecycle state, while <see cref="Interface"/> and <see cref="Port"/> describe the listener
+/// endpoint selected from command-line options, settings, or the already-created listener endpoint.
+/// </para>
+/// <para>
+/// <see cref="StartAcceptingConnectionsAsync"/> and <see cref="PauseAcceptingConnections"/> control acceptance of
+/// new connections. Pausing stops the listener from accepting new clients but does not disconnect already linked
+/// players. <see cref="Stop"/> requests host shutdown; when player draining is requested, the shutdown request is
+/// deferred until the current player collection becomes empty.
+/// </para>
+/// </remarks>
+/// <seealso cref="ProxyStatus"/>
 public interface IProxy
 {
     /// <summary>
