@@ -218,7 +218,7 @@ public sealed class ClientProcessManager
                 return false;
             }
 
-            _clientProcess.Kill(entireProcessTree: false);
+            _clientProcess.Kill(entireProcessTree: true);
 
             try
             {
@@ -285,7 +285,10 @@ public sealed class ClientProcessManager
         xvfbInfo.ArgumentList.Add("0");
         xvfbInfo.ArgumentList.Add("1280x720x24");
 
-        Process.Start(xvfbInfo);
+        var xvfbProcess = Process.Start(xvfbInfo);
+
+        if (xvfbProcess is null)
+            logger.LogWarning("Failed to start Xvfb");
 
         for (var attempt = 0; attempt < 100; attempt++)
         {
@@ -321,7 +324,10 @@ public sealed class ClientProcessManager
             RedirectStandardError = true
         };
 
-        Process.Start(xfwm4Info);
+        var xfwm4Process = Process.Start(xfwm4Info);
+
+        if (xfwm4Process is null)
+            logger.LogWarning("Failed to start xfwm4");
     }
 
     private static async Task<string> InstallCurseForgeModpackAsync(string slug, int fileId, string apiKey, string minecraftDirectory, string modpackMarkerFile, string portableMinecraftVersionFile, ILogger logger)
@@ -620,7 +626,7 @@ public static class ChatSender
     {
         var display = Environment.GetEnvironmentVariable("DISPLAY") ?? ":99";
 
-        var windowId = await FindLargestVisibleWindowAsync(display);
+        var windowId = await WindowHelper.FindLargestVisibleWindowAsync(display);
 
         if (string.IsNullOrEmpty(windowId))
             return Results.Json(new { error = "No visible Minecraft window found" }, statusCode: 500);
@@ -638,82 +644,6 @@ public static class ChatSender
         logger.LogInformation("Successfully sent chat message");
 
         return Results.Ok(new { status = "sent" });
-    }
-
-    private static async Task<string?> FindLargestVisibleWindowAsync(string display)
-    {
-        var searchInfo = new ProcessStartInfo
-        {
-            FileName = "xdotool",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        searchInfo.ArgumentList.Add("search");
-        searchInfo.ArgumentList.Add("--onlyvisible");
-        searchInfo.ArgumentList.Add("--name");
-        searchInfo.ArgumentList.Add(".*");
-        searchInfo.EnvironmentVariables["DISPLAY"] = display;
-
-        using var searchProcess = Process.Start(searchInfo);
-
-        if (searchProcess is null)
-            return null;
-
-        var output = await searchProcess.StandardOutput.ReadToEndAsync();
-        await searchProcess.WaitForExitAsync();
-
-        var windowIds = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        string? largestWindowId = null;
-        long largestArea = 0;
-
-        foreach (var candidateId in windowIds)
-        {
-            var geometryInfo = new ProcessStartInfo
-            {
-                FileName = "xdotool",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            geometryInfo.ArgumentList.Add("getwindowgeometry");
-            geometryInfo.ArgumentList.Add("--shell");
-            geometryInfo.ArgumentList.Add(candidateId.Trim());
-            geometryInfo.EnvironmentVariables["DISPLAY"] = display;
-
-            using var geometryProcess = Process.Start(geometryInfo);
-
-            if (geometryProcess is null)
-                continue;
-
-            var geometryOutput = await geometryProcess.StandardOutput.ReadToEndAsync();
-            await geometryProcess.WaitForExitAsync();
-
-            if (geometryProcess.ExitCode != 0)
-                continue;
-
-            int width = 0, height = 0;
-
-            foreach (var line in geometryOutput.Split('\n'))
-            {
-                if (line.StartsWith("WIDTH="))
-                    int.TryParse(line["WIDTH=".Length..], out width);
-                else if (line.StartsWith("HEIGHT="))
-                    int.TryParse(line["HEIGHT=".Length..], out height);
-            }
-
-            var area = (long)width * height;
-
-            if (area > largestArea)
-            {
-                largestArea = area;
-                largestWindowId = candidateId.Trim();
-            }
-        }
-
-        return largestWindowId;
     }
 
     private static async Task FocusWindowAsync(string windowId)
@@ -875,7 +805,7 @@ public static class ScreenCapture
     public static async Task<IResult> CaptureAsync()
     {
         var display = Environment.GetEnvironmentVariable("DISPLAY") ?? ":99";
-        var windowId = await FindLargestVisibleWindowAsync(display);
+        var windowId = await WindowHelper.FindLargestVisibleWindowAsync(display);
 
         if (string.IsNullOrEmpty(windowId))
             return Results.Json(new { error = "No visible window found" }, statusCode: 500);
@@ -907,8 +837,13 @@ public static class ScreenCapture
 
         return Results.File(memoryStream.ToArray(), "image/png");
     }
+}
 
-    private static async Task<string?> FindLargestVisibleWindowAsync(string display)
+// --- WindowHelper ---
+
+public static class WindowHelper
+{
+    public static async Task<string?> FindLargestVisibleWindowAsync(string display)
     {
         var searchInfo = new ProcessStartInfo
         {
