@@ -309,8 +309,6 @@ async Task EnsureDisplay()
 
     if (!displayIsReady)
         throw new InvalidOperationException($"display {display} did not become ready after {displayReadyMaxAttempts} attempts");
-
-    StartProcess("xfwm4", processInfo => processInfo.Environment["DISPLAY"] = display);
 }
 
 async Task<bool> OpenChatAsync(string windowId, string display)
@@ -506,14 +504,6 @@ void StopCriticalProcesses()
             Console.Error.WriteLine($"Failed to stop process {process.ProcessName}: {exception}");
         }
     }
-}
-
-Process StartProcess(string fileName, Action<ProcessStartInfo> configure)
-{
-    var processInfo = new ProcessStartInfo(fileName) { UseShellExecute = false };
-    configure(processInfo);
-
-    return Process.Start(processInfo) ?? throw new InvalidOperationException($"failed to start process '{fileName}'");
 }
 
 Process StartCriticalProcess(string fileName, Action<ProcessStartInfo> configure)
