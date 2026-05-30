@@ -56,7 +56,7 @@ jq -r '.data[] | [.modId, .id, .fileName] | @tsv' "$curseForgeFilesResponseFile"
 do
   targetDirectory="$(awk -v fileId="$fileId" '$1 == fileId { print $2; exit }' "$downloadMappingsFile")"
   mkdir -p "$targetDirectory"
-  curl -fL -H "x-api-key: $CURSEFORGE_API_KEY" -o "$targetDirectory/$fileName" "https://www.curseforge.com/api/v1/mods/$projectId/files/$fileId/download"
+  curl -fL -H "x-api-key: $CURSEFORGE_API_KEY" -o "$targetDirectory/$(basename "$fileName")" "https://www.curseforge.com/api/v1/mods/$projectId/files/$fileId/download"
 done
 
 ferium modpack upgrade
