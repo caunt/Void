@@ -3,7 +3,6 @@
 #:property PublishAot=false
 #:package CurseForge.APIClient@*
 
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Text.Json;
@@ -27,7 +26,8 @@ var builder = WebApplication.CreateBuilder(args);
 var application = builder.Build();
 var clientProcess = (Process?)null;
 var clientLock = new SemaphoreSlim(1, 1);
-var expectedExitProcessIds = new ConcurrentDictionary<int, byte>();
+var expectedExitProcessIds = new HashSet<int>();
+var expectedExitLock = new object();
 
 application.MapGet("/health", () => "ok");
 
@@ -138,7 +138,11 @@ application.MapGet("/stop-client", async () =>
             return Results.NotFound("no client is running");
         }
 
-        expectedExitProcessIds.TryAdd(clientProcess.Id, 0);
+        lock (expectedExitLock)
+        {
+            expectedExitProcessIds.Add(clientProcess.Id);
+        }
+
         clientProcess.Kill(entireProcessTree: true);
         await clientProcess.WaitForExitAsync();
         clientProcess = null;
@@ -581,17 +585,26 @@ Process StartCriticalProcess(string fileName, Action<ProcessStartInfo> configure
     process.EnableRaisingEvents = true;
     process.Exited += (sender, eventArguments) =>
     {
-        if (expectedExitProcessIds.TryRemove(process.Id, out _))
-            return;
+        lock (expectedExitLock)
+        {
+            if (expectedExitProcessIds.Remove(process.Id))
+                return;
+        }
 
         Environment.FailFast(
             $"{fileName} exited unexpectedly with code {process.ExitCode}");
     };
 
-    if (process.HasExited && !expectedExitProcessIds.ContainsKey(process.Id))
+    if (process.HasExited)
     {
-        Environment.FailFast(
-            $"{fileName} exited unexpectedly with code {process.ExitCode}");
+        lock (expectedExitLock)
+        {
+            if (!expectedExitProcessIds.Contains(process.Id))
+            {
+                Environment.FailFast(
+                    $"{fileName} exited unexpectedly with code {process.ExitCode}");
+            }
+        }
     }
 
     return process;
