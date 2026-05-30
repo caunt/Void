@@ -195,6 +195,13 @@ application.MapGet("/screen", async () =>
     if (windowId is null)
         return Results.Problem("no visible window found");
 
+    var displaySizeParts = displayScreen.Split('x');
+    var displayWidth = displaySizeParts[0];
+    var displayHeight = displaySizeParts[1];
+
+    await RunOrThrow("xdotool", "windowmove", "--sync", windowId, "0", "0");
+    await RunOrThrow("xdotool", "windowsize", "--sync", windowId, displayWidth, displayHeight);
+
     var captureProcessInfo = new ProcessStartInfo("import") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
 
     captureProcessInfo.ArgumentList.Add("-window");
@@ -204,9 +211,7 @@ application.MapGet("/screen", async () =>
     using var captureProcess = Process.Start(captureProcessInfo);
 
     if (captureProcess is null)
-    {
         return Results.Problem("failed to capture screen");
-    }
 
     using var imageStream = new MemoryStream();
     var standardError = captureProcess.StandardError.ReadToEndAsync();
