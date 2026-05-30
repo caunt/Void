@@ -8,7 +8,8 @@ using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CurseForge.APIClient;
-using CurseForge.APIClient.Models.Files;
+using GetModFilesRequestBody = CurseForge.APIClient.Models.Files.GetModFilesRequestBody;
+using CurseForgeFile = CurseForge.APIClient.Models.Files.File;
 
 const string DefaultMinecraftDirectory = "/root/.minecraft";
 const string DefaultDisplay = ":99";
@@ -390,19 +391,35 @@ async Task<int> CaptureBrightnessAsync(string windowId, string display)
     using var convertProcess = Process.Start(convertProcessInfo)
         ?? throw new InvalidOperationException("failed to start convert for brightness capture");
 
+    var importStandardError = importProcess.StandardError.ReadToEndAsync();
     await importProcess.StandardOutput.BaseStream.CopyToAsync(convertProcess.StandardInput.BaseStream);
     convertProcess.StandardInput.Close();
 
     var brightnessOutput = await convertProcess.StandardOutput.ReadToEndAsync();
+    var convertStandardError = await convertProcess.StandardError.ReadToEndAsync();
+    var importErrorOutput = await importStandardError;
     await importProcess.WaitForExitAsync();
     await convertProcess.WaitForExitAsync();
 
-    if (int.TryParse(brightnessOutput.Trim(), out var brightness))
+    if (importProcess.ExitCode != 0)
     {
-        return brightness;
+        throw new InvalidOperationException(
+            $"import exited with code {importProcess.ExitCode} during brightness capture: {importErrorOutput}");
     }
 
-    return 0;
+    if (convertProcess.ExitCode != 0)
+    {
+        throw new InvalidOperationException(
+            $"convert exited with code {convertProcess.ExitCode} during brightness capture: {convertStandardError}");
+    }
+
+    if (!int.TryParse(brightnessOutput.Trim(), out var brightness))
+    {
+        throw new InvalidOperationException(
+            $"failed to parse brightness value from convert output: '{brightnessOutput.Trim()}'");
+    }
+
+    return brightness;
 }
 
 async Task<string?> FindLargestWindow(string display)
@@ -661,7 +678,7 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
         {
             Console.Error.WriteLine($"Resolving {requiredFileIds.Count} CurseForge files");
 
-            var allFileMetadata = new List<CurseForge.APIClient.Models.Files.File>();
+            var allFileMetadata = new List<CurseForgeFile>();
 
             for (var batchStart = 0; batchStart < requiredFileIds.Count; batchStart += CurseForgeFilesBatchSize)
             {
