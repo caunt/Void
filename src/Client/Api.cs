@@ -246,7 +246,7 @@ Process LaunchPortablemc(string directory, string version, string[] portableMine
     if (process.WaitForExit(CriticalProcessEarlyExitMilliseconds))
     {
         Environment.FailFast(
-            $"Critical process 'portablemc' exited immediately with code {process.ExitCode}");
+            $"portablemc exited immediately with code {process.ExitCode}");
     }
 
     return process;
@@ -566,7 +566,10 @@ async Task RunOrThrow(params string[] command)
 
 Process StartCriticalProcess(string fileName, Action<ProcessStartInfo> configure)
 {
-    var processInfo = new ProcessStartInfo(fileName);
+    var processInfo = new ProcessStartInfo(fileName)
+    {
+        UseShellExecute = false
+    };
     configure(processInfo);
 
     var process = Process.Start(processInfo)
@@ -576,7 +579,7 @@ Process StartCriticalProcess(string fileName, Action<ProcessStartInfo> configure
     process.Exited += (sender, eventArguments) =>
     {
         Environment.FailFast(
-            $"Critical process '{fileName}' (PID {process.Id}) exited unexpectedly with code {process.ExitCode}");
+            $"{fileName} exited unexpectedly with code {process.ExitCode}");
     };
 
     return process;
