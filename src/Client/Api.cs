@@ -36,7 +36,7 @@ application.MapGet("/start-vanilla", async (HttpContext httpContext, string? ver
     if (string.IsNullOrWhiteSpace(version))
         return Results.BadRequest("version is required");
 
-    var portableMinecraftArguments = httpContext.Request.Query["argument"];
+    var portableMinecraftArguments = httpContext.Request.Query["argument"].OfType<string>().ToArray();
 
     await clientLock.WaitAsync();
 
@@ -71,7 +71,7 @@ application.MapGet("/start-curseforge", async (HttpContext httpContext, string? 
     if (string.IsNullOrWhiteSpace(curseForgeApiKey))
         return Results.Problem("CURSEFORGE_API_KEY is not set");
 
-    var portableMinecraftArguments = httpContext.Request.Query["argument"];
+    var portableMinecraftArguments = httpContext.Request.Query["argument"].OfType<string>().ToArray();
 
     await clientLock.WaitAsync();
 
