@@ -12,7 +12,10 @@ writeLog()
 
 curseForgeSlug="${1:?CurseForge modpack slug is required (for example: all-the-mods-10)}"
 curseForgeFileId="${2:?CurseForge modpack file id is required (must be numeric)}"
-minecraftDirectory="${3:-/root/.minecraft}"
+shift 2
+
+minecraftDirectory="${MINECRAFT_DIRECTORY:-/root/.minecraft}"
+portableMinecraftArguments=("$@")
 
 if [ -z "${CURSEFORGE_API_KEY:-}" ]
 then
@@ -217,4 +220,4 @@ then
 fi
 
 writeLog "Launching Minecraft with PortableMC version: $portableMinecraftVersion"
-portablemc --main-dir "$minecraftDirectory" start "$portableMinecraftVersion"
+portablemc --main-dir "$minecraftDirectory" start "$portableMinecraftVersion" "${portableMinecraftArguments[@]}"
