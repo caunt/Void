@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfontconfig1 \
     libfreetype6 \
     libgl1-mesa-dri \
+    libicu-dev \
     libxcursor1 \
     libxi6 \
     libxrandr2 \
@@ -40,37 +41,39 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
  && rm -rf /var/lib/apt/lists/*
 
+# Install .NET 11 preview
+RUN curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
+ && chmod +x /tmp/dotnet-install.sh \
+ && /tmp/dotnet-install.sh --channel 11.0 --quality preview --install-dir /usr/share/dotnet \
+ && rm /tmp/dotnet-install.sh
+
+ENV DOTNET_ROOT=/usr/share/dotnet
+ENV PATH="${DOTNET_ROOT}:${PATH}"
+
 # Fix sound errors by using the null audio driver
 RUN printf "pcm.!default { type null }\nctl.!default { type null }\n" > /etc/asound.conf
 
 # Skip Minecraft accessibility screen
 RUN mkdir -p "$HOME/.minecraft" && touch "$HOME/.minecraft/options.txt"
 
-# Start display utility
-COPY start-display /usr/local/bin/start-display
-RUN chmod +x /usr/local/bin/start-display
+# Copy the API application
+COPY Api.cs /app/Api.cs
+WORKDIR /app
 
-# Send chat message utility
-COPY send-chat /usr/local/bin/send-chat
-RUN chmod +x /usr/local/bin/send-chat
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
 
-# List Minecraft release versions utility
-COPY list-minecraft-release-versions /usr/local/bin/list-minecraft-release-versions
-RUN chmod +x /usr/local/bin/list-minecraft-release-versions
-
-# Start CurseForge modpack client
-COPY start-curseforge /usr/local/bin/start-curseforge
-RUN chmod +x /usr/local/bin/start-curseforge
-
-ENTRYPOINT ["sleep"]
-CMD ["infinity"]
+ENTRYPOINT ["dotnet", "run", "Api.cs"]
 
 FROM latest AS offline
 
 ARG FIRST_RELEASE_VERSION=1.7.2
 
 # Dry-run all release versions in reverse order (from oldest to latest)
-RUN list-minecraft-release-versions "$FIRST_RELEASE_VERSION" | while IFS= read -r minecraftVersion; do portablemc start --dry "mojang:$minecraftVersion"; done
+RUN curl -fsSL https://launchermeta.mojang.com/mc/game/version_manifest_v2.json \
+  | jq -r --arg first "$FIRST_RELEASE_VERSION" \
+    '([.versions[] | select(.type == "release") | .id] | reverse) as $r | ($r | index($first)) as $i | if $i == null then error("Not found: \($first)") else $r[$i:] end | .[]' \
+  | while IFS= read -r minecraftVersion; do portablemc start --dry "mojang:$minecraftVersion"; done
 
 FROM latest AS version
 
