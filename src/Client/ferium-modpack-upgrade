@@ -22,7 +22,7 @@ feriumExitCode="${PIPESTATUS[0]}"
 grep -Eo 'https://www[.]curseforge[.]com/minecraft/[^ ]+/[^ ]+/download/[0-9]+' "$upgradeLogFile" | while read -r downloadUrl
 do
   fileId="${downloadUrl##*/}"
-  category="$(echo "$downloadUrl" | cut -d/ -f6)"
+  category="$(echo "$downloadUrl" | cut -d/ -f5)"
 
   case "$category" in
     mc-mods)
@@ -58,5 +58,3 @@ do
   mkdir -p "$targetDirectory"
   curl -fL -H "x-api-key: $CURSEFORGE_API_KEY" -o "$targetDirectory/$(basename "$fileName")" "https://www.curseforge.com/api/v1/mods/$projectId/files/$fileId/download"
 done
-
-ferium modpack upgrade
