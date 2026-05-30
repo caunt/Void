@@ -20,6 +20,7 @@ const int BrightnessThreshold = 5;
 const int MaximumChatOpenPresses = 100;
 const int DisplayReadyMaxAttempts = 50;
 const int DisplayReadyDelayMilliseconds = 100;
+const int CriticalProcessEarlyExitMilliseconds = 1000;
 
 var builder = WebApplication.CreateBuilder(args);
 var application = builder.Build();
@@ -51,7 +52,7 @@ application.MapGet("/start-vanilla", async (HttpContext httpContext, string? ver
         var portablemcVersion = $"mojang:{version}";
         Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portablemcVersion}");
         clientProcess = LaunchPortablemc(minecraftDirectory, portablemcVersion, portableMinecraftArguments);
-        return Results.Ok(new { status = "started", pid = clientProcess?.Id });
+        return Results.Ok(new { status = "started", pid = clientProcess.Id });
     }
     finally
     {
@@ -115,7 +116,7 @@ application.MapGet("/start-curseforge", async (HttpContext httpContext, string? 
         await EnsureDisplay();
         Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portablemcVersion}");
         clientProcess = LaunchPortablemc(minecraftDirectory, portablemcVersion, portableMinecraftArguments);
-        return Results.Ok(new { status = "started", pid = clientProcess?.Id });
+        return Results.Ok(new { status = "started", pid = clientProcess.Id });
     }
     finally
     {
@@ -227,20 +228,28 @@ application.MapGet("/screen", async () =>
 
 application.Run();
 
-Process? LaunchPortablemc(string directory, string version, string[] portableMinecraftArguments)
+Process LaunchPortablemc(string directory, string version, string[] portableMinecraftArguments)
 {
-    var processInfo = new ProcessStartInfo("portablemc");
-    processInfo.ArgumentList.Add("--main-dir");
-    processInfo.ArgumentList.Add(directory);
-    processInfo.ArgumentList.Add("start");
-    processInfo.ArgumentList.Add(version);
-
-    foreach (var argument in portableMinecraftArguments)
+    var process = StartCriticalProcess("portablemc", processInfo =>
     {
-        processInfo.ArgumentList.Add(argument);
+        processInfo.ArgumentList.Add("--main-dir");
+        processInfo.ArgumentList.Add(directory);
+        processInfo.ArgumentList.Add("start");
+        processInfo.ArgumentList.Add(version);
+
+        foreach (var argument in portableMinecraftArguments)
+        {
+            processInfo.ArgumentList.Add(argument);
+        }
+    });
+
+    if (process.WaitForExit(CriticalProcessEarlyExitMilliseconds))
+    {
+        Environment.FailFast(
+            $"Critical process 'portablemc' exited immediately with code {process.ExitCode}");
     }
 
-    return Process.Start(processInfo);
+    return process;
 }
 
 async Task EnsureDisplay()
@@ -282,12 +291,13 @@ async Task EnsureDisplay()
         File.Delete(lockFile);
     }
 
-    var xvfbProcessInfo = new ProcessStartInfo("Xvfb");
-    xvfbProcessInfo.ArgumentList.Add(display);
-    xvfbProcessInfo.ArgumentList.Add("-screen");
-    xvfbProcessInfo.ArgumentList.Add("0");
-    xvfbProcessInfo.ArgumentList.Add(DisplayScreen);
-    Process.Start(xvfbProcessInfo);
+    StartCriticalProcess("Xvfb", processInfo =>
+    {
+        processInfo.ArgumentList.Add(display);
+        processInfo.ArgumentList.Add("-screen");
+        processInfo.ArgumentList.Add("0");
+        processInfo.ArgumentList.Add(DisplayScreen);
+    });
 
     var displayIsReady = false;
 
@@ -323,9 +333,10 @@ async Task EnsureDisplay()
         throw new InvalidOperationException($"display {display} did not become ready after {DisplayReadyMaxAttempts} attempts");
     }
 
-    var xfwm4ProcessInfo = new ProcessStartInfo("xfwm4");
-    xfwm4ProcessInfo.Environment["DISPLAY"] = display;
-    Process.Start(xfwm4ProcessInfo);
+    StartCriticalProcess("xfwm4", processInfo =>
+    {
+        processInfo.Environment["DISPLAY"] = display;
+    });
 }
 
 async Task<bool> OpenChatAsync(string windowId, string display)
@@ -551,6 +562,24 @@ async Task RunOrThrow(params string[] command)
     {
         throw new InvalidOperationException($"{command[0]} exited with code {process.ExitCode}: {standardError}");
     }
+}
+
+Process StartCriticalProcess(string fileName, Action<ProcessStartInfo> configure)
+{
+    var processInfo = new ProcessStartInfo(fileName);
+    configure(processInfo);
+
+    var process = Process.Start(processInfo)
+        ?? throw new InvalidOperationException($"failed to start critical process '{fileName}'");
+
+    process.EnableRaisingEvents = true;
+    process.Exited += (sender, eventArguments) =>
+    {
+        Environment.FailFast(
+            $"Critical process '{fileName}' (PID {process.Id}) exited unexpectedly with code {process.ExitCode}");
+    };
+
+    return process;
 }
 
 void DeleteDirectoryIfExists(string path)
