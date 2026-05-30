@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+curseForgeSlug="${1:?CurseForge modpack slug is required}"
+curseForgeFileId="${2:?CurseForge modpack file id is required}"
+minecraftDirectory="${3:-/root/.minecraft}"
+
+if [ -z "${CURSEFORGE_API_KEY:-}" ]
+then
+  echo "CURSEFORGE_API_KEY is not set"
+  exit 1
+fi
+
+if ! [[ "$curseForgeFileId" =~ ^[0-9]+$ ]]
+then
+  echo "CurseForge file id must be an integer"
+  exit 1
+fi
+
+temporaryDirectory="$(mktemp -d)"
+trap 'rm -rf "$temporaryDirectory"' EXIT
+
+modpackSearchResponseFile="$temporaryDirectory/modpack-search.json"
+modpackZipFile="$temporaryDirectory/modpack.zip"
+manifestFile="$temporaryDirectory/manifest.json"
+fileIdsFile="$temporaryDirectory/file-ids.txt"
+metadataFile="$temporaryDirectory/files.jsonl"
+
+mkdir -p "$minecraftDirectory"
+
+curl -fsS -G -H "x-api-key: $CURSEFORGE_API_KEY" --data-urlencode gameId=432 --data-urlencode slug="$curseForgeSlug" https://api.curseforge.com/v1/mods/search > "$modpackSearchResponseFile"
+
+curseForgeProjectId="$(jq -r --arg curseForgeSlug "$curseForgeSlug" 'first(.data[] | select(.slug == $curseForgeSlug) | .id) // empty' "$modpackSearchResponseFile")"
+
+if [ -z "$curseForgeProjectId" ]
+then
+  echo "CurseForge modpack was not found: $curseForgeSlug"
+  exit 1
+fi
+
+curl -fL -H "x-api-key: $CURSEFORGE_API_KEY" -o "$modpackZipFile" "https://www.curseforge.com/api/v1/mods/$curseForgeProjectId/files/$curseForgeFileId/download"
+
+unzip -p "$modpackZipFile" manifest.json > "$manifestFile"
+
+rm -rf "$minecraftDirectory/mods" "$minecraftDirectory/resourcepacks" "$minecraftDirectory/shaderpacks"
+mkdir -p "$minecraftDirectory/mods" "$minecraftDirectory/resourcepacks" "$minecraftDirectory/shaderpacks"
+
+overridesDirectoryName="$(jq -r '.overrides // empty' "$manifestFile")"
+
+if [ -n "$overridesDirectoryName" ]
+then
+  mkdir -p "$temporaryDirectory/overrides"
+  unzip -q -o "$modpackZipFile" "$overridesDirectoryName/*" -d "$temporaryDirectory/overrides"
+  cp -a "$temporaryDirectory/overrides/$overridesDirectoryName/." "$minecraftDirectory/"
+fi
+
+jq -r '.files[] | select(.required != false) | .fileID' "$manifestFile" > "$fileIdsFile"
+split -l 50 "$fileIdsFile" "$temporaryDirectory/file-ids-"
+
+for batchFile in "$temporaryDirectory"/file-ids-*
+do
+  fileIdsJson="$(jq -R . "$batchFile" | jq -s '{fileIds: map(tonumber)}')"
+  curl -fsS -H "x-api-key: $CURSEFORGE_API_KEY" -H "Content-Type: application/json" -X POST -d "$fileIdsJson" https://api.curseforge.com/v1/mods/files | jq -c '.data[]' >> "$metadataFile"
+done
+
+jq -r '[.modId, .id, .fileName, (.downloadUrl // "")] | @tsv' "$metadataFile" | while IFS="$(printf '\t')" read -r projectId fileId fileName downloadUrl
+do
+  case "$fileName" in
+    *.zip)
+      targetDirectory="$minecraftDirectory/resourcepacks"
+      ;;
+    *)
+      targetDirectory="$minecraftDirectory/mods"
+      ;;
+  esac
+
+  targetFile="$targetDirectory/$(basename "$fileName")"
+
+  if [ -f "$targetFile" ]
+  then
+    continue
+  fi
+
+  if [ -n "$downloadUrl" ]
+  then
+    curl -fL -o "$targetFile" "$downloadUrl"
+  else
+    curl -fL -H "x-api-key: $CURSEFORGE_API_KEY" -o "$targetFile" "https://www.curseforge.com/api/v1/mods/$projectId/files/$fileId/download"
+  fi
+done
+
+portableMinecraftVersion="$(jq -r '
+  .minecraft.version as $minecraftVersion |
+  (.minecraft.modLoaders // [] | map(select(.primary == true)) | first | .id // "") as $modLoaderId |
+  if $modLoaderId == "" then
+    "mojang:" + $minecraftVersion
+  elif $modLoaderId | startswith("neoforge-") then
+    "neoforge::" + ($modLoaderId | sub("^neoforge-"; ""))
+  elif $modLoaderId | startswith("forge-") then
+    ($modLoaderId | sub("^forge-"; "")) as $forgeVersion |
+    "forge::" + (if $forgeVersion | startswith($minecraftVersion + "-") then $forgeVersion else $minecraftVersion + "-" + $forgeVersion end)
+  elif $modLoaderId | startswith("fabric-") then
+    "fabric:" + $minecraftVersion + ":" + ($modLoaderId | sub("^fabric-"; ""))
+  elif $modLoaderId | startswith("quilt-") then
+    "quilt:" + $minecraftVersion + ":" + ($modLoaderId | sub("^quilt-"; ""))
+  else
+    error("Unsupported mod loader: " + $modLoaderId)
+  end
+' "$manifestFile")"
+
+export DISPLAY="${DISPLAY:-:99}"
+
+if ! xdpyinfo -display "$DISPLAY" >/dev/null 2>&1
+then
+  start-display
+fi
+
+portablemc --main-dir "$minecraftDirectory" start "$portableMinecraftVersion"

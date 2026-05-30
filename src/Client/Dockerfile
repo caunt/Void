@@ -39,6 +39,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xdotool \
     xvfb \
     xfwm4 \
+    unzip \
  && rm -rf /var/lib/apt/lists/*
 
 # Fix sound errors by using the null audio driver
@@ -59,9 +60,9 @@ RUN chmod +x /usr/local/bin/send-chat
 COPY list-minecraft-release-versions /usr/local/bin/list-minecraft-release-versions
 RUN chmod +x /usr/local/bin/list-minecraft-release-versions
 
-# Ferium modpack upgrade with CurseForge blocked-download fallback
-COPY ferium-modpack-upgrade /usr/local/bin/ferium-modpack-upgrade
-RUN chmod +x /usr/local/bin/ferium-modpack-upgrade
+# Start CurseForge modpack client
+COPY start-curseforge /usr/local/bin/start-curseforge
+RUN chmod +x /usr/local/bin/start-curseforge
 
 ENTRYPOINT ["sleep"]
 CMD ["infinity"]
