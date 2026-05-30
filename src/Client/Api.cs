@@ -27,8 +27,12 @@ var builder = WebApplication.CreateBuilder(args);
 var application = builder.Build();
 var clientProcess = (Process?)null;
 var clientLock = new SemaphoreSlim(1, 1);
+var criticalProcesses = new HashSet<Process>();
+var criticalProcessesLock = new object();
 var expectedExitProcessIds = new HashSet<int>();
 var expectedExitLock = new object();
+
+application.Lifetime.ApplicationStopping.Register(StopCriticalProcesses);
 
 application.MapGet("/health", () => "ok");
 
@@ -476,6 +480,34 @@ async Task RunOrThrow(params string[] command)
         throw new InvalidOperationException($"{command[0]} exited with code {process.ExitCode}: {standardError}");
 }
 
+void StopCriticalProcesses()
+{
+    Process[] processes;
+
+    lock (criticalProcessesLock)
+        processes = criticalProcesses.ToArray();
+
+    foreach (var process in processes)
+    {
+        if (process.HasExited)
+            continue;
+
+        try
+        {
+            process.Kill(entireProcessTree: true);
+            process.WaitForExit();
+        }
+        catch (InvalidOperationException) when (process.HasExited)
+        {
+            // Intentionally left blank
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine($"Failed to stop process {process.ProcessName}: {exception}");
+        }
+    }
+}
+
 Process StartCriticalProcess(string fileName, Action<ProcessStartInfo> configure)
 {
     var processInfo = new ProcessStartInfo(fileName) { UseShellExecute = false };
@@ -484,9 +516,18 @@ Process StartCriticalProcess(string fileName, Action<ProcessStartInfo> configure
     var process = Process.Start(processInfo)
                   ?? throw new InvalidOperationException($"failed to start critical process '{fileName}'");
 
+    lock (criticalProcessesLock)
+        criticalProcesses.Add(process);
+
     process.EnableRaisingEvents = true;
     process.Exited += (sender, eventArguments) =>
     {
+        lock (criticalProcessesLock)
+            criticalProcesses.Remove(process);
+
+        if (application.Lifetime.ApplicationStopping.IsCancellationRequested)
+            return;
+
         lock (expectedExitLock)
         {
             if (expectedExitProcessIds.Remove(process.Id))
@@ -563,7 +604,7 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
     await using var manifestStream = manifestEntry.Open();
     var manifest = await JsonSerializer.DeserializeAsync<CurseForgeManifest>(manifestStream, new JsonSerializerOptions(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = false })
                    ?? throw new InvalidOperationException("failed to deserialize manifest.json");
-    
+
     DeleteDirectoryIfExists(Path.Combine(minecraftDirectory, "mods"));
     DeleteDirectoryIfExists(Path.Combine(minecraftDirectory, "resourcepacks"));
     DeleteDirectoryIfExists(Path.Combine(minecraftDirectory, "shaderpacks"));
