@@ -13,6 +13,8 @@ feriumConfigFile="${FERIUM_CONFIG_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/ferium
 outputDirectory="$(jq -r '.modpacks[.active_modpack // 0].output_dir // "/root/.minecraft"' "$feriumConfigFile")"
 upgradeLogFile="$(mktemp)"
 downloadMappingsFile="$(mktemp)"
+curseForgeFilesResponseFile=""
+trap 'rm -f "$upgradeLogFile" "$downloadMappingsFile" ${curseForgeFilesResponseFile:+"$curseForgeFilesResponseFile"}' EXIT
 
 ferium modpack upgrade 2>&1 | tee "$upgradeLogFile"
 feriumExitCode="${PIPESTATUS[0]}"
@@ -37,7 +39,7 @@ do
       ;;
   esac
 
-  echo "$fileId $targetDirectory" > "$downloadMappingsFile"
+  echo "$fileId $targetDirectory" >> "$downloadMappingsFile"
 done
 
 if [ ! -s "$downloadMappingsFile" ]
