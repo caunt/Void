@@ -1,37 +1,39 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-outputFormat="text"
+output_format="text"
 
 if [[ "${1:-}" == "--json" ]]; then
-  outputFormat="json"
+  output_format="json"
   shift
 fi
+readonly output_format
 
-firstReleaseVersion="${1:-}"
+first_release_version="${1:-}"
+readonly first_release_version
 
-if [[ -z "$firstReleaseVersion" ]]; then
+if [[ -z "$first_release_version" ]]; then
   echo "Usage: $0 [--json] <first-release-version>" >&2
   exit 1
 fi
 
-if [[ "$outputFormat" == "json" ]]; then
+if [[ "$output_format" == "json" ]]; then
   curl -fsSL https://launchermeta.mojang.com/mc/game/version_manifest_v2.json \
-    | jq -c --arg firstReleaseVersion "$firstReleaseVersion" '
+    | jq -c --arg firstReleaseVersion "$first_release_version" '
       ([.versions[] | select(.type == "release") | .id] | reverse) as $releaseVersions |
       ($releaseVersions | index($firstReleaseVersion)) as $firstReleaseVersionIndex |
       if $firstReleaseVersionIndex == null
-      then error("Not found: \($firstReleaseVersion)")
+      then error("Release version not found: \($firstReleaseVersion)")
       else $releaseVersions[$firstReleaseVersionIndex:]
       end
     '
 else
   curl -fsSL https://launchermeta.mojang.com/mc/game/version_manifest_v2.json \
-    | jq -r --arg firstReleaseVersion "$firstReleaseVersion" '
+    | jq -r --arg firstReleaseVersion "$first_release_version" '
       ([.versions[] | select(.type == "release") | .id] | reverse) as $releaseVersions |
       ($releaseVersions | index($firstReleaseVersion)) as $firstReleaseVersionIndex |
       if $firstReleaseVersionIndex == null
-      then error("Not found: \($firstReleaseVersion)")
+      then error("Release version not found: \($firstReleaseVersion)")
       else $releaseVersions[$firstReleaseVersionIndex:] | .[]
       end
     '
