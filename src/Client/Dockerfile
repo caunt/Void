@@ -6,7 +6,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl-dev \
  && rm -rf /var/lib/apt/lists/*
 
-RUN cargo install portablemc-cli --root /usr/local
+RUN cargo install portablemc-cli --root /usr/local \
+ && cargo install --locked --no-default-features ferium --root /usr/local
 
 # Runtime stage
 FROM --platform=linux/amd64 amd64/debian:trixie-20260518@sha256:b91d9b2c1738c0cb7f2c7440eaebc9f40e3e411a0e7ce768dd4e1879cf0cd141 AS latest
@@ -16,6 +17,7 @@ ENV LIBGL_ALWAYS_SOFTWARE=1
 
 # Copy pre-built portablemc binary from builder
 COPY --from=builder /usr/local/bin/portablemc /usr/local/bin/portablemc
+COPY --from=builder /usr/local/bin/ferium /usr/local/bin/ferium
 
 # Install only runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
