@@ -8,8 +8,9 @@ using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CurseForge.APIClient;
-using GetModFilesRequestBody = CurseForge.APIClient.Models.Files.GetModFilesRequestBody;
+using CurseForge.APIClient.Models.Files;
 using CurseForgeFile = CurseForge.APIClient.Models.Files.File;
+using File = System.IO.File;
 
 const string defaultMinecraftDirectory = "/root/.minecraft";
 const string defaultDisplay = ":99";
@@ -190,13 +191,7 @@ application.MapGet("/screen", async () =>
     if (windowId is null)
         return Results.Problem("no visible window found");
 
-    var captureProcessInfo = new ProcessStartInfo("import")
-    {
-        RedirectStandardOutput = true,
-        RedirectStandardError = true
-    };
-
-    captureProcessInfo.Environment["DISPLAY"] = display;
+    var captureProcessInfo = new ProcessStartInfo("import") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
 
     captureProcessInfo.ArgumentList.Add("-window");
     captureProcessInfo.ArgumentList.Add(windowId);
@@ -223,8 +218,10 @@ application.MapGet("/screen", async () =>
 
 application.Run();
 
-Process LaunchPortableMinecraftClient(string directory, string version, string[] portableMinecraftArguments)
+Process LaunchPortableMinecraftClient(string directory, string version, string?[]? portableMinecraftArguments = null)
 {
+    portableMinecraftArguments ??= [];
+
     var process = StartCriticalProcess("portablemc", processInfo =>
     {
         processInfo.ArgumentList.Add("--main-dir");
@@ -232,7 +229,7 @@ Process LaunchPortableMinecraftClient(string directory, string version, string[]
         processInfo.ArgumentList.Add("start");
         processInfo.ArgumentList.Add(version);
 
-        foreach (var argument in portableMinecraftArguments)
+        foreach (var argument in portableMinecraftArguments.OfType<string>())
             processInfo.ArgumentList.Add(argument);
     });
 
@@ -248,13 +245,7 @@ async Task EnsureDisplay()
 
     if (!string.IsNullOrEmpty(display))
     {
-        var checkProcessInfo = new ProcessStartInfo("xdpyinfo")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        checkProcessInfo.Environment["DISPLAY"] = display;
+        var checkProcessInfo = new ProcessStartInfo("xdpyinfo") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
 
         checkProcessInfo.ArgumentList.Add("-display");
         checkProcessInfo.ArgumentList.Add(display);
@@ -293,13 +284,8 @@ async Task EnsureDisplay()
     {
         await Task.Delay(displayReadyDelayMilliseconds);
 
-        var readyCheckInfo = new ProcessStartInfo("xdpyinfo")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
+        var readyCheckInfo = new ProcessStartInfo("xdpyinfo") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
 
-        readyCheckInfo.Environment["DISPLAY"] = display;
         readyCheckInfo.ArgumentList.Add("-display");
         readyCheckInfo.ArgumentList.Add(display);
 
@@ -352,27 +338,16 @@ async Task<bool> OpenChatAsync(string windowId, string display)
 
 async Task<int> CaptureBrightnessAsync(string windowId, string display)
 {
-    var importProcessInfo = new ProcessStartInfo("import")
-    {
-        RedirectStandardOutput = true,
-        RedirectStandardError = true
-    };
-
-    importProcessInfo.Environment["DISPLAY"] = display;
+    var importProcessInfo = new ProcessStartInfo("import") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
 
     importProcessInfo.ArgumentList.Add("-window");
     importProcessInfo.ArgumentList.Add(windowId);
     importProcessInfo.ArgumentList.Add("miff:-");
 
     using var importProcess = Process.Start(importProcessInfo)
-        ?? throw new InvalidOperationException("failed to start import for brightness capture");
+                              ?? throw new InvalidOperationException("failed to start import for brightness capture");
 
-    var convertProcessInfo = new ProcessStartInfo("convert")
-    {
-        RedirectStandardInput = true,
-        RedirectStandardOutput = true,
-        RedirectStandardError = true
-    };
+    var convertProcessInfo = new ProcessStartInfo("convert") { RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
 
     convertProcessInfo.ArgumentList.Add("-");
     convertProcessInfo.ArgumentList.Add("-gravity");
@@ -385,7 +360,7 @@ async Task<int> CaptureBrightnessAsync(string windowId, string display)
     convertProcessInfo.ArgumentList.Add("info:");
 
     using var convertProcess = Process.Start(convertProcessInfo)
-        ?? throw new InvalidOperationException("failed to start convert for brightness capture");
+                               ?? throw new InvalidOperationException("failed to start convert for brightness capture");
 
     var importStandardError = importProcess.StandardError.ReadToEndAsync();
     await importProcess.StandardOutput.BaseStream.CopyToAsync(convertProcess.StandardInput.BaseStream);
@@ -401,21 +376,15 @@ async Task<int> CaptureBrightnessAsync(string windowId, string display)
     return importProcess.ExitCode != 0
         ? throw new InvalidOperationException($"import exited with code {importProcess.ExitCode} during brightness capture: {importErrorOutput}")
         : convertProcess.ExitCode != 0
-        ? throw new InvalidOperationException($"convert exited with code {convertProcess.ExitCode} during brightness capture: {convertStandardError}")
-        : !int.TryParse(brightnessOutput.Trim(), out var brightness)
-        ? throw new InvalidOperationException($"failed to parse brightness value from convert output: '{brightnessOutput.Trim()}'")
-        : brightness;
+            ? throw new InvalidOperationException($"convert exited with code {convertProcess.ExitCode} during brightness capture: {convertStandardError}")
+            : !int.TryParse(brightnessOutput.Trim(), out var brightness)
+                ? throw new InvalidOperationException($"failed to parse brightness value from convert output: '{brightnessOutput.Trim()}'")
+                : brightness;
 }
 
 async Task<string?> FindLargestWindow(string display)
 {
-    var searchProcessInfo = new ProcessStartInfo("xdotool")
-    {
-        RedirectStandardOutput = true,
-        RedirectStandardError = true
-    };
-
-    searchProcessInfo.Environment["DISPLAY"] = display;
+    var searchProcessInfo = new ProcessStartInfo("xdotool") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
 
     searchProcessInfo.ArgumentList.Add("search");
     searchProcessInfo.ArgumentList.Add("--onlyvisible");
@@ -437,13 +406,7 @@ async Task<string?> FindLargestWindow(string display)
     {
         var trimmedCandidateId = candidateWindowId.Trim();
 
-        var nameProcessInfo = new ProcessStartInfo("xdotool")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        nameProcessInfo.Environment["DISPLAY"] = display;
+        var nameProcessInfo = new ProcessStartInfo("xdotool") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
 
         nameProcessInfo.ArgumentList.Add("getwindowname");
         nameProcessInfo.ArgumentList.Add(trimmedCandidateId);
@@ -459,13 +422,7 @@ async Task<string?> FindLargestWindow(string display)
         if (string.IsNullOrWhiteSpace(windowName))
             continue;
 
-        var geometryProcessInfo = new ProcessStartInfo("xdotool")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        geometryProcessInfo.Environment["DISPLAY"] = display;
+        var geometryProcessInfo = new ProcessStartInfo("xdotool") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
 
         geometryProcessInfo.ArgumentList.Add("getwindowgeometry");
         geometryProcessInfo.ArgumentList.Add("--shell");
@@ -504,17 +461,13 @@ async Task<string?> FindLargestWindow(string display)
 
 async Task RunOrThrow(params string[] command)
 {
-    var processInfo = new ProcessStartInfo(command[0])
-    {
-        RedirectStandardOutput = true,
-        RedirectStandardError = true
-    };
+    var processInfo = new ProcessStartInfo(command[0]) { RedirectStandardOutput = true, RedirectStandardError = true };
 
     foreach (var argument in command[1..])
         processInfo.ArgumentList.Add(argument);
 
-    using var process = Process.Start(processInfo) 
-        ?? throw new InvalidOperationException($"failed to start {command[0]}");
+    using var process = Process.Start(processInfo)
+                        ?? throw new InvalidOperationException($"failed to start {command[0]}");
 
     var standardError = await process.StandardError.ReadToEndAsync();
     await process.WaitForExitAsync();
@@ -525,11 +478,11 @@ async Task RunOrThrow(params string[] command)
 
 Process StartCriticalProcess(string fileName, Action<ProcessStartInfo> configure)
 {
-    var processInfo = new ProcessStartInfo(fileName ){ UseShellExecute = false };
+    var processInfo = new ProcessStartInfo(fileName) { UseShellExecute = false };
     configure(processInfo);
 
     var process = Process.Start(processInfo)
-        ?? throw new InvalidOperationException($"failed to start critical process '{fileName}'");
+                  ?? throw new InvalidOperationException($"failed to start critical process '{fileName}'");
 
     process.EnableRaisingEvents = true;
     process.Exited += (sender, eventArguments) =>
@@ -571,7 +524,7 @@ void ValidateFileName(string fileName, int modId, int modFileId)
         || safeName == ".."
         || safeName.Contains('/')
         || safeName.Contains('\\')
-        || safeName.Any(character => char.IsControl(character)))
+        || safeName.Any(char.IsControl))
     {
         throw new InvalidOperationException($"Unexpected CurseForge file name '{fileName}' for mod id '{modId}' and file id '{modFileId}'");
     }
@@ -582,10 +535,10 @@ string DetermineTargetDirectory(string fileName, string minecraftDirectory)
     return fileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase)
         ? Path.Combine(minecraftDirectory, "mods")
         : fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
-        ? fileName.Contains("shader", StringComparison.OrdinalIgnoreCase)
-            ? Path.Combine(minecraftDirectory, "shaderpacks")
-            : Path.Combine(minecraftDirectory, "resourcepacks")
-        : Path.Combine(minecraftDirectory, "mods");
+            ? fileName.Contains("shader", StringComparison.OrdinalIgnoreCase)
+                ? Path.Combine(minecraftDirectory, "shaderpacks")
+                : Path.Combine(minecraftDirectory, "resourcepacks")
+            : Path.Combine(minecraftDirectory, "mods");
 }
 
 async Task<string> InstallModpack(string slug, int fileId, string apiKey, string minecraftDirectory)
@@ -596,24 +549,21 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
     Console.Error.WriteLine("Resolving CurseForge project");
     var searchResult = await curseForgeClient.SearchModsAsync(gameId: minecraftGameId, slug: slug);
     var project = searchResult.Data.FirstOrDefault(modpack => modpack.Slug == slug)
-        ?? throw new InvalidOperationException($"modpack not found: {slug}");
+                  ?? throw new InvalidOperationException($"modpack not found: {slug}");
 
     Console.Error.WriteLine("Downloading modpack archive");
     var archiveDownloadUrl = await ResolveDownloadUrlAsync(curseForgeClient, httpClient, project.Id, fileId, apiKey);
     var archiveBytes = await DownloadWithFallbackAsync(httpClient, archiveDownloadUrl, apiKey);
 
     Console.Error.WriteLine("Reading modpack manifest");
-    using var archive = new ZipArchive(new MemoryStream(archiveBytes), ZipArchiveMode.Read);
+    await using var archive = new ZipArchive(new MemoryStream(archiveBytes), ZipArchiveMode.Read);
     var manifestEntry = archive.GetEntry("manifest.json")
-        ?? throw new InvalidOperationException("manifest.json not found");
+                        ?? throw new InvalidOperationException("manifest.json not found");
 
-    using var manifestStream = manifestEntry.Open();
-    var manifest = await JsonSerializer.DeserializeAsync<CurseForgeManifest>(
-        manifestStream,
-        new JsonSerializerOptions(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = false }
-    )
-        ?? throw new InvalidOperationException("failed to deserialize manifest.json");
-
+    await using var manifestStream = manifestEntry.Open();
+    var manifest = await JsonSerializer.DeserializeAsync<CurseForgeManifest>(manifestStream, new JsonSerializerOptions(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = false })
+                   ?? throw new InvalidOperationException("failed to deserialize manifest.json");
+    
     DeleteDirectoryIfExists(Path.Combine(minecraftDirectory, "mods"));
     DeleteDirectoryIfExists(Path.Combine(minecraftDirectory, "resourcepacks"));
     DeleteDirectoryIfExists(Path.Combine(minecraftDirectory, "shaderpacks"));
@@ -657,7 +607,7 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
             if (file.Required is false)
                 continue;
 
-            var resolvedFileId = file.FileID ?? file.FileId;
+            var resolvedFileId = file.FileId ?? file.FileId;
 
             if (resolvedFileId is > 0)
             {
@@ -716,7 +666,7 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
 
     Console.Error.WriteLine("Resolving PortableMC version");
     var minecraftVersion = manifest.Minecraft?.Version
-        ?? throw new InvalidOperationException("minecraft.version missing");
+                           ?? throw new InvalidOperationException("minecraft.version missing");
 
     var portablemcVersion = $"mojang:{minecraftVersion}";
 
@@ -795,24 +745,14 @@ async Task<byte[]> DownloadWithFallbackAsync(HttpClient httpClient, string downl
 
     var response = await httpClient.SendAsync(request);
     response.EnsureSuccessStatusCode();
-    
+
     return await response.Content.ReadAsByteArrayAsync();
 }
 
-record CurseForgeManifest(
-    CurseForgeMinecraft? Minecraft,
-    string? Overrides,
-    List<CurseForgeManifestFile>? Files);
+record CurseForgeManifest(CurseForgeMinecraft? Minecraft, string? Overrides, List<CurseForgeManifestFile>? Files);
 
-record CurseForgeMinecraft(
-    string? Version,
-    List<CurseForgeModLoader>? ModLoaders);
+record CurseForgeMinecraft(string? Version, List<CurseForgeModLoader>? ModLoaders);
 
-record CurseForgeModLoader(
-    string? Id,
-    bool? Primary);
+record CurseForgeModLoader(string? Id, bool? Primary);
 
-record CurseForgeManifestFile(
-    [property: JsonPropertyName("fileID")] int? FileID,
-    [property: JsonPropertyName("fileId")] int? FileId,
-    bool? Required);
+record CurseForgeManifestFile([property: JsonPropertyName("fileID")] int? FileId, bool? Required);
