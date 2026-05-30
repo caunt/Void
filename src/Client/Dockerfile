@@ -59,6 +59,9 @@ RUN mkdir -p "$HOME/.minecraft" && touch "$HOME/.minecraft/options.txt"
 COPY Api.cs /app/Api.cs
 WORKDIR /app
 
+COPY list-minecraft-release-versions /usr/local/bin/list-minecraft-release-versions
+RUN chmod +x /usr/local/bin/list-minecraft-release-versions
+
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 
@@ -69,10 +72,7 @@ FROM latest AS offline
 ARG FIRST_RELEASE_VERSION=1.7.2
 
 # Dry-run all release versions in reverse order (from oldest to latest)
-RUN curl -fsSL https://launchermeta.mojang.com/mc/game/version_manifest_v2.json \
-  | jq -r --arg first "$FIRST_RELEASE_VERSION" \
-    '([.versions[] | select(.type == "release") | .id] | reverse) as $r | ($r | index($first)) as $i | if $i == null then error("Not found: \($first)") else $r[$i:] end | .[]' \
-  | while IFS= read -r minecraftVersion; do portablemc start --dry "mojang:$minecraftVersion"; done
+RUN list-minecraft-release-versions "$FIRST_RELEASE_VERSION" | while IFS= read -r minecraftVersion; do portablemc start --dry "mojang:$minecraftVersion"; done
 
 FROM latest AS version
 

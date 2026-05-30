@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+outputFormat="text"
+
+if [[ "${1:-}" == "--json" ]]; then
+  outputFormat="json"
+  shift
+fi
+
+firstReleaseVersion="${1:-}"
+
+if [[ -z "$firstReleaseVersion" ]]; then
+  echo "Usage: $0 [--json] <first-release-version>" >&2
+  exit 1
+fi
+
+if [[ "$outputFormat" == "json" ]]; then
+  curl -fsSL https://launchermeta.mojang.com/mc/game/version_manifest_v2.json \
+    | jq -c --arg firstReleaseVersion "$firstReleaseVersion" '
+      ([.versions[] | select(.type == "release") | .id] | reverse) as $releaseVersions |
+      ($releaseVersions | index($firstReleaseVersion)) as $firstReleaseVersionIndex |
+      if $firstReleaseVersionIndex == null
+      then error("Not found: \($firstReleaseVersion)")
+      else $releaseVersions[$firstReleaseVersionIndex:]
+      end
+    '
+else
+  curl -fsSL https://launchermeta.mojang.com/mc/game/version_manifest_v2.json \
+    | jq -r --arg firstReleaseVersion "$firstReleaseVersion" '
+      ([.versions[] | select(.type == "release") | .id] | reverse) as $releaseVersions |
+      ($releaseVersions | index($firstReleaseVersion)) as $firstReleaseVersionIndex |
+      if $firstReleaseVersionIndex == null
+      then error("Not found: \($firstReleaseVersion)")
+      else $releaseVersions[$firstReleaseVersionIndex:] | .[]
+      end
+    '
+fi
