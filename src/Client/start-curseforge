@@ -29,126 +29,150 @@ modpackZipFile="$temporaryDirectory/modpack.zip"
 manifestFile="$temporaryDirectory/manifest.json"
 fileIdsFile="$temporaryDirectory/file-ids.txt"
 metadataFile="$temporaryDirectory/files.jsonl"
+modpackMarkerFile="$minecraftDirectory/.curseforge-modpack"
+portableMinecraftVersionFile="$minecraftDirectory/.curseforge-portablemc-version"
 
 mkdir -p "$minecraftDirectory"
 
-curl -fsS -G -H "x-api-key: $CURSEFORGE_API_KEY" --data-urlencode "gameId=$minecraftGameId" --data-urlencode slug="$curseForgeSlug" https://api.curseforge.com/v1/mods/search > "$modpackSearchResponseFile"
+requestedModpackMarker="$curseForgeSlug $curseForgeFileId"
+existingModpackMarker=""
 
-curseForgeProjectId="$(jq -r --arg curseForgeSlug "$curseForgeSlug" 'first(.data[] | select(.slug == $curseForgeSlug) | .id) // empty' "$modpackSearchResponseFile")"
-
-if [ -z "$curseForgeProjectId" ]
+if [ -f "$modpackMarkerFile" ]
 then
-  echo "CurseForge modpack was not found: $curseForgeSlug"
-  exit 1
+  existingModpackMarker="$(cat "$modpackMarkerFile")"
 fi
 
-if ! curl -fL -H "x-api-key: $CURSEFORGE_API_KEY" -o "$modpackZipFile" "https://www.curseforge.com/api/v1/mods/$curseForgeProjectId/files/$curseForgeFileId/download"
+if [ "$existingModpackMarker" = "$requestedModpackMarker" ]
 then
-  echo "Failed to download CurseForge modpack archive for slug '$curseForgeSlug' (project id: $curseForgeProjectId, file id: $curseForgeFileId)"
-  exit 1
-fi
-
-if ! unzip -p "$modpackZipFile" manifest.json > "$manifestFile"
-then
-  echo "Failed to read manifest.json from CurseForge modpack archive for slug '$curseForgeSlug' (file id: $curseForgeFileId)"
-  exit 1
-fi
-
-rm -rf "$minecraftDirectory/mods" "$minecraftDirectory/resourcepacks" "$minecraftDirectory/shaderpacks"
-mkdir -p "$minecraftDirectory/mods" "$minecraftDirectory/resourcepacks" "$minecraftDirectory/shaderpacks"
-
-overridesDirectoryName="$(jq -r '.overrides // empty' "$manifestFile")"
-
-if [ -n "$overridesDirectoryName" ]
-then
-  mkdir -p "$temporaryDirectory/overrides"
-  if ! unzip -q -o "$modpackZipFile" "$overridesDirectoryName/*" -d "$temporaryDirectory/overrides"
+  if [ ! -f "$portableMinecraftVersionFile" ]
   then
-    echo "Failed to extract overrides from CurseForge modpack archive for slug '$curseForgeSlug' (file id: $curseForgeFileId)"
+    echo "PortableMC version cache file is missing: $portableMinecraftVersionFile"
     exit 1
   fi
-  cp -a "$temporaryDirectory/overrides/$overridesDirectoryName/." "$minecraftDirectory/"
-fi
 
-jq -r '.files[] | select(.required != false) | (.fileID // .fileId)' "$manifestFile" > "$fileIdsFile"
-split -l "$curseForgeFilesBatchSize" "$fileIdsFile" "$temporaryDirectory/file-ids-"
+  portableMinecraftVersion="$(cat "$portableMinecraftVersionFile")"
+else
+  curl -fsS -G -H "x-api-key: $CURSEFORGE_API_KEY" --data-urlencode "gameId=$minecraftGameId" --data-urlencode slug="$curseForgeSlug" https://api.curseforge.com/v1/mods/search > "$modpackSearchResponseFile"
 
-for batchFile in "$temporaryDirectory"/file-ids-*
-do
-  fileIdsJson="$(jq -R . "$batchFile" | jq -s '{fileIds: map(tonumber)}')"
-  curl -fsS -H "x-api-key: $CURSEFORGE_API_KEY" -H "Content-Type: application/json" -X POST -d "$fileIdsJson" https://api.curseforge.com/v1/mods/files | jq -c '.data[]' >> "$metadataFile"
-done
+  curseForgeProjectId="$(jq -r --arg curseForgeSlug "$curseForgeSlug" 'first(.data[] | select(.slug == $curseForgeSlug) | .id) // empty' "$modpackSearchResponseFile")"
 
-jq -r '[.modId, .id, .fileName, (.downloadUrl // "")] | @tsv' "$metadataFile" | while IFS="$(printf '\t')" read -r modId fileId fileName downloadUrl
-do
-  case "$fileName" in
-    *.jar)
-      targetDirectory="$minecraftDirectory/mods"
-      ;;
-    *.zip)
-      lowerFileName="$(printf '%s' "$fileName" | tr '[:upper:]' '[:lower:]')"
+  if [ -z "$curseForgeProjectId" ]
+  then
+    echo "CurseForge modpack was not found: $curseForgeSlug"
+    exit 1
+  fi
 
-      if [[ "$lowerFileName" == *shader* ]]
+  if ! curl -fL -H "x-api-key: $CURSEFORGE_API_KEY" -o "$modpackZipFile" "https://www.curseforge.com/api/v1/mods/$curseForgeProjectId/files/$curseForgeFileId/download"
+  then
+    echo "Failed to download CurseForge modpack archive for slug '$curseForgeSlug' (project id: $curseForgeProjectId, file id: $curseForgeFileId)"
+    exit 1
+  fi
+
+  if ! unzip -p "$modpackZipFile" manifest.json > "$manifestFile"
+  then
+    echo "Failed to read manifest.json from CurseForge modpack archive for slug '$curseForgeSlug' (file id: $curseForgeFileId)"
+    exit 1
+  fi
+
+  rm -rf "$minecraftDirectory/mods" "$minecraftDirectory/resourcepacks" "$minecraftDirectory/shaderpacks"
+  mkdir -p "$minecraftDirectory/mods" "$minecraftDirectory/resourcepacks" "$minecraftDirectory/shaderpacks"
+
+  overridesDirectoryName="$(jq -r '.overrides // empty' "$manifestFile")"
+
+  if [ -n "$overridesDirectoryName" ]
+  then
+    mkdir -p "$temporaryDirectory/overrides"
+    if ! unzip -q -o "$modpackZipFile" "$overridesDirectoryName/*" -d "$temporaryDirectory/overrides"
+    then
+      echo "Failed to extract overrides from CurseForge modpack archive for slug '$curseForgeSlug' (file id: $curseForgeFileId)"
+      exit 1
+    fi
+    cp -a "$temporaryDirectory/overrides/$overridesDirectoryName/." "$minecraftDirectory/"
+  fi
+
+  jq -r '.files[] | select(.required != false) | (.fileID // .fileId)' "$manifestFile" > "$fileIdsFile"
+  split -l "$curseForgeFilesBatchSize" "$fileIdsFile" "$temporaryDirectory/file-ids-"
+
+  for batchFile in "$temporaryDirectory"/file-ids-*
+  do
+    fileIdsJson="$(jq -R . "$batchFile" | jq -s '{fileIds: map(tonumber)}')"
+    curl -fsS -H "x-api-key: $CURSEFORGE_API_KEY" -H "Content-Type: application/json" -X POST -d "$fileIdsJson" https://api.curseforge.com/v1/mods/files | jq -c '.data[]' >> "$metadataFile"
+  done
+
+  jq -r '[.modId, .id, .fileName, (.downloadUrl // "")] | @tsv' "$metadataFile" | while IFS="$(printf '\t')" read -r modId fileId fileName downloadUrl
+  do
+    case "$fileName" in
+      *.jar)
+        targetDirectory="$minecraftDirectory/mods"
+        ;;
+      *.zip)
+        lowerFileName="$(printf '%s' "$fileName" | tr '[:upper:]' '[:lower:]')"
+
+        if [[ "$lowerFileName" == *shader* ]]
+        then
+          targetDirectory="$minecraftDirectory/shaderpacks"
+        else
+          targetDirectory="$minecraftDirectory/resourcepacks"
+        fi
+        ;;
+      *)
+        targetDirectory="$minecraftDirectory/mods"
+        ;;
+    esac
+
+    safeFileName="$(basename -- "$fileName")"
+
+    if [ "$safeFileName" != "$fileName" ] || [ -z "$safeFileName" ] || [ "$safeFileName" = "." ] || [ "$safeFileName" = ".." ] || [[ "$safeFileName" =~ [[:cntrl:]] ]] || [[ "$safeFileName" == */* ]]
+    then
+      echo "Unexpected CurseForge file name '$fileName' for mod id '$modId' and file id '$fileId'"
+      exit 1
+    fi
+
+    targetFile="$targetDirectory/$safeFileName"
+
+    if [ -f "$targetFile" ]
+    then
+      continue
+    fi
+
+    if [ -n "$downloadUrl" ]
+    then
+      if ! curl -fL -o "$targetFile" "$downloadUrl"
       then
-        targetDirectory="$minecraftDirectory/shaderpacks"
-      else
-        targetDirectory="$minecraftDirectory/resourcepacks"
+        echo "Failed to download CurseForge file '$fileName' (mod id: $modId, file id: $fileId, url: $downloadUrl)"
+        exit 1
       fi
-      ;;
-    *)
-      targetDirectory="$minecraftDirectory/mods"
-      ;;
-  esac
-
-  safeFileName="$(basename -- "$fileName")"
-
-  if [ "$safeFileName" != "$fileName" ] || [ -z "$safeFileName" ] || [ "$safeFileName" = "." ] || [ "$safeFileName" = ".." ] || [[ "$safeFileName" =~ [[:cntrl:]] ]] || [[ "$safeFileName" == */* ]]
-  then
-    echo "Unexpected CurseForge file name '$fileName' for mod id '$modId' and file id '$fileId'"
-    exit 1
-  fi
-
-  targetFile="$targetDirectory/$safeFileName"
-
-  if [ -f "$targetFile" ]
-  then
-    continue
-  fi
-
-  if [ -n "$downloadUrl" ]
-  then
-    if ! curl -fL -o "$targetFile" "$downloadUrl"
-    then
-      echo "Failed to download CurseForge file '$fileName' (mod id: $modId, file id: $fileId, url: $downloadUrl)"
-      exit 1
+    else
+      if ! curl -fL -H "x-api-key: $CURSEFORGE_API_KEY" -o "$targetFile" "https://www.curseforge.com/api/v1/mods/$modId/files/$fileId/download"
+      then
+        echo "Failed to download CurseForge file '$fileName' (mod id: $modId, file id: $fileId) via authenticated CurseForge download endpoint"
+        exit 1
+      fi
     fi
-  else
-    if ! curl -fL -H "x-api-key: $CURSEFORGE_API_KEY" -o "$targetFile" "https://www.curseforge.com/api/v1/mods/$modId/files/$fileId/download"
-    then
-      echo "Failed to download CurseForge file '$fileName' (mod id: $modId, file id: $fileId) via authenticated CurseForge download endpoint"
-      exit 1
-    fi
-  fi
-done
+  done
 
-portableMinecraftVersion="$(jq -r --arg curseForgeSlug "$curseForgeSlug" --arg curseForgeFileId "$curseForgeFileId" '
-  .minecraft.version as $minecraftVersion |
-  (.minecraft.modLoaders // [] | map(select(.primary == true)) | first | .id // "") as $modLoaderId |
-  if $modLoaderId == "" then
-    "mojang:" + $minecraftVersion
-  elif $modLoaderId | startswith("neoforge-") then
-    "neoforge::" + ($modLoaderId | sub("^neoforge-"; ""))
-  elif $modLoaderId | startswith("forge-") then
-    ($modLoaderId | sub("^forge-"; "")) as $forgeVersion |
-    "forge::" + (if $forgeVersion | startswith($minecraftVersion + "-") then $forgeVersion else $minecraftVersion + "-" + $forgeVersion end)
-  elif $modLoaderId | startswith("fabric-") then
-    "fabric:" + $minecraftVersion + ":" + ($modLoaderId | sub("^fabric-"; ""))
-  elif $modLoaderId | startswith("quilt-") then
-    "quilt:" + $minecraftVersion + ":" + ($modLoaderId | sub("^quilt-"; ""))
-  else
-    error("Unsupported mod loader for CurseForge modpack '" + $curseForgeSlug + "' (file id: " + $curseForgeFileId + "): " + $modLoaderId)
-  end
-' "$manifestFile")"
+  portableMinecraftVersion="$(jq -r --arg curseForgeSlug "$curseForgeSlug" --arg curseForgeFileId "$curseForgeFileId" '
+    .minecraft.version as $minecraftVersion |
+    (.minecraft.modLoaders // [] | map(select(.primary == true)) | first | .id // "") as $modLoaderId |
+    if $modLoaderId == "" then
+      "mojang:" + $minecraftVersion
+    elif $modLoaderId | startswith("neoforge-") then
+      "neoforge::" + ($modLoaderId | sub("^neoforge-"; ""))
+    elif $modLoaderId | startswith("forge-") then
+      ($modLoaderId | sub("^forge-"; "")) as $forgeVersion |
+      "forge::" + (if $forgeVersion | startswith($minecraftVersion + "-") then $forgeVersion else $minecraftVersion + "-" + $forgeVersion end)
+    elif $modLoaderId | startswith("fabric-") then
+      "fabric:" + $minecraftVersion + ":" + ($modLoaderId | sub("^fabric-"; ""))
+    elif $modLoaderId | startswith("quilt-") then
+      "quilt:" + $minecraftVersion + ":" + ($modLoaderId | sub("^quilt-"; ""))
+    else
+      error("Unsupported mod loader for CurseForge modpack '" + $curseForgeSlug + "' (file id: " + $curseForgeFileId + "): " + $modLoaderId)
+    end
+  ' "$manifestFile")"
+
+  printf '%s\n' "$portableMinecraftVersion" > "$portableMinecraftVersionFile"
+  printf '%s %s\n' "$curseForgeSlug" "$curseForgeFileId" > "$modpackMarkerFile"
+fi
 
 export DISPLAY="${DISPLAY:-:99}"
 
