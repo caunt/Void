@@ -608,7 +608,10 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
         ?? throw new InvalidOperationException("manifest.json not found");
 
     using var manifestStream = manifestEntry.Open();
-    var manifest = await JsonSerializer.DeserializeAsync<CurseForgeManifest>(manifestStream, JsonSerializerOptions.Web)
+    var manifest = await JsonSerializer.DeserializeAsync<CurseForgeManifest>(
+        manifestStream,
+        new JsonSerializerOptions(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = false }
+    )
         ?? throw new InvalidOperationException("failed to deserialize manifest.json");
 
     DeleteDirectoryIfExists(Path.Combine(minecraftDirectory, "mods"));
