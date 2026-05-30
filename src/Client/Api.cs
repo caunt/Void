@@ -1,921 +1,249 @@
 #:sdk Microsoft.NET.Sdk.Web
 #:property TargetFramework=net11.0
 #:property PublishAot=false
+#:package CurseForge.APIClient@*
 
 using System.Diagnostics;
-using System.Text;
+using System.IO.Compression;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using CurseForge.APIClient;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddSingleton<ClientProcessManager>();
 var application = builder.Build();
+var clientProcess = (Process?)null;
+var clientLock = new SemaphoreSlim(1, 1);
 
-application.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+application.MapGet("/health", () => "ok");
 
-application.MapPost("/start-vanilla", async (HttpContext context, ClientProcessManager manager, ILogger<ClientProcessManager> logger) =>
+application.MapPost("/start-vanilla", async (HttpContext context) =>
 {
-    var request = await context.Request.ReadFromJsonAsync<StartVanillaRequest>();
-
-    if (request is null || string.IsNullOrWhiteSpace(request.Version))
-        return Results.BadRequest(new { error = "version is required" });
-
-    var portableMinecraftVersion = $"mojang:{request.Version}";
-    var result = await manager.StartAsync(portableMinecraftVersion, request.Arguments ?? [], logger);
-
-    return result;
+    var request = await context.Request.ReadFromJsonAsync<VanillaRequest>();
+    if (request is null || string.IsNullOrWhiteSpace(request.Version)) return Results.BadRequest("version is required");
+    await clientLock.WaitAsync();
+    try
+    {
+        if (clientProcess is not null && !clientProcess.HasExited) return Results.Conflict("a client is already running");
+        await EnsureDisplay();
+        var dir = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? "/root/.minecraft";
+        clientProcess = LaunchPortablemc(dir, $"mojang:{request.Version}", request.Arguments ?? []);
+        return Results.Ok(new { status = "started", pid = clientProcess?.Id });
+    }
+    finally { clientLock.Release(); }
 });
 
-application.MapPost("/start-curseforge", async (HttpContext context, ClientProcessManager manager, ILogger<ClientProcessManager> logger) =>
+application.MapPost("/start-curseforge", async (HttpContext context) =>
 {
-    var request = await context.Request.ReadFromJsonAsync<StartCurseForgeRequest>();
-
-    if (request is null || string.IsNullOrWhiteSpace(request.Slug))
-        return Results.BadRequest(new { error = "slug is required" });
-
-    if (request.FileId <= 0)
-        return Results.BadRequest(new { error = "fileId must be a positive integer" });
-
-    var curseForgeApiKey = Environment.GetEnvironmentVariable("CURSEFORGE_API_KEY");
-
-    if (string.IsNullOrWhiteSpace(curseForgeApiKey))
-        return Results.Json(new { error = "CURSEFORGE_API_KEY is not set" }, statusCode: 500);
-
-    var result = await manager.StartCurseForgeAsync(request.Slug, request.FileId, curseForgeApiKey, request.Arguments ?? [], logger);
-
-    return result;
+    var request = await context.Request.ReadFromJsonAsync<CurseForgeRequest>();
+    if (request is null || string.IsNullOrWhiteSpace(request.Slug) || request.FileId <= 0)
+        return Results.BadRequest("slug and positive fileId are required");
+    var apiKey = Environment.GetEnvironmentVariable("CURSEFORGE_API_KEY");
+    if (string.IsNullOrWhiteSpace(apiKey)) return Results.Problem("CURSEFORGE_API_KEY is not set");
+    await clientLock.WaitAsync();
+    try
+    {
+        if (clientProcess is not null && !clientProcess.HasExited) return Results.Conflict("a client is already running");
+        var dir = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? "/root/.minecraft";
+        Directory.CreateDirectory(dir);
+        var markerFile = Path.Combine(dir, ".curseforge-modpack");
+        var versionFile = Path.Combine(dir, ".curseforge-portablemc-version");
+        var marker = $"{request.Slug} {request.FileId}";
+        var existing = File.Exists(markerFile) ? (await File.ReadAllTextAsync(markerFile)).Trim() : "";
+        string version;
+        if (existing == marker && File.Exists(versionFile))
+            version = (await File.ReadAllTextAsync(versionFile)).Trim();
+        else
+        {
+            version = await InstallModpack(request.Slug, request.FileId, apiKey, dir);
+            await File.WriteAllTextAsync(versionFile, version);
+            await File.WriteAllTextAsync(markerFile, marker);
+        }
+        await EnsureDisplay();
+        clientProcess = LaunchPortablemc(dir, version, request.Arguments ?? []);
+        return Results.Ok(new { status = "started", pid = clientProcess?.Id });
+    }
+    finally { clientLock.Release(); }
 });
 
-application.MapPost("/stop-client", async (ClientProcessManager manager) =>
+application.MapPost("/stop-client", async () =>
 {
-    var stopped = await manager.StopAsync();
-
-    return stopped
-        ? Results.Ok(new { status = "stopped" })
-        : Results.NotFound(new { error = "no client is running" });
+    await clientLock.WaitAsync();
+    try
+    {
+        if (clientProcess is null || clientProcess.HasExited) { clientProcess = null; return Results.NotFound("no client is running"); }
+        clientProcess.Kill(entireProcessTree: true);
+        await clientProcess.WaitForExitAsync();
+        clientProcess = null;
+        return Results.Ok(new { status = "stopped" });
+    }
+    finally { clientLock.Release(); }
 });
 
-application.MapPost("/send-chat", async (HttpContext context, ClientProcessManager manager, ILogger<ClientProcessManager> logger) =>
+application.MapPost("/send-chat", async (HttpContext context) =>
 {
-    var request = await context.Request.ReadFromJsonAsync<SendChatRequest>();
-
-    if (request is null || string.IsNullOrWhiteSpace(request.Message))
-        return Results.BadRequest(new { error = "message is required" });
-
-    if (!manager.IsRunning)
-        return Results.Conflict(new { error = "no client is running" });
-
-    var result = await ChatSender.SendAsync(request.Message, logger);
-
-    return result;
+    var request = await context.Request.ReadFromJsonAsync<ChatRequest>();
+    if (request is null || string.IsNullOrWhiteSpace(request.Message)) return Results.BadRequest("message is required");
+    if (clientProcess is null || clientProcess.HasExited) return Results.Conflict("no client is running");
+    var windowId = await FindLargestWindow();
+    if (windowId is null) return Results.Problem("no visible window found");
+    await Run("xdotool", "windowfocus", windowId);
+    await Run("xdotool", "key", "--window", windowId, "t");
+    await Task.Delay(200);
+    await Run("xdotool", "type", "--delay", "50", "--", request.Message);
+    await Run("xdotool", "key", "Return");
+    return Results.Ok(new { status = "sent" });
 });
 
-application.MapGet("/screen", async (ClientProcessManager manager) =>
+application.MapGet("/screen", async () =>
 {
-    if (!manager.IsRunning)
-        return Results.Conflict(new { error = "no client is running" });
-
-    var screenshot = await ScreenCapture.CaptureAsync();
-
-    return screenshot;
+    if (clientProcess is null || clientProcess.HasExited) return Results.Conflict("no client is running");
+    var windowId = await FindLargestWindow();
+    if (windowId is null) return Results.Problem("no visible window found");
+    var info = new ProcessStartInfo("import") { RedirectStandardOutput = true };
+    info.ArgumentList.Add("-window"); info.ArgumentList.Add(windowId); info.ArgumentList.Add("png:-");
+    using var process = Process.Start(info);
+    if (process is null) return Results.Problem("failed to capture screen");
+    using var stream = new MemoryStream();
+    await process.StandardOutput.BaseStream.CopyToAsync(stream);
+    await process.WaitForExitAsync();
+    return Results.File(stream.ToArray(), "image/png");
 });
 
 application.Run();
 
-// --- Request models ---
-
-public sealed record StartVanillaRequest(
-    [property: JsonPropertyName("version")] string? Version,
-    [property: JsonPropertyName("arguments")] string[]? Arguments);
-
-public sealed record StartCurseForgeRequest(
-    [property: JsonPropertyName("slug")] string? Slug,
-    [property: JsonPropertyName("fileId")] int FileId,
-    [property: JsonPropertyName("arguments")] string[]? Arguments);
-
-public sealed record SendChatRequest(
-    [property: JsonPropertyName("message")] string? Message);
-
-// --- ClientProcessManager ---
-
-public sealed class ClientProcessManager
+Process? LaunchPortablemc(string directory, string version, string[] arguments)
 {
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private Process? _clientProcess;
-
-    public bool IsRunning => _clientProcess is not null && !_clientProcess.HasExited;
-
-    public async Task<IResult> StartAsync(string portableMinecraftVersion, string[] arguments, ILogger logger)
-    {
-        await _semaphore.WaitAsync();
-
-        try
-        {
-            if (IsRunning)
-                return Results.Conflict(new { error = "a client is already running" });
-
-            await EnsureDisplayAsync(logger);
-
-            var minecraftDirectory = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? "/root/.minecraft";
-            var processArguments = new List<string> { "--main-dir", minecraftDirectory, "start", portableMinecraftVersion };
-            processArguments.AddRange(arguments);
-
-            logger.LogInformation("Launching portablemc with version: {Version}", portableMinecraftVersion);
-
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "portablemc",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            foreach (var argument in processArguments)
-                startInfo.ArgumentList.Add(argument);
-
-            _clientProcess = Process.Start(startInfo);
-
-            return Results.Ok(new { status = "started", version = portableMinecraftVersion, pid = _clientProcess?.Id });
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
-    }
-
-    public async Task<IResult> StartCurseForgeAsync(string slug, int fileId, string apiKey, string[] arguments, ILogger logger)
-    {
-        await _semaphore.WaitAsync();
-
-        try
-        {
-            if (IsRunning)
-                return Results.Conflict(new { error = "a client is already running" });
-
-            var minecraftDirectory = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? "/root/.minecraft";
-            Directory.CreateDirectory(minecraftDirectory);
-
-            var modpackMarkerFile = Path.Combine(minecraftDirectory, ".curseforge-modpack");
-            var portableMinecraftVersionFile = Path.Combine(minecraftDirectory, ".curseforge-portablemc-version");
-            var requestedMarker = $"{slug} {fileId}";
-            var existingMarker = File.Exists(modpackMarkerFile) ? (await File.ReadAllTextAsync(modpackMarkerFile)).Trim() : "";
-            string portableMinecraftVersion;
-
-            if (existingMarker == requestedMarker)
-            {
-                if (!File.Exists(portableMinecraftVersionFile))
-                    return Results.Json(new { error = "PortableMC version cache file is missing" }, statusCode: 500);
-
-                portableMinecraftVersion = (await File.ReadAllTextAsync(portableMinecraftVersionFile)).Trim();
-                logger.LogInformation("Using existing installation in {Directory}", minecraftDirectory);
-            }
-            else
-            {
-                portableMinecraftVersion = await InstallCurseForgeModpackAsync(slug, fileId, apiKey, minecraftDirectory, modpackMarkerFile, portableMinecraftVersionFile, logger);
-            }
-
-            await EnsureDisplayAsync(logger);
-
-            var processArguments = new List<string> { "--main-dir", minecraftDirectory, "start", portableMinecraftVersion };
-            processArguments.AddRange(arguments);
-
-            logger.LogInformation("Launching portablemc with version: {Version}", portableMinecraftVersion);
-
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "portablemc",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            foreach (var argument in processArguments)
-                startInfo.ArgumentList.Add(argument);
-
-            _clientProcess = Process.Start(startInfo);
-
-            return Results.Ok(new { status = "started", version = portableMinecraftVersion, pid = _clientProcess?.Id });
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
-    }
-
-    public async Task<bool> StopAsync()
-    {
-        await _semaphore.WaitAsync();
-
-        try
-        {
-            if (_clientProcess is null || _clientProcess.HasExited)
-            {
-                _clientProcess = null;
-                return false;
-            }
-
-            _clientProcess.Kill(entireProcessTree: true);
-
-            try
-            {
-                await _clientProcess.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-            }
-            catch (TimeoutException)
-            {
-                _clientProcess.Kill(entireProcessTree: true);
-                await _clientProcess.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-            }
-
-            _clientProcess = null;
-            return true;
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
-    }
-
-    private static async Task EnsureDisplayAsync(ILogger logger)
-    {
-        var display = Environment.GetEnvironmentVariable("DISPLAY") ?? ":99";
-        Environment.SetEnvironmentVariable("DISPLAY", display);
-
-        var checkInfo = new ProcessStartInfo
-        {
-            FileName = "xdpyinfo",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        checkInfo.ArgumentList.Add("-display");
-        checkInfo.ArgumentList.Add(display);
-
-        using var checkProcess = Process.Start(checkInfo);
-
-        if (checkProcess is not null)
-        {
-            await checkProcess.WaitForExitAsync();
-
-            if (checkProcess.ExitCode == 0)
-                return;
-        }
-
-        logger.LogInformation("Starting virtual display: {Display}", display);
-
-        var lockFile = $"/tmp/.X{display.TrimStart(':')}-lock";
-
-        if (File.Exists(lockFile))
-            File.Delete(lockFile);
-
-        var xvfbInfo = new ProcessStartInfo
-        {
-            FileName = "Xvfb",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        xvfbInfo.ArgumentList.Add(display);
-        xvfbInfo.ArgumentList.Add("-screen");
-        xvfbInfo.ArgumentList.Add("0");
-        xvfbInfo.ArgumentList.Add("1280x720x24");
-
-        var xvfbProcess = Process.Start(xvfbInfo);
-
-        if (xvfbProcess is null)
-            logger.LogWarning("Failed to start Xvfb");
-
-        for (var attempt = 0; attempt < 100; attempt++)
-        {
-            await Task.Delay(100);
-
-            var retryCheckInfo = new ProcessStartInfo
-            {
-                FileName = "xdpyinfo",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            retryCheckInfo.ArgumentList.Add("-display");
-            retryCheckInfo.ArgumentList.Add(display);
-
-            using var retryCheck = Process.Start(retryCheckInfo);
-
-            if (retryCheck is not null)
-            {
-                await retryCheck.WaitForExitAsync();
-
-                if (retryCheck.ExitCode == 0)
-                    break;
-            }
-        }
-
-        var xfwm4Info = new ProcessStartInfo
-        {
-            FileName = "xfwm4",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        var xfwm4Process = Process.Start(xfwm4Info);
-
-        if (xfwm4Process is null)
-            logger.LogWarning("Failed to start xfwm4");
-    }
-
-    private static async Task<string> InstallCurseForgeModpackAsync(string slug, int fileId, string apiKey, string minecraftDirectory, string modpackMarkerFile, string portableMinecraftVersionFile, ILogger logger)
-    {
-        const int minecraftGameId = 432;
-        const int batchSize = 50;
-
-        using var httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Add("x-api-key", apiKey);
-
-        logger.LogInformation("Resolving CurseForge project: {Slug}", slug);
-
-        var searchUrl = $"https://api.curseforge.com/v1/mods/search?gameId={minecraftGameId}&slug={Uri.EscapeDataString(slug)}";
-        var searchResponse = await httpClient.GetStringAsync(searchUrl);
-        var searchDocument = JsonDocument.Parse(searchResponse);
-        int? projectId = null;
-
-        foreach (var mod in searchDocument.RootElement.GetProperty("data").EnumerateArray())
-        {
-            if (mod.GetProperty("slug").GetString() == slug)
-            {
-                projectId = mod.GetProperty("id").GetInt32();
-                break;
-            }
-        }
-
-        if (projectId is null)
-            throw new InvalidOperationException($"CurseForge modpack was not found: {slug}");
-
-        logger.LogInformation("Downloading modpack archive for project {ProjectId}", projectId);
-
-        var downloadUrl = $"https://www.curseforge.com/api/v1/mods/{projectId}/files/{fileId}/download";
-        var modpackBytes = await httpClient.GetByteArrayAsync(downloadUrl);
-        var temporaryDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-        Directory.CreateDirectory(temporaryDirectory);
-
-        try
-        {
-            var modpackZipPath = Path.Combine(temporaryDirectory, "modpack.zip");
-            await File.WriteAllBytesAsync(modpackZipPath, modpackBytes);
-
-            logger.LogInformation("Reading modpack manifest");
-
-            var extractInfo = new ProcessStartInfo
-            {
-                FileName = "unzip",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            extractInfo.ArgumentList.Add("-p");
-            extractInfo.ArgumentList.Add(modpackZipPath);
-            extractInfo.ArgumentList.Add("manifest.json");
-
-            using var extractProcess = Process.Start(extractInfo) ?? throw new InvalidOperationException("Failed to start unzip");
-            var manifestContent = await extractProcess.StandardOutput.ReadToEndAsync();
-            await extractProcess.WaitForExitAsync();
-
-            if (extractProcess.ExitCode != 0)
-                throw new InvalidOperationException("Failed to read manifest.json from modpack archive");
-
-            var manifest = JsonDocument.Parse(manifestContent);
-
-            var modsDirectory = Path.Combine(minecraftDirectory, "mods");
-            var resourcePacksDirectory = Path.Combine(minecraftDirectory, "resourcepacks");
-            var shaderPacksDirectory = Path.Combine(minecraftDirectory, "shaderpacks");
-
-            if (Directory.Exists(modsDirectory))
-                Directory.Delete(modsDirectory, true);
-
-            if (Directory.Exists(resourcePacksDirectory))
-                Directory.Delete(resourcePacksDirectory, true);
-
-            if (Directory.Exists(shaderPacksDirectory))
-                Directory.Delete(shaderPacksDirectory, true);
-
-            Directory.CreateDirectory(modsDirectory);
-            Directory.CreateDirectory(resourcePacksDirectory);
-            Directory.CreateDirectory(shaderPacksDirectory);
-
-            if (manifest.RootElement.TryGetProperty("overrides", out var overridesElement))
-            {
-                var overridesDirectoryName = overridesElement.GetString();
-
-                if (!string.IsNullOrEmpty(overridesDirectoryName))
-                {
-                    logger.LogInformation("Installing modpack overrides");
-
-                    var overridesPath = Path.Combine(temporaryDirectory, "overrides");
-                    Directory.CreateDirectory(overridesPath);
-
-                    var overridesExtractInfo = new ProcessStartInfo
-                    {
-                        FileName = "unzip",
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    };
-
-                    overridesExtractInfo.ArgumentList.Add("-q");
-                    overridesExtractInfo.ArgumentList.Add("-o");
-                    overridesExtractInfo.ArgumentList.Add(modpackZipPath);
-                    overridesExtractInfo.ArgumentList.Add($"{overridesDirectoryName}/*");
-                    overridesExtractInfo.ArgumentList.Add("-d");
-                    overridesExtractInfo.ArgumentList.Add(overridesPath);
-
-                    using var overridesProcess = Process.Start(overridesExtractInfo);
-
-                    if (overridesProcess is not null)
-                        await overridesProcess.WaitForExitAsync();
-
-                    CopyDirectoryRecursive(Path.Combine(overridesPath, overridesDirectoryName), minecraftDirectory);
-                }
-            }
-
-            var requiredFileIds = new List<int>();
-
-            if (manifest.RootElement.TryGetProperty("files", out var filesArray))
-            {
-                foreach (var file in filesArray.EnumerateArray())
-                {
-                    if (file.TryGetProperty("required", out var requiredProperty) && requiredProperty.ValueKind == JsonValueKind.False)
-                        continue;
-
-                    if (file.TryGetProperty("fileID", out var fileIdProperty))
-                        requiredFileIds.Add(fileIdProperty.GetInt32());
-                    else if (file.TryGetProperty("fileId", out var fileIdProperty2))
-                        requiredFileIds.Add(fileIdProperty2.GetInt32());
-                }
-            }
-
-            if (requiredFileIds.Count > 0)
-            {
-                logger.LogInformation("Resolving {Count} CurseForge files", requiredFileIds.Count);
-
-                var fileMetadataList = new List<JsonElement>();
-
-                for (var batchIndex = 0; batchIndex < requiredFileIds.Count; batchIndex += batchSize)
-                {
-                    var batch = requiredFileIds.Skip(batchIndex).Take(batchSize).ToArray();
-                    var batchRequest = JsonSerializer.Serialize(new { fileIds = batch });
-                    var batchContent = new StringContent(batchRequest, Encoding.UTF8, "application/json");
-                    var batchResponse = await httpClient.PostAsync("https://api.curseforge.com/v1/mods/files", batchContent);
-                    var batchResponseContent = await batchResponse.Content.ReadAsStringAsync();
-                    var batchDocument = JsonDocument.Parse(batchResponseContent);
-
-                    foreach (var item in batchDocument.RootElement.GetProperty("data").EnumerateArray())
-                        fileMetadataList.Add(item.Clone());
-                }
-
-                var totalCount = fileMetadataList.Count;
-                var currentIndex = 0;
-
-                foreach (var fileMeta in fileMetadataList)
-                {
-                    currentIndex++;
-                    var modId = fileMeta.GetProperty("modId").GetInt32();
-                    var metaFileId = fileMeta.GetProperty("id").GetInt32();
-                    var fileName = fileMeta.GetProperty("fileName").GetString() ?? "unknown";
-                    var fileDownloadUrl = fileMeta.TryGetProperty("downloadUrl", out var downloadUrlElement) && downloadUrlElement.ValueKind == JsonValueKind.String
-                        ? downloadUrlElement.GetString()
-                        : null;
-
-                    var targetDirectory = modsDirectory;
-
-                    if (fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (fileName.Contains("shader", StringComparison.OrdinalIgnoreCase))
-                            targetDirectory = shaderPacksDirectory;
-                        else
-                            targetDirectory = resourcePacksDirectory;
-                    }
-
-                    var safeFileName = Path.GetFileName(fileName);
-
-                    if (string.IsNullOrEmpty(safeFileName) || safeFileName == "." || safeFileName == ".." || safeFileName != fileName || safeFileName.Contains('/'))
-                        throw new InvalidOperationException($"Unexpected CurseForge file name '{fileName}' for mod id '{modId}' and file id '{metaFileId}'");
-
-                    var targetFile = Path.Combine(targetDirectory, safeFileName);
-
-                    if (File.Exists(targetFile))
-                    {
-                        logger.LogInformation("[{Current}/{Total}] Already exists: {FileName}", currentIndex, totalCount, safeFileName);
-                        continue;
-                    }
-
-                    logger.LogInformation("[{Current}/{Total}] Downloading: {FileName}", currentIndex, totalCount, safeFileName);
-
-                    byte[] fileBytes;
-
-                    if (!string.IsNullOrEmpty(fileDownloadUrl))
-                    {
-                        fileBytes = await httpClient.GetByteArrayAsync(fileDownloadUrl);
-                    }
-                    else
-                    {
-                        fileBytes = await httpClient.GetByteArrayAsync($"https://www.curseforge.com/api/v1/mods/{modId}/files/{metaFileId}/download");
-                    }
-
-                    await File.WriteAllBytesAsync(targetFile, fileBytes);
-                }
-            }
-            else
-            {
-                logger.LogInformation("No CurseForge files to download");
-            }
-
-            logger.LogInformation("Resolving PortableMC version");
-
-            var minecraftVersion = manifest.RootElement.GetProperty("minecraft").GetProperty("version").GetString()
-                ?? throw new InvalidOperationException("minecraft.version is missing from manifest");
-
-            var portableMinecraftVersion = $"mojang:{minecraftVersion}";
-
-            if (manifest.RootElement.GetProperty("minecraft").TryGetProperty("modLoaders", out var modLoadersElement))
-            {
-                foreach (var loader in modLoadersElement.EnumerateArray())
-                {
-                    if (loader.TryGetProperty("primary", out var primaryProperty) && primaryProperty.GetBoolean())
-                    {
-                        var modLoaderId = loader.GetProperty("id").GetString() ?? "";
-
-                        if (modLoaderId.StartsWith("neoforge-"))
-                        {
-                            portableMinecraftVersion = $"neoforge::{modLoaderId["neoforge-".Length..]}";
-                        }
-                        else if (modLoaderId.StartsWith("forge-"))
-                        {
-                            var forgeVersion = modLoaderId["forge-".Length..];
-
-                            portableMinecraftVersion = forgeVersion.StartsWith($"{minecraftVersion}-")
-                                ? $"forge::{forgeVersion}"
-                                : $"forge::{minecraftVersion}-{forgeVersion}";
-                        }
-                        else if (modLoaderId.StartsWith("fabric-"))
-                        {
-                            portableMinecraftVersion = $"fabric:{minecraftVersion}:{modLoaderId["fabric-".Length..]}";
-                        }
-                        else if (modLoaderId.StartsWith("quilt-"))
-                        {
-                            portableMinecraftVersion = $"quilt:{minecraftVersion}:{modLoaderId["quilt-".Length..]}";
-                        }
-                        else if (!string.IsNullOrEmpty(modLoaderId))
-                        {
-                            throw new InvalidOperationException($"Unsupported mod loader for CurseForge modpack '{slug}' (file id: {fileId}): {modLoaderId}");
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-            await File.WriteAllTextAsync(portableMinecraftVersionFile, portableMinecraftVersion + "\n");
-            await File.WriteAllTextAsync(modpackMarkerFile, $"{slug} {fileId}\n");
-            logger.LogInformation("Installation marker updated");
-
-            return portableMinecraftVersion;
-        }
-        finally
-        {
-            try
-            {
-                Directory.Delete(temporaryDirectory, true);
-            }
-            catch
-            {
-                // Best-effort cleanup
-            }
-        }
-    }
-
-    private static void CopyDirectoryRecursive(string sourceDirectory, string targetDirectory)
-    {
-        Directory.CreateDirectory(targetDirectory);
-
-        foreach (var file in Directory.GetFiles(sourceDirectory))
-        {
-            var destinationFile = Path.Combine(targetDirectory, Path.GetFileName(file));
-            File.Copy(file, destinationFile, overwrite: true);
-        }
-
-        foreach (var directory in Directory.GetDirectories(sourceDirectory))
-        {
-            var destinationDirectory = Path.Combine(targetDirectory, Path.GetFileName(directory));
-            CopyDirectoryRecursive(directory, destinationDirectory);
-        }
-    }
+    var info = new ProcessStartInfo("portablemc") { RedirectStandardOutput = true, RedirectStandardError = true };
+    info.ArgumentList.Add("--main-dir"); info.ArgumentList.Add(directory);
+    info.ArgumentList.Add("start"); info.ArgumentList.Add(version);
+    foreach (var a in arguments) info.ArgumentList.Add(a);
+    return Process.Start(info);
 }
 
-// --- ChatSender ---
-
-public static class ChatSender
+async Task EnsureDisplay()
 {
-    public static async Task<IResult> SendAsync(string message, ILogger logger)
+    var display = Environment.GetEnvironmentVariable("DISPLAY");
+    if (!string.IsNullOrEmpty(display))
     {
-        var display = Environment.GetEnvironmentVariable("DISPLAY") ?? ":99";
-
-        var windowId = await WindowHelper.FindLargestVisibleWindowAsync(display);
-
-        if (string.IsNullOrEmpty(windowId))
-            return Results.Json(new { error = "No visible Minecraft window found" }, statusCode: 500);
-
-        await FocusWindowAsync(windowId);
-
-        var chatOpened = await OpenChatAsync(windowId);
-
-        if (!chatOpened)
-            return Results.Json(new { error = "Failed to open chat interface" }, statusCode: 500);
-
-        await TypeMessageAsync(windowId, message);
-        await SendKeyAsync(windowId, "Return");
-
-        logger.LogInformation("Successfully sent chat message");
-
-        return Results.Ok(new { status = "sent" });
+        using var check = Process.Start(new ProcessStartInfo("xdpyinfo") { RedirectStandardOutput = true, RedirectStandardError = true });
+        if (check is not null) { await check.WaitForExitAsync(); if (check.ExitCode == 0) return; }
     }
-
-    private static async Task FocusWindowAsync(string windowId)
+    display = ":99";
+    Environment.SetEnvironmentVariable("DISPLAY", display);
+    if (File.Exists("/tmp/.X99-lock")) File.Delete("/tmp/.X99-lock");
+    var xvfb = new ProcessStartInfo("Xvfb") { RedirectStandardOutput = true, RedirectStandardError = true };
+    xvfb.ArgumentList.Add(display); xvfb.ArgumentList.Add("-screen"); xvfb.ArgumentList.Add("0"); xvfb.ArgumentList.Add("1280x720x24");
+    Process.Start(xvfb);
+    for (var i = 0; i < 50; i++)
     {
-        var focusInfo = new ProcessStartInfo
-        {
-            FileName = "xdotool",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        focusInfo.ArgumentList.Add("windowfocus");
-        focusInfo.ArgumentList.Add(windowId);
-
-        using var process = Process.Start(focusInfo);
-
-        if (process is not null)
-            await process.WaitForExitAsync();
+        await Task.Delay(100);
+        using var r = Process.Start(new ProcessStartInfo("xdpyinfo") { RedirectStandardOutput = true, RedirectStandardError = true });
+        if (r is not null) { await r.WaitForExitAsync(); if (r.ExitCode == 0) break; }
     }
-
-    private static async Task<bool> OpenChatAsync(string windowId)
-    {
-        const int brightnessThreshold = 5;
-        const int maximumPresses = 100;
-
-        var baselineBrightness = await CaptureBottomLeftBrightnessAsync(windowId);
-        var currentPressCount = 0;
-        var isChatOpen = false;
-
-        while (currentPressCount < maximumPresses && !isChatOpen)
-        {
-            await SendKeyAsync(windowId, "t");
-            currentPressCount++;
-
-            await Task.Delay(132);
-
-            var currentBrightness = await CaptureBottomLeftBrightnessAsync(windowId);
-            var brightnessDifference = baselineBrightness - currentBrightness;
-
-            if (Math.Abs(brightnessDifference) > brightnessThreshold)
-            {
-                isChatOpen = true;
-                break;
-            }
-        }
-
-        if (!isChatOpen)
-            return false;
-
-        for (var backspaceIndex = 0; backspaceIndex < currentPressCount; backspaceIndex++)
-        {
-            await SendKeyWithDelayAsync(windowId, "BackSpace", 50);
-        }
-
-        return true;
-    }
-
-    private static async Task<int> CaptureBottomLeftBrightnessAsync(string windowId)
-    {
-        var captureInfo = new ProcessStartInfo
-        {
-            FileName = "/bin/sh",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        captureInfo.ArgumentList.Add("-c");
-        captureInfo.ArgumentList.Add($"import -window {windowId} miff:- | convert - -gravity SouthWest -crop 100x20+0+0 +repage -format \"%[fx:int(mean*100)]\" info:");
-
-        using var process = Process.Start(captureInfo);
-
-        if (process is null)
-            return 0;
-
-        var output = await process.StandardOutput.ReadToEndAsync();
-        await process.WaitForExitAsync();
-
-        return int.TryParse(output.Trim(), out var brightness) ? brightness : 0;
-    }
-
-    private static async Task SendKeyAsync(string windowId, string key)
-    {
-        var keyInfo = new ProcessStartInfo
-        {
-            FileName = "xdotool",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        keyInfo.ArgumentList.Add("key");
-        keyInfo.ArgumentList.Add("--clearmodifiers");
-        keyInfo.ArgumentList.Add("--window");
-        keyInfo.ArgumentList.Add(windowId);
-        keyInfo.ArgumentList.Add(key);
-
-        using var process = Process.Start(keyInfo);
-
-        if (process is not null)
-            await process.WaitForExitAsync();
-    }
-
-    private static async Task SendKeyWithDelayAsync(string windowId, string key, int delayMilliseconds)
-    {
-        var keyInfo = new ProcessStartInfo
-        {
-            FileName = "xdotool",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        keyInfo.ArgumentList.Add("key");
-        keyInfo.ArgumentList.Add("--clearmodifiers");
-        keyInfo.ArgumentList.Add("--window");
-        keyInfo.ArgumentList.Add(windowId);
-        keyInfo.ArgumentList.Add("--delay");
-        keyInfo.ArgumentList.Add(delayMilliseconds.ToString());
-        keyInfo.ArgumentList.Add(key);
-
-        using var process = Process.Start(keyInfo);
-
-        if (process is not null)
-            await process.WaitForExitAsync();
-    }
-
-    private static async Task TypeMessageAsync(string windowId, string message)
-    {
-        var typeInfo = new ProcessStartInfo
-        {
-            FileName = "xdotool",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        typeInfo.ArgumentList.Add("type");
-        typeInfo.ArgumentList.Add("--clearmodifiers");
-        typeInfo.ArgumentList.Add("--window");
-        typeInfo.ArgumentList.Add(windowId);
-        typeInfo.ArgumentList.Add("--delay");
-        typeInfo.ArgumentList.Add("50");
-        typeInfo.ArgumentList.Add("--");
-        typeInfo.ArgumentList.Add(message);
-
-        using var process = Process.Start(typeInfo);
-
-        if (process is not null)
-            await process.WaitForExitAsync();
-    }
+    Process.Start(new ProcessStartInfo("xfwm4") { RedirectStandardOutput = true, RedirectStandardError = true });
 }
 
-// --- ScreenCapture ---
-
-public static class ScreenCapture
+async Task<string?> FindLargestWindow()
 {
-    public static async Task<IResult> CaptureAsync()
+    var info = new ProcessStartInfo("xdotool") { RedirectStandardOutput = true, RedirectStandardError = true };
+    info.ArgumentList.Add("search"); info.ArgumentList.Add("--onlyvisible"); info.ArgumentList.Add("--name"); info.ArgumentList.Add(".*");
+    using var process = Process.Start(info);
+    if (process is null) return null;
+    var output = await process.StandardOutput.ReadToEndAsync();
+    await process.WaitForExitAsync();
+    string? largest = null; long largestArea = 0;
+    foreach (var candidate in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
     {
-        var display = Environment.GetEnvironmentVariable("DISPLAY") ?? ":99";
-        var windowId = await WindowHelper.FindLargestVisibleWindowAsync(display);
-
-        if (string.IsNullOrEmpty(windowId))
-            return Results.Json(new { error = "No visible window found" }, statusCode: 500);
-
-        var captureInfo = new ProcessStartInfo
+        var geo = new ProcessStartInfo("xdotool") { RedirectStandardOutput = true, RedirectStandardError = true };
+        geo.ArgumentList.Add("getwindowgeometry"); geo.ArgumentList.Add("--shell"); geo.ArgumentList.Add(candidate.Trim());
+        using var g = Process.Start(geo);
+        if (g is null) continue;
+        var gOut = await g.StandardOutput.ReadToEndAsync(); await g.WaitForExitAsync();
+        if (g.ExitCode != 0) continue;
+        int w = 0, h = 0;
+        foreach (var line in gOut.Split('\n'))
         {
-            FileName = "import",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        captureInfo.ArgumentList.Add("-window");
-        captureInfo.ArgumentList.Add(windowId);
-        captureInfo.ArgumentList.Add("png:-");
-        captureInfo.EnvironmentVariables["DISPLAY"] = display;
-
-        using var process = Process.Start(captureInfo);
-
-        if (process is null)
-            return Results.Json(new { error = "Failed to start screen capture" }, statusCode: 500);
-
-        using var memoryStream = new MemoryStream();
-        await process.StandardOutput.BaseStream.CopyToAsync(memoryStream);
-        await process.WaitForExitAsync();
-
-        if (process.ExitCode != 0)
-            return Results.Json(new { error = "Screen capture failed" }, statusCode: 500);
-
-        return Results.File(memoryStream.ToArray(), "image/png");
+            if (line.StartsWith("WIDTH=")) int.TryParse(line["WIDTH=".Length..], out w);
+            else if (line.StartsWith("HEIGHT=")) int.TryParse(line["HEIGHT=".Length..], out h);
+        }
+        if ((long)w * h > largestArea) { largestArea = (long)w * h; largest = candidate.Trim(); }
     }
+    return largest;
 }
 
-// --- WindowHelper ---
-
-public static class WindowHelper
+async Task Run(params string[] command)
 {
-    public static async Task<string?> FindLargestVisibleWindowAsync(string display)
+    var info = new ProcessStartInfo(command[0]) { RedirectStandardOutput = true, RedirectStandardError = true };
+    foreach (var a in command[1..]) info.ArgumentList.Add(a);
+    using var p = Process.Start(info);
+    if (p is not null) await p.WaitForExitAsync();
+}
+
+async Task<string> InstallModpack(string slug, int fileId, string apiKey, string mcDir)
+{
+    var client = new ApiClient(apiKey);
+    var searchResult = await client.SearchModsAsync(432, searchFilter: slug);
+    var project = searchResult.Data.FirstOrDefault(m => m.Slug == slug)
+        ?? throw new InvalidOperationException($"modpack not found: {slug}");
+    var fileResponse = await client.GetModFileAsync(project.Id, fileId);
+    var url = fileResponse.Data.DownloadUrl ?? $"https://www.curseforge.com/api/v1/mods/{project.Id}/files/{fileId}/download";
+    using var httpClient = new HttpClient();
+    var bytes = await httpClient.GetByteArrayAsync(url);
+    using var archive = new ZipArchive(new MemoryStream(bytes), ZipArchiveMode.Read);
+    var manifestEntry = archive.GetEntry("manifest.json") ?? throw new InvalidOperationException("manifest.json not found");
+    using var ms = manifestEntry.Open();
+    var manifest = await JsonDocument.ParseAsync(ms);
+    var overrides = manifest.RootElement.TryGetProperty("overrides", out var op) ? op.GetString() ?? "overrides" : "overrides";
+    foreach (var entry in archive.Entries)
     {
-        var searchInfo = new ProcessStartInfo
+        if (!entry.FullName.StartsWith(overrides + "/") || entry.FullName.Length <= overrides.Length + 1) continue;
+        var target = Path.Combine(mcDir, entry.FullName[(overrides.Length + 1)..]);
+        if (entry.FullName.EndsWith('/')) { Directory.CreateDirectory(target); continue; }
+        Directory.CreateDirectory(Path.GetDirectoryName(target) ?? mcDir);
+        entry.ExtractToFile(target, overwrite: true);
+    }
+    var modsDir = Path.Combine(mcDir, "mods"); Directory.CreateDirectory(modsDir);
+    if (manifest.RootElement.TryGetProperty("files", out var filesArray))
+    {
+        var ids = new List<int>();
+        foreach (var f in filesArray.EnumerateArray())
         {
-            FileName = "xdotool",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-
-        searchInfo.ArgumentList.Add("search");
-        searchInfo.ArgumentList.Add("--onlyvisible");
-        searchInfo.ArgumentList.Add("--name");
-        searchInfo.ArgumentList.Add(".*");
-        searchInfo.EnvironmentVariables["DISPLAY"] = display;
-
-        using var searchProcess = Process.Start(searchInfo);
-
-        if (searchProcess is null)
-            return null;
-
-        var output = await searchProcess.StandardOutput.ReadToEndAsync();
-        await searchProcess.WaitForExitAsync();
-
-        var windowIds = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        string? largestWindowId = null;
-        long largestArea = 0;
-
-        foreach (var candidateId in windowIds)
+            if (f.TryGetProperty("required", out var req) && req.ValueKind == JsonValueKind.False) continue;
+            if (f.TryGetProperty("fileID", out var fid)) ids.Add(fid.GetInt32());
+            else if (f.TryGetProperty("fileId", out var fid2)) ids.Add(fid2.GetInt32());
+        }
+        if (ids.Count > 0)
         {
-            var geometryInfo = new ProcessStartInfo
+            var response = await client.GetFilesAsync(ids);
+            foreach (var meta in response.Data)
             {
-                FileName = "xdotool",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            geometryInfo.ArgumentList.Add("getwindowgeometry");
-            geometryInfo.ArgumentList.Add("--shell");
-            geometryInfo.ArgumentList.Add(candidateId.Trim());
-            geometryInfo.EnvironmentVariables["DISPLAY"] = display;
-
-            using var geometryProcess = Process.Start(geometryInfo);
-
-            if (geometryProcess is null)
-                continue;
-
-            var geometryOutput = await geometryProcess.StandardOutput.ReadToEndAsync();
-            await geometryProcess.WaitForExitAsync();
-
-            if (geometryProcess.ExitCode != 0)
-                continue;
-
-            int width = 0, height = 0;
-
-            foreach (var line in geometryOutput.Split('\n'))
-            {
-                if (line.StartsWith("WIDTH="))
-                    int.TryParse(line["WIDTH=".Length..], out width);
-                else if (line.StartsWith("HEIGHT="))
-                    int.TryParse(line["HEIGHT=".Length..], out height);
-            }
-
-            var area = (long)width * height;
-
-            if (area > largestArea)
-            {
-                largestArea = area;
-                largestWindowId = candidateId.Trim();
+                var dl = meta.DownloadUrl ?? $"https://www.curseforge.com/api/v1/mods/{meta.ModId}/files/{meta.Id}/download";
+                var dir = meta.FileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+                    ? Path.Combine(mcDir, meta.FileName.Contains("shader", StringComparison.OrdinalIgnoreCase) ? "shaderpacks" : "resourcepacks")
+                    : modsDir;
+                Directory.CreateDirectory(dir);
+                var dest = Path.Combine(dir, meta.FileName);
+                if (!File.Exists(dest)) await File.WriteAllBytesAsync(dest, await httpClient.GetByteArrayAsync(dl));
             }
         }
-
-        return largestWindowId;
     }
+    var mcVersion = manifest.RootElement.GetProperty("minecraft").GetProperty("version").GetString()
+        ?? throw new InvalidOperationException("minecraft.version missing");
+    var pmc = $"mojang:{mcVersion}";
+    if (manifest.RootElement.GetProperty("minecraft").TryGetProperty("modLoaders", out var loaders))
+        foreach (var loader in loaders.EnumerateArray())
+        {
+            if (!loader.TryGetProperty("primary", out var primary) || !primary.GetBoolean()) continue;
+            var id = loader.GetProperty("id").GetString() ?? "";
+            if (id.StartsWith("neoforge-")) pmc = $"neoforge::{id["neoforge-".Length..]}";
+            else if (id.StartsWith("forge-"))
+            { var fv = id["forge-".Length..]; pmc = fv.StartsWith($"{mcVersion}-") ? $"forge::{fv}" : $"forge::{mcVersion}-{fv}"; }
+            else if (id.StartsWith("fabric-")) pmc = $"fabric:{mcVersion}:{id["fabric-".Length..]}";
+            else if (id.StartsWith("quilt-")) pmc = $"quilt:{mcVersion}:{id["quilt-".Length..]}";
+            break;
+        }
+    return pmc;
 }
+
+record VanillaRequest(string? Version, string[]? Arguments);
+record CurseForgeRequest(string? Slug, int FileId, string[]? Arguments);
+record ChatRequest(string? Message);
