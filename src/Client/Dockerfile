@@ -38,7 +38,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xdotool \
     xvfb \
     xfwm4 \
-    unzip \
  && rm -rf /var/lib/apt/lists/*
 
 # Install .NET 11 preview
