@@ -2,6 +2,7 @@
 #:property TargetFramework=net11.0
 #:property PublishAot=false
 #:package CurseForge.APIClient@*
+#:package Nito.AsyncEx@*
 
 using System.Diagnostics;
 using System.IO.Compression;
@@ -9,6 +10,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using CurseForge.APIClient;
 using CurseForge.APIClient.Models.Files;
+using Nito.AsyncEx;
 using CurseForgeFile = CurseForge.APIClient.Models.Files.File;
 using File = System.IO.File;
 
@@ -26,7 +28,7 @@ const int criticalProcessEarlyExitMilliseconds = 1000;
 var builder = WebApplication.CreateBuilder(args);
 var application = builder.Build();
 var clientProcess = (Process?)null;
-var clientLock = new SemaphoreSlim(1, 1);
+var clientLock = new AsyncLock();
 var criticalProcesses = new HashSet<Process>();
 var criticalProcessesLock = new object();
 var expectedExitProcessIds = new HashSet<int>();
@@ -43,27 +45,20 @@ application.MapGet("/start-vanilla", async (HttpContext httpContext, string? ver
 
     var portableMinecraftArguments = httpContext.Request.Query["argument"].OfType<string>().ToArray();
 
-    await clientLock.WaitAsync();
+    using var _ = await clientLock.LockAsync();
 
-    try
-    {
-        if (clientProcess is not null && !clientProcess.HasExited)
-            return Results.Conflict("a client is already running");
+    if (clientProcess is not null && !clientProcess.HasExited)
+        return Results.Conflict("a client is already running");
 
-        await EnsureDisplay();
+    await EnsureDisplay();
 
-        var minecraftDirectory = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? defaultMinecraftDirectory;
-        var portablemcVersion = $"mojang:{version}";
+    var minecraftDirectory = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? defaultMinecraftDirectory;
+    var portablemcVersion = $"mojang:{version}";
 
-        Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portablemcVersion}");
-        clientProcess = LaunchPortableMinecraftClient(minecraftDirectory, portablemcVersion, portableMinecraftArguments);
+    Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portablemcVersion}");
+    clientProcess = LaunchPortableMinecraftClient(minecraftDirectory, portablemcVersion, portableMinecraftArguments);
 
-        return Results.Ok(new { status = "started", pid = clientProcess.Id });
-    }
-    finally
-    {
-        clientLock.Release();
-    }
+    return Results.Ok(new { status = "started", pid = clientProcess.Id });
 });
 
 application.MapGet("/start-curseforge", async (HttpContext httpContext, string? slug, int fileId) =>
@@ -78,90 +73,78 @@ application.MapGet("/start-curseforge", async (HttpContext httpContext, string? 
 
     var portableMinecraftArguments = httpContext.Request.Query["argument"].OfType<string>().ToArray();
 
-    await clientLock.WaitAsync();
+    using var _ = await clientLock.LockAsync();
 
-    try
+    if (clientProcess is not null && !clientProcess.HasExited)
+        return Results.Conflict("a client is already running");
+
+    var minecraftDirectory = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? defaultMinecraftDirectory;
+    Directory.CreateDirectory(minecraftDirectory);
+
+    var markerFile = Path.Combine(minecraftDirectory, ".curseforge-modpack");
+    var versionFile = Path.Combine(minecraftDirectory, ".curseforge-portablemc-version");
+
+    var marker = $"{slug} {fileId}";
+    var existingMarker = File.Exists(markerFile) ? (await File.ReadAllTextAsync(markerFile)).Trim() : "";
+
+    string portablemcVersion;
+
+    Console.Error.WriteLine($"Starting CurseForge modpack '{slug}' file '{fileId}'");
+
+    if (existingMarker == marker)
     {
-        if (clientProcess is not null && !clientProcess.HasExited)
-            return Results.Conflict("a client is already running");
+        if (!File.Exists(versionFile))
+            return Results.Problem($"PortableMC version cache file is missing: {versionFile}");
 
-        var minecraftDirectory = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? defaultMinecraftDirectory;
-        _ = Directory.CreateDirectory(minecraftDirectory);
+        portablemcVersion = (await File.ReadAllTextAsync(versionFile)).Trim();
 
-        var markerFile = Path.Combine(minecraftDirectory, ".curseforge-modpack");
-        var versionFile = Path.Combine(minecraftDirectory, ".curseforge-portablemc-version");
-
-        var marker = $"{slug} {fileId}";
-        var existingMarker = File.Exists(markerFile) ? (await File.ReadAllTextAsync(markerFile)).Trim() : "";
-
-        string portablemcVersion;
-
-        Console.Error.WriteLine($"Starting CurseForge modpack '{slug}' file '{fileId}'");
-
-        if (existingMarker == marker)
-        {
-            if (!File.Exists(versionFile))
-                return Results.Problem($"PortableMC version cache file is missing: {versionFile}");
-
-            portablemcVersion = (await File.ReadAllTextAsync(versionFile)).Trim();
-
-            Console.Error.WriteLine($"Using existing installation in {minecraftDirectory}");
-        }
-        else
-        {
-            portablemcVersion = await InstallModpack(slug, fileId, curseForgeApiKey, minecraftDirectory);
-
-            await File.WriteAllTextAsync(versionFile, portablemcVersion);
-            await File.WriteAllTextAsync(markerFile, marker);
-
-            Console.Error.WriteLine("Installation marker updated");
-        }
-
-        await EnsureDisplay();
-
-        Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portablemcVersion}");
-        clientProcess = LaunchPortableMinecraftClient(minecraftDirectory, portablemcVersion, portableMinecraftArguments);
-
-        return Results.Ok(new { status = "started", pid = clientProcess.Id });
+        Console.Error.WriteLine($"Using existing installation in {minecraftDirectory}");
     }
-    finally
+    else
     {
-        clientLock.Release();
+        portablemcVersion = await InstallModpack(slug, fileId, curseForgeApiKey, minecraftDirectory);
+
+        await File.WriteAllTextAsync(versionFile, portablemcVersion);
+        await File.WriteAllTextAsync(markerFile, marker);
+
+        Console.Error.WriteLine("Installation marker updated");
     }
+
+    await EnsureDisplay();
+
+    Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portablemcVersion}");
+    clientProcess = LaunchPortableMinecraftClient(minecraftDirectory, portablemcVersion, portableMinecraftArguments);
+
+    return Results.Ok(new { status = "started", pid = clientProcess.Id });
 });
 
 application.MapGet("/stop-client", async () =>
 {
-    await clientLock.WaitAsync();
+    using var _ = await clientLock.LockAsync();
 
-    try
+    if (clientProcess is null || clientProcess.HasExited)
     {
-        if (clientProcess is null || clientProcess.HasExited)
-        {
-            clientProcess = null;
-            return Results.NotFound("no client is running");
-        }
-
-        lock (expectedExitLock)
-            expectedExitProcessIds.Add(clientProcess.Id);
-
-        clientProcess.Kill(entireProcessTree: true);
-        await clientProcess.WaitForExitAsync();
-
         clientProcess = null;
+        return Results.NotFound("no client is running");
+    }
 
-        return Results.Ok(new { status = "stopped" });
-    }
-    finally
-    {
-        clientLock.Release();
-    }
+    lock (expectedExitLock)
+        expectedExitProcessIds.Add(clientProcess.Id);
+
+    clientProcess.Kill(entireProcessTree: true);
+    await clientProcess.WaitForExitAsync();
+
+    clientProcess = null;
+
+    return Results.Ok(new { status = "stopped" });
 });
 
 application.MapGet("/send-chat", async (string? message) =>
 {
     if (string.IsNullOrWhiteSpace(message))
         return Results.BadRequest("message is required");
+
+    using var _ = await clientLock.LockAsync();
 
     if (clientProcess is null || clientProcess.HasExited)
         return Results.Conflict("no client is running");
