@@ -1,5 +1,102 @@
 # Changelog
 
+## [0.5.17](https://github.com/caunt/Void/compare/v0.5.16...v0.5.17) (2026-05-31)
+
+
+### Features
+
+* **client:** ✨ added critical process crash handling for long-running child processes ([c71cc8d](https://github.com/caunt/Void/commit/c71cc8dec1c5667bc4bfed6f129a59e1c810c8d8))
+* **client:** ✨ added ferium binary to Docker image ([02f6f09](https://github.com/caunt/Void/commit/02f6f09dbac8fc52d9ce45c2b29400c59ae1269f))
+* **client:** ✨ added ferium modpack upgrade script with CurseForge fallback ([4d4fba0](https://github.com/caunt/Void/commit/4d4fba09abf4f5e1fafb8f69b780e2ab0c2bcee0))
+* **client:** ✨ avoided repeated CurseForge reprovisioning ([6f633ba](https://github.com/caunt/Void/commit/6f633ba7fa8998e6521432948b2b0d83294cfecc))
+* **client:** ✨ hardened curseforge launcher behavior ([f40ac1b](https://github.com/caunt/Void/commit/f40ac1b221a58c395c4f70d2c8ea621451e57959))
+* **client:** ✨ replaced ferium upgrade launcher ([8aaefca](https://github.com/caunt/Void/commit/8aaefca3219c175baad8389cc64bc361c7948cc5))
+* **client:** ✨ restored old shell script behavior in Api.cs ([d302022](https://github.com/caunt/Void/commit/d302022c440823b5d1246a2c37cc6ced2cc94437))
+* **command:** ✨ added server suggestion functionality for command execution ([6fd8351](https://github.com/caunt/Void/commit/6fd8351e90598ce8e26e729b12998ed92206b982))
+* **event:** ✨ added improved event handling with scoped listener resolution ([976aeeb](https://github.com/caunt/Void/commit/976aeebef2561b5053bf32e11de42ae2109674a6))
+* extract PortableMinecraftClient Docker image into src/Client and publish to ghcr.io ([2f095ac](https://github.com/caunt/Void/commit/2f095ac6888c3b7eecc0d9572ee1f3e63a889269))
+* **logging:** ✨ added player connection logging on server join ([3238718](https://github.com/caunt/Void/commit/323871892214d5032e6e24d1bc5d783210bc7090))
+* **player:** ✨ added link validation for packet sending ([96fddb2](https://github.com/caunt/Void/commit/96fddb296efd7b453a0ce86ca731cf1818b11dcf))
+* **server:** ✨ updated server initialization to use PaperServer and improved timeout handling ([cbaa899](https://github.com/caunt/Void/commit/cbaa899cbbb7f506c5790553a4aec09b56361942))
+* **service:** ✨ improved plugin loading message formatting ([19613ae](https://github.com/caunt/Void/commit/19613ae03d37d3fe1fa6c42f8fe60ba3b27c8290))
+* **uuid:** ✨ add implicit conversion operators for Guid ([fdd67b4](https://github.com/caunt/Void/commit/fdd67b4094a2dc6a5119caf5576af71287d8e0f1))
+
+
+### Bug Fixes
+
+* **AbstractLifecycleService, DependencyService, PlayerContext:** 🐛 corrected service context handling and improved method signatures ([d0543d9](https://github.com/caunt/Void/commit/d0543d9ff9a46bc8690288f525d3a6bb8903b2c7))
+* **AbstractLifecycleService:** 🐛 corrected kick message handling logic ([b38b341](https://github.com/caunt/Void/commit/b38b341a7030187f8dd237f7fb123b02fe11c5b7))
+* **api:** 🐛 added critical process management and cleanup on application stopping ([16a535c](https://github.com/caunt/Void/commit/16a535c6b8f504202eb525c86e19a68902ea20e0))
+* **api:** 🐛 adjusted window position and size before screen capture ([e112efd](https://github.com/caunt/Void/commit/e112efdf98f64c0e478c8f2903ab2ee5e4379f6a))
+* **api:** 🐛 corrected process start info initialization and improved argument handling ([0213ec7](https://github.com/caunt/Void/commit/0213ec7f0808fac8e0552750c406047a160fcecb))
+* **api:** 🐛 corrected process start method and added new process start utility ([f050159](https://github.com/caunt/Void/commit/f050159dda94a49f9368a2b1eb3af0869562e3d6))
+* **api:** 🐛 corrected variable naming conventions and improved argument handling ([2868c91](https://github.com/caunt/Void/commit/2868c91f13355f3be6136cb2c6bc3874e5018e4d))
+* **api:** 🐛 corrected version parsing logic and improved documentation formatting ([5732e58](https://github.com/caunt/Void/commit/5732e589f254cb09c5aec4781501198f099c999c))
+* **api:** 🐛 ensured chat window closure before brightness adjustment ([010f5e9](https://github.com/caunt/Void/commit/010f5e91cac2eeb124128274d1cb3ba8e18b3106))
+* **api:** 🐛 removed redundant StartProcess method and streamlined process handling ([069dd75](https://github.com/caunt/Void/commit/069dd7580288c06f28a14616ff1bdfdf3f8a8364))
+* **api:** 🐛 replaced SemaphoreSlim with AsyncLock for improved concurrency handling ([ef9e403](https://github.com/caunt/Void/commit/ef9e40366f021112e3de42a246d7ab7974b653b5))
+* **AssemblyInfo:** 🐛 corrected max parallel threads configuration ([c68545e](https://github.com/caunt/Void/commit/c68545e82dbc7ecd1375dd625fef42b46aca924b))
+* **client:** 🐛 added --clearmodifiers and --window flags to xdotool chat commands ([e72d821](https://github.com/caunt/Void/commit/e72d821da2b6ef6c3fad602a585c9e874f49b631))
+* **client:** 🐛 appended download mappings and added temp file cleanup trap ([6d36474](https://github.com/caunt/Void/commit/6d3647418d476a01465b047db83d5d63b6d7b5eb))
+* **client:** 🐛 corrected CurseForge download progress tracking ([1efab4c](https://github.com/caunt/Void/commit/1efab4cb7142cfb2ea6fd2c4f5ee3bcabe674475))
+* **client:** 🐛 corrected StartCriticalProcess to set UseShellExecute and match FailFast message format ([203b0e4](https://github.com/caunt/Void/commit/203b0e49f288fecb7322d113624d9896a21eb022))
+* **client:** 🐛 disabled case-insensitive property matching for manifest deserialization ([252c387](https://github.com/caunt/Void/commit/252c38708ccfda43fcc0ac724e79fea345910109))
+* **client:** 🐛 enabled CurseForge launch argument passthrough ([6da1d19](https://github.com/caunt/Void/commit/6da1d1990e1b2dd5f1c8b8c0d725d264ec386c5e))
+* **client:** 🐛 fixed Api.cs correctness issues and reverted src/Api changes ([4339c61](https://github.com/caunt/Void/commit/4339c611c3e555745d6260abe26d77e95c8e0695))
+* **client:** 🐛 fixed category field index and removed redundant ferium re-run ([1c15b9b](https://github.com/caunt/Void/commit/1c15b9b06b20b80e6014d566cdcbf4a169e1c555))
+* **client:** 🐛 fixed type ambiguity and brightness error handling in Api.cs ([05fec9d](https://github.com/caunt/Void/commit/05fec9d4d5b840e5fa3afcfe8da6d7606d03a2c2))
+* **client:** 🐛 improved CurseForge startup logging and downloads ([9b63e8c](https://github.com/caunt/Void/commit/9b63e8c4e99d096281448f4725fe6307c8eef2d3))
+* **client:** 🐛 materialized query string values to string array ([fab01cc](https://github.com/caunt/Void/commit/fab01cc2834458422e4aa911c90eab400eecc25d))
+* **client:** 🐛 moved directory cleanup before overrides extraction ([89f1dd8](https://github.com/caunt/Void/commit/89f1dd86db29f02979185ebce5170d12d2457bf9))
+* **client:** 🐛 prevented FailFast on intentional /stop-client kill ([62ca718](https://github.com/caunt/Void/commit/62ca7189b4e0ae1466377ab4c8010b90a9ff52dc))
+* **client:** 🐛 replaced ConcurrentDictionary with lock-protected HashSet for expected exit tracking ([a2dfa2a](https://github.com/caunt/Void/commit/a2dfa2aa38a107572d8c31c6b834d0ab14e2e23f))
+* **client:** 🔒 sanitised fileName with basename to prevent path traversal ([b677fc2](https://github.com/caunt/Void/commit/b677fc2fb2ad7f3c82fd62b694a97a435cb556f7))
+* **client:** skip CurseForge file metadata flow for empty required files ([14de269](https://github.com/caunt/Void/commit/14de2691cd746481fb72496723761c97cba95471))
+* **command:** 🐛 corrected command suggestion structure and plugin unloading behavior ([df3b9cf](https://github.com/caunt/Void/commit/df3b9cfedff4b3774a523ea23d5f51e66e9b0de5))
+* **commands:** 🔧 fixed side bound interface ([3e15a72](https://github.com/caunt/Void/commit/3e15a72d5268a86b26e8bbd0b50d4d5f4ceb1b11))
+* **console:** 🐛 corrected terminal input/output handling on proxy start/stop ([ee9e36d](https://github.com/caunt/Void/commit/ee9e36dec867fe3c7335248b440528e629d6ed39))
+* correct workflow file extension from .yaml to .yml in runnable-pr.yml ([2f03081](https://github.com/caunt/Void/commit/2f03081a3aae7c997680c85712e411c028903208))
+* **demo:** 🐛 install xxd and revert servers.dat generation to original command ([533d70a](https://github.com/caunt/Void/commit/533d70a2161bdfd4bf8da127789c77f4a3384c85))
+* **demo:** 🐛 replaced xxd with python3 for hex-to-binary conversion in client Dockerfile ([ca9ddb0](https://github.com/caunt/Void/commit/ca9ddb084aeddd026475839fb84c2af3a8fe3b07))
+* **dependencies:** remove retry loop from plugin container creation ([68415b6](https://github.com/caunt/Void/commit/68415b6531c46267f11dadd0890278290cce0b24))
+* **dependencies:** use concurrent plugin container map ([9c04b8c](https://github.com/caunt/Void/commit/9c04b8c77ed3249705fd88b6359b94accb9cb5cd))
+* **dependency:** 🐛 corrected instance factory creation and registry sharing behavior ([dfcd66c](https://github.com/caunt/Void/commit/dfcd66cd3327ac2bfe6bf6561a551acaf98a6151))
+* **dependency:** 🐛 corrected plugin container retrieval logic in GetRootContainers method ([2dc31a0](https://github.com/caunt/Void/commit/2dc31a01f1910ce86fdb2c2e9f5aeea69fa5bb3d))
+* **DependencyService:** 🐛 corrected container access methods for service resolution ([7e1537f](https://github.com/caunt/Void/commit/7e1537f3afd95544d079e10f6f66c794819f6fc4))
+* **DependencyService:** 🐛 corrected player scope handling and improved service resolution logic ([cd383ee](https://github.com/caunt/Void/commit/cd383eefdaec923421c484ebac5c6b46e3295417))
+* **DependencyService:** 🐛 corrected plugin container retrieval and improved player scope handling ([108cfbf](https://github.com/caunt/Void/commit/108cfbf3de8453f5bbb9abeb227569369a9a521c))
+* **DependencyService:** 🐛 corrected resolver context handling for current scope ([7e2b347](https://github.com/caunt/Void/commit/7e2b34787036548ba2f6a633453b035648c439ab))
+* **DependencyService:** 🐛 corrected service resolution logic by prioritizing service providers ([be88611](https://github.com/caunt/Void/commit/be88611b55c142587f69fb130b79f96a7d34de94))
+* **DependencyService:** 🐛 corrected service resolution logic for singleton and dependency services ([47f22c8](https://github.com/caunt/Void/commit/47f22c894028e7c60ee175d52772f9d030096bed))
+* **docs:** update workflow path filter from main.yaml to runnable-commit.yml ([a3627db](https://github.com/caunt/Void/commit/a3627db17472edc92e38cf2ddc76ab617b5055bf))
+* **forwarding:** 🐛 corrected player profile null warning message and improved forwarding version logic ([108c2cc](https://github.com/caunt/Void/commit/108c2cc46a49772b30bfaabc6e26a58a3fd64cf0))
+* **forwarding:** 🐛 removed debug break from phase change event handler ([2749516](https://github.com/caunt/Void/commit/2749516a5290f74363fbaa12ae2027227248c7a0))
+* **forwarding:** 🐛 removed debug log from phase change event handler ([1c922c0](https://github.com/caunt/Void/commit/1c922c034dd207550158f324663e0cade9318e9d))
+* **handshake:** 🐛 corrected casing for channel constants and moved PlayerCachedMods class ([eb8a086](https://github.com/caunt/Void/commit/eb8a086580f9124ab6a859ff94c50ddd41f00681))
+* **HostingExtensions:** 🐛 corrected XML documentation formatting for clarity ([eef8dff](https://github.com/caunt/Void/commit/eef8dffcfcdaa8eb193bdf581f0e14c21b09072b))
+* **IPluginService:** 🐛 corrected plugin loading logic and improved method signatures ([0bbd71b](https://github.com/caunt/Void/commit/0bbd71bf658bf3a76907c288522b9bd04b965dac))
+* **link:** 🐛 corrected logging behavior for player connection ([37d5093](https://github.com/caunt/Void/commit/37d509371e21478680eb3836de1ebabe9f179a10))
+* **link:** 🐛 corrected logging behavior for player connection ([d929e67](https://github.com/caunt/Void/commit/d929e6782cbe1fac2f810298465443e941c87732))
+* **link:** 🐛 corrected player channel closure logic on link stop ([09ff668](https://github.com/caunt/Void/commit/09ff668266304420e0597dce40065fc8746ca6ae))
+* **platform:** 🐛 resolved NuGet meta-package dependency assemblies ([a3582e3](https://github.com/caunt/Void/commit/a3582e3a86b208cf6c7194ecfe16bea7516335dc))
+* **player:** 🐛 cleared player reference on disposal ([2eb3b3e](https://github.com/caunt/Void/commit/2eb3b3ee2dba6025c6d4df79908fbddb98954f3d))
+* **player:** 🐛 corrected player type retrieval logic and improved null handling ([90dd96a](https://github.com/caunt/Void/commit/90dd96a39fa2440872dde47a7c69b746b7a599df))
+* **players:** 🐛 switched kick link check to link service ([2d79d39](https://github.com/caunt/Void/commit/2d79d39a65a3b38c4eaf591ab9676517bbd063a1))
+* **registry:** 🐛 corrected packet type name retrieval in PrintPackets method ([d5678fb](https://github.com/caunt/Void/commit/d5678fb9effd2bf3d5db3a143b44b090b01a9f60))
+* update GitHub Actions workflow badge to reference correct workflow file ([cb6c52f](https://github.com/caunt/Void/commit/cb6c52fc1484515366baa639b4f849008245e3ee))
+* use channel.SendPacketAsync instead of player.SendPacketAsync in KickPlayerAsync ([002326b](https://github.com/caunt/Void/commit/002326be6faffc5781aa621d98b72038d1df717b))
+* **WeakPluginContainer:** 🐛 corrected plugin addition logic to ensure assembly consistency ([d5cf1e0](https://github.com/caunt/Void/commit/d5cf1e0145b49a30a90b9d5694eaed88b43b7c73))
+
+
+### Performance Improvements
+
+* **client:** 🐳 converted Dockerfile to multi-stage build to reduce image size ([f47d0c6](https://github.com/caunt/Void/commit/f47d0c6aeafdd24bce531e5df21d0647fa20cae7))
+
+
+### Reverts
+
+* **api:** ⏪ reverted src/Api and publish-docker.yml to main ([edd0fb3](https://github.com/caunt/Void/commit/edd0fb3300086221cc1872d47ed3c065f6199ec0))
+
 ## [0.5.16](https://github.com/caunt/Void/compare/v0.5.15...v0.5.16) (2026-05-19)
 
 
