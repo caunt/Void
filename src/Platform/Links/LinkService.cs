@@ -156,13 +156,6 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
 
         var playerChannel = await unwrappedPlayer.GetChannelAsync(cancellationToken);
 
-        // TODO: This was moved from the method above
-        // Reimplement
-        var selectedServer = await events.ThrowWithResultAsync(new PlayerSearchServerEvent(player.Unwrap()), cancellationToken);
-
-        if (selectedServer is not null)
-            server = selectedServer;
-
         INetworkChannel serverChannel;
 
         try
@@ -209,6 +202,13 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
             {
                 using (await _lock.LockAsync(cancellationToken))
                     _activeLinks.Add(link);
+
+                // TODO: This was moved from the method above
+                // Reimplement
+                var selectedServer = await events.ThrowWithResultAsync(new PlayerSearchServerEvent(player.Unwrap()), cancellationToken);
+
+                if (selectedServer is not null)
+                    return await ConnectCoreAsync(player, selectedServer, cancellationToken);
 
                 await link.StartAsync(cancellationToken);
                 await events.ThrowAsync(new LinkStartedEvent(link, unwrappedPlayer, IsFirstLink: firstConnection), cancellationToken);
