@@ -156,6 +156,8 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
 
         var playerChannel = await unwrappedPlayer.GetChannelAsync(cancellationToken);
 
+        // TODO: This was moved from the method above
+        // Reimplement
         var selectedServer = await events.ThrowWithResultAsync(new PlayerSearchServerEvent(player.Unwrap()), cancellationToken);
 
         if (selectedServer is not null)
