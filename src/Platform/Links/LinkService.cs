@@ -32,15 +32,15 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
     {
         logger.LogTrace("Looking for a server for {Player} player", player);
 
-        var selectedServer = await events.ThrowWithResultAsync(new PlayerSearchServerEvent(player.Unwrap()), cancellationToken);
-
-        if (selectedServer is not null)
-        {
-            if (ignoredServers.Contains(selectedServer))
-                logger.LogWarning("Selected server {Server} for player {Player} is in ignored servers list", selectedServer, player);
-
-            return await ConnectCoreAsync(player, selectedServer, cancellationToken);
-        }
+        // var selectedServer = await events.ThrowWithResultAsync(new PlayerSearchServerEvent(player.Unwrap()), cancellationToken);
+        // 
+        // if (selectedServer is not null)
+        // {
+        //     if (ignoredServers.Contains(selectedServer))
+        //         logger.LogWarning("Selected server {Server} for player {Player} is in ignored servers list", selectedServer, player);
+        // 
+        //     return await ConnectCoreAsync(player, selectedServer, cancellationToken);
+        // }
 
         foreach (var server in servers.All.Except(ignoredServers))
         {
@@ -155,6 +155,11 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
         unwrappedPlayer = player.Unwrap();
 
         var playerChannel = await unwrappedPlayer.GetChannelAsync(cancellationToken);
+
+        var selectedServer = await events.ThrowWithResultAsync(new PlayerSearchServerEvent(player.Unwrap()), cancellationToken);
+
+        if (selectedServer is not null)
+            server = selectedServer;
 
         INetworkChannel serverChannel;
 
