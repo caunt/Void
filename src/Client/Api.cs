@@ -47,10 +47,16 @@ application.MapGet("/start-vanilla", async (HttpContext httpContext, string? ver
 
     using var _ = await clientLock.LockAsync();
 
+    await EnsureDisplay();
+
     if (clientProcess is not null && !clientProcess.HasExited)
         return Results.Conflict("a client is already running");
 
-    await EnsureDisplay();
+    var display = Environment.GetEnvironmentVariable("DISPLAY") ?? defaultDisplay;
+    var existingWindowId = await FindLargestWindow(display);
+
+    if (existingWindowId is not null)
+        return Results.Conflict("a client window is already running");
 
     var minecraftDirectory = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? defaultMinecraftDirectory;
     var portablemcVersion = $"mojang:{version}";
@@ -75,8 +81,16 @@ application.MapGet("/start-curseforge", async (HttpContext httpContext, string? 
 
     using var _ = await clientLock.LockAsync();
 
+    await EnsureDisplay();
+
     if (clientProcess is not null && !clientProcess.HasExited)
         return Results.Conflict("a client is already running");
+
+    var display = Environment.GetEnvironmentVariable("DISPLAY") ?? defaultDisplay;
+    var existingWindowId = await FindLargestWindow(display);
+
+    if (existingWindowId is not null)
+        return Results.Conflict("a client window is already running");
 
     var minecraftDirectory = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? defaultMinecraftDirectory;
     Directory.CreateDirectory(minecraftDirectory);
@@ -109,8 +123,6 @@ application.MapGet("/start-curseforge", async (HttpContext httpContext, string? 
 
         Console.Error.WriteLine("Installation marker updated");
     }
-
-    await EnsureDisplay();
 
     Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portablemcVersion}");
     clientProcess = LaunchPortableMinecraftClient(minecraftDirectory, portablemcVersion, portableMinecraftArguments);
