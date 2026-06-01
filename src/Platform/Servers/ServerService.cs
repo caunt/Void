@@ -11,21 +11,26 @@ namespace Void.Proxy.Servers;
 public class ServerService(ILogger<ServerService> logger, ISettings settings, IConsoleService console) : IServerService, IEventListener
 {
     /// <summary>
-    /// The default Minecraft server port.
+    ///     The default Minecraft server port.
     /// </summary>
     private const int DefaultPort = 25565;
 
-    private static readonly Option<bool> IgnoreFileServersOption = new("--ignore-file-servers")
-    {
-        Description = "Ignore servers specified in configuration files"
-    };
+    private static readonly Option<bool> IgnoreFileServersOption = new("--ignore-file-servers") { Description = "Ignore servers specified in configuration files" };
 
-    private static readonly Option<string[]> ServersOption = new("--server")
-    {
-        Description = "Registers an additional server in format <host>:<port> or <host> (port defaults to 25565)"
-    };
+    private static readonly Option<string[]> ServersOption = new("--server") { Description = "Registers an additional server in format <host>:<port> or <host> (port defaults to 25565)" };
 
     public IEnumerable<IServer> All => GetArgumentsServers().Concat(console.GetOptionValue(IgnoreFileServersOption) ? [] : settings.Servers);
+
+    public bool TryGetByName(string name, [MaybeNullWhen(false)] out IServer server)
+    {
+        server = GetByName(name);
+        return server is not null;
+    }
+
+    public IServer? GetByName(string name)
+    {
+        return All.FirstOrDefault(server => server.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    }
 
     [Subscribe]
     public void OnProxyStarted(ProxyStartingEvent @event)
@@ -44,18 +49,7 @@ public class ServerService(ILogger<ServerService> logger, ISettings settings, IC
             logger.LogInformation(" - {Server} ({Address}:{Port})", server.Name, server.Host, server.Port);
     }
 
-    public bool TryGetByName(string name, [MaybeNullWhen(false)] out IServer server)
-    {
-        server = GetByName(name);
-        return server is not null;
-    }
-
-    public IServer? GetByName(string name)
-    {
-        return All.FirstOrDefault(server => server.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private IEnumerable<Server> GetArgumentsServers()
+    private IEnumerable<RuntimeServer> GetArgumentsServers()
     {
         var servers = console.GetOptionValue(ServersOption);
 
@@ -92,7 +86,7 @@ public class ServerService(ILogger<ServerService> logger, ISettings settings, IC
                 continue;
             }
 
-            yield return new Server($"args-server-{index++}", host, port);
+            yield return new RuntimeServer($"args-server-{index++}", host, port);
         }
     }
 }

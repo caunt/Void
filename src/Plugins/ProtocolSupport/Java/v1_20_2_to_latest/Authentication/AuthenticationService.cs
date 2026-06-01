@@ -5,6 +5,7 @@ using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Players.Extensions;
+using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Authentication;
 using Void.Proxy.Api.Events.Network;
@@ -12,8 +13,8 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players;
-using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins.Dependencies;
+using Void.Proxy.Api.Servers;
 using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Network.Bundles;
@@ -27,7 +28,7 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbo
 namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Authentication;
 
 #pragma warning disable CS9107 // Parameter is captured into the state of the enclosing type and its value is also passed to the base constructor. The value might be captured by the base class as well.
-public class AuthenticationService(ILogger<AuthenticationService> logger, IEventService events, IPlayerService players, IDependencyService dependencies) : AbstractAuthenticationService(events, players, dependencies)
+public class AuthenticationService(ILogger<AuthenticationService> logger, IEventService events, IPlayerService players, IServerService servers, IConsoleService console, IDependencyService dependencies) : AbstractAuthenticationService(events, players, servers, console, dependencies)
 #pragma warning restore CS9107 // Parameter is captured into the state of the enclosing type and its value is also passed to the base constructor. The value might be captured by the base class as well.
 {
     [Subscribe]
@@ -119,11 +120,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         if (link.Player.Profile is not { } profile)
             throw new InvalidOperationException("Player should be logged in already");
 
-        await link.SendPacketAsync(new LoginSuccessPacket
-        {
-            GameProfile = profile,
-            StrictErrorHandling = false
-        }, cancellationToken);
+        await link.SendPacketAsync(new LoginSuccessPacket { GameProfile = profile, StrictErrorHandling = false }, cancellationToken);
 
         await link.ReceivePacketAsync<LoginAcknowledgedPacket>(cancellationToken);
     }
@@ -133,13 +130,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         if (!link.Player.IsMinecraft)
             return;
 
-        await link.SendPacketAsync(packet ?? new HandshakePacket
-        {
-            NextState = nextState,
-            ProtocolVersion = link.Player.ProtocolVersion.Value,
-            ServerAddress = link.Server.Host,
-            ServerPort = (ushort)link.Server.Port
-        }, cancellationToken);
+        await link.SendPacketAsync(packet ?? new HandshakePacket { NextState = nextState, ProtocolVersion = link.Player.ProtocolVersion.Value, ServerAddress = link.Server.Host, ServerPort = (ushort)link.Server.Port }, cancellationToken);
     }
 
     protected override async ValueTask StartServerLoginAsync(ILink link, CancellationToken cancellationToken)
@@ -150,10 +141,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         if (link.Player.Profile is not { } profile)
             throw new InvalidOperationException("Player should be logged in already");
 
-        await link.SendPacketAsync(new LoginStartPacket
-        {
-            Profile = profile
-        }, cancellationToken);
+        await link.SendPacketAsync(new LoginStartPacket { Profile = profile }, cancellationToken);
     }
 
     protected override async ValueTask<AuthenticationResult> HandleServerPacketAsync(ILink link, IMinecraftClientboundPacket packet, CancellationToken cancellationToken)
@@ -178,12 +166,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
                 if (!await events.ThrowWithResultAsync(loginPluginMessage, cancellationToken))
                     break;
 
-                await link.SendPacketAsync(new LoginPluginResponsePacket
-                {
-                    MessageId = loginPluginRequest.MessageId,
-                    Data = loginPluginMessage.Response ?? [],
-                    Successful = loginPluginMessage.Successful
-                }, cancellationToken);
+                await link.SendPacketAsync(new LoginPluginResponsePacket { MessageId = loginPluginRequest.MessageId, Data = loginPluginMessage.Response ?? [], Successful = loginPluginMessage.Successful }, cancellationToken);
                 break;
             case EncryptionRequestPacket:
                 throw new InvalidOperationException("Authentication side is set to Proxy, but server is in online-mode.");

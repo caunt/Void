@@ -45,7 +45,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    [Subscribe]
+    [Subscribe(PostOrder.First)]
     public async ValueTask OnChannelCreated(ChannelCreatedEvent @event, CancellationToken cancellationToken)
     {
         if (!@event.Player.IsMinecraft)
@@ -54,7 +54,6 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
-        SetupRegistries(@event.Channel, @event.Side, @event.Player.ProtocolVersion);
         await @event.Player.SetPhaseAsync(link: null, @event.Side, Phase.Handshake, @event.Channel, cancellationToken);
     }
 
@@ -71,7 +70,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         {
             playerPacketStream.Registries.PacketTransformationsSystem.Clear();
             playerPacketStream.Registries.PacketTransformationsPlugins.Clear();
-            
+
             logger.LogTrace("Cleared transformations registries for player channel in {Link} link", @event.Link);
         }
 
@@ -79,8 +78,8 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         {
             serverPacketStream.Registries.PacketTransformationsSystem.Clear();
             serverPacketStream.Registries.PacketTransformationsPlugins.Clear();
-            
-            logger.LogTrace("Cleared transformations registries for server channel in {Link} link", @event.Link);       
+
+            logger.LogTrace("Cleared transformations registries for server channel in {Link} link", @event.Link);
         }
     }
 
@@ -92,7 +91,10 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
         // At handshake phase IPlayer channel is still being built, causing stack overflow here
         if (@event.Phase is Phase.Handshake)
+        {
+            SetupRegistries(@event.Channel, @event.Side, @event.Player.ProtocolVersion);
             return;
+        }
 
         if (@event.Link is { } link)
         {
@@ -123,7 +125,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         var channel = @event.Direction switch
         {
             Direction.Clientbound => @event.Link.ServerChannel,
-            Direction.Serverbound => @event.Link.PlayerChannel,
+            Direction.Serverbound => await @event.Player.GetChannelAsync(cancellationToken),
             _ => throw new InvalidOperationException($"Unknown direction {@event.Direction}")
         };
 
@@ -142,7 +144,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             var packets = @event.Message switch
             {
                 IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, operation, registries, transformations, binaryMessage),
-                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, operation, registries, transformations, minecraftPacket),
+                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Player, operation, registries, transformations, minecraftPacket),
                 _ => null
             };
 
@@ -190,7 +192,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             var packets = @event.Message switch
             {
                 IMinecraftBinaryMessage binaryMessage => DecodeBinaryMessage(@event.Link, operation, registries, transformations, binaryMessage),
-                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, operation, registries, transformations, minecraftPacket),
+                IMinecraftPacket minecraftPacket => DecodeMinecraftPacket(@event.Link, @event.Player, operation, registries, transformations, minecraftPacket),
                 _ => null
             };
 
@@ -278,18 +280,18 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
         }
     }
 
-    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink link, Operation operation, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketTransformationsPluginsRegistry transformationsMappings, IMinecraftPacket minecraftPacket)
+    protected static IEnumerable<IMinecraftPacket> DecodeMinecraftPacket(ILink? link, IPlayer player, Operation operation, IMinecraftPacketIdPluginsRegistry registries, IMinecraftPacketTransformationsPluginsRegistry transformationsMappings, IMinecraftPacket minecraftPacket)
     {
-        if (!link.Player.IsMinecraft)
+        if (!player.IsMinecraft)
             yield break;
 
-        var playerRegistry = link.PlayerChannel.MinecraftRegistries.PacketIdSystem;
-        var serverRegistry = link.ServerChannel.MinecraftRegistries.PacketIdSystem;
+        var playerRegistry = player.Context.Channel?.MinecraftRegistries.PacketIdSystem;
+        var serverRegistry = link?.ServerChannel.MinecraftRegistries.PacketIdSystem;
 
-        if (!playerRegistry.Write.TryGetPacketId(minecraftPacket, out var id) &&
-            !serverRegistry.Write.TryGetPacketId(minecraftPacket, out id) &&
-            !playerRegistry.Read.TryGetPacketId(minecraftPacket, out id) &&
-            !serverRegistry.Read.TryGetPacketId(minecraftPacket, out id))
+        if (!(playerRegistry?.Write.TryGetPacketId(minecraftPacket, out var id) ?? false) &&
+            !(serverRegistry?.Write.TryGetPacketId(minecraftPacket, out id) ?? false) &&
+            !(playerRegistry?.Read.TryGetPacketId(minecraftPacket, out id) ?? false) &&
+            !(serverRegistry?.Read.TryGetPacketId(minecraftPacket, out id) ?? false))
             yield break;
 
         var filteredRegistries = operation switch
@@ -309,7 +311,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             var buffer = new MinecraftBuffer(stream);
             var wrapper = new MinecraftBinaryPacketWrapper(new MinecraftBinaryPacket(id, stream));
 
-            minecraftPacket.Encode(ref buffer, link.Player.ProtocolVersion);
+            minecraftPacket.Encode(ref buffer, player.ProtocolVersion);
             stream.Position = 0;
 
             if (registries.TryGetTransformations(transformationsMappings, type, TransformationType.Upgrade, out var transformations))
@@ -327,7 +329,7 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             stream.SetLength(stream.Position);
             stream.Position = 0;
 
-            var packet = decoder(ref buffer, link.Player.ProtocolVersion);
+            var packet = decoder(ref buffer, player.ProtocolVersion);
 
             stream.Position = 0;
             yield return packet;

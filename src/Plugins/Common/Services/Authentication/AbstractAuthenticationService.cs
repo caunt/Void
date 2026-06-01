@@ -1,13 +1,17 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.CommandLine;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Mojang;
 using Void.Minecraft.Network;
-using Void.Minecraft.Network.Channels.Extensions;
 using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Players.Extensions;
+using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Authentication;
+using Void.Proxy.Api.Events.Links;
+using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Player;
 using Void.Proxy.Api.Events.Proxy;
 using Void.Proxy.Api.Events.Services;
@@ -16,6 +20,7 @@ using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins.Dependencies;
+using Void.Proxy.Api.Servers;
 using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Mojang;
@@ -23,12 +28,89 @@ using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 
 namespace Void.Proxy.Plugins.Common.Services.Authentication;
 
-public abstract class AbstractAuthenticationService(IEventService events, IPlayerService players, IDependencyService dependencies) : IPluginCommonService
+public abstract class AbstractAuthenticationService(IEventService events, IPlayerService players, IServerService servers, IConsoleService console, IDependencyService dependencies) : IPluginCommonService
 {
+    public static readonly Option<string[]> OverridesOption = new("--override", "-o") { Description = "Register an additional server override to redirect players based on hostname they are connecting with.\nExample:\n--ignore-file-servers\n--server 127.0.0.1:25565\n--override vanilla.example.org=args-server-1\nIf you configured server in file:\n--override vanilla.example.org=lobby" };
+
     [Subscribe]
     public void OnProxyStarting(ProxyStartingEvent _)
     {
         dependencies.Register(services => services.AddSingleton<IMojangService, MojangService>());
+
+        OverridesOption.Validators.Add(result =>
+        {
+            foreach (var option in result.GetValueOrDefault<string[]>())
+            {
+                var parts = option.Split('=');
+
+                if (parts.Length is 2 && !string.IsNullOrWhiteSpace(parts[0]) && !string.IsNullOrWhiteSpace(parts[1]))
+                    continue;
+
+                result.AddError($"Override \"{option}\" must be in the format <hostname>=<server-name>.");
+                return;
+            }
+        });
+
+        console.EnsureOptionDiscovered(OverridesOption);
+    }
+
+    [Subscribe]
+    public async ValueTask OnPlayerConnected(PlayerConnectedEvent @event, CancellationToken cancellationToken)
+    {
+        if (!@event.Player.IsMinecraft)
+            return;
+
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
+            return;
+
+        var channel = await @event.Player.GetChannelAsync(cancellationToken);
+
+        var handshake = await channel.ReceivePacketAsync<HandshakePacket>(cancellationToken);
+        await events.ThrowAsync(new MessageReceivedEvent(Side.Client, Side.Client, Side.Proxy, Direction.Serverbound, handshake, null, @event.Player), cancellationToken);
+
+        // Player is anonymous
+        @event.Result = handshake.IsStatusQuery;
+        @event.ConnectedWith = new RuntimeServer(nameof(@event.ConnectedWith), handshake.ServerAddress, handshake.ServerPort);
+    }
+
+    [Subscribe]
+    public async ValueTask OnPlayerSearchServer(PlayerSearchServerEvent @event, CancellationToken cancellationToken)
+    {
+        if (!@event.Player.IsMinecraft)
+            return;
+
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
+            return;
+
+        if (@event.Result is not null)
+            return;
+
+        var serverOverrides = servers.All.Where(server => !string.IsNullOrWhiteSpace(server.Override)).Select(server => $"{server.Override}={server.Name}");
+        var optionOverrides = console.GetOptionValue(OverridesOption) ?? [];
+
+        foreach (var value in serverOverrides.Concat(optionOverrides))
+        {
+            var parts = value.Split("=");
+
+            if (parts.Length is not 2)
+                continue;
+
+            var overrideName = parts[0];
+            var serverName = parts[1];
+
+            if (!string.Equals(@event.ConnectedWith?.Host, overrideName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (!servers.TryGetByName(serverName, out var server))
+            {
+                @event.Player.Logger.LogWarning("Failed to find server {Server} from redirection override name {Name}", serverName, overrideName);
+                continue;
+            }
+
+            @event.Result = server;
+            @event.Player.Logger.LogTrace("Server overridden to {Server}", server.Name);
+            break;
+        }
     }
 
     [Subscribe]
@@ -46,29 +128,30 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
             return;
         }
 
-        if (await IsPlayerAuthenticatedAsync(@event.Player, cancellationToken))
-        {
-            // since IPlayer is already authenticated, we have no choice but to continue authenticating IServer on proxy side
-            @event.Result = AuthenticationSide.Proxy;
+        @event.Result = AuthenticationSide.Proxy;
 
-            if (await IsPlayerPlayingAsync(@event.Player, cancellationToken))
-                await FinishPlayingAsync(@event.Link, cancellationToken);
-        }
-        else
-        {
-            var handshake = await @event.Link.ReceivePacketAsync<HandshakePacket>(cancellationToken);
+        if (!await IsPlayerAuthenticatedAsync(@event.Player, cancellationToken))
+            return;
 
-            // Status query
-            if (handshake.IsStatusQuery)
-                await @event.Link.SendPacketAsync(handshake, cancellationToken);
-
-            await events.ThrowAsync(new HandshakeCompletedEvent(@event.Link.Player, @event.Link, Side.Client, handshake.ServerAddress, handshake.NextState), cancellationToken);
-
-            if (!handshake.IsStatusQuery)
-                @event.Result = AuthenticationSide.Proxy;
-        }
+        if (await IsPlayerPlayingAsync(@event.Player, cancellationToken))
+            await FinishPlayingAsync(@event.Link, cancellationToken);
     }
 
+    [Subscribe]
+    public async ValueTask OnLinkStarted(LinkStartedEvent @event, CancellationToken cancellationToken)
+    {
+        if (!@event.Player.IsMinecraft)
+            return;
+
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
+            return;
+
+        if (!@event.IsFirstLink || !@event.IsAnonymous)
+            return;
+
+        await @event.Link.SendPacketAsync(new HandshakePacket { NextState = 1, ProtocolVersion = @event.Player.ProtocolVersion.Value, ServerAddress = @event.Link.Server.Host, ServerPort = (ushort)@event.Link.Server.Port }, cancellationToken);
+        await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Status, @event.Link.ServerChannel, cancellationToken);
+    }
 
     [Subscribe]
     public async ValueTask OnPlayerKickEvent(PlayerKickEvent @event, CancellationToken cancellationToken)
@@ -169,7 +252,14 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         var handshakeBuildEventResult = await events.ThrowWithResultAsync(new HandshakeBuildEvent(link.Player, link), cancellationToken) ?? new(NextState: 2);
 
         await HandshakeWithServerAsync(link, handshakeBuildEventResult.Packet, handshakeBuildEventResult.NextState, cancellationToken);
-        await events.ThrowAsync(new HandshakeCompletedEvent(link.Player, link, Side.Server, handshakeBuildEventResult.ServerAddress ?? link.Server.Host, handshakeBuildEventResult.NextState), cancellationToken);
+
+        switch (handshakeBuildEventResult)
+        {
+            case { NextState: 2 or 3 }:
+                await link.Player.SetPhaseAsync(link, Side.Server, Phase.Login, link.ServerChannel, cancellationToken);
+                break;
+        }
+
         await StartServerLoginAsync(link, cancellationToken);
 
         while (!cancellationToken.IsCancellationRequested)

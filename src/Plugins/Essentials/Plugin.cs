@@ -27,14 +27,9 @@ public class Plugin(IDependencyService dependencies, IConsoleService console) : 
         dependencies.Register(services =>
         {
             services.AddSingleton<RedirectionService>();
-            services.AddSingleton<OverridesService>();
             services.AddSingleton<ModerationService>();
             services.AddSingleton<PlatformService>();
             services.AddSingleton<TraceService>();
         });
-
-        var overrides = dependencies.GetRequiredService<OverridesService>();
-        overrides.OverridesOption.Validators.Add(OverridesService.ValidateOverride);
-        console.EnsureOptionDiscovered(overrides.OverridesOption);
     }
 }

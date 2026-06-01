@@ -9,7 +9,6 @@ using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Players;
-using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Players.Contexts;
 
 namespace Void.Proxy.Plugins.Common.Extensions;

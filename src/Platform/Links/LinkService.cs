@@ -32,59 +32,31 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
     {
         logger.LogTrace("Looking for a server for {Player} player", player);
 
-        // var selectedServer = await events.ThrowWithResultAsync(new PlayerSearchServerEvent(player.Unwrap()), cancellationToken);
-        // 
-        // if (selectedServer is not null)
-        // {
-        //     if (ignoredServers.Contains(selectedServer))
-        //         logger.LogWarning("Selected server {Server} for player {Player} is in ignored servers list", selectedServer, player);
-        // 
-        //     return await ConnectCoreAsync(player, selectedServer, cancellationToken);
-        // }
+        var firstConnection = player.Context.Channel is null;
+        _ = await player.GetChannelBuilderAsync(cancellationToken);
 
-        foreach (var server in servers.All.Except(ignoredServers))
-        {
-            try
-            {
-                var result = await ConnectCoreAsync(player, server, cancellationToken);
+        // After searching for player channel builder, player might be upgraded to another implementation, unwrap proxy again
+        player = player.Unwrap();
 
-                if (result is not ConnectionResult.Connected)
-                    continue;
+        var anonymous = false;
 
-                return ConnectionResult.Connected;
-            }
-            catch (StreamException)
-            {
-                // Try next server
-            }
-        }
+        if (!firstConnection)
+            return await ConnectAnyAsync(player, ignoredServers, anonymous, cancellationToken);
 
-        return ConnectionResult.NotConnected;
+        var playerConnectedEvent = new PlayerConnectedEvent(player);
+        anonymous = await events.ThrowWithResultAsync(playerConnectedEvent, cancellationToken);
+
+        var selectedServer = await events.ThrowWithResultAsync(new PlayerSearchServerEvent(player.Unwrap(), playerConnectedEvent.ConnectedWith), cancellationToken);
+
+        if (selectedServer is not null && await ConnectAsync(player, selectedServer, anonymous, cancellationToken) is ConnectionResult.Connected)
+            return ConnectionResult.Connected;
+
+        return await ConnectAnyAsync(player, ignoredServers, anonymous, cancellationToken);
     }
 
     public async ValueTask<ConnectionResult> ConnectAsync(IPlayer player, IServer server, CancellationToken cancellationToken = default)
     {
-        var previousServer = player.Server;
-        var result = await ConnectCoreAsync(player, server, cancellationToken);
-
-        if (result is ConnectionResult.NotConnected)
-        {
-            if (previousServer is null)
-            {
-                await player.KickAsync("Could not redirect you to the target server and you had no previous server.", cancellationToken);
-                return result;
-            }
-
-            result = await ConnectCoreAsync(player, previousServer, cancellationToken);
-
-            if (result is ConnectionResult.NotConnected)
-            {
-                await player.KickAsync("Could not redirect you to the target server nor previous server.", cancellationToken);
-                return result;
-            }
-        }
-
-        return result;
+        return await ConnectAsync(player, server, anonymous: false, cancellationToken);
     }
 
     public bool TryGetLink(IPlayer player, [NotNullWhen(true)] out ILink? link)
@@ -104,6 +76,51 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
     public bool HasLink(IPlayer player)
     {
         return _activeLinks.Any(link => link.Player == player);
+    }
+
+    private async ValueTask<ConnectionResult> ConnectAnyAsync(IPlayer player, IEnumerable<IServer> ignoredServers, bool anonymous, CancellationToken cancellationToken)
+    {
+        foreach (var server in servers.All.Except(ignoredServers))
+        {
+            try
+            {
+                var result = await ConnectAsync(player, server, anonymous, cancellationToken);
+
+                if (result is ConnectionResult.Connected)
+                    return ConnectionResult.Connected;
+            }
+            catch (StreamException)
+            {
+                // Try next server
+            }
+        }
+
+        return ConnectionResult.NotConnected;
+    }
+
+    public async ValueTask<ConnectionResult> ConnectAsync(IPlayer player, IServer server, bool anonymous = false, CancellationToken cancellationToken = default)
+    {
+        var playerChannel = await player.GetChannelAsync(cancellationToken);
+
+        var previousServer = player.Server;
+        var result = await ConnectCoreAsync(playerChannel, player, server, firstConnection: previousServer is null, anonymous, cancellationToken);
+
+        if (result is ConnectionResult.Connected)
+            return result;
+
+        if (previousServer is null)
+        {
+            await player.KickAsync("Could not redirect you to the target server and you had no previous server.", cancellationToken);
+            return result;
+        }
+
+        result = await ConnectCoreAsync(playerChannel, player, previousServer, firstConnection: false, anonymous, cancellationToken);
+
+        if (result is not ConnectionResult.NotConnected)
+            return result;
+
+        await player.KickAsync("Could not redirect you to the target server nor previous server.", cancellationToken);
+        return result;
     }
 
     [Subscribe(PostOrder.First)]
@@ -132,11 +149,11 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
         logger.LogTrace("Stopped forwarding {Link} traffic", @event.Link);
     }
 
-    private async ValueTask<ConnectionResult> ConnectCoreAsync(IPlayer player, IServer server, CancellationToken cancellationToken = default)
+    private async ValueTask<ConnectionResult> ConnectCoreAsync(INetworkChannel playerChannel, IPlayer player, IServer server, bool firstConnection, bool anonymous, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        // Since cancellationToken might be coming from ILink, it will be cancelled after link is destroyed.
+        // Since cancellationToken might be coming from ILink, it will be canceled after link is destroyed.
         // All further events should have application lifetime tokens in order to know when they are forced to stop.
         // Also stopping token is used for all events triggered by link.
         cancellationToken = hostApplicationLifetime.ApplicationStopping;
@@ -147,14 +164,6 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
             await link.StopAsync(cancellationToken);
 
         logger.LogTrace("Connecting {Player} player to a {Server} server", unwrappedPlayer, server);
-
-        var firstConnection = unwrappedPlayer.Context.Channel is null;
-        _ = await unwrappedPlayer.GetChannelBuilderAsync(cancellationToken);
-
-        // After searching for player channel builder, player might be upgraded to another implementation, unwrap proxy again
-        unwrappedPlayer = player.Unwrap();
-
-        var playerChannel = await unwrappedPlayer.GetChannelAsync(cancellationToken);
 
         INetworkChannel serverChannel;
 
@@ -170,54 +179,42 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
 
         try
         {
-            if (firstConnection)
-                await events.ThrowAsync(new PlayerConnectedEvent(unwrappedPlayer), cancellationToken);
-
             link = await events.ThrowWithResultAsync(new CreateLinkEvent(unwrappedPlayer, server, playerChannel, serverChannel), cancellationToken)
                    ?? new Link(unwrappedPlayer, server, playerChannel, serverChannel, logger, events, cancellationToken);
 
             _weakLinks.Add(link);
 
-            events.RegisterListeners(link);
+            events.RegisterListeners(cancellationToken, link);
 
-            var side = await events.ThrowWithResultAsync(new AuthenticationStartingEvent(link, unwrappedPlayer), cancellationToken);
-
-            if (side is AuthenticationSide.Proxy && !await unwrappedPlayer.IsProtocolSupportedAsync(cancellationToken))
+            if (!anonymous)
             {
-                logger.LogWarning("Player {Player} protocol is not supported, forcing authentication to Server side", unwrappedPlayer);
-                side = AuthenticationSide.Server;
-            }
+                var side = await events.ThrowWithResultAsync(new AuthenticationStartingEvent(link, unwrappedPlayer), cancellationToken);
 
-            var result = await events.ThrowWithResultAsync(new AuthenticationStartedEvent(link, unwrappedPlayer, side), cancellationToken)
-                         ?? AuthenticationResult.NoResult;
-
-            await events.ThrowAsync(new AuthenticationFinishedEvent(link, unwrappedPlayer, side, result), cancellationToken);
-
-            if (!result.IsAuthenticated)
-            {
-                await unwrappedPlayer.KickAsync($"You are not authorized to play:\n{result.Message}", cancellationToken);
-                return ConnectionResult.NotConnected;
-            }
-            else
-            {
-                using (await _lock.LockAsync(cancellationToken))
-                    _activeLinks.Add(link);
-
-                await link.StartAsync(cancellationToken);
-                await events.ThrowAsync(new LinkStartedEvent(link, unwrappedPlayer, IsFirstLink: firstConnection), cancellationToken);
-
-                if (firstConnection)
+                if (side is AuthenticationSide.Proxy && !await unwrappedPlayer.IsProtocolSupportedAsync(cancellationToken))
                 {
-                    // TODO: This was moved from the method above
-                    // Reimplement
-                    var selectedServer = await events.ThrowWithResultAsync(new PlayerSearchServerEvent(player.Unwrap()), cancellationToken);
-
-                    if (selectedServer is not null)
-                        return await ConnectCoreAsync(player, selectedServer, cancellationToken);
+                    logger.LogWarning("Player {Player} protocol is not supported, forcing authentication to Server side", unwrappedPlayer);
+                    side = AuthenticationSide.Server;
                 }
 
-                return ConnectionResult.Connected;
+                var result = await events.ThrowWithResultAsync(new AuthenticationStartedEvent(link, unwrappedPlayer, side), cancellationToken)
+                             ?? AuthenticationResult.NoResult;
+
+                await events.ThrowAsync(new AuthenticationFinishedEvent(link, unwrappedPlayer, side, result), cancellationToken);
+
+                if (!result.IsAuthenticated)
+                {
+                    await unwrappedPlayer.KickAsync($"You are not authorized to play:\n{result.Message}", cancellationToken);
+                    return ConnectionResult.NotConnected;
+                }
             }
+
+            using (await _lock.LockAsync(cancellationToken))
+                _activeLinks.Add(link);
+
+            await events.ThrowAsync(new LinkStartedEvent(link, unwrappedPlayer, firstConnection, anonymous), cancellationToken);
+            await link.StartAsync(cancellationToken);
+
+            return ConnectionResult.Connected;
         }
         catch (StreamException)
         {

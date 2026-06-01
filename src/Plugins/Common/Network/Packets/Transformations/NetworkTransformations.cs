@@ -22,37 +22,39 @@ namespace Void.Proxy.Plugins.Common.Network.Packets.Transformations;
 
 public static class NetworkTransformations
 {
-    public static PacketTransformation[] KeepAlive { get; } = [
+    public static PacketTransformation[] KeepAlive { get; } =
+    [
         new KeepAliveTransformation1_8(),
         new KeepAliveTransformation1_12_2()
     ];
 
-    public static PacketTransformation[] ChatMessage { get; } = [
+    public static PacketTransformation[] ChatMessage { get; } =
+    [
         new ChatMessageTransformation1_8(),
         new ChatMessageTransformation1_9(),
         new ChatMessageTransformation1_12(),
         new ChatMessageTransformation1_16()
     ];
 
-    public static PacketTransformation[] SystemChatMessage { get; } = [
+    public static PacketTransformation[] SystemChatMessage { get; } =
+    [
         new SystemChatMessageTransformation1_20_3(),
         new SystemChatMessageTransformation1_21_5()
     ];
 
-    public static PacketTransformation[] PlayDisconnect { get; } = [
+    public static PacketTransformation[] PlayDisconnect { get; } =
+    [
         new PlayDisconnectTransformation1_20_3()
     ];
 
     public static void Register(ILink? link, IPlayer player, Phase phase)
     {
-        // Not really possible, but just to be sure
         link ??= player.Link;
-
-        ArgumentNullException.ThrowIfNull(link);
 
         switch (phase)
         {
             case Phase.Play:
+                ArgumentNullException.ThrowIfNull(link);
                 RegisterMappings<KeepAliveRequestPacket>(link, KeepAlive.SelectMany(keepAlive => keepAlive.Mappings));
                 RegisterMappings<KeepAliveResponsePacket>(link, KeepAlive.SelectMany(keepAlive => keepAlive.Mappings));
                 RegisterMappings<ChatMessagePacket>(link, ChatMessage.SelectMany(chatMessage => chatMessage.Mappings));
@@ -73,7 +75,7 @@ public static class NetworkTransformations
     {
         var logger = link.Player.Logger;
         var protocolVersion = link.Player.ProtocolVersion;
-        
+
         logger.LogTrace("Registering {PacketType} packet transformations", typeof(T));
 
         link.PlayerChannel.MinecraftRegistries.PacketTransformationsSystem.All.RegisterTransformations<T>(protocolVersion, mappings);

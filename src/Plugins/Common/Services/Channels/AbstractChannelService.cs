@@ -8,6 +8,7 @@ using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Network.Channels;
+using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 using Void.Proxy.Plugins.Common.Network.Streams.Network;
 using Void.Proxy.Plugins.Common.Network.Streams.Packet;
 
@@ -20,7 +21,7 @@ public abstract class AbstractChannelService : IPluginCommonService
     {
         if (!IsSupportedHandshake(@event.Buffer, out var protocolVersion))
             return;
-
+        
         // This is definitely a Minecraft connection
         var player = await @event.Player.UpgradeToMinecraftAsync(protocolVersion, cancellationToken);
 

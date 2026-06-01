@@ -173,7 +173,6 @@ public static class PlayerExtensions
 
             var events = player.GetRequiredService<IEventService>();
             await events.ThrowAsync(new ChannelCreatedEvent(player, Side.Server, channel), cancellationToken);
-
             return channel;
         }
 

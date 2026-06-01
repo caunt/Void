@@ -10,8 +10,8 @@ using Void.Proxy.Api.Links;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Players;
+using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins;
-using Void.Proxy.Plugins.Common.Events;
 using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 using Void.Proxy.Plugins.Common.Services.Registries;
@@ -73,34 +73,19 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
         if (@event.Message is HandshakePacket packet && !Plugin.SupportedVersions.Contains(ProtocolVersion.Get(packet.ProtocolVersion)))
             return;
 
+        var playerChannel = await @event.Player.GetChannelAsync(cancellationToken);
+
         switch (@event.Message)
         {
             case HandshakePacket handshake:
                 if (handshake.NextState is 1)
-                    await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Status, @event.Link.PlayerChannel, cancellationToken);
+                    await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Status, playerChannel, cancellationToken);
                 else if (handshake.NextState is 2 or 3)
-                    await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Login, @event.Link.PlayerChannel, cancellationToken);
+                    await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Login, playerChannel, cancellationToken);
 
                 break;
             case LoginSuccessPacket:
-                await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Play, @event.Link.ServerChannel, cancellationToken);
-                break;
-        }
-    }
-
-    [Subscribe]
-    public async ValueTask OnHandshakeCompleted(HandshakeCompletedEvent @event, CancellationToken cancellationToken)
-    {
-        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
-            return;
-
-        switch (@event)
-        {
-            case { Side: Side.Client, NextState: 1 }:
-                await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Status, @event.Link.ServerChannel, cancellationToken);
-                break;
-            case { Side: Side.Server, NextState: 2 or 3 }:
-                await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Login, @event.Link.ServerChannel, cancellationToken);
+                await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Play, playerChannel, cancellationToken);
                 break;
         }
     }

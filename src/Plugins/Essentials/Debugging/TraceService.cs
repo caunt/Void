@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Network.Messages.Packets;
+using Void.Proxy.Api;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
-using Void.Proxy.Api.Extensions;
 using Void.Proxy.Api.Network;
 using Void.Proxy.Api.Network.Messages;
 
@@ -17,18 +17,28 @@ public partial class TraceService(ILogger<TraceService> logger) : IEventListener
         switch (@event.Message)
         {
             case IBufferedBinaryMessage bufferedBinaryMessage:
-                LogReceivedBufferFromSide(bufferedBinaryMessage.Stream.Length, @event.From, @event.From.FromLink(@event.Link));
+                LogReceivedBufferFromSide(bufferedBinaryMessage.Stream.Length, @event.From, From());
                 return;
             case IMinecraftBinaryMessage binaryMessage:
-                LogReceivedBinaryPacketFromSide(binaryMessage.Id, binaryMessage.Stream.Length, @event.From, @event.From.FromLink(@event.Link));
+                LogReceivedBinaryPacketFromSide(binaryMessage.Id, binaryMessage.Stream.Length, @event.From, From());
                 return;
             case IMinecraftPacket minecraftPacket:
-                LogReceivedPacketFromSide(minecraftPacket, @event.From, @event.From.FromLink(@event.Link));
+                LogReceivedPacketFromSide(minecraftPacket, @event.From, From());
                 return;
             default:
                 LogReceivedPacket(@event.Message);
                 break;
         }
+
+        return;
+
+        object? From() => @event.From switch
+        {
+            Side.Client => @event.Player,
+            Side.Server => @event.Link?.Server,
+            Side.Proxy => typeof(IProxy),
+            _ => null
+        };
     }
 
     [Subscribe(PostOrder.Last)]
@@ -37,18 +47,28 @@ public partial class TraceService(ILogger<TraceService> logger) : IEventListener
         switch (@event.Message)
         {
             case IBufferedBinaryMessage bufferedBinaryMessage:
-                LogSentBufferToDirection(bufferedBinaryMessage.Stream.Length, @event.To, @event.To.FromLink(@event.Link));
+                LogSentBufferToDirection(bufferedBinaryMessage.Stream.Length, @event.To, To());
                 return;
             case IMinecraftBinaryMessage binaryMessage:
-                LogSentBinaryPacketToDirection(binaryMessage.Id, binaryMessage.Stream.Length, @event.To, @event.To.FromLink(@event.Link));
+                LogSentBinaryPacketToDirection(binaryMessage.Id, binaryMessage.Stream.Length, @event.To, To());
                 return;
             case IMinecraftPacket minecraftPacket:
-                LogSentPacketToDirection(minecraftPacket, @event.To, @event.To.FromLink(@event.Link));
+                LogSentPacketToDirection(minecraftPacket, @event.To, To());
                 return;
             default:
                 LogSentPacket(@event.Message);
                 break;
         }
+
+        return;
+
+        object? To() => @event.To switch
+        {
+            Side.Client => @event.Player,
+            Side.Server => @event.Link?.Server,
+            Side.Proxy => typeof(IProxy),
+            _ => null
+        };
     }
 
     [LoggerMessage(LogLevel.Trace, "Received buffer length {Length} from {Side} {PlayerOrServer}")]
