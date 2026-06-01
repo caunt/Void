@@ -251,14 +251,13 @@ public partial class EventService(ILogger<EventService> logger, IContainer conta
                 // Listener should be exactly Scoped
                 if (dependencies.TryGetServiceReuse(serviceType, out var lifetime) && lifetime is ServiceLifetime.Scoped)
                 {
-                    var scope = dependencies.GetEntryPoint(scopedEvent.Player).GetRequiredService<IContainer>();
-                    var scoped = scope.GetService(serviceType);
+                    var scoped = dependencies.GetEntryPoint(scopedEvent.Player, serviceType.Assembly).GetService(serviceType);
 
                     if (scoped is null)
                         throw new InvalidOperationException($"Failed to resolve scoped listener of type {serviceType.FullName} for event {eventType.FullName}.");
 
                     // Skip wrong scopes
-                    if (scoped != listener)
+                    if (!ReferenceEquals(scoped, listener))
                         continue;
                 }
             }

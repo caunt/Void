@@ -66,7 +66,7 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         var channel = await @event.Player.GetChannelAsync(cancellationToken);
 
         var handshake = await channel.ReceivePacketAsync<HandshakePacket>(cancellationToken);
-        await events.ThrowAsync(new MessageReceivedEvent(Side.Client, Side.Client, Side.Proxy, Direction.Serverbound, handshake, null!, @event.Player), cancellationToken);
+        await events.ThrowAsync(new MessageReceivedEvent(Side.Client, Side.Client, Side.Proxy, Direction.Serverbound, handshake, Link: null!, @event.Player), cancellationToken);
 
         // Player is anonymous
         @event.Result = handshake.IsStatusQuery;

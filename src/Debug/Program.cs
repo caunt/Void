@@ -31,7 +31,7 @@ string[] arguments =
 [
     "--read-only",
     "--logging", nameof(LogLevel.Debug),
-    "--forwarding-modern-key", "aaa",
+    "--forwarding-modern-key", "GHo9pV4daKzS7ujtaWgPBcBgLZG8qqGf",
     "--ignore-file-servers",
     "--port", "25565",
     "--server", "127.0.0.1:25566",
@@ -41,8 +41,8 @@ string[] arguments =
     "--override", "s1=args-server-1",
     "--override", "s2=args-server-2",
     "--override", "s3=args-server-3",
-    "--override", "s4=args-server-4"
-    // "--offline"
+    "--override", "s4=args-server-4",
+    "--offline"
 ];
 
 Environment.SetEnvironmentVariable("MINECRAFT_API_BASE_URL", "http://minecraft.api.svc.cluster.local:80/");
@@ -87,7 +87,7 @@ async ValueTask StartDockerEnvironmentAsync(CancellationToken cancellationToken 
             "DOWNLOAD_EXTRA_CONFIGS=patches<https://raw.githubusercontent.com/caunt/ItzgTemplates/refs/heads/main/config--paper-global-yml.patch.json,patches<https://raw.githubusercontent.com/caunt/ItzgTemplates/refs/heads/main/config--paper-yml.patch.json",
             "CFG_VELOCITY_ENABLED=TRUE",
             "CFG_VELOCITY_ONLINE_MODE=TRUE",
-            "CFG_VELOCITY_SECRET=aaa"
+            "CFG_VELOCITY_SECRET=GHo9pV4daKzS7ujtaWgPBcBgLZG8qqGf"
         };
 
         variables.AddRange(server.EnvironmentVariables.AsEnumerable().Select(keyPair => $"{keyPair.Key}={keyPair.Value}"));
