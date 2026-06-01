@@ -191,6 +191,22 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         return CombineLazy(() => GetRootContainers(preferredAssembly));
     }
 
+    // DependencyService.cs
+
+    public bool IsInPlayerScope(IPlayer player, object service)
+    {
+        var serviceType = service.GetType();
+        var playerStableHashCode = player.GetStableHashCode();
+
+        if (!_plugins.TryGetValue(serviceType.Assembly, out var pluginContainer))
+            return false;
+
+        if (!pluginContainer.Scopes.TryGetValue(playerStableHashCode, out var playerScope))
+            return false;
+
+        return playerScope.CurrentScope.SelectMany(scope => scope.GetSnapshotOfServicesWithFactoryIDs()).Any(scopedService => ReferenceEquals(scopedService.Value, service));
+    }
+
     [Subscribe(PostOrder.First)]
     public void OnPluginUnloading(PluginUnloadingEvent @event)
     {
