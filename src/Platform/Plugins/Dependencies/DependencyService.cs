@@ -191,8 +191,6 @@ public class DependencyService(ILogger<DependencyService> logger, IContainer roo
         return CombineLazy(() => GetRootContainers(preferredAssembly));
     }
 
-    // DependencyService.cs
-
     public bool IsInPlayerScope(IPlayer player, object service)
     {
         var serviceType = service.GetType();

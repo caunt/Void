@@ -2,6 +2,7 @@
 using Void.Minecraft.Events;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Channels.Extensions;
+using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Network;
@@ -28,6 +29,8 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
     {
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
+
+        Console.WriteLine($"SET {@event.Side} TO {@event.Phase}");
 
         switch (@event.Side, @event.Phase)
         {
@@ -63,6 +66,7 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
             case (Side.Server, Phase.Configuration):
                 @event.Channel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundConfigurationMappings);
                 @event.Channel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ServerboundConfigurationMappings);
+                Console.WriteLine("set server registries to configuration");
                 break;
             case (Side.Server, Phase.Play):
                 @event.Channel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundPlayMappings);
@@ -84,6 +88,13 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
 
         switch (@event.Message)
         {
+            case IMinecraftBinaryMessage { Id: 0x03 } binaryMessage:
+                Console.WriteLine(@event.Direction + " " + binaryMessage);
+                return;
+        }
+
+        switch (@event.Message)
+        {
             case HandshakePacket handshake:
                 if (handshake.NextState is 1)
                     await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Status, playerChannel, cancellationToken);
@@ -93,10 +104,8 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
                 break;
             case AcknowledgeConfigurationPacket:
             case LoginAcknowledgedPacket:
+                Console.WriteLine("ghjghjghj");
                 await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Configuration, playerChannel, cancellationToken);
-                break;
-            case AcknowledgeFinishConfigurationPacket:
-                await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Play, playerChannel, cancellationToken);
                 break;
         }
     }
@@ -113,6 +122,7 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
                 await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Configuration, @event.Link.ServerChannel, cancellationToken);
                 break;
             case AcknowledgeFinishConfigurationPacket:
+                await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Play, @event.Link.PlayerChannel, cancellationToken);
                 await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Play, @event.Link.ServerChannel, cancellationToken);
                 break;
         }
