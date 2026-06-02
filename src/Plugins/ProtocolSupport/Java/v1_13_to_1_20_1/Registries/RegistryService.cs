@@ -23,7 +23,7 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
 {
     private readonly IPlugin _plugin = plugin;
 
-    [Subscribe]
+    [Subscribe(PostOrder.First + 1)]
     public async ValueTask OnPhaseChanged(PhaseChangedEvent @event, CancellationToken cancellationToken)
     {
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
