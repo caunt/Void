@@ -45,11 +45,6 @@ string[] arguments =
     "--offline"
 ];
 
-Environment.SetEnvironmentVariable("MINECRAFT_API_BASE_URL", "http://minecraft.api.svc.cluster.local:80/");
-Environment.SetEnvironmentVariable("MINECRAFT_RABBITMQ_CONNECTION_STRING", "amqp://user:BU5bnxzotvfWkygJ8KdBOHKszT5sFSHO@minecraft-rabbitmq.rabbitmq.svc.cluster.local:5672/");
-Environment.SetEnvironmentVariable("VOID_NUGET_REPOSITORIES", "http://minecraft.bagetter.svc.cluster.local:80/v3/index.json");
-Environment.SetEnvironmentVariable("VOID_PLUGINS", "https://github.com/Shonz1/Void.Plugins/releases/latest/download/void-tab-lists.dll,https://github.com/Shonz1/Void.Plugins/releases/latest/download/void-player-positions.dll,https://github.com/Shonz1/Void.Plugins/releases/latest/download/void-menus.dll,https://pub-637ef13bcc21413ab47c77dd6e1399cf.r2.dev/ExamplePlugin.dll");
-
 Console.WriteLine(@$"Starting {servers.Length} minecraft container(s)");
 
 await StartDockerEnvironmentAsync();
