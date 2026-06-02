@@ -10,7 +10,6 @@ using Void.Proxy.Api.Events.Services;
 using Void.Proxy.Api.Logging;
 using Void.Proxy.Api.Network.Exceptions;
 using Void.Proxy.Api.Players;
-using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Api.Settings;
 
@@ -27,28 +26,94 @@ public class Platform(
     ISettings settings,
     IHostApplicationLifetime hostApplicationLifetime) : IProxy, IHostedService
 {
-    private readonly Option<int> _portOption = new("--port")
-    {
-        Description = "Sets the listening port"
-    };
+    private readonly Option<string> _interfaceOption = new("--interface") { Description = "Sets the listening network interface" };
 
-    private readonly Option<string> _interfaceOption = new("--interface")
-    {
-        Description = "Sets the listening network interface"
-    };
+    private readonly Option<LogLevel> _loggingOption = new("--logging") { Description = "Sets the logging level" };
 
-    private readonly Option<bool> _offlineOption = new("--offline")
-    {
-        Description = "Allows players to connect without Mojang authorization"
-    };
+    private readonly Option<bool> _offlineOption = new("--offline") { Description = "Allows players to connect without Mojang authorization" };
 
-    private readonly Option<LogLevel> _loggingOption = new("--logging")
-    {
-        Description = "Sets the logging level"
-    };
+    private readonly Option<int> _portOption = new("--port") { Description = "Sets the listening port" };
 
     private Task? _backgroundTask;
     private TcpListener? _listener;
+
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+#if RELEASE
+        logLevelSwitch.Level = settings.LogLevel;
+#else
+        logLevelSwitch.Level = LogLevel.Debug;
+#endif
+
+        if (console.TryGetOptionValue(_loggingOption, out var loggingOptionValue))
+            logLevelSwitch.Level = loggingOptionValue;
+
+        logger.LogInformation("Starting {Name} {Version} proxy", nameof(Void), $"v{GetType().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion}");
+        var startTime = Stopwatch.GetTimestamp();
+
+        logger.LogTrace("Working directory is {Path}", runOptions.WorkingDirectory);
+
+        if (bool.TryParse(Environment.GetEnvironmentVariable("VOID_OFFLINE"), out var offlineVariable))
+            settings.Offline = offlineVariable;
+
+        if (console.TryGetOptionValue(_offlineOption, out var offlineOptionValue))
+            settings.Offline = offlineOptionValue;
+
+        if (settings.Offline)
+            logger.LogWarning("Offline mode is enabled. Players will be able to connect without Mojang authentication.");
+
+        logger.LogInformation("Loading plugins");
+        await plugins.LoadPluginsAsync(cancellationToken: cancellationToken);
+
+        await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
+
+        logger.LogDebug("Starting connection listener");
+        _listener = new TcpListener(IPAddress.IPv6Any, Port);
+        _listener.Server.DualMode = true;
+        _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+
+        await StartAcceptingConnectionsAsync(cancellationToken);
+
+        logger.LogInformation("Connection listener started on address {Address}:{Port}", Interface, Port);
+
+        _backgroundTask = ExecuteAsync(hostApplicationLifetime.ApplicationStopping);
+
+        var totalTime = Stopwatch.GetElapsedTime(startTime);
+        logger.LogInformation("Proxy started in {StartTimeSeconds} seconds!", totalTime.TotalSeconds.ToString("F"));
+    }
+
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        Status = ProxyStatus.Stopping;
+
+        logger.LogInformation("Stopping proxy");
+        await events.ThrowAsync<ProxyStoppingEvent>(cancellationToken);
+
+        await players.ForEachAsync(async (player, cancellationToken) =>
+        {
+            try
+            {
+                await players.KickPlayerAsync(player, "Proxy is shutting down", cancellationToken);
+            }
+            catch (StreamClosedException)
+            {
+                // Player disconnected before we could kick them, ignore
+            }
+        }, cancellationToken);
+
+        logger.LogInformation("Awaiting completion of connection listener");
+        if (_backgroundTask is not null)
+            await _backgroundTask;
+
+        _listener?.Stop();
+
+        await events.ThrowAsync<ProxyStoppedEvent>(cancellationToken);
+
+        logger.LogInformation("Unloading plugins");
+        await plugins.UnloadContainersAsync(cancellationToken);
+
+        logger.LogInformation("Proxy stopped!");
+    }
 
     public ProxyStatus Status
     {
@@ -61,6 +126,7 @@ public class Platform(
     }
 
     public IPAddress Interface => console.TryGetOptionValue(_interfaceOption, out var value) && IPAddress.TryParse(value, out var address) ? address : settings.Address;
+
     public int Port => _listener switch
     {
         { LocalEndpoint: IPEndPoint ipEndPoint } => ipEndPoint.Port,
@@ -130,83 +196,6 @@ public class Platform(
         }
     }
 
-    public async Task StartAsync(CancellationToken cancellationToken)
-    {
-#if RELEASE
-        logLevelSwitch.Level = settings.LogLevel;
-#else
-        logLevelSwitch.Level = LogLevel.Debug;
-#endif
-
-        if (console.TryGetOptionValue(_loggingOption, out var loggingOptionValue))
-            logLevelSwitch.Level = loggingOptionValue;
-
-        logger.LogInformation("Starting {Name} {Version} proxy", nameof(Void), $"v{GetType().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion}");
-        var startTime = Stopwatch.GetTimestamp();
-
-        logger.LogTrace("Working directory is {Path}", runOptions.WorkingDirectory);
-
-        if (bool.TryParse(Environment.GetEnvironmentVariable("VOID_OFFLINE"), out var offlineVariable))
-            settings.Offline = offlineVariable;
-
-        if (console.TryGetOptionValue(_offlineOption, out var offlineOptionValue))
-            settings.Offline = offlineOptionValue;
-
-        if (settings.Offline)
-            logger.LogWarning("Offline mode is enabled. Players will be able to connect without Mojang authentication.");
-
-        logger.LogInformation("Loading plugins");
-        await plugins.LoadPluginsAsync(cancellationToken: cancellationToken);
-
-        await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
-
-        logger.LogDebug("Starting connection listener");
-        _listener = new TcpListener(Interface, Port);
-        _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-
-        await StartAcceptingConnectionsAsync(cancellationToken);
-
-        logger.LogInformation("Connection listener started on address {Address}:{Port}", Interface, Port);
-
-        _backgroundTask = ExecuteAsync(hostApplicationLifetime.ApplicationStopping);
-
-        var totalTime = Stopwatch.GetElapsedTime(startTime);
-        logger.LogInformation("Proxy started in {StartTimeSeconds} seconds!", totalTime.TotalSeconds.ToString("F"));
-    }
-
-    public async Task StopAsync(CancellationToken cancellationToken)
-    {
-        Status = ProxyStatus.Stopping;
-
-        logger.LogInformation("Stopping proxy");
-        await events.ThrowAsync<ProxyStoppingEvent>(cancellationToken);
-
-        await players.ForEachAsync(async (player, cancellationToken) =>
-        {
-            try
-            {
-                await players.KickPlayerAsync(player, "Proxy is shutting down", cancellationToken);
-            }
-            catch (StreamClosedException)
-            {
-                // Player disconnected before we could kick them, ignore
-            }
-        }, cancellationToken);
-
-        logger.LogInformation("Awaiting completion of connection listener");
-        if (_backgroundTask is not null)
-            await _backgroundTask;
-
-        _listener?.Stop();
-
-        await events.ThrowAsync<ProxyStoppedEvent>(cancellationToken);
-
-        logger.LogInformation("Unloading plugins");
-        await plugins.UnloadContainersAsync(cancellationToken);
-
-        logger.LogInformation("Proxy stopped!");
-    }
-
     private async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(_listener);
@@ -218,13 +207,13 @@ public class Platform(
             {
                 if (Status is ProxyStatus.Stopping)
                     break;
-                    
+
                 if (Status is ProxyStatus.Paused)
                 {
                     await Task.Delay(1_000, cancellationToken);
                     continue;
                 }
-                
+
                 var client = await _listener.AcceptTcpClientAsync(cancellationToken);
 
                 _ = Task.Run(async () =>
