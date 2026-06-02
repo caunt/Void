@@ -46,8 +46,10 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
                 @event.Channel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ClientboundConfigurationMappings);
                 break;
             case (Side.Client, Phase.Play):
+                logger.LogDebug("Replacing play phase packets for client side of {Player}", @event.Player);
                 @event.Channel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ServerboundPlayMappings);
                 @event.Channel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ClientboundPlayMappings);
+                logger.LogDebug("Finished replacing play phase packets for client side of {Player}", @event.Player);
                 break;
 
             case (Side.Server, Phase.Handshake):
