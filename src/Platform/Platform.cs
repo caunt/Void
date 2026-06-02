@@ -77,7 +77,7 @@ public class Platform(
 
         await StartAcceptingConnectionsAsync(cancellationToken);
 
-        logger.LogInformation("Connection listener started on address {Address}:{Port}", Interface, Port);
+        logger.LogInformation("Connection listener started on address {EndPoint}", _listener.Server.LocalEndPoint);
 
         _backgroundTask = ExecuteAsync(hostApplicationLifetime.ApplicationStopping);
 
