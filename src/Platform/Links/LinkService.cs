@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Net.Sockets;
 using Nito.AsyncEx;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Authentication;
@@ -171,9 +172,14 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
         {
             serverChannel = await unwrappedPlayer.BuildServerChannelAsync(server, cancellationToken);
         }
+        catch (SocketException exception)
+        {
+            logger.LogWarning("Failed to connect {Player} player to a {Server} server: {ExceptionMessage}", unwrappedPlayer, server, exception.Message);
+            return ConnectionResult.NotConnected;
+        }
         catch (Exception exception)
         {
-            logger.LogWarning("Player {Player} cannot connect to a {Server} server: {Exception}", unwrappedPlayer, server, exception);
+            logger.LogWarning(exception, "Player {Player} cannot connect to a {Server} server", unwrappedPlayer, server);
             return ConnectionResult.NotConnected;
         }
 
