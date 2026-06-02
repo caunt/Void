@@ -68,8 +68,11 @@ public class Platform(
         await events.ThrowAsync<ProxyStartingEvent>(cancellationToken);
 
         logger.LogDebug("Starting connection listener");
-        _listener = new TcpListener(IPAddress.IPv6Any, Port);
-        _listener.Server.DualMode = true;
+        _listener = new TcpListener(Interface.Equals(IPAddress.Any) ? IPAddress.IPv6Any : Interface, Port);
+
+        if (_listener.Server.AddressFamily is AddressFamily.InterNetworkV6)
+            _listener.Server.DualMode = true;
+
         _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
         await StartAcceptingConnectionsAsync(cancellationToken);

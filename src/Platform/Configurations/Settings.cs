@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Net.Sockets;
 using Void.Proxy.Api.Configurations.Attributes;
 using Void.Proxy.Api.Servers;
 using Void.Proxy.Api.Settings;
@@ -8,7 +9,7 @@ namespace Void.Proxy.Configurations;
 [RootConfiguration("settings")]
 public record Settings : ISettings
 {
-    public string Address { get; init; } = IPAddress.Any.ToString();
+    public string Address { get; init; } = (Socket.OSSupportsIPv6 ? IPAddress.IPv6Any : IPAddress.Any).ToString();
 
     public List<RuntimeServer> Servers { get; init; } =
     [
