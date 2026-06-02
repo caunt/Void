@@ -104,7 +104,6 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
                 break;
             case AcknowledgeConfigurationPacket:
             case LoginAcknowledgedPacket:
-                Console.WriteLine("ghjghjghj");
                 await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Configuration, playerChannel, cancellationToken);
                 break;
         }
