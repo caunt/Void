@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Void.Minecraft.Buffers;
@@ -91,10 +92,7 @@ public class ForwardingService(IPlayerContext context, ILogger logger, IConsoleS
 
         buffer.WriteVarInt((int)actualVersion);
 
-        var remoteEndPoint = context.Player.RemoteEndPoint.AsSpan();
-        var colonIndex = remoteEndPoint.IndexOf(':');
-
-        buffer.WriteString(colonIndex >= 0 ? remoteEndPoint[..colonIndex] : remoteEndPoint);
+        buffer.WriteString(IPEndPoint.Parse(context.Player.RemoteEndPoint).Address.ToString());
 
         if (context.Player.Profile is not { } profile)
         {
