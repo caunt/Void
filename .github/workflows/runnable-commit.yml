@@ -8,6 +8,7 @@ on:
     inputs:
       dotnet-version:
         description: Full version of .NET SDK
+        default: 'latest'
       skip-tests:
         description: Skip running dotnet tests
         default: true

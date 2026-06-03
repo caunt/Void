@@ -4,6 +4,7 @@ on:
       dotnet-version:
         type: string
         required: false
+        default: 'latest'
       release-please:
         type: boolean
         required: false
