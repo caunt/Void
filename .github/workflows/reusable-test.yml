@@ -3,7 +3,8 @@ on:
     inputs:
       dotnet-version:
         type: string
-        required: true
+        required: false
+        default: 'latest'
       void-version:
         type: string
         required: true
@@ -78,7 +79,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
         with:
-          dotnet-version: 'latest'
+          dotnet-version: ${{ inputs.dotnet-version }}
 
       - name: Build
         if: ${{ matrix.test-kind == 'unit' }}
