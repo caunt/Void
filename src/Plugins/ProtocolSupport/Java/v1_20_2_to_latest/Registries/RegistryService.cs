@@ -92,7 +92,7 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
         var playerChannel = await @event.Player.GetChannelAsync(cancellationToken);
 
         if (@event.Message is IMinecraftBinaryMessage { Id: 0x03 })
-            logger.LogDebug("Received non-deserialized acknowledge packet from {Player} with registries:\nCLIENT:\n{ClientRegistries}\nSERVER:\n{ClientRegistries}", @event.Player, playerChannel.MinecraftRegistries.PrintPackets(), @event.Link?.ServerChannel.MinecraftRegistries.PrintPackets());
+            logger.LogDebug("Received non-deserialized acknowledge packet from {Player} with registries:\nCLIENT:\n{ClientRegistries}\nSERVER:\n{ServerRegistries}", @event.Player, playerChannel.MinecraftRegistries.PrintPackets(), @event.Link?.ServerChannel.MinecraftRegistries.PrintPackets());
 
         switch (@event.Message)
         {
@@ -117,7 +117,7 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
             return;
 
         if (@event.Message is IMinecraftBinaryMessage { Id: 0x03 })
-            logger.LogDebug("Sent non-deserialized acknowledge packet from {Player} with registries:\nCLIENT:\n{ClientRegistries}\nSERVER:\n{ClientRegistries}", @event.Player, @event.Link?.PlayerChannel.MinecraftRegistries.PrintPackets(), @event.Link?.ServerChannel.MinecraftRegistries.PrintPackets());
+            logger.LogDebug("Sent non-deserialized acknowledge packet from {Player} with registries:\nCLIENT:\n{ClientRegistries}\nSERVER:\n{ServerRegistries}", @event.Player, @event.Link?.PlayerChannel.MinecraftRegistries.PrintPackets(), @event.Link?.ServerChannel.MinecraftRegistries.PrintPackets());
 
         switch (@event.Message)
         {
