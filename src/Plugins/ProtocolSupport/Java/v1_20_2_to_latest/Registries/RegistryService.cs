@@ -13,6 +13,7 @@ using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Common.Extensions;
+using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
 using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 using Void.Proxy.Plugins.Common.Services.Registries;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Packets.Serverbound;
@@ -117,11 +118,13 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
             case LoginAcknowledgedPacket:
                 await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Configuration, @event.Link.ServerChannel, cancellationToken);
                 break;
-            case AcknowledgeFinishConfigurationPacket:
+            case FinishConfigurationPacket:
                 logger.LogDebug("Sent {Packet} from client {Player}, setting both phases to play", @event.Message, @event.Player);
                 await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Play, @event.Link.PlayerChannel, cancellationToken);
                 await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Play, @event.Link.ServerChannel, cancellationToken);
                 logger.LogDebug("Finished processing {Packet} from client {Player}, both phases set to play", @event.Message, @event.Player);
+                break;
+            case AcknowledgeFinishConfigurationPacket:
                 break;
         }
     }

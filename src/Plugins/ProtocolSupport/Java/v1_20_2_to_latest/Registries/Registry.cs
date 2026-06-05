@@ -11,10 +11,7 @@ public static class Registry
 {
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ClientboundHandshakeMappings = new Dictionary<MinecraftPacketIdMapping[], Type>();
 
-    public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundHandshakeMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
-    {
-        { PacketIdDefinitions.ServerboundHandshake, typeof(HandshakePacket) }
-    };
+    public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundHandshakeMappings = new Dictionary<MinecraftPacketIdMapping[], Type> { { PacketIdDefinitions.ServerboundHandshake, typeof(HandshakePacket) } };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ClientboundStatusMappings = new Dictionary<MinecraftPacketIdMapping[], Type>();
 
@@ -29,25 +26,11 @@ public static class Registry
         { PacketIdDefinitions.ClientboundLoginPluginRequest, typeof(LoginPluginRequestPacket) }
     };
 
-    public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundLoginMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
-    {
-        { PacketIdDefinitions.ServerboundLoginStart, typeof(LoginStartPacket) },
-        { PacketIdDefinitions.ServerboundEncryptionResponse, typeof(EncryptionResponsePacket) },
-        { PacketIdDefinitions.ServerboundLoginPluginResponse, typeof(LoginPluginResponsePacket) },
-        { PacketIdDefinitions.ServerboundLoginAcknowledged, typeof(LoginAcknowledgedPacket) }
-    };
+    public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundLoginMappings = new Dictionary<MinecraftPacketIdMapping[], Type> { { PacketIdDefinitions.ServerboundLoginStart, typeof(LoginStartPacket) }, { PacketIdDefinitions.ServerboundEncryptionResponse, typeof(EncryptionResponsePacket) }, { PacketIdDefinitions.ServerboundLoginPluginResponse, typeof(LoginPluginResponsePacket) }, { PacketIdDefinitions.ServerboundLoginAcknowledged, typeof(LoginAcknowledgedPacket) } };
 
-    public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ClientboundConfigurationMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
-    {
-        { PacketIdDefinitions.ClientboundConfigurationDisconnect, typeof(NbtDisconnectPacket) },
-        { PacketIdDefinitions.ClientboundConfigurationKeepAliveRequest, typeof(KeepAliveRequestPacket) }
-    };
+    public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ClientboundConfigurationMappings = new Dictionary<MinecraftPacketIdMapping[], Type> { { PacketIdDefinitions.ClientboundConfigurationDisconnect, typeof(NbtDisconnectPacket) }, { PacketIdDefinitions.ClientboundConfigurationFinishConfiguration, typeof(FinishConfigurationPacket) }, { PacketIdDefinitions.ClientboundConfigurationKeepAliveRequest, typeof(KeepAliveRequestPacket) } };
 
-    public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundConfigurationMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
-    {
-        { PacketIdDefinitions.ServerboundAcknowledgeFinishConfiguration, typeof(AcknowledgeFinishConfigurationPacket) },
-        { PacketIdDefinitions.ServerboundConfigurationKeepAliveResponse, typeof(KeepAliveResponsePacket) }
-    };
+    public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ServerboundConfigurationMappings = new Dictionary<MinecraftPacketIdMapping[], Type> { { PacketIdDefinitions.ServerboundAcknowledgeFinishConfiguration, typeof(AcknowledgeFinishConfigurationPacket) }, { PacketIdDefinitions.ServerboundConfigurationKeepAliveResponse, typeof(KeepAliveResponsePacket) } };
 
     public static readonly IReadOnlyDictionary<MinecraftPacketIdMapping[], Type> ClientboundPlayMappings = new Dictionary<MinecraftPacketIdMapping[], Type>
     {
