@@ -41,10 +41,10 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
 
     public async ValueTask AcceptPlayerAsync(TcpClient client, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("Accepted client from {@RemoteEndPoint}", client.Client.RemoteEndPoint);
+        logger.LogTrace("Accepted client from {RemoteEndPoint}", client.Client.RemoteEndPoint);
 
         var player = new PlayerProxy(await events.ThrowWithResultAsync(new PlayerConnectingEvent(client, player => dependencies.GetEntryPoint(player)), cancellationToken) ??
-            throw new InvalidOperationException("Player is not instantiated"));
+                                     throw new InvalidOperationException("Player is not instantiated"));
 
         dependencies.ActivatePlayerScope(player.Context);
 
@@ -73,7 +73,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
         using var sync = await _lock.LockAsync(cancellationToken);
 
         var proxy = _players.FirstOrDefault(proxy => proxy == player || proxy.Source == player) ??
-            throw new InvalidOperationException($"Player {player} not found");
+                    throw new InvalidOperationException($"Player {player} not found");
 
         proxy.Replace(upgradedPlayer);
     }
