@@ -24,21 +24,13 @@ public static class MinecraftChannelExtensions
                 throw new InvalidOperationException($"{nameof(IMinecraftPacketMessageStream)} is not found on this channel");
             }
         }
+
         public async ValueTask SendPacketAsync<T>(T packet, CancellationToken cancellationToken) where T : IMinecraftMessage
         {
             if (packet is IMinecraftBinaryMessage binaryMessage)
                 binaryMessage.Stream.Position = binaryMessage.Id.VarIntSize();
 
             await channel.WriteMessageAsync(packet, cancellationToken);
-        }
-
-        [Obsolete("Use the property MinecraftRegistries instead.")]
-        public IRegistryHolder GetMinecraftRegistries()
-        {
-            if (channel.TryGet<IMinecraftPacketMessageStream>(out var stream))
-                return stream.Registries;
-
-            throw new InvalidOperationException($"{nameof(IMinecraftPacketMessageStream)} is not found on this channel");
         }
     }
 }
