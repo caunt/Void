@@ -50,8 +50,8 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
                 break;
             case (Side.Client, Phase.Play):
                 logger.LogDebug("Replacing play phase packets for client side of {Player}", @event.Player);
-                @event.Channel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ServerboundPlayMappings);
-                @event.Channel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ClientboundPlayMappings);
+                // @event.Channel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ServerboundPlayMappings);
+                // @event.Channel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ClientboundPlayMappings);
                 logger.LogDebug("Finished replacing play phase packets for client side of {Player}", @event.Player);
                 break;
 
@@ -122,9 +122,11 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
                 logger.LogDebug("Sent {Packet} from client {Player}, setting both phases to play", @event.Message, @event.Player);
                 await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Play, @event.Link.PlayerChannel, cancellationToken);
                 await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Play, @event.Link.ServerChannel, cancellationToken);
+                @event.Link.PlayerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ClientboundPlayMappings);
                 logger.LogDebug("Finished processing {Packet} from client {Player}, both phases set to play", @event.Message, @event.Player);
                 break;
             case AcknowledgeFinishConfigurationPacket:
+                @event.Link.PlayerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ServerboundPlayMappings);
                 break;
         }
     }
