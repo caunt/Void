@@ -29,11 +29,24 @@ namespace Void.Minecraft;
 /// </param>
 public record ReleaseVersion(int Major, int Minor, int Patch) : IComparable<ReleaseVersion>
 {
+    /// <summary>
+    /// Compares the current instance with another version and returns an integer that indicates whether the current
+    /// instance precedes, follows, or occurs in the same position in the sort order as the other version.
+    /// </summary>
+    /// <param name="other">The version to compare with this instance.</param>
+    /// <returns>A value that indicates the relative order of the objects being compared. Less than zero if this instance
+    /// precedes <paramref name="other"/> in the sort order. Zero if this instance occurs in the same position as
+    /// <paramref name="other"/> in the sort order. Greater than zero if this instance follows <paramref name="other"/>
+    /// in the sort order, or if <paramref name="other"/> is <see langword="null"/>.</returns>
     public int CompareTo(ReleaseVersion? other)
     {
         return other is null ? 1 : (Major, Minor, Patch).CompareTo((other.Major, other.Minor, other.Patch));
     }
 
+    /// <summary>
+    /// Converts the version to its string representation.
+    /// </summary>
+    /// <returns>A string in the format "Major.Minor" when Patch is zero, otherwise "Major.Minor.Patch".</returns>
     public override string ToString()
     {
         return Patch is 0
@@ -41,6 +54,12 @@ public record ReleaseVersion(int Major, int Minor, int Patch) : IComparable<Rele
             : $"{Major}.{Minor}.{Patch}";
     }
 
+    /// <summary>
+    /// Attempts to parse a version string into a <see cref="ReleaseVersion"/> instance.
+    /// </summary>
+    /// <param name="versionString">The version string to parse in "major.minor" or "major.minor.patch" format.</param>
+    /// <param name="version">When successful, contains the parsed <see cref="ReleaseVersion"/>; otherwise, <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> if the version string was successfully parsed; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string versionString, [MaybeNullWhen(false)] out ReleaseVersion version)
     {
         return (version = versionString.Split('.') switch
@@ -53,6 +72,12 @@ public record ReleaseVersion(int Major, int Minor, int Patch) : IComparable<Rele
         }) is not null;
     }
 
+    /// <summary>
+    /// Converts the string representation of a version to its <see cref="ReleaseVersion"/> equivalent.
+    /// </summary>
+    /// <param name="versionString">A string containing the version to convert.</param>
+    /// <returns>A <see cref="ReleaseVersion"/> equivalent to the version contained in <paramref name="versionString"/>.</returns>
+    /// <exception cref="FormatException"><paramref name="versionString"/> is not in a valid format.</exception>
     public static ReleaseVersion Parse(string versionString)
     {
         return !TryParse(versionString, out var version)
@@ -60,11 +85,19 @@ public record ReleaseVersion(int Major, int Minor, int Patch) : IComparable<Rele
             : version;
     }
 
+    /// <summary>
+    /// Converts a string to a ReleaseVersion.
+    /// </summary>
+    /// <param name="versionString">The string representation of the version.</param>
     public static implicit operator ReleaseVersion(string versionString)
     {
         return Parse(versionString);
     }
 
+    /// <summary>
+    /// Implicitly converts a ReleaseVersion to its string representation.
+    /// </summary>
+    /// <param name="version">The ReleaseVersion to convert.</param>
     public static implicit operator string(ReleaseVersion version)
     {
         return version.ToString();
