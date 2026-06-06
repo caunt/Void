@@ -27,7 +27,7 @@ public interface ILinkService
     /// <see cref="ConnectionResult.Connected"/> if a server was found and the player authenticated successfully;
     /// <see cref="ConnectionResult.NotConnected"/> if no available server accepted the player.
     /// </returns>
-    public ValueTask<ConnectionResult> ConnectPlayerAnywhereAsync(IPlayer player, CancellationToken cancellationToken = default);
+    public ValueTask<ConnectionResult> ConnectAnywhereAsync(IPlayer player, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Connects the specified player to the first available backend server that is not in
@@ -42,7 +42,7 @@ public interface ILinkService
     /// <see cref="ConnectionResult.Connected"/> if a server was found and the player authenticated successfully;
     /// <see cref="ConnectionResult.NotConnected"/> if no available server accepted the player.
     /// </returns>
-    public ValueTask<ConnectionResult> ConnectPlayerAnywhereAsync(IPlayer player, IEnumerable<IServer> ignoredServers, CancellationToken cancellationToken = default);
+    public ValueTask<ConnectionResult> ConnectAnywhereAsync(IPlayer player, IEnumerable<IServer> ignoredServers, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Connects the specified player to the given backend server.

@@ -54,7 +54,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
                 _players.Add(player);
 
             logger.LogTrace("Player {Player} connecting", player);
-            var result = await links.ConnectPlayerAnywhereAsync(player, cancellationToken);
+            var result = await links.ConnectAnywhereAsync(player, cancellationToken);
 
             if (result is ConnectionResult.NotConnected)
                 await player.KickAsync("Failed to find a server for you", cancellationToken);
@@ -144,7 +144,7 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
 
         logger.LogTrace("Reconnecting player {Player} after link {Link} stopped due to {Reason}", @event.Player, @event.Link, @event.Reason);
 
-        var result = await links.ConnectPlayerAnywhereAsync(@event.Player, [@event.Link.Server], cancellationToken);
+        var result = await links.ConnectAnywhereAsync(@event.Player, [@event.Link.Server], cancellationToken);
 
         if (result is ConnectionResult.NotConnected)
             await @event.Player.KickAsync("Failed to find a next server for you", cancellationToken);

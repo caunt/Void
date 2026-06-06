@@ -1,4 +1,6 @@
-﻿using System.Net.Sockets;
+﻿using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using MCStatus;
@@ -30,7 +32,7 @@ IDockerMinecraftServer[] servers =
 string[] arguments =
 [
     "--read-only",
-    "--logging", nameof(LogLevel.Debug),
+    "--logging", nameof(LogLevel.Trace),
     "--forwarding-modern-key", "GHo9pV4daKzS7ujtaWgPBcBgLZG8qqGf",
     "--ignore-file-servers",
     "--port", "25565",
@@ -55,7 +57,8 @@ return;
 async ValueTask StartDockerEnvironmentAsync(CancellationToken cancellationToken = default)
 {
     const string imageName = "itzg/minecraft-server";
-    var dockerClient = new DockerClientConfiguration().CreateClient();
+
+    var dockerClient = await BuildDockerClientAsync();
 
     var containers = await servers.Select(async server =>
     {
@@ -229,6 +232,18 @@ async ValueTask StartDockerEnvironmentAsync(CancellationToken cancellationToken 
             var value when value == ProtocolVersion.MINECRAFT_1_20 => value.Releases[1], // refined storage requires forge 1.20.1
             var value => value.FirstRelease
         };
+    }
+
+    async Task<DockerClient> BuildDockerClientAsync()
+    {
+        using var ping = new Ping();
+        var parallelsHost = IPAddress.Parse("10.211.55.2");
+
+        var configuration = await ping.SendPingAsync(parallelsHost, timeout: TimeSpan.FromSeconds(3), cancellationToken: cancellationToken) is { Status: IPStatus.Success }
+            ? new DockerClientConfiguration(new Uri($"http://{parallelsHost}:2375/"))
+            : new DockerClientConfiguration();
+
+        return configuration.CreateClient();
     }
 }
 

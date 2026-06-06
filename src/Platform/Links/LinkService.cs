@@ -24,12 +24,17 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
 
     public IReadOnlyList<ILink> All => _activeLinks.AsReadOnly();
 
-    public async ValueTask<ConnectionResult> ConnectPlayerAnywhereAsync(IPlayer player, CancellationToken cancellationToken = default)
+    public async ValueTask<ConnectionResult> ConnectAsync(IPlayer player, IServer server, CancellationToken cancellationToken = default)
     {
-        return await ConnectPlayerAnywhereAsync(player, [], cancellationToken);
+        return await ConnectOrKickAsync(player, server, anonymous: false, cancellationToken);
     }
 
-    public async ValueTask<ConnectionResult> ConnectPlayerAnywhereAsync(IPlayer player, IEnumerable<IServer> ignoredServers, CancellationToken cancellationToken = default)
+    public async ValueTask<ConnectionResult> ConnectAnywhereAsync(IPlayer player, CancellationToken cancellationToken = default)
+    {
+        return await ConnectAnywhereAsync(player, [], cancellationToken);
+    }
+
+    public async ValueTask<ConnectionResult> ConnectAnywhereAsync(IPlayer player, IEnumerable<IServer> ignoredServers, CancellationToken cancellationToken = default)
     {
         logger.LogTrace("Looking for a server for {Player} player", player);
 
@@ -49,15 +54,38 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
 
         var selectedServer = await events.ThrowWithResultAsync(new PlayerSearchServerEvent(player.Unwrap(), playerConnectedEvent.ConnectedWith), cancellationToken);
 
-        if (selectedServer is not null && await ConnectAsync(player, selectedServer, anonymous, cancellationToken) is ConnectionResult.Connected)
-            return ConnectionResult.Connected;
+        return selectedServer is null
+            ? await ConnectAnyAsync(player, ignoredServers, anonymous, cancellationToken)
+            : await ConnectCoreAsync(player, selectedServer, anonymous, cancellationToken);
 
-        return await ConnectAnyAsync(player, ignoredServers, anonymous, cancellationToken);
-    }
+        async ValueTask<ConnectionResult> ConnectAnyAsync(IPlayer player, IEnumerable<IServer> ignoredServers, bool anonymous, CancellationToken cancellationToken)
+        {
+            var candidates = servers.All.Except(ignoredServers);
+            var lastServer = candidates.LastOrDefault();
 
-    public async ValueTask<ConnectionResult> ConnectAsync(IPlayer player, IServer server, CancellationToken cancellationToken = default)
-    {
-        return await ConnectAsync(player, server, anonymous: false, cancellationToken);
+            if (lastServer is null)
+            {
+                await player.KickAsync("No available servers to connect you to.", cancellationToken);
+                return ConnectionResult.NotConnected;
+            }
+
+            foreach (var server in candidates.Except([lastServer]))
+            {
+                try
+                {
+                    var result = await ConnectCoreAsync(player, server, anonymous, cancellationToken);
+
+                    if (result is ConnectionResult.Connected)
+                        return ConnectionResult.Connected;
+                }
+                catch (StreamException)
+                {
+                    // Try next server
+                }
+            }
+
+            return await ConnectOrKickAsync(player, lastServer, anonymous, cancellationToken);
+        }
     }
 
     public bool TryGetLink(IPlayer player, [NotNullWhen(true)] out ILink? link)
@@ -77,51 +105,6 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
     public bool HasLink(IPlayer player)
     {
         return _activeLinks.Any(link => link.Player == player);
-    }
-
-    private async ValueTask<ConnectionResult> ConnectAnyAsync(IPlayer player, IEnumerable<IServer> ignoredServers, bool anonymous, CancellationToken cancellationToken)
-    {
-        foreach (var server in servers.All.Except(ignoredServers))
-        {
-            try
-            {
-                var result = await ConnectAsync(player, server, anonymous, cancellationToken);
-
-                if (result is ConnectionResult.Connected)
-                    return ConnectionResult.Connected;
-            }
-            catch (StreamException)
-            {
-                // Try next server
-            }
-        }
-
-        return ConnectionResult.NotConnected;
-    }
-
-    public async ValueTask<ConnectionResult> ConnectAsync(IPlayer player, IServer server, bool anonymous = false, CancellationToken cancellationToken = default)
-    {
-        var playerChannel = await player.GetChannelAsync(cancellationToken);
-
-        var previousServer = player.Server;
-        var result = await ConnectCoreAsync(playerChannel, player, server, firstConnection: previousServer is null, anonymous, cancellationToken);
-
-        if (result is ConnectionResult.Connected)
-            return result;
-
-        if (previousServer is null)
-        {
-            await player.KickAsync("Could not redirect you to the target server and you had no previous server.", cancellationToken);
-            return result;
-        }
-
-        result = await ConnectCoreAsync(playerChannel, player, previousServer, firstConnection: false, anonymous, cancellationToken);
-
-        if (result is not ConnectionResult.NotConnected)
-            return result;
-
-        await player.KickAsync("Could not redirect you to the target server nor previous server.", cancellationToken);
-        return result;
     }
 
     [Subscribe(PostOrder.First)]
@@ -148,6 +131,34 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
         }
 
         logger.LogTrace("Stopped forwarding {Link} traffic", @event.Link);
+    }
+
+    private async ValueTask<ConnectionResult> ConnectOrKickAsync(IPlayer player, IServer server, bool anonymous = false, CancellationToken cancellationToken = default)
+    {
+        var previousServer = player.Server;
+        var result = await ConnectCoreAsync(player, server, anonymous, cancellationToken);
+
+        if (result is ConnectionResult.Connected)
+            return result;
+
+        if (previousServer is null)
+        {
+            await player.KickAsync("Could not redirect you to the target server and you had no previous server.", cancellationToken);
+            return result;
+        }
+
+        result = await ConnectCoreAsync(player, previousServer, anonymous, cancellationToken);
+
+        if (result is not ConnectionResult.NotConnected)
+            return result;
+
+        await player.KickAsync("Could not redirect you to the target server nor previous server.", cancellationToken);
+        return result;
+    }
+
+    private async ValueTask<ConnectionResult> ConnectCoreAsync(IPlayer player, IServer server, bool anonymous = false, CancellationToken cancellationToken = default)
+    {
+        return await ConnectCoreAsync(await player.GetChannelAsync(cancellationToken), player, server, firstConnection: player.Server is null, anonymous, cancellationToken);
     }
 
     private async ValueTask<ConnectionResult> ConnectCoreAsync(INetworkChannel playerChannel, IPlayer player, IServer server, bool firstConnection, bool anonymous, CancellationToken cancellationToken = default)

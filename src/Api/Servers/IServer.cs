@@ -36,5 +36,11 @@ public interface IServer
     /// Creates a <see cref="TcpClient"/> connected to this server.
     /// </summary>
     /// <returns>A configured <see cref="TcpClient"/> instance.</returns>
-    public TcpClient CreateTcpClient() => new(Host, Port);
+    public async Task<TcpClient> CreateTcpClientAsync(CancellationToken cancellationToken = default)
+    {
+        var client = new TcpClient();
+        await client.ConnectAsync(Host, Port, cancellationToken);
+
+        return client;
+    }
 }

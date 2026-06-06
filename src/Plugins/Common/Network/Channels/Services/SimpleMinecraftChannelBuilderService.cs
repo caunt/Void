@@ -86,8 +86,10 @@ public class SimpleMinecraftChannelBuilderService(ILogger<SimpleMinecraftChannel
     {
         logger.LogTrace("Building channel for a {Server} server", server);
 
-        var client = server.CreateTcpClient();
+        var client = await server.CreateTcpClientAsync(cancellationToken);
         client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+
+        logger.LogTrace("Connected to server {Name} at {RemoteEndPoint}", server.Name, client.Client.RemoteEndPoint);
 
         var channel = await BuildChannelAsync(player, Side.Server, client.GetStream(), cancellationToken);
         logger.LogTrace("Server {Name} is using {ChannelTypeName} channel implementation", server.Name, channel.GetType().Name);
