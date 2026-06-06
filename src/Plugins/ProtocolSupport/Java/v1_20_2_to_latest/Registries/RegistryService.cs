@@ -73,8 +73,8 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
                 break;
             case (Side.Server, Phase.Play):
                 logger.LogDebug("Replacing play phase packets for server side of {Player}", @event.Player);
-                @event.Channel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundPlayMappings);
-                @event.Channel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ServerboundPlayMappings);
+                // @event.Channel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundPlayMappings);
+                // @event.Channel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ServerboundPlayMappings);
                 logger.LogDebug("Finished replacing play phase packets for server side of {Player}", @event.Player);
                 break;
         }
@@ -121,12 +121,14 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
             case FinishConfigurationPacket:
                 logger.LogDebug("Sent {Packet} from client {Player}, setting both phases to play", @event.Message, @event.Player);
                 @event.Link.PlayerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ClientboundPlayMappings);
+                @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ClientboundPlayMappings);
                 await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Play, @event.Link.PlayerChannel, cancellationToken);
                 await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Play, @event.Link.ServerChannel, cancellationToken);
                 logger.LogDebug("Finished processing {Packet} from client {Player}, both phases set to play", @event.Message, @event.Player);
                 break;
             case AcknowledgeFinishConfigurationPacket:
                 @event.Link.PlayerChannel.ReplaceSystemPackets(Operation.Read, _plugin, Registry.ServerboundPlayMappings);
+                @event.Link.ServerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ServerboundPlayMappings);
                 break;
         }
     }
