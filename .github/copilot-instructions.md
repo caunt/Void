@@ -51,3 +51,15 @@ Commit body is required and must include:
 
 For pure refactors, write:
 `Observable behavior: none.`
+
+# Documentation
+
+Before editing, analyze the real behavior of each chosen member from its implementation and relevant call sites. Document what it actually does, not what its name suggests.
+
+- Add or improve all XML documentation tags that are genuinely applicable, including: `<summary>`, `<remarks>`, `<param>`, `<paramref>`, `<typeparam>`, `<typeparamref>`, `<returns>`, `<value>`, `<exception>`, `<example>`, `<see>`, and `<seealso>`.
+- Use accurate `cref` references wherever useful.
+- Use `<c>` for inline code, `<code>` for code blocks, and `<para>` to structure longer remarks.
+- Do not add tags that are not justified by the implementation.
+- Write documentation that is precise, technical, and useful to API consumers.
+- Cover actual behavior, nullability, side effects, important edge cases, exception conditions, return value semantics, and usage intent.
+- Prefer strong references to related members and types when they improve clarity.
