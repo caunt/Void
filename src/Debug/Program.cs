@@ -32,7 +32,7 @@ IDockerMinecraftServer[] servers =
 string[] arguments =
 [
     "--read-only",
-    "--logging", nameof(LogLevel.Trace),
+    "--logging", nameof(LogLevel.Debug),
     "--forwarding-modern-key", "GHo9pV4daKzS7ujtaWgPBcBgLZG8qqGf",
     "--ignore-file-servers",
     "--port", "25565",
