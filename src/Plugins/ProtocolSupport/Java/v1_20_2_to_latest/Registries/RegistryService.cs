@@ -120,9 +120,9 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
                 break;
             case FinishConfigurationPacket:
                 logger.LogDebug("Sent {Packet} from client {Player}, setting both phases to play", @event.Message, @event.Player);
+                @event.Link.PlayerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ClientboundPlayMappings);
                 await @event.Player.SetPhaseAsync(@event.Link, Side.Client, Phase.Play, @event.Link.PlayerChannel, cancellationToken);
                 await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Play, @event.Link.ServerChannel, cancellationToken);
-                @event.Link.PlayerChannel.ReplaceSystemPackets(Operation.Write, _plugin, Registry.ClientboundPlayMappings);
                 logger.LogDebug("Finished processing {Packet} from client {Player}, both phases set to play", @event.Message, @event.Player);
                 break;
             case AcknowledgeFinishConfigurationPacket:
