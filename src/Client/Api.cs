@@ -18,8 +18,9 @@ const string defaultMinecraftDirectory = "/root/.minecraft";
 const string defaultDisplay = ":99";
 const string displayScreenWidth = "854";
 const string displayScreenHeight = "480";
+const string displayScreenResolution = $"{displayScreenWidth}x{displayScreenHeight}";
 const string displayScreenDepth = "24";
-const string displayScreen = $"{displayScreenWidth}x{displayScreenHeight}x{displayScreenDepth}";
+const string displayScreen = $"{displayScreenResolution}x{displayScreenDepth}";
 const int minecraftGameId = 432;
 const int curseForgeFilesBatchSize = 50;
 const int brightnessThreshold = 5;
@@ -233,16 +234,10 @@ Process LaunchPortableMinecraftClient(string directory, string version, string?[
         processInfo.ArgumentList.Add("start");
         processInfo.ArgumentList.Add(version);
 
-        if (!HasPortableMinecraftArgument(requestedPortableMinecraftArguments, "--width"))
+        if (!HasPortableMinecraftArgument(requestedPortableMinecraftArguments, "--resolution"))
         {
-            processInfo.ArgumentList.Add("--width");
-            processInfo.ArgumentList.Add(displayScreenWidth);
-        }
-
-        if (!HasPortableMinecraftArgument(requestedPortableMinecraftArguments, "--height"))
-        {
-            processInfo.ArgumentList.Add("--height");
-            processInfo.ArgumentList.Add(displayScreenHeight);
+            processInfo.ArgumentList.Add("--resolution");
+            processInfo.ArgumentList.Add(displayScreenResolution);
         }
 
         foreach (var argument in requestedPortableMinecraftArguments)
