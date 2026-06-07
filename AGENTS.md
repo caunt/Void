@@ -1,41 +1,15 @@
 # Repository Guidelines
 
-## Initial exploration
-
-Before starting any work, run the following command to better understand the repository structure:
-
-```bash
-tree --prune -I 'bin|obj|.git'
-```
-
-This displays the directory tree while excluding build artifacts (`bin`, `obj`) and git metadata (`.git`).
-
 ## Structure
 
-This repository is a .NET solution composed of the following sections:
+This repository is organized around these root components:
 
-- src — all production code, including:
-  - Api — API abstractions.
-  - Benchmarks — benchmark projects.
-  - Debug — debug harness and utilities.
-  - Minecraft — Minecraft-specific libraries.
-  - Platform — main proxy entry point.
-  - Playground — sample playground app.
-  - Plugins — built-in plugins organized by feature:
-    - Common — shared infrastructure and helpers for other plugins.
-    - Essentials — debugging and moderation tools.
-    - ForwardingSupport — server forwarding protocol support (e.g., Velocity).
-    - ModsSupport — modded client integrations such as Forge.
-    - ProtocolSupport — compatibility with multiple protocol versions.
-    - Watchdog — HTTP service that monitors proxy health.
-    - ExamplePlugin — minimal API sample plugin.
-  - Servers — server implementation integrations such as Bukkit.
-  - Terminal — terminal UI for proxy console.
-- tests — xUnit test projects.
-- docs — documentation site built with Astro.
-- demo - sample demo Void proxy, Minecraft server and client, all in the browser.
-- pdk — plugin development kit example.
-- Void.slnx — solution file referencing all projects.
+- `.github` — GitHub Actions workflows, issue templates, and repository automation.
+- `demo` — sample browser-hosted Void proxy, Minecraft server, and client.
+- `docs` — documentation site and generated documentation assets.
+- `pdk` — plugin development kit example.
+- `src` — production code, sample apps, debug harnesses, benchmarks, and built-in plugins.
+- `tests` — xUnit test projects and integration test infrastructure.
 
 ## Coding conventions
 
