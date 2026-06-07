@@ -32,7 +32,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
         // These do connect to the server before the loading screen completes, causing MC-228828 crash on 1.14-1.19
         .Where(version => version < ProtocolVersion.MINECRAFT_1_14 || version > ProtocolVersion.MINECRAFT_1_19);
 
-    public string LogFileName => "logs.txt";
+    public string LogFileName => "client.log";
     public IEnumerable<string> Logs => ReadLogsAsync(_readLogsSince).GetAwaiter().GetResult();
 
     public void ClearLogs()
