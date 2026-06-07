@@ -16,7 +16,10 @@ using File = System.IO.File;
 
 const string defaultMinecraftDirectory = "/root/.minecraft";
 const string defaultDisplay = ":99";
-const string displayScreen = "1280x720x24";
+const string displayScreenWidth = "854";
+const string displayScreenHeight = "480";
+const string displayScreenDepth = "24";
+const string displayScreen = $"{displayScreenWidth}x{displayScreenHeight}x{displayScreenDepth}";
 const int minecraftGameId = 432;
 const int curseForgeFilesBatchSize = 50;
 const int brightnessThreshold = 5;
@@ -167,6 +170,7 @@ application.MapGet("/send-chat", async (string? message) =>
     if (windowId is null)
         return Results.Problem("no visible window found");
 
+    await ResizeWindowToDisplayAsync(windowId);
     await RunOrThrow("xdotool", "windowfocus", windowId);
     var chatOpened = await OpenChatAsync(windowId, display);
 
@@ -190,12 +194,7 @@ application.MapGet("/screen", async () =>
     if (windowId is null)
         return Results.Problem("no visible window found");
 
-    var displaySizeParts = displayScreen.Split('x');
-    var displayWidth = displaySizeParts[0];
-    var displayHeight = displaySizeParts[1];
-
-    await RunOrThrow("xdotool", "windowmove", "--sync", windowId, "0", "0");
-    await RunOrThrow("xdotool", "windowsize", "--sync", windowId, displayWidth, displayHeight);
+    await ResizeWindowToDisplayAsync(windowId);
 
     var captureProcessInfo = new ProcessStartInfo("import") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
 
@@ -225,6 +224,7 @@ application.Run();
 Process LaunchPortableMinecraftClient(string directory, string version, string?[]? portableMinecraftArguments = null)
 {
     portableMinecraftArguments ??= [];
+    var requestedPortableMinecraftArguments = portableMinecraftArguments.OfType<string>().ToArray();
 
     var process = StartCriticalProcess("portablemc", processInfo =>
     {
@@ -233,7 +233,19 @@ Process LaunchPortableMinecraftClient(string directory, string version, string?[
         processInfo.ArgumentList.Add("start");
         processInfo.ArgumentList.Add(version);
 
-        foreach (var argument in portableMinecraftArguments.OfType<string>())
+        if (!HasPortableMinecraftArgument(requestedPortableMinecraftArguments, "--width"))
+        {
+            processInfo.ArgumentList.Add("--width");
+            processInfo.ArgumentList.Add(displayScreenWidth);
+        }
+
+        if (!HasPortableMinecraftArgument(requestedPortableMinecraftArguments, "--height"))
+        {
+            processInfo.ArgumentList.Add("--height");
+            processInfo.ArgumentList.Add(displayScreenHeight);
+        }
+
+        foreach (var argument in requestedPortableMinecraftArguments)
             processInfo.ArgumentList.Add(argument);
     });
 
@@ -241,6 +253,17 @@ Process LaunchPortableMinecraftClient(string directory, string version, string?[
         Environment.FailFast($"portablemc exited immediately with code {process.ExitCode}");
 
     return process;
+}
+
+bool HasPortableMinecraftArgument(IEnumerable<string> arguments, string argumentName)
+{
+    return arguments.Any(argument => string.Equals(argument, argumentName, StringComparison.Ordinal) || argument.StartsWith($"{argumentName}=", StringComparison.Ordinal));
+}
+
+async Task ResizeWindowToDisplayAsync(string windowId)
+{
+    await RunOrThrow("xdotool", "windowmove", "--sync", windowId, "0", "0");
+    await RunOrThrow("xdotool", "windowsize", "--sync", windowId, displayScreenWidth, displayScreenHeight);
 }
 
 async Task EnsureDisplay()
