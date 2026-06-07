@@ -7,9 +7,33 @@ This repository is organized around these root components:
 - `.github` — GitHub Actions workflows, issue templates, and repository automation.
 - `demo` — sample browser-hosted Void proxy, Minecraft server, and client.
 - `docs` — documentation site and generated documentation assets.
-- `pdk` — plugin development kit example.
+- `pdk` — plugin development kit sample project.
 - `src` — production code, sample apps, debug harnesses, benchmarks, and built-in plugins.
-- `tests` — xUnit test projects and integration test infrastructure.
+- `tests` — xUnit tests and integration test infrastructure.
+
+Project directories:
+
+- `src/Api` — public proxy API abstractions.
+- `src/Benchmarks` — benchmark projects for performance measurements.
+- `src/Debug` — debug harness for running the proxy locally.
+- `src/Minecraft` — Minecraft protocol, serialization, profile, and data libraries.
+- `src/Platform` — main Void proxy application.
+- `src/Playground` — sample playground app.
+- `src/Plugins/Common` — shared infrastructure for built-in plugins.
+- `src/Plugins/Essentials` — debugging and moderation plugin.
+- `src/Plugins/ExamplePlugin` — minimal plugin API example.
+- `src/Plugins/ForwardingSupport/Velocity` — Velocity forwarding support plugin.
+- `src/Plugins/ModsSupport/CrossStitch` — CrossStitch mod integration plugin.
+- `src/Plugins/ModsSupport/Forge` — Forge mod integration plugin.
+- `src/Plugins/ProtocolSupport/Java/v1_7_2_to_1_12_2` — Java protocol support for 1.7.2 through 1.12.2.
+- `src/Plugins/ProtocolSupport/Java/v1_13_to_1_20_1` — Java protocol support for 1.13 through 1.20.1.
+- `src/Plugins/ProtocolSupport/Java/v1_20_2_to_latest` — Java protocol support for 1.20.2 through latest.
+- `src/Plugins/Watchdog` — HTTP health monitoring plugin.
+- `src/Terminal` — terminal UI for the proxy console.
+- `tests/Void.IntegrationTests` — integration test suite.
+- `tests/Void.IntegrationTests.Generators` — source generators for integration tests.
+- `tests/Void.UnitTests` — unit test suite.
+- `pdk/YourPlugin` — plugin development kit example project.
 
 ## Coding conventions
 
