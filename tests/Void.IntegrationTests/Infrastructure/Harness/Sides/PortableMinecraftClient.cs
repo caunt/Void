@@ -4,20 +4,25 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using Void.IntegrationTests.Infrastructure.Exceptions;
 using Void.IntegrationTests.Infrastructure.Extensions;
 using Void.Minecraft.Network;
 
 namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
 
-public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
+public record PortableMinecraftClient(IContainer Container, HttpClient HttpClient) : IIntegrationSide
 {
     private const int SetupRetries = 5;
+    private const int ApiPort = 8080;
     private const string Display = ":99";
-    private const string RedirectOutput = ">/proc/1/fd/1 2>/proc/1/fd/2";
+    private const string DockerHost = "host.docker.internal";
+    private const string DockerHostGateway = "host-gateway";
     private const string LogMessagePrefix = $"[{nameof(Void)}.{nameof(IntegrationTests)}]";
 
     private DateTime _readLogsSince = DateTime.UtcNow;
@@ -36,6 +41,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
 
     public async ValueTask DisposeAsync()
     {
+        HttpClient.Dispose();
         await Container.DisposeAsync();
 
         GC.SuppressFinalize(this);
@@ -45,17 +51,26 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
     {
         var builder = new ContainerBuilder("ghcr.io/caunt/portable-minecraft-client:offline")
             .WithEnvironment("DISPLAY", Display)
+            .WithPortBinding(port: ApiPort, assignRandomHostPort: true)
+            .WithWaitStrategy(Wait.ForUnixContainer()
+                .UntilHttpRequestIsSucceeded(request => request
+                    .ForPort(ApiPort)
+                    .ForPath("/health"), options => options.WithTimeout(TimeSpan.FromMinutes(1))))
             .WithCreateParameterModifier(parameters => parameters.Platform = "linux/amd64");
 
         if (OperatingSystem.IsLinux())
-            builder = builder.WithCreateParameterModifier(parameters => parameters.HostConfig?.NetworkMode = "host");
+            builder = builder.WithExtraHost(DockerHost, DockerHostGateway);
 
         var container = builder.Build();
 
         await container.StartAsync(cancellationToken);
-        await container.RunCommandAsync(["start-display"], cancellationToken);
 
-        return new PortableMinecraftClient(container);
+        var httpClient = new HttpClient
+        {
+            BaseAddress = new Uri($"http://{container.Hostname}:{container.GetMappedPublicPort(ApiPort)}")
+        };
+
+        return new PortableMinecraftClient(container, httpClient);
     }
 
     public async Task<Game> RunGameAsync(string testName, EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
@@ -64,7 +79,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         {
             try
             {
-                return await Game.RunAsync(testName, Container, logsDateTimeGetter: () => _readLogsSince, endPoint, protocolVersion, cancellationToken);
+                return await Game.RunAsync(testName, Container, HttpClient, logsDateTimeGetter: () => _readLogsSince, endPoint, protocolVersion, cancellationToken);
             }
             catch (OperationCanceledException) when (attempt < SetupRetries)
             {
@@ -75,7 +90,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         throw new TimeoutException($"Failed to setup {protocolVersion} after {SetupRetries} attempts");
     }
 
-    public record Game(string TestName, IContainer Container, Func<DateTime> LogsDateTimeGetter, ProtocolVersion ProtocolVersion, string Username, Task RunTask, CancellationTokenSource CancellationTokenSource) : IAsyncDisposable
+    public record Game(string TestName, IContainer Container, HttpClient HttpClient, Func<DateTime> LogsDateTimeGetter, ProtocolVersion ProtocolVersion, string Username) : IAsyncDisposable
     {
         private readonly string _workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), "steps", TestName, ProtocolVersion.ToString(), Username);
         private int _step;
@@ -86,51 +101,40 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
         {
             await LogAsync($"Stopping Minecraft {ProtocolVersion.FirstRelease}", Timeouts.StepTimeoutToken);
 
-            await MakeStepAsync("exit", Timeouts.StepTimeoutToken);
-            await File.WriteAllLinesAsync(Path.Combine(_workingDirectory, "logs.txt"), await Container.ReadLogsAsync(ReadLogsSince, Timeouts.StepTimeoutToken), Timeouts.StepTimeoutToken);
-
-            await CancellationTokenSource.CancelAsync();
-
             try
             {
-                await RunTask;
-            }
-            catch (OperationCanceledException)
-            {
-                // Ignored
+                await MakeStepAsync("exit", Timeouts.StepTimeoutToken);
+                await File.WriteAllLinesAsync(Path.Combine(_workingDirectory, "logs.txt"), await Container.ReadLogsAsync(ReadLogsSince, Timeouts.StepTimeoutToken), Timeouts.StepTimeoutToken);
             }
             finally
             {
-                CancellationTokenSource.Dispose();
+                await StopClientAsync(Timeouts.StepTimeoutToken);
             }
 
             GC.SuppressFinalize(this);
         }
 
-        public static async Task<Game> RunAsync(string testName, IContainer container, Func<DateTime> logsDateTimeGetter, EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
+        public static async Task<Game> RunAsync(string testName, IContainer container, HttpClient httpClient, Func<DateTime> logsDateTimeGetter, EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
         {
             var (dockerHost, dockerPort) = endPoint.AsDockerHostPort;
             var username = Convert.ToHexString(BitConverter.GetBytes(Random.Shared.Next()));
-            var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-            // Reset whole options.txt
-            await container.RunCommandAsync(
-                $"""
-                 printf "
-                 maxFps:15
-                 renderDistance:2
-                 {(protocolVersion >= ProtocolVersion.MINECRAFT_1_19_4 ? "onboardAccessibility:false" : string.Empty)}
-                 pauseOnLostFocus:false
-                 " > "$HOME/.minecraft/options.txt"
-                 """,
-                cancellationToken);
+            await container.CopyAsync(Encoding.UTF8.GetBytes(CreateOptionsText(protocolVersion)), "/root/.minecraft/options.txt", ct: cancellationToken);
 
-            var task = container.RunCommandAsync($"portablemc start --fetch-exclude-all --username \"{username}\" --join-server \"{dockerHost}\" --join-server-port \"{dockerPort}\" --jvm-arg=-Djava.awt.headless=false \"{protocolVersion.FirstRelease}\" {RedirectOutput}", cancellationToken, cancellationTokenSource.Token);
-            var game = new Game(testName, container, logsDateTimeGetter, protocolVersion, username, task, cancellationTokenSource);
+            var game = new Game(testName, container, httpClient, logsDateTimeGetter, protocolVersion, username);
 
-            await game.LogAsync($"Starting Minecraft {protocolVersion.FirstRelease}", cancellationToken);
-            await container.ExpectTextAsync("Connecting to", cancellationToken);
-            await game.EnsureStableAsync(cancellationToken);
+            try
+            {
+                await game.LogAsync($"Starting Minecraft {protocolVersion.FirstRelease}", cancellationToken);
+                await game.StartVanillaAsync(dockerHost, dockerPort, cancellationToken);
+                await container.ExpectTextAsync("Connecting to", cancellationToken);
+                await game.EnsureStableAsync(cancellationToken);
+            }
+            catch
+            {
+                await game.StopClientAsync(Timeouts.StepTimeoutToken);
+                throw;
+            }
 
             return game;
         }
@@ -150,7 +154,7 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
                     : Container.ExpectTextAsync(text, cancellationToken); // Expect the text to appear in logs
 
                 await LogAsync($"Sending chat input: {text}", cancellationToken);
-                await Container.RunCommandAsync(["send-chat", text], cancellationToken);
+                await SendChatAsync(text, cancellationToken);
                 await expectTask;
 
                 await MakeStepAsync("chat", cancellationToken);
@@ -186,15 +190,90 @@ public record PortableMinecraftClient(IContainer Container) : IIntegrationSide
             await MakeStepAsync("stable", cancellationToken);
         }
 
-        private async Task LogAsync(string message, CancellationToken cancellationToken = default)
+        private async Task StartVanillaAsync(string dockerHost, int dockerPort, CancellationToken cancellationToken = default)
         {
-            await Container.RunCommandAsync($"printf '{LogMessagePrefix} %s\n' '{message.Replace("'", "'\"'\"'")}' {RedirectOutput}", cancellationToken);
+            var queryParameters = new List<KeyValuePair<string, string>>
+            {
+                new("version", ProtocolVersion.FirstRelease),
+                new("argument", "--fetch-exclude-all"),
+                new("argument", "--username"),
+                new("argument", Username),
+                new("argument", "--join-server"),
+                new("argument", dockerHost),
+                new("argument", "--join-server-port"),
+                new("argument", dockerPort.ToString()),
+                new("argument", "--jvm-arg=-Djava.awt.headless=false")
+            };
+
+            using var response = await HttpClient.GetAsync(CreateRequestUri("/start-vanilla", queryParameters), cancellationToken);
+            await EnsureSuccessAsync(response, $"Starting Minecraft {ProtocolVersion.FirstRelease}", cancellationToken);
+        }
+
+        private async Task SendChatAsync(string text, CancellationToken cancellationToken = default)
+        {
+            using var response = await HttpClient.GetAsync(CreateRequestUri("/send-chat", [new KeyValuePair<string, string>("message", text)]), cancellationToken);
+            await EnsureSuccessAsync(response, $"Sending chat input: {text}", cancellationToken);
+        }
+
+        private async Task StopClientAsync(CancellationToken cancellationToken = default)
+        {
+            using var response = await HttpClient.GetAsync("/stop-client", cancellationToken);
+
+            if (response.StatusCode is HttpStatusCode.NotFound)
+                return;
+
+            await EnsureSuccessAsync(response, $"Stopping Minecraft {ProtocolVersion.FirstRelease}", cancellationToken);
+        }
+
+        private async Task<byte[]> TakeScreenshotAsync(CancellationToken cancellationToken = default)
+        {
+            using var response = await HttpClient.GetAsync("/screen", cancellationToken);
+            await EnsureSuccessAsync(response, "Taking Minecraft screenshot", cancellationToken);
+
+            return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        }
+
+        private static async Task EnsureSuccessAsync(HttpResponseMessage response, string operation, CancellationToken cancellationToken = default)
+        {
+            if (response.IsSuccessStatusCode)
+                return;
+
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new IntegrationTestException($"{operation} failed with HTTP {(int)response.StatusCode} {response.ReasonPhrase}\n{content}");
+        }
+
+        private Task LogAsync(string message, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Console.WriteLine($"{LogMessagePrefix} {message}");
+            return Task.CompletedTask;
         }
 
         private async Task MakeStepAsync(string action, CancellationToken cancellationToken = default)
         {
             _ = Directory.CreateDirectory(_workingDirectory);
-            await File.WriteAllBytesAsync(Path.Combine(_workingDirectory, $"step-{++_step}-{action}.png"), await Container.TakeScreenshotAsync(windowName: "Minecraft", cancellationToken), cancellationToken);
+            await File.WriteAllBytesAsync(Path.Combine(_workingDirectory, $"step-{++_step}-{action}.png"), await TakeScreenshotAsync(cancellationToken), cancellationToken);
+        }
+
+        private static string CreateRequestUri(string path, IEnumerable<KeyValuePair<string, string>> queryParameters)
+        {
+            var query = string.Join("&", queryParameters.Select(parameter => $"{Uri.EscapeDataString(parameter.Key)}={Uri.EscapeDataString(parameter.Value)}"));
+            return $"{path}?{query}";
+        }
+
+        private static string CreateOptionsText(ProtocolVersion protocolVersion)
+        {
+            var options = new List<string>
+            {
+                "maxFps:15",
+                "renderDistance:2",
+                "pauseOnLostFocus:false"
+            };
+
+            if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19_4)
+                options.Insert(2, "onboardAccessibility:false");
+
+            return string.Join('\n', options) + "\n";
         }
     }
 }
