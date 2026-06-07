@@ -15,7 +15,7 @@ on:
       shard-count:
         type: number
         required: false
-        default: 32
+        default: 16
 
 jobs:
   test-matrix:
@@ -93,19 +93,81 @@ jobs:
         shell: bash
         if: ${{ matrix.test-kind == 'integration' }}
         run: |
-          filter=$(
-            dotnet test tests/Void.IntegrationTests --configuration Release --list-tests \
-              | awk '/The following Tests are available:/{started=1; next} started {gsub(/^[ \t]+/, ""); if ($0) print}' \
-              | sort -u \
-              | awk -v shard=${{ matrix.shard }} -v total=${{ inputs.shard-count }} '((NR - 1) % total) == shard { print "FullyQualifiedName=" $0 }' \
-              | paste -sd '|' -
-          )
+          set -euo pipefail
 
+          shard=${{ matrix.shard }}
+          total=${{ inputs.shard-count }}
+          assignment_dir="$(mktemp -d)"
+          tests_file="$assignment_dir/tests.txt"
+          assignments_file="$assignment_dir/assignments.tsv"
+          trap 'rm -rf "$assignment_dir"' EXIT
+
+          dotnet test tests/Void.IntegrationTests --configuration Release --list-tests \
+            | awk '/The following Tests are available:/{started=1; next} started {gsub(/^[ \t]+/, ""); if ($0) print}' \
+            | LC_ALL=C sort -u > "$tests_file"
+
+          total_tests=$(wc -l < "$tests_file" | tr -d ' ')
+
+          if [ "$total_tests" -eq 0 ]; then
+            echo "No integration tests were discovered."
+            echo "HAS_INTEGRATION_TESTS=false" >> "$GITHUB_ENV"
+            echo "TEST_FILTER=" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          for (( current_shard = 0; current_shard < total; current_shard++ )); do
+            : > "$assignment_dir/shard-$current_shard.txt"
+          done
+
+          while IFS= read -r test_name; do
+            checksum=$(printf '%s' "$test_name" | cksum | awk '{ print $1 }')
+            assigned_shard=$(( checksum % total ))
+
+            printf '%s\t%s\n' "$assigned_shard" "$test_name" >> "$assignments_file"
+            printf '%s\n' "$test_name" >> "$assignment_dir/shard-$assigned_shard.txt"
+          done < "$tests_file"
+
+          assigned_tests=$(wc -l < "$assignments_file" | tr -d ' ')
+          unique_assigned_tests=$(cut -f2- "$assignments_file" | LC_ALL=C sort -u | wc -l | tr -d ' ')
+
+          if [ "$assigned_tests" -ne "$total_tests" ] || [ "$unique_assigned_tests" -ne "$total_tests" ]; then
+            echo "Shard assignment check failed."
+            echo "Discovered tests: $total_tests"
+            echo "Assigned tests: $assigned_tests"
+            echo "Unique assigned tests: $unique_assigned_tests"
+            echo "Duplicate assignments:"
+            cut -f2- "$assignments_file" | LC_ALL=C sort | uniq -d
+            exit 1
+          fi
+
+          echo "Discovered $total_tests integration tests."
+
+          for (( current_shard = 0; current_shard < total; current_shard++ )); do
+            shard_tests=$(wc -l < "$assignment_dir/shard-$current_shard.txt" | tr -d ' ')
+            echo "Shard $current_shard/$total: $shard_tests tests"
+          done
+
+          current_shard_file="$assignment_dir/shard-$shard.txt"
+
+          if [ ! -s "$current_shard_file" ]; then
+            echo "No integration tests assigned to shard $shard/$total."
+            echo "HAS_INTEGRATION_TESTS=false" >> "$GITHUB_ENV"
+            echo "TEST_FILTER=" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          filter=$(awk '{ print "FullyQualifiedName=" $0 }' "$current_shard_file" | paste -sd '|' -)
+
+          echo "HAS_INTEGRATION_TESTS=true" >> "$GITHUB_ENV"
           echo "TEST_FILTER=$filter" >> "$GITHUB_ENV"
 
       - name: Run integration shard
-        if: ${{ matrix.test-kind == 'integration' }}
+        if: ${{ matrix.test-kind == 'integration' && env.HAS_INTEGRATION_TESTS == 'true' }}
         run: dotnet test tests/Void.IntegrationTests --configuration Release --filter "$TEST_FILTER" --logger "console;verbosity=detailed"
+
+      - name: Skip empty integration shard
+        if: ${{ matrix.test-kind == 'integration' && env.HAS_INTEGRATION_TESTS != 'true' }}
+        run: echo "No integration tests assigned to this shard."
 
       - name: Upload integration steps
         if: ${{ always() && matrix.test-kind == 'integration' }}
