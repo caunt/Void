@@ -32,7 +32,8 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
         // These do connect to the server before the loading screen completes, causing MC-228828 crash on 1.14-1.19
         .Where(version => version < ProtocolVersion.MINECRAFT_1_14 || version > ProtocolVersion.MINECRAFT_1_19);
 
-    public IEnumerable<string> Logs => Container.ReadLogsAsync(_readLogsSince).GetAwaiter().GetResult();
+    public string LogFileName => "logs.txt";
+    public IEnumerable<string> Logs => ReadLogsAsync(_readLogsSince).GetAwaiter().GetResult();
 
     public void ClearLogs()
     {
@@ -75,11 +76,16 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
     public async Task<Game> RunGameAsync(string testName, EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
     {
+        return await RunGameAsync(testName, endPoint, protocolVersion, [], cancellationToken);
+    }
+
+    public async Task<Game> RunGameAsync(string testName, EndPoint endPoint, ProtocolVersion protocolVersion, IEnumerable<IIntegrationSide> additionalLogSides, CancellationToken cancellationToken = default)
+    {
         for (var attempt = 1; attempt <= SetupRetries; attempt++)
         {
             try
             {
-                return await Game.RunAsync(testName, Container, HttpClient, logsDateTimeGetter: () => _readLogsSince, endPoint, protocolVersion, cancellationToken);
+                return await Game.RunAsync(testName, Container, HttpClient, [this, .. additionalLogSides], endPoint, protocolVersion, cancellationToken);
             }
             catch (OperationCanceledException) when (attempt < SetupRetries)
             {
@@ -90,12 +96,15 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
         throw new TimeoutException($"Failed to setup {protocolVersion} after {SetupRetries} attempts");
     }
 
-    public record Game(string TestName, IContainer Container, HttpClient HttpClient, Func<DateTime> LogsDateTimeGetter, ProtocolVersion ProtocolVersion, string Username) : IAsyncDisposable
+    public async Task<IEnumerable<string>> ReadLogsAsync(DateTime since, CancellationToken cancellationToken = default)
+    {
+        return await Container.ReadLogsAsync(since, cancellationToken);
+    }
+
+    public record Game(string TestName, IContainer Container, HttpClient HttpClient, IReadOnlyList<IIntegrationSide> LogSides, DateTime StartedAt, ProtocolVersion ProtocolVersion, string Username) : IAsyncDisposable
     {
         private readonly string _workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), "steps", TestName, ProtocolVersion.ToString(), Username);
         private int _step;
-
-        public DateTime ReadLogsSince => LogsDateTimeGetter();
 
         public async ValueTask DisposeAsync()
         {
@@ -103,8 +112,14 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
             try
             {
-                await MakeStepAsync("exit", Timeouts.StepTimeoutToken);
-                await File.WriteAllLinesAsync(Path.Combine(_workingDirectory, "logs.txt"), await Container.ReadLogsAsync(ReadLogsSince, Timeouts.StepTimeoutToken), Timeouts.StepTimeoutToken);
+                try
+                {
+                    await MakeStepAsync("exit", Timeouts.StepTimeoutToken);
+                }
+                finally
+                {
+                    await TryWriteLogsAsync(Timeouts.StepTimeoutToken);
+                }
             }
             finally
             {
@@ -114,14 +129,15 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             GC.SuppressFinalize(this);
         }
 
-        public static async Task<Game> RunAsync(string testName, IContainer container, HttpClient httpClient, Func<DateTime> logsDateTimeGetter, EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
+        public static async Task<Game> RunAsync(string testName, IContainer container, HttpClient httpClient, IReadOnlyList<IIntegrationSide> logSides, EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
         {
             var (dockerHost, dockerPort) = endPoint.AsDockerHostPort;
             var username = Convert.ToHexString(BitConverter.GetBytes(Random.Shared.Next()));
+            var startedAt = DateTime.UtcNow;
 
             await container.CopyAsync(Encoding.UTF8.GetBytes(CreateOptionsText(protocolVersion)), "/root/.minecraft/options.txt", ct: cancellationToken);
 
-            var game = new Game(testName, container, httpClient, logsDateTimeGetter, protocolVersion, username);
+            var game = new Game(testName, container, httpClient, logSides, startedAt, protocolVersion, username);
 
             try
             {
@@ -132,6 +148,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             }
             catch
             {
+                await game.TryWriteLogsAsync(Timeouts.StepTimeoutToken);
                 await game.StopClientAsync(Timeouts.StepTimeoutToken);
                 throw;
             }
@@ -253,6 +270,29 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
         {
             _ = Directory.CreateDirectory(_workingDirectory);
             await File.WriteAllBytesAsync(Path.Combine(_workingDirectory, $"step-{++_step}-{action}.png"), await TakeScreenshotAsync(cancellationToken), cancellationToken);
+        }
+
+        private async Task TryWriteLogsAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await WriteLogsAsync(cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                await LogAsync($"Failed to write step logs: {exception.Message}", CancellationToken.None);
+            }
+        }
+
+        private async Task WriteLogsAsync(CancellationToken cancellationToken = default)
+        {
+            _ = Directory.CreateDirectory(_workingDirectory);
+
+            foreach (var side in LogSides)
+            {
+                var logs = await side.ReadLogsAsync(StartedAt, cancellationToken);
+                await File.WriteAllLinesAsync(Path.Combine(_workingDirectory, side.LogFileName), logs, cancellationToken);
+            }
         }
 
         private static string CreateRequestUri(string path, IEnumerable<KeyValuePair<string, string>> queryParameters)

@@ -13,6 +13,7 @@ using Xunit;
 
 public record VoidProxy(CollectingTextWriter LogWriter, VoidEntryPoint.RunResult RunResult, CancellationTokenSource CancellationTokenSource) : IIntegrationSide
 {
+    public string LogFileName => "void-proxy.log";
     public IEnumerable<string> Logs => LogWriter.Lines;
     public int Port => RunResult.ListeningPort;
 
@@ -69,6 +70,12 @@ public record VoidProxy(CollectingTextWriter LogWriter, VoidEntryPoint.RunResult
     public void ClearLogs()
     {
         LogWriter.Clear();
+    }
+
+    public Task<IEnumerable<string>> ReadLogsAsync(DateTime since, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult<IEnumerable<string>>(LogWriter.GetLinesSince(since));
     }
 
     public async ValueTask DisposeAsync()

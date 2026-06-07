@@ -13,8 +13,8 @@ public class PaperFixture : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        var paperServer1 = PaperServer.CreateAsync(Timeouts.SetupTimeoutToken);
-        var paperServer2 = PaperServer.CreateAsync(Timeouts.SetupTimeoutToken);
+        var paperServer1 = PaperServer.CreateAsync("server-1.log", Timeouts.SetupTimeoutToken);
+        var paperServer2 = PaperServer.CreateAsync("server-2.log", Timeouts.SetupTimeoutToken);
 
         Server1 = await paperServer1;
         Server2 = await paperServer2;
