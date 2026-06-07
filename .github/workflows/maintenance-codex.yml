@@ -6,10 +6,12 @@ on:
   workflow_dispatch:
     inputs:
       model:
-        description: OpenAI API model. For free tier usage models, see https://platform.openai.com/settings/organization/data-controls/sharing.
-        required: true
-        default: gpt-5.4
+        description: Optional OpenAI API model. Defaults to CODEX_DEFAULT_MODEL.
+        required: false
         type: string
+
+env:
+  CODEX_DEFAULT_MODEL: gpt-5.4-mini
 
 jobs:
   document_api:
@@ -39,19 +41,35 @@ jobs:
 
       - name: Improve XML documentation with Codex
         env:
-          MODEL: ${{ inputs.model || 'gpt-5.4' }}
+          MODEL: ${{ inputs.model || env.CODEX_DEFAULT_MODEL }}
           PROMPT: |
-            Improve C# XML documentation in exactly 1 place only, limited to the Void.Proxy.API and Void.Minecraft assemblies.
+            # Improve C# XML documentation in exactly 1 place only, limited to the Void.Proxy.Api and Void.Minecraft assemblies.
 
-            First, build the relevant projects and check the build warnings for missing XML documentation. If there are any missing docs reported by the build, prioritize adding those instead of editing existing documentation. Only if there are no good missing-doc candidates should you improve existing XML docs.
+            First, build the relevant projects, but do not print or read the full build output in the conversation.
 
-            Before editing, analyze the real behavior of each chosen member from its implementation and relevant call sites. Document what it actually does, not what its name suggests.
+            Save the full build output into a temporary file. Extract only warning lines into a second temporary file. Never output the full build log or the full warning list.
 
-            For the exactly 1 chosen location, add or improve all XML documentation tags that are genuinely applicable, including: <summary>, <remarks>, <param>, <paramref>, <typeparam>, <typeparamref>, <returns>, <value>, <exception>, <example>, <see>, and <seealso>. Use accurate cref references wherever useful. Use <c> for inline code, <code> for code blocks, and <para> to structure longer remarks. Do not add tags that are not justified by the implementation.
+            If there are no warnings, exit without making changes.
 
-            Write documentation that is precise, technical, and useful to API consumers. Cover actual behavior, nullability, side effects, important edge cases, exception conditions, return value semantics, and usage intent. Prefer strong references to related members and types when they improve clarity.
+            Randomly select one warning line from the warning file and read only that warning line.
+
+            If the selected warning is not related to missing or invalid XML documentation, select another random warning line that has not already been checked. Repeat until either:
+            - one XML documentation warning is selected
+            - there are no unchecked warnings left
+
+            If no XML documentation warning is found, exit without making changes.
+
+            For the exactly 1 selected XML documentation warning, inspect only the target source file and the minimal directly relevant implementation/call-site context needed to document it correctly.
+
+            Add or improve XML documentation only for that one selected location.
+
+            Use only XML documentation tags that are genuinely applicable, including <summary>, <remarks>, <param>, <paramref>, <typeparam>, <typeparamref>, <returns>, <value>, <exception>, <example>, <see>, and <seealso>. Use accurate cref references wherever useful. Use <c> for inline code, <code> for code blocks, and <para> to structure longer remarks. Do not add tags that are not justified by the implementation.
+
+            Write documentation that is precise, technical, and useful to API consumers. Cover actual behavior, nullability, side effects, important edge cases, exception conditions, return value semantics, and usage intent.
 
             Do not change code behavior. Do not edit more than exactly 1 documentation location.
+
+            After editing, do not run solution build.
         run: codex exec --yolo --model "$MODEL" "$PROMPT"
 
       - name: Commit changes and open pull request
@@ -67,10 +85,10 @@ jobs:
             Keeps public API XML documentation precise and useful for consumers.
 
             ## Changes
-            Codex was instructed to improve exactly one XML documentation location in Void.Proxy.API or Void.Minecraft.
+            Codex was instructed to improve exactly one XML documentation warning in Void.Proxy.Api or Void.Minecraft.
 
             ## Verification
-            Codex was instructed to build the relevant projects and use missing XML documentation warnings as the first source of candidates.
+            Codex was instructed to build the relevant projects, inspect only extracted warning lines, and skip solution build after editing.
 
             ## Performance
             Not applicable; documentation-only change.
