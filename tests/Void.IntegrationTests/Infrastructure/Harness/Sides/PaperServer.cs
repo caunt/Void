@@ -9,12 +9,12 @@ using Void.IntegrationTests.Infrastructure.Extensions;
 
 namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
 
-public record PaperServer(IContainer Container) : IIntegrationSide
+public record PaperServer(IContainer Container, string LogFileName) : IIntegrationSide
 {
     private DateTime _readLogsSince = DateTime.UtcNow;
     public int Port => Container.GetMappedPublicPort(containerPort: 25565);
 
-    public IEnumerable<string> Logs => Container.ReadLogsAsync(_readLogsSince).GetAwaiter().GetResult();
+    public IEnumerable<string> Logs => ReadLogsAsync(_readLogsSince).GetAwaiter().GetResult();
 
     public void ClearLogs()
     {
@@ -29,6 +29,11 @@ public record PaperServer(IContainer Container) : IIntegrationSide
     }
 
     public static async Task<PaperServer> CreateAsync(CancellationToken cancellationToken = default)
+    {
+        return await CreateAsync("server.log", cancellationToken);
+    }
+
+    public static async Task<PaperServer> CreateAsync(string logFileName, CancellationToken cancellationToken = default)
     {
         var container = new ContainerBuilder("itzg/minecraft-server:latest")
             .WithImagePullPolicy(PullPolicy.Always)
@@ -67,7 +72,12 @@ public record PaperServer(IContainer Container) : IIntegrationSide
 
         await container.StartAsync(cancellationToken);
 
-        return new PaperServer(container);
+        return new PaperServer(container, logFileName);
+    }
+
+    public async Task<IEnumerable<string>> ReadLogsAsync(DateTime since, CancellationToken cancellationToken = default)
+    {
+        return await Container.ReadLogsAsync(since, cancellationToken);
     }
 
     public async Task ExpectTextAsync(string text, bool lookupHistory = false, CancellationToken cancellationToken = default)

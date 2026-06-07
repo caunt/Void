@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -8,11 +9,19 @@ namespace Void.IntegrationTests.Infrastructure.IO;
 
 public class CollectingTextWriter : TextWriter
 {
-    private readonly List<string> _lines = [];
+    private readonly List<CollectedLine> _lines = [];
     private readonly StringBuilder _currentLineBuilder = new();
     private readonly Lock _lock = new();
 
-    public IReadOnlyList<string> Lines => [.. _lines];
+    public IReadOnlyList<string> Lines
+    {
+        get
+        {
+            using var _ = _lock.EnterScope();
+            return [.. _lines.Select(line => line.Text)];
+        }
+    }
+
     public string Text => string.Join('\n', Lines);
     public event Action<string>? OnLine;
     public override Encoding Encoding { get; } = Encoding.UTF8;
@@ -23,6 +32,12 @@ public class CollectingTextWriter : TextWriter
 
         _lines.Clear();
         _currentLineBuilder.Clear();
+    }
+
+    public IReadOnlyList<string> GetLinesSince(DateTime since)
+    {
+        using var _ = _lock.EnterScope();
+        return [.. _lines.Where(line => line.Timestamp >= since).Select(line => line.Text)];
     }
 
     public override void Write(char value)
@@ -75,7 +90,7 @@ public class CollectingTextWriter : TextWriter
                 if (completedLine.Length == 0)
                     continue;
 
-                _lines.Add(completedLine);
+                _lines.Add(new CollectedLine(DateTime.UtcNow, completedLine));
                 completedLines ??= [];
                 completedLines.Add(completedLine);
                 continue;
@@ -86,4 +101,6 @@ public class CollectingTextWriter : TextWriter
 
         return completedLines?.ToArray() ?? [];
     }
+
+    private readonly record struct CollectedLine(DateTime Timestamp, string Text);
 }

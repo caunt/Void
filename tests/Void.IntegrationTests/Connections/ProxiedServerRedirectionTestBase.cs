@@ -25,7 +25,7 @@ public abstract class ProxiedServerRedirectionTestBase(PaperFixture paperFixture
 
         await LoggedExecutorAsync(async () =>
         {
-            await using (var game = await portableMinecraftClientFixture.Api.RunGameAsync(nameof(ProxiedServerRedirectionTestBase), _proxyEndPoint, protocolVersion, Timeouts.SetupTimeoutToken))
+            await using (var game = await portableMinecraftClientFixture.Api.RunGameAsync(nameof(ProxiedServerRedirectionTestBase), _proxyEndPoint, protocolVersion, [voidFixture.VoidProxy, paperFixture.Server1, paperFixture.Server2], Timeouts.SetupTimeoutToken))
             {
                 await game.SendTextMessageAsync(firstMessage, Timeouts.StepTimeoutToken);
                 await paperFixture.Server1.ExpectTextAsync(firstMessage, lookupHistory: true, Timeouts.StepTimeoutToken);
