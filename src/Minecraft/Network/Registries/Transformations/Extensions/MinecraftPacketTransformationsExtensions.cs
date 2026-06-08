@@ -5,6 +5,9 @@ using Void.Minecraft.Network.Registries.Transformations.Mappings;
 
 namespace Void.Minecraft.Network.Registries.Transformations.Extensions;
 
+/// <summary>
+/// Extension methods for registering <see cref="MinecraftPacketTransformationMapping"/> sets with an <see cref="IMinecraftPacketTransformationsRegistry"/>.
+/// </summary>
 public static class MinecraftPacketTransformationsExtensions
 {
     public static void RegisterTransformations<T>(this IMinecraftPacketTransformationsRegistry registry, ProtocolVersion protocolVersion, params IEnumerable<MinecraftPacketTransformationMapping> mappings) where T : IMinecraftPacket
