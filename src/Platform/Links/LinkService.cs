@@ -143,7 +143,7 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
 
         if (previousServer is null)
         {
-            await player.KickAsync("Could not redirect you to the target server and you had no previous server.", cancellationToken);
+            await player.KickAsync("Could not connect you to the target server.", cancellationToken);
             return result;
         }
 
@@ -152,7 +152,7 @@ public class LinkService(ILogger<LinkService> logger, IServerService servers, IE
         if (result is not ConnectionResult.NotConnected)
             return result;
 
-        await player.KickAsync("Could not redirect you to the target server nor previous server.", cancellationToken);
+        await player.KickAsync("Could not connect you to the target server nor back to the previous server.", cancellationToken);
         return result;
     }
 
