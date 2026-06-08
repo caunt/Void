@@ -6,6 +6,13 @@ namespace Void.Minecraft.Network.Registries.Transformations.Properties;
 
 public record ListProperty<TPacketProperty>(List<TPacketProperty> Values) : IPacketProperty<ListProperty<TPacketProperty>> where TPacketProperty : IPacketProperty<TPacketProperty>
 {
+    /// <summary>
+    /// Reads a list property from <paramref name="buffer"/> using the encoded element count prefix.
+    /// </summary>
+    /// <remarks>
+    /// This method first reads the list length as a VarInt and then delegates to <see cref="Read(ref MinecraftBuffer, int)"/>
+    /// to materialize each element by calling <c>TPacketProperty.Read(ref buffer)</c> repeatedly.
+    /// </remarks>
     public static ListProperty<TPacketProperty> Read(ref MinecraftBuffer buffer)
     {
         return Read(ref buffer, buffer.ReadVarInt());
