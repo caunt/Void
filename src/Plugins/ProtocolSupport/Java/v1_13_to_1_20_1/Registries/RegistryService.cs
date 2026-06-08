@@ -84,7 +84,7 @@ public class RegistryService(ILogger<RegistryService> logger, Plugin plugin, IPl
 
                 break;
             case LoginSuccessPacket:
-                await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Play, playerChannel, cancellationToken);
+                await @event.Player.SetPhaseAsync(@event.Link, Side.Server, Phase.Play, @event.Link.ServerChannel, cancellationToken);
                 break;
         }
     }
