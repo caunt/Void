@@ -9,6 +9,11 @@ public record NbtProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<NbtPrope
 {
     public NbtTag AsNbtTag => new MinecraftBuffer(Value.Span).ReadTag(readName: false);
 
+    /// <summary>
+    /// Serializes an <see cref="NbtTag"/> into the raw payload stored by <see cref="NbtProperty" />.
+    /// </summary>
+    /// <param name="value">The tag to serialize.</param>
+    /// <returns>A property containing the tag serialized without a name.</returns>
     public static NbtProperty FromNbtTag(NbtTag value)
     {
         using var stream = new MemoryStream();
