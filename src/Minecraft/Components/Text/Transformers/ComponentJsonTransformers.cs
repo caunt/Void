@@ -17,6 +17,17 @@ public static class ComponentJsonTransformers
 {
     private const string ShowAchievementMarker = "!1.11.1=>1.12!";
 
+    /// <summary>
+    /// Transforms the next <see cref="StringProperty"/> payload in <paramref name="wrapper"/> between two protocol versions.
+    /// </summary>
+    /// <remarks>
+    /// The method reads the current value from <paramref name="wrapper"/>, applies the JSON component migration rules for
+    /// <paramref name="from"/> and <paramref name="to"/>, and writes the transformed value back to the same wrapper.
+    /// If the payload is not valid component JSON, it is written back unchanged.
+    /// </remarks>
+    /// <param name="wrapper">The packet wrapper containing the component property to transform.</param>
+    /// <param name="from">The source protocol version.</param>
+    /// <param name="to">The destination protocol version.</param>
     public static void Apply(IMinecraftBinaryPacketWrapper wrapper, ProtocolVersion from, ProtocolVersion to)
     {
         wrapper.Write(Apply(wrapper.Read<StringProperty>(), from, to));
