@@ -85,6 +85,13 @@ public record TextColor(byte Red, byte Green, byte Blue)
         throw new ArgumentException($"Invalid color string: '{span}'. Expected either a hex color (#RRGGBB) or a named color (e.g., 'red', 'blue', 'green').", nameof(value));
     }
 
+    /// <summary>
+    /// Returns the canonical color identifier for this value.
+    /// </summary>
+    /// <remarks>
+    /// Named Minecraft colors return their registered identifier, such as <c>red</c> or <c>dark_blue</c>.
+    /// Unmapped colors return a hexadecimal RGB string in <c>#RRGGBB</c> format.
+    /// </remarks>
     public override string ToString() => Name;
 
     private static float Distance(Color left, Color right)
