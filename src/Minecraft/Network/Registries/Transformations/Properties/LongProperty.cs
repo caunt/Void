@@ -3,6 +3,9 @@ using Void.Minecraft.Buffers;
 
 namespace Void.Minecraft.Network.Registries.Transformations.Properties;
 
+/// <summary>
+/// Represents a 64-bit signed integer property encoded as the Minecraft long binary format.
+/// </summary>
 public record LongProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<LongProperty>
 {
     public long AsPrimitive => new MinecraftBuffer(Value.Span).ReadLong();
