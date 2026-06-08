@@ -160,6 +160,17 @@ public static class PlayerExtensions
             }
         }
 
+        /// <summary>
+        /// Registers <typeparamref name="T"/> as the packet type for the specified channel and operation.
+        /// </summary>
+        /// <typeparam name="T">The packet type to register.</typeparam>
+        /// <param name="channel">The network channel whose packet id registry will receive the mapping.</param>
+        /// <param name="operation">The packet operation to register the mapping for.</param>
+        /// <param name="mappings">The protocol-version-specific packet id mappings to associate with the packet type.</param>
+        /// <remarks>
+        /// The packet is registered against the plugin returned by <c>GetPluginFromType</c> on <see cref="IPluginService"/>
+        /// and uses the player's current Minecraft protocol version when adding the mapping.
+        /// </remarks>
         public void RegisterPacket<T>(INetworkChannel channel, Operation operation, params MinecraftPacketIdMapping[] mappings) where T : IMinecraftPacket
         {
             channel
