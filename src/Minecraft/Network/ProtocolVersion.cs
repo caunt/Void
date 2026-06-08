@@ -55,6 +55,9 @@ public class ProtocolVersion : IComparable
     public static readonly ProtocolVersion MINECRAFT_1_21 = new(767, "1.21", "1.21.1");
     public static readonly ProtocolVersion MINECRAFT_1_21_2 = new(768, "1.21.2", "1.21.3");
     public static readonly ProtocolVersion MINECRAFT_1_21_4 = new(769, "1.21.4");
+    /// <summary>
+    /// Represents Minecraft Java Edition 1.21.5, which uses protocol version <c>770</c>.
+    /// </summary>
     public static readonly ProtocolVersion MINECRAFT_1_21_5 = new(770, "1.21.5");
     public static readonly ProtocolVersion MINECRAFT_1_21_6 = new(771, "1.21.6");
     public static readonly ProtocolVersion MINECRAFT_1_21_7 = new(772, "1.21.7", "1.21.8");
