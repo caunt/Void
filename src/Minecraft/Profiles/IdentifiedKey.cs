@@ -88,6 +88,11 @@ public record IdentifiedKey(IdentifiedKeyRevision Revision, long ExpiresAt, byte
     }
 }
 
+/// <summary>
+/// Describes a key revision and the protocol versions it applies to.
+/// </summary>
+/// <param name="BackwardsCompatibleTo">Revision identifiers that remain valid for this revision.</param>
+/// <param name="ApplicableTo">The protocol versions that use this revision.</param>
 public record IdentifiedKeyRevision(IEnumerable<IdentifiedKeyRevision> BackwardsCompatibleTo, List<ProtocolVersion> ApplicableTo)
 {
     public static readonly IdentifiedKeyRevision GenericV1Revision = new([], [ProtocolVersion.MINECRAFT_1_19]);
