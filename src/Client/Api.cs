@@ -2,7 +2,6 @@
 #:property TargetFramework=net11.0
 #:property PublishAot=false
 #:package CurseForge.APIClient@*
-#:package Nito.AsyncEx@*
 
 using System.Diagnostics;
 using System.IO.Compression;
@@ -10,7 +9,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using CurseForge.APIClient;
 using CurseForge.APIClient.Models.Files;
-using Nito.AsyncEx;
 using CurseForgeFile = CurseForge.APIClient.Models.Files.File;
 using File = System.IO.File;
 
@@ -27,12 +25,23 @@ const int brightnessThreshold = 5;
 const int maximumChatOpenPresses = 100;
 const int displayReadyMaxAttempts = 50;
 const int displayReadyDelayMilliseconds = 100;
+const int displayProbeTimeoutMilliseconds = 1000;
+const int externalProcessTimeoutMilliseconds = 5000;
+const int screenCaptureTimeoutMilliseconds = 3000;
+const int processStopTimeoutMilliseconds = 10000;
 const int criticalProcessEarlyExitMilliseconds = 1000;
 
 var builder = WebApplication.CreateBuilder(args);
 var application = builder.Build();
 var clientProcess = (Process?)null;
-var clientLock = new AsyncLock();
+var clientState = ClientState.Idle;
+var clientStateLock = new object();
+var currentOperationId = 0;
+var currentOperationName = (string?)null;
+var currentOperationCancellationTokenSource = (CancellationTokenSource?)null;
+var lastError = (string?)null;
+var stateUpdatedAt = DateTimeOffset.UtcNow;
+var chatOperationRunning = false;
 var criticalProcesses = new HashSet<Process>();
 var criticalProcessesLock = new object();
 var expectedExitProcessIds = new HashSet<int>();
@@ -42,36 +51,37 @@ application.Lifetime.ApplicationStopping.Register(StopCriticalProcesses);
 
 application.MapGet("/health", () => "ok");
 
-application.MapGet("/start-vanilla", async (HttpContext httpContext, string? version) =>
+application.MapGet("/start-vanilla", (HttpContext httpContext, string? version) =>
 {
     if (string.IsNullOrWhiteSpace(version))
         return Results.BadRequest("version is required");
 
     var portableMinecraftArguments = httpContext.Request.Query["argument"].OfType<string>().ToArray();
-
-    using var _ = await clientLock.LockAsync();
-
-    await EnsureDisplay();
-
-    if (clientProcess is not null && !clientProcess.HasExited)
-        return Results.Conflict("a client is already running");
-
-    var display = Environment.GetEnvironmentVariable("DISPLAY") ?? defaultDisplay;
-    var existingWindowId = await FindLargestWindow(display);
-
-    if (existingWindowId is not null)
-        return Results.Conflict("a client window is already running");
-
     var minecraftDirectory = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? defaultMinecraftDirectory;
     var portablemcVersion = $"mojang:{version}";
+    var operationName = $"start-vanilla:{version}";
+    var cancellationTokenSource = CreateOperationCancellationTokenSource();
+    int operationId;
 
-    Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portablemcVersion}");
-    clientProcess = LaunchPortableMinecraftClient(minecraftDirectory, portablemcVersion, portableMinecraftArguments);
+    lock (clientStateLock)
+    {
+        RefreshClientStateLocked();
 
-    return Results.Ok(new { status = "started", pid = clientProcess.Id });
+        if (!CanStartClientLocked())
+        {
+            cancellationTokenSource.Dispose();
+            return Results.Conflict(CreateStatusBodyLocked("conflict", "a client is already running or changing state"));
+        }
+
+        operationId = BeginOperationLocked(operationName, ClientState.Starting, cancellationTokenSource);
+    }
+
+    RunDetachedOperation(operationId, operationName, cancellationTokenSource, cancellationToken => StartVanillaOperationAsync(operationId, minecraftDirectory, portablemcVersion, portableMinecraftArguments, cancellationToken));
+
+    return Results.Ok(CreateStatusBody("starting"));
 });
 
-application.MapGet("/start-curseforge", async (HttpContext httpContext, string? slug, int fileId) =>
+application.MapGet("/start-curseforge", (HttpContext httpContext, string? slug, int fileId) =>
 {
     if (string.IsNullOrWhiteSpace(slug) || fileId <= 0)
         return Results.BadRequest("slug and positive fileId are required");
@@ -82,29 +92,141 @@ application.MapGet("/start-curseforge", async (HttpContext httpContext, string? 
         return Results.Problem("CURSEFORGE_API_KEY is not set");
 
     var portableMinecraftArguments = httpContext.Request.Query["argument"].OfType<string>().ToArray();
-
-    using var _ = await clientLock.LockAsync();
-
-    await EnsureDisplay();
-
-    if (clientProcess is not null && !clientProcess.HasExited)
-        return Results.Conflict("a client is already running");
-
-    var display = Environment.GetEnvironmentVariable("DISPLAY") ?? defaultDisplay;
-    var existingWindowId = await FindLargestWindow(display);
-
-    if (existingWindowId is not null)
-        return Results.Conflict("a client window is already running");
-
     var minecraftDirectory = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? defaultMinecraftDirectory;
+    var operationName = $"start-curseforge:{slug}:{fileId}";
+    var cancellationTokenSource = CreateOperationCancellationTokenSource();
+    int operationId;
+
+    lock (clientStateLock)
+    {
+        RefreshClientStateLocked();
+
+        if (!CanStartClientLocked())
+        {
+            cancellationTokenSource.Dispose();
+            return Results.Conflict(CreateStatusBodyLocked("conflict", "a client is already running or changing state"));
+        }
+
+        operationId = BeginOperationLocked(operationName, ClientState.Starting, cancellationTokenSource);
+    }
+
+    RunDetachedOperation(operationId, operationName, cancellationTokenSource, cancellationToken => StartCurseForgeOperationAsync(operationId, slug, fileId, curseForgeApiKey, minecraftDirectory, portableMinecraftArguments, cancellationToken));
+
+    return Results.Ok(CreateStatusBody("starting"));
+});
+
+application.MapGet("/stop-client", () =>
+{
+    var cancellationTokenSource = CreateOperationCancellationTokenSource();
+    var operationName = "stop-client";
+    Process? processToStop;
+    int operationId;
+
+    lock (clientStateLock)
+    {
+        RefreshClientStateLocked();
+
+        if (!HasActiveClientOrOperationLocked())
+        {
+            cancellationTokenSource.Dispose();
+            clientState = ClientState.Idle;
+            stateUpdatedAt = DateTimeOffset.UtcNow;
+            return Results.NotFound("no client is running");
+        }
+
+        currentOperationCancellationTokenSource?.Cancel();
+        processToStop = clientProcess;
+
+        if (processToStop is not null && !processToStop.HasExited)
+            MarkExpectedExit(processToStop);
+
+        operationId = BeginOperationLocked(operationName, ClientState.Stopping, cancellationTokenSource);
+    }
+
+    RunDetachedOperation(operationId, operationName, cancellationTokenSource, cancellationToken => StopClientOperationAsync(operationId, processToStop, cancellationToken));
+
+    return Results.Ok(CreateStatusBody("stopping"));
+});
+
+application.MapGet("/send-chat", (string? message) =>
+{
+    if (string.IsNullOrWhiteSpace(message))
+        return Results.BadRequest("message is required");
+
+    lock (clientStateLock)
+    {
+        RefreshClientStateLocked();
+
+        if (clientState != ClientState.Running || clientProcess is null || clientProcess.HasExited)
+            return Results.Conflict(CreateStatusBodyLocked("conflict", "no client is running"));
+
+        if (chatOperationRunning)
+            return Results.Conflict(CreateStatusBodyLocked("conflict", "a chat operation is already running"));
+
+        chatOperationRunning = true;
+        lastError = null;
+        stateUpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    RunDetachedChatOperation(message);
+
+    return Results.Ok(CreateStatusBody("queued"));
+});
+
+application.MapGet("/screen", async () =>
+{
+    lock (clientStateLock)
+    {
+        RefreshClientStateLocked();
+
+        if (clientState != ClientState.Running || clientProcess is null || clientProcess.HasExited)
+            return Results.Conflict("no client is running");
+    }
+
+    using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(application.Lifetime.ApplicationStopping);
+    cancellationTokenSource.CancelAfter(screenCaptureTimeoutMilliseconds);
+
+    try
+    {
+        var imageBytes = await CaptureScreenAsync(cancellationTokenSource.Token);
+        return Results.File(imageBytes, "image/png");
+    }
+    catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+    {
+        return Results.Problem("screen capture timed out");
+    }
+    catch (TimeoutException exception)
+    {
+        return Results.Problem(exception.Message);
+    }
+    catch (Exception exception)
+    {
+        return Results.Problem(exception.Message);
+    }
+});
+
+application.Run();
+
+async Task StartVanillaOperationAsync(int operationId, string minecraftDirectory, string portablemcVersion, string[] portableMinecraftArguments, CancellationToken cancellationToken)
+{
+    await PrepareDisplayAndWindowAsync(cancellationToken);
+    cancellationToken.ThrowIfCancellationRequested();
+
+    Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portablemcVersion}");
+    var process = LaunchPortableMinecraftClient(minecraftDirectory, portablemcVersion, portableMinecraftArguments, cancellationToken);
+
+    CompleteStartOperation(operationId, process);
+}
+
+async Task StartCurseForgeOperationAsync(int operationId, string slug, int fileId, string curseForgeApiKey, string minecraftDirectory, string[] portableMinecraftArguments, CancellationToken cancellationToken)
+{
+    await PrepareDisplayAndWindowAsync(cancellationToken);
     Directory.CreateDirectory(minecraftDirectory);
 
     var markerFile = Path.Combine(minecraftDirectory, ".curseforge-modpack");
     var versionFile = Path.Combine(minecraftDirectory, ".curseforge-portablemc-version");
-
     var marker = $"{slug} {fileId}";
-    var existingMarker = File.Exists(markerFile) ? (await File.ReadAllTextAsync(markerFile)).Trim() : "";
-
+    var existingMarker = File.Exists(markerFile) ? (await File.ReadAllTextAsync(markerFile, cancellationToken)).Trim() : "";
     string portablemcVersion;
 
     Console.Error.WriteLine($"Starting CurseForge modpack '{slug}' file '{fileId}'");
@@ -112,118 +234,70 @@ application.MapGet("/start-curseforge", async (HttpContext httpContext, string? 
     if (existingMarker == marker)
     {
         if (!File.Exists(versionFile))
-            return Results.Problem($"PortableMC version cache file is missing: {versionFile}");
+            throw new InvalidOperationException($"PortableMC version cache file is missing: {versionFile}");
 
-        portablemcVersion = (await File.ReadAllTextAsync(versionFile)).Trim();
+        portablemcVersion = (await File.ReadAllTextAsync(versionFile, cancellationToken)).Trim();
 
         Console.Error.WriteLine($"Using existing installation in {minecraftDirectory}");
     }
     else
     {
-        portablemcVersion = await InstallModpack(slug, fileId, curseForgeApiKey, minecraftDirectory);
+        portablemcVersion = await InstallModpack(slug, fileId, curseForgeApiKey, minecraftDirectory, cancellationToken);
 
-        await File.WriteAllTextAsync(versionFile, portablemcVersion);
-        await File.WriteAllTextAsync(markerFile, marker);
+        await File.WriteAllTextAsync(versionFile, portablemcVersion, cancellationToken);
+        await File.WriteAllTextAsync(markerFile, marker, cancellationToken);
 
         Console.Error.WriteLine("Installation marker updated");
     }
 
+    cancellationToken.ThrowIfCancellationRequested();
+
     Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portablemcVersion}");
-    clientProcess = LaunchPortableMinecraftClient(minecraftDirectory, portablemcVersion, portableMinecraftArguments);
+    var process = LaunchPortableMinecraftClient(minecraftDirectory, portablemcVersion, portableMinecraftArguments, cancellationToken);
 
-    return Results.Ok(new { status = "started", pid = clientProcess.Id });
-});
+    CompleteStartOperation(operationId, process);
+}
 
-application.MapGet("/stop-client", async () =>
+async Task StopClientOperationAsync(int operationId, Process? processToStop, CancellationToken cancellationToken)
 {
-    using var _ = await clientLock.LockAsync();
+    if (processToStop is not null)
+        await StopProcessAsync(processToStop, cancellationToken);
 
-    if (clientProcess is null || clientProcess.HasExited)
+    lock (clientStateLock)
     {
+        if (currentOperationId != operationId)
+            return;
+
         clientProcess = null;
-        return Results.NotFound("no client is running");
+        currentOperationName = null;
+        currentOperationCancellationTokenSource = null;
+        clientState = ClientState.Idle;
+        stateUpdatedAt = DateTimeOffset.UtcNow;
     }
+}
 
-    lock (expectedExitLock)
-        expectedExitProcessIds.Add(clientProcess.Id);
-
-    clientProcess.Kill(entireProcessTree: true);
-    await clientProcess.WaitForExitAsync();
-
-    clientProcess = null;
-
-    return Results.Ok(new { status = "stopped" });
-});
-
-application.MapGet("/send-chat", async (string? message) =>
+async Task SendChatOperationAsync(string message, CancellationToken cancellationToken)
 {
-    if (string.IsNullOrWhiteSpace(message))
-        return Results.BadRequest("message is required");
-
-    using var _ = await clientLock.LockAsync();
-
-    if (clientProcess is null || clientProcess.HasExited)
-        return Results.Conflict("no client is running");
-
     var display = Environment.GetEnvironmentVariable("DISPLAY") ?? defaultDisplay;
-    var windowId = await FindLargestWindow(display);
+    var windowId = await FindLargestWindow(display, cancellationToken);
 
     if (windowId is null)
-        return Results.Problem("no visible window found");
+        throw new InvalidOperationException("no visible window found");
 
-    await ResizeWindowToDisplayAsync(windowId);
-    await RunOrThrow("xdotool", "windowfocus", windowId);
-    var chatOpened = await OpenChatAsync(windowId, display);
+    await ResizeWindowToDisplayAsync(windowId, cancellationToken);
+    await RunOrThrow(cancellationToken, "xdotool", "windowfocus", windowId);
+    var chatOpened = await OpenChatAsync(windowId, display, cancellationToken);
 
     if (!chatOpened)
-        return Results.Problem("failed to open chat interface after maximum attempts");
+        throw new InvalidOperationException("failed to open chat interface after maximum attempts");
 
-    await RunOrThrow("xdotool", "type", "--clearmodifiers", "--window", windowId, "--delay", "50", "--", message);
-    await RunOrThrow("xdotool", "key", "--clearmodifiers", "--window", windowId, "Return");
+    await RunOrThrow(cancellationToken, "xdotool", "type", "--clearmodifiers", "--window", windowId, "--delay", "50", "--", message);
+    await RunOrThrow(cancellationToken, "xdotool", "key", "--clearmodifiers", "--window", windowId, "Return");
+}
 
-    return Results.Ok(new { status = "sent" });
-});
-
-application.MapGet("/screen", async () =>
+Process LaunchPortableMinecraftClient(string directory, string version, string?[]? portableMinecraftArguments = null, CancellationToken cancellationToken = default)
 {
-    if (clientProcess is null || clientProcess.HasExited)
-        return Results.Conflict("no client is running");
-
-    var display = Environment.GetEnvironmentVariable("DISPLAY") ?? defaultDisplay;
-    var windowId = await FindLargestWindow(display);
-
-    if (windowId is null)
-        return Results.Problem("no visible window found");
-
-    await ResizeWindowToDisplayAsync(windowId);
-
-    var captureProcessInfo = new ProcessStartInfo("import") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
-
-    captureProcessInfo.ArgumentList.Add("-window");
-    captureProcessInfo.ArgumentList.Add(windowId);
-    captureProcessInfo.ArgumentList.Add("png:-");
-
-    using var captureProcess = Process.Start(captureProcessInfo);
-
-    if (captureProcess is null)
-        return Results.Problem("failed to capture screen");
-
-    using var imageStream = new MemoryStream();
-    var standardError = captureProcess.StandardError.ReadToEndAsync();
-    await captureProcess.StandardOutput.BaseStream.CopyToAsync(imageStream);
-    await captureProcess.WaitForExitAsync();
-
-    var errorOutput = await standardError;
-
-    return captureProcess.ExitCode is not 0
-        ? Results.Problem($"screen capture failed: {errorOutput}")
-        : Results.File(imageStream.ToArray(), "image/png");
-});
-
-application.Run();
-
-Process LaunchPortableMinecraftClient(string directory, string version, string?[]? portableMinecraftArguments = null)
-{
+    cancellationToken.ThrowIfCancellationRequested();
     portableMinecraftArguments ??= [];
     var requestedPortableMinecraftArguments = portableMinecraftArguments.OfType<string>().ToArray();
 
@@ -255,33 +329,47 @@ bool HasPortableMinecraftArgument(IEnumerable<string> arguments, string argument
     return arguments.Any(argument => string.Equals(argument, argumentName, StringComparison.Ordinal) || argument.StartsWith($"{argumentName}=", StringComparison.Ordinal));
 }
 
-async Task ResizeWindowToDisplayAsync(string windowId)
+async Task PrepareDisplayAndWindowAsync(CancellationToken cancellationToken)
 {
-    await RunOrThrow("xdotool", "windowmove", "--sync", windowId, "0", "0");
-    await RunOrThrow("xdotool", "windowsize", "--sync", windowId, displayScreenWidth, displayScreenHeight);
+    await EnsureDisplay(cancellationToken);
+
+    var display = Environment.GetEnvironmentVariable("DISPLAY") ?? defaultDisplay;
+    var existingWindowId = await FindLargestWindow(display, cancellationToken);
+
+    if (existingWindowId is not null)
+        throw new InvalidOperationException("a client window is already running");
 }
 
-async Task EnsureDisplay()
+async Task<byte[]> CaptureScreenAsync(CancellationToken cancellationToken)
+{
+    var display = Environment.GetEnvironmentVariable("DISPLAY") ?? defaultDisplay;
+    var windowId = await FindLargestWindow(display, cancellationToken);
+
+    if (windowId is null)
+        throw new InvalidOperationException("no visible window found");
+
+    await ResizeWindowToDisplayAsync(windowId, cancellationToken);
+
+    var captureProcessInfo = CreateProcessInfo("import", ["-window", windowId, "png:-"], display: display);
+    var captureResult = await RunProcessBytesAsync(captureProcessInfo, TimeSpan.FromMilliseconds(screenCaptureTimeoutMilliseconds), cancellationToken);
+
+    return captureResult.ExitCode is not 0
+        ? throw new InvalidOperationException($"screen capture failed: {captureResult.StandardError}")
+        : captureResult.StandardOutput;
+}
+
+async Task ResizeWindowToDisplayAsync(string windowId, CancellationToken cancellationToken = default)
+{
+    await RunOrThrow(cancellationToken, "xdotool", "windowmove", "--sync", windowId, "0", "0");
+    await RunOrThrow(cancellationToken, "xdotool", "windowsize", "--sync", windowId, displayScreenWidth, displayScreenHeight);
+}
+
+async Task EnsureDisplay(CancellationToken cancellationToken = default)
 {
     var display = Environment.GetEnvironmentVariable("DISPLAY");
 
-    if (!string.IsNullOrEmpty(display))
-    {
-        var checkProcessInfo = new ProcessStartInfo("xdpyinfo") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
-
-        checkProcessInfo.ArgumentList.Add("-display");
-        checkProcessInfo.ArgumentList.Add(display);
-
-        using var checkProcess = Process.Start(checkProcessInfo);
-
-        if (checkProcess is not null)
-        {
-            await checkProcess.WaitForExitAsync();
-
-            if (checkProcess.ExitCode == 0)
-                return;
-        }
-    }
+    if (!string.IsNullOrEmpty(display) && await IsDisplayReadyAsync(display, cancellationToken))
+        return;
 
     display ??= defaultDisplay;
     Environment.SetEnvironmentVariable("DISPLAY", display);
@@ -304,24 +392,12 @@ async Task EnsureDisplay()
 
     for (var attempt = 0; attempt < displayReadyMaxAttempts; attempt++)
     {
-        await Task.Delay(displayReadyDelayMilliseconds);
+        await Task.Delay(displayReadyDelayMilliseconds, cancellationToken);
 
-        var readyCheckInfo = new ProcessStartInfo("xdpyinfo") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
-
-        readyCheckInfo.ArgumentList.Add("-display");
-        readyCheckInfo.ArgumentList.Add(display);
-
-        using var readyCheck = Process.Start(readyCheckInfo);
-
-        if (readyCheck is not null)
+        if (await IsDisplayReadyAsync(display, cancellationToken))
         {
-            await readyCheck.WaitForExitAsync();
-
-            if (readyCheck.ExitCode == 0)
-            {
-                displayIsReady = true;
-                break;
-            }
+            displayIsReady = true;
+            break;
         }
     }
 
@@ -329,29 +405,44 @@ async Task EnsureDisplay()
         throw new InvalidOperationException($"display {display} did not become ready after {displayReadyMaxAttempts} attempts");
 }
 
-async Task<bool> OpenChatAsync(string windowId, string display)
+async Task<bool> IsDisplayReadyAsync(string display, CancellationToken cancellationToken)
+{
+    try
+    {
+        var processInfo = CreateProcessInfo("xdpyinfo", ["-display", display], display: display);
+        var result = await RunProcessTextAsync(processInfo, TimeSpan.FromMilliseconds(displayProbeTimeoutMilliseconds), cancellationToken);
+
+        return result.ExitCode == 0;
+    }
+    catch (TimeoutException)
+    {
+        return false;
+    }
+}
+
+async Task<bool> OpenChatAsync(string windowId, string display, CancellationToken cancellationToken = default)
 {
     // Just in case, ensure chat window is closed
-    await RunOrThrow("xdotool", "key", "--clearmodifiers", "--window", windowId, "Return");
+    await RunOrThrow(cancellationToken, "xdotool", "key", "--clearmodifiers", "--window", windowId, "Return");
 
-    var baselineBrightness = await CaptureBrightnessAsync(windowId, display);
+    var baselineBrightness = await CaptureBrightnessAsync(windowId, display, cancellationToken);
     var currentPressCount = 0;
 
     while (currentPressCount < maximumChatOpenPresses)
     {
-        await RunOrThrow("xdotool", "key", "--clearmodifiers", "--window", windowId, "t");
+        await RunOrThrow(cancellationToken, "xdotool", "key", "--clearmodifiers", "--window", windowId, "t");
         currentPressCount++;
 
-        await Task.Delay(132);
+        await Task.Delay(132, cancellationToken);
 
-        var currentBrightness = await CaptureBrightnessAsync(windowId, display);
+        var currentBrightness = await CaptureBrightnessAsync(windowId, display, cancellationToken);
         var brightnessDifference = Math.Abs(baselineBrightness - currentBrightness);
 
         if (brightnessDifference <= brightnessThreshold)
             continue;
 
         for (var backspaceIndex = 0; backspaceIndex < currentPressCount; backspaceIndex++)
-            await RunOrThrow("xdotool", "key", "--clearmodifiers", "--window", windowId, "--delay", "50", "BackSpace");
+            await RunOrThrow(cancellationToken, "xdotool", "key", "--clearmodifiers", "--window", windowId, "--delay", "50", "BackSpace");
 
         return true;
     }
@@ -359,112 +450,66 @@ async Task<bool> OpenChatAsync(string windowId, string display)
     return false;
 }
 
-async Task<int> CaptureBrightnessAsync(string windowId, string display)
+async Task<int> CaptureBrightnessAsync(string windowId, string display, CancellationToken cancellationToken = default)
 {
-    var importProcessInfo = new ProcessStartInfo("import") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
+    var importProcessInfo = CreateProcessInfo("import", ["-window", windowId, "miff:-"], display: display);
+    var importResult = await RunProcessBytesAsync(importProcessInfo, TimeSpan.FromMilliseconds(externalProcessTimeoutMilliseconds), cancellationToken);
 
-    importProcessInfo.ArgumentList.Add("-window");
-    importProcessInfo.ArgumentList.Add(windowId);
-    importProcessInfo.ArgumentList.Add("miff:-");
+    if (importResult.ExitCode != 0)
+        throw new InvalidOperationException($"import exited with code {importResult.ExitCode} during brightness capture: {importResult.StandardError}");
 
-    using var importProcess = Process.Start(importProcessInfo)
-                              ?? throw new InvalidOperationException("failed to start import for brightness capture");
+    var convertProcessInfo = CreateProcessInfo("convert",
+    [
+        "-",
+        "-gravity",
+        "SouthWest",
+        "-crop",
+        "100x20+0+0",
+        "+repage",
+        "-format",
+        "%[fx:int(mean*100)]",
+        "info:"
+    ], redirectStandardInput: true);
 
-    var convertProcessInfo = new ProcessStartInfo("convert") { RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
+    var convertResult = await RunProcessWithInputAsync(convertProcessInfo, importResult.StandardOutput, TimeSpan.FromMilliseconds(externalProcessTimeoutMilliseconds), cancellationToken);
+    var brightnessOutput = convertResult.StandardOutput;
 
-    convertProcessInfo.ArgumentList.Add("-");
-    convertProcessInfo.ArgumentList.Add("-gravity");
-    convertProcessInfo.ArgumentList.Add("SouthWest");
-    convertProcessInfo.ArgumentList.Add("-crop");
-    convertProcessInfo.ArgumentList.Add("100x20+0+0");
-    convertProcessInfo.ArgumentList.Add("+repage");
-    convertProcessInfo.ArgumentList.Add("-format");
-    convertProcessInfo.ArgumentList.Add("%[fx:int(mean*100)]");
-    convertProcessInfo.ArgumentList.Add("info:");
-
-    using var convertProcess = Process.Start(convertProcessInfo)
-                               ?? throw new InvalidOperationException("failed to start convert for brightness capture");
-
-    var importStandardError = importProcess.StandardError.ReadToEndAsync();
-    await importProcess.StandardOutput.BaseStream.CopyToAsync(convertProcess.StandardInput.BaseStream);
-    convertProcess.StandardInput.Close();
-
-    var brightnessOutput = await convertProcess.StandardOutput.ReadToEndAsync();
-    var convertStandardError = await convertProcess.StandardError.ReadToEndAsync();
-    var importErrorOutput = await importStandardError;
-
-    await importProcess.WaitForExitAsync();
-    await convertProcess.WaitForExitAsync();
-
-    return importProcess.ExitCode != 0
-        ? throw new InvalidOperationException($"import exited with code {importProcess.ExitCode} during brightness capture: {importErrorOutput}")
-        : convertProcess.ExitCode != 0
-            ? throw new InvalidOperationException($"convert exited with code {convertProcess.ExitCode} during brightness capture: {convertStandardError}")
-            : !int.TryParse(brightnessOutput.Trim(), out var brightness)
-                ? throw new InvalidOperationException($"failed to parse brightness value from convert output: '{brightnessOutput.Trim()}'")
-                : brightness;
+    return convertResult.ExitCode != 0
+        ? throw new InvalidOperationException($"convert exited with code {convertResult.ExitCode} during brightness capture: {convertResult.StandardError}")
+        : !int.TryParse(brightnessOutput.Trim(), out var brightness)
+            ? throw new InvalidOperationException($"failed to parse brightness value from convert output: '{brightnessOutput.Trim()}'")
+            : brightness;
 }
 
-async Task<string?> FindLargestWindow(string display)
+async Task<string?> FindLargestWindow(string display, CancellationToken cancellationToken = default)
 {
-    var searchProcessInfo = new ProcessStartInfo("xdotool") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
+    var searchProcessInfo = CreateProcessInfo("xdotool", ["search", "--onlyvisible", "--name", ".*"], display: display);
+    var searchResult = await RunProcessTextAsync(searchProcessInfo, TimeSpan.FromMilliseconds(displayProbeTimeoutMilliseconds), cancellationToken);
 
-    searchProcessInfo.ArgumentList.Add("search");
-    searchProcessInfo.ArgumentList.Add("--onlyvisible");
-    searchProcessInfo.ArgumentList.Add("--name");
-    searchProcessInfo.ArgumentList.Add(".*");
-
-    using var searchProcess = Process.Start(searchProcessInfo);
-
-    if (searchProcess is null)
+    if (searchResult.ExitCode != 0)
         return null;
-
-    var searchOutput = await searchProcess.StandardOutput.ReadToEndAsync();
-    await searchProcess.WaitForExitAsync();
 
     string? largestWindowId = null;
     long largestArea = 0;
 
-    foreach (var candidateWindowId in searchOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+    foreach (var candidateWindowId in searchResult.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries))
     {
         var trimmedCandidateId = candidateWindowId.Trim();
+        var nameProcessInfo = CreateProcessInfo("xdotool", ["getwindowname", trimmedCandidateId], display: display);
+        var nameResult = await RunProcessTextAsync(nameProcessInfo, TimeSpan.FromMilliseconds(displayProbeTimeoutMilliseconds), cancellationToken);
 
-        var nameProcessInfo = new ProcessStartInfo("xdotool") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
-
-        nameProcessInfo.ArgumentList.Add("getwindowname");
-        nameProcessInfo.ArgumentList.Add(trimmedCandidateId);
-
-        using var nameProcess = Process.Start(nameProcessInfo);
-
-        if (nameProcess is null)
+        if (nameResult.ExitCode != 0 || string.IsNullOrWhiteSpace(nameResult.StandardOutput))
             continue;
 
-        var windowName = await nameProcess.StandardOutput.ReadToEndAsync();
-        await nameProcess.WaitForExitAsync();
+        var geometryProcessInfo = CreateProcessInfo("xdotool", ["getwindowgeometry", "--shell", trimmedCandidateId], display: display);
+        var geometryResult = await RunProcessTextAsync(geometryProcessInfo, TimeSpan.FromMilliseconds(displayProbeTimeoutMilliseconds), cancellationToken);
 
-        if (string.IsNullOrWhiteSpace(windowName))
-            continue;
-
-        var geometryProcessInfo = new ProcessStartInfo("xdotool") { RedirectStandardOutput = true, RedirectStandardError = true, Environment = { ["DISPLAY"] = display } };
-
-        geometryProcessInfo.ArgumentList.Add("getwindowgeometry");
-        geometryProcessInfo.ArgumentList.Add("--shell");
-        geometryProcessInfo.ArgumentList.Add(trimmedCandidateId);
-
-        using var geometryProcess = Process.Start(geometryProcessInfo);
-
-        if (geometryProcess is null)
-            continue;
-
-        var geometryOutput = await geometryProcess.StandardOutput.ReadToEndAsync();
-        await geometryProcess.WaitForExitAsync();
-
-        if (geometryProcess.ExitCode != 0)
+        if (geometryResult.ExitCode != 0)
             continue;
 
         int width = 0, height = 0;
 
-        foreach (var line in geometryOutput.Split('\n'))
+        foreach (var line in geometryResult.StandardOutput.Split('\n'))
         {
             if (line.StartsWith("WIDTH=") && int.TryParse(line["WIDTH=".Length..], out var widthValue))
                 width = widthValue;
@@ -482,21 +527,400 @@ async Task<string?> FindLargestWindow(string display)
     return largestWindowId;
 }
 
-async Task RunOrThrow(params string[] command)
+async Task RunOrThrow(CancellationToken cancellationToken, params string[] command)
 {
-    var processInfo = new ProcessStartInfo(command[0]) { RedirectStandardOutput = true, RedirectStandardError = true };
+    var processInfo = CreateProcessInfo(command[0], command[1..]);
+    var result = await RunProcessTextAsync(processInfo, TimeSpan.FromMilliseconds(externalProcessTimeoutMilliseconds), cancellationToken);
 
-    foreach (var argument in command[1..])
+    if (result.ExitCode is not 0)
+        throw new InvalidOperationException($"{command[0]} exited with code {result.ExitCode}: {result.StandardError}");
+}
+
+ProcessStartInfo CreateProcessInfo(string fileName, IEnumerable<string> arguments, string? display = null, bool redirectStandardInput = false)
+{
+    var processInfo = new ProcessStartInfo(fileName)
+    {
+        UseShellExecute = false,
+        RedirectStandardInput = redirectStandardInput,
+        RedirectStandardOutput = true,
+        RedirectStandardError = true
+    };
+
+    if (display is not null)
+        processInfo.Environment["DISPLAY"] = display;
+
+    foreach (var argument in arguments)
         processInfo.ArgumentList.Add(argument);
 
+    return processInfo;
+}
+
+async Task<ProcessTextResult> RunProcessTextAsync(ProcessStartInfo processInfo, TimeSpan timeout, CancellationToken cancellationToken)
+{
     using var process = Process.Start(processInfo)
-                        ?? throw new InvalidOperationException($"failed to start {command[0]}");
+                        ?? throw new InvalidOperationException($"failed to start {processInfo.FileName}");
 
-    var standardError = await process.StandardError.ReadToEndAsync();
-    await process.WaitForExitAsync();
+    var standardOutputTask = process.StandardOutput.ReadToEndAsync();
+    var standardErrorTask = process.StandardError.ReadToEndAsync();
 
-    if (process.ExitCode is not 0)
-        throw new InvalidOperationException($"{command[0]} exited with code {process.ExitCode}: {standardError}");
+    try
+    {
+        await WaitForProcessExitAsync(process, processInfo.FileName, timeout, cancellationToken);
+    }
+    catch
+    {
+        await IgnoreTaskAsync(standardOutputTask);
+        await IgnoreTaskAsync(standardErrorTask);
+        throw;
+    }
+
+    return new ProcessTextResult(process.ExitCode, await standardOutputTask, await standardErrorTask);
+}
+
+async Task<ProcessBytesResult> RunProcessBytesAsync(ProcessStartInfo processInfo, TimeSpan timeout, CancellationToken cancellationToken)
+{
+    using var process = Process.Start(processInfo)
+                        ?? throw new InvalidOperationException($"failed to start {processInfo.FileName}");
+
+    using var standardOutput = new MemoryStream();
+    var standardOutputTask = process.StandardOutput.BaseStream.CopyToAsync(standardOutput);
+    var standardErrorTask = process.StandardError.ReadToEndAsync();
+
+    try
+    {
+        await WaitForProcessExitAsync(process, processInfo.FileName, timeout, cancellationToken);
+        await standardOutputTask;
+    }
+    catch
+    {
+        await IgnoreTaskAsync(standardOutputTask);
+        await IgnoreTaskAsync(standardErrorTask);
+        throw;
+    }
+
+    return new ProcessBytesResult(process.ExitCode, standardOutput.ToArray(), await standardErrorTask);
+}
+
+async Task<ProcessTextResult> RunProcessWithInputAsync(ProcessStartInfo processInfo, byte[] standardInput, TimeSpan timeout, CancellationToken cancellationToken)
+{
+    using var process = Process.Start(processInfo)
+                        ?? throw new InvalidOperationException($"failed to start {processInfo.FileName}");
+
+    var standardInputTask = WriteProcessInputAsync(process, standardInput, cancellationToken);
+    var standardOutputTask = process.StandardOutput.ReadToEndAsync();
+    var standardErrorTask = process.StandardError.ReadToEndAsync();
+
+    try
+    {
+        await WaitForProcessExitAsync(process, processInfo.FileName, timeout, cancellationToken);
+
+        try
+        {
+            await standardInputTask;
+        }
+        catch (IOException) when (process.HasExited)
+        {
+            // The process can reject stdin before producing a non-zero exit code.
+        }
+    }
+    catch
+    {
+        await IgnoreTaskAsync(standardInputTask);
+        await IgnoreTaskAsync(standardOutputTask);
+        await IgnoreTaskAsync(standardErrorTask);
+        throw;
+    }
+
+    return new ProcessTextResult(process.ExitCode, await standardOutputTask, await standardErrorTask);
+}
+
+async Task WriteProcessInputAsync(Process process, byte[] standardInput, CancellationToken cancellationToken)
+{
+    try
+    {
+        await process.StandardInput.BaseStream.WriteAsync(standardInput, cancellationToken);
+    }
+    finally
+    {
+        process.StandardInput.Close();
+    }
+}
+
+async Task WaitForProcessExitAsync(Process process, string processName, TimeSpan timeout, CancellationToken cancellationToken)
+{
+    using var timeoutSource = new CancellationTokenSource(timeout);
+    using var linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token);
+
+    try
+    {
+        await process.WaitForExitAsync(linkedCancellationTokenSource.Token);
+    }
+    catch (OperationCanceledException) when (timeoutSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+    {
+        KillProcess(process);
+        await WaitForKilledProcessAsync(process);
+        throw new TimeoutException($"{processName} timed out after {timeout.TotalSeconds:F1} seconds");
+    }
+    catch (OperationCanceledException)
+    {
+        KillProcess(process);
+        await WaitForKilledProcessAsync(process);
+        throw;
+    }
+}
+
+async Task WaitForKilledProcessAsync(Process process)
+{
+    try
+    {
+        await process.WaitForExitAsync(CancellationToken.None);
+    }
+    catch (InvalidOperationException) when (process.HasExited)
+    {
+        // Intentionally left blank
+    }
+}
+
+async Task IgnoreTaskAsync(Task task)
+{
+    try
+    {
+        await task;
+    }
+    catch
+    {
+        // Best-effort cleanup after the process has already failed or timed out.
+    }
+}
+
+async Task StopProcessAsync(Process process, CancellationToken cancellationToken)
+{
+    try
+    {
+        if (process.HasExited)
+            return;
+
+        MarkExpectedExit(process);
+        process.Kill(entireProcessTree: true);
+
+        await WaitForProcessExitAsync(process, process.ProcessName, TimeSpan.FromMilliseconds(processStopTimeoutMilliseconds), cancellationToken);
+    }
+    catch (InvalidOperationException) when (process.HasExited)
+    {
+        // Intentionally left blank
+    }
+}
+
+void KillProcess(Process process)
+{
+    try
+    {
+        if (!process.HasExited)
+            process.Kill(entireProcessTree: true);
+    }
+    catch (InvalidOperationException) when (process.HasExited)
+    {
+        // Intentionally left blank
+    }
+    catch (Exception exception)
+    {
+        Console.Error.WriteLine($"Failed to kill process {process.ProcessName}: {exception}");
+    }
+}
+
+CancellationTokenSource CreateOperationCancellationTokenSource()
+{
+    return CancellationTokenSource.CreateLinkedTokenSource(application.Lifetime.ApplicationStopping);
+}
+
+void RunDetachedOperation(int operationId, string operationName, CancellationTokenSource cancellationTokenSource, Func<CancellationToken, Task> operation)
+{
+    _ = Task.Run(async () =>
+    {
+        try
+        {
+            await operation(cancellationTokenSource.Token);
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested || application.Lifetime.ApplicationStopping.IsCancellationRequested)
+        {
+            CompleteCanceledOperation(operationId);
+        }
+        catch (Exception exception)
+        {
+            FailOperation(operationId, operationName, exception);
+        }
+        finally
+        {
+            cancellationTokenSource.Dispose();
+        }
+    });
+}
+
+void RunDetachedChatOperation(string message)
+{
+    var cancellationTokenSource = CreateOperationCancellationTokenSource();
+
+    _ = Task.Run(async () =>
+    {
+        try
+        {
+            await SendChatOperationAsync(message, cancellationTokenSource.Token);
+
+            lock (clientStateLock)
+            {
+                lastError = null;
+                stateUpdatedAt = DateTimeOffset.UtcNow;
+            }
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested || application.Lifetime.ApplicationStopping.IsCancellationRequested)
+        {
+            // The application is stopping or the chat operation was canceled.
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine($"send-chat failed: {exception}");
+
+            lock (clientStateLock)
+            {
+                lastError = exception.Message;
+                stateUpdatedAt = DateTimeOffset.UtcNow;
+            }
+        }
+        finally
+        {
+            lock (clientStateLock)
+            {
+                chatOperationRunning = false;
+                stateUpdatedAt = DateTimeOffset.UtcNow;
+            }
+
+            cancellationTokenSource.Dispose();
+        }
+    });
+}
+
+int BeginOperationLocked(string operationName, ClientState state, CancellationTokenSource cancellationTokenSource)
+{
+    currentOperationId++;
+    currentOperationName = operationName;
+    currentOperationCancellationTokenSource = cancellationTokenSource;
+    clientState = state;
+    lastError = null;
+    stateUpdatedAt = DateTimeOffset.UtcNow;
+
+    return currentOperationId;
+}
+
+bool CanStartClientLocked()
+{
+    return (clientState is ClientState.Idle or ClientState.Failed) && !IsClientProcessRunningLocked();
+}
+
+bool HasActiveClientOrOperationLocked()
+{
+    return (clientState is ClientState.Starting or ClientState.Running or ClientState.Stopping) || IsClientProcessRunningLocked();
+}
+
+bool IsClientProcessRunningLocked()
+{
+    return clientProcess is not null && !clientProcess.HasExited;
+}
+
+void RefreshClientStateLocked()
+{
+    if (clientProcess is null || !clientProcess.HasExited)
+        return;
+
+    clientProcess = null;
+
+    if (clientState is ClientState.Running)
+    {
+        clientState = ClientState.Idle;
+        currentOperationName = null;
+        currentOperationCancellationTokenSource = null;
+        stateUpdatedAt = DateTimeOffset.UtcNow;
+    }
+}
+
+void CompleteStartOperation(int operationId, Process process)
+{
+    var shouldStopProcess = false;
+
+    lock (clientStateLock)
+    {
+        if (currentOperationId != operationId || clientState is not ClientState.Starting)
+        {
+            shouldStopProcess = true;
+        }
+        else
+        {
+            clientProcess = process;
+            clientState = ClientState.Running;
+            currentOperationName = null;
+            currentOperationCancellationTokenSource = null;
+            lastError = null;
+            stateUpdatedAt = DateTimeOffset.UtcNow;
+        }
+    }
+
+    if (!shouldStopProcess)
+        return;
+
+    MarkExpectedExit(process);
+    KillProcess(process);
+}
+
+void CompleteCanceledOperation(int operationId)
+{
+    lock (clientStateLock)
+    {
+        if (currentOperationId != operationId)
+            return;
+
+        currentOperationName = null;
+        currentOperationCancellationTokenSource = null;
+        clientState = IsClientProcessRunningLocked() ? ClientState.Running : ClientState.Idle;
+        stateUpdatedAt = DateTimeOffset.UtcNow;
+    }
+}
+
+void FailOperation(int operationId, string operationName, Exception exception)
+{
+    Console.Error.WriteLine($"{operationName} failed: {exception}");
+
+    lock (clientStateLock)
+    {
+        if (currentOperationId != operationId)
+            return;
+
+        currentOperationName = null;
+        currentOperationCancellationTokenSource = null;
+        lastError = exception.Message;
+        clientState = IsClientProcessRunningLocked() ? ClientState.Running : ClientState.Failed;
+        stateUpdatedAt = DateTimeOffset.UtcNow;
+    }
+}
+
+ApiStatus CreateStatusBody(string status, string? message = null)
+{
+    lock (clientStateLock)
+    {
+        RefreshClientStateLocked();
+        return CreateStatusBodyLocked(status, message);
+    }
+}
+
+ApiStatus CreateStatusBodyLocked(string status, string? message = null)
+{
+    var pid = IsClientProcessRunningLocked() ? clientProcess?.Id : null;
+
+    return new ApiStatus(status, clientState.ToString().ToLowerInvariant(), currentOperationId, currentOperationName, pid, message, lastError, stateUpdatedAt);
+}
+
+void MarkExpectedExit(Process process)
+{
+    lock (expectedExitLock)
+        expectedExitProcessIds.Add(process.Id);
 }
 
 void StopCriticalProcesses()
@@ -601,19 +1025,21 @@ string DetermineTargetDirectory(string fileName, string minecraftDirectory)
             : Path.Combine(minecraftDirectory, "mods");
 }
 
-async Task<string> InstallModpack(string slug, int fileId, string apiKey, string minecraftDirectory)
+async Task<string> InstallModpack(string slug, int fileId, string apiKey, string minecraftDirectory, CancellationToken cancellationToken)
 {
     var curseForgeClient = new ApiClient(apiKey);
     using var httpClient = new HttpClient();
 
     Console.Error.WriteLine("Resolving CurseForge project");
     var searchResult = await curseForgeClient.SearchModsAsync(gameId: minecraftGameId, slug: slug);
+    cancellationToken.ThrowIfCancellationRequested();
+
     var project = searchResult.Data.FirstOrDefault(modpack => modpack.Slug == slug)
                   ?? throw new InvalidOperationException($"modpack not found: {slug}");
 
     Console.Error.WriteLine("Downloading modpack archive");
-    var archiveDownloadUrl = await ResolveDownloadUrlAsync(curseForgeClient, httpClient, project.Id, fileId, apiKey);
-    var archiveBytes = await DownloadWithFallbackAsync(httpClient, archiveDownloadUrl, apiKey);
+    var archiveDownloadUrl = await ResolveDownloadUrlAsync(curseForgeClient, httpClient, project.Id, fileId, apiKey, cancellationToken);
+    var archiveBytes = await DownloadWithFallbackAsync(httpClient, archiveDownloadUrl, apiKey, cancellationToken);
 
     Console.Error.WriteLine("Reading modpack manifest");
     await using var archive = new ZipArchive(new MemoryStream(archiveBytes), ZipArchiveMode.Read);
@@ -621,8 +1047,10 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
                         ?? throw new InvalidOperationException("manifest.json not found");
 
     await using var manifestStream = manifestEntry.Open();
-    var manifest = await JsonSerializer.DeserializeAsync<CurseForgeManifest>(manifestStream, new JsonSerializerOptions(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = false })
+    var manifest = await JsonSerializer.DeserializeAsync<CurseForgeManifest>(manifestStream, new JsonSerializerOptions(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = false }, cancellationToken)
                    ?? throw new InvalidOperationException("failed to deserialize manifest.json");
+
+    cancellationToken.ThrowIfCancellationRequested();
 
     DeleteDirectoryIfExists(Path.Combine(minecraftDirectory, "mods"));
     DeleteDirectoryIfExists(Path.Combine(minecraftDirectory, "resourcepacks"));
@@ -642,6 +1070,8 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
 
         foreach (var entry in archive.Entries)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (!entry.FullName.StartsWith(overridesFolder + "/") || entry.FullName.Length <= overridesFolder.Length + 1)
                 continue;
 
@@ -683,6 +1113,8 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
 
             for (var batchStart = 0; batchStart < requiredFileIds.Count; batchStart += curseForgeFilesBatchSize)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 var batch = requiredFileIds.Skip(batchStart).Take(curseForgeFilesBatchSize).ToList();
                 var filesResponse = await curseForgeClient.GetFilesAsync(new GetModFilesRequestBody { FileIds = batch });
                 allFileMetadata.AddRange(filesResponse.Data);
@@ -693,6 +1125,8 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
 
             foreach (var fileMeta in allFileMetadata)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 downloadIndex++;
                 ValidateFileName(fileMeta.FileName, fileMeta.ModId, fileMeta.Id);
 
@@ -708,10 +1142,10 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
 
                 Console.Error.WriteLine($"[{downloadIndex}/{totalFileCount}] Downloading: {fileMeta.FileName}");
 
-                var fileDownloadUrl = await ResolveModFileDownloadUrlAsync(curseForgeClient, httpClient, fileMeta.ModId, fileMeta.Id, fileMeta.DownloadUrl, apiKey);
-                var fileBytes = await DownloadWithFallbackAsync(httpClient, fileDownloadUrl, apiKey);
+                var fileDownloadUrl = await ResolveModFileDownloadUrlAsync(curseForgeClient, httpClient, fileMeta.ModId, fileMeta.Id, fileMeta.DownloadUrl, apiKey, cancellationToken);
+                var fileBytes = await DownloadWithFallbackAsync(httpClient, fileDownloadUrl, apiKey, cancellationToken);
 
-                await File.WriteAllBytesAsync(destinationPath, fileBytes);
+                await File.WriteAllBytesAsync(destinationPath, fileBytes, cancellationToken);
             }
         }
         else
@@ -770,43 +1204,46 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
     return portablemcVersion;
 }
 
-async Task<string> ResolveDownloadUrlAsync(ApiClient curseForgeClient, HttpClient httpClient, int projectId, int modFileId, string apiKey)
+async Task<string> ResolveDownloadUrlAsync(ApiClient curseForgeClient, HttpClient httpClient, int projectId, int modFileId, string apiKey, CancellationToken cancellationToken)
 {
     var fileResponse = await curseForgeClient.GetModFileAsync(projectId, modFileId);
+    cancellationToken.ThrowIfCancellationRequested();
 
     if (!string.IsNullOrEmpty(fileResponse.Data.DownloadUrl))
         return fileResponse.Data.DownloadUrl;
 
     var urlResponse = await curseForgeClient.GetModFileDownloadUrlAsync(projectId, modFileId);
+    cancellationToken.ThrowIfCancellationRequested();
 
     return !string.IsNullOrEmpty(urlResponse.Data)
         ? urlResponse.Data
         : $"https://www.curseforge.com/api/v1/mods/{projectId}/files/{modFileId}/download";
 }
 
-async Task<string> ResolveModFileDownloadUrlAsync(ApiClient curseForgeClient, HttpClient httpClient, int modId, int modFileId, string? sdkDownloadUrl, string apiKey)
+async Task<string> ResolveModFileDownloadUrlAsync(ApiClient curseForgeClient, HttpClient httpClient, int modId, int modFileId, string? sdkDownloadUrl, string apiKey, CancellationToken cancellationToken)
 {
     if (!string.IsNullOrEmpty(sdkDownloadUrl))
         return sdkDownloadUrl;
 
     var urlResponse = await curseForgeClient.GetModFileDownloadUrlAsync(modId, modFileId);
+    cancellationToken.ThrowIfCancellationRequested();
 
     return !string.IsNullOrEmpty(urlResponse.Data)
         ? urlResponse.Data
         : $"https://www.curseforge.com/api/v1/mods/{modId}/files/{modFileId}/download";
 }
 
-async Task<byte[]> DownloadWithFallbackAsync(HttpClient httpClient, string downloadUrl, string apiKey)
+async Task<byte[]> DownloadWithFallbackAsync(HttpClient httpClient, string downloadUrl, string apiKey, CancellationToken cancellationToken)
 {
-    var request = new HttpRequestMessage(HttpMethod.Get, downloadUrl);
+    using var request = new HttpRequestMessage(HttpMethod.Get, downloadUrl);
 
     if (downloadUrl.Contains("curseforge.com", StringComparison.OrdinalIgnoreCase))
         request.Headers.TryAddWithoutValidation("x-api-key", apiKey);
 
-    var response = await httpClient.SendAsync(request);
+    using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
     response.EnsureSuccessStatusCode();
 
-    return await response.Content.ReadAsByteArrayAsync();
+    return await response.Content.ReadAsByteArrayAsync(cancellationToken);
 }
 
 record CurseForgeManifest(CurseForgeMinecraft? Minecraft, string? Overrides, List<CurseForgeManifestFile>? Files);
@@ -816,3 +1253,18 @@ record CurseForgeMinecraft(string? Version, List<CurseForgeModLoader>? ModLoader
 record CurseForgeModLoader(string? Id, bool? Primary);
 
 record CurseForgeManifestFile([property: JsonPropertyName("fileID")] int? FileId, bool? Required);
+
+record ApiStatus(string Status, string State, int OperationId, string? Operation, int? Pid, string? Message, string? Error, DateTimeOffset UpdatedAt);
+
+record ProcessTextResult(int ExitCode, string StandardOutput, string StandardError);
+
+record ProcessBytesResult(int ExitCode, byte[] StandardOutput, string StandardError);
+
+enum ClientState
+{
+    Idle,
+    Starting,
+    Running,
+    Stopping,
+    Failed
+}
