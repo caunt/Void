@@ -156,13 +156,54 @@ export const renderBuild = (entry) =>
 
         ### Platforms
 
-        | OS - Arch       | X64      | ARM64    | ARM      | X86      |
-        |:---------------:|:--------:|:--------:|:--------:|:--------:|
-        | Linux           | &#x2705; | &#x2705; | &#x2705; | &#x274C; |
-        | Linux (Alpine)  | &#x2705; | &#x2705; | &#x2705; | &#x274C; |
-        | Linux (Android) | &#x2705; | &#x2705; | &#x274C; | &#x274C; |
-        | macOS           | &#x2705; | &#x2705; | &#x274C; | &#x274C; |
-        | Windows         | &#x2705; | &#x2705; | &#x274C; | &#x2705; |
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">OS - Arch</th>
+                    <th scope="col">X64</th>
+                    <th scope="col">ARM64</th>
+                    <th scope="col">ARM</th>
+                    <th scope="col">X86</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th scope="row">Linux</th>
+                    <td>&#x2705;</td>
+                    <td>&#x2705;</td>
+                    <td>&#x2705;</td>
+                    <td>&#x274C;</td>
+                </tr>
+                <tr>
+                    <th scope="row">Linux (Alpine)</th>
+                    <td>&#x2705;</td>
+                    <td>&#x2705;</td>
+                    <td>&#x2705;</td>
+                    <td>&#x274C;</td>
+                </tr>
+                <tr>
+                    <th scope="row">Linux (Android)</th>
+                    <td>&#x2705;</td>
+                    <td>&#x2705;</td>
+                    <td>&#x274C;</td>
+                    <td>&#x274C;</td>
+                </tr>
+                <tr>
+                    <th scope="row">macOS</th>
+                    <td>&#x2705;</td>
+                    <td>&#x2705;</td>
+                    <td>&#x274C;</td>
+                    <td>&#x274C;</td>
+                </tr>
+                <tr>
+                    <th scope="row">Windows</th>
+                    <td>&#x2705;</td>
+                    <td>&#x2705;</td>
+                    <td>&#x274C;</td>
+                    <td>&#x2705;</td>
+                </tr>
+            </tbody>
+        </table>
 
         {releases.slice(0, 1).map(entry => renderRelease(entry, true))}
 
