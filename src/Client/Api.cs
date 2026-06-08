@@ -51,6 +51,8 @@ application.Lifetime.ApplicationStopping.Register(StopCriticalProcesses);
 
 application.MapGet("/health", () => "ok");
 
+application.MapGet("/status", () => Results.Ok(CreateStatusBody("ok")));
+
 application.MapGet("/start-vanilla", (HttpContext httpContext, string? version) =>
 {
     if (string.IsNullOrWhiteSpace(version))

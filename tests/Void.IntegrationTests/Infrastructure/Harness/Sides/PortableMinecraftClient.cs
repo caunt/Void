@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
@@ -20,6 +21,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 {
     private const int SetupRetries = 5;
     private const int ApiPort = 8080;
+    private const int ClientStatePollDelayMilliseconds = 250;
     private const string Display = ":99";
     private const string DockerHost = "host.docker.internal";
     private const string DockerHostGateway = "host-gateway";
@@ -222,8 +224,25 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
                 new("argument", "--jvm-arg=-Djava.awt.headless=false")
             };
 
-            using var response = await HttpClient.GetAsync(CreateRequestUri("/start-vanilla", queryParameters), cancellationToken);
-            await EnsureSuccessAsync(response, $"Starting Minecraft {ProtocolVersion.FirstRelease}", cancellationToken);
+            var requestUri = CreateRequestUri("/start-vanilla", queryParameters);
+
+            while (true)
+            {
+                using var response = await HttpClient.GetAsync(requestUri, cancellationToken);
+
+                if (response.IsSuccessStatusCode)
+                    return;
+
+                var status = await TryReadApiStatusAsync(response, cancellationToken);
+
+                if (response.StatusCode is HttpStatusCode.Conflict && status?.State is "stopping")
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(ClientStatePollDelayMilliseconds), cancellationToken);
+                    continue;
+                }
+
+                await EnsureSuccessAsync(response, $"Starting Minecraft {ProtocolVersion.FirstRelease}", cancellationToken);
+            }
         }
 
         private async Task SendChatAsync(string text, CancellationToken cancellationToken = default)
@@ -240,6 +259,30 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
                 return;
 
             await EnsureSuccessAsync(response, $"Stopping Minecraft {ProtocolVersion.FirstRelease}", cancellationToken);
+            await WaitForClientIdleAsync(cancellationToken);
+        }
+
+        private async Task WaitForClientIdleAsync(CancellationToken cancellationToken = default)
+        {
+            while (true)
+            {
+                using var response = await HttpClient.GetAsync("/status", cancellationToken);
+
+                if (response.StatusCode is HttpStatusCode.NotFound)
+                    return;
+
+                await EnsureSuccessAsync(response, "Reading Minecraft client status", cancellationToken);
+
+                var status = await ReadApiStatusAsync(response, "Reading Minecraft client status", cancellationToken);
+
+                if (status.State is "idle")
+                    return;
+
+                if (status.State is "failed")
+                    throw new IntegrationTestException($"Stopping Minecraft {ProtocolVersion.FirstRelease} failed: {status.Error ?? "client entered failed state"}");
+
+                await Task.Delay(TimeSpan.FromMilliseconds(ClientStatePollDelayMilliseconds), cancellationToken);
+            }
         }
 
         private async Task<byte[]> TakeScreenshotAsync(CancellationToken cancellationToken = default)
@@ -257,6 +300,29 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
             throw new IntegrationTestException($"{operation} failed with HTTP {(int)response.StatusCode} {response.ReasonPhrase}\n{content}");
+        }
+
+        private static async Task<ApiStatus> ReadApiStatusAsync(HttpResponseMessage response, string operation, CancellationToken cancellationToken = default)
+        {
+            return await TryReadApiStatusAsync(response, cancellationToken)
+                ?? throw new IntegrationTestException($"{operation} returned an empty or malformed status response");
+        }
+
+        private static async Task<ApiStatus?> TryReadApiStatusAsync(HttpResponseMessage response, CancellationToken cancellationToken = default)
+        {
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (string.IsNullOrWhiteSpace(content))
+                return null;
+
+            try
+            {
+                return JsonSerializer.Deserialize<ApiStatus>(content, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
         }
 
         private Task LogAsync(string message, CancellationToken cancellationToken = default)
@@ -315,5 +381,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
             return string.Join('\n', options) + "\n";
         }
+
+        private record ApiStatus(string Status, string State, int OperationId, string? Operation, int? Pid, string? Message, string? Error, DateTimeOffset UpdatedAt);
     }
 }
