@@ -135,6 +135,13 @@ public abstract record ArgumentBuilder<TBuilder, TNode> : ArgumentBuilder, IArgu
         return base.Redirect(target) as TBuilder ?? GetThis();
     }
 
+    /// <summary>
+    /// Redirects execution to <paramref name="target"/> and uses <paramref name="modifier"/> to map the redirected context to a single command source.
+    /// </summary>
+    /// <param name="target">The command node to redirect to.</param>
+    /// <param name="modifier">The callback used to produce the redirected command source for each execution context.</param>
+    /// <returns>The current builder instance, typed as <typeparamref name="TBuilder"/>.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the builder already contains child nodes and cannot be redirected.</exception>
     public new TBuilder Redirect(CommandNode target, SingleRedirectModifier modifier)
     {
         return base.Redirect(target, modifier) as TBuilder ?? GetThis();
