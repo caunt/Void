@@ -154,6 +154,9 @@ public class ProtocolVersion : IComparable
         return left.CompareTo(right) >= 0;
     }
 
+    /// <summary>
+    /// Determines whether <paramref name="left"/> is less than or equal to <paramref name="right"/> by comparing their protocol values.
+    /// </summary>
     public static bool operator <=(ProtocolVersion left, ProtocolVersion right)
     {
         return left.CompareTo(right) <= 0;
