@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "$#" -ne 1 ]]; then
+  echo "Usage: $0 <portablemc-version>" >&2
+  exit 1
+fi
+
+portablemc_version="$1"
+attempts="${PORTABLEMC_DRY_RUN_ATTEMPTS:-5}"
+retry_delay_seconds="${PORTABLEMC_DRY_RUN_RETRY_DELAY_SECONDS:-5}"
+
+if [[ ! "$attempts" =~ ^[1-9][0-9]*$ ]]; then
+  echo "PORTABLEMC_DRY_RUN_ATTEMPTS must be a positive integer." >&2
+  exit 1
+fi
+
+if [[ ! "$retry_delay_seconds" =~ ^[0-9]+$ ]]; then
+  echo "PORTABLEMC_DRY_RUN_RETRY_DELAY_SECONDS must be a non-negative integer." >&2
+  exit 1
+fi
+
+last_exit_code=0
+
+for ((attempt = 1; attempt <= attempts; attempt++)); do
+  echo "Running portablemc dry-run for $portablemc_version (attempt $attempt/$attempts)."
+
+  if portablemc start --dry "$portablemc_version"; then
+    exit 0
+  else
+    last_exit_code="$?"
+  fi
+
+  if ((attempt == attempts)); then
+    break
+  fi
+
+  delay_seconds=$((retry_delay_seconds * attempt))
+  echo "portablemc dry-run for $portablemc_version failed with exit code $last_exit_code; retrying in ${delay_seconds}s." >&2
+  sleep "$delay_seconds"
+done
+
+echo "portablemc dry-run for $portablemc_version failed after $attempts attempts (last exit code $last_exit_code)." >&2
+exit "$last_exit_code"

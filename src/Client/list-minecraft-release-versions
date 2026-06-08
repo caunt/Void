@@ -11,6 +11,8 @@ readonly output_format
 
 first_release_version="${1:-}"
 readonly first_release_version
+version_manifest_url="https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"
+readonly version_manifest_url
 
 if [[ -z "$first_release_version" ]]; then
   echo "Usage: $0 [--json] <first-release-version>" >&2
@@ -18,7 +20,7 @@ if [[ -z "$first_release_version" ]]; then
 fi
 
 if [[ "$output_format" == "json" ]]; then
-  curl -fsSL https://launchermeta.mojang.com/mc/game/version_manifest_v2.json \
+  curl -fsSL --retry 5 --retry-all-errors --connect-timeout 15 --max-time 60 "$version_manifest_url" \
     | jq -c --arg firstReleaseVersion "$first_release_version" '
       ([.versions[] | select(.type == "release") | .id] | reverse) as $releaseVersions |
       ($releaseVersions | index($firstReleaseVersion)) as $firstReleaseVersionIndex |
@@ -28,7 +30,7 @@ if [[ "$output_format" == "json" ]]; then
       end
     '
 else
-  curl -fsSL https://launchermeta.mojang.com/mc/game/version_manifest_v2.json \
+  curl -fsSL --retry 5 --retry-all-errors --connect-timeout 15 --max-time 60 "$version_manifest_url" \
     | jq -r --arg firstReleaseVersion "$first_release_version" '
       ([.versions[] | select(.type == "release") | .id] | reverse) as $releaseVersions |
       ($releaseVersions | index($firstReleaseVersion)) as $firstReleaseVersionIndex |

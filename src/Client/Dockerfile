@@ -60,7 +60,8 @@ COPY Api.cs /app/Api.cs
 WORKDIR /app
 
 COPY list-minecraft-release-versions /usr/local/bin/list-minecraft-release-versions
-RUN chmod +x /usr/local/bin/list-minecraft-release-versions
+COPY portablemc-dry-run-with-retries /usr/local/bin/portablemc-dry-run-with-retries
+RUN chmod +x /usr/local/bin/list-minecraft-release-versions /usr/local/bin/portablemc-dry-run-with-retries
 
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
@@ -72,10 +73,10 @@ FROM latest AS offline
 ARG FIRST_RELEASE_VERSION=1.7.2
 
 # Dry-run all release versions in reverse order (from oldest to latest)
-RUN list-minecraft-release-versions "$FIRST_RELEASE_VERSION" | while IFS= read -r minecraftVersion; do portablemc start --dry "mojang:$minecraftVersion"; done
+RUN list-minecraft-release-versions "$FIRST_RELEASE_VERSION" | while IFS= read -r minecraftVersion; do portablemc-dry-run-with-retries "mojang:$minecraftVersion"; done
 
 FROM latest AS version
 
 ARG MINECRAFT_VERSION
 RUN test -n "$MINECRAFT_VERSION"
-RUN portablemc start --dry "mojang:$MINECRAFT_VERSION"
+RUN portablemc-dry-run-with-retries "mojang:$MINECRAFT_VERSION"
