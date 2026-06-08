@@ -5,6 +5,11 @@ using Void.Minecraft.Network;
 
 namespace Void.Minecraft.Commands.Brigadier.Serializers.Passthrough;
 
+/// <summary>
+/// Represents a passthrough argument value whose serialized payload is a single unsigned byte.
+/// </summary>
+/// <param name="Serializer">The serializer that created and serializes this value.</param>
+/// <param name="Value">The raw byte value preserved by the passthrough argument.</param>
 public record BytePassthroughArgumentValue(IArgumentSerializer Serializer, byte Value) : IPassthroughArgumentValue;
 public class ByteArgumentPassthroughSerializer : IArgumentSerializer
 {
