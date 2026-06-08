@@ -22,6 +22,8 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
     private const int SetupRetries = 5;
     private const int ApiPort = 8080;
     private const int ClientStatePollDelayMilliseconds = 250;
+    private const int JoinStatePollDelayMilliseconds = 100;
+    private const string ClientLogFileName = "client.log";
     private const string Display = ":99";
     private const string DockerHost = "host.docker.internal";
     private const string DockerHostGateway = "host-gateway";
@@ -34,7 +36,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
         // These do connect to the server before the loading screen completes, causing MC-228828 crash on 1.14-1.19
         .Where(version => version < ProtocolVersion.MINECRAFT_1_14 || version > ProtocolVersion.MINECRAFT_1_19);
 
-    public string LogFileName => "client.log";
+    public string LogFileName => ClientLogFileName;
     public IEnumerable<string> Logs => ReadLogsAsync(_readLogsSince).GetAwaiter().GetResult();
 
     public void ClearLogs()
@@ -147,6 +149,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
                 await game.StartVanillaAsync(dockerHost, dockerPort, cancellationToken);
                 await container.ExpectTextAsync("Connecting to", cancellationToken);
                 await game.EnsureStableAsync(cancellationToken);
+                await game.EnsureJoinedServerAsync(cancellationToken);
             }
             catch
             {
@@ -207,6 +210,38 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
             await LogAsync($"Logs are stable after {Stopwatch.GetElapsedTime(timestamp).TotalSeconds:F2} seconds", cancellationToken);
             await MakeStepAsync("stable", cancellationToken);
+        }
+
+        private async Task EnsureJoinedServerAsync(CancellationToken cancellationToken = default)
+        {
+            var logSides = LogSides.Where(side => side.LogFileName != ClientLogFileName).ToArray();
+
+            if (logSides.Length is 0)
+                return;
+
+            var timestamp = Stopwatch.GetTimestamp();
+            await LogAsync($"Waiting for {Username} to join a server", cancellationToken);
+
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(Timeouts.StepTimeout);
+
+            while (!timeout.IsCancellationRequested)
+            {
+                foreach (var side in logSides)
+                {
+                    var logs = await side.ReadLogsAsync(StartedAt, timeout.Token);
+
+                    if (logs.Any(IsJoinedServerLog))
+                    {
+                        await LogAsync($"{Username} joined a server after {Stopwatch.GetElapsedTime(timestamp).TotalSeconds:F2} seconds", cancellationToken);
+                        return;
+                    }
+                }
+
+                await Task.Delay(JoinStatePollDelayMilliseconds, timeout.Token);
+            }
+
+            timeout.Token.ThrowIfCancellationRequested();
         }
 
         private async Task StartVanillaAsync(string dockerHost, int dockerPort, CancellationToken cancellationToken = default)
@@ -365,6 +400,14 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
         {
             var query = string.Join("&", queryParameters.Select(parameter => $"{Uri.EscapeDataString(parameter.Key)}={Uri.EscapeDataString(parameter.Value)}"));
             return $"{path}?{query}";
+        }
+
+        private bool IsJoinedServerLog(string line)
+        {
+            return line.Contains(Username, StringComparison.OrdinalIgnoreCase) &&
+                   (line.Contains(" joined the game", StringComparison.OrdinalIgnoreCase) ||
+                    line.Contains(" logged in with entity id", StringComparison.OrdinalIgnoreCase) ||
+                    line.Contains(" connected to ", StringComparison.OrdinalIgnoreCase));
         }
 
         private static string CreateOptionsText(ProtocolVersion protocolVersion)
