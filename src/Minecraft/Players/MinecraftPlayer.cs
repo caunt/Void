@@ -10,6 +10,14 @@ namespace Void.Minecraft.Players;
 
 public class MinecraftPlayer(TcpClient client, IPlayerContext context, string remoteEndPoint, DateTimeOffset connectedAt, ProtocolVersion protocolVersion) : IPlayer
 {
+    /// <summary>
+    /// Gets the player's display name.
+    /// </summary>
+    /// <remarks>
+    /// This returns <see cref="ToString"/>, which prefers the authenticated
+    /// profile username when one is available and otherwise falls back to the
+    /// remote endpoint text.
+    /// </remarks>
     public string Name => ToString();
     public TcpClient Client { get; } = client;
     public IPlayerContext Context { get; } = context;
