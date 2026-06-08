@@ -237,9 +237,6 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
             if (!TryGetPacketId(packet, out var id))
                 throw new InvalidOperationException($"{packet} is not registered for writing:\n{Registries.PrintPackets()}");
 
-            if (packet.GetType().FullName!.Contains("KeepAlive"))
-                Console.WriteLine($"ENCODE {packet.GetType()} WITH ID {id}");
-
             EncodeVarInt(stream, id);
 
             var buffer = new MinecraftBuffer(stream);
