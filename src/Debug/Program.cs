@@ -12,13 +12,14 @@ using Void.Proxy;
 if (OperatingSystem.IsWindows())
     Console.Clear();
 
+var secondaryHost = IPAddress.Parse("10.211.55.2");
 var ttl = TimeSpan.FromMinutes(30);
 
 IDockerMinecraftServer[] servers =
 [
-    new PaperServer(ProtocolVersion.Latest, 25566),
-    new PaperServer(ProtocolVersion.Latest, 25567),
-    new PaperServer(ProtocolVersion.Latest, 25568)
+    new VanillaServer(ProtocolVersion.MINECRAFT_1_11, 25566),
+    new VanillaServer(ProtocolVersion.MINECRAFT_1_11, 25567),
+    new VanillaServer(ProtocolVersion.MINECRAFT_1_11, 25568)
     // ProtocolVersion.MINECRAFT_1_21
     // new NeoForgeServer(version, 25566, ["https://mediafilez.forgecdn.net/files/7039/43/refinedstorage-neoforge-2.0.0.jar"]),
     // new NeoForgeServer(version, 25567, ["https://mediafilez.forgecdn.net/files/7039/43/refinedstorage-neoforge-2.0.0.jar"]),
@@ -36,10 +37,10 @@ string[] arguments =
     "--forwarding-modern-key", "GHo9pV4daKzS7ujtaWgPBcBgLZG8qqGf",
     "--ignore-file-servers",
     "--port", "25565",
-    "--server", "127.0.0.1:25566",
-    "--server", "127.0.0.1:25567",
-    "--server", "127.0.0.1:25568",
-    "--server", "127.0.0.1:25569",
+    "--server", await BuildEndPointAsync(port: 25566),
+    "--server", await BuildEndPointAsync(port: 25567),
+    "--server", await BuildEndPointAsync(port: 25568),
+    "--server", await BuildEndPointAsync(port: 25569),
     "--override", "s1=args-server-1",
     "--override", "s2=args-server-2",
     "--override", "s3=args-server-3",
@@ -237,14 +238,24 @@ async ValueTask StartDockerEnvironmentAsync(CancellationToken cancellationToken 
     async Task<DockerClient> BuildDockerClientAsync()
     {
         using var ping = new Ping();
-        var parallelsHost = IPAddress.Parse("10.211.55.2");
 
-        var configuration = await ping.SendPingAsync(parallelsHost, timeout: TimeSpan.FromSeconds(3), cancellationToken: cancellationToken) is { Status: IPStatus.Success }
-            ? new DockerClientConfiguration(new Uri($"http://{parallelsHost}:2375/"))
+        var configuration = await ping.SendPingAsync(secondaryHost, timeout: TimeSpan.FromSeconds(3), cancellationToken: cancellationToken) is { Status: IPStatus.Success }
+            ? new DockerClientConfiguration(new Uri($"http://{secondaryHost}:2375/"))
             : new DockerClientConfiguration();
 
         return configuration.CreateClient();
     }
+}
+
+async Task<string> BuildEndPointAsync(int port, CancellationToken cancellationToken = default)
+{
+    using var ping = new Ping();
+
+    var endpoint = await ping.SendPingAsync(secondaryHost, timeout: TimeSpan.FromSeconds(3), cancellationToken: cancellationToken) is { Status: IPStatus.Success }
+        ? new IPEndPoint(secondaryHost, port)
+        : new IPEndPoint(IPAddress.Loopback, port);
+
+    return endpoint.ToString();
 }
 
 record VanillaServer(ProtocolVersion ProtocolVersion, int Port) : IDockerMinecraftServer
