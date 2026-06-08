@@ -4,4 +4,12 @@ using Void.Proxy.Api.Players;
 
 namespace Void.Minecraft.Events;
 
+/// <summary>
+/// Represents a player kick event whose reason is supplied as a Minecraft text <see cref="Component"/>.
+/// </summary>
+/// <param name="Player">The player being kicked.</param>
+/// <param name="Reason">
+/// The optional kick reason. When provided, it is serialized to legacy text and passed to
+/// <see cref="PlayerKickEvent"/>.
+/// </param>
 public record MinecraftPlayerKickEvent(IPlayer Player, Component? Reason = null) : PlayerKickEvent(Player, Reason?.SerializeLegacy());
