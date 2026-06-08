@@ -11,7 +11,7 @@ on:
         type: string
 
 env:
-  CODEX_DEFAULT_MODEL: gpt-5.4-mini
+  CODEX_DEFAULT_MODEL: gpt-5.5-2026-04-23
 
 jobs:
   document_api:
