@@ -11,6 +11,10 @@ on:
       release:
         type: string
         required: true
+      client-version-shard-count:
+        type: number
+        required: false
+        default: 16
 
 permissions:
   packages: write
@@ -37,21 +41,29 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       versions: ${{ steps.versions.outputs.versions }}
+      matrix: ${{ steps.versions.outputs.matrix }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Fetch Minecraft release versions
         id: versions
         run: |
+          shard_count=${{ inputs.client-version-shard-count }}
+          if [ "$shard_count" -lt 1 ]; then
+            echo "client-version-shard-count must be greater than 0" >&2
+            exit 1
+          fi
+
           versions="$(bash src/Client/list-minecraft-release-versions --json 1.7.2)"
+          matrix="$(jq -cn --argjson shardCount "$shard_count" '{ include: [range(0; $shardCount) as $shard | { "shard": $shard }] }')"
           echo "versions=$versions" >> "$GITHUB_OUTPUT"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   push-client-versions:
     needs: [push-client, list-minecraft-versions]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        minecraft-version: ${{ fromJson(needs.list-minecraft-versions.outputs.versions) }}
+      matrix: ${{ fromJson(needs.list-minecraft-versions.outputs.matrix) }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Login to GitHub Container Registry
@@ -60,10 +72,31 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push client version image
+      - name: Build and push client version image shard ${{ matrix.shard }}
+        env:
+          MINECRAFT_VERSIONS: ${{ needs.list-minecraft-versions.outputs.versions }}
+          SHARD: ${{ matrix.shard }}
+          SHARD_COUNT: ${{ inputs.client-version-shard-count }}
         run: |
-          docker build --target version --build-arg MINECRAFT_VERSION="${{ matrix.minecraft-version }}" -t ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:${{ matrix.minecraft-version }} src/Client
-          docker push ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:${{ matrix.minecraft-version }}
+          mapfile -t minecraft_versions < <(
+            jq -r \
+              --argjson shard "$SHARD" \
+              --argjson shardCount "$SHARD_COUNT" \
+              'to_entries[] | select((.key % $shardCount) == $shard) | .value' \
+              <<< "$MINECRAFT_VERSIONS"
+          )
+
+          if [ "${#minecraft_versions[@]}" -eq 0 ]; then
+            echo "No Minecraft versions assigned to shard $SHARD/$SHARD_COUNT."
+            exit 0
+          fi
+
+          echo "Building and pushing ${#minecraft_versions[@]} Minecraft client version images for shard $SHARD/$SHARD_COUNT."
+
+          for minecraft_version in "${minecraft_versions[@]}"; do
+            docker build --target version --build-arg MINECRAFT_VERSION="$minecraft_version" -t ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:$minecraft_version src/Client
+            docker push ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:$minecraft_version
+          done
 
 
   push-dev:
