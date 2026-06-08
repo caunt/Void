@@ -25,6 +25,16 @@ public interface IMinecraftPacketIdPluginsRegistry
     public bool Contains(INetworkMessage message);
     public bool Contains(Type type);
     public void Clear();
+    /// <summary>
+    /// Clears packet ID registrations for the specified direction from the selected operation buckets.
+    /// </summary>
+    /// <remarks>
+    /// When <paramref name="operation"/> includes <see cref="Operation.Read"/>, each read registry is cleared for
+    /// <paramref name="direction"/>. When it includes <see cref="Operation.Write"/>, each write registry is cleared.
+    /// If neither flag is present, this method has no effect.
+    /// </remarks>
+    /// <param name="direction">The packet direction whose registrations should be removed.</param>
+    /// <param name="operation">The read and/or write registry buckets to clear.</param>
     public void Clear(Direction direction, Operation operation);
     public void Reset();
 }
