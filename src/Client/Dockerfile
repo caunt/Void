@@ -65,6 +65,7 @@ RUN chmod +x /usr/local/bin/list-minecraft-release-versions /usr/local/bin/porta
 
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
+ENV CURSEFORGE_API_BASE_URL=https://api.curseforge.com
 
 ENTRYPOINT ["dotnet", "run", "Api.cs"]
 

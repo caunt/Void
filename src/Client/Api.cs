@@ -1,18 +1,16 @@
 #:sdk Microsoft.NET.Sdk.Web
 #:property TargetFramework=net11.0
 #:property PublishAot=false
-#:package CurseForge.APIClient@*
 
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using CurseForge.APIClient;
-using CurseForge.APIClient.Models.Files;
-using CurseForgeFile = CurseForge.APIClient.Models.Files.File;
 using File = System.IO.File;
 
 const string defaultMinecraftDirectory = "/root/.minecraft";
+const string defaultCurseForgeApiBaseUrl = "https://api.curseforge.com";
 const string defaultDisplay = ":99";
 const string displayScreenWidth = "854";
 const string displayScreenHeight = "480";
@@ -93,6 +91,17 @@ application.MapGet("/start-curseforge", (HttpContext httpContext, string? slug, 
     if (string.IsNullOrWhiteSpace(curseForgeApiKey))
         return Results.Problem("CURSEFORGE_API_KEY is not set");
 
+    Uri curseForgeApiBaseUri;
+
+    try
+    {
+        curseForgeApiBaseUri = CreateCurseForgeApiBaseUri();
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.Problem(exception.Message);
+    }
+
     var portableMinecraftArguments = httpContext.Request.Query["argument"].OfType<string>().ToArray();
     var minecraftDirectory = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? defaultMinecraftDirectory;
     var operationName = $"start-curseforge:{slug}:{fileId}";
@@ -112,7 +121,7 @@ application.MapGet("/start-curseforge", (HttpContext httpContext, string? slug, 
         operationId = BeginOperationLocked(operationName, ClientState.Starting, cancellationTokenSource);
     }
 
-    RunDetachedOperation(operationId, operationName, cancellationTokenSource, cancellationToken => StartCurseForgeOperationAsync(operationId, slug, fileId, curseForgeApiKey, minecraftDirectory, portableMinecraftArguments, cancellationToken));
+    RunDetachedOperation(operationId, operationName, cancellationTokenSource, cancellationToken => StartCurseForgeOperationAsync(operationId, slug, fileId, curseForgeApiKey, curseForgeApiBaseUri, minecraftDirectory, portableMinecraftArguments, cancellationToken));
 
     return Results.Ok(CreateStatusBody("starting"));
 });
@@ -220,7 +229,7 @@ async Task StartVanillaOperationAsync(int operationId, string minecraftDirectory
     CompleteStartOperation(operationId, process);
 }
 
-async Task StartCurseForgeOperationAsync(int operationId, string slug, int fileId, string curseForgeApiKey, string minecraftDirectory, string[] portableMinecraftArguments, CancellationToken cancellationToken)
+async Task StartCurseForgeOperationAsync(int operationId, string slug, int fileId, string curseForgeApiKey, Uri curseForgeApiBaseUri, string minecraftDirectory, string[] portableMinecraftArguments, CancellationToken cancellationToken)
 {
     await PrepareDisplayAndWindowAsync(cancellationToken);
     Directory.CreateDirectory(minecraftDirectory);
@@ -244,7 +253,7 @@ async Task StartCurseForgeOperationAsync(int operationId, string slug, int fileI
     }
     else
     {
-        portablemcVersion = await InstallModpack(slug, fileId, curseForgeApiKey, minecraftDirectory, cancellationToken);
+        portablemcVersion = await InstallModpack(slug, fileId, curseForgeApiKey, curseForgeApiBaseUri, minecraftDirectory, cancellationToken);
 
         await File.WriteAllTextAsync(versionFile, portablemcVersion, cancellationToken);
         await File.WriteAllTextAsync(markerFile, marker, cancellationToken);
@@ -329,6 +338,29 @@ Process LaunchPortableMinecraftClient(string directory, string version, string?[
 bool HasPortableMinecraftArgument(IEnumerable<string> arguments, string argumentName)
 {
     return arguments.Any(argument => string.Equals(argument, argumentName, StringComparison.Ordinal) || argument.StartsWith($"{argumentName}=", StringComparison.Ordinal));
+}
+
+Uri CreateCurseForgeApiBaseUri()
+{
+    var configuredBaseUrl = Environment.GetEnvironmentVariable("CURSEFORGE_API_BASE_URL");
+    var baseUrl = string.IsNullOrWhiteSpace(configuredBaseUrl)
+        ? defaultCurseForgeApiBaseUrl
+        : configuredBaseUrl.Trim();
+
+    if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri)
+        || baseUri.Scheme != Uri.UriSchemeHttp && baseUri.Scheme != Uri.UriSchemeHttps)
+    {
+        throw new InvalidOperationException("CURSEFORGE_API_BASE_URL must be an absolute HTTP or HTTPS URL");
+    }
+
+    var path = baseUri.AbsolutePath.TrimEnd('/');
+
+    return new UriBuilder(baseUri)
+    {
+        Path = string.IsNullOrEmpty(path) ? "/" : path + "/",
+        Query = "",
+        Fragment = ""
+    }.Uri;
 }
 
 async Task PrepareDisplayAndWindowAsync(CancellationToken cancellationToken)
@@ -1027,20 +1059,20 @@ string DetermineTargetDirectory(string fileName, string minecraftDirectory)
             : Path.Combine(minecraftDirectory, "mods");
 }
 
-async Task<string> InstallModpack(string slug, int fileId, string apiKey, string minecraftDirectory, CancellationToken cancellationToken)
+async Task<string> InstallModpack(string slug, int fileId, string apiKey, Uri apiBaseUri, string minecraftDirectory, CancellationToken cancellationToken)
 {
-    var curseForgeClient = new ApiClient(apiKey);
     using var httpClient = new HttpClient();
+    var curseForgeClient = new CurseForgeApiClient(httpClient, apiBaseUri, apiKey);
 
     Console.Error.WriteLine("Resolving CurseForge project");
-    var searchResult = await curseForgeClient.SearchModsAsync(gameId: minecraftGameId, slug: slug);
+    var searchResult = await curseForgeClient.SearchModsAsync(minecraftGameId, slug, cancellationToken);
     cancellationToken.ThrowIfCancellationRequested();
 
-    var project = searchResult.Data.FirstOrDefault(modpack => modpack.Slug == slug)
+    var project = searchResult.FirstOrDefault(modpack => modpack.Slug == slug)
                   ?? throw new InvalidOperationException($"modpack not found: {slug}");
 
     Console.Error.WriteLine("Downloading modpack archive");
-    var archiveDownloadUrl = await ResolveDownloadUrlAsync(curseForgeClient, httpClient, project.Id, fileId, apiKey, cancellationToken);
+    var archiveDownloadUrl = await ResolveDownloadUrlAsync(curseForgeClient, project.Id, fileId, cancellationToken);
     var archiveBytes = await DownloadWithFallbackAsync(httpClient, archiveDownloadUrl, apiKey, cancellationToken);
 
     Console.Error.WriteLine("Reading modpack manifest");
@@ -1118,8 +1150,8 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var batch = requiredFileIds.Skip(batchStart).Take(curseForgeFilesBatchSize).ToList();
-                var filesResponse = await curseForgeClient.GetFilesAsync(new GetModFilesRequestBody { FileIds = batch });
-                allFileMetadata.AddRange(filesResponse.Data);
+                var files = await curseForgeClient.GetFilesAsync(batch, cancellationToken);
+                allFileMetadata.AddRange(files);
             }
 
             var totalFileCount = allFileMetadata.Count;
@@ -1144,7 +1176,7 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
 
                 Console.Error.WriteLine($"[{downloadIndex}/{totalFileCount}] Downloading: {fileMeta.FileName}");
 
-                var fileDownloadUrl = await ResolveModFileDownloadUrlAsync(curseForgeClient, httpClient, fileMeta.ModId, fileMeta.Id, fileMeta.DownloadUrl, apiKey, cancellationToken);
+                var fileDownloadUrl = await ResolveModFileDownloadUrlAsync(curseForgeClient, fileMeta.ModId, fileMeta.Id, fileMeta.DownloadUrl, cancellationToken);
                 var fileBytes = await DownloadWithFallbackAsync(httpClient, fileDownloadUrl, apiKey, cancellationToken);
 
                 await File.WriteAllBytesAsync(destinationPath, fileBytes, cancellationToken);
@@ -1206,32 +1238,32 @@ async Task<string> InstallModpack(string slug, int fileId, string apiKey, string
     return portablemcVersion;
 }
 
-async Task<string> ResolveDownloadUrlAsync(ApiClient curseForgeClient, HttpClient httpClient, int projectId, int modFileId, string apiKey, CancellationToken cancellationToken)
+async Task<string> ResolveDownloadUrlAsync(CurseForgeApiClient curseForgeClient, int projectId, int modFileId, CancellationToken cancellationToken)
 {
-    var fileResponse = await curseForgeClient.GetModFileAsync(projectId, modFileId);
+    var file = await curseForgeClient.GetModFileAsync(projectId, modFileId, cancellationToken);
     cancellationToken.ThrowIfCancellationRequested();
 
-    if (!string.IsNullOrEmpty(fileResponse.Data.DownloadUrl))
-        return fileResponse.Data.DownloadUrl;
+    if (!string.IsNullOrEmpty(file.DownloadUrl))
+        return file.DownloadUrl;
 
-    var urlResponse = await curseForgeClient.GetModFileDownloadUrlAsync(projectId, modFileId);
+    var downloadUrl = await curseForgeClient.GetModFileDownloadUrlAsync(projectId, modFileId, cancellationToken);
     cancellationToken.ThrowIfCancellationRequested();
 
-    return !string.IsNullOrEmpty(urlResponse.Data)
-        ? urlResponse.Data
+    return !string.IsNullOrEmpty(downloadUrl)
+        ? downloadUrl
         : $"https://www.curseforge.com/api/v1/mods/{projectId}/files/{modFileId}/download";
 }
 
-async Task<string> ResolveModFileDownloadUrlAsync(ApiClient curseForgeClient, HttpClient httpClient, int modId, int modFileId, string? sdkDownloadUrl, string apiKey, CancellationToken cancellationToken)
+async Task<string> ResolveModFileDownloadUrlAsync(CurseForgeApiClient curseForgeClient, int modId, int modFileId, string? sdkDownloadUrl, CancellationToken cancellationToken)
 {
     if (!string.IsNullOrEmpty(sdkDownloadUrl))
         return sdkDownloadUrl;
 
-    var urlResponse = await curseForgeClient.GetModFileDownloadUrlAsync(modId, modFileId);
+    var downloadUrl = await curseForgeClient.GetModFileDownloadUrlAsync(modId, modFileId, cancellationToken);
     cancellationToken.ThrowIfCancellationRequested();
 
-    return !string.IsNullOrEmpty(urlResponse.Data)
-        ? urlResponse.Data
+    return !string.IsNullOrEmpty(downloadUrl)
+        ? downloadUrl
         : $"https://www.curseforge.com/api/v1/mods/{modId}/files/{modFileId}/download";
 }
 
@@ -1247,6 +1279,88 @@ async Task<byte[]> DownloadWithFallbackAsync(HttpClient httpClient, string downl
 
     return await response.Content.ReadAsByteArrayAsync(cancellationToken);
 }
+
+sealed class CurseForgeApiClient
+{
+    private readonly HttpClient _httpClient;
+    private readonly Uri _baseUri;
+    private readonly string _apiKey;
+    private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
+
+    public CurseForgeApiClient(HttpClient httpClient, Uri baseUri, string apiKey)
+    {
+        _httpClient = httpClient;
+        _baseUri = baseUri;
+        _apiKey = apiKey;
+    }
+
+    public async Task<List<CurseForgeProject>> SearchModsAsync(int gameId, string slug, CancellationToken cancellationToken)
+    {
+        var slugQuery = Uri.EscapeDataString(slug);
+        var response = await GetAsync<CurseForgeApiListResponse<CurseForgeProject>>($"v1/mods/search?gameId={gameId}&slug={slugQuery}", cancellationToken);
+
+        return response.Data ?? [];
+    }
+
+    public async Task<CurseForgeFile> GetModFileAsync(int modId, int fileId, CancellationToken cancellationToken)
+    {
+        var response = await GetAsync<CurseForgeApiResponse<CurseForgeFile>>($"v1/mods/{modId}/files/{fileId}", cancellationToken);
+
+        return response.Data ?? throw new InvalidOperationException($"CurseForge file not found: mod {modId}, file {fileId}");
+    }
+
+    public async Task<string?> GetModFileDownloadUrlAsync(int modId, int fileId, CancellationToken cancellationToken)
+    {
+        var response = await GetAsync<CurseForgeApiResponse<string?>>($"v1/mods/{modId}/files/{fileId}/download-url", cancellationToken);
+
+        return response.Data;
+    }
+
+    public async Task<List<CurseForgeFile>> GetFilesAsync(List<int> fileIds, CancellationToken cancellationToken)
+    {
+        var response = await PostAsync<CurseForgeApiListResponse<CurseForgeFile>>("v1/mods/files", new CurseForgeFilesRequest(fileIds), cancellationToken);
+
+        return response.Data ?? [];
+    }
+
+    private async Task<T> GetAsync<T>(string relativeUrl, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(_baseUri, relativeUrl));
+
+        return await SendAsync<T>(request, cancellationToken);
+    }
+
+    private async Task<T> PostAsync<T>(string relativeUrl, object body, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_baseUri, relativeUrl))
+        {
+            Content = JsonContent.Create(body, options: _jsonOptions)
+        };
+
+        return await SendAsync<T>(request, cancellationToken);
+    }
+
+    private async Task<T> SendAsync<T>(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        request.Headers.TryAddWithoutValidation("x-api-key", _apiKey);
+
+        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<T>(_jsonOptions, cancellationToken)
+               ?? throw new InvalidOperationException("CurseForge API returned an empty response");
+    }
+}
+
+record CurseForgeApiListResponse<T>(List<T>? Data);
+
+record CurseForgeApiResponse<T>(T? Data);
+
+record CurseForgeProject(int Id, string? Slug);
+
+record CurseForgeFile(int Id, int ModId, string FileName, string? DownloadUrl);
+
+record CurseForgeFilesRequest(List<int> FileIds);
 
 record CurseForgeManifest(CurseForgeMinecraft? Minecraft, string? Overrides, List<CurseForgeManifestFile>? Files);
 
