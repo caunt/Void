@@ -4,6 +4,7 @@ using Void.Proxy.Api.Players;
 
 namespace Void.Minecraft.Events.Chat;
 
+/// <param name="Player">The non-null player that submitted the command represented by this event.</param>
 public record ChatCommandSendEvent(IPlayer Player, string Command, Side Origin) : IScopedEventWithResult<ChatSendResult>
 {
     public ChatSendResult Result { get; set; }
