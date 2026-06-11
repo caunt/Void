@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN cargo install portablemc-cli --root /usr/local
 
 # Runtime stage
-FROM --platform=linux/amd64 amd64/debian:trixie-20260518@sha256:b91d9b2c1738c0cb7f2c7440eaebc9f40e3e411a0e7ce768dd4e1879cf0cd141 AS latest
+FROM --platform=linux/amd64 amd64/debian:trixie-20260610@sha256:71e49ff8e0ab2a692f8a08a778094b903ea0bd12f25ea277b563d74b7c670ecb AS latest
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LIBGL_ALWAYS_SOFTWARE=1
