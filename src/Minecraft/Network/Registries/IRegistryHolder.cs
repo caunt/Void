@@ -20,5 +20,10 @@ public interface IRegistryHolder : IDisposable
     public void ClearPlugins();
     public void ClearPlugins(Direction direction, Operation operation);
     public string PrintPackets();
+
+    /// <summary>
+    /// Resets the held registries when they are all managed by the specified plugin.
+    /// </summary>
+    /// <param name="managedBy">The plugin that must own every held registry before disposal occurs.</param>
     public void DisposeBy(IPlugin managedBy);
 }
