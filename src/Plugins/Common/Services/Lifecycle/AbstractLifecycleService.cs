@@ -185,7 +185,7 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
                 {
                     player.Logger.LogError(exception, "Failed to send Keep Alive request {Id}", requestId);
                 }
-            }, _keepAliveInterval);
+            }, _keepAliveInterval, createRequestIdFunction: () => KeepAliveTracker.CreateRequestId(player.ProtocolVersion));
         }
 
         await tracker.PongAsync(player, id, cancellationToken);
