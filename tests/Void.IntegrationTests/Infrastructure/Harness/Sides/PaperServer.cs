@@ -42,6 +42,7 @@ public record PaperServer(IContainer Container, string LogFileName) : IIntegrati
             .WithEnvironment("TYPE", "PAPER")
             .WithEnvironment("VERSION", "1.21.4")
             .WithEnvironment("DIFFICULTY", "peaceful")
+            .WithEnvironment("MODE", "creative")
             .WithEnvironment("VIEW_DISTANCE", "3")
             .WithEnvironment("SIMULATION_DISTANCE", "3")
             .WithEnvironment("ONLINE_MODE", "FALSE")
