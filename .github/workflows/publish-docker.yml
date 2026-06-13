@@ -32,10 +32,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push client images
         run: |
-          docker build --target latest -t ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:latest src/Client
-          docker build --target offline -t ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:offline src/Client
-          docker push ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:latest
-          docker push ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:offline
+          latest_image="ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:latest"
+          offline_image="ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:offline"
+
+          docker build --target latest -t "$latest_image" src/Client
+          docker build --target offline -t "$offline_image" src/Client
+          bash .github/scripts/docker-push-with-retries.sh "$latest_image"
+          bash .github/scripts/docker-push-with-retries.sh "$offline_image"
 
   list-minecraft-versions:
     runs-on: ubuntu-latest
@@ -94,8 +97,9 @@ jobs:
           echo "Building and pushing ${#minecraft_versions[@]} Minecraft client version images for shard $SHARD/$SHARD_COUNT."
 
           for minecraft_version in "${minecraft_versions[@]}"; do
-            docker build --target version --build-arg MINECRAFT_VERSION="$minecraft_version" -t ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:$minecraft_version src/Client
-            docker push ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:$minecraft_version
+            image="ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:$minecraft_version"
+            docker build --target version --build-arg MINECRAFT_VERSION="$minecraft_version" -t "$image" src/Client
+            bash .github/scripts/docker-push-with-retries.sh "$image"
           done
 
 
