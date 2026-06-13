@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using ThrottleDebounce;
+using Void.Minecraft.Network;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
@@ -12,21 +13,42 @@ public class KeepAliveTracker : IDisposable
 
     public const int DefaultRequestId = -1;
     public delegate Task SendKeepAliveRequest(long id);
+    public delegate long CreateKeepAliveRequestId();
 
     public RateLimitedFunc<IPlayer, CancellationToken, Task<bool>> DebouncerCallback { get; }
     public System.Timers.Timer Sender { get; }
 
-    public KeepAliveTracker(SendKeepAliveRequest sendRequestFunction, TimeSpan keepAliveRequestInterval, TimeSpan keepAliveResponseTimeout = default)
+    public KeepAliveTracker(SendKeepAliveRequest sendRequestFunction, TimeSpan keepAliveRequestInterval, TimeSpan keepAliveResponseTimeout = default, CreateKeepAliveRequestId? createRequestIdFunction = null)
     {
         if (keepAliveResponseTimeout == default)
             keepAliveResponseTimeout = keepAliveRequestInterval * 3;
 
+        createRequestIdFunction ??= CreateRequestId;
+
         var timer = new System.Timers.Timer(keepAliveRequestInterval);
-        timer.Elapsed += (eventArgs, sender) => _ = sendRequestFunction(_requestId = Random.Shared.NextInt64()); // TODO: Handle exceptions?
+        timer.Elapsed += (eventArgs, sender) => _ = sendRequestFunction(_requestId = createRequestIdFunction()); // TODO: Handle exceptions?
         timer.Start();
 
         DebouncerCallback = Debouncer.Debounce<IPlayer, CancellationToken, Task<bool>>(HandleTimeoutAsync, keepAliveResponseTimeout);
         Sender = timer;
+    }
+
+    public static long CreateRequestId(ProtocolVersion protocolVersion)
+    {
+        if (UsesLegacyRequestIdWidth(protocolVersion))
+            return Random.Shared.NextInt64(int.MinValue, (long)int.MaxValue + 1);
+
+        return CreateRequestId();
+    }
+
+    public static long CreateRequestId()
+    {
+        return Random.Shared.NextInt64();
+    }
+
+    public static bool UsesLegacyRequestIdWidth(ProtocolVersion protocolVersion)
+    {
+        return protocolVersion < ProtocolVersion.MINECRAFT_1_12_2;
     }
 
     public async ValueTask PongAsync(IPlayer player, long id, CancellationToken cancellationToken)
