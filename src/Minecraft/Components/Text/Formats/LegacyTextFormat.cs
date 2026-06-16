@@ -44,6 +44,7 @@ public record LegacyTextFormat
     public static LegacyTextFormat Green { get; } = new('a', "green");
     /// <summary>The legacy text format for aqua, identified by the <c>b</c> control code.</summary>
     public static LegacyTextFormat Aqua { get; } = new('b', "aqua");
+    /// <summary>The legacy text format for red, identified by the <c>c</c> control code.</summary>
     public static LegacyTextFormat Red { get; } = new('c', "red");
     public static LegacyTextFormat LightPurple { get; } = new('d', "light_purple");
     public static LegacyTextFormat Yellow { get; } = new('e', "yellow");
