@@ -7,7 +7,7 @@ RUN set -e; \
   cp /usr/bin/tmux /out/usr/local/tmux/bin/; \
   ldd /usr/bin/tmux | awk '$3 ~ /^\// {print $3}' | grep -vE '/ld-linux|/libc\.so|/libm\.so|/libpthread\.so|/librt\.so|/libdl\.so|/libresolv\.so|/libnsl\.so|/libutil\.so' | while read -r libraryPath; do cp "$libraryPath" /out/usr/local/tmux/lib/; done
 
-FROM itzg/minecraft-server@sha256:d54e9c99dfc77b18c02b896772798884b430f8e65865e785a2f5a9780d566320
+FROM itzg/minecraft-server@sha256:9cd46375d0921e77784eabd88d67b4501eaf0b9af9de7d0ca71784d76d358ee4
 
 COPY --from=ttyd_source /usr/bin/ttyd /usr/local/bin/ttyd
 COPY --from=tmux_source /out/usr/local/tmux /usr/local/tmux
