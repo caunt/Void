@@ -10,6 +10,13 @@ namespace Void.Minecraft.Network.Registries.PacketId;
 
 public interface IMinecraftPacketIdPluginsRegistry
 {
+    /// <summary>
+    /// Gets whether all plugin-owned read and write packet ID registries are empty.
+    /// </summary>
+    /// <value>
+    /// <see langword="true"/> when every registry in <see cref="Read"/> and <see cref="Write"/> contains no packet ID
+    /// mappings; otherwise, <see langword="false"/>. An instance with no plugin registries is considered empty.
+    /// </value>
     public bool IsEmpty { get; }
     public ProtocolVersion? ProtocolVersion { get; set; }
     public IPlugin? ManagedBy { get; set; }
