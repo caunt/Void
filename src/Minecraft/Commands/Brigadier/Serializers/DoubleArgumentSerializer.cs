@@ -7,6 +7,9 @@ namespace Void.Minecraft.Commands.Brigadier.Serializers;
 
 public class DoubleArgumentSerializer : IArgumentSerializer
 {
+    /// <summary>
+    /// Indicates that a serialized <see cref="DoubleArgumentType"/> includes an explicit minimum bound.
+    /// </summary>
     public const byte HAS_MINIMUM = 0x01;
     public const byte HAS_MAXIMUM = 0x02;
 
