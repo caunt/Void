@@ -51,6 +51,18 @@ public class NbtTagNumberAdapter
         throw new JsonException($"{nameof(NbtList)} cannot contain multiple NBT types. Present types: {string.Join(", ", types)}.");
     }
 
+    /// <summary>
+    /// Promotes numeric tags in a list to the widest numeric <see cref="NbtTagType"/> already present in that list.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This method mutates <paramref name="tags"/> in place by replacing narrower numeric tags with new tags of the target type.
+    /// Non-numeric tags are left unchanged.
+    /// </para>
+    /// </remarks>
+    /// <param name="tags">The list whose numeric entries should be aligned before validating the list element type.</param>
+    /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="tags"/> is <see langword="null"/>.</exception>
+    /// <exception cref="System.InvalidOperationException">Thrown when <paramref name="tags"/> is empty.</exception>
     public static void AlignNumbers(List<NbtTag> tags)
     {
         var maxRank = tags.Max(tag => GetTagRankFromType(tag.Type));
