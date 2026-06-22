@@ -17,6 +17,12 @@ public class ArgumentCommandNode(string name, IArgumentType type, CommandExecuto
     public IArgumentType Type { get; } = type;
     public override string Name => name;
     public override string UsageText => $"{UsageArgumentOpen}{Name}{UsageArgumentClose}";
+    /// <summary>
+    /// Gets representative input strings for this argument node.
+    /// </summary>
+    /// <remarks>
+    /// The sequence is provided by <see cref="IArgumentType.Examples"/> on <see cref="Type"/> and is used by command-tree ambiguity detection to test whether sibling nodes can consume the same sample input.
+    /// </remarks>
     public override IEnumerable<string> Examples => Type.Examples;
     protected override string SortedKey => Name;
     public SuggestionProvider? CustomSuggestions { get; set; } = customSuggestions;
