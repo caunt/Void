@@ -23,6 +23,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\..\src\Plugins\Common\Void.Proxy.Plugins.Common.csproj" />
+	  <ProjectReference Include="..\..\src\Plugins\ProtocolSupport\Java\v1_20_2_to_latest\Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.csproj" />
 	  <ProjectReference Include="..\..\src\Platform\Void.Proxy.csproj" />
 	</ItemGroup>
 </Project>
