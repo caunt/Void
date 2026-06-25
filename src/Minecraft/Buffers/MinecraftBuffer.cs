@@ -75,6 +75,21 @@ public ref struct MinecraftBuffer
         return _backingBuffer.ReadUnsignedShort();
     }
 
+    /// <summary>
+    /// Writes an unsigned 16-bit integer to the buffer using Minecraft's big-endian binary encoding.
+    /// </summary>
+    /// <param name="value">
+    /// The value to write.
+    /// </param>
+    /// <remarks>
+    /// This method writes exactly two bytes and advances the current buffer position by two.
+    /// </remarks>
+    /// <exception cref="System.Data.ReadOnlyException">
+    /// The underlying backing buffer does not support writes.
+    /// </exception>
+    /// <exception cref="InternalBufferOverflowException">
+    /// The target writable span does not have enough capacity for the encoded value.
+    /// </exception>
     public void WriteUnsignedShort(ushort value)
     {
         _backingBuffer.WriteUnsignedShort(value);
