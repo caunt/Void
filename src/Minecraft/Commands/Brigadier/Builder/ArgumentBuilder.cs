@@ -125,6 +125,11 @@ public abstract record ArgumentBuilder<TBuilder, TNode> : ArgumentBuilder, IArgu
         return base.Executes(command) as TBuilder ?? GetThis();
     }
 
+    /// <summary>
+    /// Sets the predicate that determines whether a command source can use the node produced by this builder.
+    /// </summary>
+    /// <param name="requirement">The asynchronous requirement delegate to store on the built command node, or <see langword="null"/> to allow every source.</param>
+    /// <returns>The current builder instance, typed as <typeparamref name="TBuilder"/>.</returns>
     public new TBuilder Requires(CommandRequirement? requirement)
     {
         return base.Requires(requirement) as TBuilder ?? GetThis();
