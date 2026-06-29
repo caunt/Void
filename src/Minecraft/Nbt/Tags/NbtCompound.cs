@@ -6,6 +6,12 @@ using Void.Minecraft.Nbt.SharpNBT.Tags;
 
 namespace Void.Minecraft.Nbt.Tags;
 
+/// <summary>
+/// Represents an NBT compound tag backed by a mutable dictionary of named child tags.
+/// </summary>
+/// <param name="Fields">
+/// The dictionary used as the compound's backing storage. The dictionary instance is retained directly; changes made through it are reflected by this compound, and existing tag values are not renamed automatically.
+/// </param>
 public record NbtCompound(Dictionary<string, NbtTag> Fields) : NbtTag
 {
     public NbtCompound() : this([])
