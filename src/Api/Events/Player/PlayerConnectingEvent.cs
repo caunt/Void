@@ -3,6 +3,7 @@ using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Api.Events.Player;
 
+/// <param name="GetServices">A resolver that returns the service provider scoped to the specified connected player.</param>
 public record PlayerConnectingEvent(TcpClient Client, Func<IPlayer, IServiceProvider> GetServices) : IEventWithResult<IPlayer>
 {
     public IPlayer? Result { get; set; }
