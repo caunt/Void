@@ -10,6 +10,12 @@ namespace Void.Minecraft.Network.Registries.Transformations;
 
 public interface IMinecraftPacketTransformationsRegistry
 {
+    /// <summary>
+    /// Gets the packet <see cref="Type"/> values that currently have transformation entries in this registry.
+    /// </summary>
+    /// <remarks>
+    /// Callers that need a stable snapshot while the registry may be modified should materialize the sequence before enumerating it.
+    /// </remarks>
     public IEnumerable<Type> PacketTypes { get; }
     public bool IsEmpty { get; }
 
