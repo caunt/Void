@@ -10,6 +10,16 @@ public class Arguments
         return IntegerArgumentType.IntegerArgument(min, max);
     }
 
+    /// <summary>
+    /// Gets the parsed integer argument with the specified name from a command context.
+    /// </summary>
+    /// <param name="context">The command context that contains parsed arguments.</param>
+    /// <param name="name">The name of the parsed argument to retrieve.</param>
+    /// <returns>The parsed <see cref="int"/> value associated with <paramref name="name"/>.</returns>
+    /// <exception cref="System.ArgumentException">
+    /// No argument named <paramref name="name"/> exists in <paramref name="context"/>, or the argument was parsed as a type other than <see cref="int"/>.
+    /// </exception>
+    /// <exception cref="System.ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
     public static int GetInteger(CommandContext context, string name)
     {
         return context.GetArgument<int>(name);
