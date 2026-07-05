@@ -15,6 +15,9 @@ public class RootCommandNode() : CommandNode(requirement: EmptyRequirement, redi
     public override string UsageText => string.Empty;
     protected override string SortedKey => string.Empty;
 
+    /// <summary>
+    /// Gets an empty sequence because the root command node does not consume input directly.
+    /// </summary>
     public override IEnumerable<string> Examples => [];
 
     public override IArgumentBuilder<CommandNode> CreateBuilder()
