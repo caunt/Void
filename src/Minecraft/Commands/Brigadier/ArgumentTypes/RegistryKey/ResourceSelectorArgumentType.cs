@@ -7,6 +7,9 @@ namespace Void.Minecraft.Commands.Brigadier.ArgumentTypes.RegistryKey;
 
 public record ResourceSelectorArgumentType(string Identifier) : RegistryKeyArgumentType(Identifier)
 {
+    /// <summary>
+    /// Serializes <see cref="ResourceSelectorArgumentType"/> values by reading and writing their registry identifier string.
+    /// </summary>
     public class Serializer : IArgumentSerializer
     {
         public static IArgumentSerializer Instance { get; } = new Serializer();
