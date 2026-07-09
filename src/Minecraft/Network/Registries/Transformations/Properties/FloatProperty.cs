@@ -7,6 +7,11 @@ public record FloatProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<FloatP
 {
     public float AsPrimitive => new MinecraftBuffer(Value.Span).ReadFloat();
 
+    /// <summary>
+    /// Creates a property payload containing the big-endian Minecraft binary representation of a single-precision floating-point value.
+    /// </summary>
+    /// <param name="value">The <see cref="float"/> value to serialize into the property payload.</param>
+    /// <returns>A <see cref="FloatProperty"/> whose <see cref="Value"/> contains the serialized value.</returns>
     public static FloatProperty FromPrimitive(float value)
     {
         var bytes = new byte[4];
