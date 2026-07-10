@@ -25,6 +25,13 @@ public class DoubleArgumentSerializer : IArgumentSerializer
         return DoubleArgumentType.DoubleArgument(minimum, maximum);
     }
 
+    /// <summary>
+    /// Serializes a double command argument into the Brigadier argument payload.
+    /// </summary>
+    /// <param name="argumentType">The <see cref="DoubleArgumentType"/> instance to serialize.</param>
+    /// <param name="buffer">The destination buffer that receives the flag byte and any explicit bounds.</param>
+    /// <param name="protocolVersion">The protocol version for the serialized payload; this serializer uses the same format for every version.</param>
+    /// <exception cref="System.InvalidCastException">Thrown when <paramref name="argumentType"/> is not a <see cref="DoubleArgumentType"/>.</exception>
     public void Serialize(IArgumentType argumentType, ref BufferSpan buffer, ProtocolVersion protocolVersion)
     {
         var value = argumentType.As<DoubleArgumentType>();
