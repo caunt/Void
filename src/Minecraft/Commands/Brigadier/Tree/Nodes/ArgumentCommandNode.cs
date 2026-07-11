@@ -9,6 +9,20 @@ using Void.Minecraft.Commands.Brigadier.Suggestion;
 
 namespace Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 
+/// <summary>
+/// Represents a named argument in a Brigadier command tree.
+/// </summary>
+/// <remarks>
+/// An argument node consumes input by delegating parsing and completion behavior to its configured <see cref="IArgumentType"/>. Parsed values are stored in the active <see cref="CommandContextBuilder"/> under <paramref name="name"/>, and usage text is rendered as <c>&lt;name&gt;</c>.
+/// </remarks>
+/// <param name="name">The argument name used in command contexts, usage text, and child-node lookup.</param>
+/// <param name="type">The argument type that parses input, supplies examples, and provides default suggestions.</param>
+/// <param name="executor">The command executor invoked when parsing completes at this node, or <see langword="null"/> when the node is not executable.</param>
+/// <param name="requirement">The predicate that controls whether a source can use this node, or <see langword="null"/> to allow all sources.</param>
+/// <param name="redirectTarget">The node to redirect execution to, or <see langword="null"/> when this node does not redirect.</param>
+/// <param name="redirectModifier">The modifier that maps a command context to redirected sources, or <see langword="null"/> when no redirect modifier is used.</param>
+/// <param name="isForks">A value indicating whether redirects from this node fork execution to multiple sources.</param>
+/// <param name="customSuggestions">The custom suggestion provider for this argument, or <see langword="null"/> to use <paramref name="type"/> suggestions.</param>
 public class ArgumentCommandNode(string name, IArgumentType type, CommandExecutor? executor, CommandRequirement? requirement, CommandNode? redirectTarget, RedirectModifier? redirectModifier, bool isForks, SuggestionProvider? customSuggestions) : CommandNode(executor, requirement, redirectTarget, redirectModifier, isForks)
 {
     private const string UsageArgumentOpen = "<";
