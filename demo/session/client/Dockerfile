@@ -1,4 +1,4 @@
-FROM rust:1.97-slim-trixie@sha256:14c4fe50ea427dc42381a1a09a9a839c1d2346a2e508cd491bf02c659dbc0ed7 AS builder
+FROM rust:1.97-slim-trixie@sha256:41a5647cbdc067365b49e71f6a416789ab2ff884e501577643de6e99cb11b61d AS builder
 
 WORKDIR /src
 
