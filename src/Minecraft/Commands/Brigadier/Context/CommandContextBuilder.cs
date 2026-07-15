@@ -34,6 +34,14 @@ public class CommandContextBuilder
         return this;
     }
 
+    /// <summary>
+    /// Records a parsed argument by name for the command context being built.
+    /// </summary>
+    /// <param name="name">The argument name from the command tree.</param>
+    /// <param name="argument">The parsed argument range and value to associate with <paramref name="name"/>.</param>
+    /// <returns>The current <see cref="CommandContextBuilder"/> instance.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+    /// <remarks>If an argument with the same <paramref name="name"/> was already recorded, it is replaced.</remarks>
     public CommandContextBuilder WithArgument(string name, ParsedArgument argument)
     {
         Arguments[name] = argument;
