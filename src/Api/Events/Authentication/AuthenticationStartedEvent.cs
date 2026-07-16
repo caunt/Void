@@ -3,6 +3,18 @@ using Void.Proxy.Api.Players;
 
 namespace Void.Proxy.Api.Events.Authentication;
 
+/// <summary>
+/// Represents the event raised when authentication begins for a linked player connection.
+/// </summary>
+/// <param name="Link">The active link that connects the player to the selected server.</param>
+/// <param name="Player">The player whose authentication flow is starting.</param>
+/// <param name="Side">
+/// The side responsible for handling authentication. <see cref="AuthenticationSide.Proxy"/> indicates that proxy listeners should complete the authentication flow;
+/// <see cref="AuthenticationSide.Server"/> indicates that the downstream server is expected to handle authentication and proxy authentication listeners should treat the player as authenticated.
+/// </param>
+/// <remarks>
+/// The generated record constructor stores these values without additional validation.
+/// </remarks>
 public record AuthenticationStartedEvent(ILink Link, IPlayer Player, AuthenticationSide Side) : IScopedEventWithResult<AuthenticationResult>
 {
     /// <summary>
