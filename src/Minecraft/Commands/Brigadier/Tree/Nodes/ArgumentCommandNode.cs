@@ -72,6 +72,15 @@ public class ArgumentCommandNode(string name, IArgumentType type, CommandExecuto
             return await CustomSuggestions(context, builder, cancellationToken);
     }
 
+    /// <summary>
+    /// Parses this argument from the current position of <paramref name="reader"/> and records the parsed value in <paramref name="contextBuilder"/>.
+    /// </summary>
+    /// <remarks>
+    /// Parsing is delegated to <see cref="Type"/>. On success, the consumed cursor range and returned argument value are stored under <see cref="Name"/>, and this node is added to the context path for the same range. The reader cursor remains at the position left by the argument type.
+    /// </remarks>
+    /// <param name="reader">The input reader positioned at the beginning of the argument value to parse.</param>
+    /// <param name="contextBuilder">The command context builder that receives the parsed argument and node range.</param>
+    /// <exception cref="CommandSyntaxException">The configured <see cref="Type"/> rejected the input at the reader position.</exception>
     public override void Parse(StringReader reader, CommandContextBuilder contextBuilder)
     {
         var start = reader.Cursor;
