@@ -21,6 +21,16 @@ public record BinaryProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<Binar
         return new BinaryProperty(buffer.ReadToEnd().ToArray());
     }
 
+    /// <summary>
+    /// Writes the property's binary value to the current position of the specified buffer.
+    /// </summary>
+    /// <param name="buffer">The writable buffer that receives the value.</param>
+    /// <remarks>
+    /// The bytes are written verbatim without a length prefix, and the buffer position advances by <see cref="ReadOnlyMemory{T}.Length"/>.
+    /// An empty value writes no bytes.
+    /// </remarks>
+    /// <exception cref="System.Data.ReadOnlyException">The buffer is backed by read-only storage.</exception>
+    /// <exception cref="InternalBufferOverflowException">The writable span backing the buffer has insufficient remaining capacity.</exception>
     public void Write(ref MinecraftBuffer buffer)
     {
         buffer.Write(Value.Span);
