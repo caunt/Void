@@ -7,6 +7,7 @@ using Void.Proxy.Api.Commands;
 
 namespace Void.Minecraft.Commands.Brigadier.Context;
 
+/// <param name="Executor">The callback to invoke for this parsed command, or <see langword="null"/> when the context does not represent an executable command.</param>
 public record CommandContext(
     ICommandSource Source,
     string Input,
