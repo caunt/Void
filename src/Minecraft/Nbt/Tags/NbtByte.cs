@@ -17,5 +17,9 @@ public record NbtByte(byte Value = 0) : NbtTag
     public static implicit operator NbtByte(ByteTag tag) => new(tag.Value) { Name = tag.Name };
     public static implicit operator ByteTag(NbtByte tag) => new(tag.Name, tag.Value);
 
+    /// <summary>
+    /// Returns the byte tag serialized in stringified NBT (SNBT) format.
+    /// </summary>
+    /// <returns>The SNBT representation of this byte tag.</returns>
     public override string ToString() => ToSnbt();
 }
