@@ -5,6 +5,12 @@ using Void.Minecraft.Nbt.Tags;
 
 namespace Void.Minecraft.Nbt.Serializers.Json.Tags;
 
+/// <summary>
+/// Converts an <see cref="NbtDouble"/> tag to a JSON number containing its double-precision value.
+/// </summary>
+/// <remarks>
+/// This converter supports serialization only. Deserialization through <see cref="Read"/> throws a <see cref="NotSupportedException"/>.
+/// </remarks>
 public class NbtDoubleJsonConverter : JsonConverter<NbtDouble>
 {
     public override NbtDouble Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
