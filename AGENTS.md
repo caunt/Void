@@ -51,7 +51,7 @@ Follow the existing C# style rules:
 
 ## Development
 
-- Commit only hunks with actual code changes. All code should use CRLF line endings and existing whitespace should be preserved; never reformat untouched lines.
+- Commit only hunks with actual code changes. Preserve existing whitespace and never reformat untouched lines.
 - Run `dotnet test tests/Void.UnitTests/` to ensure unit tests pass whenever C# source files (`*.cs`) are modified. Skip this step if no C# files change.
 - Do not run integration tests (`tests/Void.IntegrationTests/`) unless explicitly asked to do so.
 - Be patient with long-running tests and avoid aborting them early; some may take several minutes to complete.
