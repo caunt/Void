@@ -47,6 +47,12 @@ public class SuggestionsBuilder(string Input, int Start)
         return this;
     }
 
+    /// <summary>
+    /// Adds an integer suggestion with an associated tooltip for the portion of the input from this builder's start position to the end of the input.
+    /// </summary>
+    /// <param name="value">The integer value to suggest.</param>
+    /// <param name="tooltip">The message to associate with the suggestion as its tooltip.</param>
+    /// <returns>This builder, allowing additional suggestions to be added.</returns>
     public SuggestionsBuilder Suggest(int value, IMessage tooltip)
     {
         _result.Add(new IntegerSuggestion(StringRange.Between(Start, Input.Length), value, tooltip));
