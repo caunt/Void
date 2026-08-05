@@ -67,6 +67,9 @@ public static class PacketIdDefinitions
         new(0x00, ProtocolVersion.Oldest)
     ];
 
+    /// <summary>
+    /// Maps the serverbound login encryption response packet to its packet ID for all supported protocol versions.
+    /// </summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundEncryptionResponse =
     [
         new(0x01, ProtocolVersion.Oldest)
