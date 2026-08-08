@@ -7,11 +7,11 @@ export const wrapUnderSummary = (markdown, headerMarker) => {
 
   const flush = () => {
     out.push(
-        `<details>
-        <summary>${title}</summary>
+`<details>
+<summary>${title}</summary>
 
-        ${buffer.join('\n')}
-        </details>`
+${buffer.join('\n')}
+</details>`
     )
   }
 
