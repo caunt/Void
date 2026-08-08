@@ -21,11 +21,25 @@ if [[ ! "$retry_delay_seconds" =~ ^[0-9]+$ ]]; then
 fi
 
 last_exit_code=0
+portablemc_start_arguments=(start --dry "$portablemc_version")
+
+if [[ "$(uname -m)" == "aarch64" && "$portablemc_version" == mojang:* ]]; then
+  minecraft_version="${portablemc_version#mojang:}"
+  major_version="${minecraft_version%%.*}"
+  remaining_version="${minecraft_version#*.}"
+  minor_version="${remaining_version%%.*}"
+
+  if [[ "$major_version" =~ ^[0-9]+$ && "$major_version" -ge 26 ]]; then
+    portablemc_start_arguments+=(--fix-lwjgl 3.4.1)
+  elif [[ "$major_version" == "1" && "$minor_version" =~ ^[0-9]+$ && "$minor_version" -ge 13 ]]; then
+    portablemc_start_arguments+=(--fix-lwjgl 3.3.3)
+  fi
+fi
 
 for ((attempt = 1; attempt <= attempts; attempt++)); do
   echo "Running portablemc dry-run for $portablemc_version (attempt $attempt/$attempts)."
 
-  if portablemc start --dry "$portablemc_version"; then
+  if portablemc "${portablemc_start_arguments[@]}"; then
     exit 0
   else
     last_exit_code="$?"
