@@ -1,3 +1,10 @@
+/**
+ * Wraps markdown sections delimited by a specific header marker in <details> tags.
+ *
+ * @param {string} markdown - The original markdown content.
+ * @param {string} headerMarker - The markdown header string (e.g. '#####') used to separate sections.
+ * @returns {string} The transformed markdown content.
+ */
 export const wrapUnderSummary = (markdown, headerMarker) => {
   const esc = headerMarker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const regex = new RegExp(`^${esc}\\s+(.*)`)

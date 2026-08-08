@@ -3,11 +3,11 @@ title: Download
 description: Download the Void Proxy.
 template: splash
 ---
-import { wrapUnderSummary } from "./utils.js";
 
 import { Aside, Badge, Card, LinkCard, CardGrid, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
 import { Markdown } from 'astro-remote';
 import { getCollection } from 'astro:content';
+import { wrapUnderSummary } from "./utils.js";
 
 export const releases = (await getCollection('releases')).sort(
     (leftRelease, rightRelease) => new Date(rightRelease.data.published_at).getTime() - new Date(leftRelease.data.published_at).getTime()
