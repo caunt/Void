@@ -50,6 +50,11 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
         GC.SuppressFinalize(this);
     }
 
+    public async Task<IEnumerable<string>> ReadLogsAsync(DateTime since, CancellationToken cancellationToken = default)
+    {
+        return await Container.ReadLogsAsync(since, cancellationToken);
+    }
+
     public static async Task<PortableMinecraftClient> CreateAsync(CancellationToken cancellationToken = default)
     {
         var builder = new ContainerBuilder("ghcr.io/caunt/portable-minecraft-client:offline")
@@ -58,8 +63,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             .WithWaitStrategy(Wait.ForUnixContainer()
                 .UntilHttpRequestIsSucceeded(request => request
                     .ForPort(ApiPort)
-                    .ForPath("/health"), options => options.WithTimeout(TimeSpan.FromMinutes(1))))
-            .WithCreateParameterModifier(parameters => parameters.Platform = "linux/amd64");
+                    .ForPath("/health"), options => options.WithTimeout(TimeSpan.FromMinutes(1))));
 
         if (OperatingSystem.IsLinux())
             builder = builder.WithExtraHost(DockerHost, DockerHostGateway);
@@ -83,24 +87,25 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
     public async Task<Game> RunGameAsync(string testName, EndPoint endPoint, ProtocolVersion protocolVersion, IEnumerable<IIntegrationSide> additionalLogSides, CancellationToken cancellationToken = default)
     {
+        OperationCanceledException? lastTimeoutException = null;
+
         for (var attempt = 1; attempt <= SetupRetries; attempt++)
         {
+            using var attemptCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, Timeouts.StepTimeoutToken);
+
             try
             {
-                return await Game.RunAsync(testName, Container, HttpClient, [this, .. additionalLogSides], endPoint, protocolVersion, cancellationToken);
+                return await Game.RunAsync(testName, Container, HttpClient, [this, .. additionalLogSides], endPoint, protocolVersion, attemptCancellationTokenSource.Token);
             }
-            catch (OperationCanceledException) when (attempt < SetupRetries)
+            catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
             {
-                // Ignored
+                lastTimeoutException = exception;
+                Console.WriteLine($"{LogMessagePrefix} Minecraft {protocolVersion.FirstRelease} setup attempt {attempt} of {SetupRetries} timed out");
             }
         }
 
-        throw new TimeoutException($"Failed to setup {protocolVersion} after {SetupRetries} attempts");
-    }
-
-    public async Task<IEnumerable<string>> ReadLogsAsync(DateTime since, CancellationToken cancellationToken = default)
-    {
-        return await Container.ReadLogsAsync(since, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        throw new TimeoutException($"Failed to setup {protocolVersion} after {SetupRetries} attempts", lastTimeoutException);
     }
 
     public record Game(string TestName, IContainer Container, HttpClient HttpClient, IReadOnlyList<IIntegrationSide> LogSides, DateTime StartedAt, ProtocolVersion ProtocolVersion, string Username) : IAsyncDisposable
@@ -137,7 +142,9 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             var username = Convert.ToHexString(BitConverter.GetBytes(Random.Shared.Next()));
             var startedAt = DateTime.UtcNow;
 
-            await container.CopyAsync(Encoding.UTF8.GetBytes(CreateOptionsText(protocolVersion)), "/root/.minecraft/options.txt", ct: cancellationToken);
+            using var optionsContent = new StringContent(CreateOptionsText(protocolVersion), Encoding.UTF8, "text/plain");
+            using var optionsResponse = await httpClient.PutAsync("/options", optionsContent, cancellationToken);
+            await EnsureSuccessAsync(optionsResponse, $"Writing Minecraft {protocolVersion.FirstRelease} options", cancellationToken);
 
             var game = new Game(testName, container, httpClient, logSides, startedAt, protocolVersion, username);
 
@@ -146,6 +153,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
                 await game.LogAsync($"Starting Minecraft {protocolVersion.FirstRelease}", cancellationToken);
                 await game.StartVanillaAsync(dockerHost, dockerPort, cancellationToken);
                 await container.ExpectTextAsync("Connecting to", cancellationToken);
+                await container.ExpectTextAsync($"{username} joined the game", cancellationToken);
                 await game.EnsureStableAsync(cancellationToken);
             }
             catch
@@ -204,6 +212,11 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
                 " has no item?!", // Item entity 72 has no item?!
                 "Skipping Entity with id" // Skipping Entity with id minecraft:cave_spider
             ], cancellationToken);
+
+            var remainingDuration = duration - Stopwatch.GetElapsedTime(timestamp);
+
+            if (remainingDuration > TimeSpan.Zero)
+                await Task.Delay(remainingDuration, cancellationToken);
 
             await LogAsync($"Logs are stable after {Stopwatch.GetElapsedTime(timestamp).TotalSeconds:F2} seconds", cancellationToken);
             await MakeStepAsync("stable", cancellationToken);
