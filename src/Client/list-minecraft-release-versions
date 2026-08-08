@@ -11,32 +11,44 @@ readonly output_format
 
 first_release_version="${1:-}"
 readonly first_release_version
+last_release_version="${2:-}"
+readonly last_release_version
 version_manifest_url="https://launchermeta.mojang.com/mc/game/version_manifest_v2.json"
 readonly version_manifest_url
 
 if [[ -z "$first_release_version" ]]; then
-  echo "Usage: $0 [--json] <first-release-version>" >&2
+  echo "Usage: $0 [--json] <first-release-version> [last-release-version]" >&2
   exit 1
 fi
 
 if [[ "$output_format" == "json" ]]; then
   curl -fsSL --retry 5 --retry-all-errors --connect-timeout 15 --max-time 60 "$version_manifest_url" \
-    | jq -c --arg firstReleaseVersion "$first_release_version" '
+    | jq -c --arg firstReleaseVersion "$first_release_version" --arg lastReleaseVersion "$last_release_version" '
       ([.versions[] | select(.type == "release") | .id] | reverse) as $releaseVersions |
       ($releaseVersions | index($firstReleaseVersion)) as $firstReleaseVersionIndex |
+      (if $lastReleaseVersion == "" then ($releaseVersions | length) - 1 else ($releaseVersions | index($lastReleaseVersion)) end) as $lastReleaseVersionIndex |
       if $firstReleaseVersionIndex == null
       then error("Release version not found: \($firstReleaseVersion)")
-      else $releaseVersions[$firstReleaseVersionIndex:]
+      elif $lastReleaseVersionIndex == null
+      then error("Release version not found: \($lastReleaseVersion)")
+      elif $lastReleaseVersionIndex < $firstReleaseVersionIndex
+      then error("Last release precedes first release: \($lastReleaseVersion)")
+      else $releaseVersions[$firstReleaseVersionIndex:($lastReleaseVersionIndex + 1)]
       end
     '
 else
   curl -fsSL --retry 5 --retry-all-errors --connect-timeout 15 --max-time 60 "$version_manifest_url" \
-    | jq -r --arg firstReleaseVersion "$first_release_version" '
+    | jq -r --arg firstReleaseVersion "$first_release_version" --arg lastReleaseVersion "$last_release_version" '
       ([.versions[] | select(.type == "release") | .id] | reverse) as $releaseVersions |
       ($releaseVersions | index($firstReleaseVersion)) as $firstReleaseVersionIndex |
+      (if $lastReleaseVersion == "" then ($releaseVersions | length) - 1 else ($releaseVersions | index($lastReleaseVersion)) end) as $lastReleaseVersionIndex |
       if $firstReleaseVersionIndex == null
       then error("Release version not found: \($firstReleaseVersion)")
-      else $releaseVersions[$firstReleaseVersionIndex:] | .[]
+      elif $lastReleaseVersionIndex == null
+      then error("Release version not found: \($lastReleaseVersion)")
+      elif $lastReleaseVersionIndex < $firstReleaseVersionIndex
+      then error("Last release precedes first release: \($lastReleaseVersion)")
+      else $releaseVersions[$firstReleaseVersionIndex:($lastReleaseVersionIndex + 1)] | .[]
       end
     '
 fi
