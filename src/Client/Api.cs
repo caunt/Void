@@ -3,6 +3,7 @@
 #:property PublishAot=false
 
 using System.Diagnostics;
+using System.Globalization;
 using System.IO.Compression;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -17,10 +18,18 @@ const string displayScreenHeight = "480";
 const string displayScreenResolution = $"{displayScreenWidth}x{displayScreenHeight}";
 const string displayScreenDepth = "24";
 const string displayScreen = $"{displayScreenResolution}x{displayScreenDepth}";
+const string portableMinecraftLegacyJvmExecutablePath = "/opt/zulu-8-i686/bin/java";
+const string portableMinecraftLegacyJvmPath = "/usr/local/bin/java-i686";
+const string portableMinecraftArmLwjgl3Version = "3.3.3";
+const string portableMinecraftArmLwjgl4Version = "3.4.1";
+const string chatInputBrightnessCropGeometry = "854x2+0+451";
 const int minecraftGameId = 432;
 const int curseForgeFilesBatchSize = 50;
-const int brightnessThreshold = 5;
-const int maximumChatOpenPresses = 100;
+const int chatOpenMaxAttempts = 10;
+const int legacyChatOpenConfirmationMaxAttempts = 90;
+const int chatSubmitMaxAttempts = 3;
+const int chatSubmitConfirmationMaxAttempts = 10;
+const double chatInputBrightnessRatioThreshold = 0.7;
 const int displayReadyMaxAttempts = 50;
 const int displayReadyDelayMilliseconds = 100;
 const int displayProbeTimeoutMilliseconds = 1000;
@@ -40,6 +49,8 @@ var currentOperationCancellationTokenSource = (CancellationTokenSource?)null;
 var lastError = (string?)null;
 var stateUpdatedAt = DateTimeOffset.UtcNow;
 var chatOperationRunning = false;
+var chatInputTargetsWindow = true;
+var chatInputSupportsVisualConfirmation = true;
 var criticalProcesses = new HashSet<Process>();
 var criticalProcessesLock = new object();
 var expectedExitProcessIds = new HashSet<int>();
@@ -50,6 +61,18 @@ application.Lifetime.ApplicationStopping.Register(StopCriticalProcesses);
 application.MapGet("/health", () => "ok");
 
 application.MapGet("/status", () => Results.Ok(CreateStatusBody("ok")));
+
+application.MapPut("/options", async Task<IResult> (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var minecraftDirectory = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? defaultMinecraftDirectory;
+    using var reader = new StreamReader(request.Body);
+    var options = await reader.ReadToEndAsync(cancellationToken);
+
+    _ = Directory.CreateDirectory(minecraftDirectory);
+    await File.WriteAllTextAsync(Path.Combine(minecraftDirectory, "options.txt"), options, cancellationToken);
+
+    return Results.Ok();
+});
 
 application.MapGet("/start-vanilla", (HttpContext httpContext, string? version) =>
 {
@@ -159,7 +182,7 @@ application.MapGet("/stop-client", () =>
     return Results.Ok(CreateStatusBody("stopping"));
 });
 
-application.MapGet("/send-chat", (string? message) =>
+application.MapGet("/send-chat", async Task<IResult> (string? message, CancellationToken cancellationToken) =>
 {
     if (string.IsNullOrWhiteSpace(message))
         return Results.BadRequest("message is required");
@@ -179,9 +202,40 @@ application.MapGet("/send-chat", (string? message) =>
         stateUpdatedAt = DateTimeOffset.UtcNow;
     }
 
-    RunDetachedChatOperation(message);
+    using var operationCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, application.Lifetime.ApplicationStopping);
 
-    return Results.Ok(CreateStatusBody("queued"));
+    try
+    {
+        await SendChatOperationAsync(message, operationCancellationTokenSource.Token);
+
+        lock (clientStateLock)
+        {
+            lastError = null;
+            stateUpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        return Results.Ok(CreateStatusBody("sent"));
+    }
+    catch (Exception exception)
+    {
+        Console.Error.WriteLine($"send-chat failed: {exception}");
+
+        lock (clientStateLock)
+        {
+            lastError = exception.Message;
+            stateUpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        return Results.Problem(exception.Message);
+    }
+    finally
+    {
+        lock (clientStateLock)
+        {
+            chatOperationRunning = false;
+            stateUpdatedAt = DateTimeOffset.UtcNow;
+        }
+    }
 });
 
 application.MapGet("/screen", async () =>
@@ -295,15 +349,14 @@ async Task SendChatOperationAsync(string message, CancellationToken cancellation
     if (windowId is null)
         throw new InvalidOperationException("no visible window found");
 
+    var preferredInputWindowId = chatInputTargetsWindow ? windowId : null;
     await ResizeWindowToDisplayAsync(windowId, cancellationToken);
-    await RunOrThrow(cancellationToken, "xdotool", "windowfocus", windowId);
-    var chatOpened = await OpenChatAsync(windowId, display, cancellationToken);
-
-    if (!chatOpened)
-        throw new InvalidOperationException("failed to open chat interface after maximum attempts");
-
-    await RunOrThrow(cancellationToken, "xdotool", "type", "--clearmodifiers", "--window", windowId, "--delay", "50", "--", message);
-    await RunOrThrow(cancellationToken, "xdotool", "key", "--clearmodifiers", "--window", windowId, "Return");
+    await RunOrThrow(cancellationToken, "xdotool", "windowfocus", "--sync", windowId);
+    await Task.Delay(1_000, cancellationToken);
+    var inputWindowId = await OpenChatAsync(windowId, preferredInputWindowId, display, cancellationToken);
+    await TypeTextAsync(inputWindowId, message, chatInputSupportsVisualConfirmation ? 50 : 150, cancellationToken);
+    await Task.Delay(chatInputSupportsVisualConfirmation ? 1_000 : 3_000, cancellationToken);
+    await SubmitChatAsync(windowId, inputWindowId, display, cancellationToken);
 }
 
 Process LaunchPortableMinecraftClient(string directory, string version, string?[]? portableMinecraftArguments = null, CancellationToken cancellationToken = default)
@@ -311,6 +364,8 @@ Process LaunchPortableMinecraftClient(string directory, string version, string?[
     cancellationToken.ThrowIfCancellationRequested();
     portableMinecraftArguments ??= [];
     var requestedPortableMinecraftArguments = portableMinecraftArguments.OfType<string>().ToArray();
+    chatInputTargetsWindow = !UsesActiveWindowChatInput(version);
+    chatInputSupportsVisualConfirmation = !RequiresBlindChatInput(version);
 
     var process = StartCriticalProcess("portablemc", processInfo =>
     {
@@ -325,6 +380,20 @@ Process LaunchPortableMinecraftClient(string directory, string version, string?[
             processInfo.ArgumentList.Add(displayScreenResolution);
         }
 
+        if (File.Exists(portableMinecraftLegacyJvmExecutablePath) && version.StartsWith("mojang:", StringComparison.Ordinal))
+        {
+            if (UsesLegacyLwjgl(version) && !HasPortableMinecraftArgument(requestedPortableMinecraftArguments, "--jvm"))
+            {
+                processInfo.ArgumentList.Add("--jvm");
+                processInfo.ArgumentList.Add(portableMinecraftLegacyJvmPath);
+            }
+            else if (!UsesLegacyLwjgl(version) && !HasPortableMinecraftArgument(requestedPortableMinecraftArguments, "--fix-lwjgl"))
+            {
+                processInfo.ArgumentList.Add("--fix-lwjgl");
+                processInfo.ArgumentList.Add(GetArmLwjglVersion(version));
+            }
+        }
+
         foreach (var argument in requestedPortableMinecraftArguments)
             processInfo.ArgumentList.Add(argument);
     });
@@ -333,6 +402,55 @@ Process LaunchPortableMinecraftClient(string directory, string version, string?[
         Environment.FailFast($"portablemc exited immediately with code {process.ExitCode}");
 
     return process;
+}
+
+string GetArmLwjglVersion(string version)
+{
+    var versionComponents = version["mojang:".Length..].Split('.');
+
+    if (versionComponents.Length >= 1 && int.TryParse(versionComponents[0], out var majorVersion) && majorVersion >= 26)
+        return portableMinecraftArmLwjgl4Version;
+
+    return portableMinecraftArmLwjgl3Version;
+}
+
+bool UsesLegacyLwjgl(string version)
+{
+    var versionComponents = version["mojang:".Length..].Split('.');
+
+    return versionComponents.Length >= 2
+        && int.TryParse(versionComponents[0], out var majorVersion)
+        && int.TryParse(versionComponents[1], out var minorVersion)
+        && majorVersion == 1
+        && minorVersion <= 12;
+}
+
+bool UsesActiveWindowChatInput(string version)
+{
+    if (!version.StartsWith("mojang:", StringComparison.Ordinal))
+        return false;
+
+    var versionComponents = version["mojang:".Length..].Split('.');
+
+    return versionComponents.Length >= 2
+        && int.TryParse(versionComponents[0], out var majorVersion)
+        && int.TryParse(versionComponents[1], out var minorVersion)
+        && majorVersion == 1
+        && minorVersion <= 12;
+}
+
+bool RequiresBlindChatInput(string version)
+{
+    if (!version.StartsWith("mojang:", StringComparison.Ordinal))
+        return false;
+
+    var versionComponents = version["mojang:".Length..].Split('.');
+
+    return versionComponents.Length >= 2
+        && int.TryParse(versionComponents[0], out var majorVersion)
+        && int.TryParse(versionComponents[1], out var minorVersion)
+        && majorVersion == 1
+        && minorVersion == 7;
 }
 
 bool HasPortableMinecraftArgument(IEnumerable<string> arguments, string argumentName)
@@ -454,65 +572,190 @@ async Task<bool> IsDisplayReadyAsync(string display, CancellationToken cancellat
     }
 }
 
-async Task<bool> OpenChatAsync(string windowId, string display, CancellationToken cancellationToken = default)
+async Task TypeTextAsync(string? windowId, string text, int delayMilliseconds, CancellationToken cancellationToken = default)
 {
-    // Just in case, ensure chat window is closed
-    await RunOrThrow(cancellationToken, "xdotool", "key", "--clearmodifiers", "--window", windowId, "Return");
+    var delay = delayMilliseconds.ToString(CultureInfo.InvariantCulture);
 
-    var baselineBrightness = await CaptureBrightnessAsync(windowId, display, cancellationToken);
-    var currentPressCount = 0;
-
-    while (currentPressCount < maximumChatOpenPresses)
-    {
-        await RunOrThrow(cancellationToken, "xdotool", "key", "--clearmodifiers", "--window", windowId, "t");
-        currentPressCount++;
-
-        await Task.Delay(132, cancellationToken);
-
-        var currentBrightness = await CaptureBrightnessAsync(windowId, display, cancellationToken);
-        var brightnessDifference = Math.Abs(baselineBrightness - currentBrightness);
-
-        if (brightnessDifference <= brightnessThreshold)
-            continue;
-
-        for (var backspaceIndex = 0; backspaceIndex < currentPressCount; backspaceIndex++)
-            await RunOrThrow(cancellationToken, "xdotool", "key", "--clearmodifiers", "--window", windowId, "--delay", "50", "BackSpace");
-
-        return true;
-    }
-
-    return false;
+    if (windowId is null)
+        await RunOrThrow(cancellationToken, "xdotool", "type", "--clearmodifiers", "--delay", delay, "--", text);
+    else
+        await RunOrThrow(cancellationToken, "xdotool", "type", "--clearmodifiers", "--window", windowId, "--delay", delay, "--", text);
 }
 
-async Task<int> CaptureBrightnessAsync(string windowId, string display, CancellationToken cancellationToken = default)
+async Task PressKeyAsync(string? windowId, string key, CancellationToken cancellationToken = default)
 {
-    var importProcessInfo = CreateProcessInfo("import", ["-window", windowId, "miff:-"], display: display);
-    var importResult = await RunProcessBytesAsync(importProcessInfo, TimeSpan.FromMilliseconds(externalProcessTimeoutMilliseconds), cancellationToken);
+    if (windowId is null)
+        await RunOrThrow(cancellationToken, "xdotool", "key", "--clearmodifiers", key);
+    else
+        await RunOrThrow(cancellationToken, "xdotool", "key", "--clearmodifiers", "--window", windowId, key);
+}
 
-    if (importResult.ExitCode != 0)
-        throw new InvalidOperationException($"import exited with code {importResult.ExitCode} during brightness capture: {importResult.StandardError}");
+async Task PressKeySlowlyAsync(string? windowId, string key, CancellationToken cancellationToken = default)
+{
+    if (windowId is null)
+        await RunOrThrow(cancellationToken, "xdotool", "keydown", "--clearmodifiers", key);
+    else
+        await RunOrThrow(cancellationToken, "xdotool", "keydown", "--clearmodifiers", "--window", windowId, key);
 
-    var convertProcessInfo = CreateProcessInfo("convert",
-    [
-        "-",
-        "-gravity",
-        "SouthWest",
-        "-crop",
-        "100x20+0+0",
-        "+repage",
-        "-format",
-        "%[fx:int(mean*100)]",
-        "info:"
-    ], redirectStandardInput: true);
+    await Task.Delay(150, cancellationToken);
 
-    var convertResult = await RunProcessWithInputAsync(convertProcessInfo, importResult.StandardOutput, TimeSpan.FromMilliseconds(externalProcessTimeoutMilliseconds), cancellationToken);
-    var brightnessOutput = convertResult.StandardOutput;
+    if (windowId is null)
+        await RunOrThrow(cancellationToken, "xdotool", "keyup", key);
+    else
+        await RunOrThrow(cancellationToken, "xdotool", "keyup", "--window", windowId, key);
+}
 
-    return convertResult.ExitCode != 0
-        ? throw new InvalidOperationException($"convert exited with code {convertResult.ExitCode} during brightness capture: {convertResult.StandardError}")
-        : !int.TryParse(brightnessOutput.Trim(), out var brightness)
-            ? throw new InvalidOperationException($"failed to parse brightness value from convert output: '{brightnessOutput.Trim()}'")
-            : brightness;
+async Task ClearChatInputAsync(bool pressKeysSlowly = false, CancellationToken cancellationToken = default)
+{
+    await Task.Delay(1_000, cancellationToken);
+
+    if (pressKeysSlowly)
+    {
+        await SelectAllTextAsync(cancellationToken);
+        await PressKeySlowlyAsync(null, "BackSpace", cancellationToken);
+        await Task.Delay(2_000, cancellationToken);
+        return;
+    }
+
+    for (var attempt = 0; attempt < chatOpenMaxAttempts; attempt++)
+    {
+        await PressKeyAsync(null, "BackSpace", cancellationToken);
+        await Task.Delay(50, cancellationToken);
+    }
+
+    await Task.Delay(750, cancellationToken);
+}
+
+async Task SelectAllTextAsync(CancellationToken cancellationToken)
+{
+    await RunOrThrow(cancellationToken, "xdotool", "keydown", "ctrl");
+    await Task.Delay(150, cancellationToken);
+    await RunOrThrow(cancellationToken, "xdotool", "keydown", "a");
+    await Task.Delay(150, cancellationToken);
+    await RunOrThrow(cancellationToken, "xdotool", "keyup", "a");
+    await RunOrThrow(cancellationToken, "xdotool", "keyup", "ctrl");
+}
+
+async Task<string?> OpenChatAsync(string windowId, string? preferredInputWindowId, string display, CancellationToken cancellationToken = default)
+{
+    if (!chatInputSupportsVisualConfirmation)
+    {
+        for (var attempt = 0; attempt < legacyChatOpenConfirmationMaxAttempts; attempt++)
+        {
+            var chatKey = attempt % 2 == 0 ? "t" : "slash";
+            await PressKeySlowlyAsync(null, chatKey, cancellationToken);
+            await Task.Delay(500, cancellationToken);
+
+            if (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
+            {
+                await ClearChatInputAsync(pressKeysSlowly: true, cancellationToken: cancellationToken);
+
+                if (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
+                    return null;
+            }
+        }
+
+        throw new InvalidOperationException($"failed to confirm legacy chat input after {legacyChatOpenConfirmationMaxAttempts} attempts");
+    }
+
+    for (var attempt = 0; attempt < chatOpenMaxAttempts; attempt++)
+    {
+        var inputWindowId = attempt % 2 == 0
+            ? preferredInputWindowId
+            : preferredInputWindowId is null ? windowId : null;
+
+        await PressKeyAsync(inputWindowId, "t", cancellationToken);
+        await Task.Delay(500, cancellationToken);
+
+        if (!await IsChatInputVisibleAsync(windowId, display, cancellationToken))
+        {
+            await Task.Delay(500, cancellationToken);
+
+            if (!await IsChatInputVisibleAsync(windowId, display, cancellationToken))
+                continue;
+        }
+
+        await ClearChatInputAsync(cancellationToken: cancellationToken);
+
+        if (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
+            return null;
+    }
+
+    throw new InvalidOperationException($"failed to open chat input after {chatOpenMaxAttempts} attempts");
+}
+
+async Task SubmitChatAsync(string windowId, string? inputWindowId, string display, CancellationToken cancellationToken = default)
+{
+    if (!chatInputSupportsVisualConfirmation)
+    {
+        await PressKeyAsync(null, "Return", cancellationToken);
+        await Task.Delay(1_000, cancellationToken);
+        return;
+    }
+
+    for (var attempt = 0; attempt < chatSubmitMaxAttempts; attempt++)
+    {
+        await PressKeyAsync(inputWindowId, "Return", cancellationToken);
+
+        for (var confirmationAttempt = 0; confirmationAttempt < chatSubmitConfirmationMaxAttempts; confirmationAttempt++)
+        {
+            await Task.Delay(500, cancellationToken);
+
+            if (!await IsChatInputVisibleAsync(windowId, display, cancellationToken))
+                return;
+        }
+    }
+
+    throw new InvalidOperationException($"failed to submit chat input after {chatSubmitMaxAttempts} attempts");
+}
+
+async Task<bool> IsChatInputVisibleAsync(string windowId, string display, CancellationToken cancellationToken = default)
+{
+    var screenshotPath = Path.Combine(Path.GetTempPath(), $"portable-minecraft-chat-{Guid.NewGuid():N}.png");
+
+    try
+    {
+        var importProcessInfo = CreateProcessInfo("import", ["-window", windowId, screenshotPath], display: display);
+        var importResult = await RunProcessTextAsync(importProcessInfo, TimeSpan.FromMilliseconds(screenCaptureTimeoutMilliseconds), cancellationToken);
+
+        if (importResult.ExitCode != 0)
+            throw new InvalidOperationException($"chat input capture failed: {importResult.StandardError}");
+
+        var convertProcessInfo = CreateProcessInfo("convert",
+        [
+            screenshotPath,
+            "-colorspace",
+            "Gray",
+            "-crop",
+            chatInputBrightnessCropGeometry,
+            "+repage",
+            "-scale",
+            "1x2!",
+            "-format",
+            "%[fx:u.p{0,0}.r*100] %[fx:u.p{0,1}.r*100]",
+            "info:"
+        ]);
+        var convertResult = await RunProcessTextAsync(convertProcessInfo, TimeSpan.FromMilliseconds(externalProcessTimeoutMilliseconds), cancellationToken);
+
+        if (convertResult.ExitCode != 0)
+            throw new InvalidOperationException($"chat input analysis failed: {convertResult.StandardError}");
+
+        var brightnessValues = convertResult.StandardOutput.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        if (brightnessValues.Length != 2
+            || !double.TryParse(brightnessValues[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var brightnessAboveInput)
+            || !double.TryParse(brightnessValues[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var inputBrightness))
+        {
+            throw new InvalidOperationException($"failed to parse chat input brightness values: '{convertResult.StandardOutput.Trim()}'");
+        }
+
+        return brightnessAboveInput >= 1 && inputBrightness / brightnessAboveInput <= chatInputBrightnessRatioThreshold;
+    }
+    finally
+    {
+        if (File.Exists(screenshotPath))
+            File.Delete(screenshotPath);
+    }
 }
 
 async Task<string?> FindLargestWindow(string display, CancellationToken cancellationToken = default)
@@ -570,12 +813,11 @@ async Task RunOrThrow(CancellationToken cancellationToken, params string[] comma
         throw new InvalidOperationException($"{command[0]} exited with code {result.ExitCode}: {result.StandardError}");
 }
 
-ProcessStartInfo CreateProcessInfo(string fileName, IEnumerable<string> arguments, string? display = null, bool redirectStandardInput = false)
+ProcessStartInfo CreateProcessInfo(string fileName, IEnumerable<string> arguments, string? display = null)
 {
     var processInfo = new ProcessStartInfo(fileName)
     {
         UseShellExecute = false,
-        RedirectStandardInput = redirectStandardInput,
         RedirectStandardOutput = true,
         RedirectStandardError = true
     };
@@ -633,51 +875,6 @@ async Task<ProcessBytesResult> RunProcessBytesAsync(ProcessStartInfo processInfo
     }
 
     return new ProcessBytesResult(process.ExitCode, standardOutput.ToArray(), await standardErrorTask);
-}
-
-async Task<ProcessTextResult> RunProcessWithInputAsync(ProcessStartInfo processInfo, byte[] standardInput, TimeSpan timeout, CancellationToken cancellationToken)
-{
-    using var process = Process.Start(processInfo)
-                        ?? throw new InvalidOperationException($"failed to start {processInfo.FileName}");
-
-    var standardInputTask = WriteProcessInputAsync(process, standardInput, cancellationToken);
-    var standardOutputTask = process.StandardOutput.ReadToEndAsync();
-    var standardErrorTask = process.StandardError.ReadToEndAsync();
-
-    try
-    {
-        await WaitForProcessExitAsync(process, processInfo.FileName, timeout, cancellationToken);
-
-        try
-        {
-            await standardInputTask;
-        }
-        catch (IOException) when (process.HasExited)
-        {
-            // The process can reject stdin before producing a non-zero exit code.
-        }
-    }
-    catch
-    {
-        await IgnoreTaskAsync(standardInputTask);
-        await IgnoreTaskAsync(standardOutputTask);
-        await IgnoreTaskAsync(standardErrorTask);
-        throw;
-    }
-
-    return new ProcessTextResult(process.ExitCode, await standardOutputTask, await standardErrorTask);
-}
-
-async Task WriteProcessInputAsync(Process process, byte[] standardInput, CancellationToken cancellationToken)
-{
-    try
-    {
-        await process.StandardInput.BaseStream.WriteAsync(standardInput, cancellationToken);
-    }
-    finally
-    {
-        process.StandardInput.Close();
-    }
 }
 
 async Task WaitForProcessExitAsync(Process process, string processName, TimeSpan timeout, CancellationToken cancellationToken)
@@ -785,49 +982,6 @@ void RunDetachedOperation(int operationId, string operationName, CancellationTok
         }
         finally
         {
-            cancellationTokenSource.Dispose();
-        }
-    });
-}
-
-void RunDetachedChatOperation(string message)
-{
-    var cancellationTokenSource = CreateOperationCancellationTokenSource();
-
-    _ = Task.Run(async () =>
-    {
-        try
-        {
-            await SendChatOperationAsync(message, cancellationTokenSource.Token);
-
-            lock (clientStateLock)
-            {
-                lastError = null;
-                stateUpdatedAt = DateTimeOffset.UtcNow;
-            }
-        }
-        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested || application.Lifetime.ApplicationStopping.IsCancellationRequested)
-        {
-            // The application is stopping or the chat operation was canceled.
-        }
-        catch (Exception exception)
-        {
-            Console.Error.WriteLine($"send-chat failed: {exception}");
-
-            lock (clientStateLock)
-            {
-                lastError = exception.Message;
-                stateUpdatedAt = DateTimeOffset.UtcNow;
-            }
-        }
-        finally
-        {
-            lock (clientStateLock)
-            {
-                chatOperationRunning = false;
-                stateUpdatedAt = DateTimeOffset.UtcNow;
-            }
-
             cancellationTokenSource.Dispose();
         }
     });
