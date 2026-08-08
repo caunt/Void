@@ -1,5 +1,61 @@
 # Changelog
 
+## [0.5.18](https://github.com/caunt/Void/compare/v0.5.17...v0.5.18) (2026-08-08)
+
+
+### Features
+
+* **api:** ✨ added chat input handling and configuration options ([47f5d5f](https://github.com/caunt/Void/commit/47f5d5ff2112cf3133b35fef6a4d04c3bc34cdd4))
+* **api:** ✨ added handshake propagation before link creation ([85180a6](https://github.com/caunt/Void/commit/85180a6462282c7806d84d307620d29fdf33df83))
+* **api:** ✨ updated environment variables for PaperServer configuration ([8b612eb](https://github.com/caunt/Void/commit/8b612ebf9d9811c4e48e9d45a20593d4fd1d2de1))
+* **authentication:** ✨ added temporary dimension handling for respawn on re-authentication ([e4331ca](https://github.com/caunt/Void/commit/e4331ca72bc3e954fcddd2295cfbbaed32ceb946))
+* **client:** ✨ added asynchronous log reading and improved cancellation handling ([b6ffaca](https://github.com/caunt/Void/commit/b6ffaca2fb10f9deb79fd5106fb9c1a06de4ac0f))
+* **client:** ✨ added configurable CurseForge API base URL ([fe75964](https://github.com/caunt/Void/commit/fe7596497c5f897010f5cca174b7b23ce95a0cef))
+* **docker:** ✨ added multi-architecture support and improved Java installation process ([3da610f](https://github.com/caunt/Void/commit/3da610f4ce0a04f967f3e318ebbe33dccb399a5f))
+* **java:** ✨ added script to execute Java with QEMU for i686 architecture ([37b7a84](https://github.com/caunt/Void/commit/37b7a84509fdb543040388d1748bd9d03816441f))
+* **link:** ✨ improved async connection handling ([5c3d3e9](https://github.com/caunt/Void/commit/5c3d3e95ff7b496ee1183e3b4b8ecc31509a30d9))
+* **list-minecraft-release-versions:** ✨ added support for specifying last release version ([9b968e5](https://github.com/caunt/Void/commit/9b968e5d5bd2fdda3285749da432d8ad22831797))
+* **portablemc:** ✨ added support for LWJGL fixes based on Minecraft version ([7e6588c](https://github.com/caunt/Void/commit/7e6588c4bde159e3fae00c289bdfda74b386bf1c))
+
+
+### Bug Fixes
+
+* **api:** 🐛 adjusted subscription order for phase change events ([6715f43](https://github.com/caunt/Void/commit/6715f4381acecc2bb86ac9fca8a668f34d139d13))
+* **api:** 🐛 corrected initialization and disposal of PortableMinecraftClient ([b0a49f0](https://github.com/caunt/Void/commit/b0a49f0655f95c38ba0d90f305056054da71d7ef))
+* **api:** 🐛 corrected null handling in MessageReceivedEvent ([0f94a43](https://github.com/caunt/Void/commit/0f94a43ceb6e179f8a0c74c804c67dc58faed138))
+* **api:** 🐛 corrected null handling in MessageReceivedEvent ([9020089](https://github.com/caunt/Void/commit/902008997276dd6cc1c4c694ade83be183f8366c))
+* **api:** 🐛 corrected player phase handling in registry service ([6bc6635](https://github.com/caunt/Void/commit/6bc66356c9ab9e375938f117f6919b5a93e69f7f))
+* **api:** 🐛 corrected remote endpoint address parsing in ForwardingService ([744353b](https://github.com/caunt/Void/commit/744353be3984b6a5bc4ef8fa6f3359f87df5e146))
+* **api:** 🐛 handled socket connection exceptions in LinkService ([6df015f](https://github.com/caunt/Void/commit/6df015f63b6b91f65ecfe632814f9b8b4ba6c359))
+* **api:** 🐛 reimplemented server selection logic for player connections ([c346c75](https://github.com/caunt/Void/commit/c346c75f1e39b8c6290b900371e9b244b02052ac))
+* **api:** 🐛 reimplemented server selection logic in LinkService ([ce3bdda](https://github.com/caunt/Void/commit/ce3bddad6a4bc976b885564192b84214eb70198a))
+* **api:** 🐛 removed debug log statement from registry service ([3ffac80](https://github.com/caunt/Void/commit/3ffac80141dca60353a94623d47fabbfcaa6cba8))
+* **api:** 🐛 removed hardcoded environment variable settings for Minecraft API ([e1272a1](https://github.com/caunt/Void/commit/e1272a18fd2502275c7bc9f8349f8b0e7ece23f8))
+* **api:** 🐛 restored server selection logic for player connections ([0a56ad7](https://github.com/caunt/Void/commit/0a56ad77cc337b925643ae515ad99b37d4d55bac))
+* **client:** 🐛 made client API actions respond immediately ([c971a58](https://github.com/caunt/Void/commit/c971a58c82ceb4f51bcb0ccffb787c980b5e124a))
+* **client:** 🐛 prevented duplicate client windows ([96196a6](https://github.com/caunt/Void/commit/96196a6765c4aa6b35971bc41b3f23e2dde34a31))
+* **client:** 🐛 retried portablemc dry-run downloads ([acb669a](https://github.com/caunt/Void/commit/acb669a9195736b5652624edcadeb0b714256019))
+* **client:** 🐛 updated PortableMC launch resolution ([693e16c](https://github.com/caunt/Void/commit/693e16cb58996b9620f1a03513a582c22972256a))
+* **client:** 🐛 waited for client stop before restart ([fbf5d88](https://github.com/caunt/Void/commit/fbf5d885099750ec2184e7547d258b78782f913c))
+* **deps:** update dependency @astrojs/starlight to ^0.40.0 ([99b7c4a](https://github.com/caunt/Void/commit/99b7c4aecb4069ced4522f66984074ec5c12748a))
+* **deps:** update dependency @astrojs/starlight to ^0.41.0 ([90c0f41](https://github.com/caunt/Void/commit/90c0f41ac785f12b23b9b1a6bdbf38afe2d40bc4))
+* **deps:** update dependency astro to v7 ([8bf9fe9](https://github.com/caunt/Void/commit/8bf9fe9491866fe6be9ff1f95037fd078f37a72f))
+* **deps:** update dependency sharp to ^0.35.0 ([14d2d10](https://github.com/caunt/Void/commit/14d2d10d3fb51f228716c32c2624e181bdc5f1ac))
+* **deps:** update dependency starlight-links-validator to ^0.25.0 ([b2a1707](https://github.com/caunt/Void/commit/b2a170738f4ef782087b2387bc387799eab2d768))
+* **docs:** 🐛 escaped closing details tag in JS template literal to fix MDX build ([9748f4a](https://github.com/caunt/Void/commit/9748f4a9c0f4cca4a7bc05fc453bbc5cb7ab2926))
+* **lifecycle:** 🐛 fixed legacy keep-alive ids ([c638524](https://github.com/caunt/Void/commit/c638524d5aec0482d3d74b38a1ffd56b6fd6b38b))
+* **link:** 🐛 changed states dictionary to concurrent implementation ([2ab72d3](https://github.com/caunt/Void/commit/2ab72d3ea6c5455bd77d236985b0ae19dea289bf))
+* **logger:** 🐛 corrected logging of connection listener address ([7385ca6](https://github.com/caunt/Void/commit/7385ca6acca099af22dd3369b27ba4aad427ab6e))
+* **proxy:** 🐛 corrected listener initialization and connection handling ([1d98071](https://github.com/caunt/Void/commit/1d98071363557ce50175c6b4599cd4405398d8ff))
+* **proxy:** 🐛 corrected listener initialization for IPv6 support ([48435bb](https://github.com/caunt/Void/commit/48435bb3fa1830fa20bdab175d83d884ecf42a2b))
+* **registry:** 🐛 corrected packet handling for configuration phase in client and server ([868a2b4](https://github.com/caunt/Void/commit/868a2b42b3afd979532698731b128d9e65ae1d07))
+* **registry:** 🐛 use correct server channel on login ([46abccc](https://github.com/caunt/Void/commit/46abcccb87f5ec3ac87ef589a26bb63e4ad7f98b))
+
+
+### Performance Improvements
+
+* **api:** ✨ added player scope validation for service listeners ([f65a6f8](https://github.com/caunt/Void/commit/f65a6f85bc8395634263c8bc0426bbe85b3ce6b0))
+
 ## [0.5.17](https://github.com/caunt/Void/compare/v0.5.16...v0.5.17) (2026-05-31)
 
 
