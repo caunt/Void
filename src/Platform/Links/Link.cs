@@ -1,4 +1,5 @@
-﻿using Nito.AsyncEx;
+﻿using System.Collections.Concurrent;
+using Nito.AsyncEx;
 using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Services;
@@ -22,7 +23,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
     private readonly CancellationTokenSource _ctsServerToPlayer = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
     private readonly CancellationTokenSource _ctsServerToPlayerForce = new();
     private readonly AsyncLock _lock = new();
-    private readonly Dictionary<Direction, State> _states = [];
+    private readonly ConcurrentDictionary<Direction, State> _states = [];
     private Task<Task>? _onStoppingTask;
 
     private Task? _playerToServerTask;
