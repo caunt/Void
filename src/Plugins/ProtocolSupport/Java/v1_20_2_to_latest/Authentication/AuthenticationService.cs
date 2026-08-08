@@ -5,6 +5,7 @@ using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Binary;
 using Void.Minecraft.Network.Messages.Packets;
 using Void.Minecraft.Players.Extensions;
+using Void.Minecraft.Profiles;
 using Void.Proxy.Api.Console;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Authentication;
@@ -120,7 +121,12 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         if (link.Player.Profile is not { } profile)
             throw new InvalidOperationException("Player should be logged in already");
 
-        await link.SendPacketAsync(new LoginSuccessPacket { GameProfile = profile, StrictErrorHandling = false }, cancellationToken);
+        await link.SendPacketAsync(new LoginSuccessPacket
+        {
+            GameProfile = profile,
+            StrictErrorHandling = false,
+            SessionId = link.Player.ProtocolVersion >= ProtocolVersion.MINECRAFT_26_2 ? Uuid.NewUuid() : null
+        }, cancellationToken);
 
         await link.ReceivePacketAsync<LoginAcknowledgedPacket>(cancellationToken);
     }
