@@ -34,7 +34,7 @@ public class JoinGamePacket : IMinecraftClientboundPacket<JoinGamePacket>
         gamemode &= ~HardcoreFlag;
 
         var dimension = protocolVersion < ProtocolVersion.MINECRAFT_1_9_1 ?
-            buffer.ReadUnsignedByte() :
+            unchecked((sbyte)buffer.ReadUnsignedByte()) :
             buffer.ReadInt();
 
         var difficulty = buffer.ReadUnsignedByte();

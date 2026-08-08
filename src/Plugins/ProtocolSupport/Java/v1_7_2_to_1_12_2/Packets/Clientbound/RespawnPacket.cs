@@ -13,9 +13,14 @@ public class RespawnPacket : IMinecraftClientboundPacket<RespawnPacket>
 
     public static RespawnPacket FromJoinGame(JoinGamePacket packet)
     {
+        return FromJoinGame(packet, packet.Dimension);
+    }
+
+    public static RespawnPacket FromJoinGame(JoinGamePacket packet, int dimension)
+    {
         return new RespawnPacket
         {
-            Dimension = packet.Dimension,
+            Dimension = dimension,
             Difficulty = packet.Difficulty,
             Gamemode = packet.Gamemode,
             LevelType = packet.LevelType

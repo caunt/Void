@@ -120,7 +120,15 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         var joinGamePacket = (JoinGamePacket)packet;
 
         if (authenticationResult == AuthenticationResult.AlreadyAuthenticated)
+        {
+            if (link.Player.ProtocolVersion <= ProtocolVersion.MINECRAFT_1_13_2)
+            {
+                var temporaryDimension = joinGamePacket.Dimension == 0 ? -1 : 0;
+                await link.SendPacketAsync(RespawnPacket.FromJoinGame(joinGamePacket, temporaryDimension), cancellationToken);
+            }
+
             await link.SendPacketAsync(RespawnPacket.FromJoinGame(joinGamePacket), cancellationToken);
+        }
         else
             await link.SendPacketAsync(joinGamePacket, cancellationToken);
     }
