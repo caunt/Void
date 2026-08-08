@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Void.IntegrationTests.Infrastructure.IO;
 
@@ -38,6 +39,28 @@ public class CollectingTextWriter : TextWriter
     {
         using var _ = _lock.EnterScope();
         return [.. _lines.Where(line => line.Timestamp >= since).Select(line => line.Text)];
+    }
+
+    public async Task<string> WaitForLineAsync(Func<string, bool> predicate, CancellationToken cancellationToken = default)
+    {
+        var completionSource = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        void HandleLine(string line)
+        {
+            if (predicate(line))
+                completionSource.TrySetResult(line);
+        }
+
+        OnLine += HandleLine;
+
+        try
+        {
+            return await completionSource.Task.WaitAsync(cancellationToken);
+        }
+        finally
+        {
+            OnLine -= HandleLine;
+        }
     }
 
     public override void Write(char value)

@@ -1,36 +1,55 @@
 ﻿using Microsoft.Extensions.Logging;
-using ThrottleDebounce;
 using Void.Minecraft.Network;
-using Void.Minecraft.Players.Extensions;
-using Void.Proxy.Api.Players;
-using Void.Proxy.Api.Players.Extensions;
 
 namespace Void.Proxy.Plugins.Common.Services.Lifecycle;
 
-public class KeepAliveTracker : IDisposable
+public class KeepAliveTracker : IDisposable, IAsyncDisposable
 {
+    private readonly Lock _lock = new();
+    private readonly ILogger _logger;
+    private readonly CancellationTokenSource _cancellationTokenSource = new();
+    private readonly SendKeepAliveRequest _sendRequestFunction;
+    private readonly HandleKeepAliveTimeout _handleTimeoutFunction;
+    private readonly CreateKeepAliveRequestId _createRequestIdFunction;
+    private readonly WaitForKeepAliveInterval _waitForKeepAliveIntervalFunction;
+    private readonly TimeSpan _keepAliveRequestInterval;
+    private readonly int _responseIntervalCount;
+    private readonly Task _workerTask;
     private long _requestId = DefaultRequestId;
+    private int _unansweredIntervalCount;
+    private bool _hasOutstandingRequest;
+    private int _disposed;
 
     public const int DefaultRequestId = -1;
-    public delegate Task SendKeepAliveRequest(long id);
+    public delegate Task SendKeepAliveRequest(long id, CancellationToken cancellationToken);
+    public delegate ValueTask HandleKeepAliveTimeout(KeepAliveTracker tracker, CancellationToken cancellationToken);
     public delegate long CreateKeepAliveRequestId();
+    internal delegate Task WaitForKeepAliveInterval(TimeSpan interval, CancellationToken cancellationToken);
 
-    public RateLimitedFunc<IPlayer, CancellationToken, Task<bool>> DebouncerCallback { get; }
-    public System.Timers.Timer Sender { get; }
-
-    public KeepAliveTracker(SendKeepAliveRequest sendRequestFunction, TimeSpan keepAliveRequestInterval, TimeSpan keepAliveResponseTimeout = default, CreateKeepAliveRequestId? createRequestIdFunction = null)
+    public KeepAliveTracker(ILogger logger, SendKeepAliveRequest sendRequestFunction, HandleKeepAliveTimeout handleTimeoutFunction, TimeSpan keepAliveRequestInterval, TimeSpan keepAliveResponseTimeout = default, CreateKeepAliveRequestId? createRequestIdFunction = null)
+        : this(logger, sendRequestFunction, handleTimeoutFunction, keepAliveRequestInterval, keepAliveResponseTimeout, createRequestIdFunction, Task.Delay)
     {
+    }
+
+    internal KeepAliveTracker(ILogger logger, SendKeepAliveRequest sendRequestFunction, HandleKeepAliveTimeout handleTimeoutFunction, TimeSpan keepAliveRequestInterval, TimeSpan keepAliveResponseTimeout, CreateKeepAliveRequestId? createRequestIdFunction, WaitForKeepAliveInterval waitForKeepAliveIntervalFunction)
+    {
+        if (keepAliveRequestInterval <= TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(keepAliveRequestInterval));
+
         if (keepAliveResponseTimeout == default)
             keepAliveResponseTimeout = keepAliveRequestInterval * 3;
 
-        createRequestIdFunction ??= CreateRequestId;
+        if (keepAliveResponseTimeout <= TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(keepAliveResponseTimeout));
 
-        var timer = new System.Timers.Timer(keepAliveRequestInterval);
-        timer.Elapsed += (eventArgs, sender) => _ = sendRequestFunction(_requestId = createRequestIdFunction()); // TODO: Handle exceptions?
-        timer.Start();
-
-        DebouncerCallback = Debouncer.Debounce<IPlayer, CancellationToken, Task<bool>>(HandleTimeoutAsync, keepAliveResponseTimeout);
-        Sender = timer;
+        _logger = logger;
+        _sendRequestFunction = sendRequestFunction;
+        _handleTimeoutFunction = handleTimeoutFunction;
+        _createRequestIdFunction = createRequestIdFunction ?? CreateRequestId;
+        _waitForKeepAliveIntervalFunction = waitForKeepAliveIntervalFunction;
+        _keepAliveRequestInterval = keepAliveRequestInterval;
+        _responseIntervalCount = Math.Max(1, (int)Math.Ceiling(keepAliveResponseTimeout / keepAliveRequestInterval));
+        _workerTask = RunAsync(_cancellationTokenSource.Token);
     }
 
     public static long CreateRequestId(ProtocolVersion protocolVersion)
@@ -51,48 +70,107 @@ public class KeepAliveTracker : IDisposable
         return protocolVersion < ProtocolVersion.MINECRAFT_1_12_2;
     }
 
-    public async ValueTask PongAsync(IPlayer player, long id, CancellationToken cancellationToken)
+    public bool Pong(long id, CancellationToken cancellationToken)
     {
-        player.Logger.LogTrace("Keep Alive hit {Id} received", id);
+        cancellationToken.ThrowIfCancellationRequested();
+        _logger.LogTrace("Keep Alive hit {Id} received", id);
 
-        if (_requestId != id)
-            player.Logger.LogWarning("Keep Alive hit {Id} does not match last sent id {LastId}", id, _requestId);
+        using var _ = _lock.EnterScope();
 
-        if (DebouncerCallback.Invoke(player, cancellationToken) is not { } timedoutTask)
-            return;
+        if (!_hasOutstandingRequest || _requestId != id)
+        {
+            _logger.LogWarning("Keep Alive hit {Id} does not match outstanding id {LastId}", id, _hasOutstandingRequest ? _requestId : DefaultRequestId);
+            return false;
+        }
 
-        if (!await timedoutTask)
-            return;
-
-        throw new Exception("Keep Alive pong invoked when player is already timed out.");
+        _hasOutstandingRequest = false;
+        _unansweredIntervalCount = 0;
+        return true;
     }
 
-    private async Task<bool> HandleTimeoutAsync(IPlayer player, CancellationToken cancellationToken)
+    private async Task RunAsync(CancellationToken cancellationToken)
     {
         try
         {
-            if (player.Link is not { IsAlive: true })
-                return false;
+            while (true)
+            {
+                await _waitForKeepAliveIntervalFunction(_keepAliveRequestInterval, cancellationToken);
 
-            DebouncerCallback.Dispose();
-            player.Logger.LogInformation("Keep alive timed out");
-            await player.KickAsync("Timed out", cancellationToken);
+                long requestId = default;
+                var shouldSendRequest = false;
+                var shouldHandleTimeout = false;
+
+                using (var _ = _lock.EnterScope())
+                {
+                    if (_hasOutstandingRequest)
+                    {
+                        _unansweredIntervalCount++;
+                        shouldHandleTimeout = _unansweredIntervalCount >= _responseIntervalCount;
+                    }
+                    else
+                    {
+                        requestId = _requestId = _createRequestIdFunction();
+                        _hasOutstandingRequest = true;
+                        _unansweredIntervalCount = 0;
+                        shouldSendRequest = true;
+                    }
+                }
+
+                if (shouldHandleTimeout)
+                {
+                    await _handleTimeoutFunction(this, cancellationToken);
+                    return;
+                }
+
+                if (shouldSendRequest)
+                    await SendAsync(requestId, cancellationToken);
+            }
         }
-        catch (Exception exception)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            player.Logger.LogError(exception, "Error while handling keep alive timeout");
         }
+    }
 
-        return true;
+    private async Task SendAsync(long requestId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _sendRequestFunction(requestId, cancellationToken);
+        }
+        catch
+        {
+            using var _ = _lock.EnterScope();
+
+            if (_hasOutstandingRequest && _requestId == requestId)
+            {
+                _hasOutstandingRequest = false;
+                _unansweredIntervalCount = 0;
+            }
+
+            throw;
+        }
     }
 
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            return;
+
         GC.SuppressFinalize(this);
+        _cancellationTokenSource.Cancel();
+    }
 
-        Sender.Stop();
+    public async ValueTask DisposeAsync()
+    {
+        Dispose();
 
-        Sender.Dispose();
-        DebouncerCallback.Dispose();
+        try
+        {
+            await _workerTask;
+        }
+        finally
+        {
+            _cancellationTokenSource.Dispose();
+        }
     }
 }

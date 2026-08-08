@@ -30,20 +30,16 @@ public abstract class ProxiedServerRedirectionTestBase(PaperFixture paperFixture
                 await game.SendTextMessageAsync(firstMessage, Timeouts.StepTimeoutToken);
                 await paperFixture.Server1.ExpectTextAsync(firstMessage, lookupHistory: true, Timeouts.StepTimeoutToken);
                 
+                var secondServerReadyTask = voidFixture.VoidProxy.WaitForServerConnectionAndKeepAliveAsync(game.Username, "args-server-2", Timeouts.StepTimeoutToken);
                 await game.SendTextMessageAsync("/server args-server-2", Timeouts.StepTimeoutToken);
-                await game.EnsureStableAsync(Timeouts.StepTimeoutToken);
-
-                // TODO: How do we know when the redirection is complete?
-                await Task.Delay(15_000);
+                await secondServerReadyTask;
                 
                 await game.SendTextMessageAsync(secondMessage, Timeouts.StepTimeoutToken);
                 await paperFixture.Server2.ExpectTextAsync(secondMessage, lookupHistory: true, Timeouts.StepTimeoutToken);
                 
+                var firstServerReadyTask = voidFixture.VoidProxy.WaitForServerConnectionAndKeepAliveAsync(game.Username, "args-server-1", Timeouts.StepTimeoutToken);
                 await game.SendTextMessageAsync("/server args-server-1", Timeouts.StepTimeoutToken);
-                await game.EnsureStableAsync(Timeouts.StepTimeoutToken);
-
-                // TODO: How do we know when the redirection is complete?
-                await Task.Delay(15_000);
+                await firstServerReadyTask;
                 
                 await game.SendTextMessageAsync(thirdMessage, Timeouts.StepTimeoutToken);
                 await paperFixture.Server1.ExpectTextAsync(thirdMessage, lookupHistory: true, Timeouts.StepTimeoutToken);

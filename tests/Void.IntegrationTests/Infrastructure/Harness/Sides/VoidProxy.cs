@@ -78,6 +78,45 @@ public record VoidProxy(CollectingTextWriter LogWriter, VoidEntryPoint.RunResult
         return Task.FromResult<IEnumerable<string>>(LogWriter.GetLinesSince(since));
     }
 
+    public async Task WaitForServerConnectionAndKeepAliveAsync(string username, string serverName, CancellationToken cancellationToken = default)
+    {
+        const string keepAliveRequestMarker = "Sending Keep Alive request ";
+        var stateLock = new Lock();
+        var connected = false;
+        long? requestId = null;
+
+        await LogWriter.WaitForLineAsync(line =>
+        {
+            using var _ = stateLock.EnterScope();
+
+            if (!line.Contains(username, StringComparison.Ordinal))
+                return false;
+
+            if (!connected)
+            {
+                connected = line.Contains($"connected to {serverName}", StringComparison.Ordinal);
+                return false;
+            }
+
+            if (requestId is null)
+            {
+                var markerIndex = line.IndexOf(keepAliveRequestMarker, StringComparison.Ordinal);
+
+                if (markerIndex < 0)
+                    return false;
+
+                var requestIdText = line[(markerIndex + keepAliveRequestMarker.Length)..].Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
+
+                if (long.TryParse(requestIdText, out var parsedRequestId))
+                    requestId = parsedRequestId;
+
+                return false;
+            }
+
+            return line.Contains($"Keep Alive hit {requestId.Value} received", StringComparison.Ordinal);
+        }, cancellationToken);
+    }
+
     public async ValueTask DisposeAsync()
     {
         GC.SuppressFinalize(this);
