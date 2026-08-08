@@ -1,5 +1,8 @@
 ﻿namespace Void.Proxy.Api.Configurations.Serializer;
 
+/// <summary>
+/// Converts configuration objects to and from their persisted textual representation.
+/// </summary>
 public interface IConfigurationSerializer
 {
     /// <summary>
@@ -41,7 +44,21 @@ public interface IConfigurationSerializer
     /// <seealso cref="Serialize{TConfiguration}(TConfiguration)" />
     /// <seealso cref="Serialize(object, Type)" />
     public string Serialize<TConfiguration>() where TConfiguration : notnull;
+    /// <summary>
+    /// Serializes a configuration instance or a runtime-specified default configuration.
+    /// </summary>
+    /// <param name="configuration">The instance to serialize. When this value is a <see cref="Type" />, a default instance of that type is created and serialized.</param>
+    /// <returns>The serialized configuration text.</returns>
+    /// <exception cref="Void.Proxy.Api.Configurations.Exceptions.InvalidConfigurationException">The configuration cannot be mapped to the persisted format.</exception>
     public string Serialize(object configuration);
+
+    /// <summary>
+    /// Serializes a configuration instance using its declared configuration type.
+    /// </summary>
+    /// <typeparam name="TConfiguration">The declared configuration type.</typeparam>
+    /// <param name="configuration">The instance to serialize, or <see langword="null" /> to construct and serialize an instance populated with default values.</param>
+    /// <returns>The serialized configuration text.</returns>
+    /// <exception cref="Void.Proxy.Api.Configurations.Exceptions.InvalidConfigurationException">The configuration cannot be constructed or mapped to the persisted format.</exception>
     public string Serialize<TConfiguration>(TConfiguration? configuration) where TConfiguration : notnull;
     /// <summary>
     /// Serializes the given configuration object — or a default instance of

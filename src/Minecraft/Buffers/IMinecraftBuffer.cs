@@ -3,6 +3,7 @@ using System.IO;
 
 namespace Void.Minecraft.Buffers;
 
+/// <summary>Defines cursor and storage-access operations shared by Minecraft buffers.</summary>
 public interface ICommonMinecraftBuffer
 {
     /// <summary>
@@ -49,6 +50,7 @@ public interface ICommonMinecraftBuffer
     public Span<byte> Access(int position, int length);
 }
 
+/// <summary>Defines a readable Minecraft buffer with a remaining-byte count.</summary>
 public interface IReadMinecraftBuffer : ICommonMinecraftBuffer
 {
     /// <summary>
@@ -58,8 +60,11 @@ public interface IReadMinecraftBuffer : ICommonMinecraftBuffer
     public int Remaining { get; }
 }
 
+/// <summary>Marks a Minecraft buffer as writable.</summary>
 public interface IWriteMinecraftBuffer : ICommonMinecraftBuffer;
 
+/// <summary>Defines a readable and writable Minecraft buffer that can create typed slices.</summary>
+/// <typeparam name="TBuffer">The concrete buffer type returned by slicing.</typeparam>
 public interface IMinecraftBuffer<TBuffer> : IReadMinecraftBuffer, IWriteMinecraftBuffer where TBuffer : struct, allows ref struct
 {
     /// <summary>

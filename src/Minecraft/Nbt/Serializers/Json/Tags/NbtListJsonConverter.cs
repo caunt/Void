@@ -7,8 +7,11 @@ using Void.Minecraft.Nbt.Tags;
 
 namespace Void.Minecraft.Nbt.Serializers.Json.Tags;
 
+/// <summary>Converts between homogeneous NBT lists and JSON arrays.</summary>
+/// <remarks>Numeric elements are widened to a common NBT numeric type during deserialization.</remarks>
 public class NbtListJsonConverter : JsonConverter<NbtList>
 {
+    /// <inheritdoc/>
     public override NbtList Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         var values = new List<NbtTag>();
@@ -26,6 +29,7 @@ public class NbtListJsonConverter : JsonConverter<NbtList>
         return new NbtList(values, NbtTagNumberAdapter.GetTagsType(values));
     }
 
+    /// <inheritdoc/>
     public override void Write(Utf8JsonWriter writer, NbtList tag, JsonSerializerOptions options)
     {
         writer.WriteStartArray();

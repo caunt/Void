@@ -7,5 +7,6 @@
 /// <param name="Separator">Optional component inserted between multiple resolved selector results; serializers omit it when it is <see langword="null"/>.</param>
 public record SelectorContent(string Value, Component? Separator = null) : IContent
 {
+    /// <summary>Gets the <c>selector</c> content discriminator.</summary>
     public string Type => "selector";
 }

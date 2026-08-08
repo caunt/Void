@@ -1,6 +1,5 @@
 ﻿namespace Void.Proxy.Api.Configurations.Attributes;
 
-[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
 /// <summary>
 /// Provides TOML mapping metadata for a configuration field or property.
 /// </summary>
@@ -10,6 +9,7 @@
 /// <remarks>
 /// During TOML mapping, null or whitespace values in <see cref="Name"/>, <see cref="InlineComment"/>, and <see cref="PrecedingComment"/> are ignored.
 /// </remarks>
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
 public class ConfigurationPropertyAttribute(string? name = null) : Attribute
 {
     /// <summary>

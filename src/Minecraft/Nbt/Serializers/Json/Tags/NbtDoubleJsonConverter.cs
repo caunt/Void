@@ -13,7 +13,9 @@ namespace Void.Minecraft.Nbt.Serializers.Json.Tags;
 /// </remarks>
 public class NbtDoubleJsonConverter : JsonConverter<NbtDouble>
 {
+    /// <inheritdoc/>
     public override NbtDouble Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
 
+    /// <inheritdoc/>
     public override void Write(Utf8JsonWriter writer, NbtDouble tag, JsonSerializerOptions options) => writer.WriteNumberValue(tag.Value);
 }

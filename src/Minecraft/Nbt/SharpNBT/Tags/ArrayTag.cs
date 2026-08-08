@@ -22,11 +22,11 @@ public abstract class ArrayTag<T> : Tag, IReadOnlyList<T> where T : unmanaged, I
     /// </summary>
     public Memory<T> Memory => new(array);
 
-    /// <inheritdoc />
+    /// <summary>Initializes an array tag with its tag kind, optional name, and backing array.</summary>
+    /// <param name="type">The concrete NBT array tag type.</param>
+    /// <param name="name">The optional tag name.</param>
     /// <param name="value">The value of the tag.</param>
-    // ReSharper disable InvalidXmlDocComment
     protected ArrayTag(TagType type, string? name, T[] value) : base(type, name)
-    // ReSharper restore InvalidXmlDocComment
     {
         array = value;
     }
@@ -43,7 +43,9 @@ public abstract class ArrayTag<T> : Tag, IReadOnlyList<T> where T : unmanaged, I
     /// <inheritdoc />
     IEnumerator IEnumerable.GetEnumerator() => array.GetEnumerator();
 
-    /// <inheritdoc cref="IList{T}.CopyTo"/>
+    /// <summary>Copies the entire backing array into a destination array.</summary>
+    /// <param name="array">The destination array.</param>
+    /// <param name="arrayIndex">The zero-based destination index at which copying begins.</param>
     // ReSharper disable once ParameterHidesMember
     public void CopyTo(T[] array, int arrayIndex) => this.array.CopyTo(array, arrayIndex);
 
@@ -100,10 +102,10 @@ public abstract class ArrayTag<T> : Tag, IReadOnlyList<T> where T : unmanaged, I
     }
 
     /// <summary>
-    /// Implicit conversion of an <see cref="ArrayTag{T}"/> to an array of <see cref="T"/>.
+    /// Implicit conversion of an <see cref="ArrayTag{T}"/> to an array of <typeparamref name="T"/>.
     /// </summary>
     /// <param name="tag">The <see cref="ArrayTag{T}"/> to be converted.</param>
-    /// <returns>The value of <paramref name="tag"/> as an array of <see cref="T"/>.</returns>
+    /// <returns>The value of <paramref name="tag"/> as an array of <typeparamref name="T"/>.</returns>
     public static implicit operator T[](ArrayTag<T> tag) => tag.array;
 
     /// <summary>

@@ -159,6 +159,12 @@ public class CompoundTag : Tag, IDictionary<string, Tag>, ICollection<Tag>
         set => dict[name] = ValidateChild(value);
     }
 
+    /// <summary>Gets a named child and casts it to the requested tag type.</summary>
+    /// <typeparam name="TTag">The required child-tag type.</typeparam>
+    /// <param name="name">The child name.</param>
+    /// <returns>The named child.</returns>
+    /// <exception cref="KeyNotFoundException">No child has the supplied name.</exception>
+    /// <exception cref="InvalidCastException">The child is not a <typeparamref name="TTag"/>.</exception>
     public TTag Get<TTag>(string name) where TTag : Tag
     {
         return (TTag)dict[name];

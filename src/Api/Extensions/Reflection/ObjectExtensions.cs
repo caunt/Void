@@ -5,6 +5,9 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Void.Minecraft")]
 namespace Void.Proxy.Api.Extensions.Reflection;
 
+/// <summary>
+/// Provides internal reflection helpers for invoking and accessing instance members.
+/// </summary>
 public static class ObjectExtensions
 {
     private const BindingFlags DefaultFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;

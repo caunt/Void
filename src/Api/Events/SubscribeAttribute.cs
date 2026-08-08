@@ -10,9 +10,23 @@ namespace Void.Proxy.Api.Events;
 [AttributeUsage(AttributeTargets.Method)]
 public class SubscribeAttribute(PostOrder order = PostOrder.Normal, bool bypassScopedFilter = false) : Attribute
 {
+    /// <summary>
+    /// Gets the priority used to order the annotated handler relative to other handlers.
+    /// </summary>
     public PostOrder Order => order;
+
+    /// <summary>
+    /// Gets whether player-scope filtering is disabled for the annotated handler.
+    /// </summary>
     public bool BypassScopedFilter => bypassScopedFilter;
 
+    /// <summary>
+    /// Validates that a subscribed method has a supported event-handler signature.
+    /// </summary>
+    /// <param name="methodInfo">The subscribed method to validate.</param>
+    /// <exception cref="ArgumentException">
+    /// The method does not have one or two parameters, its first parameter does not implement <see cref="IEvent" />, or its optional second parameter is not a <see cref="CancellationToken" />.
+    /// </exception>
     public static void SanityChecks(MethodInfo methodInfo)
     {
         var parameters = methodInfo.GetParameters();

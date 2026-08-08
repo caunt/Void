@@ -42,6 +42,11 @@ public record AuthenticationStartedEvent(ILink Link, IPlayer Player, Authenticat
     public AuthenticationResult? Result { get; set; }
 }
 
+/// <summary>
+/// Describes the outcome of an authentication attempt.
+/// </summary>
+/// <param name="IsAuthenticated"><see langword="true" /> when authentication succeeded; otherwise, <see langword="false" />.</param>
+/// <param name="Message">Optional human-readable context for the outcome.</param>
 public record AuthenticationResult(bool IsAuthenticated, string? Message = null)
 {
     /// <summary>
@@ -73,8 +78,20 @@ public record AuthenticationResult(bool IsAuthenticated, string? Message = null)
     /// <seealso cref="AlreadyAuthenticated" />
     /// <seealso cref="NoResult" />
     public static AuthenticationResult Authenticated => new(true, "Authenticated");
+
+    /// <summary>
+    /// Gets a successful result indicating that the connection was authenticated before the current attempt.
+    /// </summary>
     public static AuthenticationResult AlreadyAuthenticated => new(true, "Already Authenticated");
+
+    /// <summary>
+    /// Gets a failed result attributed to player authentication.
+    /// </summary>
     public static AuthenticationResult NotAuthenticatedPlayer => new(false, "Not Authenticated Player");
+
+    /// <summary>
+    /// Gets a failed result attributed to destination-server authentication.
+    /// </summary>
     public static AuthenticationResult NotAuthenticatedServer => new(false, "Not Authenticated Server");
 
     /// <summary>

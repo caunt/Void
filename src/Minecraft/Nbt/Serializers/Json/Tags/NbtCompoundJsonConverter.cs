@@ -5,8 +5,10 @@ using Void.Minecraft.Nbt.Tags;
 
 namespace Void.Minecraft.Nbt.Serializers.Json.Tags;
 
+/// <summary>Converts between NBT compounds and JSON objects.</summary>
 public class NbtCompoundJsonConverter : JsonConverter<NbtCompound>
 {
+    /// <inheritdoc/>
     public override NbtCompound Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         var compound = new NbtCompound();
@@ -31,6 +33,7 @@ public class NbtCompoundJsonConverter : JsonConverter<NbtCompound>
         return compound;
     }
 
+    /// <inheritdoc/>
     public override void Write(Utf8JsonWriter writer, NbtCompound tag, JsonSerializerOptions options)
     {
         writer.WriteStartObject();

@@ -4,6 +4,9 @@ using Void.Proxy.Api.Commands;
 
 namespace Void.Proxy.Api.Console;
 
+/// <summary>
+/// Provides access to the proxy console, its command source, and parsed command-line options.
+/// </summary>
 public interface IConsoleService : ICommandSource
 {
     /// <summary>

@@ -5,6 +5,8 @@ using Void.Minecraft.Network;
 
 namespace Void.Minecraft.Commands.Brigadier.ArgumentTypes.RegistryKey;
 
+/// <summary>Declares a resource-selector argument for a specific registry.</summary>
+/// <param name="Identifier">The registry identifier.</param>
 public record ResourceSelectorArgumentType(string Identifier) : RegistryKeyArgumentType(Identifier)
 {
     /// <summary>
@@ -12,13 +14,16 @@ public record ResourceSelectorArgumentType(string Identifier) : RegistryKeyArgum
     /// </summary>
     public class Serializer : IArgumentSerializer
     {
+        /// <summary>Gets the shared stateless serializer.</summary>
         public static IArgumentSerializer Instance { get; } = new Serializer();
 
+        /// <inheritdoc/>
         public IArgumentType Deserialize(ref BufferSpan buffer, ProtocolVersion protocolVersion)
         {
             return new ResourceSelectorArgumentType(buffer.ReadString());
         }
 
+        /// <inheritdoc/>
         public void Serialize(IArgumentType value, ref BufferSpan buffer, ProtocolVersion protocolVersion)
         {
             buffer.WriteString(value.As<ResourceSelectorArgumentType>().Identifier);

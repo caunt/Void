@@ -9,10 +9,14 @@ using Void.Proxy.Api.Commands;
 
 namespace Void.Minecraft.Commands.Brigadier.Tree.Nodes;
 
+/// <summary>Represents the non-consuming root of a command tree.</summary>
 public class RootCommandNode() : CommandNode(requirement: EmptyRequirement, redirectModifier: static context => [context.Source])
 {
+    /// <inheritdoc/>
     public override string Name => string.Empty;
+    /// <inheritdoc/>
     public override string UsageText => string.Empty;
+    /// <inheritdoc/>
     protected override string SortedKey => string.Empty;
 
     /// <summary>
@@ -20,21 +24,25 @@ public class RootCommandNode() : CommandNode(requirement: EmptyRequirement, redi
     /// </summary>
     public override IEnumerable<string> Examples => [];
 
+    /// <inheritdoc/>
     public override IArgumentBuilder<CommandNode> CreateBuilder()
     {
         throw new InvalidOperationException($"Cannot convert {nameof(RootCommandNode)} into a builder");
     }
 
+    /// <inheritdoc/>
     public override bool IsValidInput(string input)
     {
         return false;
     }
 
+    /// <inheritdoc/>
     public override ValueTask<Suggestions> ListSuggestionsAsync(CommandContext context, SuggestionsBuilder builder, CancellationToken cancellationToken)
     {
         return ValueTask.FromResult(Suggestions.Empty);
     }
 
+    /// <inheritdoc/>
     public override void Parse(StringReader reader, CommandContextBuilder context)
     {
         // Empty

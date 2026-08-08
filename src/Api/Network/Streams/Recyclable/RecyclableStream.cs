@@ -2,8 +2,14 @@
 
 namespace Void.Proxy.Api.Network.Streams.Recyclable;
 
+/// <summary>
+/// Provides the shared recyclable-memory-stream pool used by proxy stream implementations.
+/// </summary>
 public abstract class RecyclableStream
 {
+    /// <summary>
+    /// The shared manager used to rent recyclable streams and buffers.
+    /// </summary>
     public static readonly RecyclableMemoryStreamManager RecyclableMemoryStreamManager = new(new RecyclableMemoryStreamManager.Options
     {
         BlockSize = 1024,

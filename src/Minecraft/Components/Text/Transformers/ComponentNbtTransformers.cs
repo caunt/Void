@@ -12,10 +12,15 @@ using Void.Minecraft.Profiles;
 
 namespace Void.Minecraft.Components.Text.Transformers;
 
+/// <summary>Applies version-specific schema migrations to NBT text components.</summary>
 public static class ComponentNbtTransformers
 {
     private const string ShowAchievementMarker = "!1.11.1=>1.12!";
 
+    /// <summary>Reads, migrates, and rewrites one NBT component property using the naming convention required by the endpoint versions.</summary>
+    /// <param name="wrapper">The packet wrapper whose cursor is advanced by one property.</param>
+    /// <param name="from">The source protocol version.</param>
+    /// <param name="to">The destination protocol version.</param>
     [Obsolete("Rewrite properties yourself instead.")]
     public static void Apply(IMinecraftBinaryPacketWrapper wrapper, ProtocolVersion from, ProtocolVersion to)
     {
@@ -45,18 +50,33 @@ public static class ComponentNbtTransformers
         }
     }
 
+    /// <summary>Migrates the tag contained in a named NBT property.</summary>
+    /// <param name="property">The source property.</param>
+    /// <param name="from">The source protocol version.</param>
+    /// <param name="to">The destination protocol version.</param>
+    /// <returns>A named property containing the migrated tag.</returns>
     [Obsolete("Rewrite properties yourself instead.")]
     public static NamedNbtProperty Apply(NamedNbtProperty property, ProtocolVersion from, ProtocolVersion to)
     {
         return NamedNbtProperty.FromNbtTag(Apply(property.AsNbtTag, from, to));
     }
 
+    /// <summary>Migrates the tag contained in an unnamed NBT property.</summary>
+    /// <param name="property">The source property.</param>
+    /// <param name="from">The source protocol version.</param>
+    /// <param name="to">The destination protocol version.</param>
+    /// <returns>An unnamed property containing the migrated tag.</returns>
     [Obsolete("Rewrite properties yourself instead.")]
     public static NbtProperty Apply(NbtProperty property, ProtocolVersion from, ProtocolVersion to)
     {
         return NbtProperty.FromNbtTag(Apply(property.AsNbtTag, from, to));
     }
 
+    /// <summary>Applies every component-schema transition crossed by a protocol-version change.</summary>
+    /// <param name="tag">The component tag. Compound graphs may be mutated in place.</param>
+    /// <param name="from">The source protocol version.</param>
+    /// <param name="to">The destination protocol version.</param>
+    /// <returns>The migrated tag. JSON stored in a string tag is migrated when it can be parsed.</returns>
     [Obsolete("Rewrite properties yourself instead.")]
     public static NbtTag Apply(NbtTag tag, ProtocolVersion from, ProtocolVersion to)
     {
@@ -132,6 +152,8 @@ public static class ComponentNbtTransformers
     }
 
     #region Downgrade
+    /// <summary>Reads, downgrades, and rewrites one NBT component property from 1.21.5 to 1.21.4 format.</summary>
+    /// <param name="wrapper">The packet wrapper whose cursor is advanced by one property.</param>
     [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_21_5_to_v1_21_4(IMinecraftBinaryPacketWrapper wrapper)
     {
@@ -141,6 +163,8 @@ public static class ComponentNbtTransformers
         wrapper.Write(NbtProperty.FromNbtTag(tag));
     }
 
+    /// <summary>Reads, downgrades, and rewrites one NBT component property from 1.20.3 to 1.20.2 format.</summary>
+    /// <param name="wrapper">The packet wrapper whose cursor is advanced by one property.</param>
     [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_20_3_to_v1_20_2(IMinecraftBinaryPacketWrapper wrapper)
     {
@@ -151,6 +175,8 @@ public static class ComponentNbtTransformers
         wrapper.Write(property);
     }
 
+    /// <summary>Reads, downgrades, and rewrites one NBT component property from 1.16 to 1.15.2 format.</summary>
+    /// <param name="wrapper">The packet wrapper whose cursor is advanced by one property.</param>
     [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_16_to_v1_15_2(IMinecraftBinaryPacketWrapper wrapper)
     {
@@ -161,6 +187,8 @@ public static class ComponentNbtTransformers
         wrapper.Write(property);
     }
 
+    /// <summary>Reads, downgrades, and rewrites one NBT component property from 1.12 to 1.11.1 format.</summary>
+    /// <param name="wrapper">The packet wrapper whose cursor is advanced by one property.</param>
     [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_12_to_v1_11_1(IMinecraftBinaryPacketWrapper wrapper)
     {
@@ -171,6 +199,8 @@ public static class ComponentNbtTransformers
         wrapper.Write(property);
     }
 
+    /// <summary>Reads, downgrades, and rewrites one NBT component property from 1.9 to 1.8 format.</summary>
+    /// <param name="wrapper">The packet wrapper whose cursor is advanced by one property.</param>
     [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_9_to_v1_8(IMinecraftBinaryPacketWrapper wrapper)
     {
@@ -183,6 +213,8 @@ public static class ComponentNbtTransformers
     #endregion
 
     #region Upgrade
+    /// <summary>Reads, upgrades, and rewrites one NBT component property from 1.21.4 to 1.21.5 format.</summary>
+    /// <param name="wrapper">The packet wrapper whose cursor is advanced by one property.</param>
     [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_21_4_to_v1_21_5(IMinecraftBinaryPacketWrapper wrapper)
     {
@@ -192,6 +224,8 @@ public static class ComponentNbtTransformers
         wrapper.Write(NbtProperty.FromNbtTag(tag));
     }
 
+    /// <summary>Reads, upgrades, and rewrites one NBT component property from 1.20.2 to 1.20.3 format.</summary>
+    /// <param name="wrapper">The packet wrapper whose cursor is advanced by one property.</param>
     [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_20_2_to_v1_20_3(IMinecraftBinaryPacketWrapper wrapper)
     {
@@ -202,6 +236,8 @@ public static class ComponentNbtTransformers
         wrapper.Write(property);
     }
 
+    /// <summary>Reads, upgrades, and rewrites one NBT component property from 1.15.2 to 1.16 format.</summary>
+    /// <param name="wrapper">The packet wrapper whose cursor is advanced by one property.</param>
     [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_15_2_to_v1_16(IMinecraftBinaryPacketWrapper wrapper)
     {
@@ -212,6 +248,8 @@ public static class ComponentNbtTransformers
         wrapper.Write(property);
     }
 
+    /// <summary>Reads, upgrades, and rewrites one NBT component property from 1.11.1 to 1.12 format.</summary>
+    /// <param name="wrapper">The packet wrapper whose cursor is advanced by one property.</param>
     [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_11_1_to_v1_12(IMinecraftBinaryPacketWrapper wrapper)
     {
@@ -222,6 +260,8 @@ public static class ComponentNbtTransformers
         wrapper.Write(property);
     }
 
+    /// <summary>Reads, upgrades, and rewrites one NBT component property from 1.8 to 1.9 format.</summary>
+    /// <param name="wrapper">The packet wrapper whose cursor is advanced by one property.</param>
     [Obsolete("Rewrite properties yourself instead.")]
     public static void Passthrough_v1_8_to_v1_9(IMinecraftBinaryPacketWrapper wrapper)
     {
@@ -233,6 +273,9 @@ public static class ComponentNbtTransformers
     }
     #endregion
 
+    /// <summary>Converts snake-case 1.21.5 interaction fields to the nested 1.21.4 component schema.</summary>
+    /// <param name="tag">The component tag to mutate recursively.</param>
+    /// <returns>The migrated tag.</returns>
     public static NbtTag Downgrade_v1_21_5_to_v1_21_4(NbtTag tag)
     {
         if (tag is NbtCompound root)
@@ -323,6 +366,10 @@ public static class ComponentNbtTransformers
         return tag;
     }
 
+    /// <summary>Converts entity-hover UUID integer arrays to strings for 1.20.2.</summary>
+    /// <param name="tag">The component tag to mutate recursively.</param>
+    /// <returns>The migrated tag.</returns>
+    /// <exception cref="NotSupportedException">An entity-hover identifier is neither an integer array nor a string.</exception>
     public static NbtTag Downgrade_v1_20_3_to_v1_20_2(NbtTag tag)
     {
         // Replace "show_entity" contents "id" int array value to string
@@ -356,6 +403,9 @@ public static class ComponentNbtTransformers
         return tag;
     }
 
+    /// <summary>Downsamples colors and converts hover contents to values for 1.15.2.</summary>
+    /// <param name="tag">The component tag to mutate recursively.</param>
+    /// <returns>The migrated tag; compact string components are expanded to compounds.</returns>
     public static NbtTag Downgrade_v1_16_to_v1_15_2(NbtTag tag)
     {
         if (tag is NbtCompound rootCompound)
@@ -405,6 +455,9 @@ public static class ComponentNbtTransformers
         return tag;
     }
 
+    /// <summary>Restores marked achievement hover events when downgrading to 1.11.1.</summary>
+    /// <param name="tag">The component tag to mutate recursively.</param>
+    /// <returns>The migrated tag.</returns>
     public static NbtTag Downgrade_v1_12_to_v1_11_1(NbtTag tag)
     {
         if (tag is NbtCompound rootCompound)
@@ -442,6 +495,10 @@ public static class ComponentNbtTransformers
         return tag;
     }
 
+    /// <summary>Converts structured legacy hover values to scalar values for 1.8.</summary>
+    /// <param name="tag">The component tag to mutate recursively.</param>
+    /// <returns>The migrated tag.</returns>
+    /// <exception cref="NotSupportedException">A supported structured hover action has no text value.</exception>
     public static NbtTag Downgrade_v1_9_to_v1_8(NbtTag tag)
     {
         if (tag is NbtCompound rootCompound)
@@ -478,6 +535,9 @@ public static class ComponentNbtTransformers
         return tag;
     }
 
+    /// <summary>Converts nested 1.21.4 interaction fields to the flattened snake-case 1.21.5 schema.</summary>
+    /// <param name="tag">The component tag to mutate recursively.</param>
+    /// <returns>The migrated tag.</returns>
     public static NbtTag Upgrade_v1_21_4_to_v1_21_5(NbtTag tag)
     {
         if (tag is NbtCompound root)
@@ -549,11 +609,18 @@ public static class ComponentNbtTransformers
         return tag;
     }
 
+    /// <summary>Applies the component representation transition from 1.20.2 to 1.20.3.</summary>
+    /// <param name="tag">The component tag to migrate.</param>
+    /// <returns>The migrated tag.</returns>
     public static NbtTag Upgrade_v1_20_2_to_v1_20_3(NbtTag tag)
     {
         return tag;
     }
 
+    /// <summary>Upgrades hover values and compact strings to the 1.16 NBT component schema.</summary>
+    /// <param name="tag">The component tag to mutate recursively.</param>
+    /// <returns>The migrated tag.</returns>
+    /// <exception cref="NotSupportedException">An item or entity hover value has no SNBT text field.</exception>
     public static NbtTag Upgrade_v1_15_2_to_v1_16(NbtTag tag)
     {
         if (tag is NbtCompound root)
@@ -607,6 +674,9 @@ public static class ComponentNbtTransformers
         return tag;
     }
 
+    /// <summary>Converts achievement hover events to marked text hover events for 1.12.</summary>
+    /// <param name="tag">The component tag to mutate recursively.</param>
+    /// <returns>The migrated tag.</returns>
     public static NbtTag Upgrade_v1_11_1_to_v1_12(NbtTag tag)
     {
         if (tag is NbtCompound root)
@@ -642,6 +712,9 @@ public static class ComponentNbtTransformers
         return tag;
     }
 
+    /// <summary>Wraps supported scalar hover values in text compounds for 1.9.</summary>
+    /// <param name="tag">The component tag to mutate recursively.</param>
+    /// <returns>The migrated tag.</returns>
     public static NbtTag Upgrade_v1_8_to_v1_9(NbtTag tag)
     {
         if (tag is NbtCompound root)

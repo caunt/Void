@@ -5,16 +5,20 @@ using Void.Minecraft.Network;
 
 namespace Void.Minecraft.Commands.Brigadier.Serializers;
 
+/// <summary>Reads and writes optional double-argument bounds.</summary>
 public class DoubleArgumentSerializer : IArgumentSerializer
 {
     /// <summary>
     /// Indicates that a serialized <see cref="DoubleArgumentType"/> includes an explicit minimum bound.
     /// </summary>
     public const byte HAS_MINIMUM = 0x01;
+    /// <summary>Indicates that an explicit maximum follows the flag byte.</summary>
     public const byte HAS_MAXIMUM = 0x02;
 
+    /// <summary>Gets the shared stateless serializer.</summary>
     public static IArgumentSerializer Instance { get; } = new DoubleArgumentSerializer();
 
+    /// <inheritdoc/>
     public IArgumentType Deserialize(ref BufferSpan buffer, ProtocolVersion protocolVersion)
     {
         var flags = buffer.ReadUnsignedByte();

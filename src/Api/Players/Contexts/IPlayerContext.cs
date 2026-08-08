@@ -3,6 +3,9 @@ using Void.Proxy.Api.Network.Channels;
 
 namespace Void.Proxy.Api.Players.Contexts;
 
+/// <summary>
+/// Owns the player-scoped services, logging, and network resources associated with a connection.
+/// </summary>
 public interface IPlayerContext : IDisposable, IAsyncDisposable
 {
     /// <summary>

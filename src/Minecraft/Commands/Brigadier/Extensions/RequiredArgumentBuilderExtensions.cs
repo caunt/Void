@@ -3,6 +3,7 @@ using Void.Minecraft.Commands.Brigadier.Builder;
 
 namespace Void.Minecraft.Commands.Brigadier.Extensions;
 
+/// <summary>Provides required-argument node factories inside command registration delegates.</summary>
 public static class RequiredArgumentBuilderExtensions
 {
     /// <summary>

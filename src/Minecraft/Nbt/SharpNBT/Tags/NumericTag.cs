@@ -128,9 +128,9 @@ public abstract class NumericTag<T> : Tag, IEquatable<NumericTag<T>>, IComparabl
     }
 
     /// <summary>
-    /// Implicit conversion of a <see cref="NumericTag{T}"/> to a <see cref="T"/>.
+    /// Implicit conversion of a <see cref="NumericTag{T}"/> to a <typeparamref name="T"/>.
     /// </summary>
     /// <param name="tag">The <see cref="NumericTag{T}"/> to be converted.</param>
-    /// <returns>The value of <paramref name="tag"/> as a <see cref="T"/>.</returns>
+    /// <returns>The value of <paramref name="tag"/> as a <typeparamref name="T"/>.</returns>
     public static implicit operator T(NumericTag<T> tag) => tag.Value;
 }

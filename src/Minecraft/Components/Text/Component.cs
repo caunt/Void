@@ -9,6 +9,11 @@ using Void.Minecraft.Nbt.Serializers.String;
 
 namespace Void.Minecraft.Components.Text;
 
+/// <summary>Represents a structured Minecraft text component.</summary>
+/// <param name="Content">The value-producing content of the component.</param>
+/// <param name="Children">The child components appended after this component.</param>
+/// <param name="Formatting">The component's visual formatting.</param>
+/// <param name="Interactivity">The component's insertion and interaction events.</param>
 public record Component(IContent Content, Children Children, Formatting Formatting, Interactivity Interactivity)
 {
     /// <summary>
@@ -17,6 +22,9 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     /// </summary>
     public static Component Default { get; } = new(new TextContent(string.Empty), Children.Default, Formatting.Default, Interactivity.Default);
 
+    /// <summary>Deserializes a legacy-formatted string using the default <c>&amp;</c> prefix.</summary>
+    /// <param name="text">The legacy-formatted text.</param>
+    /// <returns>The deserialized component tree.</returns>
     public static implicit operator Component(string text) => DeserializeLegacy(text);
 
     /// <summary>
@@ -44,6 +52,7 @@ public record Component(IContent Content, Children Children, Formatting Formatti
     /// Reads data from a buffer and deserializes it into a Component.
     /// </summary>
     /// <param name="buffer">The buffer containing the data to be read and deserialized into a Component.</param>
+    /// <param name="readName"><see langword="true" /> to read the root NBT tag name; otherwise, <see langword="false" />.</param>
     /// <returns>Returns a Component object created from the data in the buffer.</returns>
     public static Component ReadFrom(ref MinecraftBuffer buffer, bool readName = true)
     {

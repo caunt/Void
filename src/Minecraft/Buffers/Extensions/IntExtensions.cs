@@ -4,6 +4,7 @@ using System.Numerics;
 
 namespace Void.Minecraft.Buffers.Extensions;
 
+/// <summary>Provides Minecraft variable-length integer encoding helpers.</summary>
 public static class IntExtensions
 {
     /// <summary>

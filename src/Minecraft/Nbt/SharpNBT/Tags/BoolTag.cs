@@ -7,16 +7,17 @@ namespace Void.Minecraft.Nbt.SharpNBT.Tags;
 /// A tag that contains a single 8-bit integer value.
 /// </summary>
 /// <remarks>
-/// This tag type does not exist in the NBT specification, and is included for convenience to differentiate it from the <see cref="ByteTag"/> that it is
+/// This tag type does not exist in the NBT specification, and is included for convenience to differentiate it from the <see cref="Void.Minecraft.Nbt.SharpNBT.Tags.ByteTag"/> that it is
 /// actually serialized as.
 /// </remarks>
 [Obsolete("Use the IsBool and Bool properties of ByteTag. This class will be removed in a future version.")]
 public class BoolTag : Tag
 {
+    /// <summary>Gets or sets the Boolean value serialized as an NBT byte.</summary>
     public bool Value { get; set; }
 
     /// <summary>
-    /// Creates a new instance of the <see cref="Void.Minecraft.Nbt.ByteTag"/> class with the specified <paramref name="value"/>.
+    /// Creates a Boolean convenience tag that serializes using the byte tag type.
     /// </summary>
     /// <param name="name">The name of the tag, or <see langword="null"/> if tag has no name.</param>
     /// <param name="value">The value to assign to this tag.</param>

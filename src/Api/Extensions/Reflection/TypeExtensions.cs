@@ -2,6 +2,9 @@
 
 namespace Void.Proxy.Api.Extensions.Reflection;
 
+/// <summary>
+/// Provides internal reflection helpers for invoking static members.
+/// </summary>
 public static class TypeExtensions
 {
     private const BindingFlags DefaultFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;

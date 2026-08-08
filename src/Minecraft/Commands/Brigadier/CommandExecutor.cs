@@ -11,4 +11,8 @@ namespace Void.Minecraft.Commands.Brigadier;
 /// <returns>The integer result returned to the command dispatcher.</returns>
 public delegate int CommandExecutorSync(CommandContext context);
 
+/// <summary>Represents an asynchronous command executor.</summary>
+/// <param name="context">The execution context.</param>
+/// <param name="cancellationToken">A token that may cancel execution.</param>
+/// <returns>The command result.</returns>
 public delegate ValueTask<int> CommandExecutor(CommandContext context, CancellationToken cancellationToken);

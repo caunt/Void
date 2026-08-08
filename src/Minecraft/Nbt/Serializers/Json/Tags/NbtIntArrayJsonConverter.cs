@@ -5,10 +5,14 @@ using Void.Minecraft.Nbt.Tags;
 
 namespace Void.Minecraft.Nbt.Serializers.Json.Tags;
 
+/// <summary>Writes NBT integer arrays as JSON number arrays.</summary>
+/// <remarks>Deserialization is not supported.</remarks>
 public class NbtIntArrayJsonConverter : JsonConverter<NbtIntArray>
 {
+    /// <inheritdoc/>
     public override NbtIntArray Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
 
+    /// <inheritdoc/>
     public override void Write(Utf8JsonWriter writer, NbtIntArray tag, JsonSerializerOptions options)
     {
         writer.WriteStartArray();

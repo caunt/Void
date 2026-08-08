@@ -14,8 +14,11 @@ using Void.Proxy.Api.Commands;
 
 namespace Void.Minecraft.Commands.Brigadier;
 
+/// <summary>Owns a Brigadier command tree and provides registration, parsing, execution, usage, and completion operations.</summary>
+/// <param name="Root">The root command node.</param>
 public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
 {
+    /// <summary>Specifies the single space used to separate command arguments.</summary>
     public const char ArgumentSeparator = ' ';
 
     private const char UsageOptionalOpen = '[';
@@ -24,13 +27,18 @@ public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
     private const char UsageRequiredClose = ')';
     private const char UsageOr = '|';
 
+    /// <summary>Gets or sets the callback notified after execution attempts.</summary>
     public ResultConsumer Consumer { get; set; } = (context, success, result) => { };
 
+    /// <summary>Creates a dispatcher with a new empty root.</summary>
     public CommandDispatcher() : this(new RootCommandNode())
     {
         // Empty
     }
 
+    /// <summary>Adds a proxy API command node to the root.</summary>
+    /// <param name="node">The node to add.</param>
+    /// <exception cref="ArgumentException"><paramref name="node"/> is not this Brigadier implementation's <see cref="CommandNode"/>.</exception>
     public void Add(ICommandNode node)
     {
         if (node is not CommandNode commandNode)
@@ -39,6 +47,9 @@ public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
         Root.AddChild(commandNode);
     }
 
+    /// <summary>Builds and registers a literal command at the root.</summary>
+    /// <param name="command">The command builder.</param>
+    /// <returns>The built node.</returns>
     public LiteralCommandNode Register(LiteralArgumentBuilder command)
     {
         var build = command.Build();
@@ -46,6 +57,9 @@ public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
         return build;
     }
 
+    /// <summary>Invokes a command-builder factory with the default argument context and registers its result.</summary>
+    /// <param name="command">The builder factory.</param>
+    /// <returns>The built node.</returns>
     public LiteralCommandNode Register(Func<IArgumentContext, LiteralArgumentBuilder> command)
     {
         var build = command(default(ArgumentContext)).Build();
@@ -53,6 +67,9 @@ public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
         return build;
     }
 
+    /// <summary>Enumerates descendants depth-first, excluding the supplied root itself.</summary>
+    /// <param name="root">The traversal root, or <see langword="null"/> for <see cref="Root"/>.</param>
+    /// <returns>The lazy descendant sequence.</returns>
     public IEnumerable<CommandNode> All(CommandNode? root = null)
     {
         root ??= Root;
@@ -66,28 +83,53 @@ public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
         }
     }
 
+    /// <summary>Parses a string and computes completions at its end.</summary>
+    /// <param name="input">The command input.</param>
+    /// <param name="source">The command source.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The completions.</returns>
     public async ValueTask<Suggestions> SuggestAsync(string input, ICommandSource source, CancellationToken cancellationToken)
     {
         return await SuggestAsync(new StringReader(input), source, cancellationToken);
     }
 
+    /// <summary>Parses a reader and computes completions at the end of its source.</summary>
+    /// <param name="input">The command reader.</param>
+    /// <param name="source">The command source.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The completions.</returns>
     public async ValueTask<Suggestions> SuggestAsync(StringReader input, ICommandSource source, CancellationToken cancellationToken)
     {
         var parse = await ParseAsync(input, source, cancellationToken);
         return await GetCompletionSuggestions(parse, cancellationToken);
     }
 
+    /// <summary>Parses and executes command text.</summary>
+    /// <param name="input">The command input.</param>
+    /// <param name="source">The command source.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The command result or accumulated fork result.</returns>
     public async ValueTask<int> ExecuteAsync(string input, ICommandSource source, CancellationToken cancellationToken)
     {
         return await ExecuteAsync(new StringReader(input), source, cancellationToken);
     }
 
+    /// <summary>Parses and executes input from a reader.</summary>
+    /// <param name="input">The command reader.</param>
+    /// <param name="source">The command source.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The command result or accumulated fork result.</returns>
     public async ValueTask<int> ExecuteAsync(StringReader input, ICommandSource source, CancellationToken cancellationToken)
     {
         var parse = await ParseAsync(input, source, cancellationToken);
         return await ExecuteAsync(parse, cancellationToken);
     }
 
+    /// <summary>Validates and executes precomputed parse results.</summary>
+    /// <param name="parse">The parse result.</param>
+    /// <param name="cancellationToken">A cancellation token passed to execution.</param>
+    /// <returns>The command result or accumulated fork result.</returns>
+    /// <exception cref="CommandSyntaxException">Input remains unparsed, no executable context exists, or execution reports a syntax failure.</exception>
     public async ValueTask<int> ExecuteAsync(ParseResults parse, CancellationToken cancellationToken)
     {
         if (parse.Reader.CanRead)
@@ -114,11 +156,21 @@ public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
         return await flatContext.ExecuteAllAsync(original.Source, Consumer, cancellationToken);
     }
 
+    /// <summary>Parses command text into the best matching command-tree path.</summary>
+    /// <param name="command">The command input.</param>
+    /// <param name="source">The command source used for access checks.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The best parse result, including recoverable branch exceptions.</returns>
     public async ValueTask<ParseResults> Parse(string command, ICommandSource source, CancellationToken cancellationToken)
     {
         return await ParseAsync(new StringReader(command), source, cancellationToken);
     }
 
+    /// <summary>Parses a command reader into the best matching command-tree path.</summary>
+    /// <param name="command">The command reader.</param>
+    /// <param name="source">The command source used for access checks.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The best parse result.</returns>
     public async ValueTask<ParseResults> ParseAsync(StringReader command, ICommandSource source, CancellationToken cancellationToken)
     {
         var context = new CommandContextBuilder(this, source, Root, command.Cursor);
@@ -223,6 +275,12 @@ public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
         return new ParseResults(contextSoFar, originalReader, errors);
     }
 
+    /// <summary>Enumerates every executable and redirect usage below a node.</summary>
+    /// <param name="node">The traversal root.</param>
+    /// <param name="source">The source used for access checks.</param>
+    /// <param name="restricted">Whether to omit inaccessible branches.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The usage strings.</returns>
     public async ValueTask<string[]> GetAllUsageAsync(CommandNode node, ICommandSource source, bool restricted, CancellationToken cancellationToken)
     {
         var result = new List<string>();
@@ -250,6 +308,11 @@ public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
         }
     }
 
+    /// <summary>Builds compact usage strings for each accessible direct child.</summary>
+    /// <param name="node">The parent node.</param>
+    /// <param name="source">The source used for access checks.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A map of child nodes to usage strings.</returns>
     public async ValueTask<Dictionary<CommandNode, string>> GetSmartUsageAsync(CommandNode node, ICommandSource source, CancellationToken cancellationToken)
     {
         var result = new Dictionary<CommandNode, string>();
@@ -338,11 +401,20 @@ public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
         return self;
     }
 
+    /// <summary>Computes completions at the end of parsed input.</summary>
+    /// <param name="parse">The parse result.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>Merged suggestions from relevant child nodes.</returns>
     public static async ValueTask<Suggestions> GetCompletionSuggestions(ParseResults parse, CancellationToken cancellationToken)
     {
         return await GetCompletionSuggestions(parse, parse.Reader.TotalLength, cancellationToken);
     }
 
+    /// <summary>Computes completions at an explicit cursor.</summary>
+    /// <param name="parse">The parse result.</param>
+    /// <param name="cursor">The completion cursor.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>Merged suggestions from relevant child nodes.</returns>
     public static async ValueTask<Suggestions> GetCompletionSuggestions(ParseResults parse, int cursor, CancellationToken cancellationToken)
     {
         var context = parse.Context;
@@ -359,6 +431,9 @@ public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
         return Suggestions.Merge(fullInput, suggestions);
     }
 
+    /// <summary>Finds the first root-relative name path to a node by reference identity.</summary>
+    /// <param name="target">The target node.</param>
+    /// <returns>The name path, or an empty list when absent or when targeting the root.</returns>
     public List<string> GetPath(CommandNode target)
     {
         var nodes = new List<List<CommandNode>>();
@@ -383,6 +458,10 @@ public record CommandDispatcher(RootCommandNode Root) : ICommandDispatcher
         return [];
     }
 
+    /// <summary>Traverses exact child names from the root.</summary>
+    /// <param name="path">The root-relative name path.</param>
+    /// <returns>The reached node; an empty path returns <see cref="Root"/>.</returns>
+    /// <exception cref="KeyNotFoundException">A path segment is not a child of the current node.</exception>
     public CommandNode? FindNode(List<string> path)
     {
         var node = Root as CommandNode;

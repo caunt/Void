@@ -8,6 +8,7 @@ using Void.Minecraft.Profiles;
 
 namespace Void.Minecraft.Buffers.Extensions;
 
+/// <summary>Provides primitive and protocol-structure write operations for Minecraft buffers.</summary>
 public static class WriteMinecraftBufferExtensions
 {
     /// <summary>
@@ -218,9 +219,9 @@ public static class WriteMinecraftBufferExtensions
     /// Writes the specified byte array to the provided Minecraft buffer.
     /// </summary>
     /// <remarks>This method is intended for use with custom buffer structures that implement the
-    /// IMinecraftBuffer interface, ensuring type safety and efficient memory usage.</remarks>
+    /// <see cref="IMinecraftBuffer{TBuffer}" /> interface, ensuring type safety and efficient memory usage.</remarks>
     /// <typeparam name="TBuffer">The type of the buffer to which the data will be written. Must be a value type that implements the
-    /// IMinecraftBuffer<TBuffer> interface.</typeparam>
+    /// <see cref="IMinecraftBuffer{TBuffer}" /> interface.</typeparam>
     /// <param name="buffer">A reference to the buffer that receives the byte array data.</param>
     /// <param name="data">A read-only span of bytes containing the data to write to the buffer.</param>
     public static void WriteByteArray<TBuffer>(ref this TBuffer buffer, scoped ReadOnlySpan<byte> data)

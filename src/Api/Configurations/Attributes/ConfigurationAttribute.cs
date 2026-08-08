@@ -57,6 +57,16 @@ public class ConfigurationAttribute(string name) : Attribute
     /// <seealso cref="ConfigurationAttribute"/>
     /// <seealso cref="RootConfigurationAttribute"/>
     public string Name { get; init; } = name;
+
+    /// <summary>
+    /// Gets an inline comment to attach to the serialized TOML root.
+    /// </summary>
+    /// <value>The inline comment text, or <see langword="null" /> when no inline comment is declared.</value>
     public string? InlineComment { get; init; }
+
+    /// <summary>
+    /// Gets a comment to place before the serialized TOML root.
+    /// </summary>
+    /// <value>The preceding comment text, or <see langword="null" /> when no preceding comment is declared.</value>
     public string? PrecedingComment { get; init; }
 }

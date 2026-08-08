@@ -13,11 +13,18 @@ using Void.Minecraft.Nbt.Tags;
 
 namespace Void.Minecraft.Nbt;
 
+/// <summary>Provides the common API for tags in the Named Binary Tag data model.</summary>
 public abstract record NbtTag
 {
+    /// <summary>Gets or sets the optional binary tag name.</summary>
     public string? Name { get; set; }
+    /// <summary>Gets the NBT payload type.</summary>
     public NbtTagType Type => (NbtTagType)((Tag)this).Type;
 
+    /// <summary>Converts a SharpNBT tag to its Void NBT representation.</summary>
+    /// <param name="tag">The SharpNBT tag.</param>
+    /// <returns>The corresponding Void tag.</returns>
+    /// <exception cref="NotSupportedException">The concrete SharpNBT tag type is unsupported.</exception>
     public static implicit operator NbtTag(Tag tag) => tag switch
     {
         ByteArrayTag value => (NbtByteArray)value,
@@ -36,6 +43,10 @@ public abstract record NbtTag
         var value => throw new NotSupportedException(value.ToString())
     };
 
+    /// <summary>Converts a Void NBT tag to its SharpNBT representation.</summary>
+    /// <param name="tag">The Void tag.</param>
+    /// <returns>The corresponding SharpNBT tag.</returns>
+    /// <exception cref="NotSupportedException">The concrete Void tag type is unsupported.</exception>
     public static implicit operator Tag(NbtTag tag) => tag switch
     {
         NbtByte value => (ByteTag)value,
@@ -54,6 +65,11 @@ public abstract record NbtTag
         var value => throw new NotSupportedException(value.ToString())
     };
 
+    /// <summary>Serializes this tag to a seekable in-memory binary stream.</summary>
+    /// <param name="formatOptions">The byte-order and integer-encoding options.</param>
+    /// <param name="writeName">Whether to include the tag-name field.</param>
+    /// <returns>A new stream positioned at zero.</returns>
+    /// <remarks>When <paramref name="writeName"/> is <see langword="false"/>, <see cref="Name"/> is temporarily cleared and restored after serialization.</remarks>
     public MemoryStream AsStream(NbtFormatOptions formatOptions = NbtFormatOptions.Java, bool writeName = true)
     {
         var stream = new MemoryStream();
@@ -85,15 +101,25 @@ public abstract record NbtTag
         return stream;
     }
 
+    /// <summary>Serializes this tag to the library's typed JSON representation.</summary>
+    /// <returns>The JSON node.</returns>
     public JsonNode AsJsonNode()
     {
         return NbtJsonSerializer.Serialize(this);
     }
 
+    /// <summary>Serializes this tag as stringified NBT.</summary>
+    /// <returns>The SNBT representation.</returns>
     public override string ToString() => ToSnbt();
 
+    /// <summary>Serializes this tag as stringified NBT for derived tag implementations.</summary>
+    /// <returns>The SNBT representation.</returns>
     protected string ToSnbt() => NbtStringSerializer.Serialize(this);
 
+    /// <summary>Parses an SNBT compound or list.</summary>
+    /// <param name="data">The SNBT text.</param>
+    /// <returns>The parsed compound or list tag.</returns>
+    /// <exception cref="FormatException">The trimmed input does not begin with <c>{</c> or <c>[</c>, or contains invalid SNBT.</exception>
     public static NbtTag Parse(string data)
     {
         ReadOnlySpan<char> span = data.AsSpan().TrimStart();
@@ -106,11 +132,27 @@ public abstract record NbtTag
             throw new FormatException($"Only NbtCompound and NbtList can be parsed from Snbt. Provided value: {data}");
     }
 
+    /// <summary>Parses one binary NBT tag.</summary>
+    /// <param name="data">Array-backed binary NBT data.</param>
+    /// <param name="result">The parsed tag.</param>
+    /// <param name="readName">Whether the root tag includes a name field.</param>
+    /// <param name="formatOptions">The byte-order and integer-encoding options.</param>
+    /// <returns>The stream position after the parsed tag.</returns>
+    /// <exception cref="ArgumentException"><paramref name="data"/> is not backed by an accessible array.</exception>
     public static long Parse(ReadOnlyMemory<byte> data, out NbtTag result, bool readName = true, NbtFormatOptions formatOptions = NbtFormatOptions.Java)
     {
         return Parse<NbtTag>(data, out result, readName, formatOptions);
     }
 
+    /// <summary>Parses one binary NBT tag and requires a specific tag type.</summary>
+    /// <typeparam name="T">The required tag type.</typeparam>
+    /// <param name="data">Array-backed binary NBT data.</param>
+    /// <param name="result">The parsed tag.</param>
+    /// <param name="readName">Whether the root tag includes a name field.</param>
+    /// <param name="formatOptions">The byte-order and integer-encoding options.</param>
+    /// <returns>The stream position after the parsed tag.</returns>
+    /// <exception cref="ArgumentException"><paramref name="data"/> is not backed by an accessible array.</exception>
+    /// <exception cref="InvalidCastException">The parsed tag is not assignable to <typeparamref name="T"/>.</exception>
     public static long Parse<T>(ReadOnlyMemory<byte> data, out T result, bool readName = true, NbtFormatOptions formatOptions = NbtFormatOptions.Java) where T : NbtTag
     {
         if (!MemoryMarshal.TryGetArray(data, out var segment) || segment.Array is null)
@@ -131,6 +173,12 @@ public abstract record NbtTag
         return stream.Position;
     }
 
+    /// <summary>Reads one binary NBT tag from the current buffer position.</summary>
+    /// <typeparam name="TBuffer">The Minecraft buffer type.</typeparam>
+    /// <param name="buffer">The buffer to consume.</param>
+    /// <param name="readName">Whether the root tag includes a name field.</param>
+    /// <returns>The parsed tag.</returns>
+    /// <remarks>The implementation reads the remaining buffer data, then advances the original buffer only by the parsed tag length.</remarks>
     public static NbtTag ReadFrom<TBuffer>(ref TBuffer buffer, bool readName = true) where TBuffer : struct, IMinecraftBuffer<TBuffer>, allows ref struct
     {
         var position = buffer.Position;
@@ -142,8 +190,16 @@ public abstract record NbtTag
     }
 }
 
+/// <summary>Provides typed binary parsing for an NBT tag family.</summary>
+/// <typeparam name="T">The concrete tag type returned by parsing.</typeparam>
 public abstract record NbtTag<T> : NbtTag where T : NbtTag
 {
+    /// <summary>Parses one binary NBT tag of type <typeparamref name="T"/>.</summary>
+    /// <param name="data">Array-backed binary NBT data.</param>
+    /// <param name="result">The parsed tag.</param>
+    /// <param name="readName">Whether the root tag includes a name field.</param>
+    /// <param name="formatOptions">The byte-order and integer-encoding options.</param>
+    /// <returns>The stream position after the parsed tag.</returns>
     public static long Parse(ReadOnlyMemory<byte> data, out T result, bool readName = true, NbtFormatOptions formatOptions = NbtFormatOptions.Java)
     {
         return Parse<T>(data, out result, readName, formatOptions);

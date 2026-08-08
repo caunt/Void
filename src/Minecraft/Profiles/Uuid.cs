@@ -195,7 +195,7 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
     /// Bukkit/Spigot convention.
     /// </summary>
     /// <remarks>
-    /// The string <c>"OfflinePlayer:<name>"</c> is UTF-8 encoded, MD5-hashed, and stamped with
+    /// The string <c>"OfflinePlayer:&lt;name&gt;"</c> is UTF-8 encoded, MD5-hashed, and stamped with
     /// UUID Version 3 bits and RFC 4122 variant bits. The result matches the UUID that
     /// Bukkit-compatible servers assign to players connecting in offline mode.
     /// </remarks>
@@ -312,11 +312,21 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
         return !left.Equals(right);
     }
 
+    /// <summary>
+    /// Converts a Minecraft UUID to its underlying .NET GUID.
+    /// </summary>
+    /// <param name="uuid">The UUID to convert.</param>
+    /// <returns>The underlying <see cref="Guid" /> value.</returns>
     public static implicit operator Guid(Uuid uuid)
     {
         return uuid.AsGuid;
     }
 
+    /// <summary>
+    /// Wraps a .NET GUID as a Minecraft UUID.
+    /// </summary>
+    /// <param name="guid">The GUID to wrap.</param>
+    /// <returns>A UUID containing the same 128-bit value.</returns>
     public static implicit operator Uuid(Guid guid)
     {
         return new Uuid(guid);

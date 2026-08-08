@@ -3,6 +3,9 @@ using System.Runtime.Loader;
 
 namespace Void.Proxy.Api.Plugins.Dependencies;
 
+/// <summary>
+/// Resolves managed assemblies for plugin assembly load contexts.
+/// </summary>
 public interface IDependencyResolver
 {
     /// <summary>

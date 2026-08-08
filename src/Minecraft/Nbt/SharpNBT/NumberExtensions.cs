@@ -67,6 +67,9 @@ public static class NumberExtensions
         return BitConverter.Int64BitsToDouble(n.SwapEndian());
     }
 
+    /// <summary>Determines whether a character may appear in an unquoted SNBT token.</summary>
+    /// <param name="c">The character to test.</param>
+    /// <returns><see langword="true"/> for ASCII letters, digits, underscore, hyphen, period, or plus; otherwise <see langword="false"/>.</returns>
     public static bool IsValidUnquoted(this char c)
     {
         return c == '_' || c == '-' ||

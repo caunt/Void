@@ -10,10 +10,17 @@ namespace Void.Minecraft.Network.Definitions;
 // Thanks to Velocity Contributors!
 // https://github.com/PaperMC/Velocity/
 
+/// <summary>
+/// Provides built-in Brigadier and Minecraft command argument parser definitions.
+/// </summary>
+/// <remarks>The arrays and their mapping objects are mutable shared definitions; consumers should treat them as read-only.</remarks>
 public class ArgumentParserDefinitions
 {
     #region Brigadier
 
+    /// <summary>
+    /// Definitions for the primitive parsers in the <c>brigadier</c> namespace.
+    /// </summary>
     public static readonly ArgumentParserDefinition[] BrigadierArgumentParserDefinitions =
     [
         ArgumentParserDefinition.From<BoolArgumentType>(BoolArgumentSerializer.Instance,
@@ -51,6 +58,9 @@ public class ArgumentParserDefinitions
     #endregion
     #region Minecraft
 
+    /// <summary>
+    /// Definitions for protocol-specific parsers in the <c>minecraft</c> namespace.
+    /// </summary>
     public static readonly ArgumentParserDefinition[] MinecraftArgumentParserDefinitions =
     [
         #region Non-typed with non-empty serializers
@@ -454,18 +464,42 @@ public class ArgumentParserDefinitions
     #endregion
 }
 
+/// <summary>
+/// Associates an argument serializer and optional runtime argument type with its protocol identifier mapping.
+/// </summary>
+/// <param name="Serializer">The serializer used to read and write parser properties.</param>
+/// <param name="ArgumentType">The concrete argument type, or <see langword="null" /> for passthrough or otherwise untyped parsers.</param>
+/// <param name="Mapping">The resource identifier and numeric parser identifiers by protocol version.</param>
 public record ArgumentParserDefinition(IArgumentSerializer Serializer, Type? ArgumentType, ArgumentSerializerMapping Mapping)
 {
+    /// <summary>
+    /// Creates an untyped definition using the empty passthrough serializer.
+    /// </summary>
+    /// <param name="mapping">The parser identifier mapping.</param>
+    /// <returns>An untyped parser definition.</returns>
     public static ArgumentParserDefinition From(ArgumentSerializerMapping mapping)
     {
         return From(EmptyArgumentPassthroughSerializer.Instance, mapping);
     }
 
+    /// <summary>
+    /// Creates an untyped definition using an explicit serializer.
+    /// </summary>
+    /// <param name="serializer">The serializer for parser properties.</param>
+    /// <param name="mapping">The parser identifier mapping.</param>
+    /// <returns>An untyped parser definition whose <see cref="ArgumentType" /> is <see langword="null" />.</returns>
     public static ArgumentParserDefinition From(IArgumentSerializer serializer, ArgumentSerializerMapping mapping)
     {
         return new ArgumentParserDefinition(serializer, ArgumentType: null, mapping);
     }
 
+    /// <summary>
+    /// Creates a typed definition using an explicit serializer.
+    /// </summary>
+    /// <typeparam name="TArgumentType">The runtime argument type associated with the parser.</typeparam>
+    /// <param name="serializer">The serializer for parser properties.</param>
+    /// <param name="mapping">The parser identifier mapping.</param>
+    /// <returns>A definition whose <see cref="ArgumentType" /> is <see langword="typeof" />(<typeparamref name="TArgumentType" />).</returns>
     public static ArgumentParserDefinition From<TArgumentType>(IArgumentSerializer serializer, ArgumentSerializerMapping mapping)
     {
         return new ArgumentParserDefinition(serializer, typeof(TArgumentType), mapping);

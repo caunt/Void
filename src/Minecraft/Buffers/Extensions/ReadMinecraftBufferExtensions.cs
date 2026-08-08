@@ -7,6 +7,7 @@ using Void.Minecraft.Profiles;
 
 namespace Void.Minecraft.Buffers.Extensions;
 
+/// <summary>Provides primitive and protocol-structure read operations for Minecraft buffers.</summary>
 public static class ReadMinecraftBufferExtensions
 {
     /// <summary>
@@ -223,7 +224,7 @@ public static class ReadMinecraftBufferExtensions
     /// </summary>
     /// <remarks>This method is useful for efficiently reading length-prefixed byte arrays from a Minecraft
     /// protocol buffer, where the length is encoded as a variable-length integer.</remarks>
-    /// <typeparam name="TBuffer">The type of the buffer, which must be a value type that implements the IMinecraftBuffer<TBuffer> interface.</typeparam>
+    /// <typeparam name="TBuffer">The type of the buffer, which must be a value type that implements the <see cref="IMinecraftBuffer{TBuffer}" /> interface.</typeparam>
     /// <param name="buffer">A reference to the buffer from which the byte array is read. The buffer must support reading variable-length
     /// integers.</param>
     /// <returns>A read-only span of bytes containing the data read from the buffer.</returns>
@@ -238,7 +239,7 @@ public static class ReadMinecraftBufferExtensions
     /// <remarks>This method is intended for use with buffers that implement the IMinecraftBuffer interface,
     /// enabling efficient reading of variable-length integer arrays commonly used in Minecraft network
     /// protocols.</remarks>
-    /// <typeparam name="TBuffer">The type of the buffer, which must be a value type implementing the IMinecraftBuffer<TBuffer> interface.</typeparam>
+    /// <typeparam name="TBuffer">The type of the buffer, which must be a value type implementing the <see cref="IMinecraftBuffer{TBuffer}" /> interface.</typeparam>
     /// <param name="buffer">A reference to the buffer from which the variable-length integer array is read. The buffer must be properly
     /// initialized and contain valid data.</param>
     /// <returns>A read-only span containing the integers read from the buffer.</returns>

@@ -28,8 +28,11 @@ public class ArgumentCommandNode(string name, IArgumentType type, CommandExecuto
     private const string UsageArgumentOpen = "<";
     private const string UsageArgumentClose = ">";
 
+    /// <summary>Gets the parser and default completion behavior.</summary>
     public IArgumentType Type { get; } = type;
+    /// <inheritdoc/>
     public override string Name => name;
+    /// <inheritdoc/>
     public override string UsageText => $"{UsageArgumentOpen}{Name}{UsageArgumentClose}";
     /// <summary>
     /// Gets representative input strings for this argument node.
@@ -38,9 +41,12 @@ public class ArgumentCommandNode(string name, IArgumentType type, CommandExecuto
     /// The sequence is provided by <see cref="IArgumentType.Examples"/> on <see cref="Type"/> and is used by command-tree ambiguity detection to test whether sibling nodes can consume the same sample input.
     /// </remarks>
     public override IEnumerable<string> Examples => Type.Examples;
+    /// <inheritdoc/>
     protected override string SortedKey => Name;
+    /// <summary>Gets or sets the custom completion provider, or <see langword="null"/> to delegate to <see cref="Type"/>.</summary>
     public SuggestionProvider? CustomSuggestions { get; set; } = customSuggestions;
 
+    /// <inheritdoc/>
     public override IArgumentBuilder<CommandNode> CreateBuilder()
     {
         return RequiredArgumentBuilder.Create(Name, Type)
@@ -50,6 +56,7 @@ public class ArgumentCommandNode(string name, IArgumentType type, CommandExecuto
             .Executes(Executor);
     }
 
+    /// <inheritdoc/>
     public override bool IsValidInput(string input)
     {
         try
@@ -64,6 +71,7 @@ public class ArgumentCommandNode(string name, IArgumentType type, CommandExecuto
         }
     }
 
+    /// <inheritdoc/>
     public override async ValueTask<Suggestions> ListSuggestionsAsync(CommandContext context, SuggestionsBuilder builder, CancellationToken cancellationToken)
     {
         if (CustomSuggestions is null)
@@ -91,6 +99,8 @@ public class ArgumentCommandNode(string name, IArgumentType type, CommandExecuto
         contextBuilder.WithNode(this, parsed.Range);
     }
 
+    /// <summary>Returns a diagnostic representation containing the name and argument type.</summary>
+    /// <returns>The diagnostic representation.</returns>
     public override string ToString()
     {
         return $"ArgumentCommandNode{{name='{Name}', type={Type}}}";

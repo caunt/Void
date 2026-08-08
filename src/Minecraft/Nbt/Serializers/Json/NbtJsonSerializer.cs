@@ -5,8 +5,10 @@ using Void.Minecraft.Profiles.Serializers;
 
 namespace Void.Minecraft.Nbt.Serializers.Json;
 
+/// <summary>Serializes NBT tags as natural JSON values and infers tag types while deserializing.</summary>
 public static class NbtJsonSerializer
 {
+    /// <summary>Gets the shared mutable serializer options containing all NBT and UUID converters.</summary>
     public static readonly JsonSerializerOptions Options = new();
 
     static NbtJsonSerializer()
@@ -31,11 +33,18 @@ public static class NbtJsonSerializer
         Options.Converters.Add(new UuidJsonConverter());
     }
 
+    /// <summary>Serializes an NBT tag to a JSON node.</summary>
+    /// <param name="tag">The tag to serialize.</param>
+    /// <returns>The JSON representation.</returns>
+    /// <exception cref="JsonException">Serialization produces no JSON node.</exception>
     public static JsonNode Serialize(NbtTag tag)
     {
         return JsonSerializer.SerializeToNode(tag, Options) ?? throw new JsonException("Nbt cannot be serialized to JSON.");
     }
 
+    /// <summary>Deserializes JSON text, falling back to an NBT string when the input is not valid JSON.</summary>
+    /// <param name="value">The JSON text or literal string value.</param>
+    /// <returns>The inferred NBT tag.</returns>
     public static NbtTag Deserialize(string value)
     {
         var node = (JsonNode?)null;
@@ -55,6 +64,10 @@ public static class NbtJsonSerializer
             return Deserialize(node);
     }
 
+    /// <summary>Deserializes a JSON node to an inferred NBT tag.</summary>
+    /// <param name="node">The JSON node.</param>
+    /// <returns>The inferred NBT tag.</returns>
+    /// <exception cref="JsonException">No tag can be deserialized from the node.</exception>
     public static NbtTag Deserialize(JsonNode node)
     {
         return JsonSerializer.Deserialize<NbtTag>(node, Options) ?? throw new JsonException("Nbt cannot be deserialized from JSON.");

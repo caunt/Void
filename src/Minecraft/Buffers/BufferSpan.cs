@@ -12,6 +12,8 @@ public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>, IDisposable
     private readonly Span<byte> _source;
     private int _position;
 
+    /// <summary>Gets or sets the zero-based cursor within the underlying span.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The assigned position is outside the inclusive range from zero through <see cref="Length"/>.</exception>
     public int Position
     {
         readonly get => _position;
@@ -24,6 +26,7 @@ public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>, IDisposable
         }
     }
 
+    /// <summary>Gets the total number of bytes in the underlying span.</summary>
     public readonly int Length => _source.Length;
     /// <summary>
     /// Gets how many bytes can still be read or written from the current <see cref="Position"/> to the end of the span.
@@ -54,6 +57,9 @@ public ref struct BufferSpan : IMinecraftBuffer<BufferSpan>, IDisposable
         _position = 0;
     }
     
+    /// <summary>Creates a buffer over the range from an absolute position through the end of this buffer.</summary>
+    /// <param name="position">The zero-based start position.</param>
+    /// <returns>A new buffer sharing the selected underlying storage and starting at position zero.</returns>
     public readonly BufferSpan Slice(int position)
     {
         return new BufferSpan(Access(position, Length - position));

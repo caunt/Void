@@ -6,6 +6,10 @@ using System.Linq;
 
 namespace Void.Minecraft.Components.Text.Colors;
 
+/// <summary>Represents an RGB color used by a Minecraft text component.</summary>
+/// <param name="Red">The red channel.</param>
+/// <param name="Green">The green channel.</param>
+/// <param name="Blue">The blue channel.</param>
 public record TextColor(byte Red, byte Green, byte Blue)
 {
     private static readonly Dictionary<(byte, byte, byte), string> _map = new()
@@ -28,14 +32,33 @@ public record TextColor(byte Red, byte Green, byte Blue)
         [(0xFF, 0xFF, 0xFF)] = "white"
     };
 
+    /// <summary>Gets the Minecraft color name, or an uppercase <c>#RRGGBB</c> value for an unnamed color.</summary>
     public string Name => _map.TryGetValue((Red, Green, Blue), out var name) ? name : $"#{Red:X2}{Green:X2}{Blue:X2}";
 
+    /// <summary>Creates a color from an RGB tuple.</summary>
+    /// <param name="color">The RGB channels.</param>
+    /// <returns>A color containing the supplied channels.</returns>
     public static implicit operator TextColor((byte Red, byte Green, byte Blue) color) => new(color.Red, color.Green, color.Blue);
+    /// <summary>Creates a text color from a drawing color, discarding its alpha channel.</summary>
+    /// <param name="color">The drawing color.</param>
+    /// <returns>The corresponding RGB text color.</returns>
     public static implicit operator TextColor(Color color) => new(color.R, color.G, color.B);
+    /// <summary>Parses a named or hexadecimal text color.</summary>
+    /// <param name="color">A Minecraft color name or <c>#RRGGBB</c> value.</param>
+    /// <returns>The parsed color.</returns>
+    /// <exception cref="ArgumentException"><paramref name="color"/> is not a recognized name or valid hexadecimal color.</exception>
     public static implicit operator TextColor(string color) => FromString(color);
+    /// <summary>Converts a text color to an opaque drawing color.</summary>
+    /// <param name="color">The text color.</param>
+    /// <returns>The corresponding drawing color.</returns>
     public static implicit operator Color(TextColor color) => Color.FromArgb(color.Red, color.Green, color.Blue);
+    /// <summary>Converts a text color to its canonical identifier.</summary>
+    /// <param name="color">The text color.</param>
+    /// <returns>The value of <see cref="Name"/>.</returns>
     public static implicit operator string(TextColor color) => color.Name;
 
+    /// <summary>Finds the nearest color in the sixteen-color legacy Minecraft palette.</summary>
+    /// <returns>The closest legacy color according to hue, saturation, and brightness distance.</returns>
     public TextColor Downsample()
     {
         var matchedDistance = float.MaxValue;
@@ -59,6 +82,10 @@ public record TextColor(byte Red, byte Green, byte Blue)
         return match;
     }
 
+    /// <summary>Parses a Minecraft color name or hexadecimal RGB value.</summary>
+    /// <param name="value">A case-insensitive Minecraft color name or a <c>#RRGGBB</c> value.</param>
+    /// <returns>The parsed color.</returns>
+    /// <exception cref="ArgumentException"><paramref name="value"/> is not a recognized name or valid hexadecimal color.</exception>
     public static TextColor FromString(string value)
     {
         var span = value.AsSpan();

@@ -81,7 +81,12 @@ public static class NbtFile
         writer.WriteTag(tag);
     }
 
-    /// <inheritdoc cref="Write(string,Void.Minecraft.Nbt.CompoundTag,Void.Minecraft.Nbt.FormatOptions,Void.Minecraft.Nbt.CompressionType,System.IO.Compression.CompressionLevel)"/>
+    /// <summary>Writes a list tag as the root of an NBT file.</summary>
+    /// <param name="path">The path of the file to create or overwrite.</param>
+    /// <param name="tag">The root list tag to serialize.</param>
+    /// <param name="options">Compatibility flags controlling NBT encoding.</param>
+    /// <param name="type">The output compression format.</param>
+    /// <param name="level">The compression level used by compressed formats.</param>
     public static void Write(string path, ListTag tag, FormatOptions options, CompressionType type = CompressionType.GZip, CompressionLevel level = CompressionLevel.Fastest)
     {
         using var stream = File.OpenWrite(path);
@@ -104,7 +109,13 @@ public static class NbtFile
         await writer.WriteTagAsync(tag);
     }
 
-    /// <inheritdoc cref="WriteAsync(string,Void.Minecraft.Nbt.CompoundTag,Void.Minecraft.Nbt.FormatOptions,Void.Minecraft.Nbt.CompressionType,System.IO.Compression.CompressionLevel)"/>
+    /// <summary>Asynchronously writes a list tag as the root of an NBT file.</summary>
+    /// <param name="path">The path of the file to create or overwrite.</param>
+    /// <param name="tag">The root list tag to serialize.</param>
+    /// <param name="options">Compatibility flags controlling NBT encoding.</param>
+    /// <param name="type">The output compression format.</param>
+    /// <param name="level">The compression level used by compressed formats.</param>
+    /// <returns>A task that completes when serialization and file output finish.</returns>
     public static async Task WriteAsync(string path, ListTag tag, FormatOptions options, CompressionType type = CompressionType.GZip, CompressionLevel level = CompressionLevel.Fastest)
     {
         await using var stream = File.OpenWrite(path);

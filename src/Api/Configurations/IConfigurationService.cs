@@ -2,6 +2,12 @@
 
 namespace Void.Proxy.Api.Configurations;
 
+/// <summary>
+/// Provides managed configuration instances whose in-memory and persisted values remain synchronized.
+/// </summary>
+/// <remarks>
+/// The service participates in the host lifecycle through <see cref="IHostedService" />. Configuration instances returned by this service are shared and managed by the service rather than detached snapshots.
+/// </remarks>
 public interface IConfigurationService : IHostedService
 {
     /// <summary>

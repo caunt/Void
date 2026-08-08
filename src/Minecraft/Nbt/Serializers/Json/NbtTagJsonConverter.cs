@@ -6,8 +6,10 @@ using Void.Minecraft.Nbt.Tags;
 
 namespace Void.Minecraft.Nbt.Serializers.Json;
 
+/// <summary>Dispatches JSON tokens to concrete NBT tag converters.</summary>
 public class NbtTagJsonConverter : JsonConverter<NbtTag>
 {
+    /// <inheritdoc/>
     public override NbtTag Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.TokenType switch
     {
         JsonTokenType.Number => NbtTagNumberAdapter.DeserializeNumber(ref reader),
@@ -19,6 +21,7 @@ public class NbtTagJsonConverter : JsonConverter<NbtTag>
         var value => throw new NotSupportedException(value.ToString())
     } ?? throw new JsonException("One of JSON converters returned null in read method.");
 
+    /// <inheritdoc/>
     public override void Write(Utf8JsonWriter writer, NbtTag tag, JsonSerializerOptions options)
     {
         JsonSerializer.Serialize(writer, (object)tag, options);

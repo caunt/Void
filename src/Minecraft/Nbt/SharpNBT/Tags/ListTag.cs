@@ -64,6 +64,9 @@ public class ListTag : Tag, IList<Tag>
     /// <inheritdoc />
     public void Add(Tag item) => list.Add(ValidateChild(item));
 
+    /// <summary>Appends validated child tags in enumeration order.</summary>
+    /// <param name="items">The child tags to append.</param>
+    /// <exception cref="ArgumentException">An item does not match the list's declared child type or is already parented.</exception>
     public void AddRange(IEnumerable<Tag> items)
     {
         foreach (var item in items)

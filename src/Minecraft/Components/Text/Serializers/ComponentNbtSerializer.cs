@@ -14,8 +14,13 @@ using Void.Minecraft.Profiles;
 
 namespace Void.Minecraft.Components.Text.Serializers;
 
+/// <summary>Converts Minecraft text components to and from their NBT representation.</summary>
 public static class ComponentNbtSerializer
 {
+    /// <summary>Serializes a component tree to an NBT compound using the modern component schema.</summary>
+    /// <param name="component">The component to serialize.</param>
+    /// <returns>The serialized compound.</returns>
+    /// <exception cref="NotSupportedException">The component has an unsupported content implementation.</exception>
     public static NbtCompound Serialize(Component component)
     {
         var content = component.Content;
@@ -179,6 +184,10 @@ public static class ComponentNbtSerializer
         return tag;
     }
 
+    /// <summary>Deserializes a text component from an NBT tag.</summary>
+    /// <param name="tag">A component compound, a compact string component, or an end tag.</param>
+    /// <returns>The deserialized component; an end tag produces <see cref="Component.Default"/>.</returns>
+    /// <exception cref="NbtException">The tag shape, required field, or field type is not supported.</exception>
     public static Component Deserialize(NbtTag tag)
     {
         var component = Component.Default;

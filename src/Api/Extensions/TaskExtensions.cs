@@ -2,6 +2,9 @@
 
 namespace Void.Proxy.Api.Extensions;
 
+/// <summary>
+/// Provides helpers for observing and logging asynchronous operation failures.
+/// </summary>
 public static class TaskExtensions
 {
     /// <summary>

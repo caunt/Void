@@ -3,8 +3,11 @@ using Void.Minecraft.Buffers;
 
 namespace Void.Minecraft.Network.Registries.Transformations.Properties;
 
+/// <summary>Represents a big-endian IEEE 754 single-precision packet property.</summary>
+/// <param name="Value">The encoded property bytes, retained without copying or validation.</param>
 public record FloatProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<FloatProperty>
 {
+    /// <summary>Gets the single-precision value decoded from the property bytes.</summary>
     public float AsPrimitive => new MinecraftBuffer(Value.Span).ReadFloat();
 
     /// <summary>
@@ -21,11 +24,16 @@ public record FloatProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<FloatP
         return new FloatProperty(bytes);
     }
 
+    /// <summary>Reads one big-endian single-precision value from a buffer.</summary>
+    /// <param name="buffer">The source buffer.</param>
+    /// <returns>The decoded property.</returns>
     public static FloatProperty Read(ref MinecraftBuffer buffer)
     {
         return FromPrimitive(buffer.ReadFloat());
     }
 
+    /// <summary>Writes the decoded single-precision value in big-endian order.</summary>
+    /// <param name="buffer">The destination buffer.</param>
     public void Write(ref MinecraftBuffer buffer)
     {
         buffer.WriteFloat(AsPrimitive);

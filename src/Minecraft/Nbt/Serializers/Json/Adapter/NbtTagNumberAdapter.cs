@@ -6,6 +6,7 @@ using Void.Minecraft.Nbt.Tags;
 
 namespace Void.Minecraft.Nbt.Serializers.Json.Adapter;
 
+/// <summary>Selects and aligns NBT numeric types for untyped JSON numbers.</summary>
 public class NbtTagNumberAdapter
 {
     private static readonly Dictionary<int, NbtTagType> _map = new()
@@ -18,6 +19,10 @@ public class NbtTagNumberAdapter
         [6] = NbtTagType.Double,
     };
 
+    /// <summary>Reads the current JSON number into the narrowest supported NBT numeric type.</summary>
+    /// <param name="reader">The reader positioned on a number.</param>
+    /// <returns>An NBT byte, short, integer, long, float, or double tag.</returns>
+    /// <exception cref="JsonException">The token cannot be represented by an NBT numeric type.</exception>
     public static NbtTag DeserializeNumber(ref Utf8JsonReader reader)
     {
         if (reader.TryGetByte(out var byteValue))
@@ -41,6 +46,10 @@ public class NbtTagNumberAdapter
         throw new JsonException($"\"{Encoding.UTF8.GetString(reader.ValueSpan)}\" is not a valid NBT number.");
     }
 
+    /// <summary>Gets the single common type of all tags in a list.</summary>
+    /// <param name="tags">The tags to inspect.</param>
+    /// <returns>The common tag type.</returns>
+    /// <exception cref="JsonException">The list is empty or contains multiple tag types.</exception>
     public static NbtTagType GetTagsType(List<NbtTag> tags)
     {
         var types = tags.Select(tag => tag.Type).Distinct();

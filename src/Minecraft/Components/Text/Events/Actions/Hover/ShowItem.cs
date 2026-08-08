@@ -12,5 +12,6 @@ namespace Void.Minecraft.Components.Text.Events.Actions.Hover;
 /// </param>
 public record ShowItem(string Id, int? Count = null, NbtCompound? ItemComponents = null) : IHoverEventAction
 {
+    /// <summary>Gets the <c>show_item</c> hover-action identifier.</summary>
     public string ActionName => "show_item";
 }

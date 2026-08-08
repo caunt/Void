@@ -4,12 +4,21 @@ using Void.Minecraft.Profiles;
 
 namespace Void.Minecraft.Network.Registries.Transformations.Properties;
 
+/// <summary>
+/// Represents a UUID encoded as two 64-bit Minecraft protocol values.
+/// </summary>
+/// <param name="Value">The encoded 16-byte value, retained without copying or validation.</param>
 public record UuidProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<UuidProperty>
 {
+    /// <summary>Gets a property containing the zero UUID.</summary>
     public static UuidProperty Empty { get; } = FromUuid(Uuid.Empty);
 
+    /// <summary>Gets the UUID decoded from the property bytes.</summary>
     public Uuid AsUuid => new MinecraftBuffer(Value.Span).ReadUuid();
 
+    /// <summary>Encodes a UUID as a packet property.</summary>
+    /// <param name="value">The UUID to encode.</param>
+    /// <returns>A property backed by a new 16-byte array.</returns>
     public static UuidProperty FromUuid(Uuid value)
     {
         var bytes = new byte[16];
@@ -29,6 +38,8 @@ public record UuidProperty(ReadOnlyMemory<byte> Value) : IPacketProperty<UuidPro
         return FromUuid(buffer.ReadUuid());
     }
 
+    /// <summary>Writes the decoded UUID to a buffer.</summary>
+    /// <param name="buffer">The destination buffer.</param>
     public void Write(ref MinecraftBuffer buffer)
     {
         buffer.WriteUuid(AsUuid);

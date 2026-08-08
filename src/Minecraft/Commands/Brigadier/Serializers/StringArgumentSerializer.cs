@@ -6,10 +6,13 @@ using Void.Minecraft.Network;
 
 namespace Void.Minecraft.Commands.Brigadier.Serializers;
 
+/// <summary>Encodes string parsing modes as protocol VarInt discriminators.</summary>
 public class StringArgumentSerializer : IArgumentSerializer
 {
+    /// <summary>Gets the shared stateless serializer.</summary>
     public static IArgumentSerializer Instance { get; } = new StringArgumentSerializer();
 
+    /// <inheritdoc/>
     public IArgumentType Deserialize(ref BufferSpan buffer, ProtocolVersion protocolVersion)
     {
         return buffer.ReadVarInt() switch
@@ -21,6 +24,7 @@ public class StringArgumentSerializer : IArgumentSerializer
         };
     }
 
+    /// <inheritdoc/>
     public void Serialize(IArgumentType value, ref BufferSpan buffer, ProtocolVersion protocolVersion)
     {
         var stringArgumentType = value.As<StringArgumentType>();

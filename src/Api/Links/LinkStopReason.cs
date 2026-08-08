@@ -1,5 +1,8 @@
 ﻿namespace Void.Proxy.Api.Links;
 
+/// <summary>
+/// Identifies why a player-to-server link stopped.
+/// </summary>
 public enum LinkStopReason
 {
     /// <summary>

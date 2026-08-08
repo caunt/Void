@@ -8,17 +8,25 @@ using Void.Minecraft.Components.Text.Properties.Content;
 
 namespace Void.Minecraft.Components.Text.Serializers;
 
+/// <summary>Converts component trees to and from section-style legacy formatting strings.</summary>
 public static class ComponentLegacySerializer
 {
+    /// <summary>Provides an example containing legacy colors, a hexadecimal color, styles, and reset formatting.</summary>
     public const string ExampleLegacyString = "&1Hello, &2this is a &x&F&F&A&A&0&1hex colored " +
                                               "text, &lwith bold, &oitalic, &nunderline, &mstrikethrough, " +
                                               "&kobfuscated, &rand reset.";
 
+    /// <summary>Provides a dense example that exercises legacy codes among varied literal characters.</summary>
     public const string ExampleComplexLegacyString = "&0Aa1!b@2$&k3#Cd$Ef%&1Gh7%h^j&lKl8&Lm*&2No9(Q)r" +
                                                      "&mSt0_Op+&3Uv-1=Wx&nYz2!Za@&4b#3$Cd%&oEf4&Gh*&5" +
                                                      "Ij5)Kl(&rMn6)Op?&6Qr7_Rs-&7Tu8*Vw&&8Xy9@Za!&9Bc0#De$&a" +
                                                      "Fg1%Hi^&bJk2&Lm*&cNo3(Pq)&dRs4_St+&eUv5=Wx-&fYz6!Ab@";
 
+    /// <summary>Serializes a component and its direct children to legacy-formatted text.</summary>
+    /// <param name="component">The root component.</param>
+    /// <param name="prefix">The character emitted before each formatting code. Use the null character to omit formatting codes.</param>
+    /// <returns>The legacy text.</returns>
+    /// <remarks>Content that has no native legacy form is reduced to a textual approximation. Descendants below direct children are not traversed.</remarks>
     public static string Serialize(Component component, char prefix = '&')
     {
         var builder = new StringBuilder();
@@ -122,6 +130,11 @@ public static class ComponentLegacySerializer
         }
     }
 
+    /// <summary>Deserializes legacy-formatted text into a component tree.</summary>
+    /// <param name="source">The text to parse.</param>
+    /// <param name="prefix">The character introducing formatting codes.</param>
+    /// <returns>A default component for empty input, a single component for one segment, or a root whose children contain subsequent segments.</returns>
+    /// <remarks>Unknown or incomplete formatting sequences are retained as literal text.</remarks>
     public static Component Deserialize(string source, char prefix = '&')
     {
         var span = source.AsSpan();

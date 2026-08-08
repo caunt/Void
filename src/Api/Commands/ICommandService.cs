@@ -40,5 +40,16 @@ public interface ICommandService
     /// <returns>An array of possible completions.</returns>
     public ValueTask<IEnumerable<ICommandSuggestion>> SuggestAsync(string input, ICommandSource source, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Copies commands available to a source into another root command node.
+    /// </summary>
+    /// <remarks>
+    /// Existing destination children with the same names are replaced. Commands whose requirements reject <paramref name="commandSource" /> are omitted.
+    /// </remarks>
+    /// <param name="commandNode">The destination root command node.</param>
+    /// <param name="commandSource">The source used to evaluate command requirements.</param>
+    /// <param name="cancellationToken">A token used to cancel requirement evaluation.</param>
+    /// <returns>A task that completes after all eligible commands have been copied.</returns>
+    /// <exception cref="ArgumentException"><paramref name="commandNode" /> is not a root command node.</exception>
     public ValueTask CopyToAsync(ICommandNode commandNode, ICommandSource commandSource, CancellationToken cancellationToken = default);
 }

@@ -10,6 +10,7 @@ using Void.Minecraft.Network.Definitions;
 
 namespace Void.Minecraft.Commands.Brigadier.Registry;
 
+/// <summary>Registers command argument serializers and resolves their protocol identifiers.</summary>
 public class ArgumentSerializerRegistry
 {
     private static readonly Dictionary<ArgumentSerializerMapping, IArgumentSerializer> MappingToSerializer = [];
@@ -25,11 +26,18 @@ public class ArgumentSerializerRegistry
             Register(definition.Mapping, definition.ArgumentType, definition.Serializer);
     }
 
+    /// <summary>Registers a passthrough mapping without associating a normal runtime argument type.</summary>
+    /// <param name="mapping">The protocol identifier mapping.</param>
+    /// <param name="serializer">The payload serializer, or the empty serializer when <see langword="null"/>.</param>
     public static void Register(ArgumentSerializerMapping mapping, IArgumentSerializer? serializer = null)
     {
         Register(mapping, argumentType: null, serializer ?? EmptyArgumentPassthroughSerializer.Instance);
     }
 
+    /// <summary>Registers or replaces mapping and optional runtime-type associations.</summary>
+    /// <param name="mapping">The protocol identifier mapping.</param>
+    /// <param name="argumentType">The normal argument runtime type, or <see langword="null"/> for passthrough-only use.</param>
+    /// <param name="serializer">The property serializer.</param>
     public static void Register(ArgumentSerializerMapping mapping, Type? argumentType, IArgumentSerializer serializer)
     {
         MappingToSerializer[mapping] = serializer;
@@ -41,6 +49,11 @@ public class ArgumentSerializerRegistry
         ArgumentTypeToMapping[argumentType] = mapping;
     }
 
+    /// <summary>Reads a parser identifier and its properties.</summary>
+    /// <param name="buffer">The source command-tree buffer.</param>
+    /// <param name="protocolVersion">The source protocol version.</param>
+    /// <returns>A normal argument type or a wrapped passthrough argument.</returns>
+    /// <exception cref="ArgumentException">The decoded mapping is not registered.</exception>
     public static IArgumentType Deserialize(ref BufferSpan buffer, ProtocolVersion protocolVersion)
     {
         var mapping = DecodeParserMapping(ref buffer, protocolVersion);
@@ -56,6 +69,11 @@ public class ArgumentSerializerRegistry
         return argumentType;
     }
 
+    /// <summary>Writes an argument parser identifier and its properties.</summary>
+    /// <param name="buffer">The destination command-tree buffer.</param>
+    /// <param name="argumentType">The normal or passthrough argument type.</param>
+    /// <param name="protocolVersion">The target protocol version.</param>
+    /// <exception cref="ArgumentException">The runtime argument type is unregistered or has no parser ID for the target version.</exception>
     public static void Serialize(ref BufferSpan buffer, IArgumentType argumentType, ProtocolVersion protocolVersion)
     {
         if (argumentType is PassthroughArgumentType passthroughArgumentType)
@@ -74,6 +92,11 @@ public class ArgumentSerializerRegistry
         serializer.Serialize(argumentType, ref buffer, protocolVersion);
     }
 
+    /// <summary>Writes a numeric parser ID for 1.19 and newer, or a string identifier for older protocols.</summary>
+    /// <param name="buffer">The destination buffer.</param>
+    /// <param name="mapping">The parser mapping.</param>
+    /// <param name="protocolVersion">The target protocol version.</param>
+    /// <exception cref="ArgumentException">No numeric ID exists for a target version requiring one.</exception>
     public static void WriteParserIdentifier(ref BufferSpan buffer, ArgumentSerializerMapping mapping, ProtocolVersion protocolVersion)
     {
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19)
@@ -89,6 +112,11 @@ public class ArgumentSerializerRegistry
         }
     }
 
+    /// <summary>Reads and resolves a numeric or string parser identifier.</summary>
+    /// <param name="buffer">The source buffer.</param>
+    /// <param name="protocolVersion">The source protocol version.</param>
+    /// <returns>The registered mapping.</returns>
+    /// <exception cref="ArgumentException">The identifier is unknown for the protocol version.</exception>
     public static ArgumentSerializerMapping DecodeParserMapping(ref BufferSpan buffer, ProtocolVersion protocolVersion)
     {
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_19)

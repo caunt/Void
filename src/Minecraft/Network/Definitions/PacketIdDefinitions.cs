@@ -5,10 +5,15 @@ namespace Void.Minecraft.Network.Definitions;
 // Thanks to Velocity Contributors!
 // https://github.com/PaperMC/Velocity/
 
+/// <summary>
+/// Provides built-in packet identifier mappings across supported Java Edition protocol versions.
+/// </summary>
+/// <remarks>The arrays are mutable shared definitions; consumers should treat their contents as read-only.</remarks>
 public static class PacketIdDefinitions
 {
     #region Handshake - Serverbound
 
+    /// <summary>Mappings for the serverbound handshake packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundHandshake =
     [
         new(0x00, ProtocolVersion.Oldest)
@@ -18,6 +23,7 @@ public static class PacketIdDefinitions
 
     #region Example Plugin Definitions
 
+    /// <summary>Mappings for the clientbound set-held-item packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundSetHeldItem =
     [
         new(0x09, ProtocolVersion.Oldest),
@@ -40,6 +46,7 @@ public static class PacketIdDefinitions
         new(0x69, ProtocolVersion.MINECRAFT_26_1)
     ];
 
+    /// <summary>Mappings for the serverbound set-held-item packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundSetHeldItem =
     [
         new(0x09, ProtocolVersion.Oldest),
@@ -62,6 +69,7 @@ public static class PacketIdDefinitions
 
     #region Login - Serverbound
 
+    /// <summary>Mappings for the serverbound login-start packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundLoginStart =
     [
         new(0x00, ProtocolVersion.Oldest)
@@ -75,11 +83,13 @@ public static class PacketIdDefinitions
         new(0x01, ProtocolVersion.Oldest)
     ];
 
+    /// <summary>Mappings for the serverbound login plugin-response packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundLoginPluginResponse =
     [
         new(0x02, ProtocolVersion.Oldest)
     ];
 
+    /// <summary>Mappings for the serverbound login-acknowledged packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundLoginAcknowledged =
     [
         new(0x03, ProtocolVersion.Oldest)
@@ -89,26 +99,31 @@ public static class PacketIdDefinitions
 
     #region Login - Clientbound
 
+    /// <summary>Mappings for the clientbound login disconnect packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundLoginDisconnect =
     [
         new(0x00, ProtocolVersion.Oldest)
     ];
 
+    /// <summary>Mappings for the clientbound encryption-request packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundEncryptionRequest =
     [
         new(0x01, ProtocolVersion.Oldest)
     ];
 
+    /// <summary>Mappings for the clientbound login-success packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundLoginSuccess =
     [
         new(0x02, ProtocolVersion.Oldest)
     ];
 
+    /// <summary>Mappings for the clientbound set-compression packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundSetCompression =
     [
         new(0x03, ProtocolVersion.MINECRAFT_1_8)
     ];
 
+    /// <summary>Mappings for the clientbound login plugin-request packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundLoginPluginRequest =
     [
         new(0x04, ProtocolVersion.Oldest)
@@ -118,12 +133,14 @@ public static class PacketIdDefinitions
 
     #region Configuration - Serverbound
 
+    /// <summary>Mappings for the serverbound finish-configuration acknowledgement packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundAcknowledgeFinishConfiguration =
     [
         new(0x02, ProtocolVersion.MINECRAFT_1_20_2),
         new(0x03, ProtocolVersion.MINECRAFT_1_20_5)
     ];
 
+    /// <summary>Mappings for the serverbound configuration keep-alive response packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundConfigurationKeepAliveResponse =
     [
         new(0x03, ProtocolVersion.MINECRAFT_1_20_2),
@@ -134,18 +151,21 @@ public static class PacketIdDefinitions
 
     #region Configuration - Clientbound
 
+    /// <summary>Mappings for the clientbound configuration disconnect packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundConfigurationDisconnect =
     [
         new(0x01, ProtocolVersion.MINECRAFT_1_20_2),
         new(0x02, ProtocolVersion.MINECRAFT_1_20_5)
     ];
 
+    /// <summary>Mappings for the clientbound finish-configuration packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundConfigurationFinishConfiguration =
     [
         new(0x02, ProtocolVersion.MINECRAFT_1_20_2),
         new(0x03, ProtocolVersion.MINECRAFT_1_20_5)
     ];
 
+    /// <summary>Mappings for the clientbound configuration keep-alive request packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundConfigurationKeepAliveRequest =
     [
         new(0x03, ProtocolVersion.MINECRAFT_1_20_2),
@@ -156,6 +176,7 @@ public static class PacketIdDefinitions
 
     #region Play - Serverbound
 
+    /// <summary>Mappings for the serverbound play keep-alive response packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundPlayKeepAliveResponse =
     [
         new(0x00, ProtocolVersion.Oldest),
@@ -178,6 +199,7 @@ public static class PacketIdDefinitions
         new(0x1C, ProtocolVersion.MINECRAFT_26_1)
     ];
 
+    /// <summary>Mappings for the legacy serverbound chat-message packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundChatMessage =
     [
         new(0x01, ProtocolVersion.Oldest),
@@ -188,12 +210,14 @@ public static class PacketIdDefinitions
         new(0x03, ProtocolVersion.MINECRAFT_1_14, ProtocolVersion.MINECRAFT_1_18_2)
     ];
 
+    /// <summary>Mappings for the serverbound keyed chat-command packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundKeyedChatCommand =
     [
         new(0x03, ProtocolVersion.MINECRAFT_1_19),
         new(0x04, ProtocolVersion.MINECRAFT_1_19_1, ProtocolVersion.MINECRAFT_1_19_1)
     ];
 
+    /// <summary>Mappings for the serverbound signed chat-command packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundSignedChatCommand =
     [
         new(0x04, ProtocolVersion.MINECRAFT_1_19_3),
@@ -204,6 +228,7 @@ public static class PacketIdDefinitions
         new(0x08, ProtocolVersion.MINECRAFT_26_1)
     ];
 
+    /// <summary>Mappings for the serverbound unsigned chat-command packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundChatCommand =
     [
         new(0x04, ProtocolVersion.MINECRAFT_1_20_5),
@@ -212,6 +237,7 @@ public static class PacketIdDefinitions
         new(0x07, ProtocolVersion.MINECRAFT_26_1)
     ];
 
+    /// <summary>Mappings for the serverbound acknowledge-configuration packet sent from play.</summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundAcknowledgeConfiguration =
     [
         new(0x0B, ProtocolVersion.MINECRAFT_1_20_2),
@@ -221,6 +247,7 @@ public static class PacketIdDefinitions
         new(0x10, ProtocolVersion.MINECRAFT_26_1)
     ];
 
+    /// <summary>Mappings for the serverbound play plugin-message packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundPlayPluginMessage =
     [
         new(0x17, ProtocolVersion.Oldest),
@@ -242,6 +269,7 @@ public static class PacketIdDefinitions
         new(0x16, ProtocolVersion.MINECRAFT_26_1)
     ];
 
+    /// <summary>Mappings for the serverbound command-suggestions request packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ServerboundCommandSuggestionsRequest =
     [
         new(0x14, ProtocolVersion.MINECRAFT_1_7_2),
@@ -265,6 +293,7 @@ public static class PacketIdDefinitions
 
     #region Play - Clientbound
 
+    /// <summary>Mappings for the clientbound play keep-alive request packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundPlayKeepAliveRequest =
     [
         new(0x00, ProtocolVersion.Oldest),
@@ -287,6 +316,7 @@ public static class PacketIdDefinitions
         new(0x2C, ProtocolVersion.MINECRAFT_26_1)
     ];
 
+    /// <summary>Mappings for the clientbound play disconnect packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundPlayDisconnect =
     [
         new(0x40, ProtocolVersion.Oldest),
@@ -307,6 +337,7 @@ public static class PacketIdDefinitions
         new(0x20, ProtocolVersion.MINECRAFT_1_21_9)
     ];
 
+    /// <summary>Mappings for the clientbound join-game packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundJoinGame =
     [
         new(0x01, ProtocolVersion.Oldest),
@@ -323,6 +354,7 @@ public static class PacketIdDefinitions
         new(0x28, ProtocolVersion.MINECRAFT_1_19_4)
     ];
 
+    /// <summary>Mappings for the clientbound respawn packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundRespawn =
     [
         new(0x07, ProtocolVersion.Oldest),
@@ -341,6 +373,7 @@ public static class PacketIdDefinitions
         new(0x41, ProtocolVersion.MINECRAFT_1_19_4)
     ];
 
+    /// <summary>Mappings for the legacy clientbound chat-message packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundChatMessage =
     [
         new(0x02, ProtocolVersion.Oldest),
@@ -351,11 +384,13 @@ public static class PacketIdDefinitions
         new(0x0F, ProtocolVersion.MINECRAFT_1_17, ProtocolVersion.MINECRAFT_1_18_2)
     ];
 
+    /// <summary>Mappings for the clientbound bundle-delimiter packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundBundleDelimiter =
     [
         new(0x00, ProtocolVersion.MINECRAFT_1_19_4)
     ];
 
+    /// <summary>Mappings for the clientbound system-chat packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundSystemChatMessage =
     [
         new(0x5F, ProtocolVersion.MINECRAFT_1_19),
@@ -371,6 +406,7 @@ public static class PacketIdDefinitions
         new(0x79, ProtocolVersion.MINECRAFT_26_1)
     ];
 
+    /// <summary>Mappings for the clientbound start-configuration packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundStartConfiguration =
     [
         new(0x65, ProtocolVersion.MINECRAFT_1_20_2),
@@ -382,6 +418,7 @@ public static class PacketIdDefinitions
         new(0x76, ProtocolVersion.MINECRAFT_26_1)
     ];
 
+    /// <summary>Mappings for the clientbound play plugin-message packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundPlayPluginMessage =
     [
         new(0x3F, ProtocolVersion.Oldest),
@@ -401,6 +438,7 @@ public static class PacketIdDefinitions
         new(0x18, ProtocolVersion.MINECRAFT_1_21_5)
     ];
 
+    /// <summary>Mappings for the clientbound commands packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundCommands =
     [
         new(0x11, ProtocolVersion.MINECRAFT_1_13),
@@ -415,6 +453,7 @@ public static class PacketIdDefinitions
         new(0x10, ProtocolVersion.MINECRAFT_1_21_5)
     ];
 
+    /// <summary>Mappings for the clientbound command-suggestions response packet.</summary>
     public static readonly MinecraftPacketIdMapping[] ClientboundCommandSuggestionsResponse =
     [
         new(0x3A, ProtocolVersion.MINECRAFT_1_7_2),

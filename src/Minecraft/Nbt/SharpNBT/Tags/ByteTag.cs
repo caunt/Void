@@ -19,7 +19,7 @@ public class ByteTag : NumericTag<byte>
     /// </summary>
     public bool IsBool { get; private set; }
 
-    /// <inheritdoc cref="Tag{T}.Value"/>
+    /// <summary>Gets or sets the raw unsigned byte value and clears <see cref="IsBool" /> when assigned.</summary>
     public new byte Value
     {
         get => base.Value;

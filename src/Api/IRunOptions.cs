@@ -18,6 +18,13 @@
 /// <seealso cref="IProxy"/>
 public interface IRunOptions
 {
+    /// <summary>
+    /// Gets the absolute or relative base directory used for runtime files.
+    /// </summary>
     public string WorkingDirectory { get; }
+
+    /// <summary>
+    /// Gets the command-line arguments supplied for this proxy run.
+    /// </summary>
     public string[] Arguments { get; }
 }

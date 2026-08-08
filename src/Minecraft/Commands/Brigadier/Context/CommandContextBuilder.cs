@@ -5,20 +5,37 @@ using Void.Proxy.Api.Commands;
 
 namespace Void.Minecraft.Commands.Brigadier.Context;
 
+/// <summary>Accumulates parse results for one stage of a potentially redirected command.</summary>
 public class CommandContextBuilder
 {
+    /// <summary>Gets or sets the command source.</summary>
     public ICommandSource Source { get; set; }
+    /// <summary>Gets or sets the dispatcher that owns the parsed tree.</summary>
     public CommandDispatcher Dispatcher { get; set; }
+    /// <summary>Gets or sets the parsing root node.</summary>
     public CommandNode RootNode { get; set; }
+    /// <summary>Gets or sets the initial parse cursor.</summary>
     public int Start { get; set; }
+    /// <summary>Gets or sets the executor selected by parsing.</summary>
     public CommandExecutor? Command { get; set; }
+    /// <summary>Gets or sets the redirect source modifier.</summary>
     public RedirectModifier? RedirectModifier { get; set; }
+    /// <summary>Gets or sets the redirected child context builder.</summary>
     public CommandContextBuilder? Child { get; set; }
+    /// <summary>Gets or sets whether the redirect forks across sources.</summary>
     public bool IsFork { get; set; }
+    /// <summary>Gets the mutable parsed-node sequence.</summary>
     public List<ParsedCommandNode> Nodes { get; } = [];
+    /// <summary>Gets the mutable parsed-argument map.</summary>
     public Dictionary<string, IParsedArgument> Arguments { get; } = [];
+    /// <summary>Gets or sets the aggregate input range covered by parsed nodes.</summary>
     public StringRange Range { get; set; }
 
+    /// <summary>Creates an empty context builder at a parse position.</summary>
+    /// <param name="dispatcher">The dispatcher owning the tree.</param>
+    /// <param name="source">The command source.</param>
+    /// <param name="rootNode">The parsing root.</param>
+    /// <param name="start">The initial cursor.</param>
     public CommandContextBuilder(CommandDispatcher dispatcher, ICommandSource source, CommandNode rootNode, int start)
     {
         Dispatcher = dispatcher;
@@ -28,6 +45,9 @@ public class CommandContextBuilder
         Range = StringRange.At(Start);
     }
 
+    /// <summary>Replaces the command source.</summary>
+    /// <param name="source">The new source.</param>
+    /// <returns>This builder.</returns>
     public CommandContextBuilder WithSource(ICommandSource source)
     {
         Source = source;
@@ -48,12 +68,19 @@ public class CommandContextBuilder
         return this;
     }
 
+    /// <summary>Associates an executor with this stage.</summary>
+    /// <param name="command">The executor, or <see langword="null"/> to clear it.</param>
+    /// <returns>This builder.</returns>
     public CommandContextBuilder WithExecutor(CommandExecutor? command)
     {
         Command = command;
         return this;
     }
 
+    /// <summary>Appends a parsed node and adopts its redirect metadata.</summary>
+    /// <param name="node">The parsed node.</param>
+    /// <param name="range">The consumed range.</param>
+    /// <returns>This builder.</returns>
     public CommandContextBuilder WithNode(CommandNode node, StringRange range)
     {
         Nodes.Add(new ParsedCommandNode(node, range));
@@ -63,12 +90,17 @@ public class CommandContextBuilder
         return this;
     }
 
+    /// <summary>Sets the redirected child stage.</summary>
+    /// <param name="child">The child builder.</param>
+    /// <returns>This builder.</returns>
     public CommandContextBuilder WithChild(CommandContextBuilder child)
     {
         Child = child;
         return this;
     }
 
+    /// <summary>Creates a shallow copy with new node and argument collections.</summary>
+    /// <returns>The copied builder. Its child, source, nodes, and argument values remain shared objects.</returns>
     public CommandContextBuilder Copy()
     {
         var copy = new CommandContextBuilder(Dispatcher, Source, RootNode, Start)
@@ -89,6 +121,8 @@ public class CommandContextBuilder
         return copy;
     }
 
+    /// <summary>Traverses redirected children to the final builder.</summary>
+    /// <returns>The last builder in the child chain.</returns>
     public CommandContextBuilder GetLastChild()
     {
         var result = this;
@@ -99,6 +133,10 @@ public class CommandContextBuilder
         return result;
     }
 
+    /// <summary>Creates an immutable command context and recursively builds its child.</summary>
+    /// <param name="input">The complete command input.</param>
+    /// <returns>The built context.</returns>
+    /// <exception cref="InvalidOperationException"><see cref="Source"/> is <see langword="null"/>.</exception>
     public CommandContext Build(string input)
     {
         if (Source is null)
@@ -107,6 +145,10 @@ public class CommandContextBuilder
         return new(Source, input, Arguments, Command, RootNode, Nodes, Range, Child?.Build(input), RedirectModifier, IsFork);
     }
 
+    /// <summary>Locates the command-tree position at which suggestions should be requested.</summary>
+    /// <param name="cursor">The completion cursor.</param>
+    /// <returns>The parent node and token start.</returns>
+    /// <exception cref="InvalidOperationException">No node precedes the cursor within this context or its children.</exception>
     public SuggestionContext BuildSuggestions(int cursor)
     {
         if (Range.Start <= cursor)

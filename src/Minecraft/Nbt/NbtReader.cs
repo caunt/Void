@@ -6,10 +6,17 @@ using Void.Minecraft.Nbt.SharpNBT.Tags;
 
 namespace Void.Minecraft.Nbt;
 
+/// <summary>Reads binary NBT while preserving empty compound keys and supporting unnamed roots.</summary>
+/// <param name="stream">The source stream.</param>
+/// <param name="options">The binary NBT encoding options.</param>
+/// <param name="leaveOpen">Whether to leave <paramref name="stream"/> open when the reader is disposed.</param>
 public class NbtReader(Stream stream, FormatOptions options, bool leaveOpen = false) : TagReader(stream, options, leaveOpen)
 {
     private static readonly FieldInfo? _tagNameField = typeof(Tag).GetField($"<{nameof(Tag.Name)}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
 
+    /// <summary>Reads a compound payload through its terminating end tag.</summary>
+    /// <param name="named">Whether to read the compound's name before its payload.</param>
+    /// <returns>The compound, including children with empty names preserved as empty strings.</returns>
     public new CompoundTag ReadCompound(bool named = true)
     {
         var compoundTag = new CompoundTag(named ? ReadUTF8String() : null);
@@ -33,6 +40,10 @@ public class NbtReader(Stream stream, FormatOptions options, bool leaveOpen = fa
         return compoundTag;
     }
 
+    /// <summary>Reads a homogeneous list payload.</summary>
+    /// <param name="named">Whether to read the list's name before its payload.</param>
+    /// <returns>The parsed list.</returns>
+    /// <exception cref="FormatException">A non-empty list declares <see cref="TagType.End"/> as its child type.</exception>
     public new ListTag ReadList(bool named = true)
     {
         var name = named ? ReadUTF8String() : null;
@@ -50,6 +61,9 @@ public class NbtReader(Stream stream, FormatOptions options, bool leaveOpen = fa
         return listTag;
     }
 
+    /// <summary>Reads a tag type identifier followed by its optional name and payload.</summary>
+    /// <param name="named">Whether the tag includes a name field.</param>
+    /// <returns>The parsed tag.</returns>
     public new Tag ReadTag(bool named = true)
     {
         var type = ReadType();

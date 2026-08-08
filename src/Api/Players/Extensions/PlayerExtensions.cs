@@ -11,14 +11,25 @@ using Void.Proxy.Api.Servers;
 
 namespace Void.Proxy.Api.Players.Extensions;
 
+/// <summary>
+/// Provides link, traffic-control, channel, and lifecycle operations for proxy players.
+/// </summary>
 public static class PlayerExtensions
 {
     private static readonly AsyncLock _lock = new();
 
     extension(IPlayer player)
     {
+        /// <summary>
+        /// Gets the destination server on the player's active link.
+        /// </summary>
+        /// <value>The linked server, or <see langword="null" /> when the player has no active link.</value>
         public IServer? Server => player.Link?.Server;
 
+        /// <summary>
+        /// Gets the player's active link from the scoped link service.
+        /// </summary>
+        /// <value>The active link, or <see langword="null" /> when the player is not currently linked.</value>
         public ILink? Link
         {
             get
@@ -32,6 +43,10 @@ public static class PlayerExtensions
             }
         }
 
+        /// <summary>
+        /// Gets a weakly tracked link associated with the player, including a link that is no longer active.
+        /// </summary>
+        /// <value>The tracked link, or <see langword="null" /> when none is available.</value>
         public ILink? WeakLink
         {
             get
@@ -45,6 +60,9 @@ public static class PlayerExtensions
             }
         }
 
+        /// <summary>
+        /// Gets whether the player has an active link.
+        /// </summary>
         public bool HasLink
         {
             get
@@ -54,6 +72,12 @@ public static class PlayerExtensions
             }
         }
 
+        /// <summary>
+        /// Pauses selected read or write operations in the player's traffic pipeline.
+        /// </summary>
+        /// <param name="direction">The protocol directions whose traffic is paused.</param>
+        /// <param name="operation">The channel operations to pause.</param>
+        /// <exception cref="InvalidOperationException">The requested operation requires a server channel, but the player has no active link.</exception>
         public void TrafficPause(Direction direction = Direction.Clientbound | Direction.Serverbound, Operation operation = Operation.Any)
         {
             if (player.Link is not { } link)
@@ -104,6 +128,12 @@ public static class PlayerExtensions
             }
         }
 
+        /// <summary>
+        /// Resumes selected read or write operations in the player's traffic pipeline.
+        /// </summary>
+        /// <param name="direction">The protocol directions whose traffic is resumed.</param>
+        /// <param name="operation">The channel operations to resume.</param>
+        /// <exception cref="InvalidOperationException">The requested operation requires a server channel, but the player has no active link.</exception>
         public void TrafficContinue(Direction direction = Direction.Clientbound | Direction.Serverbound, Operation operation = Operation.Any)
         {
             if (player.Link is not { } link)
@@ -154,18 +184,36 @@ public static class PlayerExtensions
             }
         }
 
+        /// <summary>
+        /// Serializes a request to disconnect the player with a text message.
+        /// </summary>
+        /// <param name="text">The disconnect message delivered to the player.</param>
+        /// <param name="cancellationToken">A token used to cancel lock acquisition or the disconnect operation.</param>
+        /// <returns>A task that completes when the player service has processed the kick request.</returns>
         public async ValueTask KickAsync(string text, CancellationToken cancellationToken = default)
         {
             using var disposable = await _lock.LockAsync(cancellationToken);
             await player.GetRequiredService<IPlayerService>().KickPlayerAsync(player, text, cancellationToken);
         }
 
+        /// <summary>
+        /// Determines whether channel discovery found a protocol-specific builder for the player.
+        /// </summary>
+        /// <remarks>Calling this method can consume and buffer the player's initial handshake bytes while channel discovery runs.</remarks>
+        /// <param name="cancellationToken">A token used to cancel channel-builder discovery.</param>
+        /// <returns><see langword="true" /> when discovery selected a non-fallback builder; otherwise, <see langword="false" />.</returns>
         public async ValueTask<bool> IsProtocolSupportedAsync(CancellationToken cancellationToken = default)
         {
             var channelBuilder = await player.GetChannelBuilderAsync(cancellationToken);
             return !channelBuilder.IsFallbackBuilder;
         }
 
+        /// <summary>
+        /// Connects to a server, builds the player's server-facing channel, and publishes a channel-created event.
+        /// </summary>
+        /// <param name="server">The destination server for the channel.</param>
+        /// <param name="cancellationToken">A token used to cancel discovery, connection, construction, or event processing.</param>
+        /// <returns>The newly constructed server-facing channel.</returns>
         public async ValueTask<INetworkChannel> BuildServerChannelAsync(IServer server, CancellationToken cancellationToken = default)
         {
             var channelBuilder = await player.GetChannelBuilderAsync(cancellationToken);

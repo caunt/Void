@@ -3,13 +3,21 @@ using Void.Minecraft.Nbt.Serializers.Json;
 
 namespace Void.Minecraft.Nbt.Serializers.String;
 
+/// <summary>Provides a permissive, JSON-assisted parser for a limited subset of SNBT.</summary>
+/// <remarks>The parser only quotes word-character keys and converts simple single-quoted values; it is not a complete SNBT parser.</remarks>
 public static partial class NbtUnsafeStringSerializer
 {
+    /// <summary>Serializes a tag using the standard SNBT serializer.</summary>
+    /// <param name="tag">The tag to serialize.</param>
+    /// <returns>The SNBT representation.</returns>
     public static string Serialize(NbtTag tag)
     {
         return NbtStringSerializer.Serialize(tag);
     }
 
+    /// <summary>Converts supported SNBT-like syntax to JSON and infers an NBT tag from it.</summary>
+    /// <param name="value">The permissive SNBT-like input.</param>
+    /// <returns>The inferred NBT tag.</returns>
     public static NbtTag Deserialize(string value)
     {
         return NbtJsonSerializer.Deserialize(ConvertSnbtToJson(value));
