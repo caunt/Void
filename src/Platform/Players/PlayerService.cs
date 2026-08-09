@@ -131,6 +131,9 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
     [Subscribe]
     public async ValueTask OnLinkStopped(LinkStoppedEvent @event, CancellationToken cancellationToken)
     {
+        if (@event.Reason is LinkStopReason.Requested)
+            return;
+
         var isPlayerAlive = @event.Reason is not LinkStopReason.PlayerDisconnected && @event.Link.PlayerChannel.IsAlive;
 
         if (!isPlayerAlive)
@@ -138,9 +141,6 @@ public class PlayerService(ILogger<PlayerService> logger, IDependencyService dep
             await events.ThrowAsync(new PlayerDisconnectedEvent(@event.Player), cancellationToken);
             return;
         }
-
-        if (@event.Reason is LinkStopReason.Requested)
-            return;
 
         logger.LogTrace("Reconnecting player {Player} after link {Link} stopped due to {Reason}", @event.Player, @event.Link, @event.Reason);
 

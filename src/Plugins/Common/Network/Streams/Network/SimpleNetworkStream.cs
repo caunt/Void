@@ -199,31 +199,18 @@ public class SimpleNetworkStream(NetworkStream baseStream, TimeSpan writeTimeout
         if (_isClosed)
             return false;
 
-        var expectedBytes = baseStream.Socket.Available;
+        if (_nextBuffer.Length > 0)
+            return true;
 
-        if (expectedBytes > 0)
+        try
         {
-            var buffer = new byte[expectedBytes];
-            var bytesRead = baseStream.Read(buffer);
-
-            if (expectedBytes != bytesRead)
-            {
-                if (bytesRead is 0)
-                    throw new StreamClosedException();
-
-                throw new IOException($"Socket read received length ({bytesRead}) is not equal to expected length ({expectedBytes})");
-            }
-
-            _nextBuffer = _nextBuffer.Length > 0 ? ((byte[])[.. _nextBuffer.ToArray(), .. buffer]).AsMemory() : buffer;
+            var isPollSuccessful = baseStream.Socket.Poll(0, SelectMode.SelectRead);
+            return !isPollSuccessful || baseStream.Socket.Available > 0;
         }
-
-        var availableBytes = baseStream.Socket.Available;
-        var isPollSuccessful = baseStream.Socket.Poll(0, SelectMode.SelectRead);
-
-        if (isPollSuccessful && availableBytes == 0)
+        catch (Exception exception) when (exception is SocketException or ObjectDisposedException)
+        {
             return false;
-
-        return true;
+        }
     }
 
     private async ValueTask ExecuteWithTimeout(Func<CancellationToken, ValueTask> operationFunction, Operation operation, CancellationToken cancellationToken)
