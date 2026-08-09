@@ -13,7 +13,6 @@ using Void.Minecraft.Network.Streams.Packet;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Channels;
-using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
@@ -55,32 +54,6 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             return;
 
         await @event.Player.SetPhaseAsync(link: null, @event.Side, Phase.Handshake, @event.Channel, cancellationToken);
-    }
-
-    [Subscribe]
-    public void OnLinkStoppingEvent(LinkStoppingEvent @event)
-    {
-        if (!@event.Player.IsMinecraft)
-            return;
-
-        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
-            return;
-
-        if (@event.Link.PlayerChannel.TryGet<IMinecraftPacketMessageStream>(out var playerPacketStream))
-        {
-            playerPacketStream.Registries.PacketTransformationsSystem.Clear();
-            playerPacketStream.Registries.PacketTransformationsPlugins.Clear();
-
-            logger.LogTrace("Cleared transformations registries for player channel in {Link} link", @event.Link);
-        }
-
-        if (@event.Link.ServerChannel.TryGet<IMinecraftPacketMessageStream>(out var serverPacketStream))
-        {
-            serverPacketStream.Registries.PacketTransformationsSystem.Clear();
-            serverPacketStream.Registries.PacketTransformationsPlugins.Clear();
-
-            logger.LogTrace("Cleared transformations registries for server channel in {Link} link", @event.Link);
-        }
     }
 
     [Subscribe(PostOrder.First)]

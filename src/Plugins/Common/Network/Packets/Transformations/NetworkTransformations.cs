@@ -6,6 +6,7 @@ using Void.Minecraft.Network.Registries.Transformations.Extensions;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Links;
+using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Players;
 using Void.Proxy.Api.Players.Extensions;
 using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
@@ -78,7 +79,17 @@ public static class NetworkTransformations
 
         logger.LogTrace("Registering {PacketType} packet transformations", typeof(T));
 
-        link.PlayerChannel.MinecraftRegistries.PacketTransformationsSystem.All.RegisterTransformations<T>(protocolVersion, mappings);
-        link.ServerChannel.MinecraftRegistries.PacketTransformationsSystem.All.RegisterTransformations<T>(protocolVersion, mappings);
+        RegisterMappings<T>(link.PlayerChannel, protocolVersion, mappings);
+        RegisterMappings<T>(link.ServerChannel, protocolVersion, mappings);
+    }
+
+    internal static void RegisterMappings<T>(INetworkChannel channel, ProtocolVersion protocolVersion, params IEnumerable<MinecraftPacketTransformationMapping> mappings) where T : IMinecraftPacket
+    {
+        var registry = channel.MinecraftRegistries.PacketTransformationsSystem.All;
+
+        if (registry.TryGetFor(typeof(T), TransformationType.Upgrade, out _) || registry.TryGetFor(typeof(T), TransformationType.Downgrade, out _))
+            return;
+
+        registry.RegisterTransformations<T>(protocolVersion, mappings);
     }
 }
