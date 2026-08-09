@@ -91,7 +91,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
             if (await WaitWithTimeout(_playerToServerTask))
             {
-                logger.LogTrace("Timed out waiting for Player {Player} disconnection from Server {Server} manually, cancelling forcefully [States: {States}]", Player, Server, string.Join(", ", _states.Select(x => $"{x.Key}={x.Value}")));
+                logger.LogWarning("Timed out waiting for Player {Player} disconnection from Server {Server} manually, cancelling forcefully [States: {States}]", Player, Server, string.Join(", ", _states.Select(x => $"{x.Key}={x.Value}")));
                 await _ctsPlayerToServerForce.CancelAsync();
 
                 if (await WaitWithTimeout(_playerToServerTask))
@@ -116,7 +116,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
 
             if (await WaitWithTimeout(_serverToPlayerTask))
             {
-                logger.LogTrace("Timed out waiting for Server {Server} disconnection from Player {Player} manually, cancelling forcefully [States: {States}]", Server, Player, string.Join(", ", _states.Select(x => $"{x.Key}={x.Value}")));
+                logger.LogWarning("Timed out waiting for Server {Server} disconnection from Player {Player} manually, cancelling forcefully [States: {States}]", Server, Player, string.Join(", ", _states.Select(x => $"{x.Key}={x.Value}")));
                 await _ctsServerToPlayerForce.CancelAsync();
 
                 if (await WaitWithTimeout(_serverToPlayerTask))
