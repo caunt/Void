@@ -181,14 +181,14 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
     [Subscribe]
     public async ValueTask OnAuthenticationStarted(AuthenticationStartedEvent @event, CancellationToken cancellationToken)
     {
-        if (!@event.Player.IsMinecraft)
-            return;
-
         if (@event.Side is AuthenticationSide.Server)
         {
             @event.Result = AuthenticationResult.Authenticated;
             return;
         }
+
+        if (!@event.Player.IsMinecraft)
+            return;
 
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;

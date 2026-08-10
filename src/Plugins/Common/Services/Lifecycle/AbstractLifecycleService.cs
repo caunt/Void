@@ -84,6 +84,9 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
     [Subscribe]
     public async ValueTask OnLinkStarted(LinkStartedEvent @event, CancellationToken cancellationToken)
     {
+        if (!@event.Player.IsMinecraft)
+            return;
+
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 
@@ -96,6 +99,9 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
     [Subscribe]
     public async ValueTask OnMessageReceived(MessageReceivedEvent @event, CancellationToken cancellationToken)
     {
+        if (!@event.Player.IsMinecraft)
+            return;
+
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 

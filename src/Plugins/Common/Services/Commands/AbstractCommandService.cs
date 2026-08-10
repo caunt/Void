@@ -23,6 +23,9 @@ public abstract class AbstractCommandService(ILogger logger, IEventService event
     [Subscribe]
     public async ValueTask OnCommandsMessageReceived(MessageReceivedEvent @event, CancellationToken cancellationToken)
     {
+        if (!@event.Player.IsMinecraft)
+            return;
+
         if (!IsSupportedVersion(@event.Player.ProtocolVersion))
             return;
 

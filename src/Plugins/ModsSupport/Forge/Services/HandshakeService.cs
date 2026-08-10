@@ -112,6 +112,9 @@ public class HandshakeService(IPlayerContext context, IPluginService plugins, Pl
     [Subscribe]
     public void OnMessageReceived(MessageReceivedEvent @event)
     {
+        if (!@event.Player.IsMinecraft)
+            return;
+
         switch (@event.Message)
         {
             case ModdedHandshakePacket handshakePacket:
