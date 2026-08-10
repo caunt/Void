@@ -13,6 +13,7 @@ using Void.Minecraft.Network.Streams.Packet;
 using Void.Minecraft.Players.Extensions;
 using Void.Proxy.Api.Events;
 using Void.Proxy.Api.Events.Channels;
+using Void.Proxy.Api.Events.Links;
 using Void.Proxy.Api.Events.Network;
 using Void.Proxy.Api.Events.Plugins;
 using Void.Proxy.Api.Events.Services;
@@ -54,6 +55,21 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
             return;
 
         await @event.Player.SetPhaseAsync(link: null, @event.Side, Phase.Handshake, @event.Channel, cancellationToken);
+    }
+
+    [Subscribe(PostOrder.First + 1)]
+    public void OnLinkStopped(LinkStoppedEvent @event)
+    {
+        if (!@event.Player.IsMinecraft)
+            return;
+
+        if (!IsSupportedVersion(@event.Player.ProtocolVersion))
+            return;
+
+        var hasActiveReplacement = links.TryGetLink(@event.Player, out var activeLink) && !ReferenceEquals(activeLink, @event.Link);
+        var hasPendingReplacement = links.TryGetWeakLink(@event.Player, out var pendingLink) && !ReferenceEquals(pendingLink, @event.Link);
+
+        ClearLinkTransformations(@event.Link.PlayerChannel, @event.Link.ServerChannel, hasActiveReplacement || hasPendingReplacement);
     }
 
     [Subscribe(PostOrder.First)]
@@ -306,6 +322,23 @@ public abstract class AbstractRegistryService(ILogger<AbstractRegistryService> l
 
             stream.Position = 0;
             yield return packet;
+        }
+    }
+
+    internal static void ClearLinkTransformations(INetworkChannel playerChannel, INetworkChannel serverChannel, bool preservePlayerChannel)
+    {
+        if (!preservePlayerChannel)
+            ClearTransformations(playerChannel);
+
+        ClearTransformations(serverChannel);
+
+        static void ClearTransformations(INetworkChannel channel)
+        {
+            if (!channel.TryGet<IMinecraftPacketMessageStream>(out var packetStream))
+                return;
+
+            packetStream.Registries.PacketTransformationsSystem.Clear();
+            packetStream.Registries.PacketTransformationsPlugins.Clear();
         }
     }
 
