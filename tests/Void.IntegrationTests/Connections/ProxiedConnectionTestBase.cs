@@ -3,6 +3,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Void.IntegrationTests.Infrastructure.Extensions;
 using Void.IntegrationTests.Infrastructure.Fixtures;
 using Void.IntegrationTests.Infrastructure.Harness;
 using Void.Minecraft.Network;
@@ -25,8 +26,12 @@ public abstract class ProxiedConnectionTestBase(PaperFixture paperFixture, VoidF
 
         await LoggedExecutorAsync(async () =>
         {
-            await using (var game = await portableMinecraftClientFixture.Api.RunGameAsync(nameof(ProxiedConnectionTestBase), _proxyEndPoint, protocolVersion, paperFixture.Server1, [voidFixture.VoidProxy, paperFixture.Server1], Timeouts.SetupTimeoutToken))
+            await using (var game = await portableMinecraftClientFixture.Api.RunGameAsync(nameof(ProxiedConnectionTestBase), protocolVersion, [voidFixture.VoidProxy, paperFixture.Server1], Timeouts.SetupTimeoutToken))
             {
+                await game.JoinServerAsync(_proxyEndPoint, Timeouts.SetupTimeoutToken);
+                await paperFixture.Server1.Container.ExpectTextAsync($"{game.Username} joined the game", game.StartedAt, Timeouts.SetupTimeoutToken);
+                await game.EnsureStableAsync(Timeouts.SetupTimeoutToken);
+
                 await game.SendTextMessageAsync(expectedText, Timeouts.StepTimeoutToken);
                 await paperFixture.Server1.ExpectTextAsync(expectedText, lookupHistory: true, Timeouts.StepTimeoutToken);
             }

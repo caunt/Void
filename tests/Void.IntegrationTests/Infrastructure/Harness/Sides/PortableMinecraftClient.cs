@@ -71,20 +71,20 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
         var httpClient = new HttpClient
         {
             BaseAddress = new Uri($"http://{container.Hostname}:{container.GetMappedPublicPort(ApiPort)}"),
-            Timeout = Timeout.InfiniteTimeSpan
+            Timeout = Timeouts.SetupTimeout
         };
 
         return new PortableMinecraftClient(container, httpClient);
     }
 
-    public async Task<Game> RunGameAsync(string testName, EndPoint endPoint, ProtocolVersion protocolVersion, PaperServer connectionServer, CancellationToken cancellationToken = default)
+    public async Task<Game> RunGameAsync(string testName, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
     {
-        return await RunGameAsync(testName, endPoint, protocolVersion, connectionServer, [], cancellationToken);
+        return await RunGameAsync(testName, protocolVersion, [], cancellationToken);
     }
 
-    public async Task<Game> RunGameAsync(string testName, EndPoint endPoint, ProtocolVersion protocolVersion, PaperServer connectionServer, IEnumerable<IIntegrationSide> additionalLogSides, CancellationToken cancellationToken = default)
+    public async Task<Game> RunGameAsync(string testName, ProtocolVersion protocolVersion, IEnumerable<IIntegrationSide> additionalLogSides, CancellationToken cancellationToken = default)
     {
-        return await Game.RunAsync(testName, Container, HttpClient, [this, .. additionalLogSides], connectionServer, endPoint, protocolVersion, cancellationToken);
+        return await Game.RunAsync(testName, Container, HttpClient, [this, .. additionalLogSides], protocolVersion, cancellationToken);
     }
 
     public record Game(string TestName, IContainer Container, HttpClient HttpClient, IReadOnlyList<IIntegrationSide> LogSides, DateTime StartedAt, ProtocolVersion ProtocolVersion, string Username) : IAsyncDisposable
@@ -115,9 +115,8 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             GC.SuppressFinalize(this);
         }
 
-        public static async Task<Game> RunAsync(string testName, IContainer container, HttpClient httpClient, IReadOnlyList<IIntegrationSide> logSides, PaperServer connectionServer, EndPoint endPoint, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
+        public static async Task<Game> RunAsync(string testName, IContainer container, HttpClient httpClient, IReadOnlyList<IIntegrationSide> logSides, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
         {
-            var (dockerHost, dockerPort) = endPoint.AsDockerHostPort;
             var username = Convert.ToHexString(BitConverter.GetBytes(Random.Shared.Next()));
             var startedAt = DateTime.UtcNow;
 
@@ -131,9 +130,6 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             {
                 await game.LogAsync($"Starting Minecraft {protocolVersion.FirstRelease}", cancellationToken);
                 await game.StartVanillaAsync(cancellationToken);
-                await game.JoinServerAsync(dockerHost, dockerPort, cancellationToken);
-                await connectionServer.Container.ExpectTextAsync($"{username} joined the game", startedAt, cancellationToken);
-                await game.EnsureStableAsync(cancellationToken);
             }
             catch
             {
@@ -236,16 +232,18 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             }
         }
 
-        private async Task JoinServerAsync(string host, int port, CancellationToken cancellationToken = default)
+        public async Task JoinServerAsync(EndPoint endPoint, CancellationToken cancellationToken = default)
         {
-            await LogAsync($"Navigating the Minecraft UI to {host}:{port}", cancellationToken);
+            var (dockerHost, dockerPort) = endPoint.AsDockerHostPort;
+
+            await LogAsync($"Navigating the Minecraft UI to {dockerHost}:{dockerPort}", cancellationToken);
 
             using var response = await HttpClient.GetAsync(CreateRequestUri("/join-server",
             [
-                new KeyValuePair<string, string>("host", host),
-                new KeyValuePair<string, string>("port", port.ToString())
+                new KeyValuePair<string, string>("host", dockerHost),
+                new KeyValuePair<string, string>("port", dockerPort.ToString())
             ]), cancellationToken);
-            await EnsureSuccessAsync(response, $"Navigating Minecraft {ProtocolVersion.FirstRelease} to {host}:{port}", cancellationToken);
+            await EnsureSuccessAsync(response, $"Navigating Minecraft {ProtocolVersion.FirstRelease} to {dockerHost}:{dockerPort}", cancellationToken);
         }
 
         private async Task SendChatAsync(string text, CancellationToken cancellationToken = default)
