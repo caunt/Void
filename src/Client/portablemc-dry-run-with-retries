@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ "$#" -ne 1 ]]; then
-  echo "Usage: $0 <portablemc-version>" >&2
+if [[ "$#" -lt 1 ]]; then
+  echo "Usage: $0 <portablemc-version> [portablemc-start-argument ...]" >&2
   exit 1
 fi
 
 portablemc_version="$1"
+shift
 attempts="${PORTABLEMC_DRY_RUN_ATTEMPTS:-5}"
 retry_delay_seconds="${PORTABLEMC_DRY_RUN_RETRY_DELAY_SECONDS:-5}"
 
@@ -21,7 +22,7 @@ if [[ ! "$retry_delay_seconds" =~ ^[0-9]+$ ]]; then
 fi
 
 last_exit_code=0
-portablemc_start_arguments=(start --dry "$portablemc_version")
+portablemc_start_arguments=(start --dry "$portablemc_version" "$@")
 
 if [[ "$(uname -m)" == "aarch64" && "$portablemc_version" == mojang:* ]]; then
   minecraft_version="${portablemc_version#mojang:}"

@@ -35,9 +35,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxi6 \
     libxrandr2 \
     libxtst6 \
+    matchbox-window-manager \
+    novnc \
+    tk \
+    websockify \
     x11-utils \
     x11-xserver-utils \
+    x11vnc \
     xdotool \
+    xxd \
     xvfb \
     xfwm4 \
  && rm -rf /var/lib/apt/lists/*
@@ -103,13 +109,20 @@ WORKDIR /app
 COPY list-minecraft-release-versions /usr/local/bin/list-minecraft-release-versions
 COPY portablemc-dry-run-with-retries /usr/local/bin/portablemc-dry-run-with-retries
 COPY java-i686 /usr/local/bin/java-i686
-RUN chmod +x /usr/local/bin/list-minecraft-release-versions /usr/local/bin/portablemc-dry-run-with-retries /usr/local/bin/java-i686
+COPY entrypoint /usr/local/bin/portableminecraftclient-entrypoint
+COPY demo /opt/portableminecraftclient/demo
+RUN chmod +x /usr/local/bin/list-minecraft-release-versions /usr/local/bin/portablemc-dry-run-with-retries /usr/local/bin/java-i686 /usr/local/bin/portableminecraftclient-entrypoint /opt/portableminecraftclient/demo/entrypoint \
+ && ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 
-EXPOSE 8080
+ARG PREINSTALL_PORTABLEMC_DEMO=false
+ARG PORTABLEMC_DEMO_VERSION=neoforge:release:unstable
+RUN if [ "$PREINSTALL_PORTABLEMC_DEMO" = "true" ]; then PORTABLEMC_DEMO_VERSION="$PORTABLEMC_DEMO_VERSION" /opt/portableminecraftclient/demo/entrypoint --prepare; fi
+
+EXPOSE 80 8080
 ENV ASPNETCORE_URLS=http://+:8080
 ENV CURSEFORGE_API_BASE_URL=https://api.curseforge.com
 
-ENTRYPOINT ["dotnet", "run", "Api.cs"]
+ENTRYPOINT ["portableminecraftclient-entrypoint"]
 
 FROM latest AS offline
 

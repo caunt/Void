@@ -1,0 +1,6 @@
+**
+!demo/
+!demo/**
+!src/
+!src/Client/
+!src/Client/**

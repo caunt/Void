@@ -8,13 +8,14 @@ services:
       - itzg_and_dashboard
   
   client:
-    platform: linux/amd64 # portablemc
-    build: session/client
+    image: portableminecraftclient:latest
+    pull_policy: never
     restart: unless-stopped
     networks:
       - default
       - controller_and_client
     environment:
+      PORTABLEMC_DEMO: "true"
       PORTABLEMC_ARGUMENTS: --join-server void
     cpus: 4.0
       

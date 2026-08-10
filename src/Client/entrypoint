@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${PORTABLEMC_DEMO:-false}" == "true" ]]; then
+  exec /opt/portableminecraftclient/demo/entrypoint "$@"
+fi
+
+exec dotnet run Api.cs "$@"
