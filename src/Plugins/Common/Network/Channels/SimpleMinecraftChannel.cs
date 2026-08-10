@@ -9,6 +9,7 @@ using Void.Proxy.Api.Network.Streams;
 using Void.Proxy.Api.Network.Streams.Manual.Binary;
 using Void.Proxy.Api.Network.Streams.Manual.Network;
 using Void.Proxy.Plugins.Common.Network.Messages.Binary;
+using Void.Proxy.Plugins.Common.Network.Streams.Network;
 
 namespace Void.Proxy.Plugins.Common.Network.Channels;
 
@@ -117,6 +118,20 @@ public class SimpleMinecraftChannel(IMessageStreamBase head) : INetworkChannel
         if (_readPause is not null)
             await _readPause.Task.WaitAsync(cancellationToken);
 
+        return await ReadMessageCoreAsync(cancellationToken);
+    }
+
+    public async ValueTask<INetworkMessage> ReadMessageAsync(CancellationToken waitCancellationToken, CancellationToken cancellationToken)
+    {
+        if (_readPause is not null)
+            await _readPause.Task.WaitAsync(waitCancellationToken);
+
+        await Get<SimpleNetworkStream>().WaitForDataAsync(waitCancellationToken);
+        return await ReadMessageCoreAsync(cancellationToken);
+    }
+
+    private async ValueTask<INetworkMessage> ReadMessageCoreAsync(CancellationToken cancellationToken)
+    {
         return head switch
         {
             IMinecraftPacketMessageStream stream => await stream.ReadPacketAsync(cancellationToken),

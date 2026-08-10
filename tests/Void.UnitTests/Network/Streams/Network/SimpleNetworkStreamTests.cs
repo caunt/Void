@@ -11,6 +11,29 @@ namespace Void.UnitTests.Network.Streams.Network;
 public class SimpleNetworkStreamTests
 {
     [Fact]
+    public async Task WaitForDataAsync_WhenCanceled_DoesNotConsumeNextBytesAsync()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var (receivingClient, sendingClient) = await CreateConnectedClientsAsync(cancellationToken);
+        using var receivingClientScope = receivingClient;
+        using var sendingClientScope = sendingClient;
+        using var stream = new SimpleNetworkStream(receivingClient.GetStream());
+        using var waitCancellationTokenSource = new CancellationTokenSource();
+
+        var waitTask = stream.WaitForDataAsync(waitCancellationTokenSource.Token).AsTask();
+        await waitCancellationTokenSource.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waitTask);
+
+        byte[] expectedBytes = [1];
+        await sendingClient.GetStream().WriteAsync(expectedBytes, cancellationToken);
+        await stream.WaitForDataAsync(cancellationToken);
+
+        var actualBytes = new byte[expectedBytes.Length];
+        await stream.ReadExactlyAsync(actualBytes, cancellationToken);
+        Assert.Equal(expectedBytes, actualBytes);
+    }
+
+    [Fact]
     public async Task IsAlive_WithAvailableBytes_DoesNotConsumeBytesAsync()
     {
         var cancellationToken = TestContext.Current.CancellationToken;

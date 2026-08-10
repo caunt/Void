@@ -88,13 +88,14 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         // IPlayer might still be sending Play state packets; read them all until configuration is acknowledged
         var playPacketsLimit = 256;
 
-        IMinecraftServerboundPacket packet;
-        while ((packet = await link.ReceivePacketAsync<IMinecraftServerboundPacket>(cancellationToken)) is not AcknowledgeConfigurationPacket)
+        IMinecraftServerboundPacket? packet;
+        while ((packet = await link.ReceiveCancellablePacketAsync<IMinecraftServerboundPacket>(cancellationToken)) is not AcknowledgeConfigurationPacket)
         {
             if (playPacketsLimit-- is 0)
                 throw new Exception("Client expected to send acknowledge configuration packet in order to start authentication");
 
-            logger.LogTrace("Skipped serverbound packet {Packet} because authentication service is waiting for configuration acknowledge", packet);
+            if (packet is not null)
+                logger.LogTrace("Skipped serverbound packet {Packet} because authentication service is waiting for configuration acknowledge", packet);
         }
     }
 

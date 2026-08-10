@@ -147,7 +147,7 @@ public class Link(IPlayer player, IServer server, INetworkChannel playerChannel,
             try
             {
                 _states[direction] = State.ReadStart;
-                message = await sourceChannel.ReadMessageAsync(forceCancellationToken); // maybe do cancellationToken instead? we've changed SimpleNetworkStream to support safe cancellation
+                message = await sourceChannel.ReadMessageAsync(cancellationToken, forceCancellationToken);
                 _states[direction] = State.ReadEnd;
 
                 _states[direction] = State.MessageReceivedEventStart;

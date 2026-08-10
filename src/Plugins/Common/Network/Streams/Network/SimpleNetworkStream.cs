@@ -28,6 +28,21 @@ public class SimpleNetworkStream(NetworkStream baseStream, TimeSpan writeTimeout
         _nextBuffer = _nextBuffer.Length > 0 ? ((byte[])[.. buffer.ToArray(), .. _nextBuffer.ToArray()]).AsMemory() : buffer; // TODO do not allocate
     }
 
+    public async ValueTask WaitForDataAsync(CancellationToken cancellationToken = default)
+    {
+        if (_nextBuffer.Length > 0)
+            return;
+
+        try
+        {
+            await baseStream.Socket.ReceiveAsync(Memory<byte>.Empty, SocketFlags.None, cancellationToken);
+        }
+        catch (Exception exception) when (exception is SocketException or ObjectDisposedException)
+        {
+            throw new StreamClosedException();
+        }
+    }
+
     public int Read(Span<byte> span)
     {
         if (_nextBuffer is not { Length: > 0 })

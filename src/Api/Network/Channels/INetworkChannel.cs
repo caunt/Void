@@ -103,6 +103,17 @@ public interface INetworkChannel : IDisposable, IAsyncDisposable
     public ValueTask<INetworkMessage> ReadMessageAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Waits for the next message with one cancellation token, then reads it with another.
+    /// </summary>
+    /// <param name="waitCancellationToken">A token used to cancel while waiting for the message to begin.</param>
+    /// <param name="cancellationToken">A token used to cancel the message read after it begins.</param>
+    public ValueTask<INetworkMessage> ReadMessageAsync(CancellationToken waitCancellationToken, CancellationToken cancellationToken)
+    {
+        waitCancellationToken.ThrowIfCancellationRequested();
+        return ReadMessageAsync(cancellationToken);
+    }
+
+    /// <summary>
     /// Writes the specified <paramref name="message"/> to the channel.
     /// </summary>
     public ValueTask WriteMessageAsync(INetworkMessage message, CancellationToken cancellationToken = default);

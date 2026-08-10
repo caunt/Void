@@ -84,9 +84,10 @@ public record VoidProxy(CollectingTextWriter LogWriter, VoidEntryPoint.RunResult
         var unexpectedLogs = LogWriter.GetLinesSince(since).Where(line =>
             line.Contains(" WRN] ", StringComparison.Ordinal) ||
             line.Contains(" ERR] ", StringComparison.Ordinal) ||
-            line.Contains(" FTL] ", StringComparison.Ordinal));
+            line.Contains(" FTL] ", StringComparison.Ordinal)).ToArray();
 
-        Assert.Empty(unexpectedLogs);
+        if (unexpectedLogs.Length > 0)
+            Assert.Fail($"Void emitted warning or higher logs:\n{string.Join('\n', unexpectedLogs)}");
     }
 
     public async Task WaitForPlayerDisconnectionAsync(string username, CancellationToken cancellationToken = default)

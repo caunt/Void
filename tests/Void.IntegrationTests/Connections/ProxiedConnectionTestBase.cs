@@ -26,26 +26,32 @@ public abstract class ProxiedConnectionTestBase(PaperFixture paperFixture, VoidF
 
         await LoggedExecutorAsync(async () =>
         {
-            DateTime voidLogWindowStartedAt;
-            Task playerDisconnectionTask;
+            var voidLogWindowStartedAt = DateTime.UtcNow;
 
-            await using (var game = await portableMinecraftClientFixture.Api.RunGameAsync(nameof(ProxiedConnectionTestBase), protocolVersion, [voidFixture.VoidProxy, paperFixture.Server1], Timeouts.SetupTimeoutToken))
+            try
             {
-                voidLogWindowStartedAt = DateTime.UtcNow;
-                playerDisconnectionTask = voidFixture.VoidProxy.WaitForPlayerDisconnectionAsync(game.Username, Timeouts.StepTimeoutToken);
+                Task playerDisconnectionTask;
 
-                await game.JoinServerAsync(_proxyEndPoint, Timeouts.SetupTimeoutToken);
-                await paperFixture.Server1.Container.ExpectTextAsync($"{game.Username} joined the game", game.StartedAt, Timeouts.SetupTimeoutToken);
-                await game.EnsureStableAsync(Timeouts.SetupTimeoutToken);
+                await using (var game = await portableMinecraftClientFixture.Api.RunGameAsync(nameof(ProxiedConnectionTestBase), protocolVersion, [voidFixture.VoidProxy, paperFixture.Server1], Timeouts.SetupTimeoutToken))
+                {
+                    playerDisconnectionTask = voidFixture.VoidProxy.WaitForPlayerDisconnectionAsync(game.Username, Timeouts.SetupTimeoutToken);
 
-                await game.SendTextMessageAsync(expectedText, Timeouts.StepTimeoutToken);
-                await paperFixture.Server1.ExpectTextAsync(expectedText, lookupHistory: true, Timeouts.StepTimeoutToken);
+                    await game.JoinServerAsync(_proxyEndPoint, Timeouts.SetupTimeoutToken);
+                    await paperFixture.Server1.Container.ExpectTextAsync($"{game.Username} joined the game", game.StartedAt, Timeouts.SetupTimeoutToken);
+                    await game.EnsureStableAsync(Timeouts.SetupTimeoutToken);
+
+                    await game.SendTextMessageAsync(expectedText, Timeouts.StepTimeoutToken);
+                    await paperFixture.Server1.ExpectTextAsync(expectedText, lookupHistory: true, Timeouts.StepTimeoutToken);
+                }
+
+                await playerDisconnectionTask;
+
+                Assert.Contains(paperFixture.Server1.Logs, line => line.Contains(expectedText));
             }
-
-            await playerDisconnectionTask;
-
-            Assert.Contains(paperFixture.Server1.Logs, line => line.Contains(expectedText));
-            voidFixture.VoidProxy.AssertNoWarningOrHigherLogsSince(voidLogWindowStartedAt);
+            finally
+            {
+                voidFixture.VoidProxy.AssertNoWarningOrHigherLogsSince(voidLogWindowStartedAt);
+            }
         }, portableMinecraftClientFixture.Api, voidFixture.VoidProxy, paperFixture.Server1);
     }
 }
