@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Void.IntegrationTests.Infrastructure.Harness;
 using Void.IntegrationTests.Infrastructure.IO;
 using Void.Proxy;
+using Void.Proxy.Api.Events.Links;
 using Xunit;
 
 public record VoidProxy(CollectingTextWriter LogWriter, VoidEntryPoint.RunResult RunResult, CancellationTokenSource CancellationTokenSource) : IIntegrationSide
@@ -76,6 +77,35 @@ public record VoidProxy(CollectingTextWriter LogWriter, VoidEntryPoint.RunResult
     {
         cancellationToken.ThrowIfCancellationRequested();
         return Task.FromResult<IEnumerable<string>>(LogWriter.GetLinesSince(since));
+    }
+
+    public void AssertNoWarningOrHigherLogsSince(DateTime since)
+    {
+        var unexpectedLogs = LogWriter.GetLinesSince(since).Where(line =>
+            line.Contains(" WRN] ", StringComparison.Ordinal) ||
+            line.Contains(" ERR] ", StringComparison.Ordinal) ||
+            line.Contains(" FTL] ", StringComparison.Ordinal));
+
+        Assert.Empty(unexpectedLogs);
+    }
+
+    public async Task WaitForPlayerDisconnectionAsync(string username, CancellationToken cancellationToken = default)
+    {
+        var stateLock = new Lock();
+        var disconnected = false;
+
+        await LogWriter.WaitForLineAsync(line =>
+        {
+            using var _ = stateLock.EnterScope();
+
+            if (!disconnected)
+            {
+                disconnected = line.Contains($"Player {username} disconnected", StringComparison.Ordinal);
+                return false;
+            }
+
+            return line.Contains($"Completed invoking {nameof(LinkStoppedEvent)} event", StringComparison.Ordinal);
+        }, cancellationToken);
     }
 
     public async Task WaitForServerConnectionAndKeepAliveAsync(string username, string serverName, CancellationToken cancellationToken = default)

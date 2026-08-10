@@ -26,8 +26,14 @@ public abstract class ProxiedServerRedirectionTestBase(PaperFixture paperFixture
 
         await LoggedExecutorAsync(async () =>
         {
+            DateTime voidLogWindowStartedAt;
+            Task playerDisconnectionTask;
+
             await using (var game = await portableMinecraftClientFixture.Api.RunGameAsync(nameof(ProxiedServerRedirectionTestBase), protocolVersion, [voidFixture.VoidProxy, paperFixture.Server1, paperFixture.Server2], Timeouts.SetupTimeoutToken))
             {
+                voidLogWindowStartedAt = DateTime.UtcNow;
+                playerDisconnectionTask = voidFixture.VoidProxy.WaitForPlayerDisconnectionAsync(game.Username, Timeouts.StepTimeoutToken);
+
                 await game.JoinServerAsync(_proxyEndPoint, Timeouts.SetupTimeoutToken);
                 await paperFixture.Server1.Container.ExpectTextAsync($"{game.Username} joined the game", game.StartedAt, Timeouts.SetupTimeoutToken);
                 await game.EnsureStableAsync(Timeouts.SetupTimeoutToken);
@@ -50,12 +56,15 @@ public abstract class ProxiedServerRedirectionTestBase(PaperFixture paperFixture
                 await paperFixture.Server1.ExpectTextAsync(thirdMessage, lookupHistory: true, Timeouts.StepTimeoutToken);
             }
 
+            await playerDisconnectionTask;
+
             Assert.Contains(paperFixture.Server1.Logs, line => line.Contains(firstMessage));
             Assert.Contains(paperFixture.Server2.Logs, line => line.Contains(secondMessage));
             Assert.Contains(paperFixture.Server1.Logs, line => line.Contains(thirdMessage));
             
             Assert.Contains(voidFixture.VoidProxy.Logs, line => line.Contains("connected to args-server-2"));
             Assert.True(voidFixture.VoidProxy.Logs.Count(line => line.Contains("connected to args-server-1")) is >= 2); // TODO: sometimes, proxy prints multiple times "connected to" message
+            voidFixture.VoidProxy.AssertNoWarningOrHigherLogsSince(voidLogWindowStartedAt);
         }, portableMinecraftClientFixture.Api, voidFixture.VoidProxy, paperFixture.Server1, paperFixture.Server2);
     }
 }

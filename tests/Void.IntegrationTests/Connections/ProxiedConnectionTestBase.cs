@@ -26,8 +26,14 @@ public abstract class ProxiedConnectionTestBase(PaperFixture paperFixture, VoidF
 
         await LoggedExecutorAsync(async () =>
         {
+            DateTime voidLogWindowStartedAt;
+            Task playerDisconnectionTask;
+
             await using (var game = await portableMinecraftClientFixture.Api.RunGameAsync(nameof(ProxiedConnectionTestBase), protocolVersion, [voidFixture.VoidProxy, paperFixture.Server1], Timeouts.SetupTimeoutToken))
             {
+                voidLogWindowStartedAt = DateTime.UtcNow;
+                playerDisconnectionTask = voidFixture.VoidProxy.WaitForPlayerDisconnectionAsync(game.Username, Timeouts.StepTimeoutToken);
+
                 await game.JoinServerAsync(_proxyEndPoint, Timeouts.SetupTimeoutToken);
                 await paperFixture.Server1.Container.ExpectTextAsync($"{game.Username} joined the game", game.StartedAt, Timeouts.SetupTimeoutToken);
                 await game.EnsureStableAsync(Timeouts.SetupTimeoutToken);
@@ -36,7 +42,10 @@ public abstract class ProxiedConnectionTestBase(PaperFixture paperFixture, VoidF
                 await paperFixture.Server1.ExpectTextAsync(expectedText, lookupHistory: true, Timeouts.StepTimeoutToken);
             }
 
+            await playerDisconnectionTask;
+
             Assert.Contains(paperFixture.Server1.Logs, line => line.Contains(expectedText));
+            voidFixture.VoidProxy.AssertNoWarningOrHigherLogsSince(voidLogWindowStartedAt);
         }, portableMinecraftClientFixture.Api, voidFixture.VoidProxy, paperFixture.Server1);
     }
 }
