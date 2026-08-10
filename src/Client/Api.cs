@@ -25,13 +25,10 @@ const string portableMinecraftArmLwjgl4Version = "3.4.1";
 const string chatInputBrightnessCropGeometry = "854x2+0+451";
 const int minecraftGameId = 432;
 const int curseForgeFilesBatchSize = 50;
-const int chatOpenMaxAttempts = 10;
-const int legacyChatOpenConfirmationMaxAttempts = 90;
-const int chatSubmitMaxAttempts = 3;
-const int chatSubmitConfirmationMaxAttempts = 10;
+const int userInterfaceStableConfirmationCount = 2;
+const double buttonHoverDifferenceRatioThreshold = 0.03;
+const double serverAddressFieldDifferenceRatioThreshold = 0.01;
 const double chatInputBrightnessRatioThreshold = 0.7;
-const int displayReadyMaxAttempts = 50;
-const int displayReadyDelayMilliseconds = 100;
 const int displayProbeTimeoutMilliseconds = 1000;
 const int externalProcessTimeoutMilliseconds = 5000;
 const int screenCaptureTimeoutMilliseconds = 3000;
@@ -48,9 +45,10 @@ var currentOperationName = (string?)null;
 var currentOperationCancellationTokenSource = (CancellationTokenSource?)null;
 var lastError = (string?)null;
 var stateUpdatedAt = DateTimeOffset.UtcNow;
-var chatOperationRunning = false;
+var inputOperationRunning = false;
 var chatInputTargetsWindow = true;
 var chatInputSupportsVisualConfirmation = true;
+var displayProcess = (Process?)null;
 var criticalProcesses = new HashSet<Process>();
 var criticalProcessesLock = new object();
 var expectedExitProcessIds = new HashSet<int>();
@@ -194,10 +192,10 @@ application.MapGet("/send-chat", async Task<IResult> (string? message, Cancellat
         if (clientState != ClientState.Running || clientProcess is null || clientProcess.HasExited)
             return Results.Conflict(CreateStatusBodyLocked("conflict", "no client is running"));
 
-        if (chatOperationRunning)
-            return Results.Conflict(CreateStatusBodyLocked("conflict", "a chat operation is already running"));
+        if (inputOperationRunning)
+            return Results.Conflict(CreateStatusBodyLocked("conflict", "a client input operation is already running"));
 
-        chatOperationRunning = true;
+        inputOperationRunning = true;
         lastError = null;
         stateUpdatedAt = DateTimeOffset.UtcNow;
     }
@@ -232,7 +230,66 @@ application.MapGet("/send-chat", async Task<IResult> (string? message, Cancellat
     {
         lock (clientStateLock)
         {
-            chatOperationRunning = false;
+            inputOperationRunning = false;
+            stateUpdatedAt = DateTimeOffset.UtcNow;
+        }
+    }
+});
+
+application.MapGet("/join-server", async Task<IResult> (string? host, int port, CancellationToken cancellationToken) =>
+{
+    if (string.IsNullOrWhiteSpace(host))
+        return Results.BadRequest("host is required");
+
+    if (port is < 1 or > 65535)
+        return Results.BadRequest("port must be between 1 and 65535");
+
+    lock (clientStateLock)
+    {
+        RefreshClientStateLocked();
+
+        if (clientState != ClientState.Running || clientProcess is null || clientProcess.HasExited)
+            return Results.Conflict(CreateStatusBodyLocked("conflict", "no client is running"));
+
+        if (inputOperationRunning)
+            return Results.Conflict(CreateStatusBodyLocked("conflict", "a client input operation is already running"));
+
+        inputOperationRunning = true;
+        lastError = null;
+        stateUpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    using var operationCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, application.Lifetime.ApplicationStopping);
+
+    try
+    {
+        await JoinServerOperationAsync(host.Trim(), port, operationCancellationTokenSource.Token);
+
+        lock (clientStateLock)
+        {
+            lastError = null;
+            stateUpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        return Results.Ok(CreateStatusBody("joined"));
+    }
+    catch (Exception exception)
+    {
+        Console.Error.WriteLine($"join-server failed: {exception}");
+
+        lock (clientStateLock)
+        {
+            lastError = exception.Message;
+            stateUpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        return Results.Problem(exception.Message);
+    }
+    finally
+    {
+        lock (clientStateLock)
+        {
+            inputOperationRunning = false;
             stateUpdatedAt = DateTimeOffset.UtcNow;
         }
     }
@@ -352,11 +409,475 @@ async Task SendChatOperationAsync(string message, CancellationToken cancellation
     var preferredInputWindowId = chatInputTargetsWindow ? windowId : null;
     await ResizeWindowToDisplayAsync(windowId, cancellationToken);
     await RunOrThrow(cancellationToken, "xdotool", "windowfocus", "--sync", windowId);
-    await Task.Delay(1_000, cancellationToken);
+    await ResumeGameIfPausedAsync(windowId, display, cancellationToken);
     var inputWindowId = await OpenChatAsync(windowId, preferredInputWindowId, display, cancellationToken);
     await TypeTextAsync(inputWindowId, message, chatInputSupportsVisualConfirmation ? 50 : 150, cancellationToken);
-    await Task.Delay(chatInputSupportsVisualConfirmation ? 1_000 : 3_000, cancellationToken);
     await SubmitChatAsync(windowId, inputWindowId, display, cancellationToken);
+}
+
+async Task JoinServerOperationAsync(string host, int port, CancellationToken cancellationToken)
+{
+    var display = Environment.GetEnvironmentVariable("DISPLAY") ?? defaultDisplay;
+    var windowId = await WaitForLargestWindowAsync(display, cancellationToken);
+    var serverAddress = $"{host}:{port}";
+
+    await ResizeWindowToDisplayAsync(windowId, cancellationToken);
+    await RunOrThrow(cancellationToken, "xdotool", "windowfocus", windowId);
+
+    await VisuallyClickButtonAsync("Multiplayer", windowId, display, screen => screen.TryFindMainMenuMultiplayerButton(out var button) ? button : null, cancellationToken);
+
+    var nextScreen = await WaitForMultiplayerOrOnlinePlayWarningAsync(windowId, display, cancellationToken);
+
+    if (nextScreen.Kind is NavigationScreenKind.OnlinePlayWarning)
+    {
+        Console.Error.WriteLine("Visually confirmed the third-party online play warning");
+        await VisuallyClickButtonAsync("Proceed", windowId, display, screen => screen.TryFindOnlinePlayWarningProceedButton(out var button) ? button : null, cancellationToken);
+        await WaitForScreenTargetAsync("multiplayer server list", windowId, display, screen => screen.TryFindMultiplayerScreenDirectConnectionButton(out var button) ? button : null, cancellationToken);
+    }
+
+    while (true)
+    {
+        await SubmitDirectConnectionAsync(windowId, display, serverAddress, cancellationToken);
+
+        if (await WaitForInteractiveGameScreenAsync(windowId, display, cancellationToken))
+            break;
+
+        Console.Error.WriteLine("Visually confirmed that the connection failed; returning to the server list to retry");
+        await VisuallyClickButtonAsync("Back to server list", windowId, display, screen => screen.TryFindConnectionFailureBackButton(out var button) ? button : null, cancellationToken);
+        await WaitForScreenTargetAsync("multiplayer server list", windowId, display, screen => screen.TryFindMultiplayerScreenDirectConnectionButton(out var button) ? button : null, cancellationToken);
+    }
+
+    Console.Error.WriteLine($"Visually confirmed navigation from the main menu to server {serverAddress}");
+}
+
+async Task SubmitDirectConnectionAsync(string windowId, string display, string serverAddress, CancellationToken cancellationToken)
+{
+    await VisuallyClickButtonAsync("Direct Connection", windowId, display, screen => screen.TryFindMultiplayerScreenDirectConnectionButton(out var button) ? button : null, cancellationToken);
+    await WaitForScreenTargetAsync("direct connection form", windowId, display, screen => screen.TryFindDirectConnectionScreen(out var directConnectionScreen) ? directConnectionScreen.JoinButton : null, cancellationToken);
+    await EnterServerAddressAsync(windowId, display, serverAddress, cancellationToken);
+    await VisuallyClickButtonAsync("Join Server", windowId, display, screen => screen.TryFindDirectConnectionScreen(out var directConnectionScreen) ? directConnectionScreen.JoinButton : null, cancellationToken);
+    await WaitForDirectConnectionScreenToCloseAsync(windowId, display, cancellationToken);
+}
+
+async Task<bool> WaitForInteractiveGameScreenAsync(string windowId, string display, CancellationToken cancellationToken)
+{
+    var preferredInputWindowId = chatInputTargetsWindow ? windowId : null;
+    var targetPreferredWindow = true;
+    var useChatKey = true;
+    ScreenRectangle? previousFailureButton = null;
+    var failureConfirmationCount = 0;
+
+    while (true)
+    {
+        var inputWindowId = targetPreferredWindow
+            ? preferredInputWindowId
+            : preferredInputWindowId is null ? windowId : null;
+        targetPreferredWindow = !targetPreferredWindow;
+
+        if (chatInputSupportsVisualConfirmation)
+        {
+            await PressKeyAsync(inputWindowId, "t", cancellationToken);
+        }
+        else
+        {
+            var chatKey = useChatKey ? "t" : "slash";
+            useChatKey = !useChatKey;
+            await PressKeySlowlyAsync(null, chatKey, cancellationToken);
+        }
+
+        if (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
+        {
+            await ClearChatInputAsync(pressKeysSlowly: !chatInputSupportsVisualConfirmation, cancellationToken: cancellationToken);
+
+            if (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
+                break;
+        }
+
+        using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+
+        if (screen.TryFindConnectionFailureBackButton(out var failureButton))
+        {
+            failureConfirmationCount = previousFailureButton is { } previous && AreMatchingRectangles(previous, failureButton)
+                ? failureConfirmationCount + 1
+                : 1;
+            previousFailureButton = failureButton;
+
+            if (failureConfirmationCount >= userInterfaceStableConfirmationCount)
+                return false;
+        }
+        else
+        {
+            previousFailureButton = null;
+            failureConfirmationCount = 0;
+        }
+    }
+
+    if (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
+        await PressKeyAsync(null, "Escape", cancellationToken);
+
+    while (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
+        cancellationToken.ThrowIfCancellationRequested();
+
+    await ResumeGameIfPausedAsync(windowId, display, cancellationToken);
+
+    Console.Error.WriteLine("Visually confirmed an interactive in-game screen");
+    return true;
+}
+
+async Task ResumeGameIfPausedAsync(string windowId, string display, CancellationToken cancellationToken)
+{
+    using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+
+    if (!screen.TryFindPauseMenuBackToGameButton(out _))
+        return;
+
+    Console.Error.WriteLine("Visually confirmed the pause menu; returning to the game");
+    await VisuallyClickButtonAsync("Back to Game", windowId, display, currentScreen => currentScreen.TryFindPauseMenuBackToGameButton(out var button) ? button : null, cancellationToken);
+
+    while (true)
+    {
+        using var currentScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+
+        if (!currentScreen.TryFindPauseMenuBackToGameButton(out _))
+            return;
+
+    }
+}
+
+async Task<string> WaitForLargestWindowAsync(string display, CancellationToken cancellationToken)
+{
+    while (true)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var windowId = await FindLargestWindow(display, cancellationToken);
+
+        if (windowId is not null)
+            return windowId;
+
+    }
+}
+
+async Task<NavigationScreenTarget> WaitForMultiplayerOrOnlinePlayWarningAsync(string windowId, string display, CancellationToken cancellationToken)
+{
+    await MoveMouseAsync(windowId, 2, 2, cancellationToken);
+
+    NavigationScreenTarget? previousTarget = null;
+    var stableConfirmationCount = 0;
+    string? lastScreenDescription = null;
+
+    while (true)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        try
+        {
+            using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+            lastScreenDescription = screen.ToString();
+            NavigationScreenTarget? target = null;
+
+            if (screen.TryFindMultiplayerScreenDirectConnectionButton(out var directConnectionButton))
+                target = new NavigationScreenTarget(NavigationScreenKind.MultiplayerServerList, directConnectionButton);
+            else if (screen.TryFindOnlinePlayWarningProceedButton(out var proceedButton))
+                target = new NavigationScreenTarget(NavigationScreenKind.OnlinePlayWarning, proceedButton);
+
+            if (target is not null && previousTarget is { } previous && AreMatchingTargets(previous, target.Value))
+                stableConfirmationCount++;
+            else
+                stableConfirmationCount = target is null ? 0 : 1;
+
+            previousTarget = target;
+
+            if (target is not null && stableConfirmationCount >= userInterfaceStableConfirmationCount)
+                return target.Value;
+        }
+        catch (InvalidOperationException exception)
+        {
+            lastScreenDescription = exception.Message;
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+            throw new InvalidOperationException($"Failed to visually confirm the multiplayer server list or online play warning. Last screen: {lastScreenDescription}");
+    }
+}
+
+async Task<ScreenRectangle> WaitForScreenTargetAsync(string screenName, string windowId, string display, Func<ScreenImage, ScreenRectangle?> locateTarget, CancellationToken cancellationToken)
+{
+    await MoveMouseAsync(windowId, 2, 2, cancellationToken);
+
+    ScreenRectangle? previousTarget = null;
+    var stableConfirmationCount = 0;
+    string? lastScreenDescription = null;
+
+    while (true)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        try
+        {
+            using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+            lastScreenDescription = screen.ToString();
+            var target = locateTarget(screen);
+
+            if (target is not null && previousTarget is { } previous && AreMatchingRectangles(previous, target.Value))
+                stableConfirmationCount++;
+            else
+                stableConfirmationCount = target is null ? 0 : 1;
+
+            previousTarget = target;
+
+            if (target is not null && stableConfirmationCount >= userInterfaceStableConfirmationCount)
+            {
+                Console.Error.WriteLine($"Visually confirmed {screenName}: {target.Value}");
+                return target.Value;
+            }
+        }
+        catch (InvalidOperationException exception)
+        {
+            lastScreenDescription = exception.Message;
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+            throw new InvalidOperationException($"Failed to visually confirm {screenName}. Last screen: {lastScreenDescription}");
+    }
+}
+
+async Task VisuallyClickButtonAsync(string buttonName, string windowId, string display, Func<ScreenImage, ScreenRectangle?> locateButton, CancellationToken cancellationToken)
+{
+    while (true)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await MoveMouseAsync(windowId, 2, 2, cancellationToken);
+
+        try
+        {
+            using var baselineScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+            var button = locateButton(baselineScreen);
+
+            if (button is null)
+                continue;
+
+            await MoveMouseAsync(windowId, button.Value.CenterX, button.Value.CenterY, cancellationToken);
+            var hoverConfirmationCount = 0;
+
+            while (hoverConfirmationCount < userInterfaceStableConfirmationCount)
+            {
+                using var hoveredScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+                var differenceRatio = baselineScreen.CalculateDifferenceRatio(hoveredScreen, button.Value);
+
+                if (differenceRatio < buttonHoverDifferenceRatioThreshold)
+                {
+                    hoverConfirmationCount = 0;
+                    continue;
+                }
+
+                hoverConfirmationCount++;
+
+                if (hoverConfirmationCount >= userInterfaceStableConfirmationCount)
+                    Console.Error.WriteLine($"Visually confirmed {buttonName} hover at {button.Value} ({differenceRatio:P1} changed pixels)");
+            }
+
+            await ClickMouseAsync(cancellationToken);
+            return;
+        }
+        catch (InvalidOperationException)
+        {
+            // The game can replace its window or screen while it is still loading. Reacquire the target.
+        }
+    }
+}
+
+async Task EnterServerAddressAsync(string windowId, string display, string serverAddress, CancellationToken cancellationToken)
+{
+    await MoveMouseAsync(windowId, 2, 2, cancellationToken);
+    await WaitForScreenTargetAsync("direct connection form", windowId, display, screen => screen.TryFindDirectConnectionScreen(out var directConnectionScreen) ? directConnectionScreen.JoinButton : null, cancellationToken);
+
+    var directConnectionResult = await WaitForDirectConnectionScreenImageAsync(windowId, display, cancellationToken);
+    using var directConnectionScreenImage = directConnectionResult.Screen;
+    var directConnectionScreen = directConnectionResult.DirectConnectionScreen;
+
+    await MoveMouseAsync(windowId, directConnectionScreen.ServerAddressField.CenterX, directConnectionScreen.ServerAddressField.CenterY, cancellationToken);
+    await ClickMouseAsync(cancellationToken);
+    var emptyResult = await ClearServerAddressFieldAsync(windowId, display, cancellationToken);
+    using var emptyScreen = emptyResult.Screen;
+    var emptyDirectConnectionScreen = emptyResult.DirectConnectionScreen;
+
+    var previousScreen = emptyScreen;
+    var previousDirectConnectionScreen = emptyDirectConnectionScreen;
+
+    foreach (var character in serverAddress)
+    {
+        await TypeTextWithoutDelayAsync(null, character.ToString(), cancellationToken);
+        var characterResult = await WaitForServerAddressFieldChangeAsync(windowId, display, previousScreen, previousDirectConnectionScreen.ServerAddressField, 0, cancellationToken);
+
+        if (!ReferenceEquals(previousScreen, emptyScreen))
+            previousScreen.Dispose();
+
+        previousScreen = characterResult.Screen;
+        previousDirectConnectionScreen = characterResult.DirectConnectionScreen;
+    }
+
+    if (!ReferenceEquals(previousScreen, emptyScreen))
+        previousScreen.Dispose();
+
+    var enteredConfirmationCount = 0;
+
+    while (true)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        using var enteredScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+
+        if (!enteredScreen.TryFindDirectConnectionScreen(out var enteredDirectConnectionScreen)
+            || enteredScreen.IsServerAddressFieldEmpty(enteredDirectConnectionScreen.ServerAddressField))
+        {
+            enteredConfirmationCount = 0;
+            continue;
+        }
+
+        var fieldDifferenceRatio = emptyScreen.CalculateDifferenceRatio(enteredScreen, emptyDirectConnectionScreen.ServerAddressField.Inset(3));
+
+        if (fieldDifferenceRatio < serverAddressFieldDifferenceRatioThreshold)
+        {
+            enteredConfirmationCount = 0;
+            continue;
+        }
+
+        enteredConfirmationCount++;
+
+        if (enteredConfirmationCount >= userInterfaceStableConfirmationCount)
+        {
+            Console.Error.WriteLine($"Visually confirmed server address entry ({fieldDifferenceRatio:P1} field change)");
+            return;
+        }
+    }
+}
+
+async Task<(ScreenImage Screen, DirectConnectionScreen DirectConnectionScreen)> ClearServerAddressFieldAsync(string windowId, string display, CancellationToken cancellationToken)
+{
+    ScreenImage? confirmedEmptyScreen = null;
+    var emptyConfirmationCount = 0;
+
+    try
+    {
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var screenResult = await WaitForDirectConnectionScreenImageAsync(windowId, display, cancellationToken);
+
+            if (screenResult.Screen.IsServerAddressFieldEmpty(screenResult.DirectConnectionScreen.ServerAddressField))
+            {
+                emptyConfirmationCount++;
+                confirmedEmptyScreen?.Dispose();
+                confirmedEmptyScreen = screenResult.Screen;
+
+                if (emptyConfirmationCount >= userInterfaceStableConfirmationCount)
+                {
+                    Console.Error.WriteLine("Visually confirmed an empty server address field");
+                    return (confirmedEmptyScreen, screenResult.DirectConnectionScreen);
+                }
+
+                continue;
+            }
+
+            emptyConfirmationCount = 0;
+            confirmedEmptyScreen?.Dispose();
+            confirmedEmptyScreen = null;
+            screenResult.Screen.Dispose();
+
+            await PressKeyAsync(null, "End", cancellationToken);
+            await PressKeyAsync(null, "BackSpace", cancellationToken);
+        }
+    }
+    catch
+    {
+        confirmedEmptyScreen?.Dispose();
+        throw;
+    }
+}
+
+async Task<(ScreenImage Screen, DirectConnectionScreen DirectConnectionScreen)> WaitForServerAddressFieldChangeAsync(string windowId, string display, ScreenImage baselineScreen, ScreenRectangle baselineField, double minimumDifferenceRatio, CancellationToken cancellationToken)
+{
+    while (true)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+
+        if (screen.TryFindDirectConnectionScreen(out var directConnectionScreen)
+            && baselineScreen.CalculateDifferenceRatio(screen, baselineField.Inset(3)) > minimumDifferenceRatio)
+        {
+            return (screen, directConnectionScreen);
+        }
+
+        screen.Dispose();
+    }
+}
+
+async Task<(ScreenImage Screen, DirectConnectionScreen DirectConnectionScreen)> WaitForDirectConnectionScreenImageAsync(string windowId, string display, CancellationToken cancellationToken)
+{
+    while (true)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+
+        if (screen.TryFindDirectConnectionScreen(out var directConnectionScreen))
+            return (screen, directConnectionScreen);
+
+        screen.Dispose();
+    }
+}
+
+async Task WaitForDirectConnectionScreenToCloseAsync(string windowId, string display, CancellationToken cancellationToken)
+{
+    var closedConfirmationCount = 0;
+
+    while (closedConfirmationCount < userInterfaceStableConfirmationCount)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+        closedConfirmationCount = screen.TryFindDirectConnectionScreen(out _) ? 0 : closedConfirmationCount + 1;
+    }
+
+    Console.Error.WriteLine("Visually confirmed that the Join Server action closed the direct connection form");
+}
+
+async Task<ScreenImage> CaptureScreenImageAsync(string windowId, string display, CancellationToken cancellationToken)
+{
+    var captureProcessInfo = CreateProcessInfo("import", ["-window", windowId, "-depth", "8", "ppm:-"], display: display);
+    var captureResult = await RunProcessBytesAsync(captureProcessInfo, TimeSpan.FromMilliseconds(screenCaptureTimeoutMilliseconds), cancellationToken);
+
+    if (captureResult.ExitCode is not 0)
+        throw new InvalidOperationException($"screen analysis capture failed: {captureResult.StandardError}");
+
+    return ScreenImage.LoadPortablePixmap(captureResult.StandardOutput);
+}
+
+async Task MoveMouseAsync(string windowId, int x, int y, CancellationToken cancellationToken)
+{
+    await RunOrThrow(cancellationToken, "xdotool", "windowfocus", windowId);
+    await RunOrThrow(cancellationToken, "xdotool", "mousemove", "--window", windowId, x.ToString(CultureInfo.InvariantCulture), y.ToString(CultureInfo.InvariantCulture));
+}
+
+async Task ClickMouseAsync(CancellationToken cancellationToken)
+{
+    await RunOrThrow(cancellationToken, "xdotool", "click", "1");
+}
+
+bool AreMatchingTargets(NavigationScreenTarget left, NavigationScreenTarget right)
+{
+    return left.Kind == right.Kind && AreMatchingRectangles(left.Target, right.Target);
+}
+
+bool AreMatchingRectangles(ScreenRectangle left, ScreenRectangle right)
+{
+    return Math.Abs(left.Left - right.Left) <= 3
+        && Math.Abs(left.Top - right.Top) <= 3
+        && Math.Abs(left.Right - right.Right) <= 3
+        && Math.Abs(left.Bottom - right.Bottom) <= 3;
 }
 
 Process LaunchPortableMinecraftClient(string directory, string version, string?[]? portableMinecraftArguments = null, CancellationToken cancellationToken = default)
@@ -486,10 +1007,12 @@ async Task PrepareDisplayAndWindowAsync(CancellationToken cancellationToken)
     await EnsureDisplay(cancellationToken);
 
     var display = Environment.GetEnvironmentVariable("DISPLAY") ?? defaultDisplay;
-    var existingWindowId = await FindLargestWindow(display, cancellationToken);
 
-    if (existingWindowId is not null)
-        throw new InvalidOperationException("a client window is already running");
+    while (true)
+    {
+        if (await FindLargestWindow(display, cancellationToken) is null)
+            return;
+    }
 }
 
 async Task<byte[]> CaptureScreenAsync(CancellationToken cancellationToken)
@@ -518,13 +1041,17 @@ async Task ResizeWindowToDisplayAsync(string windowId, CancellationToken cancell
 
 async Task EnsureDisplay(CancellationToken cancellationToken = default)
 {
-    var display = Environment.GetEnvironmentVariable("DISPLAY");
+    var display = Environment.GetEnvironmentVariable("DISPLAY") ?? defaultDisplay;
+    Environment.SetEnvironmentVariable("DISPLAY", display);
 
-    if (!string.IsNullOrEmpty(display) && await IsDisplayReadyAsync(display, cancellationToken))
+    if (await IsDisplayReadyAsync(display, cancellationToken))
         return;
 
-    display ??= defaultDisplay;
-    Environment.SetEnvironmentVariable("DISPLAY", display);
+    if (displayProcess is not null && !displayProcess.HasExited)
+    {
+        await WaitForDisplayReadyAsync(display, cancellationToken);
+        return;
+    }
 
     var displayNumber = display.TrimStart(':');
     var lockFile = $"/tmp/.X{displayNumber}-lock";
@@ -532,29 +1059,27 @@ async Task EnsureDisplay(CancellationToken cancellationToken = default)
     if (File.Exists(lockFile))
         File.Delete(lockFile);
 
-    StartCriticalProcess("Xvfb", processInfo =>
+    displayProcess = StartCriticalProcess("Xvfb", processInfo =>
     {
         processInfo.ArgumentList.Add(display);
         processInfo.ArgumentList.Add("-screen");
         processInfo.ArgumentList.Add("0");
         processInfo.ArgumentList.Add(displayScreen);
+        processInfo.ArgumentList.Add("-noreset");
+        processInfo.ArgumentList.Add("-nolisten");
+        processInfo.ArgumentList.Add("tcp");
     });
 
-    var displayIsReady = false;
+    await WaitForDisplayReadyAsync(display, cancellationToken);
+}
 
-    for (var attempt = 0; attempt < displayReadyMaxAttempts; attempt++)
+async Task WaitForDisplayReadyAsync(string display, CancellationToken cancellationToken)
+{
+    while (true)
     {
-        await Task.Delay(displayReadyDelayMilliseconds, cancellationToken);
-
         if (await IsDisplayReadyAsync(display, cancellationToken))
-        {
-            displayIsReady = true;
-            break;
-        }
+            return;
     }
-
-    if (!displayIsReady)
-        throw new InvalidOperationException($"display {display} did not become ready after {displayReadyMaxAttempts} attempts");
 }
 
 async Task<bool> IsDisplayReadyAsync(string display, CancellationToken cancellationToken)
@@ -582,6 +1107,14 @@ async Task TypeTextAsync(string? windowId, string text, int delayMilliseconds, C
         await RunOrThrow(cancellationToken, "xdotool", "type", "--clearmodifiers", "--window", windowId, "--delay", delay, "--", text);
 }
 
+async Task TypeTextWithoutDelayAsync(string? windowId, string text, CancellationToken cancellationToken = default)
+{
+    if (windowId is null)
+        await RunOrThrow(cancellationToken, "xdotool", "type", "--clearmodifiers", "--", text);
+    else
+        await RunOrThrow(cancellationToken, "xdotool", "type", "--clearmodifiers", "--window", windowId, "--", text);
+}
+
 async Task PressKeyAsync(string? windowId, string key, CancellationToken cancellationToken = default)
 {
     if (windowId is null)
@@ -607,44 +1140,36 @@ async Task PressKeySlowlyAsync(string? windowId, string key, CancellationToken c
 
 async Task ClearChatInputAsync(bool pressKeysSlowly = false, CancellationToken cancellationToken = default)
 {
-    await Task.Delay(1_000, cancellationToken);
-
     if (pressKeysSlowly)
     {
         await SelectAllTextAsync(cancellationToken);
         await PressKeySlowlyAsync(null, "BackSpace", cancellationToken);
-        await Task.Delay(2_000, cancellationToken);
-        return;
     }
-
-    for (var attempt = 0; attempt < chatOpenMaxAttempts; attempt++)
-    {
-        await PressKeyAsync(null, "BackSpace", cancellationToken);
-        await Task.Delay(50, cancellationToken);
-    }
-
-    await Task.Delay(750, cancellationToken);
+    else
+        await ClearTextWithoutDelayAsync(cancellationToken);
 }
 
 async Task SelectAllTextAsync(CancellationToken cancellationToken)
 {
-    await RunOrThrow(cancellationToken, "xdotool", "keydown", "ctrl");
-    await Task.Delay(150, cancellationToken);
-    await RunOrThrow(cancellationToken, "xdotool", "keydown", "a");
-    await Task.Delay(150, cancellationToken);
-    await RunOrThrow(cancellationToken, "xdotool", "keyup", "a");
-    await RunOrThrow(cancellationToken, "xdotool", "keyup", "ctrl");
+    await RunOrThrow(cancellationToken, "xdotool", "keydown", "ctrl", "key", "a", "keyup", "ctrl");
+}
+
+async Task ClearTextWithoutDelayAsync(CancellationToken cancellationToken)
+{
+    await RunOrThrow(cancellationToken, "xdotool", "keydown", "ctrl", "key", "a", "keyup", "ctrl", "key", "BackSpace");
 }
 
 async Task<string?> OpenChatAsync(string windowId, string? preferredInputWindowId, string display, CancellationToken cancellationToken = default)
 {
     if (!chatInputSupportsVisualConfirmation)
     {
-        for (var attempt = 0; attempt < legacyChatOpenConfirmationMaxAttempts; attempt++)
+        var useChatKey = true;
+
+        while (true)
         {
-            var chatKey = attempt % 2 == 0 ? "t" : "slash";
+            var chatKey = useChatKey ? "t" : "slash";
+            useChatKey = !useChatKey;
             await PressKeySlowlyAsync(null, chatKey, cancellationToken);
-            await Task.Delay(500, cancellationToken);
 
             if (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
             {
@@ -654,34 +1179,20 @@ async Task<string?> OpenChatAsync(string windowId, string? preferredInputWindowI
                     return null;
             }
         }
-
-        throw new InvalidOperationException($"failed to confirm legacy chat input after {legacyChatOpenConfirmationMaxAttempts} attempts");
     }
 
-    for (var attempt = 0; attempt < chatOpenMaxAttempts; attempt++)
+    while (true)
     {
-        var inputWindowId = attempt % 2 == 0
-            ? preferredInputWindowId
-            : preferredInputWindowId is null ? windowId : null;
+        await PressKeyAsync(preferredInputWindowId, "t", cancellationToken);
 
-        await PressKeyAsync(inputWindowId, "t", cancellationToken);
-        await Task.Delay(500, cancellationToken);
-
-        if (!await IsChatInputVisibleAsync(windowId, display, cancellationToken))
-        {
-            await Task.Delay(500, cancellationToken);
-
-            if (!await IsChatInputVisibleAsync(windowId, display, cancellationToken))
-                continue;
-        }
+        while (!await IsChatInputVisibleAsync(windowId, display, cancellationToken))
+            cancellationToken.ThrowIfCancellationRequested();
 
         await ClearChatInputAsync(cancellationToken: cancellationToken);
 
         if (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
             return null;
     }
-
-    throw new InvalidOperationException($"failed to open chat input after {chatOpenMaxAttempts} attempts");
 }
 
 async Task SubmitChatAsync(string windowId, string? inputWindowId, string display, CancellationToken cancellationToken = default)
@@ -689,24 +1200,13 @@ async Task SubmitChatAsync(string windowId, string? inputWindowId, string displa
     if (!chatInputSupportsVisualConfirmation)
     {
         await PressKeyAsync(null, "Return", cancellationToken);
-        await Task.Delay(1_000, cancellationToken);
         return;
     }
 
-    for (var attempt = 0; attempt < chatSubmitMaxAttempts; attempt++)
-    {
-        await PressKeyAsync(inputWindowId, "Return", cancellationToken);
+    await PressKeyAsync(inputWindowId, "Return", cancellationToken);
 
-        for (var confirmationAttempt = 0; confirmationAttempt < chatSubmitConfirmationMaxAttempts; confirmationAttempt++)
-        {
-            await Task.Delay(500, cancellationToken);
-
-            if (!await IsChatInputVisibleAsync(windowId, display, cancellationToken))
-                return;
-        }
-    }
-
-    throw new InvalidOperationException($"failed to submit chat input after {chatSubmitMaxAttempts} attempts");
+    while (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
+        cancellationToken.ThrowIfCancellationRequested();
 }
 
 async Task<bool> IsChatInputVisibleAsync(string windowId, string display, CancellationToken cancellationToken = default)
@@ -1432,6 +1932,615 @@ async Task<byte[]> DownloadWithFallbackAsync(HttpClient httpClient, string downl
     response.EnsureSuccessStatusCode();
 
     return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+}
+
+sealed class ScreenImage : IDisposable
+{
+    private const int MinimumButtonWidth = 60;
+    private const int MaximumButtonWidth = 430;
+    private const int MinimumButtonHeight = 36;
+    private const int MaximumButtonHeight = 42;
+    private const byte BlackThreshold = 12;
+    private const byte NeutralColorTolerance = 16;
+
+    private readonly byte[] _imageBytes;
+    private readonly int _pixelDataOffset;
+    private IReadOnlyList<ScreenRectangle>? _buttons;
+
+    private ScreenImage(byte[] imageBytes, int pixelDataOffset, int width, int height)
+    {
+        _imageBytes = imageBytes;
+        _pixelDataOffset = pixelDataOffset;
+        Width = width;
+        Height = height;
+    }
+
+    public int Width { get; }
+    public int Height { get; }
+
+    public static ScreenImage LoadPortablePixmap(byte[] imageBytes)
+    {
+        var headerOffset = 0;
+        var magic = ReadPortablePixmapToken(imageBytes, ref headerOffset);
+
+        if (magic != "P6")
+            throw new InvalidOperationException($"Unsupported screen capture format '{magic}'");
+
+        if (!int.TryParse(ReadPortablePixmapToken(imageBytes, ref headerOffset), NumberStyles.None, CultureInfo.InvariantCulture, out var width) || width <= 0)
+            throw new InvalidOperationException("Screen capture has an invalid width");
+
+        if (!int.TryParse(ReadPortablePixmapToken(imageBytes, ref headerOffset), NumberStyles.None, CultureInfo.InvariantCulture, out var height) || height <= 0)
+            throw new InvalidOperationException("Screen capture has an invalid height");
+
+        if (ReadPortablePixmapToken(imageBytes, ref headerOffset) != "255")
+            throw new InvalidOperationException("Screen capture does not use 8-bit color channels");
+
+        var pixelByteCount = checked(width * height * 3);
+        var pixelDataOffset = imageBytes.Length - pixelByteCount;
+
+        if (pixelDataOffset <= headerOffset)
+            throw new InvalidOperationException("Screen capture pixel data is truncated");
+
+        return new ScreenImage(imageBytes, pixelDataOffset, width, height);
+    }
+
+    public bool TryFindMainMenuMultiplayerButton(out ScreenRectangle multiplayerButton)
+    {
+        var expectedTop = (int)Math.Round(Height * 0.55);
+        var candidates = FindButtons()
+            .Where(button => button.Width >= Width * 0.4 && IsHorizontallyCentered(button))
+            .Where(button => Math.Abs(button.Top - expectedTop) <= 5)
+            .ToArray();
+
+        if (candidates.Length > 0)
+        {
+            multiplayerButton = candidates.MinBy(button => Math.Abs(button.Top - expectedTop));
+            return true;
+        }
+
+        multiplayerButton = default;
+        return false;
+    }
+
+    public bool TryFindOnlinePlayWarningProceedButton(out ScreenRectangle proceedButton)
+    {
+        var warningButtonRows = GroupIntoRows(FindButtons().Where(button => button.Top >= Height * 0.55));
+        var warningRow = warningButtonRows.SingleOrDefault(row => row.Count is 2 && row.All(button => button.Width >= Width * 0.25));
+
+        if (warningRow is null)
+        {
+            proceedButton = default;
+            return false;
+        }
+
+        proceedButton = warningRow.OrderBy(button => button.Left).First();
+        return true;
+    }
+
+    public bool TryFindMultiplayerScreenDirectConnectionButton(out ScreenRectangle directConnectionButton)
+    {
+        var bottomButtons = FindButtons().Where(button => button.Top >= Height * 0.7).ToArray();
+
+        if (bottomButtons.Length < 6)
+        {
+            directConnectionButton = default;
+            return false;
+        }
+
+        var upperButtonRow = GroupIntoRows(bottomButtons)
+            .Where(row => row.Count is 3)
+            .OrderBy(row => row.Min(button => button.Top))
+            .FirstOrDefault();
+
+        if (upperButtonRow is null)
+        {
+            directConnectionButton = default;
+            return false;
+        }
+
+        directConnectionButton = upperButtonRow.OrderBy(button => button.Left).ElementAt(1);
+        return true;
+    }
+
+    public bool TryFindConnectionFailureBackButton(out ScreenRectangle backButton)
+    {
+        var centeredWideButtons = FindButtons()
+            .Where(button => button.Width >= Width * 0.4 && IsHorizontallyCentered(button))
+            .ToArray();
+
+        if (centeredWideButtons.Length is 1
+            && centeredWideButtons[0].Top >= Height * 0.45
+            && centeredWideButtons[0].Top <= Height * 0.75)
+        {
+            backButton = centeredWideButtons[0];
+            return true;
+        }
+
+        backButton = default;
+        return false;
+    }
+
+    public bool TryFindPauseMenuBackToGameButton(out ScreenRectangle backToGameButton)
+    {
+        var buttons = FindButtons();
+        var centeredWideButtons = buttons
+            .Where(button => button.Width >= Width * 0.4 && IsHorizontallyCentered(button))
+            .OrderBy(button => button.Top)
+            .ToArray();
+
+        if (buttons.Count >= 5
+            && centeredWideButtons.Length >= 2
+            && centeredWideButtons[0].Top >= Height * 0.2
+            && centeredWideButtons[0].Top <= Height * 0.45
+            && centeredWideButtons[^1].Top >= Height * 0.6)
+        {
+            backToGameButton = centeredWideButtons[0];
+            return true;
+        }
+
+        backToGameButton = default;
+        return false;
+    }
+
+    public bool TryFindDirectConnectionScreen(out DirectConnectionScreen directConnectionScreen)
+    {
+        var centeredButtons = FindButtons()
+            .Where(button => button.Width >= Width * 0.4 && IsHorizontallyCentered(button))
+            .Where(button => button.Top >= Height * 0.55)
+            .OrderBy(button => button.Top)
+            .ToArray();
+
+        for (var index = 0; index < centeredButtons.Length - 1; index++)
+        {
+            var joinButton = centeredButtons[index];
+            var cancelButton = centeredButtons[index + 1];
+
+            if (!HaveMatchingWidths(joinButton, cancelButton) || !HaveStandardVerticalSpacing(joinButton, cancelButton))
+                continue;
+
+            if (!TryFindServerAddressField(joinButton, out var serverAddressField))
+                continue;
+
+            directConnectionScreen = new DirectConnectionScreen(serverAddressField, joinButton, cancelButton);
+            return true;
+        }
+
+        directConnectionScreen = default;
+        return false;
+    }
+
+    public double CalculateDifferenceRatio(ScreenImage other, ScreenRectangle area, byte channelDifferenceThreshold = 20)
+    {
+        if (Width != other.Width || Height != other.Height)
+            throw new ArgumentException("Screens must have matching dimensions.", nameof(other));
+
+        if (area.Left < 0 || area.Top < 0 || area.Right > Width || area.Bottom > Height)
+            throw new ArgumentOutOfRangeException(nameof(area));
+
+        var differentPixels = 0;
+        var comparedPixels = area.Width * area.Height;
+
+        for (var y = area.Top; y < area.Bottom; y++)
+        {
+            for (var x = area.Left; x < area.Right; x++)
+            {
+                var leftPixel = GetPixel(x, y);
+                var rightPixel = other.GetPixel(x, y);
+
+                if (Math.Abs(leftPixel.Red - rightPixel.Red) > channelDifferenceThreshold
+                    || Math.Abs(leftPixel.Green - rightPixel.Green) > channelDifferenceThreshold
+                    || Math.Abs(leftPixel.Blue - rightPixel.Blue) > channelDifferenceThreshold)
+                {
+                    differentPixels++;
+                }
+            }
+        }
+
+        return comparedPixels is 0 ? 0 : (double)differentPixels / comparedPixels;
+    }
+
+    public bool IsServerAddressFieldEmpty(ScreenRectangle serverAddressField)
+    {
+        const int fieldContentInset = 6;
+        const int maximumHorizontalCursorWidth = 12;
+        const int maximumHorizontalCursorHeight = 3;
+        const int maximumVerticalCursorWidth = 3;
+
+        var fieldContent = serverAddressField.Inset(fieldContentInset);
+        var brightPixelCount = 0;
+        var brightPixelLeft = fieldContent.Right;
+        var brightPixelTop = fieldContent.Bottom;
+        var brightPixelRight = fieldContent.Left;
+        var brightPixelBottom = fieldContent.Top;
+
+        for (var y = fieldContent.Top; y < fieldContent.Bottom; y++)
+        {
+            for (var x = fieldContent.Left; x < fieldContent.Right; x++)
+            {
+                if (!IsNeutralAndBright(GetPixel(x, y)))
+                    continue;
+
+                brightPixelCount++;
+                brightPixelLeft = Math.Min(brightPixelLeft, x);
+                brightPixelTop = Math.Min(brightPixelTop, y);
+                brightPixelRight = Math.Max(brightPixelRight, x + 1);
+                brightPixelBottom = Math.Max(brightPixelBottom, y + 1);
+            }
+        }
+
+        if (brightPixelCount is 0)
+            return true;
+
+        var brightPixelWidth = brightPixelRight - brightPixelLeft;
+        var brightPixelHeight = brightPixelBottom - brightPixelTop;
+        var isHorizontalCursor = brightPixelWidth <= maximumHorizontalCursorWidth
+            && brightPixelHeight <= maximumHorizontalCursorHeight
+            && brightPixelTop >= fieldContent.Top + fieldContent.Height / 2;
+        var isVerticalCursor = brightPixelWidth <= maximumVerticalCursorWidth
+            && brightPixelHeight >= fieldContent.Height / 3;
+
+        return isHorizontalCursor || isVerticalCursor;
+    }
+
+    public void Dispose()
+    {
+        // The image is stored in managed memory and needs no explicit cleanup.
+    }
+
+    public override string ToString()
+    {
+        return $"{Width}x{Height}; buttons: {string.Join(", ", FindButtons())}";
+    }
+
+    private IReadOnlyList<ScreenRectangle> FindButtons()
+    {
+        return _buttons ??= DetectButtons();
+    }
+
+    private IReadOnlyList<ScreenRectangle> DetectButtons()
+    {
+        var candidates = new List<ScreenRectangle>();
+
+        for (var top = 0; top <= Height - MinimumButtonHeight; top++)
+        {
+            foreach (var (left, width) in FindBlackRuns(top))
+            {
+                if (width is < MinimumButtonWidth or > MaximumButtonWidth)
+                    continue;
+
+                for (var height = MinimumButtonHeight; height <= MaximumButtonHeight && top + height <= Height; height++)
+                {
+                    var candidate = new ScreenRectangle(left, top, width, height);
+
+                    if (!HasButtonBorder(candidate) || !HasButtonInterior(candidate))
+                        continue;
+
+                    candidates.Add(candidate);
+                    break;
+                }
+            }
+        }
+
+        var buttons = new List<ScreenRectangle>();
+
+        foreach (var candidate in candidates.OrderBy(button => button.Top).ThenBy(button => button.Left))
+        {
+            var duplicateIndex = buttons.FindIndex(button => AreDuplicateDetections(button, candidate));
+
+            if (duplicateIndex < 0)
+            {
+                buttons.Add(candidate);
+                continue;
+            }
+
+            if (candidate.Width * candidate.Height > buttons[duplicateIndex].Width * buttons[duplicateIndex].Height)
+                buttons[duplicateIndex] = candidate;
+        }
+
+        return buttons.OrderBy(button => button.Top).ThenBy(button => button.Left).ToArray();
+    }
+
+    private IEnumerable<(int Left, int Width)> FindBlackRuns(int y)
+    {
+        var left = 0;
+
+        while (left < Width)
+        {
+            while (left < Width && !IsBlack(GetPixel(left, y)))
+                left++;
+
+            var right = left;
+
+            while (right < Width && IsBlack(GetPixel(right, y)))
+                right++;
+
+            if (right > left)
+                yield return (left, right - left);
+
+            left = right + 1;
+        }
+    }
+
+    private bool HasButtonBorder(ScreenRectangle candidate)
+    {
+        var topBlackPixels = 0;
+        var bottomBlackPixels = 0;
+
+        for (var x = candidate.Left; x < candidate.Right; x++)
+        {
+            if (IsBlack(GetPixel(x, candidate.Top)))
+                topBlackPixels++;
+
+            if (IsBlack(GetPixel(x, candidate.Bottom - 1)))
+                bottomBlackPixels++;
+        }
+
+        if ((double)topBlackPixels / candidate.Width < 0.9 || (double)bottomBlackPixels / candidate.Width < 0.85)
+            return false;
+
+        var leftBlackPixels = 0;
+        var rightBlackPixels = 0;
+
+        for (var y = candidate.Top; y < candidate.Bottom; y++)
+        {
+            if (IsBlack(GetPixel(candidate.Left, y)))
+                leftBlackPixels++;
+
+            if (IsBlack(GetPixel(candidate.Right - 1, y)))
+                rightBlackPixels++;
+        }
+
+        return (double)leftBlackPixels / candidate.Height >= 0.75 && (double)rightBlackPixels / candidate.Height >= 0.75;
+    }
+
+    private bool HasButtonInterior(ScreenRectangle candidate)
+    {
+        var inset = Math.Max(3, candidate.Height / 10);
+        var sideSectionWidth = Math.Max(1, candidate.Width / 4 - inset);
+        var neutralPixels = 0;
+        var sufficientlyBrightPixels = 0;
+        var sampleCount = 0;
+
+        for (var y = candidate.Top + inset; y < candidate.Bottom - inset; y += 2)
+        {
+            foreach (var x in EnumerateSideSectionPixels(candidate, inset, sideSectionWidth))
+            {
+                var pixel = GetPixel(x, y);
+                sampleCount++;
+
+                if (IsNeutral(pixel))
+                    neutralPixels++;
+
+                if (GetBrightness(pixel) >= 24)
+                    sufficientlyBrightPixels++;
+            }
+        }
+
+        return sampleCount > 0
+            && (double)neutralPixels / sampleCount >= 0.7
+            && (double)sufficientlyBrightPixels / sampleCount >= 0.7;
+    }
+
+    private IEnumerable<int> EnumerateSideSectionPixels(ScreenRectangle candidate, int inset, int sideSectionWidth)
+    {
+        var leftStart = candidate.Left + inset;
+        var rightStart = candidate.Right - inset - sideSectionWidth;
+
+        for (var offset = 0; offset < sideSectionWidth; offset += 2)
+        {
+            yield return leftStart + offset;
+            yield return rightStart + offset;
+        }
+    }
+
+    private bool TryFindServerAddressField(ScreenRectangle joinButton, out ScreenRectangle serverAddressField)
+    {
+        var minimumFieldWidth = (int)(joinButton.Width * 0.95);
+        var maximumFieldWidth = (int)(joinButton.Width * 1.05);
+
+        for (var top = joinButton.Top - 1; top >= Height * 0.25; top--)
+        {
+            foreach (var (left, width) in FindNeutralBrightRuns(top))
+            {
+                if (width < minimumFieldWidth || width > maximumFieldWidth || Math.Abs(left + width / 2 - Width / 2) > 5)
+                    continue;
+
+                for (var height = MinimumButtonHeight; height <= 48 && top + height < joinButton.Top; height++)
+                {
+                    var candidate = new ScreenRectangle(left, top, width, height);
+
+                    if (HasTextFieldInterior(candidate))
+                    {
+                        serverAddressField = candidate;
+                        return true;
+                    }
+                }
+            }
+        }
+
+        serverAddressField = default;
+        return false;
+    }
+
+    private IEnumerable<(int Left, int Width)> FindNeutralBrightRuns(int y)
+    {
+        var left = 0;
+
+        while (left < Width)
+        {
+            while (left < Width && !IsNeutralAndBright(GetPixel(left, y)))
+                left++;
+
+            var right = left;
+
+            while (right < Width && IsNeutralAndBright(GetPixel(right, y)))
+                right++;
+
+            if (right > left)
+                yield return (left, right - left);
+
+            left = right + 1;
+        }
+    }
+
+    private bool HasTextFieldInterior(ScreenRectangle candidate)
+    {
+        var bottomBorderPixels = 0;
+        var darkInteriorPixels = 0;
+        var interiorSampleCount = 0;
+
+        for (var x = candidate.Left; x < candidate.Right; x++)
+        {
+            if (IsNeutralAndBright(GetPixel(x, candidate.Bottom - 1)))
+                bottomBorderPixels++;
+        }
+
+        for (var y = candidate.Top + 3; y < candidate.Bottom - 3; y += 2)
+        {
+            for (var x = candidate.Left + 6; x < candidate.Right - 6; x += 4)
+            {
+                interiorSampleCount++;
+
+                if (GetBrightness(GetPixel(x, y)) <= 20)
+                    darkInteriorPixels++;
+            }
+        }
+
+        return (double)bottomBorderPixels / candidate.Width >= 0.8
+            && interiorSampleCount > 0
+            && (double)darkInteriorPixels / interiorSampleCount >= 0.8;
+    }
+
+    private IReadOnlyList<IReadOnlyList<ScreenRectangle>> GroupIntoRows(IEnumerable<ScreenRectangle> buttons)
+    {
+        var rows = new List<List<ScreenRectangle>>();
+
+        foreach (var button in buttons.OrderBy(button => button.Top))
+        {
+            var row = rows.FirstOrDefault(candidateRow => Math.Abs(candidateRow[0].Top - button.Top) <= 3);
+
+            if (row is null)
+            {
+                row = [];
+                rows.Add(row);
+            }
+
+            row.Add(button);
+        }
+
+        return rows.Select(row => (IReadOnlyList<ScreenRectangle>)row).ToArray();
+    }
+
+    private PixelColor GetPixel(int x, int y)
+    {
+        var offset = _pixelDataOffset + (y * Width + x) * 3;
+        return new PixelColor(_imageBytes[offset], _imageBytes[offset + 1], _imageBytes[offset + 2]);
+    }
+
+    private bool IsHorizontallyCentered(ScreenRectangle rectangle)
+    {
+        return Math.Abs(rectangle.Left + rectangle.Width / 2 - Width / 2) <= 5;
+    }
+
+    private static string ReadPortablePixmapToken(byte[] imageBytes, ref int offset)
+    {
+        while (offset < imageBytes.Length)
+        {
+            while (offset < imageBytes.Length && char.IsWhiteSpace((char)imageBytes[offset]))
+                offset++;
+
+            if (offset >= imageBytes.Length || imageBytes[offset] is not (byte)'#')
+                break;
+
+            while (offset < imageBytes.Length && imageBytes[offset] is not (byte)'\n')
+                offset++;
+        }
+
+        var tokenStart = offset;
+
+        while (offset < imageBytes.Length && !char.IsWhiteSpace((char)imageBytes[offset]))
+            offset++;
+
+        if (tokenStart == offset)
+            throw new InvalidOperationException("Screen capture has an incomplete portable pixmap header");
+
+        return System.Text.Encoding.ASCII.GetString(imageBytes, tokenStart, offset - tokenStart);
+    }
+
+    private static bool HaveMatchingWidths(ScreenRectangle first, ScreenRectangle second)
+    {
+        return Math.Abs(first.Width - second.Width) <= 5;
+    }
+
+    private static bool HaveStandardVerticalSpacing(ScreenRectangle upper, ScreenRectangle lower)
+    {
+        var spacing = lower.Top - upper.Bottom;
+        return spacing is >= 5 and <= 12;
+    }
+
+    private static bool AreDuplicateDetections(ScreenRectangle first, ScreenRectangle second)
+    {
+        return Math.Abs(first.Left - second.Left) <= 3
+            && Math.Abs(first.Top - second.Top) <= 3
+            && Math.Abs(first.Right - second.Right) <= 3
+            && Math.Abs(first.Bottom - second.Bottom) <= 3;
+    }
+
+    private static bool IsBlack(PixelColor pixel)
+    {
+        return pixel.Red <= BlackThreshold && pixel.Green <= BlackThreshold && pixel.Blue <= BlackThreshold;
+    }
+
+    private static bool IsNeutral(PixelColor pixel)
+    {
+        var minimum = Math.Min(pixel.Red, Math.Min(pixel.Green, pixel.Blue));
+        var maximum = Math.Max(pixel.Red, Math.Max(pixel.Green, pixel.Blue));
+        return maximum - minimum <= NeutralColorTolerance;
+    }
+
+    private static bool IsNeutralAndBright(PixelColor pixel)
+    {
+        var brightness = GetBrightness(pixel);
+        return IsNeutral(pixel) && brightness >= 80;
+    }
+
+    private static byte GetBrightness(PixelColor pixel)
+    {
+        return (byte)((pixel.Red + pixel.Green + pixel.Blue) / 3);
+    }
+}
+
+readonly record struct PixelColor(byte Red, byte Green, byte Blue);
+
+readonly record struct ScreenRectangle(int Left, int Top, int Width, int Height)
+{
+    public int Right => Left + Width;
+    public int Bottom => Top + Height;
+    public int CenterX => Left + Width / 2;
+    public int CenterY => Top + Height / 2;
+
+    public ScreenRectangle Inset(int amount)
+    {
+        if (amount < 0 || Width <= amount * 2 || Height <= amount * 2)
+            throw new ArgumentOutOfRangeException(nameof(amount));
+
+        return new ScreenRectangle(Left + amount, Top + amount, Width - amount * 2, Height - amount * 2);
+    }
+
+    public override string ToString()
+    {
+        return $"({Left},{Top}) {Width}x{Height}";
+    }
+}
+
+readonly record struct DirectConnectionScreen(ScreenRectangle ServerAddressField, ScreenRectangle JoinButton, ScreenRectangle CancelButton);
+
+readonly record struct NavigationScreenTarget(NavigationScreenKind Kind, ScreenRectangle Target);
+
+enum NavigationScreenKind
+{
+    MultiplayerServerList,
+    OnlinePlayWarning
 }
 
 sealed class CurseForgeApiClient
