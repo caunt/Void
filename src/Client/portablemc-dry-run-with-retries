@@ -31,7 +31,7 @@ if [[ "$(uname -m)" == "aarch64" && "$portablemc_version" == mojang:* ]]; then
   minor_version="${remaining_version%%.*}"
 
   if [[ "$major_version" =~ ^[0-9]+$ && "$major_version" -ge 26 ]]; then
-    portablemc_start_arguments+=(--fix-lwjgl 3.4.1)
+    portablemc_start_arguments+=(--fix-lwjgl 3.4.1 --exclude-lib 'org.lwjgl:lwjgl-vulkan:*:natives-linux-arm64')
   elif [[ "$major_version" == "1" && "$minor_version" =~ ^[0-9]+$ && "$minor_version" -ge 13 ]]; then
     portablemc_start_arguments+=(--fix-lwjgl 3.3.3)
   fi

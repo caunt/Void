@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+wish /opt/portableminecraftclient/splash.tcl &
+splash_process_id=$!
+splash_window_ids=()
+
+cleanup() {
+  kill "$splash_process_id" 2>/dev/null || true
+}
+
+trap cleanup EXIT
+
+while kill -0 "$splash_process_id" 2>/dev/null; do
+  mapfile -t splash_window_ids < <(xdotool search --onlyvisible --pid "$splash_process_id" --name '.*' 2>/dev/null || true)
+  if [[ "${#splash_window_ids[@]}" -gt 0 ]]; then
+    break
+  fi
+
+  sleep 0.1
+done
+
+declare -A existing_window_ids=()
+while IFS= read -r window_id; do
+  existing_window_ids["$window_id"]=1
+done < <(xdotool search --onlyvisible --name '.*' 2>/dev/null || true)
+
+portablemc "$@" &
+portablemc_process_id=$!
+
+while kill -0 "$portablemc_process_id" 2>/dev/null; do
+  while IFS= read -r window_id; do
+    if [[ ! -v "existing_window_ids[$window_id]" ]]; then
+      cleanup
+      wait "$splash_process_id" 2>/dev/null || true
+      break 2
+    fi
+  done < <(xdotool search --onlyvisible --name '.*' 2>/dev/null || true)
+
+  sleep 0.1
+done
+
+wait "$portablemc_process_id"

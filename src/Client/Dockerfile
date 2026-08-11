@@ -85,6 +85,13 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       curl --fail --location --silent --show-error \
         https://cdn.azul.com/zulu/bin/zulu8.96.0.19-ca-jre8.0.502-linux_i686.tar.gz \
         | tar --extract --gzip --directory /opt/zulu-8-i686 --strip-components=1; \
+      mkdir -p /opt/portableminecraftclient; \
+      curl --fail --location --silent --show-error \
+        https://libraries.minecraft.net/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-unsafe.jar \
+        --output /opt/portableminecraftclient/lwjgl-3.4.1-unsafe.jar; \
+      curl --fail --location --silent --show-error \
+        https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-natives-linux-arm64.jar \
+        --output /opt/portableminecraftclient/lwjgl-3.4.1-natives-linux-arm64.jar; \
     fi
 
 # Install .NET 11 preview
@@ -110,13 +117,15 @@ COPY list-minecraft-release-versions /usr/local/bin/list-minecraft-release-versi
 COPY portablemc-dry-run-with-retries /usr/local/bin/portablemc-dry-run-with-retries
 COPY java-i686 /usr/local/bin/java-i686
 COPY entrypoint /usr/local/bin/portableminecraftclient-entrypoint
-COPY demo /opt/portableminecraftclient/demo
-RUN chmod +x /usr/local/bin/list-minecraft-release-versions /usr/local/bin/portablemc-dry-run-with-retries /usr/local/bin/java-i686 /usr/local/bin/portableminecraftclient-entrypoint /opt/portableminecraftclient/demo/entrypoint \
+COPY launch-portableminecraftclient /usr/local/bin/launch-portableminecraftclient
+COPY prepare-portableminecraftclient /usr/local/bin/prepare-portableminecraftclient
+COPY options.txt sodium-options.json splash.tcl /opt/portableminecraftclient/
+RUN chmod +x /usr/local/bin/list-minecraft-release-versions /usr/local/bin/portablemc-dry-run-with-retries /usr/local/bin/java-i686 /usr/local/bin/portableminecraftclient-entrypoint /usr/local/bin/launch-portableminecraftclient /usr/local/bin/prepare-portableminecraftclient \
  && ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 
-ARG PREINSTALL_PORTABLEMC_DEMO=false
-ARG PORTABLEMC_DEMO_VERSION=neoforge:release:unstable
-RUN if [ "$PREINSTALL_PORTABLEMC_DEMO" = "true" ]; then PORTABLEMC_DEMO_VERSION="$PORTABLEMC_DEMO_VERSION" /opt/portableminecraftclient/demo/entrypoint --prepare; fi
+ARG PORTABLEMC_VERSION=neoforge:release:unstable
+ENV PORTABLEMC_VERSION=${PORTABLEMC_VERSION}
+RUN prepare-portableminecraftclient "$PORTABLEMC_VERSION"
 
 EXPOSE 80 8080
 ENV ASPNETCORE_URLS=http://+:8080

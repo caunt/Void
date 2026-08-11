@@ -8,15 +8,12 @@ services:
       - itzg_and_dashboard
   
   client:
-    image: portableminecraftclient:latest
-    pull_policy: never
+    image: ghcr.io/caunt/portable-minecraft-client:latest
+    pull_policy: always
     restart: unless-stopped
     networks:
       - default
       - controller_and_client
-    environment:
-      PORTABLEMC_DEMO: "true"
-      PORTABLEMC_ARGUMENTS: --join-server void
     cpus: 4.0
       
   void:

@@ -20,8 +20,12 @@ const string displayScreenDepth = "24";
 const string displayScreen = $"{displayScreenResolution}x{displayScreenDepth}";
 const string portableMinecraftLegacyJvmExecutablePath = "/opt/zulu-8-i686/bin/java";
 const string portableMinecraftLegacyJvmPath = "/usr/local/bin/java-i686";
+const string portableMinecraftLauncherPath = "/usr/local/bin/launch-portableminecraftclient";
 const string portableMinecraftArmLwjgl3Version = "3.3.3";
 const string portableMinecraftArmLwjgl4Version = "3.4.1";
+const string portableMinecraftArmLwjgl4ClassPath = "/opt/portableminecraftclient/lwjgl-3.4.1-unsafe.jar";
+const string portableMinecraftArmLwjgl4NativePath = "/opt/portableminecraftclient/lwjgl-3.4.1-natives-linux-arm64.jar";
+const string portableMinecraftArmVulkanLibrary = "org.lwjgl:lwjgl-vulkan:*:natives-linux-arm64";
 const string chatInputBrightnessCropGeometry = "854x2+0+451";
 const int minecraftGameId = 432;
 const int curseForgeFilesBatchSize = 50;
@@ -72,34 +76,24 @@ application.MapPut("/options", async Task<IResult> (HttpRequest request, Cancell
     return Results.Ok();
 });
 
+application.MapGet("/start", (HttpContext httpContext, string? version) =>
+{
+    var portableMinecraftVersion = string.IsNullOrWhiteSpace(version)
+        ? Environment.GetEnvironmentVariable("PORTABLEMC_VERSION")
+        : version.Trim();
+
+    if (string.IsNullOrWhiteSpace(portableMinecraftVersion))
+        return Results.BadRequest("version is required when PORTABLEMC_VERSION is not set");
+
+    return StartPortableMinecraftClient(httpContext, portableMinecraftVersion, $"start:{portableMinecraftVersion}");
+});
+
 application.MapGet("/start-vanilla", (HttpContext httpContext, string? version) =>
 {
     if (string.IsNullOrWhiteSpace(version))
         return Results.BadRequest("version is required");
 
-    var portableMinecraftArguments = httpContext.Request.Query["argument"].OfType<string>().ToArray();
-    var minecraftDirectory = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? defaultMinecraftDirectory;
-    var portablemcVersion = $"mojang:{version}";
-    var operationName = $"start-vanilla:{version}";
-    var cancellationTokenSource = CreateOperationCancellationTokenSource();
-    int operationId;
-
-    lock (clientStateLock)
-    {
-        RefreshClientStateLocked();
-
-        if (!CanStartClientLocked())
-        {
-            cancellationTokenSource.Dispose();
-            return Results.Conflict(CreateStatusBodyLocked("conflict", "a client is already running or changing state"));
-        }
-
-        operationId = BeginOperationLocked(operationName, ClientState.Starting, cancellationTokenSource);
-    }
-
-    RunDetachedOperation(operationId, operationName, cancellationTokenSource, cancellationToken => StartVanillaOperationAsync(operationId, minecraftDirectory, portablemcVersion, portableMinecraftArguments, cancellationToken));
-
-    return Results.Ok(CreateStatusBody("starting"));
+    return StartPortableMinecraftClient(httpContext, $"mojang:{version}", $"start-vanilla:{version}");
 });
 
 application.MapGet("/start-curseforge", (HttpContext httpContext, string? slug, int fileId) =>
@@ -329,13 +323,38 @@ application.MapGet("/screen", async () =>
 
 application.Run();
 
-async Task StartVanillaOperationAsync(int operationId, string minecraftDirectory, string portablemcVersion, string[] portableMinecraftArguments, CancellationToken cancellationToken)
+IResult StartPortableMinecraftClient(HttpContext httpContext, string portableMinecraftVersion, string operationName)
+{
+    var portableMinecraftArguments = httpContext.Request.Query["argument"].OfType<string>().ToArray();
+    var minecraftDirectory = Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? defaultMinecraftDirectory;
+    var cancellationTokenSource = CreateOperationCancellationTokenSource();
+    int operationId;
+
+    lock (clientStateLock)
+    {
+        RefreshClientStateLocked();
+
+        if (!CanStartClientLocked())
+        {
+            cancellationTokenSource.Dispose();
+            return Results.Conflict(CreateStatusBodyLocked("conflict", "a client is already running or changing state"));
+        }
+
+        operationId = BeginOperationLocked(operationName, ClientState.Starting, cancellationTokenSource);
+    }
+
+    RunDetachedOperation(operationId, operationName, cancellationTokenSource, cancellationToken => StartPortableMinecraftOperationAsync(operationId, minecraftDirectory, portableMinecraftVersion, portableMinecraftArguments, cancellationToken));
+
+    return Results.Ok(CreateStatusBody("starting"));
+}
+
+async Task StartPortableMinecraftOperationAsync(int operationId, string minecraftDirectory, string portableMinecraftVersion, string[] portableMinecraftArguments, CancellationToken cancellationToken)
 {
     await PrepareDisplayAndWindowAsync(cancellationToken);
     cancellationToken.ThrowIfCancellationRequested();
 
-    Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portablemcVersion}");
-    var process = LaunchPortableMinecraftClient(minecraftDirectory, portablemcVersion, portableMinecraftArguments, cancellationToken);
+    Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portableMinecraftVersion}");
+    var process = LaunchPortableMinecraftClient(minecraftDirectory, portableMinecraftVersion, portableMinecraftArguments, cancellationToken);
 
     CompleteStartOperation(operationId, process);
 }
@@ -888,7 +907,7 @@ Process LaunchPortableMinecraftClient(string directory, string version, string?[
     chatInputTargetsWindow = !UsesActiveWindowChatInput(version);
     chatInputSupportsVisualConfirmation = !RequiresBlindChatInput(version);
 
-    var process = StartCriticalProcess("portablemc", processInfo =>
+    var process = StartCriticalProcess(portableMinecraftLauncherPath, processInfo =>
     {
         processInfo.ArgumentList.Add("--main-dir");
         processInfo.ArgumentList.Add(directory);
@@ -901,17 +920,35 @@ Process LaunchPortableMinecraftClient(string directory, string version, string?[
             processInfo.ArgumentList.Add(displayScreenResolution);
         }
 
-        if (File.Exists(portableMinecraftLegacyJvmExecutablePath) && version.StartsWith("mojang:", StringComparison.Ordinal))
+        if (File.Exists(portableMinecraftLegacyJvmExecutablePath))
         {
-            if (UsesLegacyLwjgl(version) && !HasPortableMinecraftArgument(requestedPortableMinecraftArguments, "--jvm"))
+            var isMojangVersion = version.StartsWith("mojang:", StringComparison.Ordinal);
+            var usesLegacyLwjgl = isMojangVersion && UsesLegacyLwjgl(version);
+            var armLwjglVersion = isMojangVersion ? GetArmLwjglVersion(version) : portableMinecraftArmLwjgl4Version;
+
+            if (usesLegacyLwjgl && !HasPortableMinecraftArgument(requestedPortableMinecraftArguments, "--jvm"))
             {
                 processInfo.ArgumentList.Add("--jvm");
                 processInfo.ArgumentList.Add(portableMinecraftLegacyJvmPath);
             }
-            else if (!UsesLegacyLwjgl(version) && !HasPortableMinecraftArgument(requestedPortableMinecraftArguments, "--fix-lwjgl"))
+            else if (!usesLegacyLwjgl && !HasPortableMinecraftArgument(requestedPortableMinecraftArguments, "--fix-lwjgl"))
             {
                 processInfo.ArgumentList.Add("--fix-lwjgl");
-                processInfo.ArgumentList.Add(GetArmLwjglVersion(version));
+                processInfo.ArgumentList.Add(armLwjglVersion);
+
+                if (armLwjglVersion == portableMinecraftArmLwjgl4Version)
+                {
+                    processInfo.ArgumentList.Add("--include-class");
+                    processInfo.ArgumentList.Add(portableMinecraftArmLwjgl4ClassPath);
+                    processInfo.ArgumentList.Add("--include-class");
+                    processInfo.ArgumentList.Add(portableMinecraftArmLwjgl4NativePath);
+                }
+            }
+
+            if (armLwjglVersion == portableMinecraftArmLwjgl4Version && !HasPortableMinecraftArgument(requestedPortableMinecraftArguments, "--exclude-lib"))
+            {
+                processInfo.ArgumentList.Add("--exclude-lib");
+                processInfo.ArgumentList.Add(portableMinecraftArmVulkanLibrary);
             }
         }
 

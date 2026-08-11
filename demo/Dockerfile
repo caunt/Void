@@ -2,7 +2,6 @@ FROM docker:dind@sha256:e8faad5a8dc5279dff929afc5449f2791736912fff9f99351d742db2
 
 WORKDIR /demo
 COPY demo /demo
-COPY src/Client /src/Client
 
 RUN cat > /run-compose.sh <<'SH'
 #!/bin/sh
@@ -22,9 +21,6 @@ echo "Removing existing networks"
 docker network rm $(docker network ls -q) 2>/dev/null || true
 echo "Removing existing volumes"
 docker volume rm $(docker volume ls -q) 2>/dev/null || true
-
-echo "Building Portable Minecraft client"
-docker build --target latest --build-arg PREINSTALL_PORTABLEMC_DEMO=true --tag portableminecraftclient:latest /src/Client
 
 cd /demo
 echo "Starting demo stack ..."

@@ -24,6 +24,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+        with:
+          platforms: arm64
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
       - name: Login to GitHub Container Registry
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
         with:
@@ -35,9 +41,8 @@ jobs:
           latest_image="ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:latest"
           offline_image="ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:offline"
 
-          docker build --target latest -t "$latest_image" src/Client
-          docker build --target offline -t "$offline_image" src/Client
-          bash .github/scripts/docker-push-with-retries.sh "$latest_image"
+          docker buildx build --platform linux/amd64,linux/arm64 --target latest -t "$latest_image" --push src/Client
+          docker buildx build --platform linux/amd64 --target offline -t "$offline_image" --load src/Client
           bash .github/scripts/docker-push-with-retries.sh "$offline_image"
 
   list-minecraft-versions:
