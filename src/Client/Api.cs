@@ -2141,15 +2141,20 @@ sealed class ScreenImage : IDisposable
 
     public bool TryFindMainMenuMultiplayerButton(out ScreenRectangle multiplayerButton)
     {
-        var expectedTop = (int)Math.Round(Height * 0.55);
         var candidates = FindButtons()
             .Where(button => button.Width >= Width * 0.4 && IsHorizontallyCentered(button))
-            .Where(button => Math.Abs(button.Top - expectedTop) <= 5)
             .ToArray();
 
         if (candidates.Length > 0)
         {
-            multiplayerButton = candidates.MinBy(button => Math.Abs(button.Top - expectedTop));
+            multiplayerButton = candidates.MinBy(button => Math.Abs(button.CenterY - Height / 2));
+
+            if (multiplayerButton.CenterY > Height * 0.55)
+            {
+                var spacing = Math.Clamp(multiplayerButton.Height / 4, 5, 12);
+                multiplayerButton = new ScreenRectangle(multiplayerButton.Left, multiplayerButton.Top - multiplayerButton.Height - spacing, multiplayerButton.Width, multiplayerButton.Height);
+            }
+
             return true;
         }
 

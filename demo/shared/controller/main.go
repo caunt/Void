@@ -44,7 +44,8 @@ type Server struct {
 	SessionTtl    time.Duration
 	RedirectLogs  bool
 
-	Sessions map[string]*Session
+	Sessions      map[string]*Session
+	SessionsMutex sync.RWMutex
 }
 
 func main() {
@@ -103,7 +104,9 @@ func (server *Server) handleNewSession(writer http.ResponseWriter, request *http
 	session.CreatedUtc = time.Now().UTC()
 	session.ExpiresUtc = session.CreatedUtc.Add(server.SessionTtl)
 
+	server.SessionsMutex.Lock()
 	server.Sessions[session.Id] = session
+	server.SessionsMutex.Unlock()
 	http.Redirect(writer, request, "/session/"+session.Id+"/", http.StatusTemporaryRedirect)
 
 	go func() {
@@ -113,7 +116,9 @@ func (server *Server) handleNewSession(writer http.ResponseWriter, request *http
 				return
 			}
 
+			server.SessionsMutex.Lock()
 			delete(server.Sessions, session.Id)
+			server.SessionsMutex.Unlock()
 		}()
 
 		log.Printf("Creating new session %s (TTL: %s)", session.Id, server.SessionTtl)
@@ -123,12 +128,15 @@ func (server *Server) handleNewSession(writer http.ResponseWriter, request *http
 			return
 		}
 
-		session.DeleteTimer = time.AfterFunc(server.SessionTtl, func() {
+		deleteTimer := time.AfterFunc(server.SessionTtl, func() {
 			err := server.deleteSession(session.Id)
 			if err != nil {
 				log.Printf("Failed to delete session on timer %s: %v", session.Id, err)
 			}
 		})
+		server.SessionsMutex.Lock()
+		session.DeleteTimer = deleteTimer
+		server.SessionsMutex.Unlock()
 
 		startedSuccessfully = true
 		log.Printf("Session %s created successfully", session.Id)
@@ -143,7 +151,13 @@ func (server *Server) handleStatus(writer http.ResponseWriter, request *http.Req
 		return
 	}
 
+	server.SessionsMutex.RLock()
 	session, ok := server.Sessions[sessionId]
+	if ok {
+		sessionSnapshot := *session
+		session = &sessionSnapshot
+	}
+	server.SessionsMutex.RUnlock()
 
 	type statusResponse struct {
 		Exists      bool   `json:"exists"`
@@ -197,7 +211,13 @@ func (server *Server) handleSession(writer http.ResponseWriter, request *http.Re
 		return
 	}
 
+	server.SessionsMutex.RLock()
 	session, ok := server.Sessions[sessionId]
+	if ok {
+		sessionSnapshot := *session
+		session = &sessionSnapshot
+	}
+	server.SessionsMutex.RUnlock()
 
 	if !ok {
 		server.writeSessionExpiredHtml(writer)
@@ -224,10 +244,6 @@ func (server *Server) handleSession(writer http.ResponseWriter, request *http.Re
 	reverseProxy.ErrorHandler = func(proxyWriter http.ResponseWriter, proxyRequest *http.Request, proxyError error) {
 		log.Printf("Session %s upstream not reachable yet: %v", sessionId, proxyError)
 		server.writeSessionStartingHtml(proxyWriter, sessionId)
-
-		proxyWriter.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		proxyWriter.WriteHeader(http.StatusServiceUnavailable)
-		_, _ = proxyWriter.Write([]byte("starting"))
 	}
 
 	if !server.isSessionReady(session) {
@@ -502,10 +518,12 @@ func (server *Server) writeLiveHtml(writer http.ResponseWriter, statusCode int, 
 }
 
 func (server *Server) deleteSession(sessionId string) error {
+	server.SessionsMutex.Lock()
 	session, ok := server.Sessions[sessionId]
 	if ok {
 		delete(server.Sessions, sessionId)
 	}
+	server.SessionsMutex.Unlock()
 
 	if !ok {
 		return nil
@@ -629,18 +647,20 @@ func (server *Server) startSessionContainers(session *Session) (returnedError er
 		return fmt.Errorf("void container name not found")
 	}
 
+	server.SessionsMutex.Lock()
 	session.DashboardHost = dashboardContainerName
 	session.ClientHost = clientContainerName
 	session.VoidHost = voidContainerName
+	server.SessionsMutex.Unlock()
 
-	if err := startAndJoinPortableMinecraftClient(session.ClientHost); err != nil {
+	if err := startAndJoinPortableMinecraftClient(clientContainerName, createMinecraftUsername(session.SanitizedId)); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func startAndJoinPortableMinecraftClient(clientHost string) error {
+func startAndJoinPortableMinecraftClient(clientHost string, minecraftUsername string) error {
 	clientApiUrl := &url.URL{
 		Scheme: "http",
 		Host:   net.JoinHostPort(clientHost, "8080"),
@@ -649,7 +669,7 @@ func startAndJoinPortableMinecraftClient(clientHost string) error {
 
 	query := clientApiUrl.Query()
 	query.Set("version", "neoforge:release:unstable")
-	for _, argument := range []string{"--demo", "--jvm-arg=-Djava.awt.headless=false"} {
+	for _, argument := range []string{"--username", minecraftUsername, "--jvm-arg=-Djava.awt.headless=false"} {
 		query.Add("argument", argument)
 	}
 	clientApiUrl.RawQuery = query.Encode()
@@ -760,6 +780,15 @@ func sanitizeForDockerName(input string) string {
 	}
 
 	return output
+}
+
+func createMinecraftUsername(sanitizedSessionId string) string {
+	suffix := strings.ReplaceAll(sanitizedSessionId, "-", "")
+	if len(suffix) > 12 {
+		suffix = suffix[:12]
+	}
+
+	return "void" + suffix
 }
 
 func dockerCommand(arguments ...string) *exec.Cmd {
