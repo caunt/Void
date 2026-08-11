@@ -633,14 +633,14 @@ func (server *Server) startSessionContainers(session *Session) (returnedError er
 	session.ClientHost = clientContainerName
 	session.VoidHost = voidContainerName
 
-	if err := startPortableMinecraftClient(session.ClientHost); err != nil {
+	if err := startAndJoinPortableMinecraftClient(session.ClientHost); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func startPortableMinecraftClient(clientHost string) error {
+func startAndJoinPortableMinecraftClient(clientHost string) error {
 	clientApiUrl := &url.URL{
 		Scheme: "http",
 		Host:   net.JoinHostPort(clientHost, "8080"),
@@ -648,7 +648,8 @@ func startPortableMinecraftClient(clientHost string) error {
 	}
 
 	query := clientApiUrl.Query()
-	for _, argument := range []string{"--demo", "--join-server", "void", "--jvm-arg=-Djava.awt.headless=false"} {
+	query.Set("version", "neoforge:release:unstable")
+	for _, argument := range []string{"--demo", "--jvm-arg=-Djava.awt.headless=false"} {
 		query.Add("argument", argument)
 	}
 	clientApiUrl.RawQuery = query.Encode()
@@ -657,7 +658,7 @@ func startPortableMinecraftClient(clientHost string) error {
 	deadline := time.Now().Add(time.Minute)
 
 	for {
-		response, err := httpClient.Get(clientApiUrl.String())
+		responseStatusCode, responseBody, err := requestPortableMinecraftClient(httpClient, clientApiUrl)
 		if err != nil {
 			if time.Now().After(deadline) {
 				return fmt.Errorf("portable Minecraft client API did not become available: %w", err)
@@ -667,20 +668,53 @@ func startPortableMinecraftClient(clientHost string) error {
 			continue
 		}
 
-		responseBody, readError := io.ReadAll(io.LimitReader(response.Body, 4096))
-		_ = response.Body.Close()
-
-		if readError != nil {
-			return fmt.Errorf("failed to read portable Minecraft client API response: %w", readError)
+		if responseStatusCode < http.StatusOK || responseStatusCode >= http.StatusMultipleChoices {
+			return fmt.Errorf("portable Minecraft client API returned %d: %s", responseStatusCode, responseBody)
 		}
 
-		if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-			return fmt.Errorf("portable Minecraft client API returned %s: %s", response.Status, strings.TrimSpace(string(responseBody)))
+		break
+	}
+
+	log.Printf("Portable Minecraft client launch requested from %s", clientHost)
+
+	clientApiUrl.Path = "/join-server"
+	clientApiUrl.RawQuery = url.Values{"host": {"void"}, "port": {"25565"}}.Encode()
+	httpClient.Timeout = 5 * time.Minute
+	deadline = time.Now().Add(5 * time.Minute)
+
+	for {
+		responseStatusCode, responseBody, err := requestPortableMinecraftClient(httpClient, clientApiUrl)
+		if err != nil {
+			return fmt.Errorf("portable Minecraft client failed to join the server: %w", err)
 		}
 
-		log.Printf("Portable Minecraft client launch requested from %s", clientHost)
+		if responseStatusCode == http.StatusConflict && time.Now().Before(deadline) {
+			time.Sleep(250 * time.Millisecond)
+			continue
+		}
+
+		if responseStatusCode < http.StatusOK || responseStatusCode >= http.StatusMultipleChoices {
+			return fmt.Errorf("portable Minecraft client API returned %d: %s", responseStatusCode, responseBody)
+		}
+
+		log.Printf("Portable Minecraft client joined the server from %s", clientHost)
 		return nil
 	}
+}
+
+func requestPortableMinecraftClient(httpClient *http.Client, clientApiUrl *url.URL) (int, string, error) {
+	response, err := httpClient.Get(clientApiUrl.String())
+	if err != nil {
+		return 0, "", err
+	}
+
+	responseBody, err := io.ReadAll(io.LimitReader(response.Body, 4096))
+	_ = response.Body.Close()
+	if err != nil {
+		return 0, "", err
+	}
+
+	return response.StatusCode, strings.TrimSpace(string(responseBody)), nil
 }
 
 func createSessionId() (string, error) {

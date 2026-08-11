@@ -21,6 +21,9 @@ const string displayScreen = $"{displayScreenResolution}x{displayScreenDepth}";
 const string portableMinecraftLegacyJvmExecutablePath = "/opt/zulu-8-i686/bin/java";
 const string portableMinecraftLegacyJvmPath = "/usr/local/bin/java-i686";
 const string portableMinecraftLauncherPath = "/usr/local/bin/launch-portableminecraftclient";
+const string portableMinecraftDryRunPath = "/usr/local/bin/portablemc-dry-run-with-retries";
+const string portableMinecraftOptionsPath = "/opt/portableminecraftclient/options.txt";
+const string portableMinecraftSodiumOptionsPath = "/opt/portableminecraftclient/sodium-options.json";
 const string portableMinecraftArmLwjgl3Version = "3.3.3";
 const string portableMinecraftArmLwjgl4Version = "3.4.1";
 const string portableMinecraftArmLwjgl4ClassPath = "/opt/portableminecraftclient/lwjgl-3.4.1-unsafe.jar";
@@ -78,13 +81,10 @@ application.MapPut("/options", async Task<IResult> (HttpRequest request, Cancell
 
 application.MapGet("/start", (HttpContext httpContext, string? version) =>
 {
-    var portableMinecraftVersion = string.IsNullOrWhiteSpace(version)
-        ? Environment.GetEnvironmentVariable("PORTABLEMC_VERSION")
-        : version.Trim();
+    if (string.IsNullOrWhiteSpace(version))
+        return Results.BadRequest("version is required");
 
-    if (string.IsNullOrWhiteSpace(portableMinecraftVersion))
-        return Results.BadRequest("version is required when PORTABLEMC_VERSION is not set");
-
+    var portableMinecraftVersion = version.Trim();
     return StartPortableMinecraftClient(httpContext, portableMinecraftVersion, $"start:{portableMinecraftVersion}");
 });
 
@@ -350,6 +350,8 @@ IResult StartPortableMinecraftClient(HttpContext httpContext, string portableMin
 
 async Task StartPortableMinecraftOperationAsync(int operationId, string minecraftDirectory, string portableMinecraftVersion, string[] portableMinecraftArguments, CancellationToken cancellationToken)
 {
+    await PreparePortableMinecraftClientAsync(minecraftDirectory, portableMinecraftVersion, cancellationToken);
+
     await PrepareDisplayAndWindowAsync(cancellationToken);
     cancellationToken.ThrowIfCancellationRequested();
 
@@ -357,6 +359,122 @@ async Task StartPortableMinecraftOperationAsync(int operationId, string minecraf
     var process = LaunchPortableMinecraftClient(minecraftDirectory, portableMinecraftVersion, portableMinecraftArguments, cancellationToken);
 
     CompleteStartOperation(operationId, process);
+}
+
+async Task PreparePortableMinecraftClientAsync(string minecraftDirectory, string portableMinecraftVersion, CancellationToken cancellationToken)
+{
+    var configDirectory = Path.Combine(minecraftDirectory, "config");
+    var modsDirectory = Path.Combine(minecraftDirectory, "mods");
+    var optionsPath = Path.Combine(minecraftDirectory, "options.txt");
+    var sodiumOptionsPath = Path.Combine(configDirectory, "sodium-options.json");
+    var serversPath = Path.Combine(minecraftDirectory, "servers.dat");
+    Directory.CreateDirectory(configDirectory);
+    Directory.CreateDirectory(modsDirectory);
+
+    if (!File.Exists(optionsPath) || new FileInfo(optionsPath).Length == 0)
+        File.Copy(portableMinecraftOptionsPath, optionsPath, true);
+
+    if (!File.Exists(sodiumOptionsPath))
+        File.Copy(portableMinecraftSodiumOptionsPath, sodiumOptionsPath);
+
+    if (!File.Exists(serversPath))
+        await File.WriteAllBytesAsync(serversPath, Convert.FromHexString("0a0000090007736572766572730a0000000101000668696464656e000800026970000a766f69643a32353536350800046e616d65000a566f69642050726f78790000"), cancellationToken);
+
+    var portableMinecraftArguments = new List<string> { portableMinecraftVersion, "--demo", "--main-dir", minecraftDirectory, "--output", "machine" };
+
+    if (File.Exists(portableMinecraftLegacyJvmExecutablePath) && !portableMinecraftVersion.StartsWith("mojang:", StringComparison.Ordinal))
+    {
+        portableMinecraftArguments.AddRange(["--fix-lwjgl", portableMinecraftArmLwjgl4Version]);
+        portableMinecraftArguments.AddRange(["--exclude-lib", portableMinecraftArmVulkanLibrary]);
+        portableMinecraftArguments.AddRange(["--include-class", portableMinecraftArmLwjgl4ClassPath]);
+        portableMinecraftArguments.AddRange(["--include-class", portableMinecraftArmLwjgl4NativePath]);
+    }
+
+    var preparationResult = await RunProcessTextAsync(CreateProcessInfo(portableMinecraftDryRunPath, portableMinecraftArguments), TimeSpan.FromMinutes(5), cancellationToken);
+
+    if (!string.IsNullOrWhiteSpace(preparationResult.StandardError))
+        Console.Error.Write(preparationResult.StandardError);
+
+    if (preparationResult.ExitCode != 0)
+        throw new InvalidOperationException($"Portable Minecraft preparation exited with code {preparationResult.ExitCode}: {preparationResult.StandardError}");
+
+    var minecraftVersion = preparationResult.StandardOutput
+        .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+        .Select(line => line.TrimEnd('\r').Split('\t'))
+        .Where(fields => fields.Length > 1 && fields[0] == "loaded_hierarchy")
+        .Select(fields => fields[^1])
+        .LastOrDefault();
+
+    if (string.IsNullOrWhiteSpace(minecraftVersion))
+        throw new InvalidOperationException("Portable Minecraft preparation did not report a Minecraft version");
+
+    await InstallSodiumAsync(modsDirectory, portableMinecraftVersion, minecraftVersion, cancellationToken);
+}
+
+async Task InstallSodiumAsync(string modsDirectory, string portableMinecraftVersion, string minecraftVersion, CancellationToken cancellationToken)
+{
+    var sodiumPath = Path.Combine(modsDirectory, "sodium.jar");
+    var temporarySodiumPath = Path.Combine(modsDirectory, $".sodium.jar.{Guid.NewGuid():N}");
+    var separatorIndex = portableMinecraftVersion.IndexOf(':');
+    var loader = separatorIndex < 0 ? "mojang" : portableMinecraftVersion[..separatorIndex];
+    var loaders = Uri.EscapeDataString(JsonSerializer.Serialize(new[] { loader }));
+    var gameVersions = Uri.EscapeDataString(JsonSerializer.Serialize(new[] { minecraftVersion }));
+    string? sodiumUrl = null;
+
+    File.Delete(sodiumPath);
+
+    try
+    {
+        using var httpClient = new HttpClient();
+        httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("caunt/Void");
+        using var versionsResponse = await httpClient.GetAsync($"https://api.modrinth.com/v2/project/AANobbMI/version?loaders={loaders}&game_versions={gameVersions}", cancellationToken);
+        versionsResponse.EnsureSuccessStatusCode();
+        await using var versionsStream = await versionsResponse.Content.ReadAsStreamAsync(cancellationToken);
+        using var versionsDocument = await JsonDocument.ParseAsync(versionsStream, cancellationToken: cancellationToken);
+
+        foreach (var version in versionsDocument.RootElement.EnumerateArray())
+        {
+            if (!version.TryGetProperty("files", out var files))
+                continue;
+
+            foreach (var file in files.EnumerateArray())
+            {
+                if (file.TryGetProperty("primary", out var primary) && primary.GetBoolean() && file.TryGetProperty("url", out var url))
+                {
+                    sodiumUrl = url.GetString();
+                    break;
+                }
+            }
+
+            if (sodiumUrl is not null)
+                break;
+        }
+
+        if (sodiumUrl is null)
+        {
+            Console.Error.WriteLine($"Sodium was not found for {loader} Minecraft {minecraftVersion}");
+            return;
+        }
+
+        using var sodiumResponse = await httpClient.GetAsync(sodiumUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        sodiumResponse.EnsureSuccessStatusCode();
+        await using (var sodiumFile = File.Create(temporarySodiumPath))
+            await sodiumResponse.Content.CopyToAsync(sodiumFile, cancellationToken);
+
+        File.Move(temporarySodiumPath, sodiumPath, true);
+    }
+    catch (Exception exception) when (exception is HttpRequestException or JsonException)
+    {
+        Console.Error.WriteLine($"Sodium download failed for {loader} Minecraft {minecraftVersion}: {exception.Message}");
+    }
+    catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
+    {
+        Console.Error.WriteLine($"Sodium download failed for {loader} Minecraft {minecraftVersion}: {exception.Message}");
+    }
+    finally
+    {
+        File.Delete(temporarySodiumPath);
+    }
 }
 
 async Task StartCurseForgeOperationAsync(int operationId, string slug, int fileId, string curseForgeApiKey, Uri curseForgeApiBaseUri, string minecraftDirectory, string[] portableMinecraftArguments, CancellationToken cancellationToken)

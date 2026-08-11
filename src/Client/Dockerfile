@@ -118,14 +118,9 @@ COPY portablemc-dry-run-with-retries /usr/local/bin/portablemc-dry-run-with-retr
 COPY java-i686 /usr/local/bin/java-i686
 COPY entrypoint /usr/local/bin/portableminecraftclient-entrypoint
 COPY launch-portableminecraftclient /usr/local/bin/launch-portableminecraftclient
-COPY prepare-portableminecraftclient /usr/local/bin/prepare-portableminecraftclient
 COPY options.txt sodium-options.json splash.tcl /opt/portableminecraftclient/
-RUN chmod +x /usr/local/bin/list-minecraft-release-versions /usr/local/bin/portablemc-dry-run-with-retries /usr/local/bin/java-i686 /usr/local/bin/portableminecraftclient-entrypoint /usr/local/bin/launch-portableminecraftclient /usr/local/bin/prepare-portableminecraftclient \
+RUN chmod +x /usr/local/bin/list-minecraft-release-versions /usr/local/bin/portablemc-dry-run-with-retries /usr/local/bin/java-i686 /usr/local/bin/portableminecraftclient-entrypoint /usr/local/bin/launch-portableminecraftclient \
  && ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
-
-ARG PORTABLEMC_VERSION=neoforge:release:unstable
-ENV PORTABLEMC_VERSION=${PORTABLEMC_VERSION}
-RUN prepare-portableminecraftclient "$PORTABLEMC_VERSION"
 
 EXPOSE 80 8080
 ENV ASPNETCORE_URLS=http://+:8080
