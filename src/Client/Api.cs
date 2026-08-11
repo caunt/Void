@@ -33,6 +33,7 @@ const string chatInputBrightnessCropGeometry = "854x2+0+451";
 const int minecraftGameId = 432;
 const int curseForgeFilesBatchSize = 50;
 const int userInterfaceStableConfirmationCount = 2;
+const int buttonStableConfirmationMilliseconds = 1000;
 const double buttonHoverDifferenceRatioThreshold = 0.03;
 const double serverAddressFieldDifferenceRatioThreshold = 0.01;
 const double chatInputBrightnessRatioThreshold = 0.7;
@@ -555,11 +556,8 @@ async Task SendChatOperationAsync(string message, CancellationToken cancellation
 async Task JoinServerOperationAsync(string host, int port, CancellationToken cancellationToken)
 {
     var display = Environment.GetEnvironmentVariable("DISPLAY") ?? defaultDisplay;
-    var windowId = await WaitForLargestWindowAsync(display, cancellationToken);
+    var windowId = await WaitForPreparedLargestWindowAsync(display, cancellationToken);
     var serverAddress = $"{host}:{port}";
-
-    await ResizeWindowToDisplayAsync(windowId, cancellationToken);
-    await RunOrThrow(cancellationToken, "xdotool", "windowfocus", windowId);
 
     await VisuallyClickButtonAsync("Multiplayer", windowId, display, screen => screen.TryFindMainMenuMultiplayerButton(out var button) ? button : null, cancellationToken);
 
@@ -695,6 +693,25 @@ async Task<string> WaitForLargestWindowAsync(string display, CancellationToken c
     }
 }
 
+async Task<string> WaitForPreparedLargestWindowAsync(string display, CancellationToken cancellationToken)
+{
+    while (true)
+    {
+        var windowId = await WaitForLargestWindowAsync(display, cancellationToken);
+
+        try
+        {
+            await ResizeWindowToDisplayAsync(windowId, cancellationToken);
+            await RunOrThrow(cancellationToken, "xdotool", "windowfocus", windowId);
+            return windowId;
+        }
+        catch (InvalidOperationException)
+        {
+            // Minecraft can replace its startup window between discovery and focus. Try the new window.
+        }
+    }
+}
+
 async Task<NavigationScreenTarget> WaitForMultiplayerOrOnlinePlayWarningAsync(string windowId, string display, CancellationToken cancellationToken)
 {
     await MoveMouseAsync(windowId, 2, 2, cancellationToken);
@@ -781,26 +798,54 @@ async Task<ScreenRectangle> WaitForScreenTargetAsync(string screenName, string w
 
 async Task VisuallyClickButtonAsync(string buttonName, string windowId, string display, Func<ScreenImage, ScreenRectangle?> locateButton, CancellationToken cancellationToken)
 {
+    ScreenRectangle? previousButton = null;
+    var stableButtonStopwatch = Stopwatch.StartNew();
+
     while (true)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        await MoveMouseAsync(windowId, 2, 2, cancellationToken);
 
         try
         {
+            await MoveMouseAsync(windowId, 2, 2, cancellationToken);
             using var baselineScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
             var button = locateButton(baselineScreen);
 
             if (button is null)
+            {
+                previousButton = null;
+                stableButtonStopwatch.Restart();
+                continue;
+            }
+
+            if (previousButton is null || !AreMatchingRectangles(previousButton.Value, button.Value))
+            {
+                previousButton = button;
+                stableButtonStopwatch.Restart();
+                continue;
+            }
+
+            if (stableButtonStopwatch.ElapsedMilliseconds < buttonStableConfirmationMilliseconds)
                 continue;
 
+            using var confirmedBaselineScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+            var confirmedButton = locateButton(confirmedBaselineScreen);
+
+            if (confirmedButton is null || !AreMatchingRectangles(button.Value, confirmedButton.Value))
+            {
+                previousButton = confirmedButton;
+                stableButtonStopwatch.Restart();
+                continue;
+            }
+
+            button = confirmedButton;
             await MoveMouseAsync(windowId, button.Value.CenterX, button.Value.CenterY, cancellationToken);
             var hoverConfirmationCount = 0;
 
             while (hoverConfirmationCount < userInterfaceStableConfirmationCount)
             {
                 using var hoveredScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
-                var differenceRatio = baselineScreen.CalculateDifferenceRatio(hoveredScreen, button.Value);
+                var differenceRatio = confirmedBaselineScreen.CalculateDifferenceRatio(hoveredScreen, button.Value);
 
                 if (differenceRatio < buttonHoverDifferenceRatioThreshold)
                 {
@@ -820,6 +865,9 @@ async Task VisuallyClickButtonAsync(string buttonName, string windowId, string d
         catch (InvalidOperationException)
         {
             // The game can replace its window or screen while it is still loading. Reacquire the target.
+            windowId = await WaitForPreparedLargestWindowAsync(display, cancellationToken);
+            previousButton = null;
+            stableButtonStopwatch.Restart();
         }
     }
 }
@@ -2141,21 +2189,34 @@ sealed class ScreenImage : IDisposable
 
     public bool TryFindMainMenuMultiplayerButton(out ScreenRectangle multiplayerButton)
     {
-        var candidates = FindButtons()
+        var buttons = FindButtons();
+        var candidates = buttons
             .Where(button => button.Width >= Width * 0.4 && IsHorizontallyCentered(button))
+            .OrderBy(button => button.Top)
             .ToArray();
 
-        if (candidates.Length > 0)
+        if (candidates.Length >= 2)
         {
-            multiplayerButton = candidates.MinBy(button => Math.Abs(button.CenterY - Height / 2));
+            var upperButton = candidates[0];
+            var lowerButton = candidates[1];
 
-            if (multiplayerButton.CenterY > Height * 0.55)
+            if (HaveMatchingWidths(upperButton, lowerButton) && HaveStandardVerticalSpacing(upperButton, lowerButton))
             {
-                var spacing = Math.Clamp(multiplayerButton.Height / 4, 5, 12);
-                multiplayerButton = new ScreenRectangle(multiplayerButton.Left, multiplayerButton.Top - multiplayerButton.Height - spacing, multiplayerButton.Width, multiplayerButton.Height);
-            }
+                var nearbyLowerButton = buttons
+                    .Where(button => button.Top > lowerButton.Top)
+                    .OrderBy(button => button.Top)
+                    .FirstOrDefault();
 
-            return true;
+                var incompleteButtonStack = candidates.Length is 2
+                    && nearbyLowerButton != default
+                    && nearbyLowerButton.Top - lowerButton.Bottom <= lowerButton.Height;
+
+                if (!incompleteButtonStack)
+                {
+                    multiplayerButton = lowerButton;
+                    return true;
+                }
+            }
         }
 
         multiplayerButton = default;
