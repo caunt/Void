@@ -258,13 +258,13 @@ func (server *Server) isSessionReady(session *Session) bool {
 		Timeout: time.Second,
 	}
 
-	probe := func(host string) bool {
+	probe := func(host string, path string) bool {
 		if strings.TrimSpace(host) == "" {
 			log.Printf("Host for probing is still empty, skipping probe")
 			return false
 		}
 
-		request, err := http.NewRequest(http.MethodGet, "http://"+host+"/", nil)
+		request, err := http.NewRequest(http.MethodGet, "http://"+host+path, nil)
 		if err != nil {
 			log.Printf("Failed to create probe request for host %s: %v", host, err)
 			return false
@@ -283,7 +283,7 @@ func (server *Server) isSessionReady(session *Session) bool {
 		return response.StatusCode == http.StatusOK
 	}
 
-	return probe(session.DashboardHost) && probe(session.VoidHost) && probe(session.ClientHost)
+	return probe(session.DashboardHost, "/") && probe(session.VoidHost, "/") && probe(session.ClientHost, "/api/health")
 }
 
 func (server *Server) writeSessionStartingHtml(writer http.ResponseWriter, sessionId string) {
@@ -664,7 +664,7 @@ func startAndJoinPortableMinecraftClient(clientHost string, minecraftUsername st
 	clientApiUrl := &url.URL{
 		Scheme: "http",
 		Host:   net.JoinHostPort(clientHost, "80"),
-		Path:   "/start",
+		Path:   "/api/start",
 	}
 
 	query := clientApiUrl.Query()
@@ -697,7 +697,7 @@ func startAndJoinPortableMinecraftClient(clientHost string, minecraftUsername st
 
 	log.Printf("Portable Minecraft client launch requested from %s", clientHost)
 
-	clientApiUrl.Path = "/join-server"
+	clientApiUrl.Path = "/api/join-server"
 	clientApiUrl.RawQuery = url.Values{"host": {"void"}, "port": {"25565"}}.Encode()
 	httpClient.Timeout = 5 * time.Minute
 	deadline = time.Now().Add(5 * time.Minute)

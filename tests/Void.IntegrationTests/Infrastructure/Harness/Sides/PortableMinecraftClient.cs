@@ -59,7 +59,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             .WithWaitStrategy(Wait.ForUnixContainer()
                 .UntilHttpRequestIsSucceeded(request => request
                     .ForPort(ApiPort)
-                    .ForPath("/health"), options => options.WithTimeout(TimeSpan.FromMinutes(1))));
+                    .ForPath("/api/health"), options => options.WithTimeout(TimeSpan.FromMinutes(1))));
 
         if (OperatingSystem.IsLinux())
             builder = builder.WithExtraHost(DockerHost, DockerHostGateway);
@@ -121,7 +121,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             var startedAt = DateTime.UtcNow;
 
             using var optionsContent = new StringContent(CreateOptionsText(protocolVersion), Encoding.UTF8, "text/plain");
-            using var optionsResponse = await httpClient.PutAsync("/options", optionsContent, cancellationToken);
+            using var optionsResponse = await httpClient.PutAsync("/api/options", optionsContent, cancellationToken);
             await EnsureSuccessAsync(optionsResponse, $"Writing Minecraft {protocolVersion.FirstRelease} options", cancellationToken);
 
             var game = new Game(testName, container, httpClient, logSides, startedAt, protocolVersion, username);
@@ -208,7 +208,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
                 new("argument", "--jvm-arg=-Djava.awt.headless=false")
             };
 
-            var requestUri = CreateRequestUri("/start-vanilla", queryParameters);
+            var requestUri = CreateRequestUri("/api/start-vanilla", queryParameters);
 
             while (true)
             {
@@ -238,7 +238,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
             await LogAsync($"Navigating the Minecraft UI to {dockerHost}:{dockerPort}", cancellationToken);
 
-            using var response = await HttpClient.GetAsync(CreateRequestUri("/join-server",
+            using var response = await HttpClient.GetAsync(CreateRequestUri("/api/join-server",
             [
                 new KeyValuePair<string, string>("host", dockerHost),
                 new KeyValuePair<string, string>("port", dockerPort.ToString())
@@ -248,13 +248,13 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
         private async Task SendChatAsync(string text, CancellationToken cancellationToken = default)
         {
-            using var response = await HttpClient.GetAsync(CreateRequestUri("/send-chat", [new KeyValuePair<string, string>("message", text)]), cancellationToken);
+            using var response = await HttpClient.GetAsync(CreateRequestUri("/api/send-chat", [new KeyValuePair<string, string>("message", text)]), cancellationToken);
             await EnsureSuccessAsync(response, $"Sending chat input: {text}", cancellationToken);
         }
 
         private async Task StopClientAsync(CancellationToken cancellationToken = default)
         {
-            using var response = await HttpClient.GetAsync("/stop-client", cancellationToken);
+            using var response = await HttpClient.GetAsync("/api/stop-client", cancellationToken);
 
             if (response.StatusCode is HttpStatusCode.NotFound)
                 return;
@@ -267,7 +267,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
         {
             while (true)
             {
-                using var response = await HttpClient.GetAsync("/status", cancellationToken);
+                using var response = await HttpClient.GetAsync("/api/status", cancellationToken);
 
                 if (response.StatusCode is HttpStatusCode.NotFound)
                     return;
@@ -290,7 +290,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
         {
             while (true)
             {
-                using var response = await HttpClient.GetAsync("/status", cancellationToken);
+                using var response = await HttpClient.GetAsync("/api/status", cancellationToken);
                 await EnsureSuccessAsync(response, "Reading Minecraft client status", cancellationToken);
 
                 var status = await ReadApiStatusAsync(response, "Reading Minecraft client status", cancellationToken);
@@ -307,7 +307,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
         private async Task<byte[]> TakeScreenshotAsync(CancellationToken cancellationToken = default)
         {
-            using var response = await HttpClient.GetAsync("/screen", cancellationToken);
+            using var response = await HttpClient.GetAsync("/api/screen", cancellationToken);
             await EnsureSuccessAsync(response, "Taking Minecraft screenshot", cancellationToken);
 
             return await response.Content.ReadAsByteArrayAsync(cancellationToken);
