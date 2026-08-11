@@ -17,9 +17,18 @@ jobs:
       dotnet-version: ${{ needs.version.outputs.dotnet-version }}
       void-version: ${{ needs.version.outputs.void-version }}
 
-  test:
+  test-unit:
+    needs: [version, build]
+    uses: ./.github/workflows/reusable-test.yml
+    with:
+      dotnet-version: ${{ needs.version.outputs.dotnet-version }}
+      void-version: ${{ needs.version.outputs.void-version }}
+      test-kind: unit
+
+  test-integration:
     needs: version
     uses: ./.github/workflows/reusable-test.yml
     with:
       dotnet-version: ${{ needs.version.outputs.dotnet-version }}
       void-version: ${{ needs.version.outputs.void-version }}
+      test-kind: integration

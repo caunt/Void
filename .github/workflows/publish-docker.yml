@@ -11,103 +11,11 @@ on:
       release:
         type: string
         required: true
-      client-version-shard-count:
-        type: number
-        required: false
-        default: 16
 
 permissions:
   packages: write
 
 jobs:
-  push-client:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
-        with:
-          platforms: arm64
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push client images
-        run: |
-          latest_image="ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:latest"
-          offline_image="ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:offline"
-
-          docker buildx build --platform linux/amd64,linux/arm64 --target latest -t "$latest_image" --push src/Client
-          docker buildx build --platform linux/amd64 --target offline -t "$offline_image" --load src/Client
-          bash .github/scripts/docker-push-with-retries.sh "$offline_image"
-
-  list-minecraft-versions:
-    runs-on: ubuntu-latest
-    outputs:
-      versions: ${{ steps.versions.outputs.versions }}
-      matrix: ${{ steps.versions.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Fetch Minecraft release versions
-        id: versions
-        run: |
-          shard_count=${{ inputs.client-version-shard-count }}
-          if [ "$shard_count" -lt 1 ]; then
-            echo "client-version-shard-count must be greater than 0" >&2
-            exit 1
-          fi
-
-          versions="$(bash src/Client/list-minecraft-release-versions --json 1.7.2)"
-          matrix="$(jq -cn --argjson shardCount "$shard_count" '{ include: [range(0; $shardCount) as $shard | { "shard": $shard }] }')"
-          echo "versions=$versions" >> "$GITHUB_OUTPUT"
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
-
-  push-client-versions:
-    needs: [push-client, list-minecraft-versions]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.list-minecraft-versions.outputs.matrix) }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push client version image shard ${{ matrix.shard }}
-        env:
-          MINECRAFT_VERSIONS: ${{ needs.list-minecraft-versions.outputs.versions }}
-          SHARD: ${{ matrix.shard }}
-          SHARD_COUNT: ${{ inputs.client-version-shard-count }}
-        run: |
-          mapfile -t minecraft_versions < <(
-            jq -r \
-              --argjson shard "$SHARD" \
-              --argjson shardCount "$SHARD_COUNT" \
-              'to_entries[] | select((.key % $shardCount) == $shard) | .value' \
-              <<< "$MINECRAFT_VERSIONS"
-          )
-
-          if [ "${#minecraft_versions[@]}" -eq 0 ]; then
-            echo "No Minecraft versions assigned to shard $SHARD/$SHARD_COUNT."
-            exit 0
-          fi
-
-          echo "Building and pushing ${#minecraft_versions[@]} Minecraft client version images for shard $SHARD/$SHARD_COUNT."
-
-          for minecraft_version in "${minecraft_versions[@]}"; do
-            image="ghcr.io/${{ github.repository_owner }}/portable-minecraft-client:$minecraft_version"
-            docker build --target version --build-arg MINECRAFT_VERSION="$minecraft_version" -t "$image" src/Client
-            bash .github/scripts/docker-push-with-retries.sh "$image"
-          done
-
-
   push-dev:
     runs-on: ${{ matrix.os }}
     strategy:

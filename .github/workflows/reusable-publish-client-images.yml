@@ -1,0 +1,125 @@
+name: "Publish Client Images"
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        type: string
+        required: true
+      minecraft-versions:
+        type: string
+        required: false
+        default: '[]'
+
+permissions:
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate inputs
+        shell: bash
+        env:
+          TARGET: ${{ inputs.target }}
+          MINECRAFT_VERSIONS: ${{ inputs.minecraft-versions }}
+        run: |
+          set -euo pipefail
+
+          case "$TARGET" in
+            latest|offline)
+              jq -e 'type == "array" and length == 0' <<< "$MINECRAFT_VERSIONS" > /dev/null
+              ;;
+            version)
+              jq -e 'type == "array" and length > 0 and all(.[]; type == "string" and length > 0)' <<< "$MINECRAFT_VERSIONS" > /dev/null
+              ;;
+            *)
+              echo "Unsupported client image target: $TARGET"
+              exit 1
+              ;;
+          esac
+
+      - name: Build and push client images
+        shell: bash
+        env:
+          TARGET: ${{ inputs.target }}
+          MINECRAFT_VERSIONS: ${{ inputs.minecraft-versions }}
+          IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/portable-minecraft-client
+          CACHE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/portable-minecraft-client-buildcache
+          MAX_ATTEMPTS: 5
+          RETRY_DELAY_SECONDS: 10
+        run: |
+          set -euo pipefail
+
+          build_and_push() {
+            local target="$1"
+            local image="$2"
+            local minecraft_version="${3:-}"
+            local attempt
+            local docker_build_command=(
+              docker buildx build
+              --platform linux/amd64,linux/arm64
+              --target "$target"
+              --tag "$image"
+              --push
+              --cache-from "type=registry,ref=$CACHE_REPOSITORY:runtime"
+              --cache-from "type=registry,ref=$image"
+              --cache-to type=inline
+            )
+
+            case "$target" in
+              latest)
+                docker_build_command+=(--cache-to "type=registry,ref=$CACHE_REPOSITORY:runtime,mode=max,ignore-error=true")
+                ;;
+              offline)
+                docker_build_command+=(
+                  --cache-from "type=registry,ref=$CACHE_REPOSITORY:offline"
+                  --cache-to "type=registry,ref=$CACHE_REPOSITORY:offline,mode=max,ignore-error=true"
+                )
+                ;;
+              version)
+                docker_build_command+=(--build-arg "MINECRAFT_VERSION=$minecraft_version")
+                ;;
+            esac
+
+            docker_build_command+=(src/Client)
+
+            for (( attempt = 1; attempt <= MAX_ATTEMPTS; attempt++ )); do
+              if "${docker_build_command[@]}"; then
+                return 0
+              fi
+
+              if (( attempt == MAX_ATTEMPTS )); then
+                echo "Failed to publish $image after $MAX_ATTEMPTS attempts."
+                return 1
+              fi
+
+              echo "Attempt $attempt failed for $image. Retrying in $(( RETRY_DELAY_SECONDS * attempt )) seconds."
+              sleep $(( RETRY_DELAY_SECONDS * attempt ))
+            done
+          }
+
+          if [ "$TARGET" = version ]; then
+            while IFS= read -r minecraft_version; do
+              build_and_push version "$IMAGE_REPOSITORY:$minecraft_version" "$minecraft_version"
+            done < <(jq -r '.[]' <<< "$MINECRAFT_VERSIONS")
+          else
+            build_and_push "$TARGET" "$IMAGE_REPOSITORY:$TARGET"
+          fi

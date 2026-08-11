@@ -12,6 +12,10 @@ on:
         type: boolean
         required: false
         default: false
+      test-kind:
+        type: string
+        required: false
+        default: all
       shard-count:
         type: number
         required: false
@@ -25,6 +29,8 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - id: matrix
+        env:
+          TEST_KIND: ${{ inputs.test-kind }}
         run: |
           unit_operating_systems='[
             "ubuntu-24.04-arm",
@@ -49,6 +55,21 @@ jobs:
           integration_operating_systems='[
             "ubuntu-latest"
           ]'
+
+          case "$TEST_KIND" in
+            all)
+              ;;
+            unit)
+              integration_operating_systems='[]'
+              ;;
+            integration)
+              unit_operating_systems='[]'
+              ;;
+            *)
+              echo "Unsupported test kind: $TEST_KIND"
+              exit 1
+              ;;
+          esac
         
           matrix=$(
             jq -cn \

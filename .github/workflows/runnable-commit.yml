@@ -36,13 +36,42 @@ jobs:
       dotnet-version: ${{ needs.version.outputs.dotnet-version }}
       void-version: ${{ needs.version.outputs.void-version }}
 
-  test:
-    needs: [version, docker]
+  test-unit:
+    needs: [version, build]
     uses: ./.github/workflows/reusable-test.yml
     with:
       dotnet-version: ${{ needs.version.outputs.dotnet-version }}
       void-version: ${{ needs.version.outputs.void-version }}
       skip-tests: ${{ fromJSON(github.event.inputs.skip-tests || 'false') }}
+      test-kind: unit
+
+  client-latest:
+    needs: build
+    uses: ./.github/workflows/reusable-publish-client-images.yml
+    secrets: inherit
+    with:
+      target: latest
+
+  client-offline:
+    needs: client-latest
+    uses: ./.github/workflows/reusable-publish-client-images.yml
+    secrets: inherit
+    with:
+      target: offline
+
+  client-versions:
+    needs: client-latest
+    uses: ./.github/workflows/publish-docker-client-versions.yml
+    secrets: inherit
+
+  test-integration:
+    needs: [version, client-offline]
+    uses: ./.github/workflows/reusable-test.yml
+    with:
+      dotnet-version: ${{ needs.version.outputs.dotnet-version }}
+      void-version: ${{ needs.version.outputs.void-version }}
+      skip-tests: ${{ fromJSON(github.event.inputs.skip-tests || 'false') }}
+      test-kind: integration
 
   github:
     needs: [build,version]

@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN cargo install portablemc-cli --root /usr/local
 
 # Runtime stage
-FROM debian:13@sha256:34cd9e9fd437c0a095ec39cb2e73422c9f30821b0d0848ed74fd0d43bae4d958 AS latest
+FROM debian:13@sha256:34cd9e9fd437c0a095ec39cb2e73422c9f30821b0d0848ed74fd0d43bae4d958 AS runtime
 
 ARG TARGETARCH
 
@@ -109,18 +109,10 @@ RUN printf "pcm.!default { type null }\nctl.!default { type null }\n" > /etc/aso
 # Skip Minecraft accessibility screen
 RUN mkdir -p "$HOME/.minecraft" && touch "$HOME/.minecraft/options.txt"
 
-# Copy the API application
-COPY Api.cs /app/Api.cs
 WORKDIR /app
 
-COPY list-minecraft-release-versions /usr/local/bin/list-minecraft-release-versions
-COPY portablemc-dry-run-with-retries /usr/local/bin/portablemc-dry-run-with-retries
-COPY java-i686 /usr/local/bin/java-i686
-COPY entrypoint /usr/local/bin/portableminecraftclient-entrypoint
-COPY launch-portableminecraftclient /usr/local/bin/launch-portableminecraftclient
-COPY options.txt sodium-options.json splash.tcl /opt/portableminecraftclient/
-RUN chmod +x /usr/local/bin/list-minecraft-release-versions /usr/local/bin/portablemc-dry-run-with-retries /usr/local/bin/java-i686 /usr/local/bin/portableminecraftclient-entrypoint /usr/local/bin/launch-portableminecraftclient \
- && ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
+COPY --chmod=0755 list-minecraft-release-versions portablemc-dry-run-with-retries java-i686 /usr/local/bin/
+RUN ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 
 EXPOSE 80 8080
 ENV ASPNETCORE_URLS=http://+:8080
@@ -128,7 +120,18 @@ ENV CURSEFORGE_API_BASE_URL=https://api.curseforge.com
 
 ENTRYPOINT ["portableminecraftclient-entrypoint"]
 
-FROM latest AS offline
+FROM scratch AS application-files
+
+COPY Api.cs /app/Api.cs
+COPY --chmod=0755 entrypoint /usr/local/bin/portableminecraftclient-entrypoint
+COPY --chmod=0755 launch-portableminecraftclient /usr/local/bin/launch-portableminecraftclient
+COPY options.txt sodium-options.json splash.tcl /opt/portableminecraftclient/
+
+FROM runtime AS latest
+
+COPY --from=application-files / /
+
+FROM runtime AS offline-assets
 
 ARG FIRST_RELEASE_VERSION=1.7.2
 ARG LAST_RELEASE_VERSION=26.1.2
@@ -136,8 +139,16 @@ ARG LAST_RELEASE_VERSION=26.1.2
 # Dry-run all release versions in reverse order (from oldest to latest)
 RUN list-minecraft-release-versions "$FIRST_RELEASE_VERSION" "$LAST_RELEASE_VERSION" | while IFS= read -r minecraftVersion; do portablemc-dry-run-with-retries "mojang:$minecraftVersion"; done
 
-FROM latest AS version
+FROM offline-assets AS offline
+
+COPY --from=application-files / /
+
+FROM runtime AS version-assets
 
 ARG MINECRAFT_VERSION
 RUN test -n "$MINECRAFT_VERSION"
 RUN portablemc-dry-run-with-retries "mojang:$MINECRAFT_VERSION"
+
+FROM version-assets AS version
+
+COPY --from=application-files / /

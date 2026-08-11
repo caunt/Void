@@ -1,0 +1,67 @@
+name: "Publish Versioned Client Images"
+
+on:
+  workflow_call:
+    inputs:
+      shard-count:
+        type: number
+        required: false
+        default: 16
+
+permissions:
+  packages: write
+
+jobs:
+  list-minecraft-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - id: matrix
+        name: Create version batches
+        shell: bash
+        env:
+          SHARD_COUNT: ${{ inputs.shard-count }}
+        run: |
+          set -euo pipefail
+
+          if [ "$SHARD_COUNT" -lt 1 ]; then
+            echo "shard-count must be greater than 0"
+            exit 1
+          fi
+
+          minecraft_versions=$(bash src/Client/list-minecraft-release-versions --json 1.7.2)
+          matrix=$(
+            jq -cn \
+              --argjson minecraft_versions "$minecraft_versions" \
+              --argjson shard_count "$SHARD_COUNT" \
+              '{
+                include: [
+                  range(0; $shard_count) as $shard
+                  | {
+                      shard: $shard,
+                      "minecraft-versions": [
+                        $minecraft_versions
+                        | to_entries[]
+                        | select((.key % $shard_count) == $shard)
+                        | .value
+                      ]
+                    }
+                ]
+              }'
+          )
+
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: list-minecraft-versions
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.list-minecraft-versions.outputs.matrix) }}
+    uses: ./.github/workflows/reusable-publish-client-images.yml
+    secrets: inherit
+    with:
+      target: version
+      minecraft-versions: ${{ toJSON(matrix.minecraft-versions) }}
