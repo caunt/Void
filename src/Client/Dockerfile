@@ -134,10 +134,9 @@ COPY --from=application-files / /
 FROM runtime AS offline-assets
 
 ARG FIRST_RELEASE_VERSION=1.7.2
-ARG LAST_RELEASE_VERSION=26.1.2
 
 # Dry-run all release versions in reverse order (from oldest to latest)
-RUN list-minecraft-release-versions "$FIRST_RELEASE_VERSION" "$LAST_RELEASE_VERSION" | while IFS= read -r minecraftVersion; do portablemc-dry-run-with-retries "mojang:$minecraftVersion"; done
+RUN list-minecraft-release-versions "$FIRST_RELEASE_VERSION" | while IFS= read -r minecraftVersion; do portablemc-dry-run-with-retries "mojang:$minecraftVersion"; done
 
 FROM offline-assets AS offline
 
