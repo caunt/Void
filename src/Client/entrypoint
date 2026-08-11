@@ -20,6 +20,16 @@ done
 
 matchbox-window-manager -use_titlebar no -use_cursor no &
 x11vnc -ncache_cr -display "$DISPLAY" -nopw -forever -shared -rfbport 5900 -pointer_mode 1 -noxfixes -cursor arrow &
-websockify --web=/usr/share/novnc 80 127.0.0.1:5900 &
+websockify 127.0.0.1:6080 127.0.0.1:5900 &
 
-exec dotnet run Api.cs "$@"
+start_nginx_when_api_is_ready() {
+  until curl --fail --silent --output /dev/null http://127.0.0.1:8081/health; do
+    sleep 0.1
+  done
+
+  nginx
+}
+
+start_nginx_when_api_is_ready &
+
+exec dotnet run --project PortableMinecraftClient.csproj -- "$@"

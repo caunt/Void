@@ -19,7 +19,7 @@ namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
 
 public record PortableMinecraftClient(IContainer Container, HttpClient HttpClient) : IIntegrationSide
 {
-    private const int ApiPort = 8080;
+    private const int ApiPort = 80;
     private const int ClientStatePollDelayMilliseconds = 250;
     private const string Display = ":99";
     private const string DockerHost = "host.docker.internal";

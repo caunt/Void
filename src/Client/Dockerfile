@@ -36,6 +36,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxrandr2 \
     libxtst6 \
     matchbox-window-manager \
+    nginx \
     novnc \
     tk \
     websockify \
@@ -114,17 +115,18 @@ WORKDIR /app
 COPY --chmod=0755 list-minecraft-release-versions portablemc-dry-run-with-retries java-i686 /usr/local/bin/
 RUN ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 
-EXPOSE 80 8080
-ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 80
+ENV ASPNETCORE_URLS=http://127.0.0.1:8081
 ENV CURSEFORGE_API_BASE_URL=https://api.curseforge.com
 
 ENTRYPOINT ["portableminecraftclient-entrypoint"]
 
 FROM scratch AS application-files
 
-COPY Api.cs /app/Api.cs
+COPY Api.cs PortableMinecraftClient.csproj /app/
 COPY --chmod=0755 entrypoint /usr/local/bin/portableminecraftclient-entrypoint
 COPY --chmod=0755 launch-portableminecraftclient /usr/local/bin/launch-portableminecraftclient
+COPY nginx.conf /etc/nginx/nginx.conf
 COPY options.txt sodium-options.json splash.tcl /opt/portableminecraftclient/
 
 FROM runtime AS latest

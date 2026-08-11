@@ -1,7 +1,3 @@
-#:sdk Microsoft.NET.Sdk.Web
-#:property TargetFramework=net11.0
-#:property PublishAot=false
-
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;

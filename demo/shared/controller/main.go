@@ -663,7 +663,7 @@ func (server *Server) startSessionContainers(session *Session) (returnedError er
 func startAndJoinPortableMinecraftClient(clientHost string, minecraftUsername string) error {
 	clientApiUrl := &url.URL{
 		Scheme: "http",
-		Host:   net.JoinHostPort(clientHost, "8080"),
+		Host:   net.JoinHostPort(clientHost, "80"),
 		Path:   "/start",
 	}
 
