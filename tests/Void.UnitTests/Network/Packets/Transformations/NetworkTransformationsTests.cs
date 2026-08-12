@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Definitions;
@@ -9,6 +10,7 @@ using Void.Minecraft.Network.Registries.PacketId.Mappings;
 using Void.Minecraft.Network.Registries.Transformations.Extensions;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
 using Void.Proxy.Api.Network;
+using Void.Proxy.Api.Network.Channels;
 using Void.Proxy.Api.Network.Streams.Recyclable;
 using Void.Proxy.Api.Plugins;
 using Void.Proxy.Plugins.Common.Network.Channels;
@@ -38,10 +40,10 @@ public class NetworkTransformationsTests
             { PacketIdDefinitions.ServerboundPlayKeepAliveResponse, typeof(KeepAliveResponsePacket) }
         });
 
-        NetworkTransformations.RegisterMappings<KeepAliveResponsePacket>(channel, protocolVersion, mappings);
+        RegisterMappings<KeepAliveResponsePacket>(channel, protocolVersion, mappings);
         Assert.True(packetStream.Registries.PacketTransformationsSystem.All.TryGetFor(typeof(KeepAliveResponsePacket), TransformationType.Upgrade, out var originalTransformations));
 
-        NetworkTransformations.RegisterMappings<KeepAliveResponsePacket>(channel, protocolVersion, mappings);
+        RegisterMappings<KeepAliveResponsePacket>(channel, protocolVersion, mappings);
         Assert.True(packetStream.Registries.PacketTransformationsSystem.All.TryGetFor(typeof(KeepAliveResponsePacket), TransformationType.Upgrade, out var retainedTransformations));
         Assert.Same(originalTransformations, retainedTransformations);
 
@@ -69,7 +71,7 @@ public class NetworkTransformationsTests
         RegisterTransformations(playerPacketStream, playerChannel, plugin, protocolVersion, mappings);
         RegisterTransformations(serverPacketStream, serverChannel, plugin, protocolVersion, mappings);
 
-        AbstractRegistryService.ClearLinkTransformations(playerChannel, serverChannel, preservePlayerChannel: false);
+        ClearLinkTransformations(playerChannel, serverChannel, preservePlayerChannel: false);
 
         Assert.True(playerPacketStream.Registries.PacketTransformationsSystem.IsEmpty);
         Assert.True(playerPacketStream.Registries.PacketTransformationsPlugins.IsEmpty);
@@ -104,7 +106,7 @@ public class NetworkTransformationsTests
 
         Assert.True(playerPacketStream.Registries.PacketTransformationsSystem.All.TryGetFor(typeof(KeepAliveResponsePacket), TransformationType.Upgrade, out var originalTransformations));
 
-        AbstractRegistryService.ClearLinkTransformations(playerChannel, serverChannel, preservePlayerChannel: true);
+        ClearLinkTransformations(playerChannel, serverChannel, preservePlayerChannel: true);
 
         Assert.True(playerPacketStream.Registries.PacketTransformationsSystem.All.TryGetFor(typeof(KeepAliveResponsePacket), TransformationType.Upgrade, out var retainedTransformations));
         Assert.Same(originalTransformations, retainedTransformations);
@@ -126,8 +128,22 @@ public class NetworkTransformationsTests
     {
         packetStream.Registries.PacketTransformationsPlugins.ProtocolVersion = protocolVersion;
 
-        NetworkTransformations.RegisterMappings<KeepAliveResponsePacket>(channel, protocolVersion, mappings);
+        RegisterMappings<KeepAliveResponsePacket>(channel, protocolVersion, mappings);
         packetStream.Registries.PacketTransformationsPlugins.Get(plugin).RegisterTransformations<KeepAliveResponsePacket>(protocolVersion, mappings);
+    }
+
+    private static void RegisterMappings<T>(INetworkChannel channel, ProtocolVersion protocolVersion, params IEnumerable<MinecraftPacketTransformationMapping> mappings) where T : IMinecraftPacket
+    {
+        const string methodName = "RegisterMappings";
+        var method = typeof(NetworkTransformations).GetMethods(BindingFlags.NonPublic | BindingFlags.Static).SingleOrDefault(method => method.Name == methodName && method.GetParameters().Length is 3) ?? throw new MissingMethodException(typeof(NetworkTransformations).FullName, methodName);
+        method.MakeGenericMethod(typeof(T)).Invoke(null, [channel, protocolVersion, mappings]);
+    }
+
+    private static void ClearLinkTransformations(INetworkChannel playerChannel, INetworkChannel serverChannel, bool preservePlayerChannel)
+    {
+        const string methodName = "ClearLinkTransformations";
+        var method = typeof(AbstractRegistryService).GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Static) ?? throw new MissingMethodException(typeof(AbstractRegistryService).FullName, methodName);
+        method.Invoke(null, [playerChannel, serverChannel, preservePlayerChannel]);
     }
 
     private static void SetupKeepAliveDecoder(MinecraftPacketMessageStream packetStream, ProtocolVersion protocolVersion)
