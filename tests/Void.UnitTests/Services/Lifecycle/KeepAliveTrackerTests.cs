@@ -98,6 +98,33 @@ public class KeepAliveTrackerTests
     }
 
     [Fact]
+    public async Task Tracking_PausesWhilePlayerHasNoActiveLinkAsync()
+    {
+        var intervalController = new IntervalController();
+        var sentRequestIds = Channel.CreateUnbounded<long>();
+        var timeoutCount = 0;
+        var hasActiveLink = false;
+        await using var tracker = CreateTracker(intervalController, (requestId, cancellationToken) => sentRequestIds.Writer.WriteAsync(requestId, cancellationToken).AsTask(), (_, _) =>
+        {
+            Interlocked.Increment(ref timeoutCount);
+            return ValueTask.CompletedTask;
+        }, () => 81, canTrackKeepAlive: () => hasActiveLink);
+
+        await intervalController.AdvanceAsync();
+        Assert.False(sentRequestIds.Reader.TryRead(out _));
+
+        hasActiveLink = true;
+        await intervalController.AdvanceAsync();
+        Assert.Equal(81, await sentRequestIds.Reader.ReadAsync(TestContext.Current.CancellationToken));
+
+        hasActiveLink = false;
+        await intervalController.AdvanceAsync();
+        await intervalController.AdvanceAsync();
+        await intervalController.AdvanceAsync();
+        Assert.Equal(0, timeoutCount);
+    }
+
+    [Fact]
     public async Task Registry_RedirectedPlayerKeepsOutstandingRequestAsync()
     {
         var registry = new KeepAliveTrackerRegistry<object>();
@@ -216,9 +243,9 @@ public class KeepAliveTrackerTests
         return outputStream;
     }
 
-    private static KeepAliveTracker CreateTracker(IntervalController intervalController, KeepAliveTracker.SendKeepAliveRequest sendRequest, KeepAliveTracker.HandleKeepAliveTimeout handleTimeout, KeepAliveTracker.CreateKeepAliveRequestId createRequestId, ILogger? logger = null)
+    private static KeepAliveTracker CreateTracker(IntervalController intervalController, KeepAliveTracker.SendKeepAliveRequest sendRequest, KeepAliveTracker.HandleKeepAliveTimeout handleTimeout, KeepAliveTracker.CreateKeepAliveRequestId createRequestId, ILogger? logger = null, Func<bool>? canTrackKeepAlive = null)
     {
-        return new KeepAliveTracker(logger ?? NullLogger.Instance, sendRequest, handleTimeout, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15), createRequestId, intervalController.WaitAsync);
+        return new KeepAliveTracker(logger ?? NullLogger.Instance, sendRequest, handleTimeout, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15), createRequestId, intervalController.WaitAsync, canTrackKeepAlive);
     }
 
     private sealed class RecordingLogger : ILogger

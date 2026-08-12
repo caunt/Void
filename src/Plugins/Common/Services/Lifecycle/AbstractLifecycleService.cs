@@ -199,6 +199,6 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
             {
                 player.Logger.LogError(exception, "Error while handling keep alive timeout");
             }
-        }, _keepAliveInterval, createRequestIdFunction: () => KeepAliveTracker.CreateRequestId(player.ProtocolVersion)));
+        }, _keepAliveInterval, () => KeepAliveTracker.CreateRequestId(player.ProtocolVersion), () => player.Link is { IsAlive: true }));
     }
 }

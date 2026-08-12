@@ -11,6 +11,7 @@ public class KeepAliveTracker : IDisposable, IAsyncDisposable
     private readonly SendKeepAliveRequest _sendRequestFunction;
     private readonly HandleKeepAliveTimeout _handleTimeoutFunction;
     private readonly CreateKeepAliveRequestId _createRequestIdFunction;
+    private readonly Func<bool> _canTrackKeepAliveFunction;
     private readonly WaitForKeepAliveInterval _waitForKeepAliveIntervalFunction;
     private readonly TimeSpan _keepAliveRequestInterval;
     private readonly int _responseIntervalCount;
@@ -31,7 +32,12 @@ public class KeepAliveTracker : IDisposable, IAsyncDisposable
     {
     }
 
-    internal KeepAliveTracker(ILogger logger, SendKeepAliveRequest sendRequestFunction, HandleKeepAliveTimeout handleTimeoutFunction, TimeSpan keepAliveRequestInterval, TimeSpan keepAliveResponseTimeout, CreateKeepAliveRequestId? createRequestIdFunction, WaitForKeepAliveInterval waitForKeepAliveIntervalFunction)
+    internal KeepAliveTracker(ILogger logger, SendKeepAliveRequest sendRequestFunction, HandleKeepAliveTimeout handleTimeoutFunction, TimeSpan keepAliveRequestInterval, CreateKeepAliveRequestId createRequestIdFunction, Func<bool> canTrackKeepAliveFunction)
+        : this(logger, sendRequestFunction, handleTimeoutFunction, keepAliveRequestInterval, default, createRequestIdFunction, Task.Delay, canTrackKeepAliveFunction)
+    {
+    }
+
+    internal KeepAliveTracker(ILogger logger, SendKeepAliveRequest sendRequestFunction, HandleKeepAliveTimeout handleTimeoutFunction, TimeSpan keepAliveRequestInterval, TimeSpan keepAliveResponseTimeout, CreateKeepAliveRequestId? createRequestIdFunction, WaitForKeepAliveInterval waitForKeepAliveIntervalFunction, Func<bool>? canTrackKeepAliveFunction = null)
     {
         if (keepAliveRequestInterval <= TimeSpan.Zero)
             throw new ArgumentOutOfRangeException(nameof(keepAliveRequestInterval));
@@ -46,6 +52,7 @@ public class KeepAliveTracker : IDisposable, IAsyncDisposable
         _sendRequestFunction = sendRequestFunction;
         _handleTimeoutFunction = handleTimeoutFunction;
         _createRequestIdFunction = createRequestIdFunction ?? CreateRequestId;
+        _canTrackKeepAliveFunction = canTrackKeepAliveFunction ?? (() => true);
         _waitForKeepAliveIntervalFunction = waitForKeepAliveIntervalFunction;
         _keepAliveRequestInterval = keepAliveRequestInterval;
         _responseIntervalCount = Math.Max(1, (int)Math.Ceiling(keepAliveResponseTimeout / keepAliveRequestInterval));
@@ -103,6 +110,9 @@ public class KeepAliveTracker : IDisposable, IAsyncDisposable
             while (true)
             {
                 await _waitForKeepAliveIntervalFunction(_keepAliveRequestInterval, cancellationToken);
+
+                if (!_canTrackKeepAliveFunction())
+                    continue;
 
                 long requestId = default;
                 var shouldSendRequest = false;
