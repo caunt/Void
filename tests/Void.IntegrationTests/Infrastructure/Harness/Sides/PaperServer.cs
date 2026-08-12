@@ -33,9 +33,9 @@ public record PaperServer(IContainer Container, string LogFileName) : IIntegrati
         return await CreateAsync("server.log", cancellationToken);
     }
 
-    public static async Task<PaperServer> CreateAsync(string logFileName, CancellationToken cancellationToken = default)
+    public static async Task<PaperServer> CreateAsync(string logFileName, CancellationToken cancellationToken = default, int? maximumPlayers = null)
     {
-        var container = new ContainerBuilder("itzg/minecraft-server:latest")
+        var builder = new ContainerBuilder("itzg/minecraft-server:latest")
             .WithImagePullPolicy(PullPolicy.Always)
             .WithPortBinding(port: 25565, assignRandomHostPort: true)
             .WithEnvironment("EULA", "TRUE")
@@ -73,8 +73,12 @@ public record PaperServer(IContainer Container, string LogFileName) : IIntegrati
                     }
                     """u8
                 ],
-                FilePath.Of("/patches/connection-throttle.json"))
-            .Build();
+                FilePath.Of("/patches/connection-throttle.json"));
+
+        if (maximumPlayers is { } value)
+            builder = builder.WithEnvironment("MAX_PLAYERS", value.ToString());
+
+        var container = builder.Build();
 
         await container.StartAsync(cancellationToken);
 
