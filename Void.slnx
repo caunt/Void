@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Internals/">
     <Project Path="src/Api/Void.Proxy.Api.csproj" />
+    <Project Path="src/Client/PortableMinecraftClient.csproj" />
     <Project Path="src/Platform/Void.Proxy.csproj" />
   </Folder>
   <Folder Name="/Plugins/">
@@ -29,6 +30,7 @@
     <Project Path="src/Playground/Void.Playground.csproj" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="tests/Void.Client.UnitTests/Void.Client.UnitTests.csproj" />
     <Project Path="tests/Void.UnitTests/Void.UnitTests.csproj" />
     <Project Path="tests/Void.IntegrationTests/Void.IntegrationTests.csproj" />
     <Project Path="tests/Void.IntegrationTests.Generators/Void.IntegrationTests.Generators.csproj" />

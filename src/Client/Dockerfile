@@ -8,6 +8,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN cargo install portablemc-cli --root /usr/local
 
+# Publish the API once during the image build. Runtime startup never restores or compiles source code.
+FROM debian:13@sha256:34cd9e9fd437c0a095ec39cb2e73422c9f30821b0d0848ed74fd0d43bae4d958 AS dotnet-builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl libicu-dev \
+ && rm -rf /var/lib/apt/lists/* \
+ && curl --fail --location --silent --show-error --retry 5 --retry-all-errors https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
+ && chmod +x /tmp/dotnet-install.sh \
+ && /tmp/dotnet-install.sh --channel 10.0 --install-dir /usr/share/dotnet \
+ && rm /tmp/dotnet-install.sh
+
+ENV DOTNET_ROOT=/usr/share/dotnet
+ENV PATH="${DOTNET_ROOT}:${PATH}"
+
+WORKDIR /source
+COPY . .
+RUN dotnet publish PortableMinecraftClient.csproj --configuration Release --output /publish /p:UseAppHost=false
+
 # Runtime stage
 FROM debian:13@sha256:34cd9e9fd437c0a095ec39cb2e73422c9f30821b0d0848ed74fd0d43bae4d958 AS runtime
 
@@ -38,7 +55,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     matchbox-window-manager \
     nginx \
     novnc \
+    procps \
     tk \
+    tini \
+    util-linux \
     websockify \
     x11-utils \
     x11-xserver-utils \
@@ -95,10 +115,10 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
         --output /opt/portableminecraftclient/lwjgl-3.4.1-natives-linux-arm64.jar; \
     fi
 
-# Install .NET 11 preview
+# Install only the ASP.NET Core 10 runtime required by the pre-published API.
 RUN curl --fail --location --silent --show-error --retry 5 --retry-all-errors https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
  && chmod +x /tmp/dotnet-install.sh \
- && /tmp/dotnet-install.sh --channel 11.0 --quality preview --install-dir /usr/share/dotnet \
+ && /tmp/dotnet-install.sh --channel 10.0 --runtime aspnetcore --install-dir /usr/share/dotnet \
  && rm /tmp/dotnet-install.sh
 
 ENV DOTNET_ROOT=/usr/share/dotnet
@@ -119,11 +139,12 @@ EXPOSE 80
 ENV ASPNETCORE_URLS=http://127.0.0.1:8081
 ENV CURSEFORGE_API_BASE_URL=https://api.curseforge.com
 
-ENTRYPOINT ["portableminecraftclient-entrypoint"]
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 CMD curl --fail --silent --output /dev/null http://127.0.0.1/api/health || exit 1
+ENTRYPOINT ["tini", "--", "portableminecraftclient-entrypoint"]
 
 FROM scratch AS application-files
 
-COPY Api.cs PortableMinecraftClient.csproj /app/
+COPY --from=dotnet-builder /publish/ /app/
 COPY --chmod=0755 entrypoint /usr/local/bin/portableminecraftclient-entrypoint
 COPY --chmod=0755 launch-portableminecraftclient /usr/local/bin/launch-portableminecraftclient
 COPY nginx.conf /etc/nginx/nginx.conf

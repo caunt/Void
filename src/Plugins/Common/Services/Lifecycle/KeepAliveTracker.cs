@@ -79,7 +79,7 @@ public class KeepAliveTracker : IDisposable, IAsyncDisposable
 
         if (!_hasOutstandingRequest || _requestId != id)
         {
-            _logger.LogWarning("Keep Alive hit {Id} does not match outstanding id {LastId}", id, _hasOutstandingRequest ? _requestId : DefaultRequestId);
+            _logger.LogDebug("Keep Alive hit {Id} does not match outstanding id {LastId}", id, _hasOutstandingRequest ? _requestId : DefaultRequestId);
             return false;
         }
 

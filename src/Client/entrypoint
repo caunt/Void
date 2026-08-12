@@ -4,32 +4,92 @@ set -euo pipefail
 export DISPLAY="${DISPLAY:-:99}"
 display_number="${DISPLAY#:}"
 display_number="${display_number%%.*}"
+pids=()
+process_names=()
 
 rm -f "/tmp/.X$display_number-lock"
 
-Xvfb "$DISPLAY" -screen 0 854x480x24 -noreset -nolisten tcp &
-display_process_id=$!
-
-until xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; do
-  if ! kill -0 "$display_process_id" 2>/dev/null; then
-    wait "$display_process_id"
-  fi
-
-  sleep 0.1
-done
-
-matchbox-window-manager -use_titlebar no -use_cursor no &
-x11vnc -ncache_cr -display "$DISPLAY" -nopw -forever -shared -rfbport 5900 -pointer_mode 1 -noxfixes -cursor arrow &
-websockify 127.0.0.1:6080 127.0.0.1:5900 &
-
-start_nginx_when_api_is_ready() {
-  until curl --fail --silent --output /dev/null http://127.0.0.1:8081/health; do
-    sleep 0.1
-  done
-
-  nginx
+start_process() {
+  local process_name="$1"
+  shift
+  "$@" &
+  pids+=("$!")
+  process_names+=("$process_name")
 }
 
-start_nginx_when_api_is_ready &
+wait_until_ready() {
+  local process_name="$1"
+  local process_id="$2"
+  local timeout_seconds="$3"
+  shift 3
+  local deadline=$((SECONDS + timeout_seconds))
 
-exec dotnet run --project PortableMinecraftClient.csproj -- "$@"
+  until "$@"; do
+    if ! kill -0 "$process_id" 2>/dev/null; then
+      wait "$process_id"
+      echo "$process_name exited before becoming ready" >&2
+      exit 1
+    fi
+
+    if (( SECONDS >= deadline )); then
+      echo "$process_name did not become ready within $timeout_seconds seconds" >&2
+      exit 1
+    fi
+
+    sleep 0.1
+  done
+}
+
+shutdown() {
+  trap - EXIT INT TERM
+
+  for process_id in "${pids[@]}"; do
+    if kill -0 "$process_id" 2>/dev/null; then
+      kill -TERM "$process_id" 2>/dev/null || true
+    fi
+  done
+
+  for process_id in "${pids[@]}"; do
+    wait "$process_id" 2>/dev/null || true
+  done
+}
+
+trap shutdown EXIT INT TERM
+
+start_process xvfb Xvfb "$DISPLAY" -screen 0 854x480x24 -noreset -nolisten tcp
+xvfb_process_id="${pids[-1]}"
+wait_until_ready xvfb "$xvfb_process_id" 15 xdpyinfo -display "$DISPLAY"
+
+start_process window-manager matchbox-window-manager -use_titlebar no -use_cursor no
+start_process vnc x11vnc -ncache_cr -display "$DISPLAY" -nopw -forever -shared -rfbport 5900 -pointer_mode 1 -noxfixes -cursor arrow
+vnc_process_id="${pids[-1]}"
+wait_until_ready vnc "$vnc_process_id" 15 bash -c '</dev/tcp/127.0.0.1/5900'
+
+start_process websockify websockify 127.0.0.1:6080 127.0.0.1:5900
+websockify_process_id="${pids[-1]}"
+wait_until_ready websockify "$websockify_process_id" 15 bash -c '</dev/tcp/127.0.0.1/6080'
+
+start_process api dotnet /app/PortableMinecraftClient.dll "$@"
+api_process_id="${pids[-1]}"
+wait_until_ready api "$api_process_id" 30 curl --fail --silent --output /dev/null http://127.0.0.1:8081/api/health
+
+start_process nginx nginx -g 'daemon off;'
+nginx_process_id="${pids[-1]}"
+wait_until_ready nginx "$nginx_process_id" 15 curl --fail --silent --output /dev/null http://127.0.0.1/api/health
+
+set +e
+exited_process_id=""
+wait -n -p exited_process_id "${pids[@]}"
+exit_code=$?
+set -e
+
+exited_process_name="unknown"
+for index in "${!pids[@]}"; do
+  if [[ "${pids[$index]}" == "$exited_process_id" ]]; then
+    exited_process_name="${process_names[$index]}"
+    break
+  fi
+done
+
+echo "$exited_process_name exited unexpectedly with code $exit_code" >&2
+exit "$(( exit_code == 0 ? 1 : exit_code ))"

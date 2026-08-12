@@ -59,6 +59,15 @@ public class KeepAliveTrackerTests
     }
 
     [Fact]
+    public async Task Pong_WithoutOutstandingRequest_IsRejectedAsync()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var tracker = CreateTracker(new IntervalController(), (_, _) => Task.CompletedTask, (_, _) => ValueTask.CompletedTask, () => 73);
+
+        Assert.False(tracker.Pong(73, cancellationToken));
+    }
+
+    [Fact]
     public async Task DisposeAsync_CancelsWorkerWithoutSendingOrTimingOutAsync()
     {
         var intervalController = new IntervalController();

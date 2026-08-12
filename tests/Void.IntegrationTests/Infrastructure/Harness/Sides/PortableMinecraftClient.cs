@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -121,7 +122,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             var startedAt = DateTime.UtcNow;
 
             using var optionsContent = new StringContent(CreateOptionsText(protocolVersion), Encoding.UTF8, "text/plain");
-            using var optionsResponse = await httpClient.PutAsync("/api/options", optionsContent, cancellationToken);
+            using var optionsResponse = await httpClient.PutAsync("/api/game/options", optionsContent, cancellationToken);
             await EnsureSuccessAsync(optionsResponse, $"Writing Minecraft {protocolVersion.FirstRelease} options", cancellationToken);
 
             var game = new Game(testName, container, httpClient, logSides, startedAt, protocolVersion, username);
@@ -199,37 +200,23 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
         private async Task StartVanillaAsync(CancellationToken cancellationToken = default)
         {
-            var queryParameters = new List<KeyValuePair<string, string>>
+            var request = new
             {
-                new("version", ProtocolVersion.FirstRelease),
-                new("argument", "--fetch-exclude-all"),
-                new("argument", "--username"),
-                new("argument", Username),
-                new("argument", "--jvm-arg=-Djava.awt.headless=false")
+                version = ProtocolVersion.FirstRelease.ToString(),
+                arguments = new[]
+                {
+                    "--fetch-exclude-all",
+                    "--username",
+                    Username,
+                    "--jvm-arg=-Djava.awt.headless=false"
+                }
             };
 
-            var requestUri = CreateRequestUri("/api/start-vanilla", queryParameters);
+            using var response = await HttpClient.PostAsJsonAsync("/api/game/start/vanilla", request, cancellationToken);
+            await EnsureSuccessAsync(response, $"Starting Minecraft {ProtocolVersion.FirstRelease}", cancellationToken);
+            var acceptedStatus = await ReadApiStatusAsync(response, $"Accepting Minecraft {ProtocolVersion.FirstRelease} launch", cancellationToken);
 
-            while (true)
-            {
-                using var response = await HttpClient.GetAsync(requestUri, cancellationToken);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    await WaitForClientRunningAsync(cancellationToken);
-                    return;
-                }
-
-                var status = await TryReadApiStatusAsync(response, cancellationToken);
-
-                if (response.StatusCode is HttpStatusCode.Conflict && status?.State is "stopping")
-                {
-                    await Task.Delay(TimeSpan.FromMilliseconds(ClientStatePollDelayMilliseconds), cancellationToken);
-                    continue;
-                }
-
-                await EnsureSuccessAsync(response, $"Starting Minecraft {ProtocolVersion.FirstRelease}", cancellationToken);
-            }
+            await WaitForClientReadyAsync(acceptedStatus.OperationId, cancellationToken);
         }
 
         public async Task JoinServerAsync(EndPoint endPoint, CancellationToken cancellationToken = default)
@@ -238,67 +225,43 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
             await LogAsync($"Navigating the Minecraft UI to {dockerHost}:{dockerPort}", cancellationToken);
 
-            using var response = await HttpClient.GetAsync(CreateRequestUri("/api/join-server",
-            [
-                new KeyValuePair<string, string>("host", dockerHost),
-                new KeyValuePair<string, string>("port", dockerPort.ToString())
-            ]), cancellationToken);
+            using var response = await HttpClient.PostAsJsonAsync("/api/game/connect", new { host = dockerHost, port = dockerPort }, cancellationToken);
             await EnsureSuccessAsync(response, $"Navigating Minecraft {ProtocolVersion.FirstRelease} to {dockerHost}:{dockerPort}", cancellationToken);
         }
 
         private async Task SendChatAsync(string text, CancellationToken cancellationToken = default)
         {
-            using var response = await HttpClient.GetAsync(CreateRequestUri("/api/send-chat", [new KeyValuePair<string, string>("message", text)]), cancellationToken);
+            using var response = await HttpClient.PostAsJsonAsync("/api/game/send-chat", new { message = text }, cancellationToken);
             await EnsureSuccessAsync(response, $"Sending chat input: {text}", cancellationToken);
         }
 
         private async Task StopClientAsync(CancellationToken cancellationToken = default)
         {
-            using var response = await HttpClient.GetAsync("/api/stop-client", cancellationToken);
-
-            if (response.StatusCode is HttpStatusCode.NotFound)
-                return;
-
+            using var response = await HttpClient.PostAsync("/api/game/stop", null, cancellationToken);
             await EnsureSuccessAsync(response, $"Stopping Minecraft {ProtocolVersion.FirstRelease}", cancellationToken);
-            await WaitForClientIdleAsync(cancellationToken);
+            var stopResponse = await response.Content.ReadFromJsonAsync<StopGameResponse>(cancellationToken)
+                               ?? throw new IntegrationTestException("Stopping Minecraft returned an empty response");
+
+            if (stopResponse.Status.State is not "idle" || stopResponse.Status.OperationState is not "succeeded")
+                throw new IntegrationTestException($"Stopping Minecraft returned unexpected state {stopResponse.Status.State}/{stopResponse.Status.OperationState}");
         }
 
-        private async Task WaitForClientIdleAsync(CancellationToken cancellationToken = default)
+        private async Task WaitForClientReadyAsync(long operationId, CancellationToken cancellationToken = default)
         {
             while (true)
             {
-                using var response = await HttpClient.GetAsync("/api/status", cancellationToken);
-
-                if (response.StatusCode is HttpStatusCode.NotFound)
-                    return;
-
+                using var response = await HttpClient.GetAsync("/api/game/status", cancellationToken);
                 await EnsureSuccessAsync(response, "Reading Minecraft client status", cancellationToken);
 
                 var status = await ReadApiStatusAsync(response, "Reading Minecraft client status", cancellationToken);
 
-                if (status.State is "idle")
+                if (status.OperationId != operationId)
+                    throw new IntegrationTestException($"Minecraft launch operation {operationId} was superseded by {status.OperationId}");
+
+                if (status.State is "ready" && status.OperationState is "succeeded")
                     return;
 
-                if (status.State is "failed")
-                    throw new IntegrationTestException($"Stopping Minecraft {ProtocolVersion.FirstRelease} failed: {status.Error ?? "client entered failed state"}");
-
-                await Task.Delay(TimeSpan.FromMilliseconds(ClientStatePollDelayMilliseconds), cancellationToken);
-            }
-        }
-
-        private async Task WaitForClientRunningAsync(CancellationToken cancellationToken = default)
-        {
-            while (true)
-            {
-                using var response = await HttpClient.GetAsync("/api/status", cancellationToken);
-                await EnsureSuccessAsync(response, "Reading Minecraft client status", cancellationToken);
-
-                var status = await ReadApiStatusAsync(response, "Reading Minecraft client status", cancellationToken);
-
-                if (status.State is "running")
-                    return;
-
-                if (status.State is "failed")
+                if (status.State is "failed" || status.OperationState is "failed" or "canceled")
                     throw new IntegrationTestException($"Starting Minecraft {ProtocolVersion.FirstRelease} failed: {status.Error ?? "client entered failed state"}");
 
                 await Task.Delay(TimeSpan.FromMilliseconds(ClientStatePollDelayMilliseconds), cancellationToken);
@@ -307,7 +270,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
         private async Task<byte[]> TakeScreenshotAsync(CancellationToken cancellationToken = default)
         {
-            using var response = await HttpClient.GetAsync("/api/screen", cancellationToken);
+            using var response = await HttpClient.GetAsync("/api/game/screenshot", cancellationToken);
             await EnsureSuccessAsync(response, "Taking Minecraft screenshot", cancellationToken);
 
             return await response.Content.ReadAsByteArrayAsync(cancellationToken);
@@ -381,12 +344,6 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             }
         }
 
-        private static string CreateRequestUri(string path, IEnumerable<KeyValuePair<string, string>> queryParameters)
-        {
-            var query = string.Join("&", queryParameters.Select(parameter => $"{Uri.EscapeDataString(parameter.Key)}={Uri.EscapeDataString(parameter.Value)}"));
-            return $"{path}?{query}";
-        }
-
         private static string CreateOptionsText(ProtocolVersion protocolVersion)
         {
             var options = new List<string>
@@ -402,6 +359,8 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             return string.Join('\n', options) + "\n";
         }
 
-        private record ApiStatus(string Status, string State, int OperationId, string? Operation, int? Pid, string? Message, string? Error, DateTimeOffset UpdatedAt);
+        private record ApiStatus(string State, long OperationId, string? Operation, string OperationState, int? ProcessId, int? ExitCode, string? Message, string? Error, DateTimeOffset UpdatedAt);
+
+        private record StopGameResponse(string Mode, ApiStatus Status);
     }
 }
