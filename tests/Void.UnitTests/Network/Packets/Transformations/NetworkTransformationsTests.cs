@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Definitions;
@@ -24,6 +25,22 @@ namespace Void.UnitTests.Network.Packets.Transformations;
 
 public class NetworkTransformationsTests
 {
+    [Fact]
+    public async Task DisposeAsync_ClearsRegistryPluginReferencesAsync()
+    {
+        var packetStream = new MinecraftPacketMessageStream();
+        var plugin = new TestPlugin();
+
+        packetStream.Registries.Setup(plugin, ProtocolVersion.MINECRAFT_1_21_4);
+
+        await packetStream.DisposeAsync();
+
+        Assert.Null(packetStream.Registries.PacketIdSystem.ManagedBy);
+        Assert.Null(packetStream.Registries.PacketIdPlugins.ManagedBy);
+        Assert.Null(packetStream.Registries.PacketTransformationsSystem.ManagedBy);
+        Assert.Null(packetStream.Registries.PacketTransformationsPlugins.ManagedBy);
+    }
+
     [Fact]
     public void RegisterMappings_AfterServerRedirect_PreservesLegacyKeepAliveDecoding()
     {

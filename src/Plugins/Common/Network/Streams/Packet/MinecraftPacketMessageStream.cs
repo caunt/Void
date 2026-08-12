@@ -78,12 +78,15 @@ public class MinecraftPacketMessageStream : RecyclableStream, IMinecraftPacketMe
 
     public void Dispose()
     {
+        Registries.Dispose();
         BaseStream?.Dispose();
         GC.SuppressFinalize(this);
     }
 
     public async ValueTask DisposeAsync()
     {
+        Registries.Dispose();
+
         if (BaseStream != null)
             await BaseStream.DisposeAsync();
 

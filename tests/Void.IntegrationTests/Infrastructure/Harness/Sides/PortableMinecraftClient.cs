@@ -88,6 +88,11 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
         return await Game.RunAsync(testName, Container, HttpClient, [this, .. additionalLogSides], protocolVersion, cancellationToken);
     }
 
+    public async Task<Game> RunGameAsync(string testName, ProtocolVersion protocolVersion, string username, IEnumerable<IIntegrationSide> additionalLogSides, CancellationToken cancellationToken = default)
+    {
+        return await Game.RunAsync(testName, Container, HttpClient, [this, .. additionalLogSides], protocolVersion, username, cancellationToken);
+    }
+
     public record Game(string TestName, IContainer Container, HttpClient HttpClient, IReadOnlyList<IIntegrationSide> LogSides, DateTime StartedAt, ProtocolVersion ProtocolVersion, string Username) : IAsyncDisposable
     {
         private readonly string _workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), "steps", TestName, ProtocolVersion.ToString(), Username);
@@ -119,6 +124,14 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
         public static async Task<Game> RunAsync(string testName, IContainer container, HttpClient httpClient, IReadOnlyList<IIntegrationSide> logSides, ProtocolVersion protocolVersion, CancellationToken cancellationToken = default)
         {
             var username = Convert.ToHexString(BitConverter.GetBytes(Random.Shared.Next()));
+
+            return await RunAsync(testName, container, httpClient, logSides, protocolVersion, username, cancellationToken);
+        }
+
+        public static async Task<Game> RunAsync(string testName, IContainer container, HttpClient httpClient, IReadOnlyList<IIntegrationSide> logSides, ProtocolVersion protocolVersion, string username, CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(username);
+
             var startedAt = DateTime.UtcNow;
 
             using var optionsContent = new StringContent(CreateOptionsText(protocolVersion), Encoding.UTF8, "text/plain");
@@ -229,6 +242,31 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             await EnsureSuccessAsync(response, $"Navigating Minecraft {ProtocolVersion.FirstRelease} to {dockerHost}:{dockerPort}", cancellationToken);
         }
 
+        public async Task JoinServerExpectingFailureAsync(EndPoint endPoint, CancellationToken cancellationToken = default)
+        {
+            var (dockerHost, dockerPort) = endPoint.AsDockerHostPort;
+
+            await LogAsync($"Navigating the Minecraft UI to {dockerHost}:{dockerPort} and expecting a connection failure", cancellationToken);
+
+            using var connectionCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            var connectionTask = HttpClient.PostAsJsonAsync("/api/game/connect", new { host = dockerHost, port = dockerPort }, connectionCancellation.Token);
+
+            await Container.ExpectTextAsync("Visually confirmed that the connection failed", StartedAt, cancellationToken);
+            await connectionCancellation.CancelAsync();
+
+            try
+            {
+                using var response = await connectionTask;
+                throw new IntegrationTestException($"Minecraft {ProtocolVersion.FirstRelease} completed its connection attempt when a connection failure was expected");
+            }
+            catch (OperationCanceledException) when (connectionCancellation.IsCancellationRequested)
+            {
+            }
+
+            await WaitForConnectionCancellationAsync(cancellationToken);
+            await LogAsync($"Minecraft {ProtocolVersion.FirstRelease} visually confirmed the expected connection failure", cancellationToken);
+        }
+
         private async Task SendChatAsync(string text, CancellationToken cancellationToken = default)
         {
             using var response = await HttpClient.PostAsJsonAsync("/api/game/send-chat", new { message = text }, cancellationToken);
@@ -263,6 +301,25 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
                 if (status.State is "failed" || status.OperationState is "failed" or "canceled")
                     throw new IntegrationTestException($"Starting Minecraft {ProtocolVersion.FirstRelease} failed: {status.Error ?? "client entered failed state"}");
+
+                await Task.Delay(TimeSpan.FromMilliseconds(ClientStatePollDelayMilliseconds), cancellationToken);
+            }
+        }
+
+        private async Task WaitForConnectionCancellationAsync(CancellationToken cancellationToken = default)
+        {
+            while (true)
+            {
+                using var response = await HttpClient.GetAsync("/api/game/status", cancellationToken);
+                await EnsureSuccessAsync(response, "Reading Minecraft client status", cancellationToken);
+
+                var status = await ReadApiStatusAsync(response, "Reading Minecraft client status", cancellationToken);
+
+                if (status.Operation is "connect" && status.OperationState is "canceled")
+                    return;
+
+                if (status.Operation is not "connect" || status.OperationState is not "running")
+                    throw new IntegrationTestException($"Canceling the expected Minecraft connection failure returned unexpected operation {status.Operation}/{status.OperationState}");
 
                 await Task.Delay(TimeSpan.FromMilliseconds(ClientStatePollDelayMilliseconds), cancellationToken);
             }
