@@ -63,6 +63,15 @@ export default defineConfig({
                     { slug: 'docs/developing-plugins/serializers' }
                 ],
             },
+            {
+                label: 'Client',
+                collapsed: true,
+                items: [
+                    { slug: 'docs/client' },
+                    { slug: 'docs/client/images' },
+                    { slug: 'docs/client/api' }
+                ]
+            },
             { slug: 'docs/faq' },
             {
                 label: 'Reference',
