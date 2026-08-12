@@ -26,19 +26,19 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
 
     public bool IsHealthy => Volatile.Read(ref _started) is 1;
 
-    public async Task<GameStatus> StartPortableAsync(StartGameRequest request, CancellationToken cancellationToken)
-    {
-        return await EnqueueAsync<GameStatus>(completion => new StartMessage("start", request, null, completion), cancellationToken);
-    }
-
     public async Task<GameStatus> StartVanillaAsync(StartGameRequest request, CancellationToken cancellationToken)
     {
-        return await EnqueueAsync<GameStatus>(completion => new StartMessage("start-vanilla", request, null, completion), cancellationToken);
+        return await EnqueueAsync<GameStatus>(completion => new StartMessage("start-vanilla", request, null, null, completion), cancellationToken);
+    }
+
+    public async Task<GameStatus> StartNeoForgeAsync(StartNeoForgeGameRequest request, CancellationToken cancellationToken)
+    {
+        return await EnqueueAsync<GameStatus>(completion => new StartMessage("start-neoforge", null, request, null, completion), cancellationToken);
     }
 
     public async Task<GameStatus> StartCurseForgeAsync(StartCurseForgeGameRequest request, CancellationToken cancellationToken)
     {
-        return await EnqueueAsync<GameStatus>(completion => new StartMessage("start-curseforge", null, request, completion), cancellationToken);
+        return await EnqueueAsync<GameStatus>(completion => new StartMessage("start-curseforge", null, null, request, completion), cancellationToken);
     }
 
     public async Task<StopGameResponse> StopGameAsync(CancellationToken cancellationToken)
@@ -158,7 +158,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         var version = message.Request?.Version?.Trim();
         var slug = message.CurseForgeRequest?.Slug?.Trim();
 
-        if (message.Kind is not "start-curseforge" && string.IsNullOrWhiteSpace(version))
+        if (message.Kind is "start-vanilla" && string.IsNullOrWhiteSpace(version))
         {
             message.Completion.SetException(BadRequest("version is required"));
             return;
@@ -177,8 +177,8 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
 
         Task<RunningGame> operation = message.Kind switch
         {
-            "start" => runtime.LaunchPortableAsync(version ?? "", message.Request?.Arguments ?? [], operationCancellation.Token),
             "start-vanilla" => runtime.LaunchVanillaAsync(version ?? "", message.Request?.Arguments ?? [], operationCancellation.Token),
+            "start-neoforge" => runtime.LaunchNeoForgeAsync(message.NeoForgeRequest?.Arguments ?? [], operationCancellation.Token),
             "start-curseforge" => runtime.LaunchCurseForgeAsync(slug ?? "", message.CurseForgeRequest?.FileId ?? 0, message.CurseForgeRequest?.Arguments ?? [], operationCancellation.Token),
             _ => throw new InvalidOperationException($"Unknown launch kind {message.Kind}")
         };
@@ -579,7 +579,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
     private static GameCommandException Conflict(string message) => new(StatusCodes.Status409Conflict, message);
 
     private abstract record Message;
-    private sealed record StartMessage(string Kind, StartGameRequest? Request, StartCurseForgeGameRequest? CurseForgeRequest, TaskCompletionSource<GameStatus> Completion) : Message;
+    private sealed record StartMessage(string Kind, StartGameRequest? Request, StartNeoForgeGameRequest? NeoForgeRequest, StartCurseForgeGameRequest? CurseForgeRequest, TaskCompletionSource<GameStatus> Completion) : Message;
     private sealed record StopMessage(TaskCompletionSource<StopGameResponse> Completion) : Message;
     private sealed record ConnectMessage(ConnectGameRequest Request, TaskCompletionSource<ConnectGameResponse> Completion, CancellationToken RequestCancellation) : Message;
     private sealed record SendChatMessage(SendChatRequest Request, TaskCompletionSource<bool> Completion, CancellationToken RequestCancellation) : Message;

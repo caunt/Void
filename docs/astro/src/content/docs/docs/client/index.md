@@ -6,6 +6,7 @@ description: Run and automate the Docker Minecraft client.
 The Void client image runs a demo-mode Minecraft client that can be controlled over HTTP.
 It is intended for automated workflows such as integration tests, demonstrations, and compatibility checks.
 Void uses the same image for its own integration tests and [**online demo**](https://void-demo.caunt.world/).
+The demo starts the latest stable NeoForge release and adds Sodium when a compatible build is available.
 
 ## Quick Start
 
@@ -22,14 +23,14 @@ Wait until the client service is ready:
 curl --fail http://localhost:8080/api/health
 ```
 
-Start Minecraft 1.21.8:
+Start the latest stable NeoForge release:
 
 ```bash
 curl --fail-with-body \
   --request POST \
   --header 'Content-Type: application/json' \
-  --data '{"version":"1.21.8","arguments":["--username","TestPlayer"]}' \
-  http://localhost:8080/api/game/start/vanilla
+  --data '{"arguments":["--username","TestPlayer"]}' \
+  http://localhost:8080/api/game/start/neoforge
 ```
 
 The start request returns `202 Accepted`. Poll the returned operation with:

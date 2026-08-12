@@ -43,8 +43,8 @@ public sealed class GameCoordinatorTests
         using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
         await coordinator.StartAsync(CancellationToken.None);
 
-        await coordinator.StartPortableAsync(new("mojang:1.21.1", []), CancellationToken.None);
-        var exception = await Assert.ThrowsAsync<GameCommandException>(() => coordinator.StartPortableAsync(new("mojang:1.20.1", []), CancellationToken.None));
+        await coordinator.StartNeoForgeAsync(new([]), CancellationToken.None);
+        var exception = await Assert.ThrowsAsync<GameCommandException>(() => coordinator.StartNeoForgeAsync(new([]), CancellationToken.None));
 
         Assert.Equal(409, exception.StatusCode);
         Assert.Equal(1, runtime.LaunchCount);
@@ -124,9 +124,9 @@ public sealed class GameCoordinatorTests
 
         public Task WriteOptionsAsync(string options, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        public Task<RunningGame> LaunchPortableAsync(string portableMinecraftVersion, IReadOnlyList<string> arguments, CancellationToken cancellationToken) => BeginLaunch(cancellationToken);
-
         public Task<RunningGame> LaunchVanillaAsync(string version, IReadOnlyList<string> arguments, CancellationToken cancellationToken) => BeginLaunch(cancellationToken);
+
+        public Task<RunningGame> LaunchNeoForgeAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken) => BeginLaunch(cancellationToken);
 
         public Task<RunningGame> LaunchCurseForgeAsync(string slug, int fileId, IReadOnlyList<string> arguments, CancellationToken cancellationToken) => BeginLaunch(cancellationToken);
 

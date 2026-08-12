@@ -13,8 +13,8 @@ JSON property names and enum values use camel case.
 | `GET` | `/api/health` | `200` | Check whether the client service is ready. |
 | `GET` | `/api/game/status` | `200` | Read the game state and latest operation. |
 | `PUT` | `/api/game/options` | `204` | Replace Minecraft `options.txt`. |
-| `POST` | `/api/game/start` | `202` | Start a PortableMC version selector. |
 | `POST` | `/api/game/start/vanilla` | `202` | Start a Mojang vanilla release. |
+| `POST` | `/api/game/start/neoforge` | `202` | Start the latest stable NeoForge release. |
 | `POST` | `/api/game/start/curseforge` | `202` | Start a CurseForge modpack file. |
 | `POST` | `/api/game/connect` | `200` | Connect the ready game to a server. |
 | `POST` | `/api/game/send-chat` | `204` | Send chat text or a command. |
@@ -45,7 +45,7 @@ JSON property names and enum values use camel case.
 | :---- | :---------- |
 | `state` | Game lifecycle: `idle`, `starting`, `ready`, `connected`, `stopping`, or `failed`. |
 | `operationId` | Increasing identifier for the latest accepted operation. |
-| `operation` | Latest operation: `start`, `start-vanilla`, `start-curseforge`, `options`, `connect`, `send-chat`, `screenshot`, or `stop`; otherwise `null`. |
+| `operation` | Latest operation: `start-vanilla`, `start-neoforge`, `start-curseforge`, `options`, `connect`, `send-chat`, `screenshot`, or `stop`; otherwise `null`. |
 | `operationState` | `none`, `running`, `succeeded`, `failed`, or `canceled`. |
 | `processId` | Minecraft process identifier while it is running. |
 | `exitCode` | Minecraft exit code after it exits, when available. |
@@ -97,17 +97,19 @@ curl --fail-with-body \
   http://localhost:8080/api/game/start/vanilla
 ```
 
-### PortableMC Selector
+### NeoForge
 
-`version` is passed as a PortableMC version selector. Use this endpoint for selectors such as `mojang:1.21.8`:
+This endpoint resolves and starts the latest stable NeoForge release:
 
 ```bash
 curl --fail-with-body \
   --request POST \
   --header 'Content-Type: application/json' \
-  --data '{"version":"mojang:1.21.8","arguments":["--username","TestPlayer"]}' \
-  http://localhost:8080/api/game/start
+  --data '{"arguments":["--username","TestPlayer"]}' \
+  http://localhost:8080/api/game/start/neoforge
 ```
+
+Sodium is installed automatically when Modrinth provides a compatible NeoForge build for the resolved Minecraft version.
 
 ### CurseForge
 

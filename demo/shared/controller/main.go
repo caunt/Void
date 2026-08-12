@@ -682,9 +682,8 @@ func startAndJoinPortableMinecraftClient(clientHost string, minecraftUsername st
 		return err
 	}
 
-	clientApiUrl.Path = "/api/game/start"
+	clientApiUrl.Path = "/api/game/start/neoforge"
 	startRequest := map[string]any{
-		"version":   "mojang:1.21.8",
 		"arguments": []string{"--username", minecraftUsername, "--jvm-arg=-Djava.awt.headless=false"},
 	}
 	httpClient := &http.Client{Timeout: 30 * time.Second}

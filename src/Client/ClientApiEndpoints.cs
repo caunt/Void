@@ -31,15 +31,15 @@ internal static class ClientApiEndpoints
             .WithName("SetGameOptions")
             .WithSummary("Atomically stores Minecraft options for current and future launches.");
 
-        api.MapPost("/game/start", async Task<IResult> (StartGameRequest request, GameCoordinator coordinator, ILoggerFactory loggerFactory, CancellationToken cancellationToken) =>
-            await ExecuteAsync(async () => Results.Accepted(StatusPath, await coordinator.StartPortableAsync(request, cancellationToken)), loggerFactory, cancellationToken))
-            .WithName("StartPortableGame")
-            .WithSummary("Starts an arbitrary PortableMC version selector.");
-
         api.MapPost("/game/start/vanilla", async Task<IResult> (StartGameRequest request, GameCoordinator coordinator, ILoggerFactory loggerFactory, CancellationToken cancellationToken) =>
             await ExecuteAsync(async () => Results.Accepted(StatusPath, await coordinator.StartVanillaAsync(request, cancellationToken)), loggerFactory, cancellationToken))
             .WithName("StartVanillaGame")
             .WithSummary("Starts a Mojang vanilla Minecraft version.");
+
+        api.MapPost("/game/start/neoforge", async Task<IResult> (StartNeoForgeGameRequest request, GameCoordinator coordinator, ILoggerFactory loggerFactory, CancellationToken cancellationToken) =>
+            await ExecuteAsync(async () => Results.Accepted(StatusPath, await coordinator.StartNeoForgeAsync(request, cancellationToken)), loggerFactory, cancellationToken))
+            .WithName("StartNeoForgeGame")
+            .WithSummary("Starts the latest stable NeoForge Minecraft version.");
 
         api.MapPost("/game/start/curseforge", async Task<IResult> (StartCurseForgeGameRequest request, GameCoordinator coordinator, ILoggerFactory loggerFactory, CancellationToken cancellationToken) =>
             await ExecuteAsync(async () => Results.Accepted(StatusPath, await coordinator.StartCurseForgeAsync(request, cancellationToken)), loggerFactory, cancellationToken))

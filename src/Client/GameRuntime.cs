@@ -66,7 +66,7 @@ internal sealed partial class GameRuntime : IGameRuntime
         }
     }
 
-    public async Task<RunningGame> LaunchPortableAsync(string portableMinecraftVersion, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    private async Task<RunningGame> LaunchPortableAsync(string portableMinecraftVersion, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
         var minecraftDirectory = GetMinecraftDirectory();
         await PreparePortableMinecraftClientAsync(minecraftDirectory, portableMinecraftVersion, cancellationToken);
@@ -76,6 +76,11 @@ internal sealed partial class GameRuntime : IGameRuntime
     public Task<RunningGame> LaunchVanillaAsync(string version, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
         return LaunchPortableAsync($"mojang:{version}", arguments, cancellationToken);
+    }
+
+    public Task<RunningGame> LaunchNeoForgeAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    {
+        return LaunchPortableAsync("neoforge:", arguments, cancellationToken);
     }
 
     public async Task<RunningGame> LaunchCurseForgeAsync(string slug, int fileId, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
