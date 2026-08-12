@@ -55,7 +55,10 @@ public class KeepAliveTracker : IDisposable, IAsyncDisposable
     public static long CreateRequestId(ProtocolVersion protocolVersion)
     {
         if (UsesLegacyRequestIdWidth(protocolVersion))
-            return Random.Shared.NextInt64(int.MinValue, (long)int.MaxValue + 1);
+        {
+            var requestId = Random.Shared.NextInt64(int.MinValue, int.MaxValue);
+            return requestId >= 0 ? requestId + 1 : requestId;
+        }
 
         return CreateRequestId();
     }
@@ -70,6 +73,11 @@ public class KeepAliveTracker : IDisposable, IAsyncDisposable
         return protocolVersion < ProtocolVersion.MINECRAFT_1_12_2;
     }
 
+    internal static bool IsLegacyTerrainKeepAlive(ProtocolVersion protocolVersion, long id)
+    {
+        return UsesLegacyRequestIdWidth(protocolVersion) && id is 0;
+    }
+
     public bool Pong(long id, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -79,7 +87,7 @@ public class KeepAliveTracker : IDisposable, IAsyncDisposable
 
         if (!_hasOutstandingRequest || _requestId != id)
         {
-            _logger.LogDebug("Keep Alive hit {Id} does not match outstanding id {LastId}", id, _hasOutstandingRequest ? _requestId : DefaultRequestId);
+            _logger.LogWarning("Keep Alive hit {Id} does not match outstanding id {LastId}", id, _hasOutstandingRequest ? _requestId : DefaultRequestId);
             return false;
         }
 

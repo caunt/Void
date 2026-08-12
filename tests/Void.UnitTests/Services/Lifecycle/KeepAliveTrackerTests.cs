@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
@@ -41,16 +42,19 @@ public class KeepAliveTrackerTests
         var cancellationToken = TestContext.Current.CancellationToken;
         var intervalController = new IntervalController();
         var sentRequestIds = Channel.CreateUnbounded<long>();
+        var logger = new RecordingLogger();
         var timeoutCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         await using var tracker = CreateTracker(intervalController, (requestId, cancellationToken) => sentRequestIds.Writer.WriteAsync(requestId, cancellationToken).AsTask(), (_, _) =>
         {
             timeoutCompletionSource.TrySetResult();
             return ValueTask.CompletedTask;
-        }, () => 73);
+        }, () => 73, logger);
 
         await intervalController.AdvanceAsync();
         Assert.Equal(73, await sentRequestIds.Reader.ReadAsync(cancellationToken));
         Assert.False(tracker.Pong(74, cancellationToken));
+        Assert.Contains(LogLevel.Warning, logger.LogLevels);
+        Assert.DoesNotContain(LogLevel.Debug, logger.LogLevels);
 
         await intervalController.AdvanceAsync();
         await intervalController.AdvanceAsync();
@@ -62,9 +66,12 @@ public class KeepAliveTrackerTests
     public async Task Pong_WithoutOutstandingRequest_IsRejectedAsync()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
-        await using var tracker = CreateTracker(new IntervalController(), (_, _) => Task.CompletedTask, (_, _) => ValueTask.CompletedTask, () => 73);
+        var logger = new RecordingLogger();
+        await using var tracker = CreateTracker(new IntervalController(), (_, _) => Task.CompletedTask, (_, _) => ValueTask.CompletedTask, () => 73, logger);
 
         Assert.False(tracker.Pong(73, cancellationToken));
+        Assert.Contains(LogLevel.Warning, logger.LogLevels);
+        Assert.DoesNotContain(LogLevel.Debug, logger.LogLevels);
     }
 
     [Fact]
@@ -91,50 +98,41 @@ public class KeepAliveTrackerTests
     }
 
     [Fact]
-    public async Task Registry_RemovedLinkCannotAcknowledgeOrKickReplacementLinkAsync()
+    public async Task Registry_RedirectedPlayerKeepsOutstandingRequestAsync()
     {
         var registry = new KeepAliveTrackerRegistry<object>();
-        var oldLink = new object();
-        var replacementLink = new object();
-        var oldIntervalController = new IntervalController();
-        var timeoutHandled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var staleKickCount = 0;
+        var player = new object();
+        var intervalController = new IntervalController();
+        var sentRequestIds = Channel.CreateUnbounded<long>();
+        var requestIds = new Queue<long>([91, 92]);
+        var timeoutCount = 0;
         var creationCount = 0;
-        var oldTracker = registry.GetOrAdd(oldLink, () =>
+        await using var tracker = registry.GetOrAdd(player, () =>
         {
             creationCount++;
-            return CreateTracker(oldIntervalController, (_, _) => Task.CompletedTask, (tracker, _) =>
+            return CreateTracker(intervalController, (requestId, cancellationToken) => sentRequestIds.Writer.WriteAsync(requestId, cancellationToken).AsTask(), (_, _) =>
             {
-                if (registry.IsCurrent(oldLink, tracker))
-                    Interlocked.Increment(ref staleKickCount);
-
-                timeoutHandled.TrySetResult();
+                Interlocked.Increment(ref timeoutCount);
                 return ValueTask.CompletedTask;
-            }, () => 91);
+            }, () => requestIds.Dequeue());
         });
 
-        await oldIntervalController.AdvanceAsync();
-        Assert.Same(oldTracker, registry.Remove(oldLink));
-        Assert.Null(registry.Get(oldLink));
+        await intervalController.AdvanceAsync();
+        Assert.Equal(91, await sentRequestIds.Reader.ReadAsync(TestContext.Current.CancellationToken));
 
-        var replacementTracker = registry.GetOrAdd(replacementLink, () =>
+        var redirectedTracker = registry.GetOrAdd(player, () =>
         {
             creationCount++;
-            return CreateTracker(new IntervalController(), (_, _) => Task.CompletedTask, (_, _) => ValueTask.CompletedTask, () => 92);
+            return CreateTracker(new IntervalController(), (_, _) => Task.CompletedTask, (_, _) => ValueTask.CompletedTask, () => 93);
         });
 
-        Assert.Equal(2, creationCount);
-        Assert.True(registry.IsCurrent(replacementLink, replacementTracker));
-        Assert.False(registry.IsCurrent(oldLink, oldTracker));
+        Assert.Equal(1, creationCount);
+        Assert.Same(tracker, redirectedTracker);
+        Assert.True(redirectedTracker.Pong(91, TestContext.Current.CancellationToken));
 
-        await oldIntervalController.AdvanceAsync();
-        await oldIntervalController.AdvanceAsync();
-        await oldIntervalController.AdvanceAsync();
-        await timeoutHandled.Task;
-
-        Assert.Equal(0, staleKickCount);
-        await oldTracker.DisposeAsync();
-        await replacementTracker.DisposeAsync();
+        await intervalController.AdvanceAsync();
+        Assert.Equal(92, await sentRequestIds.Reader.ReadAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(0, timeoutCount);
     }
 
     [Fact]
@@ -147,6 +145,15 @@ public class KeepAliveTrackerTests
     }
 
     [Fact]
+    public void IsLegacyTerrainKeepAlive_ReturnsExpectedBoundary()
+    {
+        Assert.True(KeepAliveTracker.IsLegacyTerrainKeepAlive(ProtocolVersion.MINECRAFT_1_7_2, 0));
+        Assert.True(KeepAliveTracker.IsLegacyTerrainKeepAlive(ProtocolVersion.MINECRAFT_1_12_1, 0));
+        Assert.False(KeepAliveTracker.IsLegacyTerrainKeepAlive(ProtocolVersion.MINECRAFT_1_12_2, 0));
+        Assert.False(KeepAliveTracker.IsLegacyTerrainKeepAlive(ProtocolVersion.MINECRAFT_1_12_1, 1));
+    }
+
+    [Fact]
     public void CreateRequestId_ForLegacyVersion_ReturnsSignedIntRange()
     {
         for (var i = 0; i < 256; i++)
@@ -154,6 +161,7 @@ public class KeepAliveTrackerTests
             var id = KeepAliveTracker.CreateRequestId(ProtocolVersion.MINECRAFT_1_12_1);
 
             Assert.InRange(id, int.MinValue, int.MaxValue);
+            Assert.NotEqual(0, id);
         }
     }
 
@@ -208,9 +216,29 @@ public class KeepAliveTrackerTests
         return outputStream;
     }
 
-    private static KeepAliveTracker CreateTracker(IntervalController intervalController, KeepAliveTracker.SendKeepAliveRequest sendRequest, KeepAliveTracker.HandleKeepAliveTimeout handleTimeout, KeepAliveTracker.CreateKeepAliveRequestId createRequestId)
+    private static KeepAliveTracker CreateTracker(IntervalController intervalController, KeepAliveTracker.SendKeepAliveRequest sendRequest, KeepAliveTracker.HandleKeepAliveTimeout handleTimeout, KeepAliveTracker.CreateKeepAliveRequestId createRequestId, ILogger? logger = null)
     {
-        return new KeepAliveTracker(NullLogger.Instance, sendRequest, handleTimeout, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15), createRequestId, intervalController.WaitAsync);
+        return new KeepAliveTracker(logger ?? NullLogger.Instance, sendRequest, handleTimeout, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15), createRequestId, intervalController.WaitAsync);
+    }
+
+    private sealed class RecordingLogger : ILogger
+    {
+        public List<LogLevel> LogLevels { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull
+        {
+            return null;
+        }
+
+        public bool IsEnabled(LogLevel logLevel)
+        {
+            return true;
+        }
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            LogLevels.Add(logLevel);
+        }
     }
 
     private sealed class IntervalController

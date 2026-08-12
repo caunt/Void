@@ -34,19 +34,4 @@ internal class KeepAliveTrackerRegistry<TKey> where TKey : class
         using var _ = _lock.EnterScope();
         return _trackers.Remove(key, out var tracker) ? tracker : null;
     }
-
-    public IReadOnlyList<KeepAliveTracker> RemoveWhere(Func<TKey, bool> predicate)
-    {
-        using var _ = _lock.EnterScope();
-        var keys = _trackers.Keys.Where(predicate).ToArray();
-        var trackers = new List<KeepAliveTracker>(keys.Length);
-
-        foreach (var key in keys)
-        {
-            if (_trackers.Remove(key, out var tracker))
-                trackers.Add(tracker);
-        }
-
-        return trackers;
-    }
 }
