@@ -82,7 +82,7 @@ public class ConsoleService(ILogger<ConsoleService> logger, ConsoleConfiguration
     {
         if (!consoleConfiguration.HasTerminal || !IsEnabled)
         {
-            await Task.Delay(5_000, cancellationToken);
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
             return;
         }
 
