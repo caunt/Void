@@ -77,6 +77,9 @@ public class KeepAliveTracker : IDisposable
     {
         player.Logger.LogTrace("Refreshing Keep Alive");
 
+        Sender.Stop();
+        Sender.Start();
+
         if (DebouncerCallback.Invoke(player, cancellationToken) is not { } timedoutTask)
             return;
 
