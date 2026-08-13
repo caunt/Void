@@ -9,17 +9,21 @@ namespace Void.IntegrationTests.Infrastructure.Fixtures;
 
 public class VoidFixture(PaperFixture fixture) : IAsyncLifetime
 {
+    private DateTime _voidLogWindowStartedAt;
+
     public VoidProxy VoidProxy { get => field ?? throw new InvalidOperationException($"{nameof(VoidProxy)} is not initialized."); set; }
 
     public async ValueTask InitializeAsync()
     {
         VoidProxy = await VoidProxy.CreateAsync(Path.Combine(Path.GetTempPath(), nameof(VoidFixture), Path.GetRandomFileName()), targetServers: [$"localhost:{fixture.Server1.Port}", $"localhost:{fixture.Server2.Port}"], cancellationToken: Timeouts.SetupTimeoutToken);
+        _voidLogWindowStartedAt = DateTime.UtcNow;
     }
 
     public async ValueTask DisposeAsync()
     {
         await VoidProxy.LogWriter.WriteLineAsync($"Stopping {nameof(VoidProxy)} because of {nameof(VoidFixture)} disposal");
         await VoidProxy.DisposeAsync();
+        VoidProxy.AssertNoWarningOrHigherLogsSince(_voidLogWindowStartedAt);
         GC.SuppressFinalize(this);
     }
 }

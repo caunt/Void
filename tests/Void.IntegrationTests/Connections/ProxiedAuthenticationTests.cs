@@ -25,29 +25,20 @@ public class ProxiedAuthenticationTests(ProxiedAuthenticationFixture authenticat
 
         await LoggedExecutorAsync(async () =>
         {
-            var voidLogWindowStartedAt = DateTime.UtcNow;
+            await using var game = await portableMinecraftClientFixture.Api.RunGameAsync(nameof(ProxiedAuthenticationTests), TestProtocolVersion, Username, [authenticationFixture.VoidProxy, authenticationFixture.PaperServer], Timeouts.SetupTimeoutToken);
+            var authenticationFailureTask = authenticationFixture.VoidProxy.LogWriter.WaitForLineAsync(
+                line => line.Contains($"Player {Username} cannot authenticate on args-server-1: {{text:\"{ExpectedKickReason}\"}}", StringComparison.Ordinal),
+                Timeouts.SetupTimeoutToken);
+            var playerDisconnectionTask = authenticationFixture.VoidProxy.LogWriter.WaitForLineAsync(
+                line => line.Contains($"Player {Username} disconnected", StringComparison.Ordinal),
+                Timeouts.SetupTimeoutToken);
+            var paperRejectionTask = authenticationFixture.PaperServer.Container.ExpectTextAsync(ExpectedKickReason, game.StartedAt, Timeouts.SetupTimeoutToken);
 
-            try
-            {
-                await using var game = await portableMinecraftClientFixture.Api.RunGameAsync(nameof(ProxiedAuthenticationTests), TestProtocolVersion, Username, [authenticationFixture.VoidProxy, authenticationFixture.PaperServer], Timeouts.SetupTimeoutToken);
-                var authenticationFailureTask = authenticationFixture.VoidProxy.LogWriter.WaitForLineAsync(
-                    line => line.Contains($"Player {Username} cannot authenticate on args-server-1: {{text:\"{ExpectedKickReason}\"}}", StringComparison.Ordinal),
-                    Timeouts.SetupTimeoutToken);
-                var playerDisconnectionTask = authenticationFixture.VoidProxy.LogWriter.WaitForLineAsync(
-                    line => line.Contains($"Player {Username} disconnected", StringComparison.Ordinal),
-                    Timeouts.SetupTimeoutToken);
-                var paperRejectionTask = authenticationFixture.PaperServer.Container.ExpectTextAsync(ExpectedKickReason, game.StartedAt, Timeouts.SetupTimeoutToken);
+            await game.JoinServerExpectingFailureAsync(_proxyEndPoint, Timeouts.SetupTimeoutToken);
 
-                await game.JoinServerExpectingFailureAsync(_proxyEndPoint, Timeouts.SetupTimeoutToken);
-
-                await authenticationFailureTask;
-                await paperRejectionTask;
-                await playerDisconnectionTask;
-            }
-            finally
-            {
-                authenticationFixture.VoidProxy.AssertNoWarningOrHigherLogsSince(voidLogWindowStartedAt);
-            }
+            await authenticationFailureTask;
+            await paperRejectionTask;
+            await playerDisconnectionTask;
         }, portableMinecraftClientFixture.Api, authenticationFixture.VoidProxy, authenticationFixture.PaperServer);
     }
 }

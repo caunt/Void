@@ -9,6 +9,8 @@ namespace Void.IntegrationTests.Infrastructure.Fixtures;
 
 public class ProxiedAuthenticationFixture : IAsyncLifetime
 {
+    private DateTime _voidLogWindowStartedAt;
+
     public PaperServer PaperServer { get => field ?? throw new InvalidOperationException($"{nameof(PaperServer)} is not initialized."); set; }
     public VoidProxy VoidProxy { get => field ?? throw new InvalidOperationException($"{nameof(VoidProxy)} is not initialized."); set; }
 
@@ -19,6 +21,7 @@ public class ProxiedAuthenticationFixture : IAsyncLifetime
         try
         {
             VoidProxy = await VoidProxy.CreateAsync(Path.Combine(Path.GetTempPath(), nameof(ProxiedAuthenticationFixture), Path.GetRandomFileName()), $"localhost:{PaperServer.Port}", cancellationToken: Timeouts.SetupTimeoutToken);
+            _voidLogWindowStartedAt = DateTime.UtcNow;
         }
         catch
         {
@@ -32,6 +35,7 @@ public class ProxiedAuthenticationFixture : IAsyncLifetime
         await VoidProxy.LogWriter.WriteLineAsync($"Stopping {nameof(VoidProxy)} because of {nameof(ProxiedAuthenticationFixture)} disposal");
         await VoidProxy.DisposeAsync();
         await PaperServer.DisposeAsync();
+        VoidProxy.AssertNoWarningOrHigherLogsSince(_voidLogWindowStartedAt);
         GC.SuppressFinalize(this);
     }
 }
