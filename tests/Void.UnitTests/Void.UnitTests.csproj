@@ -4,7 +4,6 @@
 		<IsPackable>false</IsPackable>
 		<Nullable>enable</Nullable>
 		<LangVersion>preview</LangVersion>
-		<UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
 	</PropertyGroup>
 
 	<ItemGroup>
