@@ -123,8 +123,8 @@ jobs:
           assignments_file="$assignment_dir/assignments.tsv"
           trap 'rm -rf "$assignment_dir"' EXIT
 
-          dotnet test tests/Void.IntegrationTests --configuration Release --list-tests \
-            | awk '/The following Tests are available:/{started=1; next} started {gsub(/^[ \t]+/, ""); if ($0) print}' \
+          dotnet test --project tests/Void.IntegrationTests/Void.IntegrationTests.csproj --configuration Release --list-tests --no-ansi --no-progress \
+            | awk '/^Discovered [0-9]+ tests in assembly - /{started=1; next} started && /^  /{sub(/^  /, ""); print; next} started {exit}' \
             | LC_ALL=C sort -u > "$tests_file"
 
           total_tests=$(wc -l < "$tests_file" | tr -d ' ')
@@ -184,7 +184,7 @@ jobs:
 
       - name: Run integration shard
         if: ${{ matrix.test-kind == 'integration' && env.HAS_INTEGRATION_TESTS == 'true' }}
-        run: dotnet test tests/Void.IntegrationTests --configuration Release --filter "$TEST_FILTER" --logger "console;verbosity=detailed"
+        run: dotnet test --project tests/Void.IntegrationTests/Void.IntegrationTests.csproj --configuration Release --filter "$TEST_FILTER" --output Detailed
 
       - name: Skip empty integration shard
         if: ${{ matrix.test-kind == 'integration' && env.HAS_INTEGRATION_TESTS != 'true' }}
@@ -203,4 +203,4 @@ jobs:
 
       - name: Run unit tests
         if: ${{ matrix.test-kind == 'unit' }}
-        run: dotnet test tests/Void.UnitTests --verbosity normal
+        run: dotnet test --project tests/Void.UnitTests/Void.UnitTests.csproj --verbosity normal
