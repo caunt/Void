@@ -1,14 +1,15 @@
 using Void.IntegrationTests.Infrastructure.Fixtures;
 using Xunit;
+using Xunit.v3;
 
 #if DEBUG
 [assembly: CaptureConsole]
 #endif
 
 #if GITHUB_ACTIONS
-[assembly: CollectionBehavior(MaxParallelThreads = 1)]
+[assembly: Parallelization(MaxThreads = 1)]
 #else
-[assembly: CollectionBehavior(MaxParallelThreads = 3)]
+[assembly: Parallelization(MaxThreads = 3)]
 #endif
 
 [assembly: AssemblyFixture(typeof(PaperFixture))]
