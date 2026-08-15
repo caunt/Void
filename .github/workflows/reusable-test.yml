@@ -89,6 +89,8 @@ jobs:
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   tests:
+    env:
+      DOTNET_TEST_RUNNER: Microsoft.Testing.Platform
     needs: test-matrix
     strategy:
       fail-fast: false
