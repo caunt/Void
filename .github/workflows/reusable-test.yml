@@ -113,7 +113,6 @@ jobs:
       - name: Create shard filter
         shell: bash
         if: ${{ matrix.test-kind == 'integration' }}
-        working-directory: tests/Void.IntegrationTests
         run: |
           set -euo pipefail
 
@@ -124,8 +123,8 @@ jobs:
           assignments_file="$assignment_dir/assignments.tsv"
           trap 'rm -rf "$assignment_dir"' EXIT
 
-          dotnet run --configuration Release -- --list-tests --no-ansi --progress off \
-            | awk '/^  Void\.IntegrationTests\./{sub(/^  /, ""); print}' \
+          dotnet test tests/Void.IntegrationTests --configuration Release --list-tests \
+            | awk '/The following Tests are available:/{started=1; next} started {gsub(/^[ \t]+/, ""); if ($0) print}' \
             | LC_ALL=C sort -u > "$tests_file"
 
           total_tests=$(wc -l < "$tests_file" | tr -d ' ')
@@ -185,8 +184,7 @@ jobs:
 
       - name: Run integration shard
         if: ${{ matrix.test-kind == 'integration' && env.HAS_INTEGRATION_TESTS == 'true' }}
-        working-directory: tests/Void.IntegrationTests
-        run: dotnet run --configuration Release -- --filter "$TEST_FILTER" --output Detailed
+        run: dotnet test tests/Void.IntegrationTests --configuration Release --filter "$TEST_FILTER" --logger "console;verbosity=detailed"
 
       - name: Skip empty integration shard
         if: ${{ matrix.test-kind == 'integration' && env.HAS_INTEGRATION_TESTS != 'true' }}
@@ -205,5 +203,4 @@ jobs:
 
       - name: Run unit tests
         if: ${{ matrix.test-kind == 'unit' }}
-        working-directory: tests/Void.UnitTests
-        run: dotnet run --verbosity normal
+        run: dotnet test tests/Void.UnitTests --verbosity normal
