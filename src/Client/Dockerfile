@@ -106,13 +106,24 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
       curl --fail --location --silent --show-error \
         https://cdn.azul.com/zulu/bin/zulu8.96.0.19-ca-jre8.0.502-linux_i686.tar.gz \
         | tar --extract --gzip --directory /opt/zulu-8-i686 --strip-components=1; \
+      for lwjglVersion in 3.3.3 3.4.1; do \
+        for lwjglModule in lwjgl lwjgl-freetype lwjgl-glfw lwjgl-jemalloc lwjgl-openal lwjgl-opengl lwjgl-stb lwjgl-tinyfd; do \
+          lwjglLibraryDirectory="/root/.minecraft/libraries/org/lwjgl/$lwjglModule/$lwjglVersion"; \
+          mkdir -p "$lwjglLibraryDirectory"; \
+          for lwjglClassifier in '' '-natives-linux-arm64'; do \
+            lwjglLibraryFileName="$lwjglModule-$lwjglVersion$lwjglClassifier.jar"; \
+            curl --fail --location --silent --show-error --retry 5 --retry-all-errors --connect-timeout 15 --max-time 300 \
+              "https://repo.maven.apache.org/maven2/org/lwjgl/$lwjglModule/$lwjglVersion/$lwjglLibraryFileName" \
+              --output "$lwjglLibraryDirectory/$lwjglLibraryFileName"; \
+          done; \
+        done; \
+      done; \
       mkdir -p /opt/portableminecraftclient; \
-      curl --fail --location --silent --show-error \
+      curl --fail --location --silent --show-error --retry 5 --retry-all-errors --connect-timeout 15 --max-time 300 \
         https://libraries.minecraft.net/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-unsafe.jar \
         --output /opt/portableminecraftclient/lwjgl-3.4.1-unsafe.jar; \
-      curl --fail --location --silent --show-error \
-        https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-natives-linux-arm64.jar \
-        --output /opt/portableminecraftclient/lwjgl-3.4.1-natives-linux-arm64.jar; \
+      cp /root/.minecraft/libraries/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-natives-linux-arm64.jar \
+        /opt/portableminecraftclient/lwjgl-3.4.1-natives-linux-arm64.jar; \
     fi
 
 # Install only the ASP.NET Core 10 runtime required by the pre-published API.
