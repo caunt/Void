@@ -103,6 +103,7 @@ jobs:
         uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2
         with:
           dotnet-version: ${{ inputs.dotnet-version }}
+          dotnet-quality: ${{ inputs.dotnet-version == 'latest' && 'preview' || '' }}
 
       - name: Build
         if: ${{ matrix.test-kind == 'unit' }}
