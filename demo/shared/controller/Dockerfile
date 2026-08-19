@@ -1,4 +1,4 @@
-FROM golang@sha256:45a5f7a810238aabcbad211d70b9ae082022d96f7c7259e94041ad1b933575ac AS build
+FROM golang@sha256:a44b9afb2e397bbdc83cc695ac04ba5e618a44b5460feb7354cc654226d78134 AS build
 
 WORKDIR /demo
 COPY . /demo
