@@ -1,5 +1,5 @@
 # Builder stage: compile portablemc from source
-FROM rust:1.98-slim-trixie@sha256:77abfb641e6ca03336ad986a7f875e4203f67441aa92337efe1f86c2891ca642 AS builder
+FROM rust:1.98-slim-trixie@sha256:cc0448b41c3b7b7fea44f5dc50eacba729a56db365b65b7bd5e8a82d5b3db078 AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
