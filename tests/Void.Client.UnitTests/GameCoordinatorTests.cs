@@ -43,8 +43,8 @@ public sealed class GameCoordinatorTests
         using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
         await coordinator.StartAsync(CancellationToken.None);
 
-        await coordinator.StartNeoForgeAsync(new([]), CancellationToken.None);
-        var exception = await Assert.ThrowsAsync<GameCommandException>(() => coordinator.StartNeoForgeAsync(new([]), CancellationToken.None));
+        await coordinator.StartNeoForgeAsync(new(null, []), CancellationToken.None);
+        var exception = await Assert.ThrowsAsync<GameCommandException>(() => coordinator.StartNeoForgeAsync(new(null, []), CancellationToken.None));
 
         Assert.Equal(409, exception.StatusCode);
         Assert.Equal(1, runtime.LaunchCount);
@@ -91,6 +91,34 @@ public sealed class GameCoordinatorTests
         await coordinator.StopAsync(CancellationToken.None);
     }
 
+    [Fact]
+    public async Task NeoForgeLaunchWithoutVersionRequestsLatest()
+    {
+        var runtime = new FakeGameRuntime();
+        using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
+        await coordinator.StartAsync(CancellationToken.None);
+
+        await coordinator.StartNeoForgeAsync(new(null, []), CancellationToken.None);
+
+        Assert.Equal("", runtime.LastNeoForgeVersion);
+
+        await coordinator.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task NeoForgeLaunchForwardsRequestedVersion()
+    {
+        var runtime = new FakeGameRuntime();
+        using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
+        await coordinator.StartAsync(CancellationToken.None);
+
+        await coordinator.StartNeoForgeAsync(new("  1.21.1  ", []), CancellationToken.None);
+
+        Assert.Equal("1.21.1", runtime.LastNeoForgeVersion);
+
+        await coordinator.StopAsync(CancellationToken.None);
+    }
+
     private static async Task WaitForStateAsync(GameCoordinator coordinator, GameState expected)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -108,6 +136,8 @@ public sealed class GameCoordinatorTests
         public bool BlockStop { get; init; }
         public int LaunchCount { get; private set; }
         public int StopCount { get; private set; }
+        public string? LastVanillaVersion { get; private set; }
+        public string? LastNeoForgeVersion { get; private set; }
 
         public void CompleteLaunch()
         {
@@ -124,9 +154,17 @@ public sealed class GameCoordinatorTests
 
         public Task WriteOptionsAsync(string options, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        public Task<RunningGame> LaunchVanillaAsync(string version, IReadOnlyList<string> arguments, CancellationToken cancellationToken) => BeginLaunch(cancellationToken);
+        public Task<RunningGame> LaunchVanillaAsync(string version, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+        {
+            LastVanillaVersion = version;
+            return BeginLaunch(cancellationToken);
+        }
 
-        public Task<RunningGame> LaunchNeoForgeAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken) => BeginLaunch(cancellationToken);
+        public Task<RunningGame> LaunchNeoForgeAsync(string version, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+        {
+            LastNeoForgeVersion = version;
+            return BeginLaunch(cancellationToken);
+        }
 
         public Task<RunningGame> LaunchCurseForgeAsync(string slug, int fileId, IReadOnlyList<string> arguments, CancellationToken cancellationToken) => BeginLaunch(cancellationToken);
 

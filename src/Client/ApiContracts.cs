@@ -30,7 +30,7 @@ internal enum StopMode
 
 internal sealed record StartGameRequest(string? Version, string[]? Arguments);
 
-internal sealed record StartNeoForgeGameRequest(string[]? Arguments);
+internal sealed record StartNeoForgeGameRequest(string? Version, string[]? Arguments);
 
 internal sealed record StartCurseForgeGameRequest(string? Slug, int FileId, string[]? Arguments);
 
@@ -76,7 +76,7 @@ internal interface IGameRuntime
 {
     Task WriteOptionsAsync(string options, CancellationToken cancellationToken);
     Task<RunningGame> LaunchVanillaAsync(string version, IReadOnlyList<string> arguments, CancellationToken cancellationToken);
-    Task<RunningGame> LaunchNeoForgeAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken);
+    Task<RunningGame> LaunchNeoForgeAsync(string version, IReadOnlyList<string> arguments, CancellationToken cancellationToken);
     Task<RunningGame> LaunchCurseForgeAsync(string slug, int fileId, IReadOnlyList<string> arguments, CancellationToken cancellationToken);
     Task ConnectAsync(string host, int port, CancellationToken cancellationToken);
     Task SendChatAsync(string message, CancellationToken cancellationToken);
