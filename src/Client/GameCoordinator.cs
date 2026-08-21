@@ -156,6 +156,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         }
 
         var version = message.Request?.Version?.Trim();
+        var neoForgeVersion = message.NeoForgeRequest?.Version?.Trim();
         var slug = message.CurseForgeRequest?.Slug?.Trim();
 
         if (message.Kind is "start-vanilla" && string.IsNullOrWhiteSpace(version))
@@ -178,7 +179,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         Task<RunningGame> operation = message.Kind switch
         {
             "start-vanilla" => runtime.LaunchVanillaAsync(version ?? "", message.Request?.Arguments ?? [], operationCancellation.Token),
-            "start-neoforge" => runtime.LaunchNeoForgeAsync(message.NeoForgeRequest?.Arguments ?? [], operationCancellation.Token),
+            "start-neoforge" => runtime.LaunchNeoForgeAsync(neoForgeVersion ?? "", message.NeoForgeRequest?.Arguments ?? [], operationCancellation.Token),
             "start-curseforge" => runtime.LaunchCurseForgeAsync(slug ?? "", message.CurseForgeRequest?.FileId ?? 0, message.CurseForgeRequest?.Arguments ?? [], operationCancellation.Token),
             _ => throw new InvalidOperationException($"Unknown launch kind {message.Kind}")
         };

@@ -14,7 +14,7 @@ JSON property names and enum values use camel case.
 | `GET` | `/api/game/status` | `200` | Read the game state and latest operation. |
 | `PUT` | `/api/game/options` | `204` | Replace Minecraft `options.txt`. |
 | `POST` | `/api/game/start/vanilla` | `202` | Start a Mojang vanilla release. |
-| `POST` | `/api/game/start/neoforge` | `202` | Start the latest stable NeoForge release. |
+| `POST` | `/api/game/start/neoforge` | `202` | Start a NeoForge release, latest stable by default. |
 | `POST` | `/api/game/start/curseforge` | `202` | Start a CurseForge modpack file. |
 | `POST` | `/api/game/connect` | `200` | Connect the ready game to a server. |
 | `POST` | `/api/game/send-chat` | `204` | Send chat text or a command. |
@@ -99,13 +99,24 @@ curl --fail-with-body \
 
 ### NeoForge
 
-This endpoint resolves and starts the latest stable NeoForge release:
+`version` is an optional Minecraft release identifier, the same form the vanilla endpoint accepts. Omit it, or send a
+blank value, to resolve and start the latest stable NeoForge release:
 
 ```bash
 curl --fail-with-body \
   --request POST \
   --header 'Content-Type: application/json' \
   --data '{"arguments":["--username","TestPlayer"]}' \
+  http://localhost:8080/api/game/start/neoforge
+```
+
+Supply it to start NeoForge for a specific Minecraft version instead:
+
+```bash
+curl --fail-with-body \
+  --request POST \
+  --header 'Content-Type: application/json' \
+  --data '{"version":"1.21.1","arguments":["--username","TestPlayer"]}' \
   http://localhost:8080/api/game/start/neoforge
 ```
 

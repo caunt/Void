@@ -39,7 +39,7 @@ internal static class ClientApiEndpoints
         api.MapPost("/game/start/neoforge", async Task<IResult> (StartNeoForgeGameRequest request, GameCoordinator coordinator, ILoggerFactory loggerFactory, CancellationToken cancellationToken) =>
             await ExecuteAsync(async () => Results.Accepted(StatusPath, await coordinator.StartNeoForgeAsync(request, cancellationToken)), loggerFactory, cancellationToken))
             .WithName("StartNeoForgeGame")
-            .WithSummary("Starts the latest stable NeoForge Minecraft version.");
+            .WithSummary("Starts a NeoForge Minecraft version, or the latest stable release when no version is given.");
 
         api.MapPost("/game/start/curseforge", async Task<IResult> (StartCurseForgeGameRequest request, GameCoordinator coordinator, ILoggerFactory loggerFactory, CancellationToken cancellationToken) =>
             await ExecuteAsync(async () => Results.Accepted(StatusPath, await coordinator.StartCurseForgeAsync(request, cancellationToken)), loggerFactory, cancellationToken))

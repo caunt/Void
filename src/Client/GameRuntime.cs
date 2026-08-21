@@ -78,9 +78,9 @@ internal sealed partial class GameRuntime : IGameRuntime
         return LaunchPortableAsync($"mojang:{version}", arguments, cancellationToken);
     }
 
-    public Task<RunningGame> LaunchNeoForgeAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    public Task<RunningGame> LaunchNeoForgeAsync(string version, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
-        return LaunchPortableAsync("neoforge:", arguments, cancellationToken);
+        return LaunchPortableAsync($"neoforge:{version}", arguments, cancellationToken);
     }
 
     public async Task<RunningGame> LaunchCurseForgeAsync(string slug, int fileId, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
