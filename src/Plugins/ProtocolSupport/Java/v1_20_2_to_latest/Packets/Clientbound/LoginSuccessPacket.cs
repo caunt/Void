@@ -9,6 +9,7 @@ public class LoginSuccessPacket : IMinecraftClientboundPacket<LoginSuccessPacket
 {
     public required GameProfile GameProfile { get; set; }
     public required bool? StrictErrorHandling { get; set; }
+    public Uuid? SessionId { get; set; }
 
     public void Encode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
     {
@@ -17,12 +18,25 @@ public class LoginSuccessPacket : IMinecraftClientboundPacket<LoginSuccessPacket
         buffer.WritePropertyArray(GameProfile.Properties);
 
         if (protocolVersion < ProtocolVersion.MINECRAFT_1_20_5 || protocolVersion > ProtocolVersion.MINECRAFT_1_21)
+        {
+            if (protocolVersion < ProtocolVersion.MINECRAFT_26_2)
+                return;
+        }
+        else
+        {
+            if (!StrictErrorHandling.HasValue)
+                throw new InvalidDataException(nameof(StrictErrorHandling));
+
+            buffer.WriteBoolean(StrictErrorHandling.Value);
+        }
+
+        if (protocolVersion < ProtocolVersion.MINECRAFT_26_2)
             return;
 
-        if (!StrictErrorHandling.HasValue)
-            throw new InvalidDataException(nameof(StrictErrorHandling));
+        if (!SessionId.HasValue)
+            throw new InvalidDataException(nameof(SessionId));
 
-        buffer.WriteBoolean(StrictErrorHandling.Value);
+        buffer.WriteUuid(SessionId.Value);
     }
 
     public static LoginSuccessPacket Decode(ref MinecraftBuffer buffer, ProtocolVersion protocolVersion)
@@ -31,14 +45,19 @@ public class LoginSuccessPacket : IMinecraftClientboundPacket<LoginSuccessPacket
         var username = buffer.ReadString();
         var properties = buffer.ReadPropertyArray();
         bool? strictErrorHandling = null;
+        Uuid? sessionId = null;
 
         if (protocolVersion >= ProtocolVersion.MINECRAFT_1_20_5 && protocolVersion <= ProtocolVersion.MINECRAFT_1_21)
             strictErrorHandling = buffer.ReadBoolean();
 
+        if (protocolVersion >= ProtocolVersion.MINECRAFT_26_2)
+            sessionId = buffer.ReadUuid();
+
         return new LoginSuccessPacket
         {
             GameProfile = new GameProfile(username, uuid, properties),
-            StrictErrorHandling = strictErrorHandling
+            StrictErrorHandling = strictErrorHandling,
+            SessionId = sessionId
         };
     }
 

@@ -36,6 +36,7 @@ public static class Registry
     {
         { PacketIdDefinitions.ClientboundBundleDelimiter, typeof(BundleDelimiterPacket) },
         { PacketIdDefinitions.ClientboundPlayKeepAliveRequest, typeof(KeepAliveRequestPacket) },
+        { PacketIdDefinitions.ClientboundJoinGame, typeof(JoinGamePacket) },
         { PacketIdDefinitions.ClientboundStartConfiguration, typeof(StartConfigurationPacket) },
         { PacketIdDefinitions.ClientboundPlayDisconnect, typeof(NbtDisconnectPacket) },
         { PacketIdDefinitions.ClientboundSystemChatMessage, typeof(SystemChatMessagePacket) },
