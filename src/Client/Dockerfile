@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN cargo install portablemc-cli --root /usr/local
 
 # Publish the API once during the image build. Runtime startup never restores or compiles source code.
-FROM debian:13@sha256:34cd9e9fd437c0a095ec39cb2e73422c9f30821b0d0848ed74fd0d43bae4d958 AS dotnet-builder
+FROM debian:13@sha256:f324c7ff54321e8d9c588493a20244965938ce0aa50bbd1022d38010e9ffc4b1 AS dotnet-builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl libicu-dev \
  && rm -rf /var/lib/apt/lists/* \
@@ -26,7 +26,7 @@ COPY . .
 RUN dotnet publish PortableMinecraftClient.csproj --configuration Release --output /publish /p:UseAppHost=false
 
 # Runtime stage
-FROM debian:13@sha256:34cd9e9fd437c0a095ec39cb2e73422c9f30821b0d0848ed74fd0d43bae4d958 AS runtime
+FROM debian:13@sha256:f324c7ff54321e8d9c588493a20244965938ce0aa50bbd1022d38010e9ffc4b1 AS runtime
 
 ARG TARGETARCH
 
