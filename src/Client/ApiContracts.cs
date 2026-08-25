@@ -61,7 +61,17 @@ internal sealed record StopGameResponse(StopMode Mode, GameStatus Status);
 
 internal sealed record ConnectGameResponse(ServerAddress Server, DateTimeOffset ConnectedAt);
 
-internal sealed record RunningGame(IManagedProcess Process, string Version, DateTimeOffset StartedAt);
+internal sealed record Position(double X, double Y, double Z);
+
+internal sealed record GamePlayer(string? Uuid, string? Name, Position Position);
+
+internal sealed record RemoteGamePlayer(string? Uuid, string? Name, Position Position, double DistanceFromLocal);
+
+internal sealed record GamePlayers(GamePlayer Local, IReadOnlyList<RemoteGamePlayer> Remote);
+
+internal sealed record GameTrackerConnection(string DescriptorPath, string Token, string? ExpectedName);
+
+internal sealed record RunningGame(IManagedProcess Process, string Version, DateTimeOffset StartedAt, GameTrackerConnection Tracker);
 
 internal interface IManagedProcess : IDisposable
 {
@@ -81,10 +91,16 @@ internal interface IGameRuntime
     Task ConnectAsync(string host, int port, CancellationToken cancellationToken);
     Task SendChatAsync(string message, CancellationToken cancellationToken);
     Task<byte[]> CaptureScreenshotAsync(CancellationToken cancellationToken);
+    Task<GamePlayers> ReadPlayersAsync(RunningGame game, CancellationToken cancellationToken);
     Task<StopMode> StopAsync(RunningGame? game, CancellationToken cancellationToken);
 }
 
 internal sealed class GameCommandException(int statusCode, string message) : Exception(message)
+{
+    public int StatusCode { get; } = statusCode;
+}
+
+internal sealed class GamePlayersException(int statusCode, string message) : Exception(message)
 {
     public int StatusCode { get; } = statusCode;
 }

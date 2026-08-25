@@ -19,6 +19,11 @@ internal static class ClientApiEndpoints
             .WithName("GetGameStatus")
             .WithSummary("Returns the current game lifecycle and latest operation status.");
 
+        api.MapGet("/game/players", async Task<IResult> (GameCoordinator coordinator, ILoggerFactory loggerFactory, CancellationToken cancellationToken) =>
+            await ExecuteAsync(async () => Results.Ok(await coordinator.GetPlayersAsync(cancellationToken)), loggerFactory, cancellationToken))
+            .WithName("GetGamePlayers")
+            .WithSummary("Returns the live local player and all other players tracked in the current client world.");
+
         api.MapPut("/game/options", async Task<IResult> (HttpRequest request, GameCoordinator coordinator, ILoggerFactory loggerFactory, CancellationToken cancellationToken) =>
             await ExecuteAsync(async () =>
             {
@@ -80,6 +85,10 @@ internal static class ClientApiEndpoints
             return await action();
         }
         catch (GameCommandException exception)
+        {
+            return Results.Problem(exception.Message, statusCode: exception.StatusCode);
+        }
+        catch (GamePlayersException exception)
         {
             return Results.Problem(exception.Message, statusCode: exception.StatusCode);
         }

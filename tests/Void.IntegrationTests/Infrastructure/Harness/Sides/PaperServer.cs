@@ -43,7 +43,6 @@ public record PaperServer(IContainer Container, string LogFileName) : IIntegrati
             .WithEnvironment("VERSION", "1.21.4")
             .WithEnvironment("DIFFICULTY", "peaceful")
             .WithEnvironment("MODE", "creative")
-            .WithEnvironment("LEVEL_TYPE", "FLAT")
             .WithEnvironment("GENERATE_STRUCTURES", "FALSE")
             .WithEnvironment("SPAWN_ANIMALS", "FALSE")
             .WithEnvironment("SPAWN_MONSTERS", "FALSE")

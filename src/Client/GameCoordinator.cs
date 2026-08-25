@@ -61,6 +61,11 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         return await EnqueueAsync<byte[]>(completion => new ScreenshotMessage(completion, cancellationToken), cancellationToken);
     }
 
+    public async Task<GamePlayers> GetPlayersAsync(CancellationToken cancellationToken)
+    {
+        return await EnqueueAsync<GamePlayers>(completion => new PlayersMessage(completion, cancellationToken), cancellationToken);
+    }
+
     public async Task WriteOptionsAsync(string options, CancellationToken cancellationToken)
     {
         await EnqueueAsync<bool>(completion => new OptionsMessage(options, completion, cancellationToken), cancellationToken);
@@ -120,6 +125,9 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
                 break;
             case ScreenshotMessage screenshot:
                 HandleScreenshot(screenshot);
+                break;
+            case PlayersMessage players:
+                HandlePlayers(players);
                 break;
             case OptionsMessage options:
                 HandleOptions(options);
@@ -282,6 +290,17 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
 
         var (operationId, cancellation) = BeginConfirmedOperation("screenshot", message.RequestCancellation);
         Own(ObserveScreenshotAsync(operationId, runtime.CaptureScreenshotAsync(cancellation.Token), cancellation, message.Completion));
+    }
+
+    private void HandlePlayers(PlayersMessage message)
+    {
+        if (_game is null || Status.State is not (GameState.Ready or GameState.Connected))
+        {
+            message.Completion.SetException(Conflict("A running game is required before reading its players"));
+            return;
+        }
+
+        Own(ObservePlayersAsync(runtime.ReadPlayersAsync(_game, message.RequestCancellation), message.Completion));
     }
 
     private void HandleOptions(OptionsMessage message)
@@ -517,6 +536,18 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         }
     }
 
+    private static async Task ObservePlayersAsync(Task<GamePlayers> operation, TaskCompletionSource<GamePlayers> completion)
+    {
+        try
+        {
+            completion.TrySetResult(await operation);
+        }
+        catch (Exception exception)
+        {
+            completion.TrySetException(exception);
+        }
+    }
+
     private static async Task<(Exception? Error, bool Canceled)> ObserveAsync(Task operation, CancellationTokenSource cancellation)
     {
         try
@@ -585,6 +616,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
     private sealed record ConnectMessage(ConnectGameRequest Request, TaskCompletionSource<ConnectGameResponse> Completion, CancellationToken RequestCancellation) : Message;
     private sealed record SendChatMessage(SendChatRequest Request, TaskCompletionSource<bool> Completion, CancellationToken RequestCancellation) : Message;
     private sealed record ScreenshotMessage(TaskCompletionSource<byte[]> Completion, CancellationToken RequestCancellation) : Message;
+    private sealed record PlayersMessage(TaskCompletionSource<GamePlayers> Completion, CancellationToken RequestCancellation) : Message;
     private sealed record OptionsMessage(string Options, TaskCompletionSource<bool> Completion, CancellationToken RequestCancellation) : Message;
     private sealed record StartCompleted(long OperationId, string Kind, RunningGame? Game, Exception? Error, bool Canceled, CancellationTokenSource Cancellation) : Message;
     private sealed record StopCompleted(long OperationId, StopMode Mode, Exception? Error, CancellationTokenSource Cancellation, TaskCompletionSource<StopGameResponse> Completion) : Message;

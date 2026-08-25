@@ -101,7 +101,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             {
                 try
                 {
-                    await MakeStepAsync("exit", Timeouts.StepTimeoutToken);
+                    await TryMakeStepAsync("exit", Timeouts.StepTimeoutToken);
                 }
                 finally
                 {
@@ -198,6 +198,18 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             await MakeStepAsync("stable", cancellationToken);
         }
 
+        public async Task<ApiGamePlayers?> TryReadPlayersAsync(CancellationToken cancellationToken = default)
+        {
+            using var response = await HttpClient.GetAsync("/api/game/players", cancellationToken);
+
+            if (response.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.ServiceUnavailable)
+                return null;
+
+            await EnsureSuccessAsync(response, "Reading Minecraft players", cancellationToken);
+            return await response.Content.ReadFromJsonAsync<ApiGamePlayers>(cancellationToken)
+                   ?? throw new IntegrationTestException("Reading Minecraft players returned an empty response");
+        }
+
         private async Task StartVanillaAsync(CancellationToken cancellationToken = default)
         {
             var request = new
@@ -254,6 +266,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             }
             catch (OperationCanceledException) when (connectionCancellation.IsCancellationRequested)
             {
+                // Cancellation is the expected outcome after the connection-failure screen was confirmed.
             }
 
             await WaitForConnectionCancellationAsync(cancellationToken);
@@ -371,6 +384,18 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             await File.WriteAllBytesAsync(Path.Combine(_workingDirectory, $"step-{++_step}-{action}.png"), await TakeScreenshotAsync(cancellationToken), cancellationToken);
         }
 
+        private async Task TryMakeStepAsync(string action, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await MakeStepAsync(action, cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                await LogAsync($"Failed to write {action} step: {exception.Message}", CancellationToken.None);
+            }
+        }
+
         private async Task TryWriteLogsAsync(CancellationToken cancellationToken = default)
         {
             try
@@ -412,5 +437,13 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
         private record ApiStatus(string State, long OperationId, string? Operation, string OperationState, int? ProcessId, int? ExitCode, string? Message, string? Error, DateTimeOffset UpdatedAt);
 
         private record StopGameResponse(string Mode, ApiStatus Status);
+
+        public record ApiPosition(double X, double Y, double Z);
+
+        public record ApiGamePlayer(string? Uuid, string? Name, ApiPosition Position);
+
+        public record ApiRemoteGamePlayer(string? Uuid, string? Name, ApiPosition Position, double DistanceFromLocal);
+
+        public record ApiGamePlayers(ApiGamePlayer Local, IReadOnlyList<ApiRemoteGamePlayer> Remote);
     }
 }

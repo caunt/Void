@@ -1,7 +1,11 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
+using System.Net;
 using System.Net.Http.Json;
+using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using File = System.IO.File;
@@ -24,8 +28,10 @@ internal sealed partial class GameRuntime : IGameRuntime
     private const string PortableMinecraftLegacyJvmPath = "/usr/local/bin/java-i686";
     private const string PortableMinecraftLauncherPath = "/usr/local/bin/launch-portableminecraftclient";
     private const string PortableMinecraftDryRunPath = "/usr/local/bin/portablemc-dry-run-with-retries";
+    private const string PortableMinecraftJvmAttachPath = "/usr/bin/jattach";
     private const string PortableMinecraftOptionsPath = "/opt/portableminecraftclient/options.txt";
     private const string PortableMinecraftSodiumOptionsPath = "/opt/portableminecraftclient/sodium-options.json";
+    private const string PortableMinecraftAgentPath = "/opt/portableminecraftclient/void-client-agent.jar";
     private const string PortableMinecraftArmLwjgl3Version = "3.3.3";
     private const string PortableMinecraftArmLwjgl4Version = "3.4.1";
     private const string PortableMinecraftArmLwjgl4ClassPath = "/opt/portableminecraftclient/lwjgl-3.4.1-unsafe.jar";
@@ -36,14 +42,17 @@ internal sealed partial class GameRuntime : IGameRuntime
     private const int CurseForgeFilesBatchSize = 50;
     private const int UserInterfaceStableConfirmationCount = 2;
     private const int ButtonStableConfirmationMilliseconds = 1000;
+    private const int UserInterfacePollDelayMilliseconds = 100;
     private const double ButtonHoverDifferenceRatioThreshold = 0.03;
     private const double ServerAddressFieldDifferenceRatioThreshold = 0.01;
     private const double ChatInputBrightnessRatioThreshold = 0.7;
     private const int DisplayProbeTimeoutMilliseconds = 1000;
     private const int ExternalProcessTimeoutMilliseconds = 5000;
     private const int ScreenCaptureTimeoutMilliseconds = 10000;
+    private const int ScreenCaptureMaximumAttempts = 3;
     private const int ProcessStopTimeoutMilliseconds = 10000;
     private const int CriticalProcessEarlyExitMilliseconds = 1000;
+    private const int PlayerReadTimeoutMilliseconds = 2000;
 
     private bool _chatInputTargetsWindow = true;
     private bool _chatInputSupportsVisualConfirmation = true;
@@ -110,26 +119,110 @@ internal sealed partial class GameRuntime : IGameRuntime
         return CaptureScreenAsync(cancellationToken);
     }
 
-    public async Task<StopMode> StopAsync(RunningGame? game, CancellationToken cancellationToken)
+    public async Task<GamePlayers> ReadPlayersAsync(RunningGame game, CancellationToken cancellationToken)
     {
-        if (game is null || game.Process.HasExited)
-            return StopMode.AlreadyStopped;
+        if (!File.Exists(game.Tracker.DescriptorPath))
+            await AttachPlayerTrackerAsync(game, cancellationToken);
 
-        var terminateResult = await RunProcessTextAsync(CreateProcessInfo("kill", ["-TERM", "--", $"-{game.Process.Id}"]), TimeSpan.FromSeconds(5), cancellationToken);
-
-        if (terminateResult.ExitCode is not 0 && !game.Process.HasExited)
-            throw new InvalidOperationException($"kill -TERM failed with code {terminateResult.ExitCode}: {terminateResult.StandardError}");
+        using var timeoutSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(PlayerReadTimeoutMilliseconds));
+        using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token);
 
         try
         {
-            await WaitForManagedProcessExitAsync(game.Process, TimeSpan.FromMilliseconds(ProcessStopTimeoutMilliseconds), cancellationToken);
-            return StopMode.Graceful;
+            if (!File.Exists(game.Tracker.DescriptorPath))
+                throw PlayersUnavailable("The Minecraft player tracker is not ready");
+
+            var descriptor = await File.ReadAllTextAsync(game.Tracker.DescriptorPath, linkedSource.Token);
+
+            if (!int.TryParse(descriptor, NumberStyles.None, CultureInfo.InvariantCulture, out var port) || port is < 1 or > 65535)
+                throw PlayersUnavailable("The Minecraft player tracker published an invalid endpoint");
+
+            using var client = new TcpClient();
+            await client.ConnectAsync(IPAddress.Loopback, port, linkedSource.Token);
+            await using var stream = client.GetStream();
+            await using var writer = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
+            using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
+            await writer.WriteLineAsync(game.Tracker.Token.AsMemory(), linkedSource.Token);
+            var responseJson = await reader.ReadLineAsync(linkedSource.Token);
+
+            if (string.IsNullOrWhiteSpace(responseJson))
+                throw PlayersUnavailable("The Minecraft player tracker returned an empty response");
+
+            var response = JsonSerializer.Deserialize<TrackerResponse>(responseJson, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+                           ?? throw PlayersUnavailable("The Minecraft player tracker returned a malformed response");
+
+            if (response.Status is "notInWorld")
+                throw new GamePlayersException(StatusCodes.Status409Conflict, response.Message ?? "The Minecraft client has no current player world");
+
+            if (response.Status is not "ok")
+                throw PlayersUnavailable(response.Message ?? "The Minecraft player tracker is unavailable");
+
+            if (response.Local is null || response.Remote is null)
+                throw PlayersUnavailable("The Minecraft player tracker returned an incomplete response");
+
+            ValidatePlayer(response.Local);
+
+            foreach (var player in response.Remote)
+            {
+                ValidatePlayer(player);
+
+                if (!double.IsFinite(player.DistanceFromLocal))
+                    throw PlayersUnavailable("The Minecraft player tracker returned a non-finite player distance");
+            }
+
+            return new(response.Local, response.Remote);
         }
-        catch (TimeoutException)
+        catch (GamePlayersException)
         {
-            game.Process.KillTree();
-            await game.Process.WaitForExitAsync(CancellationToken.None);
-            return StopMode.Forced;
+            throw;
+        }
+        catch (OperationCanceledException) when (timeoutSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            throw PlayersUnavailable("The Minecraft player tracker did not respond in time");
+        }
+        catch (Exception exception) when (exception is IOException or SocketException or JsonException or UnauthorizedAccessException)
+        {
+            throw PlayersUnavailable($"The Minecraft player tracker could not be read: {exception.Message}");
+        }
+    }
+
+    public async Task<StopMode> StopAsync(RunningGame? game, CancellationToken cancellationToken)
+    {
+        if (game is null)
+            return StopMode.AlreadyStopped;
+
+        try
+        {
+            var launcherHasExited = game.Process.HasExited;
+            var terminateResult = await RunProcessTextAsync(CreateProcessInfo("kill", ["-TERM", "--", $"-{game.Process.Id}"]), TimeSpan.FromSeconds(5), cancellationToken);
+
+            if (terminateResult.ExitCode is not 0)
+            {
+                if ((launcherHasExited || game.Process.HasExited) && !IsProcessGroupRunning(game.Process.Id))
+                    return StopMode.AlreadyStopped;
+
+                throw new InvalidOperationException($"kill -TERM failed with code {terminateResult.ExitCode}: {terminateResult.StandardError}");
+            }
+
+            try
+            {
+                await WaitForProcessGroupExitAsync(game.Process.Id, TimeSpan.FromMilliseconds(ProcessStopTimeoutMilliseconds), cancellationToken);
+                return StopMode.Graceful;
+            }
+            catch (TimeoutException)
+            {
+                var killResult = await RunProcessTextAsync(CreateProcessInfo("kill", ["-KILL", "--", $"-{game.Process.Id}"]), TimeSpan.FromSeconds(5), CancellationToken.None);
+
+                if (killResult.ExitCode is not 0 && IsProcessGroupRunning(game.Process.Id))
+                    throw new InvalidOperationException($"kill -KILL failed with code {killResult.ExitCode}: {killResult.StandardError}");
+
+                await WaitForProcessGroupExitAsync(game.Process.Id, TimeSpan.FromMilliseconds(ProcessStopTimeoutMilliseconds), CancellationToken.None);
+                return StopMode.Forced;
+            }
+        }
+        finally
+        {
+            File.Delete(game.Tracker.DescriptorPath);
         }
     }
 
@@ -137,39 +230,204 @@ internal sealed partial class GameRuntime : IGameRuntime
     {
         await PrepareDisplayAndWindowAsync(cancellationToken);
         Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portableMinecraftVersion}");
-        var process = LaunchPortableMinecraftClient(minecraftDirectory, portableMinecraftVersion, arguments.Cast<string?>().ToArray(), cancellationToken);
+        var tracker = CreateTrackerConnection(FindUsername(arguments));
+        var launchArguments = arguments.Append($"--jvm-arg=-javaagent:{PortableMinecraftAgentPath}={CreateAgentArguments(tracker)}").Cast<string?>().ToArray();
+        Process process;
+
+        try
+        {
+            process = LaunchPortableMinecraftClient(minecraftDirectory, portableMinecraftVersion, launchArguments, cancellationToken);
+        }
+        catch
+        {
+            File.Delete(tracker.DescriptorPath);
+            throw;
+        }
 
         try
         {
             await WaitForPreparedLargestWindowAsync(Environment.GetEnvironmentVariable("DISPLAY") ?? DefaultDisplay, cancellationToken);
-            return new RunningGame(new ManagedProcess(process), portableMinecraftVersion, DateTimeOffset.UtcNow);
+            return new RunningGame(new ManagedProcess(process), portableMinecraftVersion, DateTimeOffset.UtcNow, tracker);
         }
         catch
         {
             KillProcess(process);
             await WaitForKilledProcessAsync(process);
+            File.Delete(tracker.DescriptorPath);
             throw;
         }
     }
+
+    private static GameTrackerConnection CreateTrackerConnection(string? expectedName)
+    {
+        var descriptorPath = Path.Combine(Path.GetTempPath(), $"void-client-agent-{Guid.NewGuid():N}.port");
+        return new GameTrackerConnection(descriptorPath, Convert.ToHexString(RandomNumberGenerator.GetBytes(32)), expectedName);
+    }
+
+    private static string CreateAgentArguments(GameTrackerConnection tracker)
+    {
+        var arguments = $"descriptor={EncodeAgentArgument(tracker.DescriptorPath)};token={EncodeAgentArgument(tracker.Token)}";
+        return tracker.ExpectedName is null ? arguments : $"{arguments};name={EncodeAgentArgument(tracker.ExpectedName)}";
+    }
+
+    private async Task AttachPlayerTrackerAsync(RunningGame game, CancellationToken cancellationToken)
+    {
+        var javaProcessId = FindJavaProcessId(game.Process.Id);
+
+        if (javaProcessId is null)
+            throw PlayersUnavailable("The running Minecraft JVM could not be found");
+
+        var agentPathAndArguments = $"{PortableMinecraftAgentPath}={CreateAgentArguments(game.Tracker)}";
+        var result = await RunProcessTextAsync(CreateProcessInfo(PortableMinecraftJvmAttachPath,
+            [javaProcessId.Value.ToString(CultureInfo.InvariantCulture), "load", "instrument", "false", agentPathAndArguments]),
+            TimeSpan.FromSeconds(10), cancellationToken);
+
+        if (result.ExitCode is not 0)
+            throw PlayersUnavailable($"The Minecraft player tracker could not attach: {result.StandardError}");
+    }
+
+    private static int? FindJavaProcessId(int rootProcessId)
+    {
+        var descendants = new HashSet<int> { rootProcessId };
+        var processDirectories = Directory.EnumerateDirectories("/proc")
+            .Select(path => (Path: path, Name: Path.GetFileName(path)))
+            .Where(item => int.TryParse(item.Name, NumberStyles.None, CultureInfo.InvariantCulture, out _))
+            .ToArray();
+        var changed = true;
+
+        while (changed)
+        {
+            changed = false;
+
+            foreach (var (path, name) in processDirectories)
+            {
+                var processId = int.Parse(name, CultureInfo.InvariantCulture);
+
+                if (descendants.Contains(processId) || !TryReadParentProcessId(path, out var parentProcessId) || !descendants.Contains(parentProcessId))
+                    continue;
+
+                descendants.Add(processId);
+                changed = true;
+            }
+        }
+
+        foreach (var processId in descendants.OrderDescending())
+        {
+            try
+            {
+                var arguments = File.ReadAllText($"/proc/{processId}/cmdline").Split('\0', StringSplitOptions.RemoveEmptyEntries);
+
+                if (arguments.Any(argument => Path.GetFileName(argument) is "java" or "java-i686"))
+                    return processId;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                // The process exited while its command line was being inspected.
+            }
+        }
+
+        return null;
+    }
+
+    private static bool TryReadParentProcessId(string processDirectory, out int parentProcessId)
+    {
+        parentProcessId = 0;
+
+        try
+        {
+            foreach (var line in File.ReadLines(Path.Combine(processDirectory, "status")))
+            {
+                if (!line.StartsWith("PPid:", StringComparison.Ordinal))
+                    continue;
+
+                return int.TryParse(line.AsSpan("PPid:".Length).Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out parentProcessId);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // The process exited before its parent process ID could be read.
+        }
+
+        return false;
+    }
+
+    private static string EncodeAgentArgument(string value)
+    {
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(value)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
+
+    private static string? FindUsername(IReadOnlyList<string> arguments)
+    {
+        for (var index = 0; index < arguments.Count; index++)
+        {
+            if (arguments[index] is "--username" or "-u")
+                return index + 1 < arguments.Count ? arguments[index + 1] : null;
+
+            if (arguments[index].StartsWith("--username=", StringComparison.Ordinal))
+                return arguments[index]["--username=".Length..];
+        }
+
+        return null;
+    }
+
+    private static void ValidatePlayer(GamePlayer player)
+    {
+        if (!double.IsFinite(player.Position.X) || !double.IsFinite(player.Position.Y) || !double.IsFinite(player.Position.Z))
+            throw PlayersUnavailable("The Minecraft player tracker returned a non-finite player coordinate");
+    }
+
+    private static void ValidatePlayer(RemoteGamePlayer player)
+    {
+        if (!double.IsFinite(player.Position.X) || !double.IsFinite(player.Position.Y) || !double.IsFinite(player.Position.Z))
+            throw PlayersUnavailable("The Minecraft player tracker returned a non-finite player coordinate");
+    }
+
+    private static GamePlayersException PlayersUnavailable(string message) => new(StatusCodes.Status503ServiceUnavailable, message);
+
+    private sealed record TrackerResponse(string? Status, string? Message, GamePlayer? Local, RemoteGamePlayer[]? Remote);
 
     private static string GetMinecraftDirectory()
     {
         return Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? DefaultMinecraftDirectory;
     }
 
-    private static async Task WaitForManagedProcessExitAsync(IManagedProcess process, TimeSpan timeout, CancellationToken cancellationToken)
+    private static async Task WaitForProcessGroupExitAsync(int processGroupId, TimeSpan timeout, CancellationToken cancellationToken)
     {
-        using var timeoutSource = new CancellationTokenSource(timeout);
-        using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(timeoutSource.Token, cancellationToken);
+        var stopwatch = Stopwatch.StartNew();
 
-        try
+        while (IsProcessGroupRunning(processGroupId))
         {
-            await process.WaitForExitAsync(linkedSource.Token);
+            if (stopwatch.Elapsed >= timeout)
+                throw new TimeoutException($"Minecraft process group did not exit within {timeout.TotalSeconds:F1} seconds");
+
+            await Task.Delay(50, cancellationToken);
         }
-        catch (OperationCanceledException) when (timeoutSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+    }
+
+    private static bool IsProcessGroupRunning(int processGroupId)
+    {
+        foreach (var processDirectory in Directory.EnumerateDirectories("/proc"))
         {
-            throw new TimeoutException($"Minecraft did not exit within {timeout.TotalSeconds:F1} seconds");
+            try
+            {
+                var status = File.ReadAllText(Path.Combine(processDirectory, "stat"));
+                var commandEnd = status.LastIndexOf(')');
+
+                if (commandEnd < 0)
+                    continue;
+
+                var fields = status[(commandEnd + 1)..].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                if (fields.Length > 2 && fields[0] is not "Z" && int.TryParse(fields[2], NumberStyles.None, CultureInfo.InvariantCulture, out var candidateProcessGroupId) && candidateProcessGroupId == processGroupId)
+                    return true;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                // The process exited while its state was being inspected.
+            }
         }
+
+        return false;
     }
 
     async Task PreparePortableMinecraftClientAsync(string minecraftDirectory, string portableMinecraftVersion, CancellationToken cancellationToken)
@@ -335,7 +593,12 @@ internal sealed partial class GameRuntime : IGameRuntime
         await RunOrThrow(cancellationToken, "xdotool", "windowfocus", "--sync", windowId);
         windowId = await ResumeGameIfPausedAsync(windowId, display, cancellationToken);
         var inputWindowId = await OpenChatAsync(windowId, preferredInputWindowId, display, cancellationToken);
-        await TypeTextAsync(inputWindowId, message, _chatInputSupportsVisualConfirmation ? 50 : 150, cancellationToken);
+
+        if (_chatInputTargetsWindow)
+            await PasteTextAsync(inputWindowId, message, display, cancellationToken);
+        else
+            await TypeTextAsync(inputWindowId, message, _chatInputSupportsVisualConfirmation ? 50 : 150, cancellationToken);
+
         await SubmitChatAsync(windowId, inputWindowId, display, cancellationToken);
     }
 
@@ -364,7 +627,12 @@ internal sealed partial class GameRuntime : IGameRuntime
                 break;
 
             Console.Error.WriteLine("Visually confirmed that the connection failed; returning to the server list to retry");
-            windowId = await VisuallyClickButtonAsync("Back to server list", windowId, display, screen => screen.TryFindConnectionFailureBackButton(out var button) ? button : null, cancellationToken);
+            var serverListWindowId = await VisuallyClickButtonOrConfirmCompletionAsync("Back to server list", windowId, display, screen => screen.TryFindConnectionFailureBackButton(out var button) ? button : null, TryConfirmInteractiveGameScreenAsync, cancellationToken);
+
+            if (serverListWindowId is null)
+                break;
+
+            windowId = serverListWindowId;
             await WaitForScreenTargetAsync("multiplayer server list", windowId, display, screen => screen.TryFindMultiplayerScreenDirectConnectionButton(out var button) ? button : null, cancellationToken);
         }
 
@@ -383,37 +651,13 @@ internal sealed partial class GameRuntime : IGameRuntime
 
     async Task<bool> WaitForInteractiveGameScreenAsync(string windowId, string display, CancellationToken cancellationToken)
     {
-        var preferredInputWindowId = _chatInputTargetsWindow ? windowId : null;
-        var targetPreferredWindow = true;
-        var useChatKey = true;
         ScreenRectangle? previousFailureButton = null;
         var failureConfirmationCount = 0;
 
         while (true)
         {
-            var inputWindowId = targetPreferredWindow
-                ? preferredInputWindowId
-                : preferredInputWindowId is null ? windowId : null;
-            targetPreferredWindow = !targetPreferredWindow;
-
-            if (_chatInputSupportsVisualConfirmation)
-            {
-                await PressKeyAsync(inputWindowId, "t", cancellationToken);
-            }
-            else
-            {
-                var chatKey = useChatKey ? "t" : "slash";
-                useChatKey = !useChatKey;
-                await PressKeySlowlyAsync(null, chatKey, cancellationToken);
-            }
-
-            if (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
-            {
-                await ClearChatInputAsync(pressKeysSlowly: !_chatInputSupportsVisualConfirmation, cancellationToken: cancellationToken);
-
-                if (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
-                    break;
-            }
+            if (await TryConfirmInteractiveGameScreenAsync(windowId, display, cancellationToken))
+                return true;
 
             using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
 
@@ -433,9 +677,43 @@ internal sealed partial class GameRuntime : IGameRuntime
                 failureConfirmationCount = 0;
             }
         }
+    }
 
-        if (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
-            await PressKeyAsync(null, "Escape", cancellationToken);
+    async Task<bool> TryConfirmInteractiveGameScreenAsync(string windowId, string display, CancellationToken cancellationToken)
+    {
+        var preferredInputWindowId = _chatInputTargetsWindow ? windowId : null;
+
+        if (_chatInputSupportsVisualConfirmation)
+        {
+            if (await TryOpenAndCloseChatAsync(windowId, preferredInputWindowId, display, pressKeySlowly: false, key: "t", cancellationToken: cancellationToken))
+                return true;
+
+            if (preferredInputWindowId is not null && await TryOpenAndCloseChatAsync(windowId, null, display, pressKeySlowly: false, key: "t", cancellationToken: cancellationToken))
+                return true;
+
+            return false;
+        }
+
+        return await TryOpenAndCloseChatAsync(windowId, null, display, pressKeySlowly: true, key: "t", cancellationToken: cancellationToken)
+            || await TryOpenAndCloseChatAsync(windowId, null, display, pressKeySlowly: true, key: "slash", cancellationToken: cancellationToken);
+    }
+
+    async Task<bool> TryOpenAndCloseChatAsync(string windowId, string? inputWindowId, string display, bool pressKeySlowly, string key, CancellationToken cancellationToken)
+    {
+        if (pressKeySlowly)
+            await PressKeySlowlyAsync(inputWindowId, key, cancellationToken);
+        else
+            await PressKeyAsync(inputWindowId, key, cancellationToken);
+
+        if (!await IsChatInputVisibleAsync(windowId, display, cancellationToken))
+            return false;
+
+        await ClearChatInputAsync(pressKeysSlowly: pressKeySlowly, cancellationToken: cancellationToken);
+
+        if (!await IsChatInputVisibleAsync(windowId, display, cancellationToken))
+            return false;
+
+        await PressKeyAsync(null, "Escape", cancellationToken);
 
         while (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
             cancellationToken.ThrowIfCancellationRequested();
@@ -585,6 +863,12 @@ internal sealed partial class GameRuntime : IGameRuntime
 
     async Task<string> VisuallyClickButtonAsync(string buttonName, string windowId, string display, Func<ScreenImage, ScreenRectangle?> locateButton, CancellationToken cancellationToken)
     {
+        return await VisuallyClickButtonOrConfirmCompletionAsync(buttonName, windowId, display, locateButton, null, cancellationToken)
+               ?? throw new InvalidOperationException($"Clicking {buttonName} unexpectedly completed an alternate operation");
+    }
+
+    async Task<string?> VisuallyClickButtonOrConfirmCompletionAsync(string buttonName, string windowId, string display, Func<ScreenImage, ScreenRectangle?> locateButton, Func<string, string, CancellationToken, Task<bool>>? confirmCompletion, CancellationToken cancellationToken)
+    {
         ScreenRectangle? previousButton = null;
         var stableButtonStopwatch = Stopwatch.StartNew();
 
@@ -600,6 +884,9 @@ internal sealed partial class GameRuntime : IGameRuntime
 
                 if (button is null)
                 {
+                    if (confirmCompletion is not null && await confirmCompletion(windowId, display, cancellationToken))
+                        return null;
+
                     previousButton = null;
                     stableButtonStopwatch.Restart();
                     continue;
@@ -620,6 +907,9 @@ internal sealed partial class GameRuntime : IGameRuntime
 
                 if (confirmedButton is null || !AreMatchingRectangles(button.Value, confirmedButton.Value))
                 {
+                    if (confirmCompletion is not null && await confirmCompletion(windowId, display, cancellationToken))
+                        return null;
+
                     previousButton = confirmedButton;
                     stableButtonStopwatch.Restart();
                     continue;
@@ -647,7 +937,37 @@ internal sealed partial class GameRuntime : IGameRuntime
                 }
 
                 await ClickMouseAsync(cancellationToken);
-                return windowId;
+                await MoveMouseAsync(windowId, 2, 2, cancellationToken);
+                var clickConfirmationStopwatch = Stopwatch.StartNew();
+                var changedConfirmationCount = 0;
+                ScreenRectangle? remainingButton = button;
+
+                while (changedConfirmationCount < UserInterfaceStableConfirmationCount && clickConfirmationStopwatch.ElapsedMilliseconds < ButtonStableConfirmationMilliseconds)
+                {
+                    using var clickedScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+                    remainingButton = locateButton(clickedScreen);
+
+                    if (remainingButton is null || !AreMatchingRectangles(button.Value, remainingButton.Value))
+                    {
+                        if (confirmCompletion is not null && await confirmCompletion(windowId, display, cancellationToken))
+                            return null;
+
+                        changedConfirmationCount++;
+                        continue;
+                    }
+
+                    changedConfirmationCount = 0;
+                }
+
+                if (changedConfirmationCount >= UserInterfaceStableConfirmationCount)
+                {
+                    Console.Error.WriteLine($"Visually confirmed {buttonName} click");
+                    return windowId;
+                }
+
+                Console.Error.WriteLine($"The {buttonName} click did not change the screen; retrying");
+                previousButton = remainingButton;
+                stableButtonStopwatch.Restart();
             }
             catch (InvalidOperationException)
             {
@@ -819,8 +1139,13 @@ internal sealed partial class GameRuntime : IGameRuntime
 
     async Task<ScreenImage> CaptureScreenImageAsync(string windowId, string display, CancellationToken cancellationToken)
     {
-        var captureProcessInfo = CreateProcessInfo("import", ["-window", windowId, "-depth", "8", "ppm:-"], display: display);
-        var captureResult = await RunProcessBytesAsync(captureProcessInfo, TimeSpan.FromMilliseconds(ScreenCaptureTimeoutMilliseconds), cancellationToken);
+        await Task.Delay(UserInterfacePollDelayMilliseconds, cancellationToken);
+
+        var captureResult = await RunScreenCaptureBytesAsync(
+            currentWindowId => CreateProcessInfo("import", ["-window", currentWindowId, "-depth", "8", "ppm:-"], display: display),
+            windowId,
+            display,
+            cancellationToken);
 
         if (captureResult.ExitCode is not 0)
             throw new InvalidOperationException($"screen analysis capture failed: {captureResult.StandardError}");
@@ -995,6 +1320,7 @@ internal sealed partial class GameRuntime : IGameRuntime
     async Task PrepareDisplayAndWindowAsync(CancellationToken cancellationToken)
     {
         await EnsureDisplay(cancellationToken);
+        await RunOrThrow(cancellationToken, "xset", "r", "off");
 
         var display = Environment.GetEnvironmentVariable("DISPLAY") ?? DefaultDisplay;
         var deadline = DateTimeOffset.UtcNow.AddSeconds(10);
@@ -1021,8 +1347,11 @@ internal sealed partial class GameRuntime : IGameRuntime
 
         await ResizeWindowToDisplayAsync(windowId, cancellationToken);
 
-        var captureProcessInfo = CreateProcessInfo("import", ["-window", windowId, "png:-"], display: display);
-        var captureResult = await RunProcessBytesAsync(captureProcessInfo, TimeSpan.FromMilliseconds(ScreenCaptureTimeoutMilliseconds), cancellationToken);
+        var captureResult = await RunScreenCaptureBytesAsync(
+            currentWindowId => CreateProcessInfo("import", ["-window", currentWindowId, "png:-"], display: display),
+            windowId,
+            display,
+            cancellationToken);
 
         return captureResult.ExitCode is not 0
             ? throw new InvalidOperationException($"screen capture failed: {captureResult.StandardError}")
@@ -1088,6 +1417,49 @@ internal sealed partial class GameRuntime : IGameRuntime
             await RunOrThrow(cancellationToken, "xdotool", "type", "--clearmodifiers", "--", text);
         else
             await RunOrThrow(cancellationToken, "xdotool", "type", "--clearmodifiers", "--window", windowId, "--", text);
+    }
+
+    async Task PasteTextAsync(string? windowId, string text, string display, CancellationToken cancellationToken = default)
+    {
+        var processInfo = CreateProcessInfo("xclip", ["-selection", "clipboard", "-in", "-loops", "2", "-quiet"], display: display);
+        processInfo.RedirectStandardInput = true;
+        processInfo.RedirectStandardOutput = false;
+        processInfo.RedirectStandardError = false;
+
+        using var process = Process.Start(processInfo)
+                            ?? throw new InvalidOperationException("failed to start xclip");
+
+        try
+        {
+            await process.StandardInput.WriteAsync(text.AsMemory(), cancellationToken);
+            process.StandardInput.Close();
+            var clipboardDeadline = DateTimeOffset.UtcNow.AddMilliseconds(ExternalProcessTimeoutMilliseconds);
+            var clipboardMatches = false;
+
+            while (!clipboardMatches && DateTimeOffset.UtcNow < clipboardDeadline)
+            {
+                var clipboardResult = await RunProcessTextAsync(CreateProcessInfo("xclip", ["-selection", "clipboard", "-out"], display: display), TimeSpan.FromMilliseconds(ExternalProcessTimeoutMilliseconds), cancellationToken);
+                clipboardMatches = clipboardResult.ExitCode is 0 && clipboardResult.StandardOutput == text;
+
+                if (!clipboardMatches)
+                    await Task.Delay(25, cancellationToken);
+            }
+
+            if (!clipboardMatches)
+                throw new InvalidOperationException("xclip did not acquire the clipboard selection");
+
+            await PressKeyAsync(windowId, "ctrl+v", cancellationToken);
+            await WaitForProcessExitAsync(process, processInfo.FileName, TimeSpan.FromMilliseconds(ExternalProcessTimeoutMilliseconds), cancellationToken);
+        }
+        catch
+        {
+            KillProcess(process);
+            await WaitForKilledProcessAsync(process);
+            throw;
+        }
+
+        if (process.ExitCode is not 0)
+            throw new InvalidOperationException($"xclip exited with code {process.ExitCode}");
     }
 
     async Task PressKeyAsync(string? windowId, string key, CancellationToken cancellationToken = default)
@@ -1175,6 +1547,10 @@ internal sealed partial class GameRuntime : IGameRuntime
         if (!_chatInputSupportsVisualConfirmation)
         {
             await PressKeyAsync(null, "Return", cancellationToken);
+
+            while (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
+                cancellationToken.ThrowIfCancellationRequested();
+
             return;
         }
 
@@ -1190,8 +1566,13 @@ internal sealed partial class GameRuntime : IGameRuntime
 
         try
         {
-            var importProcessInfo = CreateProcessInfo("import", ["-window", windowId, screenshotPath], display: display);
-            var importResult = await RunProcessTextAsync(importProcessInfo, TimeSpan.FromMilliseconds(ScreenCaptureTimeoutMilliseconds), cancellationToken);
+            await Task.Delay(UserInterfacePollDelayMilliseconds, cancellationToken);
+
+            var importResult = await RunScreenCaptureTextAsync(
+                currentWindowId => CreateProcessInfo("import", ["-window", currentWindowId, screenshotPath], display: display),
+                windowId,
+                display,
+                cancellationToken);
 
             if (importResult.ExitCode != 0)
                 throw new InvalidOperationException($"chat input capture failed: {importResult.StandardError}");
@@ -1236,7 +1617,7 @@ internal sealed partial class GameRuntime : IGameRuntime
     async Task<string?> FindLargestWindow(string display, CancellationToken cancellationToken = default)
     {
         var searchProcessInfo = CreateProcessInfo("xdotool", ["search", "--onlyvisible", "--name", ".*"], display: display);
-        var searchResult = await RunProcessTextAsync(searchProcessInfo, TimeSpan.FromMilliseconds(DisplayProbeTimeoutMilliseconds), cancellationToken);
+        var searchResult = await RunProcessTextAsync(searchProcessInfo, TimeSpan.FromMilliseconds(ExternalProcessTimeoutMilliseconds), cancellationToken);
 
         if (searchResult.ExitCode != 0)
             return null;
@@ -1248,13 +1629,13 @@ internal sealed partial class GameRuntime : IGameRuntime
         {
             var trimmedCandidateId = candidateWindowId.Trim();
             var nameProcessInfo = CreateProcessInfo("xdotool", ["getwindowname", trimmedCandidateId], display: display);
-            var nameResult = await RunProcessTextAsync(nameProcessInfo, TimeSpan.FromMilliseconds(DisplayProbeTimeoutMilliseconds), cancellationToken);
+            var nameResult = await RunProcessTextAsync(nameProcessInfo, TimeSpan.FromMilliseconds(ExternalProcessTimeoutMilliseconds), cancellationToken);
 
             if (nameResult.ExitCode != 0 || string.IsNullOrWhiteSpace(nameResult.StandardOutput))
                 continue;
 
             var geometryProcessInfo = CreateProcessInfo("xdotool", ["getwindowgeometry", "--shell", trimmedCandidateId], display: display);
-            var geometryResult = await RunProcessTextAsync(geometryProcessInfo, TimeSpan.FromMilliseconds(DisplayProbeTimeoutMilliseconds), cancellationToken);
+            var geometryResult = await RunProcessTextAsync(geometryProcessInfo, TimeSpan.FromMilliseconds(ExternalProcessTimeoutMilliseconds), cancellationToken);
 
             if (geometryResult.ExitCode != 0)
                 continue;
@@ -1326,6 +1707,42 @@ internal sealed partial class GameRuntime : IGameRuntime
         }
 
         return new ProcessTextResult(process.ExitCode, await standardOutputTask, await standardErrorTask);
+    }
+
+    async Task<ProcessTextResult> RunScreenCaptureTextAsync(Func<string, ProcessStartInfo> createProcessInfo, string windowId, string display, CancellationToken cancellationToken)
+    {
+        for (var attempt = 1; attempt <= ScreenCaptureMaximumAttempts; attempt++)
+        {
+            try
+            {
+                return await RunProcessTextAsync(createProcessInfo(windowId), TimeSpan.FromMilliseconds(ScreenCaptureTimeoutMilliseconds), cancellationToken);
+            }
+            catch (TimeoutException exception) when (attempt < ScreenCaptureMaximumAttempts)
+            {
+                Console.Error.WriteLine($"{exception.Message}; reacquiring the Minecraft window before screen capture attempt {attempt + 1}");
+                windowId = await WaitForPreparedLargestWindowAsync(display, cancellationToken);
+            }
+        }
+
+        throw new InvalidOperationException("Screen capture attempts were exhausted");
+    }
+
+    async Task<ProcessBytesResult> RunScreenCaptureBytesAsync(Func<string, ProcessStartInfo> createProcessInfo, string windowId, string display, CancellationToken cancellationToken)
+    {
+        for (var attempt = 1; attempt <= ScreenCaptureMaximumAttempts; attempt++)
+        {
+            try
+            {
+                return await RunProcessBytesAsync(createProcessInfo(windowId), TimeSpan.FromMilliseconds(ScreenCaptureTimeoutMilliseconds), cancellationToken);
+            }
+            catch (TimeoutException exception) when (attempt < ScreenCaptureMaximumAttempts)
+            {
+                Console.Error.WriteLine($"{exception.Message}; reacquiring the Minecraft window before screen capture attempt {attempt + 1}");
+                windowId = await WaitForPreparedLargestWindowAsync(display, cancellationToken);
+            }
+        }
+
+        throw new InvalidOperationException("Screen capture attempts were exhausted");
     }
 
     async Task<ProcessBytesResult> RunProcessBytesAsync(ProcessStartInfo processInfo, TimeSpan timeout, CancellationToken cancellationToken)

@@ -11,7 +11,7 @@ RUN cargo install portablemc-cli --root /usr/local
 # Publish the API once during the image build. Runtime startup never restores or compiles source code.
 FROM debian:13@sha256:f324c7ff54321e8d9c588493a20244965938ce0aa50bbd1022d38010e9ffc4b1 AS dotnet-builder
 
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl libicu-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl default-jdk-headless libicu-dev maven \
  && rm -rf /var/lib/apt/lists/* \
  && curl --fail --location --silent --show-error --retry 5 --retry-all-errors https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
  && chmod +x /tmp/dotnet-install.sh \
@@ -23,6 +23,7 @@ ENV PATH="${DOTNET_ROOT}:${PATH}"
 
 WORKDIR /source
 COPY . .
+RUN mvn --batch-mode --file Agent/pom.xml package
 RUN dotnet publish PortableMinecraftClient.csproj --configuration Release --output /publish /p:UseAppHost=false
 
 # Runtime stage
@@ -42,6 +43,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     jq \
     imagemagick \
+    jattach \
     libasound2 \
     libflite1 \
     libfontconfig1 \
@@ -63,6 +65,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     x11-utils \
     x11-xserver-utils \
     x11vnc \
+    xclip \
     xdotool \
     xxd \
     xvfb \
@@ -156,6 +159,7 @@ ENTRYPOINT ["tini", "--", "portableminecraftclient-entrypoint"]
 FROM scratch AS application-files
 
 COPY --from=dotnet-builder /publish/ /app/
+COPY --from=dotnet-builder /source/Agent/target/void-client-agent.jar /opt/portableminecraftclient/void-client-agent.jar
 COPY --chmod=0755 entrypoint /usr/local/bin/portableminecraftclient-entrypoint
 COPY --chmod=0755 launch-portableminecraftclient /usr/local/bin/launch-portableminecraftclient
 COPY nginx.conf /etc/nginx/nginx.conf

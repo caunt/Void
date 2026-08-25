@@ -12,6 +12,7 @@ JSON property names and enum values use camel case.
 | :----- | :--- | :------ | :---------- |
 | `GET` | `/api/health` | `200` | Check whether the client service is ready. |
 | `GET` | `/api/game/status` | `200` | Read the game state and latest operation. |
+| `GET` | `/api/game/players` | `200` | Read the live local player and client-tracked players. |
 | `PUT` | `/api/game/options` | `204` | Replace Minecraft `options.txt`. |
 | `POST` | `/api/game/start/vanilla` | `202` | Start a Mojang vanilla release. |
 | `POST` | `/api/game/start/neoforge` | `202` | Start a NeoForge release, latest stable by default. |
@@ -58,6 +59,30 @@ JSON property names and enum values use camel case.
 Start operations return this status with `202 Accepted` and a `Location: /api/game/status` header.
 Save its `operationId`, then poll until the same operation reports `ready` and `succeeded`.
 Stop polling with a failure if the identifier changes or the operation becomes `failed` or `canceled`.
+
+## Live Players
+
+`GET /api/game/players` reads players from the running Minecraft client. It does not require a mod, server plugin, or protocol-specific configuration.
+
+```json
+{
+  "local": {
+    "uuid": "f84c6a79-7f8b-4b7c-a02a-7bc7e3f99574",
+    "name": "LocalPlayer",
+    "position": { "x": 0.5, "y": 64.0, "z": 0.5 }
+  },
+  "remote": [
+    {
+      "uuid": "62ca1f73-b4d1-47bb-b176-052905a08b35",
+      "name": "Neighbour",
+      "position": { "x": 2.5, "y": 64.0, "z": 0.5 },
+      "distanceFromLocal": 2.0
+    }
+  ]
+}
+```
+
+Every returned player always contains finite `x`, `y`, and `z` coordinates. Profile identity is `null` when unavailable. A client without a current player world returns `409 Conflict`; tracker initialization or complete-coordinate failures return `503 Service Unavailable` rather than partial player data.
 
 ## Health
 

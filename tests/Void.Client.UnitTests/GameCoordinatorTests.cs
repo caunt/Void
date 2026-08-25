@@ -119,6 +119,42 @@ public sealed class GameCoordinatorTests
         await coordinator.StopAsync(CancellationToken.None);
     }
 
+    [Fact]
+    public async Task PlayersReadReturnsLiveRuntimeDataWithoutChangingOperationStatus()
+    {
+        var runtime = new FakeGameRuntime();
+        using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
+        await coordinator.StartAsync(CancellationToken.None);
+
+        var acceptedLaunch = await coordinator.StartVanillaAsync(new("1.21.11", []), CancellationToken.None);
+        runtime.CompleteLaunch();
+        await WaitForStateAsync(coordinator, GameState.Ready);
+        var operationId = coordinator.Status.OperationId;
+
+        var players = await coordinator.GetPlayersAsync(CancellationToken.None);
+
+        Assert.Equal("local", players.Local.Name);
+        Assert.Equal(new Position(4, 6, 3), Assert.Single(players.Remote).Position);
+        Assert.Equal(acceptedLaunch.OperationId, operationId);
+        Assert.Equal(operationId, coordinator.Status.OperationId);
+
+        await coordinator.StopGameAsync(CancellationToken.None);
+        await coordinator.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task PlayersReadRequiresRunningGame()
+    {
+        var runtime = new FakeGameRuntime();
+        using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
+        await coordinator.StartAsync(CancellationToken.None);
+
+        var exception = await Assert.ThrowsAsync<GameCommandException>(() => coordinator.GetPlayersAsync(CancellationToken.None));
+
+        Assert.Equal(409, exception.StatusCode);
+        await coordinator.StopAsync(CancellationToken.None);
+    }
+
     private static async Task WaitForStateAsync(GameCoordinator coordinator, GameState expected)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -142,7 +178,7 @@ public sealed class GameCoordinatorTests
         public void CompleteLaunch()
         {
             _process = new FakeManagedProcess(LaunchCount);
-            _launch.SetResult(new(_process, $"test:{LaunchCount}", DateTimeOffset.UtcNow));
+            _launch.SetResult(new(_process, $"test:{LaunchCount}", DateTimeOffset.UtcNow, new("test.port", "token", null)));
         }
 
         public void CompleteStop()
@@ -173,6 +209,13 @@ public sealed class GameCoordinatorTests
         public Task SendChatAsync(string message, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public Task<byte[]> CaptureScreenshotAsync(CancellationToken cancellationToken) => Task.FromResult(Array.Empty<byte>());
+
+        public Task<GamePlayers> ReadPlayersAsync(RunningGame game, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new GamePlayers(
+                new GamePlayer("local-id", "local", new Position(1, 2, 3)),
+                [new RemoteGamePlayer("other-id", "other", new Position(4, 6, 3), 5)]));
+        }
 
         public Task<StopMode> StopAsync(RunningGame? game, CancellationToken cancellationToken)
         {
