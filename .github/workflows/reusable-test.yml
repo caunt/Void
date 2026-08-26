@@ -123,20 +123,28 @@ jobs:
           total=${{ inputs.shard-count }}
           assignment_dir="$(mktemp -d)"
           tests_file="$assignment_dir/tests.txt"
+          discovery_output_file="$assignment_dir/discovery.txt"
           assignments_file="$assignment_dir/assignments.tsv"
           trap 'rm -rf "$assignment_dir"' EXIT
 
-          dotnet test tests/Void.IntegrationTests --configuration Release --list-tests \
-            | awk '/The following Tests are available:/{started=1; next} started {gsub(/^[ \t]+/, ""); if ($0) print}' \
+          dotnet test tests/Void.IntegrationTests --configuration Release --list-tests --no-ansi --no-progress \
+            | tee "$discovery_output_file"
+
+          awk '
+            /^Discovered [0-9]+ tests in assembly - / { started=1; next }
+            started && /^  / { sub(/^  /, ""); print; next }
+            started { started=0 }
+          ' "$discovery_output_file" \
             | LC_ALL=C sort -u > "$tests_file"
 
+          reported_tests=$(awk '/^Discovered [0-9]+ tests in assembly - / { total += $2 } END { print total + 0 }' "$discovery_output_file")
           total_tests=$(wc -l < "$tests_file" | tr -d ' ')
 
-          if [ "$total_tests" -eq 0 ]; then
-            echo "No integration tests were discovered."
-            echo "HAS_INTEGRATION_TESTS=false" >> "$GITHUB_ENV"
-            echo "TEST_FILTER=" >> "$GITHUB_ENV"
-            exit 0
+          if [ "$reported_tests" -eq 0 ] || [ "$total_tests" -ne "$reported_tests" ]; then
+            echo "Integration test discovery check failed."
+            echo "Reported tests: $reported_tests"
+            echo "Parsed unique tests: $total_tests"
+            exit 1
           fi
 
           for (( current_shard = 0; current_shard < total; current_shard++ )); do
@@ -187,7 +195,7 @@ jobs:
 
       - name: Run integration shard
         if: ${{ matrix.test-kind == 'integration' && env.HAS_INTEGRATION_TESTS == 'true' }}
-        run: dotnet test tests/Void.IntegrationTests --configuration Release --filter "$TEST_FILTER" --logger "console;verbosity=detailed"
+        run: dotnet test tests/Void.IntegrationTests --configuration Release --filter "$TEST_FILTER" --output Detailed
 
       - name: Skip empty integration shard
         if: ${{ matrix.test-kind == 'integration' && env.HAS_INTEGRATION_TESTS != 'true' }}
