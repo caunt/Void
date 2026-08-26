@@ -871,6 +871,7 @@ internal sealed partial class GameRuntime : IGameRuntime
     {
         ScreenRectangle? previousButton = null;
         var stableButtonStopwatch = Stopwatch.StartNew();
+        var attempt = 0;
 
         while (true)
         {
@@ -916,10 +917,12 @@ internal sealed partial class GameRuntime : IGameRuntime
                 }
 
                 button = confirmedButton;
+                attempt++;
                 await MoveMouseAsync(windowId, button.Value.CenterX, button.Value.CenterY, cancellationToken);
+                var hoverConfirmationStopwatch = Stopwatch.StartNew();
                 var hoverConfirmationCount = 0;
 
-                while (hoverConfirmationCount < UserInterfaceStableConfirmationCount)
+                while (hoverConfirmationCount < UserInterfaceStableConfirmationCount && hoverConfirmationStopwatch.ElapsedMilliseconds < ButtonStableConfirmationMilliseconds)
                 {
                     using var hoveredScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
                     var differenceRatio = confirmedBaselineScreen.CalculateDifferenceRatio(hoveredScreen, button.Value);
@@ -933,11 +936,18 @@ internal sealed partial class GameRuntime : IGameRuntime
                     hoverConfirmationCount++;
 
                     if (hoverConfirmationCount >= UserInterfaceStableConfirmationCount)
-                        Console.Error.WriteLine($"Visually confirmed {buttonName} hover at {button.Value} ({differenceRatio:P1} changed pixels)");
+                        Console.Error.WriteLine($"Visually confirmed {buttonName} hover on attempt {attempt} at {button.Value} ({differenceRatio:P1} changed pixels)");
+                }
+
+                if (hoverConfirmationCount < UserInterfaceStableConfirmationCount)
+                {
+                    Console.Error.WriteLine($"The {buttonName} hover was not confirmed on attempt {attempt}; retrying");
+                    previousButton = button;
+                    stableButtonStopwatch.Restart();
+                    continue;
                 }
 
                 await ClickMouseAsync(cancellationToken);
-                await MoveMouseAsync(windowId, 2, 2, cancellationToken);
                 var clickConfirmationStopwatch = Stopwatch.StartNew();
                 var changedConfirmationCount = 0;
                 ScreenRectangle? remainingButton = button;
@@ -961,11 +971,11 @@ internal sealed partial class GameRuntime : IGameRuntime
 
                 if (changedConfirmationCount >= UserInterfaceStableConfirmationCount)
                 {
-                    Console.Error.WriteLine($"Visually confirmed {buttonName} click");
+                    Console.Error.WriteLine($"Visually confirmed {buttonName} click on attempt {attempt}");
                     return windowId;
                 }
 
-                Console.Error.WriteLine($"The {buttonName} click did not change the screen; retrying");
+                Console.Error.WriteLine($"The {buttonName} click on attempt {attempt} did not change the screen; retrying");
                 previousButton = remainingButton;
                 stableButtonStopwatch.Restart();
             }
