@@ -134,7 +134,14 @@ internal sealed class GameTextRecognizer : IAsyncDisposable
 
         try
         {
-            _process.StandardInput.Close();
+            try
+            {
+                _process.StandardInput.Close();
+            }
+            catch (IOException)
+            {
+                // A worker that exited unexpectedly can close its pipe before cleanup runs.
+            }
 
             if (!_process.HasExited)
             {
@@ -180,6 +187,7 @@ internal enum ConnectionTextAction
 internal enum ConnectionNavigationKind
 {
     BackToGame,
+    PopulateServerAddress,
     JoinServer,
     DirectConnection,
     Proceed,
@@ -191,13 +199,15 @@ internal sealed record ConnectionNavigationSelection(ConnectionNavigationKind Ki
 
 internal static class ConnectionNavigationSelector
 {
-    public static ConnectionNavigationSelection? Select(IReadOnlyDictionary<ConnectionTextAction, ConnectionTextMatch> matches, bool hasServerAddressField)
+    public static ConnectionNavigationSelection? Select(IReadOnlyDictionary<ConnectionTextAction, ConnectionTextMatch> matches, bool hasServerAddressField, bool isServerAddressPrepared = false)
     {
         if (matches.ContainsKey(ConnectionTextAction.BackToGame))
             return new(ConnectionNavigationKind.BackToGame, ConnectionTextAction.BackToGame);
 
         if (hasServerAddressField && matches.ContainsKey(ConnectionTextAction.ServerAddress) && matches.ContainsKey(ConnectionTextAction.JoinServer))
-            return new(ConnectionNavigationKind.JoinServer, ConnectionTextAction.JoinServer);
+            return isServerAddressPrepared
+                ? new(ConnectionNavigationKind.JoinServer, ConnectionTextAction.JoinServer)
+                : new(ConnectionNavigationKind.PopulateServerAddress, ConnectionTextAction.ServerAddress);
 
         if (matches.ContainsKey(ConnectionTextAction.DirectConnection))
             return new(ConnectionNavigationKind.DirectConnection, ConnectionTextAction.DirectConnection);

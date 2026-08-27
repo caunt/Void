@@ -50,7 +50,7 @@ public sealed class ConnectionTextMatcherTests
     }
 
     [Fact]
-    public void SelectsJoinOnlyForDirectConnectionForm()
+    public void SelectsAddressEntryBeforeJoinForDirectConnectionForm()
     {
         var matches = ConnectionTextMatcher.Match([
             CreateRecognizedText("Server Address", 0.99),
@@ -58,7 +58,8 @@ public sealed class ConnectionTextMatcherTests
         ]);
 
         Assert.Null(ConnectionNavigationSelector.Select(matches, hasServerAddressField: false));
-        Assert.Equal(ConnectionNavigationKind.JoinServer, ConnectionNavigationSelector.Select(matches, hasServerAddressField: true)?.Kind);
+        Assert.Equal(ConnectionNavigationKind.PopulateServerAddress, ConnectionNavigationSelector.Select(matches, hasServerAddressField: true)?.Kind);
+        Assert.Equal(ConnectionNavigationKind.JoinServer, ConnectionNavigationSelector.Select(matches, hasServerAddressField: true, isServerAddressPrepared: true)?.Kind);
     }
 
     [Fact]
@@ -70,6 +71,22 @@ public sealed class ConnectionTextMatcherTests
         ]);
 
         Assert.Equal(ConnectionNavigationKind.DirectConnection, ConnectionNavigationSelector.Select(matches, hasServerAddressField: false)?.Kind);
+    }
+
+    [Fact]
+    public void PrioritizesForwardActionOverBackButtonOnCurrentScreen()
+    {
+        var warningMatches = ConnectionTextMatcher.Match([
+            CreateRecognizedText("Proceed", 0.99),
+            CreateRecognizedText("Back", 0.99)
+        ]);
+        var serverListMatches = ConnectionTextMatcher.Match([
+            CreateRecognizedText("Direct Connection", 0.99),
+            CreateRecognizedText("Back", 0.99)
+        ]);
+
+        Assert.Equal(ConnectionNavigationKind.Proceed, ConnectionNavigationSelector.Select(warningMatches, hasServerAddressField: false)?.Kind);
+        Assert.Equal(ConnectionNavigationKind.DirectConnection, ConnectionNavigationSelector.Select(serverListMatches, hasServerAddressField: false)?.Kind);
     }
 
     private static RecognizedText CreateRecognizedText(string text, double confidence)

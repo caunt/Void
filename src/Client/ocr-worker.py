@@ -27,6 +27,10 @@ def create_model():
     )
 
 
+def normalize_text(text):
+    return "".join(character.lower() for character in text if character.isalnum())
+
+
 def normalize_result(result):
     value = result.json
 
@@ -39,13 +43,7 @@ def normalize_result(result):
     return value.get("res", value)
 
 
-def recognize(model, encoded_image):
-    image_bytes = base64.b64decode(encoded_image)
-    image = cv2.imdecode(numpy.frombuffer(image_bytes, dtype=numpy.uint8), cv2.IMREAD_COLOR)
-
-    if image is None:
-        raise ValueError("OCR request contained an invalid image")
-
+def recognize_image(model, image):
     items = []
 
     for result in model.predict(image):
@@ -64,6 +62,43 @@ def recognize(model, encoded_image):
     return items
 
 
+def recognize(model, encoded_image):
+    image_bytes = base64.b64decode(encoded_image)
+    image = cv2.imdecode(numpy.frombuffer(image_bytes, dtype=numpy.uint8), cv2.IMREAD_COLOR)
+
+    if image is None:
+        raise ValueError("OCR request contained an invalid image")
+
+    return recognize_image(model, image)
+
+
+def self_test(model):
+    image = numpy.zeros((180, 720, 3), dtype=numpy.uint8)
+    cv2.putText(image, "Multiplayer", (35, 115), cv2.FONT_HERSHEY_PLAIN, 4, (255, 255, 255), 4, cv2.LINE_8)
+    items = recognize_image(model, image)
+
+    if not any(normalize_text(item["text"]) == "multiplayer" for item in items):
+        recognized = ", ".join(item["text"] for item in items) or "none"
+        raise RuntimeError(f"OCR self-test did not recognize Multiplayer; recognized: {recognized}")
+
+
+def self_test_image(model, image_path, expected_texts):
+    image = cv2.imread(image_path, cv2.IMREAD_COLOR)
+
+    if image is None:
+        raise ValueError(f"OCR self-test image could not be read: {image_path}")
+
+    items = recognize_image(model, image)
+    recognized_texts = {normalize_text(item["text"]) for item in items}
+    missing_texts = [expected_text for expected_text in expected_texts if normalize_text(expected_text) not in recognized_texts]
+
+    if missing_texts:
+        recognized = ", ".join(item["text"] for item in items) or "none"
+        raise RuntimeError(f"OCR self-test did not recognize {', '.join(missing_texts)}; recognized: {recognized}")
+
+    return items
+
+
 def write_response(response):
     protocol_output.write("VOID_OCR_RESPONSE " + json.dumps(response, separators=(",", ":")) + "\n")
     protocol_output.flush()
@@ -72,7 +107,18 @@ def write_response(response):
 model = create_model()
 
 if "--warmup" in sys.argv:
+    self_test(model)
     write_response({"ready": True})
+    raise SystemExit(0)
+
+if "--self-test-image" in sys.argv:
+    argument_index = sys.argv.index("--self-test-image")
+
+    if len(sys.argv) <= argument_index + 2:
+        raise ValueError("--self-test-image requires an image path and at least one expected text value")
+
+    items = self_test_image(model, sys.argv[argument_index + 1], sys.argv[argument_index + 2:])
+    write_response({"ready": True, "items": items})
     raise SystemExit(0)
 
 for line in sys.stdin:

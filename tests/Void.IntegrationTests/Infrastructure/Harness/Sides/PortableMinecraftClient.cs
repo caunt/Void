@@ -26,6 +26,8 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
     private const string DockerHost = "host.docker.internal";
     private const string DockerHostGateway = "host-gateway";
     private const string LogMessagePrefix = $"[{nameof(Void)}.{nameof(IntegrationTests)}]";
+    private const string PortableMinecraftClientImageEnvironmentVariable = "VOID_PORTABLE_MINECRAFT_CLIENT_IMAGE";
+    private const string PublishedPortableMinecraftClientImage = "ghcr.io/caunt/portable-minecraft-client:offline";
 
     private DateTime _readLogsSince = DateTime.UtcNow;
 
@@ -54,7 +56,12 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
     public static async Task<PortableMinecraftClient> CreateAsync(CancellationToken cancellationToken = default)
     {
-        var builder = new ContainerBuilder("ghcr.io/caunt/portable-minecraft-client:offline")
+        var image = Environment.GetEnvironmentVariable(PortableMinecraftClientImageEnvironmentVariable);
+
+        if (string.IsNullOrWhiteSpace(image))
+            image = PublishedPortableMinecraftClientImage;
+
+        var builder = new ContainerBuilder(image)
             .WithEnvironment("DISPLAY", Display)
             .WithPortBinding(port: ApiPort, assignRandomHostPort: true)
             .WithWaitStrategy(Wait.ForUnixContainer()

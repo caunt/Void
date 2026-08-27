@@ -55,100 +55,6 @@ internal sealed partial class GameRuntime
             return new ScreenImage(imageBytes, pixelDataOffset, width, height);
         }
 
-        public bool TryFindMainMenuMultiplayerButton(out ScreenRectangle multiplayerButton)
-        {
-            var buttons = FindButtons();
-            var candidates = buttons
-                .Where(button => button.Width >= Width * 0.4 && IsHorizontallyCentered(button))
-                .OrderBy(button => button.Top)
-                .ToArray();
-
-            if (candidates.Length >= 2)
-            {
-                var upperButton = candidates[0];
-                var lowerButton = candidates[1];
-
-                if (HaveMatchingWidths(upperButton, lowerButton) && HaveStandardVerticalSpacing(upperButton, lowerButton))
-                {
-                    var nearbyLowerButton = buttons
-                        .Where(button => button.Top > lowerButton.Top)
-                        .OrderBy(button => button.Top)
-                        .FirstOrDefault();
-
-                    var incompleteButtonStack = candidates.Length is 2
-                        && nearbyLowerButton != default
-                        && nearbyLowerButton.Top - lowerButton.Bottom <= lowerButton.Height;
-
-                    if (!incompleteButtonStack)
-                    {
-                        multiplayerButton = lowerButton;
-                        return true;
-                    }
-                }
-            }
-
-            multiplayerButton = default;
-            return false;
-        }
-
-        public bool TryFindOnlinePlayWarningProceedButton(out ScreenRectangle proceedButton)
-        {
-            var warningButtonRows = GroupIntoRows(FindButtons().Where(button => button.Top >= Height * 0.55));
-            var warningRow = warningButtonRows.SingleOrDefault(row => row.Count is 2 && row.All(button => button.Width >= Width * 0.25));
-
-            if (warningRow is null)
-            {
-                proceedButton = default;
-                return false;
-            }
-
-            proceedButton = warningRow.OrderBy(button => button.Left).First();
-            return true;
-        }
-
-        public bool TryFindMultiplayerScreenDirectConnectionButton(out ScreenRectangle directConnectionButton)
-        {
-            var bottomButtons = FindButtons().Where(button => button.Top >= Height * 0.7).ToArray();
-
-            if (bottomButtons.Length < 6)
-            {
-                directConnectionButton = default;
-                return false;
-            }
-
-            var upperButtonRow = GroupIntoRows(bottomButtons)
-                .Where(row => row.Count is 3)
-                .OrderBy(row => row.Min(button => button.Top))
-                .FirstOrDefault();
-
-            if (upperButtonRow is null)
-            {
-                directConnectionButton = default;
-                return false;
-            }
-
-            directConnectionButton = upperButtonRow.OrderBy(button => button.Left).ElementAt(1);
-            return true;
-        }
-
-        public bool TryFindConnectionFailureBackButton(out ScreenRectangle backButton)
-        {
-            var centeredWideButtons = FindButtons()
-                .Where(button => button.Width >= Width * 0.4 && IsHorizontallyCentered(button))
-                .ToArray();
-
-            if (centeredWideButtons.Length is 1
-                && centeredWideButtons[0].Top >= Height * 0.45
-                && centeredWideButtons[0].Top <= Height * 0.75)
-            {
-                backButton = centeredWideButtons[0];
-                return true;
-            }
-
-            backButton = default;
-            return false;
-        }
-
         public bool TryFindPauseMenuBackToGameButton(out ScreenRectangle backToGameButton)
         {
             var buttons = FindButtons();
@@ -168,33 +74,6 @@ internal sealed partial class GameRuntime
             }
 
             backToGameButton = default;
-            return false;
-        }
-
-        public bool TryFindDirectConnectionScreen(out DirectConnectionScreen directConnectionScreen)
-        {
-            var centeredButtons = FindButtons()
-                .Where(button => button.Width >= Width * 0.4 && IsHorizontallyCentered(button))
-                .Where(button => button.Top >= Height * 0.55)
-                .OrderBy(button => button.Top)
-                .ToArray();
-
-            for (var index = 0; index < centeredButtons.Length - 1; index++)
-            {
-                var joinButton = centeredButtons[index];
-                var cancelButton = centeredButtons[index + 1];
-
-                if (!HaveMatchingWidths(joinButton, cancelButton) || !HaveStandardVerticalSpacing(joinButton, cancelButton))
-                    continue;
-
-                if (!TryFindServerAddressField(joinButton, out var serverAddressField))
-                    continue;
-
-                directConnectionScreen = new DirectConnectionScreen(serverAddressField, joinButton, cancelButton);
-                return true;
-            }
-
-            directConnectionScreen = default;
             return false;
         }
 
@@ -218,10 +97,25 @@ internal sealed partial class GameRuntime
             return new ScreenRectangle(left, top, right - left, bottom - top);
         }
 
-        public bool TryFindServerAddressField(OcrRectangle joinServerTextBounds, out ScreenRectangle serverAddressField)
+        public bool TryFindServerAddressField(OcrRectangle serverAddressTextBounds, out ScreenRectangle serverAddressField)
         {
-            var joinButton = FindInteractionArea(joinServerTextBounds);
-            return TryFindServerAddressField(joinButton, out serverAddressField);
+            var maximumVerticalDistance = Math.Max(48, serverAddressTextBounds.Height * 6);
+            var candidate = FindTextFields()
+                .Where(field => serverAddressTextBounds.CenterX >= field.Left && serverAddressTextBounds.CenterX <= field.Right)
+                .Where(field => field.Top >= serverAddressTextBounds.Top)
+                .Where(field => field.Top - serverAddressTextBounds.Bottom <= maximumVerticalDistance)
+                .OrderBy(field => Math.Max(0, field.Top - serverAddressTextBounds.Bottom))
+                .ThenBy(field => field.Width * field.Height)
+                .FirstOrDefault();
+
+            if (candidate == default)
+            {
+                serverAddressField = default;
+                return false;
+            }
+
+            serverAddressField = candidate;
+            return true;
         }
 
         public double CalculateDifferenceRatio(ScreenImage other, ScreenRectangle area, byte channelDifferenceThreshold = 20)
@@ -448,35 +342,6 @@ internal sealed partial class GameRuntime
             }
         }
 
-        private bool TryFindServerAddressField(ScreenRectangle joinButton, out ScreenRectangle serverAddressField)
-        {
-            var minimumFieldWidth = (int)(joinButton.Width * 0.95);
-            var maximumFieldWidth = (int)(joinButton.Width * 1.05);
-
-            for (var top = joinButton.Top - 1; top >= Height * 0.25; top--)
-            {
-                foreach (var (left, width) in FindNeutralBrightRuns(top))
-                {
-                    if (width < minimumFieldWidth || width > maximumFieldWidth || Math.Abs(left + width / 2 - Width / 2) > 5)
-                        continue;
-
-                    for (var height = MinimumButtonHeight; height <= 48 && top + height < joinButton.Top; height++)
-                    {
-                        var candidate = new ScreenRectangle(left, top, width, height);
-
-                        if (HasTextFieldInterior(candidate))
-                        {
-                            serverAddressField = candidate;
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            serverAddressField = default;
-            return false;
-        }
-
         private IEnumerable<(int Left, int Width)> FindNeutralBrightRuns(int y)
         {
             var left = 0;
@@ -496,6 +361,46 @@ internal sealed partial class GameRuntime
 
                 left = right + 1;
             }
+        }
+
+        private IReadOnlyList<ScreenRectangle> FindTextFields()
+        {
+            const int minimumTextFieldWidth = 80;
+            const int minimumTextFieldHeight = 18;
+            const int maximumTextFieldHeight = 48;
+            var candidates = new List<ScreenRectangle>();
+
+            for (var top = 0; top <= Height - minimumTextFieldHeight; top++)
+            {
+                foreach (var (left, width) in FindNeutralBrightRuns(top))
+                {
+                    if (width < minimumTextFieldWidth)
+                        continue;
+
+                    for (var height = minimumTextFieldHeight; height <= maximumTextFieldHeight && top + height <= Height; height++)
+                    {
+                        var candidate = new ScreenRectangle(left, top, width, height);
+
+                        if (!HasTextFieldInterior(candidate))
+                            continue;
+
+                        candidates.Add(candidate);
+                        break;
+                    }
+                }
+            }
+
+            var textFields = new List<ScreenRectangle>();
+
+            foreach (var candidate in candidates.OrderBy(field => field.Top).ThenBy(field => field.Left))
+            {
+                if (textFields.Any(field => AreDuplicateDetections(field, candidate)))
+                    continue;
+
+                textFields.Add(candidate);
+            }
+
+            return textFields;
         }
 
         private bool HasTextFieldInterior(ScreenRectangle candidate)
@@ -524,26 +429,6 @@ internal sealed partial class GameRuntime
             return (double)bottomBorderPixels / candidate.Width >= 0.8
                 && interiorSampleCount > 0
                 && (double)darkInteriorPixels / interiorSampleCount >= 0.8;
-        }
-
-        private IReadOnlyList<IReadOnlyList<ScreenRectangle>> GroupIntoRows(IEnumerable<ScreenRectangle> buttons)
-        {
-            var rows = new List<List<ScreenRectangle>>();
-
-            foreach (var button in buttons.OrderBy(button => button.Top))
-            {
-                var row = rows.FirstOrDefault(candidateRow => Math.Abs(candidateRow[0].Top - button.Top) <= 3);
-
-                if (row is null)
-                {
-                    row = [];
-                    rows.Add(row);
-                }
-
-                row.Add(button);
-            }
-
-            return rows.Select(row => (IReadOnlyList<ScreenRectangle>)row).ToArray();
         }
 
         private PixelColor GetPixel(int x, int y)
@@ -648,16 +533,6 @@ internal sealed partial class GameRuntime
         }
     }
 
-    readonly record struct DirectConnectionScreen(ScreenRectangle ServerAddressField, ScreenRectangle JoinButton, ScreenRectangle CancelButton);
-
-    readonly record struct NavigationScreenTarget(NavigationScreenKind Kind, ScreenRectangle Target);
-
-    enum NavigationScreenKind
-    {
-        MultiplayerServerList,
-        OnlinePlayWarning
-    }
-
-    sealed record ConnectionScreenObservation(ConnectionNavigationKind Kind, ScreenRectangle InteractionArea);
+    sealed record ConnectionScreenObservation(ConnectionNavigationKind Kind, ScreenRectangle InteractionArea, ScreenRectangle? ServerAddressField);
 
 }
