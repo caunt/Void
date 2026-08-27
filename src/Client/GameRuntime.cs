@@ -16,7 +16,7 @@ namespace Void.Client;
 /// Owns the Linux, PortableMC, CurseForge, X11, and visual-automation details for one Minecraft game process.
 /// Lifecycle coordination deliberately lives in <see cref="GameCoordinator"/> so this class has no shared-state locks.
 /// </summary>
-internal sealed partial class GameRuntime : IGameRuntime
+internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
 {
     private const string DefaultMinecraftDirectory = "/root/.minecraft";
     private const string DefaultCurseForgeApiBaseUrl = "https://api.curseforge.com";
@@ -56,6 +56,13 @@ internal sealed partial class GameRuntime : IGameRuntime
 
     private bool _chatInputTargetsWindow = true;
     private bool _chatInputSupportsVisualConfirmation = true;
+    private readonly GameTextRecognizer _textRecognizer = new();
+
+    public async ValueTask DisposeAsync()
+    {
+        await _textRecognizer.DisposeAsync();
+        GC.SuppressFinalize(this);
+    }
 
     public async Task WriteOptionsAsync(string options, CancellationToken cancellationToken)
     {
@@ -607,47 +614,108 @@ internal sealed partial class GameRuntime : IGameRuntime
         var display = Environment.GetEnvironmentVariable("DISPLAY") ?? DefaultDisplay;
         var windowId = await WaitForPreparedLargestWindowAsync(display, cancellationToken);
         var serverAddress = $"{host}:{port}";
-
-        windowId = await VisuallyClickButtonAsync("Multiplayer", windowId, display, screen => screen.TryFindMainMenuMultiplayerButton(out var button) ? button : null, cancellationToken);
-
-        var nextScreen = await WaitForMultiplayerOrOnlinePlayWarningAsync(windowId, display, cancellationToken);
-
-        if (nextScreen.Kind is NavigationScreenKind.OnlinePlayWarning)
-        {
-            Console.Error.WriteLine("Visually confirmed the third-party online play warning");
-            windowId = await VisuallyClickButtonAsync("Proceed", windowId, display, screen => screen.TryFindOnlinePlayWarningProceedButton(out var button) ? button : null, cancellationToken);
-            await WaitForScreenTargetAsync("multiplayer server list", windowId, display, screen => screen.TryFindMultiplayerScreenDirectConnectionButton(out var button) ? button : null, cancellationToken);
-        }
+        ConnectionScreenObservation? previousObservation = null;
+        var stableObservationCount = 0;
 
         while (true)
         {
-            windowId = await SubmitDirectConnectionAsync(windowId, display, serverAddress, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
 
-            if (await WaitForInteractiveGameScreenAsync(windowId, display, cancellationToken))
-                break;
+            try
+            {
+                using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+                var recognizedTexts = await _textRecognizer.RecognizeAsync(screen.Bytes, cancellationToken);
+                var matches = ConnectionTextMatcher.Match(recognizedTexts);
+                var observation = CreateConnectionScreenObservation(screen, matches);
 
-            Console.Error.WriteLine("Visually confirmed that the connection failed; returning to the server list to retry");
-            var serverListWindowId = await VisuallyClickButtonOrConfirmCompletionAsync("Back to server list", windowId, display, screen => screen.TryFindConnectionFailureBackButton(out var button) ? button : null, TryConfirmInteractiveGameScreenAsync, cancellationToken);
+                if (observation is null)
+                {
+                    previousObservation = null;
+                    stableObservationCount = 0;
 
-            if (serverListWindowId is null)
-                break;
+                    if (matches.Count is 0 && await TryConfirmInteractiveGameScreenAsync(windowId, display, cancellationToken))
+                        return;
 
-            windowId = serverListWindowId;
-            await WaitForScreenTargetAsync("multiplayer server list", windowId, display, screen => screen.TryFindMultiplayerScreenDirectConnectionButton(out var button) ? button : null, cancellationToken);
+                    continue;
+                }
+
+                if (previousObservation is not null && AreMatchingConnectionScreenObservations(previousObservation, observation))
+                    stableObservationCount++;
+                else
+                    stableObservationCount = 1;
+
+                previousObservation = observation;
+
+                if (stableObservationCount < UserInterfaceStableConfirmationCount)
+                    continue;
+
+                Console.Error.WriteLine($"OCR selected {observation.Kind} at {observation.InteractionArea}");
+
+                if (observation.Kind is ConnectionNavigationKind.JoinServer)
+                    await EnterServerAddressAsync(windowId, display, serverAddress, cancellationToken);
+
+                _ = await TryClickCurrentConnectionActionAsync(observation.Kind, windowId, display, cancellationToken);
+                previousObservation = null;
+                stableObservationCount = 0;
+            }
+            catch (InvalidOperationException)
+            {
+                windowId = await WaitForPreparedLargestWindowAsync(display, cancellationToken);
+                previousObservation = null;
+                stableObservationCount = 0;
+            }
+        }
+    }
+
+    ConnectionScreenObservation? CreateConnectionScreenObservation(ScreenImage screen, IReadOnlyDictionary<ConnectionTextAction, ConnectionTextMatch> matches)
+    {
+        var hasServerAddressField = matches.TryGetValue(ConnectionTextAction.JoinServer, out var joinServer)
+                                    && screen.TryFindServerAddressField(joinServer.Bounds, out _);
+        var selection = ConnectionNavigationSelector.Select(matches, hasServerAddressField);
+
+        if (selection is null || !matches.TryGetValue(selection.TextAction, out var match))
+            return null;
+
+        return new(selection.Kind, screen.FindInteractionArea(match.Bounds));
+    }
+
+    async Task<bool> TryClickCurrentConnectionActionAsync(ConnectionNavigationKind expectedKind, string windowId, string display, CancellationToken cancellationToken)
+    {
+        await MoveMouseAsync(windowId, 2, 2, cancellationToken);
+        using var baselineScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+        var recognizedTexts = await _textRecognizer.RecognizeAsync(baselineScreen.Bytes, cancellationToken);
+        var observation = CreateConnectionScreenObservation(baselineScreen, ConnectionTextMatcher.Match(recognizedTexts));
+
+        if (observation is null || observation.Kind != expectedKind)
+            return false;
+
+        await MoveMouseAsync(windowId, observation.InteractionArea.CenterX, observation.InteractionArea.CenterY, cancellationToken);
+        var hoverConfirmationStopwatch = Stopwatch.StartNew();
+        var hoverConfirmationCount = 0;
+
+        while (hoverConfirmationCount < UserInterfaceStableConfirmationCount && hoverConfirmationStopwatch.ElapsedMilliseconds < ButtonStableConfirmationMilliseconds)
+        {
+            using var hoveredScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+            var differenceRatio = baselineScreen.CalculateDifferenceRatio(hoveredScreen, observation.InteractionArea);
+            hoverConfirmationCount = differenceRatio >= ButtonHoverDifferenceRatioThreshold ? hoverConfirmationCount + 1 : 0;
         }
 
-        Console.Error.WriteLine($"Visually confirmed navigation from the main menu to server {serverAddress}");
+        if (hoverConfirmationCount < UserInterfaceStableConfirmationCount)
+        {
+            Console.Error.WriteLine($"OCR-selected {expectedKind} did not visually respond to hover; rescanning");
+            return false;
+        }
+
+        await ClickMouseAsync(cancellationToken);
+        Console.Error.WriteLine($"Clicked OCR-selected {expectedKind} at {observation.InteractionArea}");
+        return true;
     }
 
-    async Task<string> SubmitDirectConnectionAsync(string windowId, string display, string serverAddress, CancellationToken cancellationToken)
+    bool AreMatchingConnectionScreenObservations(ConnectionScreenObservation left, ConnectionScreenObservation right)
     {
-        windowId = await VisuallyClickButtonAsync("Direct Connection", windowId, display, screen => screen.TryFindMultiplayerScreenDirectConnectionButton(out var button) ? button : null, cancellationToken);
-        await WaitForScreenTargetAsync("direct connection form", windowId, display, screen => screen.TryFindDirectConnectionScreen(out var directConnectionScreen) ? directConnectionScreen.JoinButton : null, cancellationToken);
-        await EnterServerAddressAsync(windowId, display, serverAddress, cancellationToken);
-        windowId = await VisuallyClickButtonAsync("Join Server", windowId, display, screen => screen.TryFindDirectConnectionScreen(out var directConnectionScreen) ? directConnectionScreen.JoinButton : null, cancellationToken);
-        await WaitForDirectConnectionScreenToCloseAsync(windowId, display, cancellationToken);
-        return windowId;
+        return left.Kind == right.Kind && AreMatchingRectangles(left.InteractionArea, right.InteractionArea);
     }
+
 
     async Task<bool> WaitForInteractiveGameScreenAsync(string windowId, string display, CancellationToken cancellationToken)
     {
@@ -948,36 +1016,8 @@ internal sealed partial class GameRuntime : IGameRuntime
                 }
 
                 await ClickMouseAsync(cancellationToken);
-                var clickConfirmationStopwatch = Stopwatch.StartNew();
-                var changedConfirmationCount = 0;
-                ScreenRectangle? remainingButton = button;
-
-                while (changedConfirmationCount < UserInterfaceStableConfirmationCount && clickConfirmationStopwatch.ElapsedMilliseconds < ButtonStableConfirmationMilliseconds)
-                {
-                    using var clickedScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
-                    remainingButton = locateButton(clickedScreen);
-
-                    if (remainingButton is null || !AreMatchingRectangles(button.Value, remainingButton.Value))
-                    {
-                        if (confirmCompletion is not null && await confirmCompletion(windowId, display, cancellationToken))
-                            return null;
-
-                        changedConfirmationCount++;
-                        continue;
-                    }
-
-                    changedConfirmationCount = 0;
-                }
-
-                if (changedConfirmationCount >= UserInterfaceStableConfirmationCount)
-                {
-                    Console.Error.WriteLine($"Visually confirmed {buttonName} click on attempt {attempt}");
-                    return windowId;
-                }
-
-                Console.Error.WriteLine($"The {buttonName} click on attempt {attempt} did not change the screen; retrying");
-                previousButton = remainingButton;
-                stableButtonStopwatch.Restart();
+                Console.Error.WriteLine($"Dispatched {buttonName} click on attempt {attempt}");
+                return windowId;
             }
             catch (InvalidOperationException)
             {

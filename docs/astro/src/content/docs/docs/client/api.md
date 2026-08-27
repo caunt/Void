@@ -17,7 +17,7 @@ JSON property names and enum values use camel case.
 | `POST` | `/api/game/start/vanilla` | `202` | Start a Mojang vanilla release. |
 | `POST` | `/api/game/start/neoforge` | `202` | Start a NeoForge release, latest stable by default. |
 | `POST` | `/api/game/start/curseforge` | `202` | Start a CurseForge modpack file. |
-| `POST` | `/api/game/connect` | `200` | Connect the ready game to a server. |
+| `POST` | `/api/game/connect` | `200` | Converge the running game on a server connection. |
 | `POST` | `/api/game/send-chat` | `204` | Send chat text or a command. |
 | `GET` | `/api/game/screenshot` | `200` | Return the Minecraft window as `image/png`. |
 | `POST` | `/api/game/stop` | `200` | Stop the current game. |
@@ -165,7 +165,9 @@ Replace the example CurseForge file identifier with the exact file you want to l
 
 ## Connecting
 
-The game must be `ready`. `port` must be between `1` and `65535`.
+The game must be running. `port` must be between `1` and `65535`. Connection navigation is idempotent for a given `host` and `port`: repeated callers join the same background operation, and an already-connected game returns its original result. A different target is rejected with `409 Conflict` while connecting or connected.
+
+Canceling an HTTP caller stops only that caller's wait. The background navigation continues from whichever Minecraft screen is currently visible until the game connects, exits, or is stopped through the API.
 
 ```bash
 curl --fail-with-body \

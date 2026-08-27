@@ -27,6 +27,7 @@ internal sealed partial class GameRuntime
 
         public int Width { get; }
         public int Height { get; }
+        public byte[] Bytes => _imageBytes;
 
         public static ScreenImage LoadPortablePixmap(byte[] imageBytes)
         {
@@ -195,6 +196,32 @@ internal sealed partial class GameRuntime
 
             directConnectionScreen = default;
             return false;
+        }
+
+        public ScreenRectangle FindInteractionArea(OcrRectangle textBounds)
+        {
+            var containingButton = FindButtons()
+                .Where(button => textBounds.CenterX >= button.Left && textBounds.CenterX <= button.Right)
+                .Where(button => textBounds.CenterY >= button.Top && textBounds.CenterY <= button.Bottom)
+                .OrderBy(button => button.Width * button.Height)
+                .FirstOrDefault();
+
+            if (containingButton != default)
+                return containingButton;
+
+            const int horizontalPadding = 24;
+            const int verticalPadding = 10;
+            var left = Math.Max(0, textBounds.Left - horizontalPadding);
+            var top = Math.Max(0, textBounds.Top - verticalPadding);
+            var right = Math.Min(Width, textBounds.Right + horizontalPadding);
+            var bottom = Math.Min(Height, textBounds.Bottom + verticalPadding);
+            return new ScreenRectangle(left, top, right - left, bottom - top);
+        }
+
+        public bool TryFindServerAddressField(OcrRectangle joinServerTextBounds, out ScreenRectangle serverAddressField)
+        {
+            var joinButton = FindInteractionArea(joinServerTextBounds);
+            return TryFindServerAddressField(joinButton, out serverAddressField);
         }
 
         public double CalculateDifferenceRatio(ScreenImage other, ScreenRectangle area, byte channelDifferenceThreshold = 20)
@@ -630,5 +657,7 @@ internal sealed partial class GameRuntime
         MultiplayerServerList,
         OnlinePlayWarning
     }
+
+    sealed record ConnectionScreenObservation(ConnectionNavigationKind Kind, ScreenRectangle InteractionArea);
 
 }

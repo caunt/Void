@@ -155,6 +155,62 @@ public sealed class GameCoordinatorTests
         await coordinator.StopAsync(CancellationToken.None);
     }
 
+    [Fact]
+    public async Task SameTargetConnectCallsShareBackgroundOperationAndReplayResult()
+    {
+        var runtime = new FakeGameRuntime { BlockConnect = true };
+        using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
+        await coordinator.StartAsync(CancellationToken.None);
+        await coordinator.StartVanillaAsync(new("1.21.11", []), CancellationToken.None);
+        runtime.CompleteLaunch();
+        await WaitForStateAsync(coordinator, GameState.Ready);
+
+        using var firstCallerCancellation = new CancellationTokenSource();
+        var firstConnect = coordinator.ConnectAsync(new("server", 25565), firstCallerCancellation.Token);
+        await WaitForOperationAsync(coordinator, "connect");
+        var secondConnect = coordinator.ConnectAsync(new("server", 25565), CancellationToken.None);
+
+        firstCallerCancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => firstConnect);
+        Assert.Equal(1, runtime.ConnectCount);
+        Assert.False(runtime.ConnectCancellationRequested);
+
+        runtime.CompleteConnect();
+        var response = await secondConnect.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+        var replay = await coordinator.ConnectAsync(new("server", 25565), CancellationToken.None);
+
+        Assert.Equal(response, replay);
+        Assert.Equal(GameState.Connected, coordinator.Status.State);
+        Assert.Equal(1, runtime.ConnectCount);
+
+        var exception = await Assert.ThrowsAsync<GameCommandException>(() => coordinator.ConnectAsync(new("other-server", 25565), CancellationToken.None));
+        Assert.Equal(409, exception.StatusCode);
+
+        await coordinator.StopGameAsync(CancellationToken.None);
+        await coordinator.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task StopCancelsSharedBackgroundConnect()
+    {
+        var runtime = new FakeGameRuntime { BlockConnect = true };
+        using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
+        await coordinator.StartAsync(CancellationToken.None);
+        await coordinator.StartVanillaAsync(new("1.21.11", []), CancellationToken.None);
+        runtime.CompleteLaunch();
+        await WaitForStateAsync(coordinator, GameState.Ready);
+
+        var connect = coordinator.ConnectAsync(new("server", 25565), CancellationToken.None);
+        await WaitForOperationAsync(coordinator, "connect");
+        await coordinator.StopGameAsync(CancellationToken.None);
+
+        await Assert.ThrowsAnyAsync<Exception>(() => connect);
+        Assert.True(runtime.ConnectCancellationRequested);
+        Assert.Equal(GameState.Idle, coordinator.Status.State);
+
+        await coordinator.StopAsync(CancellationToken.None);
+    }
+
     private static async Task WaitForStateAsync(GameCoordinator coordinator, GameState expected)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -163,15 +219,27 @@ public sealed class GameCoordinatorTests
             await Task.Delay(10, timeout.Token);
     }
 
+    private static async Task WaitForOperationAsync(GameCoordinator coordinator, string operation)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+        while (coordinator.Status.Operation != operation || coordinator.Status.OperationState is not OperationState.Running)
+            await Task.Delay(10, timeout.Token);
+    }
+
     private sealed class FakeGameRuntime : IGameRuntime
     {
         private TaskCompletionSource<RunningGame> _launch = CreateLaunchCompletion();
         private TaskCompletionSource<StopMode>? _stop;
+        private TaskCompletionSource? _connect;
         private FakeManagedProcess? _process;
 
         public bool BlockStop { get; init; }
+        public bool BlockConnect { get; init; }
         public int LaunchCount { get; private set; }
         public int StopCount { get; private set; }
+        public int ConnectCount { get; private set; }
+        public bool ConnectCancellationRequested { get; private set; }
         public string? LastVanillaVersion { get; private set; }
         public string? LastNeoForgeVersion { get; private set; }
 
@@ -186,6 +254,11 @@ public sealed class GameCoordinatorTests
             _process?.Exit(0);
             _process = null;
             _stop?.SetResult(StopMode.Graceful);
+        }
+
+        public void CompleteConnect()
+        {
+            _connect?.SetResult();
         }
 
         public Task WriteOptionsAsync(string options, CancellationToken cancellationToken) => Task.CompletedTask;
@@ -204,7 +277,21 @@ public sealed class GameCoordinatorTests
 
         public Task<RunningGame> LaunchCurseForgeAsync(string slug, int fileId, IReadOnlyList<string> arguments, CancellationToken cancellationToken) => BeginLaunch(cancellationToken);
 
-        public Task ConnectAsync(string host, int port, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task ConnectAsync(string host, int port, CancellationToken cancellationToken)
+        {
+            ConnectCount++;
+
+            if (!BlockConnect)
+                return Task.CompletedTask;
+
+            _connect = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            cancellationToken.Register(() =>
+            {
+                ConnectCancellationRequested = true;
+                _connect.TrySetCanceled(cancellationToken);
+            });
+            return _connect.Task;
+        }
 
         public Task SendChatAsync(string message, CancellationToken cancellationToken) => Task.CompletedTask;
 
