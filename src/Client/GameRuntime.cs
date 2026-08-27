@@ -617,10 +617,8 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         ConnectionScreenObservation? previousObservation = null;
         var stableObservationCount = 0;
 
-        while (true)
+        while (!cancellationToken.IsCancellationRequested)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             try
             {
                 using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
@@ -665,6 +663,8 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
                 stableObservationCount = 0;
             }
         }
+
+        cancellationToken.ThrowIfCancellationRequested();
     }
 
     ConnectionScreenObservation? CreateConnectionScreenObservation(ScreenImage screen, IReadOnlyDictionary<ConnectionTextAction, ConnectionTextMatch> matches)

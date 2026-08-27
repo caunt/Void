@@ -72,7 +72,7 @@ internal sealed class GameTextRecognizer : IAsyncDisposable
         await process.StandardInput.WriteLineAsync(request.AsMemory(), cancellationToken);
         await process.StandardInput.FlushAsync(cancellationToken);
 
-        while (true)
+        while (!cancellationToken.IsCancellationRequested)
         {
             var line = await process.StandardOutput.ReadLineAsync(cancellationToken)
                        ?? throw new IOException("OCR worker exited without returning a response");
@@ -91,6 +91,9 @@ internal sealed class GameTextRecognizer : IAsyncDisposable
 
             return response.Items ?? [];
         }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        return [];
     }
 
     private Process EnsureWorker()
