@@ -75,7 +75,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m venv /opt/paddleocr \
- && /opt/paddleocr/bin/pip install --no-cache-dir --index-url https://www.paddlepaddle.org.cn/packages/stable/cpu/ paddlepaddle==3.2.2 \
+ && /opt/paddleocr/bin/pip install --no-cache-dir --index-url https://www.paddlepaddle.org.cn/packages/stable/cpu/ paddlepaddle==3.3.1 \
  && /opt/paddleocr/bin/pip install --no-cache-dir paddleocr==3.7.0
 
 COPY ocr-worker.py /opt/portableminecraftclient/ocr-worker.py

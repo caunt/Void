@@ -24,6 +24,8 @@ def create_model():
         use_doc_unwarping=False,
         use_textline_orientation=False,
         device="cpu",
+        enable_mkldnn=False,
+        cpu_threads=4,
     )
 
 

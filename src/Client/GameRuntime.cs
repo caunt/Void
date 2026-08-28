@@ -736,7 +736,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         if (!emptyScreen.IsServerAddressFieldEmpty(serverAddressField))
             return false;
 
-        await PasteTextAsync(null, serverAddress, display, cancellationToken);
+        await TypeTextAsync(null, serverAddress, 25, cancellationToken);
         using var enteredScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
         var differenceRatio = emptyScreen.CalculateDifferenceRatio(enteredScreen, serverAddressField.Inset(3));
 
