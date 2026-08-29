@@ -39,6 +39,8 @@ public sealed class ConnectionTextMatcherTests
     [InlineData("Proceed", false, "Proceed")]
     [InlineData("Direct Connection", false, "DirectConnection")]
     [InlineData("Back", false, "Back")]
+    [InlineData("Back to Server List", false, "Back")]
+    [InlineData("Return to Server List", false, "Back")]
     [InlineData("Back to Game", false, "BackToGame")]
     public void SelectsActionFromCurrentScreenText(string text, bool hasServerAddressField, string expected)
     {

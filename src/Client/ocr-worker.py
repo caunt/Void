@@ -24,8 +24,13 @@ def create_model():
         use_doc_unwarping=False,
         use_textline_orientation=False,
         device="cpu",
-        enable_mkldnn=False,
-        cpu_threads=4,
+        engine="onnxruntime",
+        engine_config={
+            "providers": ["CPUExecutionProvider"],
+            "intra_op_num_threads": 4,
+            "inter_op_num_threads": 1,
+            "execution_mode": "sequential",
+        },
     )
 
 

@@ -211,11 +211,42 @@ public sealed class GameCoordinatorTests
         await coordinator.StopAsync(CancellationToken.None);
     }
 
+    [Fact]
+    public async Task SoleConnectCallerCancellationCancelsBackgroundOperation()
+    {
+        var runtime = new FakeGameRuntime { BlockConnect = true };
+        using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
+        await coordinator.StartAsync(CancellationToken.None);
+        await coordinator.StartVanillaAsync(new("1.21.11", []), CancellationToken.None);
+        runtime.CompleteLaunch();
+        await WaitForStateAsync(coordinator, GameState.Ready);
+
+        using var callerCancellation = new CancellationTokenSource();
+        var connect = coordinator.ConnectAsync(new("server", 25565), callerCancellation.Token);
+        await WaitForOperationAsync(coordinator, "connect");
+        callerCancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => connect);
+        await WaitForOperationStateAsync(coordinator, OperationState.Canceled);
+        Assert.True(runtime.ConnectCancellationRequested);
+
+        await coordinator.StopGameAsync(CancellationToken.None);
+        await coordinator.StopAsync(CancellationToken.None);
+    }
+
     private static async Task WaitForStateAsync(GameCoordinator coordinator, GameState expected)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
         while (coordinator.Status.State != expected)
+            await Task.Delay(10, timeout.Token);
+    }
+
+    private static async Task WaitForOperationStateAsync(GameCoordinator coordinator, OperationState expected)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+        while (coordinator.Status.OperationState != expected)
             await Task.Delay(10, timeout.Token);
     }
 

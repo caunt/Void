@@ -649,6 +649,9 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
 
                 Console.Error.WriteLine($"OCR selected {observation.Kind} at {observation.InteractionArea}");
 
+                if (observation.Kind is ConnectionNavigationKind.Back)
+                    Console.Error.WriteLine("Visually confirmed that the connection failed; returning to the server list to retry");
+
                 if (observation.Kind is ConnectionNavigationKind.JoinServer)
                     await EnterServerAddressAsync(windowId, display, serverAddress, cancellationToken);
 

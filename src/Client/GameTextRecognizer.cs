@@ -230,15 +230,15 @@ internal static class ConnectionTextMatcher
     private const double MinimumConfidence = 0.65;
     private const double MinimumSimilarity = 0.80;
 
-    private static readonly IReadOnlyDictionary<ConnectionTextAction, string> Labels = new Dictionary<ConnectionTextAction, string>
+    private static readonly IReadOnlyDictionary<ConnectionTextAction, IReadOnlyList<string>> Labels = new Dictionary<ConnectionTextAction, IReadOnlyList<string>>
     {
-        [ConnectionTextAction.Multiplayer] = "multiplayer",
-        [ConnectionTextAction.Proceed] = "proceed",
-        [ConnectionTextAction.DirectConnection] = "directconnection",
-        [ConnectionTextAction.ServerAddress] = "serveraddress",
-        [ConnectionTextAction.JoinServer] = "joinserver",
-        [ConnectionTextAction.Back] = "back",
-        [ConnectionTextAction.BackToGame] = "backtogame"
+        [ConnectionTextAction.Multiplayer] = ["multiplayer"],
+        [ConnectionTextAction.Proceed] = ["proceed"],
+        [ConnectionTextAction.DirectConnection] = ["directconnection"],
+        [ConnectionTextAction.ServerAddress] = ["serveraddress"],
+        [ConnectionTextAction.JoinServer] = ["joinserver"],
+        [ConnectionTextAction.Back] = ["back", "backtoserverlist", "returntoserverlist"],
+        [ConnectionTextAction.BackToGame] = ["backtogame"]
     };
 
     public static IReadOnlyDictionary<ConnectionTextAction, ConnectionTextMatch> Match(IEnumerable<RecognizedText> recognizedTexts)
@@ -255,9 +255,9 @@ internal static class ConnectionTextMatcher
             if (normalizedText.Length is 0)
                 continue;
 
-            foreach (var (action, label) in Labels)
+            foreach (var (action, labels) in Labels)
             {
-                var similarity = CalculateSimilarity(normalizedText, label);
+                var similarity = labels.Max(label => CalculateSimilarity(normalizedText, label));
 
                 if (similarity < MinimumSimilarity)
                     continue;

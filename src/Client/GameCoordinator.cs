@@ -15,7 +15,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         AllowSynchronousContinuations = false
     });
     private readonly List<Task> _ownedTasks = [];
-    private readonly List<TaskCompletionSource<ConnectGameResponse>> _connectWaiters = [];
+    private readonly List<ConnectWaiter> _connectWaiters = [];
     private GameStatus _status = new(GameState.Idle, 0, null, OperationState.None, null, null, null, null, null, [], DateTimeOffset.UtcNow);
     private RunningGame? _game;
     private CancellationTokenSource? _activeCancellation;
@@ -52,7 +52,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
 
     public async Task<ConnectGameResponse> ConnectAsync(ConnectGameRequest request, CancellationToken cancellationToken)
     {
-        return await EnqueueAsync<ConnectGameResponse>(completion => new ConnectMessage(request, completion), cancellationToken);
+        return await EnqueueAsync<ConnectGameResponse>(completion => new ConnectMessage(request, completion, cancellationToken), cancellationToken);
     }
 
     public async Task SendChatAsync(SendChatRequest request, CancellationToken cancellationToken)
@@ -123,6 +123,9 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
                 break;
             case ConnectMessage connect:
                 HandleConnect(connect);
+                break;
+            case ConnectWaiterCanceled canceled:
+                HandleConnectWaiterCanceled(canceled);
                 break;
             case SendChatMessage chat:
                 HandleSendChat(chat);
@@ -264,7 +267,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         if (_connectingServer is not null)
         {
             if (_connectingServer == server)
-                _connectWaiters.Add(message.Completion);
+                AddConnectWaiter(message);
             else
                 message.Completion.SetException(Conflict("A connection to a different server is already in progress"));
 
@@ -282,9 +285,30 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         _activeCancellation = cancellation;
         _connectingServer = server;
         _connectOperationId = operationId;
-        _connectWaiters.Add(message.Completion);
+        AddConnectWaiter(message);
         Publish(Status with { OperationId = operationId, Operation = "connect", OperationState = OperationState.Running, Message = "connect running", Error = null, UpdatedAt = DateTimeOffset.UtcNow });
         Own(ObserveConnectAsync(operationId, server, runtime.ConnectAsync(host, message.Request.Port, cancellation.Token), cancellation));
+    }
+
+    private void AddConnectWaiter(ConnectMessage message)
+    {
+        var registration = message.RequestCancellation.Register(() => _messages.Writer.TryWrite(new ConnectWaiterCanceled(message.Completion, message.RequestCancellation)));
+        _connectWaiters.Add(new(message.Completion, registration));
+    }
+
+    private void HandleConnectWaiterCanceled(ConnectWaiterCanceled message)
+    {
+        var waiter = _connectWaiters.FirstOrDefault(waiter => waiter.Completion == message.Completion);
+
+        if (waiter is null)
+            return;
+
+        waiter.CancellationRegistration.Dispose();
+        _connectWaiters.Remove(waiter);
+        waiter.Completion.TrySetCanceled(message.CancellationToken);
+
+        if (_connectWaiters.Count is 0 && _connectingServer is not null)
+            _activeCancellation?.Cancel();
     }
 
     private void HandleSendChat(SendChatMessage message)
@@ -430,13 +454,17 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
 
         var waiters = _connectWaiters.ToArray();
         _connectWaiters.Clear();
+
+        foreach (var waiter in waiters)
+            waiter.CancellationRegistration.Dispose();
+
         _connectingServer = null;
         _connectOperationId = null;
 
         if (completed.OperationId != Status.OperationId)
         {
             foreach (var waiter in waiters)
-                waiter.TrySetException(Conflict($"connect was superseded by operation {Status.OperationId}"));
+                waiter.Completion.TrySetException(Conflict($"connect was superseded by operation {Status.OperationId}"));
 
             return;
         }
@@ -451,9 +479,9 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             foreach (var waiter in waiters)
             {
                 if (completed.Canceled)
-                    waiter.TrySetCanceled();
+                    waiter.Completion.TrySetCanceled();
                 else
-                    waiter.TrySetException(completed.Error);
+                    waiter.Completion.TrySetException(completed.Error);
             }
 
             return;
@@ -463,7 +491,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         Publish(Status with { State = GameState.Connected, Server = completed.Server, OperationState = OperationState.Succeeded, Message = "Interactive game connection confirmed", Error = null, UpdatedAt = DateTimeOffset.UtcNow });
 
         foreach (var waiter in waiters)
-            waiter.TrySetResult(_connectedResponse);
+            waiter.Completion.TrySetResult(_connectedResponse);
     }
 
     private void HandleVoidOperationCompleted(VoidOperationCompleted completed)
@@ -685,7 +713,10 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
     private void CancelConnectWaiters()
     {
         foreach (var waiter in _connectWaiters)
-            waiter.TrySetCanceled();
+        {
+            waiter.CancellationRegistration.Dispose();
+            waiter.Completion.TrySetCanceled();
+        }
 
         _connectWaiters.Clear();
         _connectingServer = null;
@@ -699,7 +730,8 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
     private abstract record Message;
     private sealed record StartMessage(string Kind, StartGameRequest? Request, StartNeoForgeGameRequest? NeoForgeRequest, StartCurseForgeGameRequest? CurseForgeRequest, TaskCompletionSource<GameStatus> Completion) : Message;
     private sealed record StopMessage(TaskCompletionSource<StopGameResponse> Completion) : Message;
-    private sealed record ConnectMessage(ConnectGameRequest Request, TaskCompletionSource<ConnectGameResponse> Completion) : Message;
+    private sealed record ConnectMessage(ConnectGameRequest Request, TaskCompletionSource<ConnectGameResponse> Completion, CancellationToken RequestCancellation) : Message;
+    private sealed record ConnectWaiterCanceled(TaskCompletionSource<ConnectGameResponse> Completion, CancellationToken CancellationToken) : Message;
     private sealed record SendChatMessage(SendChatRequest Request, TaskCompletionSource<bool> Completion, CancellationToken RequestCancellation) : Message;
     private sealed record ScreenshotMessage(TaskCompletionSource<byte[]> Completion, CancellationToken RequestCancellation) : Message;
     private sealed record PlayersMessage(TaskCompletionSource<GamePlayers> Completion, CancellationToken RequestCancellation) : Message;
@@ -710,4 +742,5 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
     private sealed record VoidOperationCompleted(long OperationId, string Kind, Exception? Error, bool Canceled, CancellationTokenSource Cancellation, TaskCompletionSource<bool> Completion) : Message;
     private sealed record ScreenshotCompleted(long OperationId, byte[]? Image, Exception? Error, bool Canceled, CancellationTokenSource Cancellation, TaskCompletionSource<byte[]> Completion) : Message;
     private sealed record ProcessExited(int ProcessId, int ExitCode) : Message;
+    private sealed record ConnectWaiter(TaskCompletionSource<ConnectGameResponse> Completion, CancellationTokenRegistration CancellationRegistration);
 }
