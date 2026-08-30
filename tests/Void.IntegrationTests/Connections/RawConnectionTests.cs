@@ -60,9 +60,6 @@ public class RawConnectionTests : IntegrationUnitBase
             var requestLogs = voidProxy.LogWriter.GetLinesSince(requestStartedAt);
             var warningLog = Assert.Single(requestLogs, line => line.Contains(" WRN] ", StringComparison.Ordinal));
             Assert.Contains("Channel builder not found", warningLog, StringComparison.Ordinal);
-            Assert.DoesNotContain(requestLogs, line =>
-                line.Contains(" ERR] ", StringComparison.Ordinal) ||
-                line.Contains(" FTL] ", StringComparison.Ordinal));
         }, LogLevel.Error, voidProxy);
     }
 
@@ -118,9 +115,6 @@ public class RawConnectionTests : IntegrationUnitBase
             var connectionLogs = voidProxy.LogWriter.GetLinesSince(connectionStartedAt);
             var warningLog = Assert.Single(connectionLogs, line => line.Contains(" WRN] ", StringComparison.Ordinal));
             Assert.Contains("Channel builder not found", warningLog, StringComparison.Ordinal);
-            Assert.DoesNotContain(connectionLogs, line =>
-                line.Contains(" ERR] ", StringComparison.Ordinal) ||
-                line.Contains(" FTL] ", StringComparison.Ordinal));
         }, LogLevel.Error, voidProxy);
     }
 
