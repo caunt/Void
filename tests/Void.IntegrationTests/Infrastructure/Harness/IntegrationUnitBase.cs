@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Void.IntegrationTests.Infrastructure.Exceptions;
 using Void.IntegrationTests.Infrastructure.Harness.Sides;
 
@@ -8,7 +9,12 @@ namespace Void.IntegrationTests.Infrastructure.Harness;
 
 public class IntegrationUnitBase
 {
-    public static async Task LoggedExecutorAsync(Func<Task> function, params IIntegrationSide[] sides)
+    public static Task LoggedExecutorAsync(Func<Task> function, params IIntegrationSide[] sides)
+    {
+        return LoggedExecutorAsync(function, LogLevel.Warning, sides);
+    }
+
+    public static async Task LoggedExecutorAsync(Func<Task> function, LogLevel minimumFailureLogLevel, params IIntegrationSide[] sides)
     {
         var voidLogWindowStartedAt = DateTime.UtcNow;
         var voidProxies = sides.OfType<VoidProxy>().Distinct().ToArray();
@@ -18,7 +24,7 @@ public class IntegrationUnitBase
             await function();
 
             foreach (var voidProxy in voidProxies)
-                voidProxy.AssertNoWarningOrHigherLogsSince(voidLogWindowStartedAt);
+                voidProxy.AssertNoLogsAtOrAboveSince(voidLogWindowStartedAt, minimumFailureLogLevel);
         }
         catch (Exception exception)
         {

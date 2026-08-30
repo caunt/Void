@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Logging;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
 using Void.IntegrationTests.Infrastructure.Harness;
@@ -57,11 +58,12 @@ public class RawConnectionTests : IntegrationUnitBase
             await playerDisconnectedTask;
 
             var requestLogs = voidProxy.LogWriter.GetLinesSince(requestStartedAt);
-            Assert.Contains(requestLogs, line => line.Contains("Channel builder not found", StringComparison.Ordinal));
+            var warningLog = Assert.Single(requestLogs, line => line.Contains(" WRN] ", StringComparison.Ordinal));
+            Assert.Contains("Channel builder not found", warningLog, StringComparison.Ordinal);
             Assert.DoesNotContain(requestLogs, line =>
                 line.Contains(" ERR] ", StringComparison.Ordinal) ||
                 line.Contains(" FTL] ", StringComparison.Ordinal));
-        }, voidProxy);
+        }, LogLevel.Error, voidProxy);
     }
 
     [Fact]
@@ -114,11 +116,12 @@ public class RawConnectionTests : IntegrationUnitBase
             await playerDisconnectedTask;
 
             var connectionLogs = voidProxy.LogWriter.GetLinesSince(connectionStartedAt);
-            Assert.Contains(connectionLogs, line => line.Contains("Channel builder not found", StringComparison.Ordinal));
+            var warningLog = Assert.Single(connectionLogs, line => line.Contains(" WRN] ", StringComparison.Ordinal));
+            Assert.Contains("Channel builder not found", warningLog, StringComparison.Ordinal);
             Assert.DoesNotContain(connectionLogs, line =>
                 line.Contains(" ERR] ", StringComparison.Ordinal) ||
                 line.Contains(" FTL] ", StringComparison.Ordinal));
-        }, voidProxy);
+        }, LogLevel.Error, voidProxy);
     }
 
     private static byte[] CreateHandshakePacket(int protocolVersion, string serverAddress, ushort serverPort)

@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Void.IntegrationTests.Infrastructure.Harness;
 using Void.IntegrationTests.Infrastructure.IO;
 using Void.Proxy;
@@ -81,13 +82,38 @@ public record VoidProxy(CollectingTextWriter LogWriter, VoidEntryPoint.RunResult
 
     public void AssertNoWarningOrHigherLogsSince(DateTime since)
     {
-        var unexpectedLogs = LogWriter.GetLinesSince(since).Where(line =>
-            line.Contains(" WRN] ", StringComparison.Ordinal) ||
-            line.Contains(" ERR] ", StringComparison.Ordinal) ||
-            line.Contains(" FTL] ", StringComparison.Ordinal)).ToArray();
+        AssertNoLogsAtOrAboveSince(since, LogLevel.Warning);
+    }
+
+    public void AssertNoLogsAtOrAboveSince(DateTime since, LogLevel minimumLogLevel)
+    {
+        var unexpectedLogs = LogWriter.GetLinesSince(since).Where(line => GetLogLevel(line) is { } logLevel && logLevel >= minimumLogLevel).ToArray();
 
         if (unexpectedLogs.Length > 0)
-            Assert.Fail($"Void emitted warning or higher logs:\n{string.Join('\n', unexpectedLogs)}");
+            Assert.Fail($"Void emitted {minimumLogLevel} or higher logs:\n{string.Join('\n', unexpectedLogs)}");
+    }
+
+    private static LogLevel? GetLogLevel(string line)
+    {
+        if (line.Contains(" VRB] ", StringComparison.Ordinal))
+            return LogLevel.Trace;
+
+        if (line.Contains(" DBG] ", StringComparison.Ordinal))
+            return LogLevel.Debug;
+
+        if (line.Contains(" INF] ", StringComparison.Ordinal))
+            return LogLevel.Information;
+
+        if (line.Contains(" WRN] ", StringComparison.Ordinal))
+            return LogLevel.Warning;
+
+        if (line.Contains(" ERR] ", StringComparison.Ordinal))
+            return LogLevel.Error;
+
+        if (line.Contains(" FTL] ", StringComparison.Ordinal))
+            return LogLevel.Critical;
+
+        return null;
     }
 
     public async Task WaitForPlayerDisconnectionAsync(string username, CancellationToken cancellationToken = default)
