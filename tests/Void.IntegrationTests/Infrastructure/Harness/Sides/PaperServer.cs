@@ -11,6 +11,14 @@ namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
 
 public record PaperServer(IContainer Container, string LogFileName) : IIntegrationSide
 {
+    private const int MaximumStartupAttempts = 3;
+    private static readonly string[] TransientStartupFailureMarkers =
+    [
+        "DnsNameResolverTimeoutException",
+        "SearchDomainUnknownHostException",
+        "UnknownHostException",
+        "Temporary failure in name resolution"
+    ];
     private DateTime _readLogsSince = DateTime.UtcNow;
     public int Port => Container.GetMappedPublicPort(containerPort: 25565);
 
@@ -77,11 +85,47 @@ public record PaperServer(IContainer Container, string LogFileName) : IIntegrati
         if (maximumPlayers is { } value)
             builder = builder.WithEnvironment("MAX_PLAYERS", value.ToString());
 
-        var container = builder.Build();
+        for (var startupAttempt = 1; startupAttempt <= MaximumStartupAttempts; startupAttempt++)
+        {
+            var container = builder.Build();
 
-        await container.StartAsync(cancellationToken);
+            try
+            {
+                await container.StartAsync(cancellationToken);
+                return new PaperServer(container, logFileName);
+            }
+            catch (ContainerNotRunningException exception) when (startupAttempt < MaximumStartupAttempts && IsTransientStartupFailure(exception))
+            {
+                await DisposeFailedContainerAsync(container);
+                var retryDelay = TimeSpan.FromSeconds(2 << (startupAttempt - 1));
+                Console.WriteLine($"[Void.IntegrationTests] Paper server startup attempt {startupAttempt} of {MaximumStartupAttempts} failed because of a transient DNS error; retrying in {retryDelay.TotalSeconds:0} seconds");
+                await Task.Delay(retryDelay, cancellationToken);
+            }
+            catch
+            {
+                await DisposeFailedContainerAsync(container);
+                throw;
+            }
+        }
 
-        return new PaperServer(container, logFileName);
+        throw new InvalidOperationException("Paper server startup attempts were exhausted without returning or throwing.");
+    }
+
+    private static bool IsTransientStartupFailure(ContainerNotRunningException exception)
+    {
+        return Array.Exists(TransientStartupFailureMarkers, marker => exception.ToString().Contains(marker, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static async Task DisposeFailedContainerAsync(IContainer container)
+    {
+        try
+        {
+            await container.DisposeAsync();
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine($"[Void.IntegrationTests] Disposing a failed Paper server container also failed: {exception.Message}");
+        }
     }
 
     public async Task<IEnumerable<string>> ReadLogsAsync(DateTime since, CancellationToken cancellationToken = default)
