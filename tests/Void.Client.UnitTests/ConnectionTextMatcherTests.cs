@@ -74,6 +74,23 @@ public sealed class ConnectionTextMatcherTests
         Assert.Equal(ConnectionNavigationKind.DirectConnection, ConnectionNavigationSelector.Select(matches, hasServerAddressField: false)?.Kind);
     }
 
+    [Theory]
+    [InlineData(0.85, 0.90, true)]
+    [InlineData(0.84, 1.00, false)]
+    [InlineData(1.00, 0.89, false)]
+    public void IdentifiesReliableFastMatches(double confidence, double similarity, bool expected)
+    {
+        var match = new ConnectionTextMatch(ConnectionTextAction.Multiplayer, "Multiplayer", confidence, similarity, new(10, 10, 100, 20));
+
+        Assert.Equal(expected, ConnectionOcrFallbackPolicy.IsReliable(match));
+    }
+
+    [Fact]
+    public void RejectsMissingFastMatch()
+    {
+        Assert.False(ConnectionOcrFallbackPolicy.IsReliable(null));
+    }
+
     private static RecognizedText CreateRecognizedText(string text, double confidence)
     {
         return new(text, confidence, [[10, 10], [110, 10], [110, 30], [10, 30]]);

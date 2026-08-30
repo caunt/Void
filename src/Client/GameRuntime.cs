@@ -622,13 +622,12 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
             {
                 await MoveMouseAsync(windowId, 2, 2, cancellationToken);
                 using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
-                var recognizedTexts = await _textRecognizer.RecognizeAsync(screen.Bytes, cancellationToken);
-                var matches = ConnectionTextMatcher.Match(recognizedTexts);
-                var observation = CreateConnectionScreenObservation(screen, matches);
+                var recognition = await RecognizeConnectionScreenAsync(screen, cancellationToken);
+                var observation = recognition.Observation;
 
                 if (observation is null)
                 {
-                    if (matches.Count is 0 && await TryConfirmInteractiveGameScreenAsync(windowId, display, cancellationToken))
+                    if (recognition.Matches.Count is 0 && await TryConfirmInteractiveGameScreenAsync(windowId, display, cancellationToken))
                         return;
 
                     continue;
@@ -659,6 +658,22 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         cancellationToken.ThrowIfCancellationRequested();
     }
 
+    async Task<ConnectionScreenRecognition> RecognizeConnectionScreenAsync(ScreenImage screen, CancellationToken cancellationToken)
+    {
+        var recognizedTexts = await _textRecognizer.RecognizeAsync(screen.Bytes, OcrModelTier.Small, cancellationToken);
+        var matches = ConnectionTextMatcher.Match(recognizedTexts);
+        var observation = CreateConnectionScreenObservation(screen, matches);
+
+        if (ConnectionOcrFallbackPolicy.IsReliable(observation?.TextMatch))
+            return new(matches, observation);
+
+        Console.Error.WriteLine("Small OCR did not find a reliable connection action; retrying the current screen with medium OCR");
+        recognizedTexts = await _textRecognizer.RecognizeAsync(screen.Bytes, OcrModelTier.Medium, cancellationToken);
+        matches = ConnectionTextMatcher.Match(recognizedTexts);
+        observation = CreateConnectionScreenObservation(screen, matches);
+        return new(matches, observation);
+    }
+
     ConnectionScreenObservation? CreateConnectionScreenObservation(ScreenImage screen, IReadOnlyDictionary<ConnectionTextAction, ConnectionTextMatch> matches)
     {
         var hasServerAddressField = matches.TryGetValue(ConnectionTextAction.JoinServer, out var joinServer)
@@ -668,7 +683,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         if (selection is null || !matches.TryGetValue(selection.TextAction, out var match))
             return null;
 
-        return new(selection.Kind, screen.FindInteractionArea(match.Bounds));
+        return new(selection.Kind, screen.FindInteractionArea(match.Bounds), match);
     }
 
     async Task<bool> TryClickCurrentConnectionActionAsync(ConnectionScreenObservation observation, ScreenImage baselineScreen, string windowId, string display, CancellationToken cancellationToken)

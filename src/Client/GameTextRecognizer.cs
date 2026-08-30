@@ -15,7 +15,7 @@ internal sealed class GameTextRecognizer : IAsyncDisposable
     private Process? _process;
     private long _requestId;
 
-    public async Task<IReadOnlyList<RecognizedText>> RecognizeAsync(byte[] image, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<RecognizedText>> RecognizeAsync(byte[] image, OcrModelTier modelTier, CancellationToken cancellationToken)
     {
         await _lock.WaitAsync(cancellationToken);
 
@@ -25,7 +25,7 @@ internal sealed class GameTextRecognizer : IAsyncDisposable
             {
                 try
                 {
-                    return await RecognizeCoreAsync(image, cancellationToken);
+                    return await RecognizeCoreAsync(image, modelTier, cancellationToken);
                 }
                 catch (Exception exception) when (exception is IOException or JsonException or InvalidOperationException)
                 {
@@ -64,11 +64,11 @@ internal sealed class GameTextRecognizer : IAsyncDisposable
         GC.SuppressFinalize(this);
     }
 
-    private async Task<IReadOnlyList<RecognizedText>> RecognizeCoreAsync(byte[] image, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<RecognizedText>> RecognizeCoreAsync(byte[] image, OcrModelTier modelTier, CancellationToken cancellationToken)
     {
         var process = EnsureWorker();
         var requestId = Interlocked.Increment(ref _requestId);
-        var request = JsonSerializer.Serialize(new OcrRequest(requestId, Convert.ToBase64String(image)), JsonSerializerOptions.Web);
+        var request = JsonSerializer.Serialize(new OcrRequest(requestId, Convert.ToBase64String(image), modelTier.ToString().ToLowerInvariant()), JsonSerializerOptions.Web);
         await process.StandardInput.WriteLineAsync(request.AsMemory(), cancellationToken);
         await process.StandardInput.FlushAsync(cancellationToken);
 
@@ -158,11 +158,17 @@ internal sealed class GameTextRecognizer : IAsyncDisposable
         }
     }
 
-    private sealed record OcrRequest(long Id, string Image);
+    private sealed record OcrRequest(long Id, string Image, string Model);
     private sealed record OcrResponse(long? Id, IReadOnlyList<RecognizedText>? Items, string? Error);
 }
 
 internal sealed record RecognizedText(string Text, double Confidence, IReadOnlyList<IReadOnlyList<double>> Polygon);
+
+internal enum OcrModelTier
+{
+    Small,
+    Medium
+}
 
 internal sealed class OcrRecognitionException(string message, Exception innerException) : Exception(message, innerException);
 
@@ -216,6 +222,17 @@ internal static class ConnectionNavigationSelector
 }
 
 internal sealed record ConnectionTextMatch(ConnectionTextAction Action, string Text, double Confidence, double Similarity, OcrRectangle Bounds);
+
+internal static class ConnectionOcrFallbackPolicy
+{
+    private const double MinimumFastConfidence = 0.85;
+    private const double MinimumFastSimilarity = 0.90;
+
+    public static bool IsReliable(ConnectionTextMatch? match)
+    {
+        return match is not null && match.Confidence >= MinimumFastConfidence && match.Similarity >= MinimumFastSimilarity;
+    }
+}
 
 internal readonly record struct OcrRectangle(int Left, int Top, int Width, int Height)
 {

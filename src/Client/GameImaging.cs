@@ -658,6 +658,8 @@ internal sealed partial class GameRuntime
         OnlinePlayWarning
     }
 
-    sealed record ConnectionScreenObservation(ConnectionNavigationKind Kind, ScreenRectangle InteractionArea);
+    sealed record ConnectionScreenObservation(ConnectionNavigationKind Kind, ScreenRectangle InteractionArea, ConnectionTextMatch TextMatch);
+
+    sealed record ConnectionScreenRecognition(IReadOnlyDictionary<ConnectionTextAction, ConnectionTextMatch> Matches, ConnectionScreenObservation? Observation);
 
 }
