@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Void.IntegrationTests.Infrastructure.Exceptions;
 using Void.IntegrationTests.Infrastructure.Harness;
 using Void.IntegrationTests.Infrastructure.IO;
 using Void.Proxy;
@@ -142,7 +143,8 @@ public record VoidProxy(CollectingTextWriter LogWriter, VoidEntryPoint.RunResult
         var connected = false;
         long? requestId = null;
 
-        await LogWriter.WaitForLineAsync(line =>
+        using var waiterCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var readyTask = LogWriter.WaitForLineAsync(line =>
         {
             using var _ = stateLock.EnterScope();
 
@@ -171,7 +173,38 @@ public record VoidProxy(CollectingTextWriter LogWriter, VoidEntryPoint.RunResult
             }
 
             return line.Contains($"Keep Alive hit {requestId.Value} received", StringComparison.Ordinal);
-        }, cancellationToken);
+        }, waiterCancellationTokenSource.Token);
+        var disconnectedTask = LogWriter.WaitForLineAsync(
+            line => line.Contains($"Player {username} disconnected", StringComparison.Ordinal),
+            waiterCancellationTokenSource.Token);
+
+        try
+        {
+            var completedTask = await Task.WhenAny(readyTask, disconnectedTask);
+
+            if (completedTask == disconnectedTask)
+            {
+                var disconnectedLine = await disconnectedTask;
+                throw new IntegrationTestException($"Player {username} disconnected before becoming ready on {serverName}. {GetState()} Log: {disconnectedLine}");
+            }
+
+            await readyTask;
+        }
+        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+        {
+            throw new IntegrationTestException($"Timed out waiting for player {username} to become ready on {serverName}. {GetState()}", exception);
+        }
+        finally
+        {
+            await waiterCancellationTokenSource.CancelAsync();
+            await Task.WhenAll((Task)readyTask, disconnectedTask).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        }
+
+        string GetState()
+        {
+            using var _ = stateLock.EnterScope();
+            return $"Connected: {connected}; request id: {requestId?.ToString() ?? "not observed"}.";
+        }
     }
 
     public async ValueTask DisposeAsync()

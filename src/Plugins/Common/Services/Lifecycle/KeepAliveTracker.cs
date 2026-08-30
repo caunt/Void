@@ -10,6 +10,8 @@ namespace Void.Proxy.Plugins.Common.Services.Lifecycle;
 public class KeepAliveTracker : IDisposable
 {
     private readonly Lock _stateLock = new();
+    private CancellationToken _timeoutCancellationToken;
+    private IPlayer? _timeoutPlayer;
     private bool _requestOutstanding;
     private long _requestId = DefaultRequestId;
 
@@ -31,10 +33,13 @@ public class KeepAliveTracker : IDisposable
             keepAliveResponseTimeout = keepAliveRequestInterval * 3;
 
         createRequestIdFunction ??= CreateRequestId;
+        var debouncerCallback = Debouncer.Debounce<IPlayer, CancellationToken, Task<bool>>(HandleTimeoutAsync, keepAliveResponseTimeout);
 
         var timer = new System.Timers.Timer(keepAliveRequestInterval) { AutoReset = false };
         timer.Elapsed += (sender, eventArgs) =>
         {
+            CancellationToken timeoutCancellationToken = default;
+            IPlayer? timeoutPlayer = null;
             long? requestId = null;
 
             using (_stateLock.EnterScope())
@@ -46,17 +51,27 @@ public class KeepAliveTracker : IDisposable
                 {
                     _requestOutstanding = true;
                     requestId = _requestId = createRequestIdFunction();
+
+                    if (_timeoutPlayer is { } currentPlayer)
+                        timeoutPlayer = currentPlayer;
+
+                    timeoutCancellationToken = _timeoutCancellationToken;
                 }
             }
 
             if (requestId is { } value)
+            {
                 _ = sendRequestFunction(value);
+
+                if (timeoutPlayer is { } timeoutTarget)
+                    debouncerCallback.Invoke(timeoutTarget, timeoutCancellationToken);
+            }
             else
                 timer.Start();
         };
         timer.Start();
 
-        DebouncerCallback = Debouncer.Debounce<IPlayer, CancellationToken, Task<bool>>(HandleTimeoutAsync, keepAliveResponseTimeout);
+        DebouncerCallback = debouncerCallback;
         Sender = timer;
     }
 
@@ -122,12 +137,15 @@ public class KeepAliveTracker : IDisposable
         await RefreshAsync(player, cancellationToken);
     }
 
-    internal async ValueTask RefreshAsync(IPlayer player, CancellationToken cancellationToken)
+    internal ValueTask RefreshAsync(IPlayer player, CancellationToken cancellationToken)
     {
         player.Logger.LogTrace("Refreshing Keep Alive");
 
         using (_stateLock.EnterScope())
         {
+            _timeoutPlayer = player;
+            _timeoutCancellationToken = cancellationToken;
+
             if (!_requestOutstanding)
             {
                 Sender.Stop();
@@ -135,19 +153,17 @@ public class KeepAliveTracker : IDisposable
             }
         }
 
-        if (DebouncerCallback.Invoke(player, cancellationToken) is not { } timedoutTask)
-            return;
-
-        if (!await timedoutTask)
-            return;
-
-        throw new Exception("Keep Alive pong invoked when player is already timed out.");
+        return ValueTask.CompletedTask;
     }
 
     private async Task<bool> HandleTimeoutAsync(IPlayer player, CancellationToken cancellationToken)
     {
         try
         {
+            using (_stateLock.EnterScope())
+                if (!_requestOutstanding)
+                    return false;
+
             if (player.Link is not { IsAlive: true })
                 return false;
 
