@@ -27,7 +27,7 @@ def create_model():
         engine="onnxruntime",
         engine_config={
             "providers": ["CPUExecutionProvider"],
-            "intra_op_num_threads": 4,
+            "intra_op_num_threads": 2,
             "inter_op_num_threads": 1,
             "execution_mode": "sequential",
         },

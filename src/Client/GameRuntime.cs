@@ -43,6 +43,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
     private const int UserInterfaceStableConfirmationCount = 2;
     private const int ButtonStableConfirmationMilliseconds = 1000;
     private const int UserInterfacePollDelayMilliseconds = 100;
+    private const double ButtonStableDifferenceRatioThreshold = 0.01;
     private const double ButtonHoverDifferenceRatioThreshold = 0.03;
     private const double ServerAddressFieldDifferenceRatioThreshold = 0.01;
     private const double ChatInputBrightnessRatioThreshold = 0.7;
@@ -614,13 +615,12 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         var display = Environment.GetEnvironmentVariable("DISPLAY") ?? DefaultDisplay;
         var windowId = await WaitForPreparedLargestWindowAsync(display, cancellationToken);
         var serverAddress = $"{host}:{port}";
-        ConnectionScreenObservation? previousObservation = null;
-        var stableObservationCount = 0;
 
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
+                await MoveMouseAsync(windowId, 2, 2, cancellationToken);
                 using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
                 var recognizedTexts = await _textRecognizer.RecognizeAsync(screen.Bytes, cancellationToken);
                 var matches = ConnectionTextMatcher.Match(recognizedTexts);
@@ -628,24 +628,11 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
 
                 if (observation is null)
                 {
-                    previousObservation = null;
-                    stableObservationCount = 0;
-
                     if (matches.Count is 0 && await TryConfirmInteractiveGameScreenAsync(windowId, display, cancellationToken))
                         return;
 
                     continue;
                 }
-
-                if (previousObservation is not null && AreMatchingConnectionScreenObservations(previousObservation, observation))
-                    stableObservationCount++;
-                else
-                    stableObservationCount = 1;
-
-                previousObservation = observation;
-
-                if (stableObservationCount < UserInterfaceStableConfirmationCount)
-                    continue;
 
                 Console.Error.WriteLine($"OCR selected {observation.Kind} at {observation.InteractionArea}");
 
@@ -653,17 +640,19 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
                     Console.Error.WriteLine("Visually confirmed that the connection failed; returning to the server list to retry");
 
                 if (observation.Kind is ConnectionNavigationKind.JoinServer)
+                {
                     await EnterServerAddressAsync(windowId, display, serverAddress, cancellationToken);
-
-                _ = await TryClickCurrentConnectionActionAsync(observation.Kind, windowId, display, cancellationToken);
-                previousObservation = null;
-                stableObservationCount = 0;
+                    using var preparedScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+                    _ = await TryClickCurrentConnectionActionAsync(observation, preparedScreen, windowId, display, cancellationToken);
+                }
+                else
+                {
+                    _ = await TryClickCurrentConnectionActionAsync(observation, screen, windowId, display, cancellationToken);
+                }
             }
             catch (InvalidOperationException)
             {
                 windowId = await WaitForPreparedLargestWindowAsync(display, cancellationToken);
-                previousObservation = null;
-                stableObservationCount = 0;
             }
         }
 
@@ -682,15 +671,17 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         return new(selection.Kind, screen.FindInteractionArea(match.Bounds));
     }
 
-    async Task<bool> TryClickCurrentConnectionActionAsync(ConnectionNavigationKind expectedKind, string windowId, string display, CancellationToken cancellationToken)
+    async Task<bool> TryClickCurrentConnectionActionAsync(ConnectionScreenObservation observation, ScreenImage baselineScreen, string windowId, string display, CancellationToken cancellationToken)
     {
-        await MoveMouseAsync(windowId, 2, 2, cancellationToken);
-        using var baselineScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
-        var recognizedTexts = await _textRecognizer.RecognizeAsync(baselineScreen.Bytes, cancellationToken);
-        var observation = CreateConnectionScreenObservation(baselineScreen, ConnectionTextMatcher.Match(recognizedTexts));
+        await Task.Delay(UserInterfacePollDelayMilliseconds, cancellationToken);
+        using var stableScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+        var stableDifferenceRatio = baselineScreen.CalculateDifferenceRatio(stableScreen, observation.InteractionArea);
 
-        if (observation is null || observation.Kind != expectedKind)
+        if (stableDifferenceRatio > ButtonStableDifferenceRatioThreshold)
+        {
+            Console.Error.WriteLine($"OCR-selected {observation.Kind} changed before hover ({stableDifferenceRatio:P1}); rescanning");
             return false;
+        }
 
         await MoveMouseAsync(windowId, observation.InteractionArea.CenterX, observation.InteractionArea.CenterY, cancellationToken);
         var hoverConfirmationStopwatch = Stopwatch.StartNew();
@@ -699,26 +690,20 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         while (hoverConfirmationCount < UserInterfaceStableConfirmationCount && hoverConfirmationStopwatch.ElapsedMilliseconds < ButtonStableConfirmationMilliseconds)
         {
             using var hoveredScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
-            var differenceRatio = baselineScreen.CalculateDifferenceRatio(hoveredScreen, observation.InteractionArea);
+            var differenceRatio = stableScreen.CalculateDifferenceRatio(hoveredScreen, observation.InteractionArea);
             hoverConfirmationCount = differenceRatio >= ButtonHoverDifferenceRatioThreshold ? hoverConfirmationCount + 1 : 0;
         }
 
         if (hoverConfirmationCount < UserInterfaceStableConfirmationCount)
         {
-            Console.Error.WriteLine($"OCR-selected {expectedKind} did not visually respond to hover; rescanning");
+            Console.Error.WriteLine($"OCR-selected {observation.Kind} did not visually respond to hover; rescanning");
             return false;
         }
 
         await ClickMouseAsync(cancellationToken);
-        Console.Error.WriteLine($"Clicked OCR-selected {expectedKind} at {observation.InteractionArea}");
+        Console.Error.WriteLine($"Clicked OCR-selected {observation.Kind} at {observation.InteractionArea}");
         return true;
     }
-
-    bool AreMatchingConnectionScreenObservations(ConnectionScreenObservation left, ConnectionScreenObservation right)
-    {
-        return left.Kind == right.Kind && AreMatchingRectangles(left.InteractionArea, right.InteractionArea);
-    }
-
 
     async Task<bool> WaitForInteractiveGameScreenAsync(string windowId, string display, CancellationToken cancellationToken)
     {
