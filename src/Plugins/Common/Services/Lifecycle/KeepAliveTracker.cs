@@ -9,6 +9,8 @@ namespace Void.Proxy.Plugins.Common.Services.Lifecycle;
 
 public class KeepAliveTracker : IDisposable
 {
+    private readonly Lock _stateLock = new();
+    private bool _requestOutstanding;
     private long _requestId = DefaultRequestId;
 
     public const int DefaultRequestId = -1;
@@ -30,11 +32,27 @@ public class KeepAliveTracker : IDisposable
 
         createRequestIdFunction ??= CreateRequestId;
 
-        var timer = new System.Timers.Timer(keepAliveRequestInterval);
-        timer.Elapsed += (eventArgs, sender) =>
+        var timer = new System.Timers.Timer(keepAliveRequestInterval) { AutoReset = false };
+        timer.Elapsed += (sender, eventArgs) =>
         {
-            if (canSendKeepAliveFunction())
-                _ = sendRequestFunction(_requestId = createRequestIdFunction());
+            long? requestId = null;
+
+            using (_stateLock.EnterScope())
+            {
+                if (_requestOutstanding)
+                    return;
+
+                if (canSendKeepAliveFunction())
+                {
+                    _requestOutstanding = true;
+                    requestId = _requestId = createRequestIdFunction();
+                }
+            }
+
+            if (requestId is { } value)
+                _ = sendRequestFunction(value);
+            else
+                timer.Start();
         };
         timer.Start();
 
@@ -67,8 +85,39 @@ public class KeepAliveTracker : IDisposable
     {
         player.Logger.LogTrace("Keep Alive hit {Id} received", id);
 
-        if (_requestId != id)
-            player.Logger.LogWarning("Keep Alive hit {Id} does not match last sent id {LastId}", id, _requestId);
+        long expectedRequestId;
+        bool requestOutstanding;
+
+        using (_stateLock.EnterScope())
+        {
+            expectedRequestId = _requestId;
+            requestOutstanding = _requestOutstanding;
+
+            if (requestOutstanding && expectedRequestId == id)
+                _requestOutstanding = false;
+        }
+
+        if (!requestOutstanding)
+        {
+            player.Logger.LogWarning("Keep Alive hit {Id} when no request is outstanding", id);
+            return;
+        }
+
+        if (expectedRequestId != id)
+        {
+            player.Logger.LogWarning("Keep Alive hit {Id} does not match outstanding id {ExpectedId}", id, expectedRequestId);
+            return;
+        }
+
+        await RefreshAsync(player, cancellationToken);
+    }
+
+    internal async ValueTask PongAsync(IPlayer player, CancellationToken cancellationToken)
+    {
+        player.Logger.LogTrace("Keep Alive response with legacy zero id received");
+
+        using (_stateLock.EnterScope())
+            _requestOutstanding = false;
 
         await RefreshAsync(player, cancellationToken);
     }
@@ -77,8 +126,14 @@ public class KeepAliveTracker : IDisposable
     {
         player.Logger.LogTrace("Refreshing Keep Alive");
 
-        Sender.Stop();
-        Sender.Start();
+        using (_stateLock.EnterScope())
+        {
+            if (!_requestOutstanding)
+            {
+                Sender.Stop();
+                Sender.Start();
+            }
+        }
 
         if (DebouncerCallback.Invoke(player, cancellationToken) is not { } timedoutTask)
             return;

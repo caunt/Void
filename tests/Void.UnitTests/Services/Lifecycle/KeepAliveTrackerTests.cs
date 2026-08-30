@@ -1,4 +1,7 @@
+using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Void.Minecraft.Buffers;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Registries.Transformations.Mappings;
@@ -12,6 +15,24 @@ namespace Void.UnitTests.Services.Lifecycle;
 
 public class KeepAliveTrackerTests
 {
+    [Fact]
+    public async Task Sender_DoesNotSendAnotherRequestWhileResponseIsOutstanding()
+    {
+        using var requestSent = new SemaphoreSlim(0);
+        var requestsSent = 0;
+        using var tracker = new KeepAliveTracker(_ =>
+        {
+            Interlocked.Increment(ref requestsSent);
+            requestSent.Release();
+            return Task.CompletedTask;
+        }, TimeSpan.FromMilliseconds(20));
+
+        Assert.True(await requestSent.WaitAsync(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken));
+        await Task.Delay(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, Volatile.Read(ref requestsSent));
+    }
+
     [Fact]
     public void UsesLegacyRequestIdWidth_ReturnsExpectedBoundary()
     {

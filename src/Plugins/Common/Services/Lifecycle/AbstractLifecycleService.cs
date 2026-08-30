@@ -98,12 +98,12 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
             case KeepAliveResponsePacket keepAliveResponse:
                 if (KeepAliveTracker.UsesLegacyRequestIdWidth(@event.Player.ProtocolVersion) && keepAliveResponse.Id is 0)
                 {
-                    await PongKeepAliveTracker(@event.Player, cancellationToken: cancellationToken);
+                    await PongKeepAliveTracker(@event.Player, acknowledgeOutstandingRequest: true, cancellationToken: cancellationToken);
                     break;
                 }
 
                 @event.Cancel();
-                await PongKeepAliveTracker(@event.Player, keepAliveResponse.Id, cancellationToken);
+                await PongKeepAliveTracker(@event.Player, keepAliveResponse.Id, cancellationToken: cancellationToken);
                 break;
         }
     }
@@ -163,7 +163,7 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
     protected abstract ValueTask<bool> SendChatMessageAsync(IPlayer player, Component text, CancellationToken cancellationToken);
     protected abstract bool IsSupportedVersion(ProtocolVersion version);
 
-    private async ValueTask PongKeepAliveTracker(IPlayer player, long? id = null, CancellationToken cancellationToken = default)
+    private async ValueTask PongKeepAliveTracker(IPlayer player, long? id = null, bool acknowledgeOutstandingRequest = false, CancellationToken cancellationToken = default)
     {
         var key = player.GetStableHashCode();
 
@@ -190,6 +190,8 @@ public abstract class AbstractLifecycleService(ILogger logger, IEventService eve
 
         if (id is { } responseId)
             await tracker.PongAsync(player, responseId, cancellationToken);
+        else if (acknowledgeOutstandingRequest)
+            await tracker.PongAsync(player, cancellationToken);
         else
             await tracker.RefreshAsync(player, cancellationToken);
     }
