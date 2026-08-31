@@ -18,6 +18,7 @@ using Void.Proxy.Plugins.Common.Network.Bundles;
 using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
 using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 using Void.Proxy.Plugins.Common.Services.Authentication;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Entities;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Extensions;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Packets.Serverbound;
@@ -118,6 +119,8 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
             await link.SendPacketAsync(packet, cancellationToken);
 
         var joinGamePacket = (JoinGamePacket)packet;
+        if (link.Player.ProtocolVersion <= ProtocolVersion.MINECRAFT_1_15_2)
+            link.Player.Context.Services.GetRequiredService<LegacyEntityIdState>().Update(joinGamePacket.EntityId);
 
         if (authenticationResult == AuthenticationResult.AlreadyAuthenticated)
         {

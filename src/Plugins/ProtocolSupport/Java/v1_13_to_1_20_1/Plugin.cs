@@ -10,6 +10,7 @@ using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Channels;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Commands;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Compression;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Encryption;
+using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Entities;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Lifecycle;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Registries;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_13_to_1_20_1.Transformations;
@@ -37,6 +38,7 @@ public class Plugin(IDependencyService dependencies) : IProtocolPlugin
             services.AddSingleton<RegistryService>();
             services.AddSingleton<CompressionService>();
             services.AddSingleton<EncryptionService>();
+            services.AddSingleton<EntityIdService>();
             services.AddSingleton<AuthenticationService>();
             services.AddSingleton<TransformationService>();
 
@@ -45,6 +47,7 @@ public class Plugin(IDependencyService dependencies) : IProtocolPlugin
             services.AddSingleton<LifecycleService>();
 
             services.AddScoped<IBundleService, Common.Network.Bundles.BundleService>();
+            services.AddScoped<LegacyEntityIdState>();
         });
     }
 }
