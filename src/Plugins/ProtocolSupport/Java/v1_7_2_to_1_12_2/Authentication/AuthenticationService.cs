@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Void.Minecraft.Links.Extensions;
 using Void.Minecraft.Network;
 using Void.Minecraft.Network.Messages.Packets;
@@ -16,7 +15,6 @@ using Void.Proxy.Plugins.Common.Extensions;
 using Void.Proxy.Plugins.Common.Network.Packets.Clientbound;
 using Void.Proxy.Plugins.Common.Network.Packets.Serverbound;
 using Void.Proxy.Plugins.Common.Services.Authentication;
-using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Entities;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Extensions;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Clientbound;
 using Void.Proxy.Plugins.ProtocolSupport.Java.v1_7_2_to_1_12_2.Packets.Serverbound;
@@ -94,7 +92,6 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
             await link.SendPacketAsync(packet, cancellationToken);
 
         var joinGamePacket = (JoinGamePacket)packet;
-        link.Player.Context.Services.GetRequiredService<LegacyEntityIdState>().Update(joinGamePacket.EntityId);
 
         if (authenticationResult == AuthenticationResult.AlreadyAuthenticated)
         {
