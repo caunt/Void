@@ -63,9 +63,13 @@ internal sealed record ConnectGameResponse(ServerAddress Server, DateTimeOffset 
 
 internal sealed record Position(double X, double Y, double Z);
 
-internal sealed record GamePlayer(string? Uuid, string? Name, Position Position);
+internal sealed record BodyRotation(double Yaw);
 
-internal sealed record RemoteGamePlayer(string? Uuid, string? Name, Position Position, double DistanceFromLocal);
+internal sealed record HeadRotation(double Yaw, double Pitch);
+
+internal sealed record GamePlayer(string? Uuid, string? Name, Position Position, BodyRotation Body, HeadRotation Head);
+
+internal sealed record RemoteGamePlayer(string? Uuid, string? Name, Position Position, BodyRotation Body, HeadRotation Head);
 
 internal sealed record GamePlayers(GamePlayer Local, IReadOnlyList<RemoteGamePlayer> Remote);
 

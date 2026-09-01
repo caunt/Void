@@ -113,6 +113,10 @@ public abstract class ProxiedPlayerTestBase(PaperFixture paperFixture, VoidFixtu
                     Assert.Equal(secondGame.Username, reciprocalPlayers.Second.Local.Name);
                     AssertPosition(reciprocalPlayers.Second.Local.Position, reciprocalPlayers.SecondAsSeenByFirst.Position);
                     AssertPosition(reciprocalPlayers.First.Local.Position, reciprocalPlayers.FirstAsSeenBySecond.Position);
+                    AssertRotation(reciprocalPlayers.First.Local.Body, reciprocalPlayers.First.Local.Head);
+                    AssertRotation(reciprocalPlayers.Second.Local.Body, reciprocalPlayers.Second.Local.Head);
+                    AssertRotation(reciprocalPlayers.FirstAsSeenBySecond.Body, reciprocalPlayers.FirstAsSeenBySecond.Head);
+                    AssertRotation(reciprocalPlayers.SecondAsSeenByFirst.Body, reciprocalPlayers.SecondAsSeenByFirst.Head);
                     return;
                 }
 
@@ -153,6 +157,13 @@ public abstract class ProxiedPlayerTestBase(PaperFixture paperFixture, VoidFixtu
         return Math.Abs(expected.X - actual.X) <= CoordinateTolerance &&
                Math.Abs(expected.Y - actual.Y) <= CoordinateTolerance &&
                Math.Abs(expected.Z - actual.Z) <= CoordinateTolerance;
+    }
+
+    private static void AssertRotation(PortableMinecraftClient.Game.ApiBodyRotation body, PortableMinecraftClient.Game.ApiHeadRotation head)
+    {
+        Assert.True(double.IsFinite(body.Yaw));
+        Assert.True(double.IsFinite(head.Yaw));
+        Assert.True(double.IsFinite(head.Pitch));
     }
 
     private sealed record ReciprocalPlayers(PortableMinecraftClient.Game.ApiGamePlayers First, PortableMinecraftClient.Game.ApiGamePlayers Second, PortableMinecraftClient.Game.ApiRemoteGamePlayer SecondAsSeenByFirst, PortableMinecraftClient.Game.ApiRemoteGamePlayer FirstAsSeenBySecond);

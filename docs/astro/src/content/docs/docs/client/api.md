@@ -69,20 +69,23 @@ Stop polling with a failure if the identifier changes or the operation becomes `
   "local": {
     "uuid": "f84c6a79-7f8b-4b7c-a02a-7bc7e3f99574",
     "name": "LocalPlayer",
-    "position": { "x": 0.5, "y": 64.0, "z": 0.5 }
+    "position": { "x": 0.5, "y": 64.0, "z": 0.5 },
+    "body": { "yaw": 15.0 },
+    "head": { "yaw": 20.0, "pitch": -5.0 }
   },
   "remote": [
     {
       "uuid": "62ca1f73-b4d1-47bb-b176-052905a08b35",
       "name": "Neighbour",
       "position": { "x": 2.5, "y": 64.0, "z": 0.5 },
-      "distanceFromLocal": 2.0
+      "body": { "yaw": -10.0 },
+      "head": { "yaw": -5.0, "pitch": 2.5 }
     }
   ]
 }
 ```
 
-Every returned player always contains finite `x`, `y`, and `z` coordinates. Profile identity is `null` when unavailable. A client without a current player world returns `409 Conflict`; tracker initialization or complete-coordinate failures return `503 Service Unavailable` rather than partial player data.
+Every returned player always contains finite `x`, `y`, and `z` coordinates plus finite body yaw, head yaw, and head pitch values in degrees. Profile identity is `null` when unavailable. A client without a current player world returns `409 Conflict`; tracker initialization or complete position or rotation failures return `503 Service Unavailable` rather than partial player data.
 
 ## Health
 

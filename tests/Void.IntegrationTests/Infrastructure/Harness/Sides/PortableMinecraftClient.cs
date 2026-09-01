@@ -440,9 +440,13 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
         public record ApiPosition(double X, double Y, double Z);
 
-        public record ApiGamePlayer(string? Uuid, string? Name, ApiPosition Position);
+        public record ApiBodyRotation(double Yaw);
 
-        public record ApiRemoteGamePlayer(string? Uuid, string? Name, ApiPosition Position, double DistanceFromLocal);
+        public record ApiHeadRotation(double Yaw, double Pitch);
+
+        public record ApiGamePlayer(string? Uuid, string? Name, ApiPosition Position, ApiBodyRotation Body, ApiHeadRotation Head);
+
+        public record ApiRemoteGamePlayer(string? Uuid, string? Name, ApiPosition Position, ApiBodyRotation Body, ApiHeadRotation Head);
 
         public record ApiGamePlayers(ApiGamePlayer Local, IReadOnlyList<ApiRemoteGamePlayer> Remote);
     }

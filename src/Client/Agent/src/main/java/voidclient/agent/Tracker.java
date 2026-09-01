@@ -28,6 +28,8 @@ public final class Tracker {
     private static final String GameProfileName = "com.mojang.authlib.GameProfile";
     private static final Map<ClassLoader, Map<String, PositionSource[]>> LoaderPositionSources = Collections.synchronizedMap(new WeakHashMap<ClassLoader, Map<String, PositionSource[]>>());
     private static final Map<String, PositionSource[]> BootstrapPositionSources = new java.util.HashMap<String, PositionSource[]>();
+    private static final Map<ClassLoader, Map<String, RotationSources>> LoaderRotationSources = Collections.synchronizedMap(new WeakHashMap<ClassLoader, Map<String, RotationSources>>());
+    private static final Map<String, RotationSources> BootstrapRotationSources = new java.util.HashMap<String, RotationSources>();
     private static final List<WeakReference<Object>> ObservedPlayers = Collections.synchronizedList(new ArrayList<WeakReference<Object>>());
     private static Instrumentation instrumentation;
     private static String expectedName;
@@ -85,7 +87,7 @@ public final class Tracker {
 
             StringBuilder json = new StringBuilder();
             json.append("{\"status\":\"ok\",\"local\":");
-            appendPlayer(json, localPlayer, null);
+            appendPlayer(json, localPlayer);
             json.append(",\"remote\":[");
             boolean first = true;
             List<PlayerCandidate> exposedPlayers = new ArrayList<PlayerCandidate>();
@@ -109,8 +111,7 @@ public final class Tracker {
                 if (!first)
                     json.append(',');
 
-                double distance = distance(localPlayer.position, player.position);
-                appendPlayer(json, player, distance);
+                appendPlayer(json, player);
                 exposedPlayers.add(player);
                 first = false;
             }
@@ -208,18 +209,25 @@ public final class Tracker {
             return null;
 
         PositionReader reader = findPositionReader(value.getClass());
+        RotationReader rotationReader = findRotationReader(value.getClass());
 
-        if (reader == null)
+        if (reader == null || rotationReader == null)
             return null;
 
         double[] position = reader.read(value);
+        double[] rotation = rotationReader.read(value);
 
         for (double coordinate : position) {
             if (!Double.isFinite(coordinate))
                 throw new IllegalStateException("A tracked player has a non-finite coordinate");
         }
 
-        return new PlayerCandidate(value, profileId(profile), profileName(profile), position);
+        for (double angle : rotation) {
+            if (!Double.isFinite(angle))
+                throw new IllegalStateException("A tracked player has a non-finite rotation");
+        }
+
+        return new PlayerCandidate(value, profileId(profile), profileName(profile), position, rotation);
     }
 
     private static PlayerCandidate findLocalPlayer(List<PlayerCandidate> candidates) {
@@ -481,6 +489,71 @@ public final class Tracker {
         return null;
     }
 
+    private static RotationReader findRotationReader(Class<?> type) {
+        List<Class<?>> hierarchy = new ArrayList<Class<?>>();
+        PositionSource bodyYaw = null;
+        PositionSource headYaw = null;
+        PositionSource headPitch = null;
+
+        for (Class<?> current = type; current != null; current = current.getSuperclass())
+            hierarchy.add(current);
+
+        for (int index = hierarchy.size() - 1; index >= 0; index--) {
+            Class<?> current = hierarchy.get(index);
+            RotationSources sources;
+
+            synchronized (LoaderRotationSources) {
+                Map<String, RotationSources> sourcesByClass = current.getClassLoader() == null ? BootstrapRotationSources : LoaderRotationSources.get(current.getClassLoader());
+                sources = sourcesByClass == null ? null : sourcesByClass.get(current.getName().replace('.', '/'));
+            }
+
+            if (sources == null) {
+                sources = discoverRotationSources(current);
+
+                if (sources != null)
+                    registerRotationSources(current.getClassLoader(), current.getName().replace('.', '/'), sources);
+            }
+
+            if (sources == null)
+                continue;
+
+            if (bodyYaw == null)
+                bodyYaw = sources.bodyYaw;
+
+            if (headYaw == null)
+                headYaw = sources.headYaw;
+
+            if (headPitch == null)
+                headPitch = sources.headPitch;
+
+            RotationSources combined = new RotationSources(bodyYaw, headYaw, headPitch);
+
+            if (combined.isComplete())
+                return RotationReader.create(type.getClassLoader(), combined);
+        }
+
+        return null;
+    }
+
+    private static void registerRotationSources(ClassLoader loader, String className, RotationSources sources) {
+        synchronized (LoaderRotationSources) {
+            Map<String, RotationSources> sourcesByClass;
+
+            if (loader == null) {
+                sourcesByClass = BootstrapRotationSources;
+            } else {
+                sourcesByClass = LoaderRotationSources.get(loader);
+
+                if (sourcesByClass == null) {
+                    sourcesByClass = new java.util.HashMap<String, RotationSources>();
+                    LoaderRotationSources.put(loader, sourcesByClass);
+                }
+            }
+
+            sourcesByClass.put(className, sources);
+        }
+    }
+
     private static PositionSource[] discoverPositionSources(Class<?> type) {
         if (type.getName().startsWith("java."))
             return null;
@@ -500,6 +573,30 @@ public final class Tracker {
                 output.write(buffer, 0, count);
 
             return PositionSourceDiscovery.findPositionSources(output.toByteArray());
+        } catch (IOException exception) {
+            return null;
+        }
+    }
+
+    private static RotationSources discoverRotationSources(Class<?> type) {
+        if (type.getName().startsWith("java."))
+            return null;
+
+        String resourceName = type.getName().replace('.', '/') + ".class";
+        ClassLoader loader = type.getClassLoader();
+
+        try (InputStream stream = loader == null ? ClassLoader.getSystemResourceAsStream(resourceName) : loader.getResourceAsStream(resourceName)) {
+            if (stream == null)
+                return null;
+
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int count;
+
+            while ((count = stream.read(buffer)) >= 0)
+                output.write(buffer, 0, count);
+
+            return RotationSourceDiscovery.findRotationSources(output.toByteArray());
         } catch (IOException exception) {
             return null;
         }
@@ -546,13 +643,6 @@ public final class Tracker {
         } catch (Throwable exception) {
             return null;
         }
-    }
-
-    private static double distance(double[] left, double[] right) {
-        double x = left[0] - right[0];
-        double y = left[1] - right[1];
-        double z = left[2] - right[2];
-        return Math.sqrt(x * x + y * y + z * z);
     }
 
     static Double boundingBoxMinimumY(Object entity, double x, double z) {
@@ -637,7 +727,7 @@ public final class Tracker {
         return null;
     }
 
-    private static void appendPlayer(StringBuilder json, PlayerCandidate player, Double distance) {
+    private static void appendPlayer(StringBuilder json, PlayerCandidate player) {
         json.append("{\"uuid\":");
         appendString(json, player.id);
         json.append(",\"name\":");
@@ -645,10 +735,9 @@ public final class Tracker {
         json.append(",\"position\":{\"x\":").append(player.position[0]);
         json.append(",\"y\":").append(player.position[1]);
         json.append(",\"z\":").append(player.position[2]).append('}');
-
-        if (distance != null)
-            json.append(",\"distanceFromLocal\":").append(distance.doubleValue());
-
+        json.append(",\"body\":{\"yaw\":").append(player.rotation[0]).append('}');
+        json.append(",\"head\":{\"yaw\":").append(player.rotation[1]);
+        json.append(",\"pitch\":").append(player.rotation[2]).append('}');
         json.append('}');
     }
 
@@ -693,12 +782,62 @@ public final class Tracker {
         private final String id;
         private final String name;
         private final double[] position;
+        private final double[] rotation;
 
-        private PlayerCandidate(Object value, String id, String name, double[] position) {
+        private PlayerCandidate(Object value, String id, String name, double[] position, double[] rotation) {
             this.value = value;
             this.id = id;
             this.name = name;
             this.position = position;
+            this.rotation = rotation;
+        }
+    }
+
+    private static final class RotationReader {
+        private final Field[] fields;
+        private final Method[] methods;
+
+        private RotationReader(Field[] fields, Method[] methods) {
+            this.fields = fields;
+            this.methods = methods;
+        }
+
+        private static RotationReader create(ClassLoader loader, RotationSources sources) {
+            PositionSource[] sourceValues = new PositionSource[] { sources.bodyYaw, sources.headYaw, sources.headPitch };
+            Field[] fields = new Field[sourceValues.length];
+            Method[] methods = new Method[sourceValues.length];
+
+            try {
+                for (int index = 0; index < sourceValues.length; index++) {
+                    PositionSource source = sourceValues[index];
+                    Class<?> owner = Class.forName(source.owner.replace('/', '.'), false, loader);
+
+                    if (source.method) {
+                        methods[index] = owner.getDeclaredMethod(source.name);
+                        methods[index].setAccessible(true);
+                    } else {
+                        fields[index] = owner.getDeclaredField(source.name);
+                        fields[index].setAccessible(true);
+                    }
+                }
+
+                return new RotationReader(fields, methods);
+            } catch (ReflectiveOperationException exception) {
+                throw new IllegalStateException("Could not resolve live player rotations", exception);
+            }
+        }
+
+        private double[] read(Object value) {
+            double[] result = new double[3];
+
+            try {
+                for (int index = 0; index < result.length; index++)
+                    result[index] = fields[index] == null ? ((Number) methods[index].invoke(value)).doubleValue() : fields[index].getFloat(value);
+
+                return result;
+            } catch (ReflectiveOperationException exception) {
+                throw new IllegalStateException("Could not read live player rotations", exception);
+            }
         }
     }
 

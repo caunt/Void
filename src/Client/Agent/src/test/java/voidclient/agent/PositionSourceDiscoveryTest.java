@@ -13,7 +13,9 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -43,6 +45,40 @@ public final class PositionSourceDiscoveryTest {
         Assert.assertEquals("b", sources[1].name);
         Assert.assertEquals("c", sources[2].name);
         Assert.assertTrue(sources[0].method);
+    }
+
+    @Test
+    public void discoversCurrentBodyAndHeadYawWithoutNames() {
+        ClassNode type = createLivingRotationType();
+
+        RotationSources sources = RotationSourceDiscovery.findRotationSources(type);
+
+        Assert.assertNotNull(sources);
+        Assert.assertEquals("body", sources.bodyYaw.name);
+        Assert.assertEquals("head", sources.headYaw.name);
+        Assert.assertNull(sources.headPitch);
+    }
+
+    @Test
+    public void discoversHeadPitchFromRotationSetterWithoutNames() {
+        ClassNode type = createEntityRotationType(false);
+
+        RotationSources sources = RotationSourceDiscovery.findRotationSources(type);
+
+        Assert.assertNotNull(sources);
+        Assert.assertNull(sources.bodyYaw);
+        Assert.assertNull(sources.headYaw);
+        Assert.assertEquals("pitch", sources.headPitch.name);
+    }
+
+    @Test
+    public void discoversHeadPitchThroughUnnamedSetterMethods() {
+        ClassNode type = createEntityRotationType(true);
+
+        RotationSources sources = RotationSourceDiscovery.findRotationSources(type);
+
+        Assert.assertNotNull(sources);
+        Assert.assertEquals("pitch", sources.headPitch.name);
     }
 
     @Test
@@ -120,6 +156,83 @@ public final class PositionSourceDiscoveryTest {
         distance.instructions.add(new InsnNode(Opcodes.DRETURN));
         type.methods.add(distance);
         return type;
+    }
+
+    private static ClassNode createLivingRotationType() {
+        ClassNode type = new ClassNode();
+        type.name = "x/living";
+        type.fields.add(new FieldNode(Opcodes.ACC_PRIVATE, "body", "F", null, null));
+        type.fields.add(new FieldNode(Opcodes.ACC_PRIVATE, "previousBody", "F", null, null));
+        type.fields.add(new FieldNode(Opcodes.ACC_PRIVATE, "head", "F", null, null));
+        type.fields.add(new FieldNode(Opcodes.ACC_PRIVATE, "previousHead", "F", null, null));
+        MethodNode turnHead = new MethodNode(Opcodes.ACC_PROTECTED, "a", "(FF)F", null, null);
+        turnHead.instructions.add(new VarInsnNode(Opcodes.FLOAD, 1));
+        turnHead.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        turnHead.instructions.add(new FieldInsnNode(Opcodes.GETFIELD, type.name, "body", "F"));
+        turnHead.instructions.add(new InsnNode(Opcodes.FSUB));
+        turnHead.instructions.add(new InsnNode(Opcodes.POP));
+        turnHead.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        turnHead.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        turnHead.instructions.add(new FieldInsnNode(Opcodes.GETFIELD, type.name, "body", "F"));
+        turnHead.instructions.add(new VarInsnNode(Opcodes.FLOAD, 1));
+        turnHead.instructions.add(new InsnNode(Opcodes.FADD));
+        turnHead.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, type.name, "body", "F"));
+        turnHead.instructions.add(new VarInsnNode(Opcodes.FLOAD, 2));
+        turnHead.instructions.add(new InsnNode(Opcodes.FRETURN));
+        type.methods.add(turnHead);
+        MethodNode snapshot = new MethodNode(Opcodes.ACC_PUBLIC, "b", "()V", null, null);
+        appendFieldCopy(snapshot, type.name, "head", "previousHead");
+        appendFieldCopy(snapshot, type.name, "body", "previousBody");
+        snapshot.instructions.add(new InsnNode(Opcodes.RETURN));
+        type.methods.add(snapshot);
+        return type;
+    }
+
+    private static void appendFieldCopy(MethodNode method, String owner, String source, String target) {
+        method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        method.instructions.add(new FieldInsnNode(Opcodes.GETFIELD, owner, source, "F"));
+        method.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, owner, target, "F"));
+    }
+
+    private static ClassNode createEntityRotationType(boolean methods) {
+        ClassNode type = new ClassNode();
+        type.name = "x/entity";
+        type.fields.add(new FieldNode(Opcodes.ACC_PRIVATE, "yaw", "F", null, null));
+        type.fields.add(new FieldNode(Opcodes.ACC_PRIVATE, "pitch", "F", null, null));
+
+        if (methods) {
+            type.methods.add(createRotationSetter(type.name, "c", "yaw"));
+            type.methods.add(createRotationSetter(type.name, "d", "pitch"));
+        }
+
+        MethodNode setRotation = new MethodNode(Opcodes.ACC_PUBLIC, "a", "(FF)V", null, null);
+        appendRotationAssignment(setRotation, type.name, methods ? "c" : "yaw", 1, methods);
+        appendRotationAssignment(setRotation, type.name, methods ? "d" : "pitch", 2, methods);
+        setRotation.instructions.add(new InsnNode(Opcodes.RETURN));
+        type.methods.add(setRotation);
+        return type;
+    }
+
+    private static MethodNode createRotationSetter(String owner, String name, String field) {
+        MethodNode setter = new MethodNode(Opcodes.ACC_PRIVATE, name, "(F)V", null, null);
+        setter.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        setter.instructions.add(new VarInsnNode(Opcodes.FLOAD, 1));
+        setter.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, owner, field, "F"));
+        setter.instructions.add(new InsnNode(Opcodes.RETURN));
+        return setter;
+    }
+
+    private static void appendRotationAssignment(MethodNode method, String owner, String name, int variable, boolean setter) {
+        method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        method.instructions.add(new VarInsnNode(Opcodes.FLOAD, variable));
+        method.instructions.add(new LdcInsnNode(Float.valueOf(360.0F)));
+        method.instructions.add(new InsnNode(Opcodes.FREM));
+
+        if (setter)
+            method.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, owner, name, "(F)V", false));
+        else
+            method.instructions.add(new FieldInsnNode(Opcodes.PUTFIELD, owner, name, "F"));
     }
 
     private static void appendCoordinate(MethodNode distance, String owner, String name, int variable, boolean methods) {

@@ -134,7 +134,12 @@ public sealed class GameCoordinatorTests
         var players = await coordinator.GetPlayersAsync(CancellationToken.None);
 
         Assert.Equal("local", players.Local.Name);
-        Assert.Equal(new Position(4, 6, 3), Assert.Single(players.Remote).Position);
+        Assert.Equal(new BodyRotation(10), players.Local.Body);
+        Assert.Equal(new HeadRotation(15, -5), players.Local.Head);
+        var remote = Assert.Single(players.Remote);
+        Assert.Equal(new Position(4, 6, 3), remote.Position);
+        Assert.Equal(new BodyRotation(20), remote.Body);
+        Assert.Equal(new HeadRotation(25, 5), remote.Head);
         Assert.Equal(acceptedLaunch.OperationId, operationId);
         Assert.Equal(operationId, coordinator.Status.OperationId);
 
@@ -331,8 +336,8 @@ public sealed class GameCoordinatorTests
         public Task<GamePlayers> ReadPlayersAsync(RunningGame game, CancellationToken cancellationToken)
         {
             return Task.FromResult(new GamePlayers(
-                new GamePlayer("local-id", "local", new Position(1, 2, 3)),
-                [new RemoteGamePlayer("other-id", "other", new Position(4, 6, 3), 5)]));
+                new GamePlayer("local-id", "local", new Position(1, 2, 3), new BodyRotation(10), new HeadRotation(15, -5)),
+                [new RemoteGamePlayer("other-id", "other", new Position(4, 6, 3), new BodyRotation(20), new HeadRotation(25, 5))]));
         }
 
         public Task<StopMode> StopAsync(RunningGame? game, CancellationToken cancellationToken)

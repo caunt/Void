@@ -171,12 +171,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
             ValidatePlayer(response.Local);
 
             foreach (var player in response.Remote)
-            {
                 ValidatePlayer(player);
-
-                if (!double.IsFinite(player.DistanceFromLocal))
-                    throw PlayersUnavailable("The Minecraft player tracker returned a non-finite player distance");
-            }
 
             return new(response.Local, response.Remote);
         }
@@ -382,12 +377,25 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
     {
         if (!double.IsFinite(player.Position.X) || !double.IsFinite(player.Position.Y) || !double.IsFinite(player.Position.Z))
             throw PlayersUnavailable("The Minecraft player tracker returned a non-finite player coordinate");
+
+        ValidateRotation(player.Body, player.Head);
     }
 
     private static void ValidatePlayer(RemoteGamePlayer player)
     {
         if (!double.IsFinite(player.Position.X) || !double.IsFinite(player.Position.Y) || !double.IsFinite(player.Position.Z))
             throw PlayersUnavailable("The Minecraft player tracker returned a non-finite player coordinate");
+
+        ValidateRotation(player.Body, player.Head);
+    }
+
+    private static void ValidateRotation(BodyRotation? body, HeadRotation? head)
+    {
+        if (body is null || head is null)
+            throw PlayersUnavailable("The Minecraft player tracker returned an incomplete player rotation");
+
+        if (!double.IsFinite(body.Yaw) || !double.IsFinite(head.Yaw) || !double.IsFinite(head.Pitch))
+            throw PlayersUnavailable("The Minecraft player tracker returned a non-finite player rotation");
     }
 
     private static GamePlayersException PlayersUnavailable(string message) => new(StatusCodes.Status503ServiceUnavailable, message);
