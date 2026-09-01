@@ -39,7 +39,7 @@ public class HandshakeService(IPlayerContext context, IPluginService plugins, Pl
         if (!_playerMods.TryGetValue(@event.Player, out var mods))
             return;
 
-        @event.Result = new HandshakeBuildEventResult(mods.HandshakePacket, mods.HandshakePacket.ServerAddress, mods.HandshakePacket.NextState);
+        @event.Result = new HandshakeBuildEventResult(mods.HandshakePacket, mods.HandshakePacket.ServerAddress, mods.HandshakePacket.NextState, mods.HandshakePacket.Markers.Contains(ForgeMarker.Fml.Name));
     }
 
     [Subscribe]

@@ -10,7 +10,7 @@ public record HandshakeBuildEvent(IPlayer Player, ILink Link) : IScopedEventWith
     public HandshakeBuildEventResult? Result { get; set; }
 }
 
-public record HandshakeBuildEventResult(IMinecraftServerboundPacket? Packet, string? ServerAddress, int NextState)
+public record HandshakeBuildEventResult(IMinecraftServerboundPacket? Packet, string? ServerAddress, int NextState, bool RequiresExtraRespawn = false)
 {
     public HandshakeBuildEventResult(int NextState) : this(Packet: null, ServerAddress: null, NextState)
     {

@@ -198,16 +198,20 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
 
         var playerAuthenticationResult = await AuthenticatePlayerAsync(@event.Link, cancellationToken);
         var serverAuthenticationResult = playerAuthenticationResult;
+        var handshakeBuildEventResult = new HandshakeBuildEventResult(NextState: 2);
 
         if (playerAuthenticationResult.IsAuthenticated)
-            serverAuthenticationResult = await AuthenticateServerAsync(@event.Link, playerAuthenticationResult, cancellationToken);
+        {
+            handshakeBuildEventResult = await events.ThrowWithResultAsync(new HandshakeBuildEvent(@event.Player, @event.Link), cancellationToken) ?? new(NextState: 2);
+            serverAuthenticationResult = await AuthenticateServerAsync(@event.Link, playerAuthenticationResult, handshakeBuildEventResult, cancellationToken);
+        }
 
         if (serverAuthenticationResult.IsAuthenticated)
         {
             if (playerAuthenticationResult != AuthenticationResult.AlreadyAuthenticated)
                 await FinishPlayerLoginAsync(@event.Link, cancellationToken);
 
-            await FinishServerAuthenticationAsync(@event.Link, playerAuthenticationResult, cancellationToken);
+            await FinishServerAuthenticationAsync(@event.Link, playerAuthenticationResult, handshakeBuildEventResult, cancellationToken);
         }
 
         @event.Result = serverAuthenticationResult;
@@ -237,7 +241,7 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         return AuthenticationResult.Authenticated;
     }
 
-    protected async ValueTask<AuthenticationResult> AuthenticateServerAsync(ILink link, AuthenticationResult authenticationResult, CancellationToken cancellationToken)
+    protected async ValueTask<AuthenticationResult> AuthenticateServerAsync(ILink link, AuthenticationResult authenticationResult, HandshakeBuildEventResult handshakeBuildEventResult, CancellationToken cancellationToken)
     {
         if (!link.Player.IsMinecraft)
             return AuthenticationResult.Authenticated;
@@ -248,8 +252,6 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
 
         if (link.Player.Profile is null)
             throw new InvalidOperationException("Player should be authenticated before Server");
-
-        var handshakeBuildEventResult = await events.ThrowWithResultAsync(new HandshakeBuildEvent(link.Player, link), cancellationToken) ?? new(NextState: 2);
 
         await HandshakeWithServerAsync(link, handshakeBuildEventResult.Packet, handshakeBuildEventResult.NextState, cancellationToken);
 
@@ -298,7 +300,7 @@ public abstract class AbstractAuthenticationService(IEventService events, IPlaye
         return ValueTask.CompletedTask;
     }
 
-    protected virtual ValueTask FinishServerAuthenticationAsync(ILink link, AuthenticationResult authenticationResult, CancellationToken cancellationToken)
+    protected virtual ValueTask FinishServerAuthenticationAsync(ILink link, AuthenticationResult authenticationResult, HandshakeBuildEventResult handshakeBuildEventResult, CancellationToken cancellationToken)
     {
         return ValueTask.CompletedTask;
     }

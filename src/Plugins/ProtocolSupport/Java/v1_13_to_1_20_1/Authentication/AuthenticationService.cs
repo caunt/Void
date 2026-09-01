@@ -110,7 +110,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         }, cancellationToken);
     }
 
-    protected override async ValueTask FinishServerAuthenticationAsync(ILink link, AuthenticationResult authenticationResult, CancellationToken cancellationToken)
+    protected override async ValueTask FinishServerAuthenticationAsync(ILink link, AuthenticationResult authenticationResult, HandshakeBuildEventResult handshakeBuildEventResult, CancellationToken cancellationToken)
     {
         // Forge sends Plugin Message packets after Login Success but before Join Game
         IMinecraftClientboundPacket packet;
@@ -121,13 +121,13 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
 
         if (authenticationResult == AuthenticationResult.AlreadyAuthenticated)
         {
-            if (link.Player.ProtocolVersion <= ProtocolVersion.MINECRAFT_1_13_2)
-            {
-                var temporaryDimension = joinGamePacket.Dimension == 0 ? -1 : 0;
-                await link.SendPacketAsync(RespawnPacket.FromJoinGame(joinGamePacket, temporaryDimension), cancellationToken);
-            }
+            var respawnPacket = RespawnPacket.FromJoinGame(joinGamePacket);
 
-            await link.SendPacketAsync(RespawnPacket.FromJoinGame(joinGamePacket), cancellationToken);
+            if (link.Player.ProtocolVersion < ProtocolVersion.MINECRAFT_1_16)
+                joinGamePacket.Dimension = joinGamePacket.Dimension == 0 ? -1 : 0;
+
+            await link.SendPacketAsync(joinGamePacket, cancellationToken);
+            await link.SendPacketAsync(respawnPacket, cancellationToken);
         }
         else
             await link.SendPacketAsync(joinGamePacket, cancellationToken);
