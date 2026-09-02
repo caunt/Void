@@ -40,6 +40,17 @@ internal sealed record SendChatRequest(string? Message);
 
 internal sealed record ServerAddress(string Host, int Port);
 
+internal sealed record ClientFailure(string Code, string Operation, string Stage, string Message, string ExceptionType, string StackTrace)
+{
+    public static ClientFailure FromException(string code, string operation, string stage, Exception exception)
+    {
+        if (exception is GameClientException clientException)
+            return clientException.Failure;
+
+        return new(code, operation, stage, exception.Message, exception.GetType().FullName ?? exception.GetType().Name, exception.ToString());
+    }
+}
+
 /// <summary>
 /// Immutable coordinator snapshot. The operation identifier lets callers distinguish completion of their accepted
 /// command from a later command issued by another caller.
@@ -54,6 +65,7 @@ internal sealed record GameStatus(
     ServerAddress? Server,
     string? Message,
     string? Error,
+    ClientFailure? Failure,
     IReadOnlyList<string> Warnings,
     DateTimeOffset UpdatedAt);
 
@@ -104,7 +116,30 @@ internal sealed class GameCommandException(int statusCode, string message) : Exc
     public int StatusCode { get; } = statusCode;
 }
 
-internal sealed class GamePlayersException(int statusCode, string message) : Exception(message)
+internal class GameClientException(string code, string operation, string stage, string message, Exception? innerException = null) : Exception(message, innerException)
 {
-    public int StatusCode { get; } = statusCode;
+    public ClientFailure Failure => new(code, operation, stage, Message, GetType().FullName ?? GetType().Name, ToString());
+}
+
+internal sealed class GamePlayersException : Exception
+{
+    private readonly string? _code;
+    private readonly string? _stage;
+
+    public GamePlayersException(int statusCode, string message) : base(message)
+    {
+        StatusCode = statusCode;
+    }
+
+    public GamePlayersException(int statusCode, string code, string stage, string message, Exception? innerException = null) : base(message, innerException)
+    {
+        StatusCode = statusCode;
+        _code = code;
+        _stage = stage;
+    }
+
+    public int StatusCode { get; }
+    public ClientFailure? Failure => _code is null || _stage is null
+        ? null
+        : new(_code, "players", _stage, Message, GetType().FullName ?? GetType().Name, ToString());
 }

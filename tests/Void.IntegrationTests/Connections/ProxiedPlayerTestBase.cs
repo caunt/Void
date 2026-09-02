@@ -69,6 +69,7 @@ public abstract class ProxiedPlayerTestBase(PaperFixture paperFixture, VoidFixtu
         catch (OperationCanceledException) when (connectionCancellation.IsCancellationRequested)
         {
             // Client-side player readiness is authoritative when visual confirmation exceeds its step timeout.
+            Console.WriteLine($"Connection request detached; background client diagnostics:\n{await game.ReadDiagnosticsAsync()}");
         }
 
         await WaitForLocalPlayerAsync(game, Timeouts.StepTimeoutToken);
@@ -76,17 +77,24 @@ public abstract class ProxiedPlayerTestBase(PaperFixture paperFixture, VoidFixtu
 
     private static async Task WaitForLocalPlayerAsync(PortableMinecraftClient.Game game, CancellationToken cancellationToken)
     {
-        while (!cancellationToken.IsCancellationRequested)
+        try
         {
-            var players = await game.TryReadPlayersAsync(cancellationToken);
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var players = await game.TryReadPlayersAsync(cancellationToken);
 
-            if (players?.Local.Name == game.Username)
-                return;
+                if (players?.Local.Name == game.Username)
+                    return;
 
-            await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken);
+                await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
         }
-
-        cancellationToken.ThrowIfCancellationRequested();
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw new InvalidOperationException($"Timed out waiting for local player {game.Username}. Client diagnostics:\n{await game.ReadDiagnosticsAsync()}");
+        }
     }
 
     private static async Task WaitForReciprocalCoordinatesAsync(PortableMinecraftClient.Game firstGame, PortableMinecraftClient.Game secondGame)
@@ -127,7 +135,9 @@ public abstract class ProxiedPlayerTestBase(PaperFixture paperFixture, VoidFixtu
         }
         catch (OperationCanceledException) when (playersTimeout.IsCancellationRequested)
         {
-            throw new InvalidOperationException($"Timed out waiting for reciprocal coordinates. First players: {JsonSerializer.Serialize(firstPlayers)}; second players: {JsonSerializer.Serialize(secondPlayers)}");
+            var firstDiagnostics = await firstGame.ReadDiagnosticsAsync();
+            var secondDiagnostics = await secondGame.ReadDiagnosticsAsync();
+            throw new InvalidOperationException($"Timed out waiting for reciprocal coordinates. First players: {JsonSerializer.Serialize(firstPlayers)}; second players: {JsonSerializer.Serialize(secondPlayers)}; first diagnostics:\n{firstDiagnostics}\nsecond diagnostics:\n{secondDiagnostics}");
         }
     }
 

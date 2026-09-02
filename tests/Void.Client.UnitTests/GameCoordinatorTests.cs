@@ -217,7 +217,7 @@ public sealed class GameCoordinatorTests
     }
 
     [Fact]
-    public async Task SoleConnectCallerCancellationCancelsBackgroundOperation()
+    public async Task SoleConnectCallerCancellationDetachesFromBackgroundOperation()
     {
         var runtime = new FakeGameRuntime { BlockConnect = true };
         using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
@@ -232,8 +232,40 @@ public sealed class GameCoordinatorTests
         callerCancellation.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => connect);
-        await WaitForOperationStateAsync(coordinator, OperationState.Canceled);
-        Assert.True(runtime.ConnectCancellationRequested);
+        Assert.False(runtime.ConnectCancellationRequested);
+
+        runtime.CompleteConnect();
+        await WaitForStateAsync(coordinator, GameState.Connected);
+        var replay = await coordinator.ConnectAsync(new("server", 25565), CancellationToken.None);
+
+        Assert.Equal("server", replay.Server.Host);
+
+        await coordinator.StopGameAsync(CancellationToken.None);
+        await coordinator.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task DetachedConnectFailureRemainsAvailableInStatus()
+    {
+        var runtime = new FakeGameRuntime { BlockConnect = true };
+        using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
+        await coordinator.StartAsync(CancellationToken.None);
+        await coordinator.StartVanillaAsync(new("1.21.11", []), CancellationToken.None);
+        runtime.CompleteLaunch();
+        await WaitForStateAsync(coordinator, GameState.Ready);
+
+        using var callerCancellation = new CancellationTokenSource();
+        var connect = coordinator.ConnectAsync(new("server", 25565), callerCancellation.Token);
+        await WaitForOperationAsync(coordinator, "connect");
+        callerCancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => connect);
+
+        runtime.FailConnect(new InvalidOperationException("synthetic client failure"));
+        await WaitForOperationStateAsync(coordinator, OperationState.Failed);
+
+        Assert.Equal("synthetic client failure", coordinator.Status.Error);
+        Assert.NotNull(coordinator.Status.Failure);
+        Assert.Contains("synthetic client failure", coordinator.Status.Failure.StackTrace);
 
         await coordinator.StopGameAsync(CancellationToken.None);
         await coordinator.StopAsync(CancellationToken.None);
@@ -295,6 +327,11 @@ public sealed class GameCoordinatorTests
         public void CompleteConnect()
         {
             _connect?.SetResult();
+        }
+
+        public void FailConnect(Exception exception)
+        {
+            _connect?.SetException(exception);
         }
 
         public Task WriteOptionsAsync(string options, CancellationToken cancellationToken) => Task.CompletedTask;

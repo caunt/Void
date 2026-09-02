@@ -57,6 +57,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
     private bool _chatInputTargetsWindow = true;
     private bool _chatInputSupportsVisualConfirmation = true;
     private readonly GameTextRecognizer _textRecognizer = new();
+    private long _nextWindowGeneration;
 
     public async ValueTask DisposeAsync()
     {
@@ -180,11 +181,11 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         }
         catch (OperationCanceledException) when (timeoutSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            throw PlayersUnavailable("The Minecraft player tracker did not respond in time");
+            throw PlayersUnavailable("The Minecraft player tracker did not respond in time", "response.timeout");
         }
         catch (Exception exception) when (exception is IOException or SocketException or JsonException or UnauthorizedAccessException)
         {
-            throw PlayersUnavailable($"The Minecraft player tracker could not be read: {exception.Message}");
+            throw PlayersUnavailable($"The Minecraft player tracker could not be read: {exception.Message}", "response.read", exception);
         }
     }
 
@@ -397,7 +398,10 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
             throw PlayersUnavailable("The Minecraft player tracker returned a non-finite player rotation");
     }
 
-    private static GamePlayersException PlayersUnavailable(string message) => new(StatusCodes.Status503ServiceUnavailable, message);
+    private static GamePlayersException PlayersUnavailable(string message, string stage = "snapshot", Exception? innerException = null)
+    {
+        return new(StatusCodes.Status503ServiceUnavailable, "client.players.unavailable", stage, message, innerException);
+    }
 
     private sealed record TrackerResponse(string? Status, string? Message, GamePlayer? Local, RemoteGamePlayer[]? Remote);
 
@@ -620,21 +624,26 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
     async Task JoinServerOperationAsync(string host, int port, CancellationToken cancellationToken)
     {
         var display = Environment.GetEnvironmentVariable("DISPLAY") ?? DefaultDisplay;
-        var windowId = await WaitForPreparedLargestWindowAsync(display, cancellationToken);
+        var windowLease = await AcquirePreparedWindowLeaseAsync(display, cancellationToken);
         var serverAddress = $"{host}:{port}";
+        var stage = "screen.capture";
 
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                await MoveMouseAsync(windowId, 2, 2, cancellationToken);
-                using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+                stage = "screen.prepare";
+                await MoveMouseAsync(windowLease.Id, 2, 2, cancellationToken);
+                stage = "screen.capture";
+                using var screen = await CaptureScreenImageAsync(windowLease.Id, display, cancellationToken);
+                stage = "screen.recognition";
                 var recognition = await RecognizeConnectionScreenAsync(screen, cancellationToken);
                 var observation = recognition.Observation;
 
                 if (observation is null)
                 {
-                    if (recognition.Matches.Count is 0 && await TryConfirmInteractiveGameScreenAsync(windowId, display, cancellationToken))
+                    stage = "game.confirmation";
+                    if (recognition.Matches.Count is 0 && await TryConfirmInteractiveGameScreenAsync(windowLease.Id, display, cancellationToken))
                         return;
 
                     continue;
@@ -647,9 +656,10 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
 
                 if (observation.Kind is ConnectionNavigationKind.JoinServer)
                 {
+                    stage = "address.entry";
                     var directConnectionScreen = observation.DirectConnectionScreen
                                                  ?? throw new InvalidOperationException("The Join Server action has no direct connection form");
-                    var preparedResult = await EnterServerAddressAsync(windowId, display, serverAddress, directConnectionScreen, cancellationToken);
+                    var preparedResult = await EnterServerAddressAsync(windowLease.Id, display, serverAddress, directConnectionScreen, cancellationToken);
                     using var preparedScreen = preparedResult.Screen;
                     var preparedObservation = observation with
                     {
@@ -657,17 +667,40 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
                         DirectConnectionScreen = preparedResult.DirectConnectionScreen
                     };
 
-                    if (await TryClickCurrentConnectionActionAsync(preparedObservation, preparedScreen, windowId, display, cancellationToken))
-                        await WaitForDirectConnectionScreenToCloseAsync(windowId, display, cancellationToken);
+                    stage = "connection.submit";
+                    if (await TryClickCurrentConnectionActionAsync(preparedObservation, preparedScreen, windowLease.Id, display, cancellationToken))
+                        await WaitForDirectConnectionScreenToCloseAsync(windowLease.Id, display, cancellationToken);
                 }
                 else
                 {
-                    _ = await TryClickCurrentConnectionActionAsync(observation, screen, windowId, display, cancellationToken);
+                    stage = "action.click";
+                    _ = await TryClickCurrentConnectionActionAsync(observation, screen, windowLease.Id, display, cancellationToken);
                 }
             }
-            catch (InvalidOperationException)
+            catch (OperationCanceledException)
             {
-                windowId = await WaitForPreparedLargestWindowAsync(display, cancellationToken);
+                throw;
+            }
+            catch (GameClientException)
+            {
+                throw;
+            }
+            catch (Exception exception) when (exception is ExternalProcessException or InvalidOperationException)
+            {
+                var staleWindowFailure = await GetStaleWindowFailureAsync(windowLease, display, exception, cancellationToken);
+
+                if (staleWindowFailure is not null)
+                {
+                    windowLease = await AcquirePreparedWindowLeaseAsync(display, cancellationToken);
+                    Console.Error.WriteLine($"{staleWindowFailure.Message} during {stage}; acquired lease {windowLease.Generation} ({windowLease.Id}) and restarted recognition");
+                    continue;
+                }
+
+                throw new GameClientException("client.connect.failed", "connect", stage, $"Minecraft client connection failed during {stage}: {exception.Message}", exception);
+            }
+            catch (Exception exception)
+            {
+                throw new GameClientException("client.connect.failed", "connect", stage, $"Minecraft client connection failed during {stage}: {exception.Message}", exception);
             }
         }
 
@@ -828,20 +861,56 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
 
     async Task<string> WaitForPreparedLargestWindowAsync(string display, CancellationToken cancellationToken)
     {
+        return (await AcquirePreparedWindowLeaseAsync(display, cancellationToken)).Id;
+    }
+
+    async Task<MinecraftWindowLease> AcquirePreparedWindowLeaseAsync(string display, CancellationToken cancellationToken)
+    {
         while (true)
         {
             var windowId = await WaitForLargestWindowAsync(display, cancellationToken);
+            var lease = new MinecraftWindowLease(windowId, Interlocked.Increment(ref _nextWindowGeneration));
 
             try
             {
                 await ResizeWindowToDisplayAsync(windowId, cancellationToken);
                 await RunOrThrow(cancellationToken, "xdotool", "windowfocus", windowId);
-                return windowId;
+                return lease;
             }
-            catch (InvalidOperationException)
+            catch (Exception exception) when (exception is ExternalProcessException or InvalidOperationException)
             {
-                // Minecraft can replace its startup window between discovery and focus. Try the new window.
+                var staleWindowFailure = await GetStaleWindowFailureAsync(lease, display, exception, cancellationToken);
+
+                if (staleWindowFailure is not null)
+                {
+                    Console.Error.WriteLine($"{staleWindowFailure.Message} while preparing the window; reacquiring");
+                    continue;
+                }
+
+                throw new GameClientException("client.window.prepare.failed", "window", "prepare", $"Preparing Minecraft window {windowId} failed: {exception.Message}", exception);
             }
+        }
+    }
+
+    async Task<StaleMinecraftWindowException?> GetStaleWindowFailureAsync(MinecraftWindowLease lease, string display, Exception exception, CancellationToken cancellationToken)
+    {
+        if (exception is ExternalProcessException processException && X11FailureClassifier.IsExplicitStaleWindow(processException))
+            return new(lease, exception);
+
+        try
+        {
+            var processInfo = CreateProcessInfo("xdotool", ["getwindowgeometry", "--shell", lease.Id], display: display);
+            var result = await RunProcessTextAsync(processInfo, TimeSpan.FromMilliseconds(ExternalProcessTimeoutMilliseconds), cancellationToken);
+            return result.ExitCode is 0 ? null : new(lease, exception);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            // A failed probe is not proof that the original error was a stale window. Preserve the original fault.
+            return null;
         }
     }
 
@@ -893,12 +962,21 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
                 Console.Error.WriteLine($"Dispatched {buttonName} click on attempt {attempt} at {confirmedButton.Value}");
                 return windowId;
             }
-            catch (InvalidOperationException)
+            catch (Exception exception) when (exception is ExternalProcessException or InvalidOperationException)
             {
-                // The game can replace its window or screen while it is still loading. Reacquire the target.
-                windowId = await WaitForPreparedLargestWindowAsync(display, cancellationToken);
-                previousButton = null;
-                stableButtonStopwatch.Restart();
+                var lease = new MinecraftWindowLease(windowId, Volatile.Read(ref _nextWindowGeneration));
+                var staleWindowFailure = await GetStaleWindowFailureAsync(lease, display, exception, cancellationToken);
+
+                if (staleWindowFailure is not null)
+                {
+                    windowId = await WaitForPreparedLargestWindowAsync(display, cancellationToken);
+                    previousButton = null;
+                    stableButtonStopwatch.Restart();
+                    Console.Error.WriteLine($"{staleWindowFailure.Message} while clicking {buttonName}; reacquired {windowId}");
+                    continue;
+                }
+
+                throw new GameClientException("client.action.failed", "ui", "click", $"Clicking {buttonName} failed: {exception.Message}", exception);
             }
         }
     }
@@ -1567,7 +1645,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         var result = await RunProcessTextAsync(processInfo, TimeSpan.FromMilliseconds(ExternalProcessTimeoutMilliseconds), cancellationToken);
 
         if (result.ExitCode is not 0)
-            throw new InvalidOperationException($"{command[0]} exited with code {result.ExitCode}: {result.StandardError}");
+            throw new ExternalProcessException(command[0], command[1..], result.ExitCode, result.StandardOutput, result.StandardError);
     }
 
     ProcessStartInfo CreateProcessInfo(string fileName, IEnumerable<string> arguments, string? display = null)

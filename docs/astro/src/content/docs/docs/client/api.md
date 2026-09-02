@@ -37,6 +37,7 @@ JSON property names and enum values use camel case.
   "server": null,
   "message": "Game window is ready",
   "error": null,
+  "failure": null,
   "warnings": [],
   "updatedAt": "2026-08-12T12:00:00+00:00"
 }
@@ -53,12 +54,15 @@ JSON property names and enum values use camel case.
 | `server` | Connected `host` and `port`, otherwise `null`. |
 | `message` | Short description of the current result. |
 | `error` | Failure message, otherwise `null`. |
+| `failure` | Structured runtime failure with `code`, `operation`, `stage`, `message`, `exceptionType`, and full `stackTrace`; otherwise `null`. |
 | `warnings` | Non-fatal messages associated with the state. |
 | `updatedAt` | ISO 8601 timestamp of the latest status change. |
 
 Start operations return this status with `202 Accepted` and a `Location: /api/game/status` header.
 Save its `operationId`, then poll until the same operation reports `ready` and `succeeded`.
 Stop polling with a failure if the identifier changes or the operation becomes `failed` or `canceled`.
+
+Runtime failures are also returned in the `failure` extension of HTTP Problem Details responses. Stack traces intentionally expose container implementation details and should not be forwarded to untrusted consumers.
 
 ## Live Players
 

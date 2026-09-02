@@ -91,6 +91,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
     public record Game(string TestName, IContainer Container, HttpClient HttpClient, IReadOnlyList<IIntegrationSide> LogSides, DateTime StartedAt, ProtocolVersion ProtocolVersion, string Username) : IAsyncDisposable
     {
         private readonly string _workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), "steps", TestName, ProtocolVersion.ToString(), Username);
+        private ApiProblemDetails? _lastPlayersProblem;
         private int _step;
 
         public async ValueTask DisposeAsync()
@@ -203,11 +204,39 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             using var response = await HttpClient.GetAsync("/api/game/players", cancellationToken);
 
             if (response.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.ServiceUnavailable)
+            {
+                _lastPlayersProblem = await ReadProblemDetailsAsync(response, cancellationToken);
                 return null;
+            }
 
             await EnsureSuccessAsync(response, "Reading Minecraft players", cancellationToken);
+            _lastPlayersProblem = null;
             return await response.Content.ReadFromJsonAsync<ApiGamePlayers>(cancellationToken)
                    ?? throw new IntegrationTestException("Reading Minecraft players returned an empty response");
+        }
+
+        public async Task<string> ReadDiagnosticsAsync()
+        {
+            using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+            try
+            {
+                using var response = await HttpClient.GetAsync("/api/game/status", cancellation.Token);
+                var statusContent = await response.Content.ReadAsStringAsync(cancellation.Token);
+                return JsonSerializer.Serialize(new
+                {
+                    version = ProtocolVersion.FirstRelease.ToString(),
+                    username = Username,
+                    statusCode = (int)response.StatusCode,
+                    status = TryDeserialize<ApiStatus>(statusContent),
+                    rawStatus = statusContent,
+                    lastPlayersProblem = _lastPlayersProblem
+                }, new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true });
+            }
+            catch (Exception exception)
+            {
+                return $"Failed to read Minecraft client diagnostics: {exception}";
+            }
         }
 
         private async Task StartVanillaAsync(CancellationToken cancellationToken = default)
@@ -371,6 +400,28 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             }
         }
 
+        private static async Task<ApiProblemDetails?> ReadProblemDetailsAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+        {
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            return TryDeserialize<ApiProblemDetails>(content)
+                   ?? new(response.ReasonPhrase, (int)response.StatusCode, content, null);
+        }
+
+        private static T? TryDeserialize<T>(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+                return default;
+
+            try
+            {
+                return JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            }
+            catch (JsonException)
+            {
+                return default;
+            }
+        }
+
         private Task LogAsync(string message, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -434,7 +485,11 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             return string.Join('\n', options) + "\n";
         }
 
-        private record ApiStatus(string State, long OperationId, string? Operation, string OperationState, int? ProcessId, int? ExitCode, string? Message, string? Error, DateTimeOffset UpdatedAt);
+        private record ApiFailure(string Code, string Operation, string Stage, string Message, string ExceptionType, string StackTrace);
+
+        private record ApiProblemDetails(string? Title, int? Status, string? Detail, ApiFailure? Failure);
+
+        private record ApiStatus(string State, long OperationId, string? Operation, string OperationState, int? ProcessId, int? ExitCode, string? Message, string? Error, ApiFailure? Failure, DateTimeOffset UpdatedAt);
 
         private record StopGameResponse(string Mode, ApiStatus Status);
 

@@ -28,8 +28,9 @@ public class IntegrationUnitBase
         }
         catch (Exception exception)
         {
+            Console.WriteLine($"Primary integration failure:\n{exception}");
             Console.WriteLine(CollectLogs());
-            throw new IntegrationTestException("Test execution failed: ", exception);
+            throw new IntegrationTestException($"Test execution failed: {exception.Message}", exception);
         }
         finally
         {

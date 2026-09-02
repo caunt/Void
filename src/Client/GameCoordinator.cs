@@ -16,7 +16,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
     });
     private readonly List<Task> _ownedTasks = [];
     private readonly List<ConnectWaiter> _connectWaiters = [];
-    private GameStatus _status = new(GameState.Idle, 0, null, OperationState.None, null, null, null, null, null, [], DateTimeOffset.UtcNow);
+    private GameStatus _status = new(GameState.Idle, 0, null, OperationState.None, null, null, null, null, null, null, [], DateTimeOffset.UtcNow);
     private RunningGame? _game;
     private CancellationTokenSource? _activeCancellation;
     private ServerAddress? _connectingServer;
@@ -190,7 +190,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(_stoppingToken);
         _activeCancellation = operationCancellation;
         _connectedResponse = null;
-        Publish(new(GameState.Starting, operationId, message.Kind, OperationState.Running, null, null, null, "Game launch accepted", null, [], DateTimeOffset.UtcNow));
+        Publish(new(GameState.Starting, operationId, message.Kind, OperationState.Running, null, null, null, "Game launch accepted", null, null, [], DateTimeOffset.UtcNow));
 
         Task<RunningGame> operation = message.Kind switch
         {
@@ -225,6 +225,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             OperationState = OperationState.Running,
             Message = "Stopping game",
             Error = null,
+            Failure = null,
             UpdatedAt = DateTimeOffset.UtcNow
         });
         Own(ObserveStopAsync(operationId, runtime.StopAsync(_game, operationCancellation.Token), operationCancellation, message.Completion));
@@ -286,7 +287,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         _connectingServer = server;
         _connectOperationId = operationId;
         AddConnectWaiter(message);
-        Publish(Status with { OperationId = operationId, Operation = "connect", OperationState = OperationState.Running, Message = "connect running", Error = null, UpdatedAt = DateTimeOffset.UtcNow });
+        Publish(Status with { OperationId = operationId, Operation = "connect", OperationState = OperationState.Running, Message = "connect running", Error = null, Failure = null, UpdatedAt = DateTimeOffset.UtcNow });
         Own(ObserveConnectAsync(operationId, server, runtime.ConnectAsync(host, message.Request.Port, cancellation.Token), cancellation));
     }
 
@@ -307,8 +308,8 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         _connectWaiters.Remove(waiter);
         waiter.Completion.TrySetCanceled(message.CancellationToken);
 
-        if (_connectWaiters.Count is 0 && _connectingServer is not null)
-            _activeCancellation?.Cancel();
+        // The accepted connection intent outlives individual HTTP waiters. Stop and process-exit paths still own
+        // cancellation of the background operation.
     }
 
     private void HandleSendChat(SendChatMessage message)
@@ -401,6 +402,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
                 OperationState = completed.Canceled ? OperationState.Canceled : OperationState.Failed,
                 Message = completed.Canceled ? "Game launch canceled" : "Game launch failed",
                 Error = completed.Canceled ? null : completed.Error.Message,
+                Failure = completed.Canceled ? null : FailureFor(completed.Error, completed.Kind),
                 UpdatedAt = DateTimeOffset.UtcNow
             });
             return;
@@ -415,6 +417,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             ExitCode = null,
             Message = "Game window is ready",
             Error = null,
+            Failure = null,
             UpdatedAt = DateTimeOffset.UtcNow
         });
         Own(MonitorProcessAsync(_game));
@@ -432,7 +435,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         if (completed.Error is not null)
         {
             logger.LogError(completed.Error, "Game stop failed");
-            Publish(Status with { State = GameState.Failed, OperationState = OperationState.Failed, Error = completed.Error.Message, Message = "Game stop failed", UpdatedAt = DateTimeOffset.UtcNow });
+            Publish(Status with { State = GameState.Failed, OperationState = OperationState.Failed, Error = completed.Error.Message, Failure = FailureFor(completed.Error, "stop"), Message = "Game stop failed", UpdatedAt = DateTimeOffset.UtcNow });
             completed.Completion.SetException(completed.Error);
             return;
         }
@@ -441,7 +444,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         _game?.Process.Dispose();
         _game = null;
         _connectedResponse = null;
-        Publish(new(GameState.Idle, completed.OperationId, "stop", OperationState.Succeeded, null, exitCode, null, "Game stopped", null, [], DateTimeOffset.UtcNow));
+        Publish(new(GameState.Idle, completed.OperationId, "stop", OperationState.Succeeded, null, exitCode, null, "Game stopped", null, null, [], DateTimeOffset.UtcNow));
         completed.Completion.SetResult(new(completed.Mode, Status));
     }
 
@@ -474,7 +477,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         if (completed.Error is not null)
         {
             var operationState = completed.Canceled ? OperationState.Canceled : OperationState.Failed;
-            Publish(Status with { OperationState = operationState, Message = $"connect {operationState.ToString().ToLowerInvariant()}", Error = completed.Canceled ? null : completed.Error.Message, UpdatedAt = DateTimeOffset.UtcNow });
+            Publish(Status with { OperationState = operationState, Message = $"connect {operationState.ToString().ToLowerInvariant()}", Error = completed.Canceled ? null : completed.Error.Message, Failure = completed.Canceled ? null : FailureFor(completed.Error, "connect"), UpdatedAt = DateTimeOffset.UtcNow });
 
             foreach (var waiter in waiters)
             {
@@ -488,7 +491,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         }
 
         _connectedResponse = new(completed.Server, DateTimeOffset.UtcNow);
-        Publish(Status with { State = GameState.Connected, Server = completed.Server, OperationState = OperationState.Succeeded, Message = "Interactive game connection confirmed", Error = null, UpdatedAt = DateTimeOffset.UtcNow });
+        Publish(Status with { State = GameState.Connected, Server = completed.Server, OperationState = OperationState.Succeeded, Message = "Interactive game connection confirmed", Error = null, Failure = null, UpdatedAt = DateTimeOffset.UtcNow });
 
         foreach (var waiter in waiters)
             waiter.Completion.TrySetResult(_connectedResponse);
@@ -532,6 +535,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         _activeCancellation?.Cancel();
         CancelConnectWaiters();
         _activeCancellation = null;
+        var processFailure = exited.ExitCode is 0 ? null : new InvalidOperationException($"Minecraft exited with code {exited.ExitCode}");
         Publish(Status with
         {
             State = exited.ExitCode is 0 ? GameState.Idle : GameState.Failed,
@@ -541,6 +545,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             Server = null,
             Message = exited.ExitCode is 0 ? "Game exited" : "Game exited unexpectedly",
             Error = exited.ExitCode is 0 ? null : $"Minecraft exited with code {exited.ExitCode}",
+            Failure = processFailure is null ? null : FailureFor(processFailure, "process", "exit"),
             UpdatedAt = DateTimeOffset.UtcNow
         });
     }
@@ -550,7 +555,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         var operationId = ++_nextOperationId;
         var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_stoppingToken, requestCancellation);
         _activeCancellation = cancellation;
-        Publish(Status with { OperationId = operationId, Operation = operation, OperationState = OperationState.Running, Message = $"{operation} running", Error = null, UpdatedAt = DateTimeOffset.UtcNow });
+        Publish(Status with { OperationId = operationId, Operation = operation, OperationState = OperationState.Running, Message = $"{operation} running", Error = null, Failure = null, UpdatedAt = DateTimeOffset.UtcNow });
         return (operationId, cancellation);
     }
 
@@ -566,12 +571,12 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
 
         if (error is null)
         {
-            Publish(Status with { OperationState = OperationState.Succeeded, Message = $"{operation} succeeded", Error = null, UpdatedAt = DateTimeOffset.UtcNow });
+            Publish(Status with { OperationState = OperationState.Succeeded, Message = $"{operation} succeeded", Error = null, Failure = null, UpdatedAt = DateTimeOffset.UtcNow });
             return true;
         }
 
         var operationState = canceled ? OperationState.Canceled : OperationState.Failed;
-        Publish(Status with { OperationState = operationState, Message = $"{operation} {operationState.ToString().ToLowerInvariant()}", Error = canceled ? null : error.Message, UpdatedAt = DateTimeOffset.UtcNow });
+        Publish(Status with { OperationState = operationState, Message = $"{operation} {operationState.ToString().ToLowerInvariant()}", Error = canceled ? null : error.Message, Failure = canceled ? null : FailureFor(error, operation), UpdatedAt = DateTimeOffset.UtcNow });
 
         if (canceled)
             completion.SetCanceled();
@@ -708,6 +713,11 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
     private void Publish(GameStatus status)
     {
         Volatile.Write(ref _status, status);
+    }
+
+    private static ClientFailure FailureFor(Exception exception, string operation, string stage = "coordinator")
+    {
+        return ClientFailure.FromException("client.operation.failed", operation, stage, exception);
     }
 
     private void CancelConnectWaiters()
