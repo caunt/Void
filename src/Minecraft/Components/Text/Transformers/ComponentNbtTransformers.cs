@@ -384,7 +384,7 @@ public static class ComponentNbtTransformers
                         if (action.Value is "show_entity")
                         {
                             if (contentsCompound["id"] is NbtIntArray idIntArray)
-                                contentsCompound["id"] = new NbtString(Uuid.Parse([.. idIntArray.Data]).ToString());
+                                contentsCompound["id"] = new NbtString(Uuid.FromIntArray(idIntArray.Data).ToString());
                             else if (contentsCompound["id"] is not NbtString)
                                 throw new NotSupportedException($"Non-string id value found: {contentsCompound["id"]}");
                         }

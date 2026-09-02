@@ -7,7 +7,7 @@ namespace Void.Minecraft.Profiles.Serializers;
 /// <summary>
 /// Converts <see cref="Uuid" /> values to and from their standard JSON string representation.
 /// </summary>
-public class UuidJsonConverter : JsonConverter<Uuid>
+public sealed class UuidJsonConverter : JsonConverter<Uuid>
 {
     /// <summary>
     /// Reads a UUID from the current JSON string token.
@@ -16,11 +16,11 @@ public class UuidJsonConverter : JsonConverter<Uuid>
     /// <param name="typeToConvert">The target type requested by the serializer.</param>
     /// <param name="options">The active serializer options.</param>
     /// <returns>The parsed UUID.</returns>
-    /// <exception cref="JsonException">The JSON token contains a null string.</exception>
+    /// <exception cref="InvalidOperationException">The JSON token is not a UUID string.</exception>
     /// <exception cref="FormatException">The string is not a recognized UUID representation.</exception>
     public override Uuid Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return Uuid.Parse(reader.GetString() ?? throw new JsonException($"{nameof(Uuid)} value cannot be null."));
+        return reader.GetGuid();
     }
 
     /// <summary>
@@ -31,7 +31,7 @@ public class UuidJsonConverter : JsonConverter<Uuid>
     /// <param name="options">The active serializer options.</param>
     public override void Write(Utf8JsonWriter writer, Uuid value, JsonSerializerOptions options)
     {
-        writer.WriteStringValue(value.ToString());
+        writer.WriteStringValue((Guid)value);
     }
 
     /// <summary>
@@ -45,10 +45,10 @@ public class UuidJsonConverter : JsonConverter<Uuid>
     /// <exception cref="FormatException">The property name is not a recognized UUID representation.</exception>
     public override Uuid ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        var name = reader.GetString() ??
-            throw new JsonException($"{nameof(Uuid)} property name cannot be null.");
+        if (!reader.HasValueSequence && !reader.ValueIsEscaped)
+            return Uuid.Parse(reader.ValueSpan);
 
-        return Uuid.Parse(name);
+        return Uuid.Parse(reader.GetString() ?? throw new JsonException($"{nameof(Uuid)} property name cannot be null."));
     }
 
     /// <summary>
@@ -59,6 +59,8 @@ public class UuidJsonConverter : JsonConverter<Uuid>
     /// <param name="options">The active serializer options.</param>
     public override void WriteAsPropertyName(Utf8JsonWriter writer, Uuid value, JsonSerializerOptions options)
     {
-        writer.WritePropertyName(value.ToString());
+        Span<char> destination = stackalloc char[36];
+        _ = value.TryFormat(destination, out var charsWritten);
+        writer.WritePropertyName(destination[..charsWritten]);
     }
 }

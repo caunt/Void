@@ -42,7 +42,7 @@ public class LoginStartPacket : IMinecraftServerboundPacket<LoginStartPacket>
                     buffer.WriteBoolean(true);
                     buffer.WriteUuid(Key.ProfileUuid);
                 }
-                else if (Profile.Id.AsGuid != default)
+                else if (Profile.Id != default)
                 {
                     buffer.WriteBoolean(true);
                     buffer.WriteUuid(Profile.Id);

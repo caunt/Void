@@ -9,12 +9,12 @@ public static class GuidHelper
 {
     public static Guid FromStringHash(string text)
     {
-        return Uuid.FromStringHash(text).AsGuid;
+        return Uuid.CreateVersion3(text);
     }
 
     public static Guid FromLongs(long mostSig, long leastSig)
     {
-        return Uuid.FromLongs(mostSig, leastSig).AsGuid;
+        return Uuid.FromLongs(mostSig, leastSig);
     }
 
     public static int GetVersion(Guid guid)

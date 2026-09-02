@@ -24,7 +24,7 @@ public class MojangService(ICryptoService crypto, ISettings settings) : IMojangS
             throw new ArgumentNullException(nameof(player), "Player profile should be set in order to verify his session");
 
         if (settings.Offline)
-            return new GameProfile(profile.Username, Uuid.Offline(profile.Username));
+            return new GameProfile(profile.Username, Uuid.CreateOfflinePlayer(profile.Username));
 
         var sharedSecret = player.Context.Services.GetRequiredService<ITokenHolder>().Get(TokenType.SharedSecret);
         var publicKey = crypto.Instance.ExportSubjectPublicKeyInfo();

@@ -87,7 +87,7 @@ public record IdentifiedKey(IdentifiedKeyRevision Revision, long ExpiresAt, byte
 
     private bool ValidateData(Uuid uuid)
     {
-        var guid = uuid.AsGuid;
+        Guid guid = uuid;
 
         if (Revision == IdentifiedKeyRevision.GenericV1Revision)
         {

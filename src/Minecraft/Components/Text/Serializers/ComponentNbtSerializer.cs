@@ -400,7 +400,7 @@ public static class ComponentNbtSerializer
                 "show_entity" => new ShowEntity(GetAs<NbtTag>(hoverEventNbtCompound, "uuid") switch
                 {
                     NbtString idNbtString => Uuid.Parse(idNbtString.Value),
-                    NbtIntArray idNbtIntArray => Uuid.Parse([.. idNbtIntArray.Data]),
+                    NbtIntArray idNbtIntArray => Uuid.FromIntArray(idNbtIntArray.Data),
                     var value => throw new NbtException(value)
                 },
                 TryGetAs<NbtString>(hoverEventNbtCompound, "id")?.Value,
