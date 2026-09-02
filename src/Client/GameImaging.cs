@@ -4,10 +4,8 @@ namespace Void.Client;
 
 internal sealed partial class GameRuntime
 {
-    internal sealed class ScreenImage : IDisposable
+    sealed class ScreenImage : IDisposable
     {
-        private const double ChatInputMinimumBrightness = 1;
-        private const double ChatInputBrightnessRatioThreshold = 0.7;
         private const int MinimumButtonWidth = 60;
         private const int MaximumButtonWidth = 430;
         private const int MinimumButtonHeight = 36;
@@ -62,10 +60,10 @@ internal sealed partial class GameRuntime
             if (Height is not 2)
                 throw new InvalidOperationException($"Chat input analysis requires exactly two pixel rows, but received {Height}");
 
-            var brightnessAboveInput = CalculateAverageLuminance(0);
-            var inputBrightness = CalculateAverageLuminance(1);
-            return brightnessAboveInput >= ChatInputMinimumBrightness
-                && inputBrightness / brightnessAboveInput <= ChatInputBrightnessRatioThreshold;
+            var rowByteCount = Width * 3;
+            return ChatInputVisibilityDetector.IsVisible(
+                _imageBytes.AsSpan(_pixelDataOffset, rowByteCount),
+                _imageBytes.AsSpan(_pixelDataOffset + rowByteCount, rowByteCount));
         }
 
         public bool TryFindMainMenuMultiplayerButton(out ScreenRectangle multiplayerButton)
@@ -241,22 +239,6 @@ internal sealed partial class GameRuntime
             }
 
             return comparedPixels is 0 ? 0 : (double)differentPixels / comparedPixels;
-        }
-
-        internal double CalculateAverageLuminance(int row)
-        {
-            if (row < 0 || row >= Height)
-                throw new ArgumentOutOfRangeException(nameof(row));
-
-            double totalLuminance = 0;
-
-            for (var x = 0; x < Width; x++)
-            {
-                var pixel = GetPixel(x, row);
-                totalLuminance += pixel.Red * 0.2126 + pixel.Green * 0.7152 + pixel.Blue * 0.0722;
-            }
-
-            return totalLuminance / Width / byte.MaxValue * 100;
         }
 
         public bool IsServerAddressFieldEmpty(ScreenRectangle serverAddressField)
@@ -659,4 +641,34 @@ internal sealed partial class GameRuntime
 
     sealed record ConnectionScreenRecognition(IReadOnlyDictionary<ConnectionTextAction, ConnectionTextMatch> Matches, ConnectionScreenObservation? Observation);
 
+}
+
+internal static class ChatInputVisibilityDetector
+{
+    private const double MinimumBrightness = 1;
+    private const double BrightnessRatioThreshold = 0.7;
+
+    public static bool IsVisible(ReadOnlySpan<byte> pixelsAboveInput, ReadOnlySpan<byte> inputPixels)
+    {
+        if (pixelsAboveInput.Length != inputPixels.Length)
+            throw new ArgumentException("Chat input rows must have matching lengths", nameof(inputPixels));
+
+        var brightnessAboveInput = CalculateAverageLuminance(pixelsAboveInput);
+        var inputBrightness = CalculateAverageLuminance(inputPixels);
+        return brightnessAboveInput >= MinimumBrightness
+            && inputBrightness / brightnessAboveInput <= BrightnessRatioThreshold;
+    }
+
+    internal static double CalculateAverageLuminance(ReadOnlySpan<byte> pixels)
+    {
+        if (pixels.IsEmpty || pixels.Length % 3 is not 0)
+            throw new ArgumentException("Pixel data must contain complete RGB pixels", nameof(pixels));
+
+        double totalLuminance = 0;
+
+        for (var offset = 0; offset < pixels.Length; offset += 3)
+            totalLuminance += pixels[offset] * 0.2126 + pixels[offset + 1] * 0.7152 + pixels[offset + 2] * 0.0722;
+
+        return totalLuminance / (pixels.Length / 3) / byte.MaxValue * 100;
+    }
 }
