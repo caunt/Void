@@ -86,20 +86,20 @@ RUN /opt/paddleocr/bin/python /opt/portableminecraftclient/ocr-worker.py --warmu
 
 # Mojang does not publish ARM64 JVMs for every Java version required by older clients.
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
-      dpkg --add-architecture i386; \
+      dpkg --add-architecture amd64; \
       apt-get update; \
       apt-get install -y --no-install-recommends \
-        libc6:i386 \
-        libasound2:i386 \
-        libfontconfig1:i386 \
-        libfreetype6:i386 \
-        libgl1:i386 \
-        libgl1-mesa-dri:i386 \
-        libstdc++6:i386 \
-        libxcursor1:i386 \
-        libxi6:i386 \
-        libxrandr2:i386 \
-        libxtst6:i386 \
+        libc6:amd64 \
+        libasound2:amd64 \
+        libfontconfig1:amd64 \
+        libfreetype6:amd64 \
+        libgl1:amd64 \
+        libgl1-mesa-dri:amd64 \
+        libstdc++6:amd64 \
+        libxcursor1:amd64 \
+        libxi6:amd64 \
+        libxrandr2:amd64 \
+        libxtst6:amd64 \
         qemu-user; \
       rm -rf /var/lib/apt/lists/*; \
       for javaVersion in 8 16 17 21 25; do \
@@ -117,10 +117,20 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
         curl --fail --location --silent --show-error "$downloadUrl" \
           | tar --extract --gzip --directory "/usr/lib/jvm/zulu-$javaVersion" --strip-components=1; \
       done; \
-      mkdir -p /opt/zulu-8-i686; \
+      mkdir -p /opt/zulu-8-x86_64; \
       curl --fail --location --silent --show-error \
-        https://cdn.azul.com/zulu/bin/zulu8.96.0.19-ca-jre8.0.502-linux_i686.tar.gz \
-        | tar --extract --gzip --directory /opt/zulu-8-i686 --strip-components=1; \
+        https://cdn.azul.com/zulu/bin/zulu8.96.0.19-ca-jre8.0.502-linux_x64.tar.gz \
+        | tar --extract --gzip --directory /opt/zulu-8-x86_64 --strip-components=1; \
+      # LWJGL 2.9.0 and 2.9.1 cannot be mapped through x86_64 QEMU on 16 KiB-page ARM64 hosts. \
+      # Bundle the ABI-compatible 2.9.4 native so the Java wrapper can replace them before launch. \
+      legacyLwjglNativeArchive=/tmp/lwjgl-platform-2.9.4-natives-linux.jar; \
+      curl --fail --location --silent --show-error --retry 5 --retry-all-errors --connect-timeout 15 --max-time 300 \
+        https://libraries.minecraft.net/org/lwjgl/lwjgl/lwjgl-platform/2.9.4-nightly-20150209/lwjgl-platform-2.9.4-nightly-20150209-natives-linux.jar \
+        --output "$legacyLwjglNativeArchive"; \
+      echo "931074f46c795d2f7b30ed6395df5715cfd7675b  $legacyLwjglNativeArchive" | sha1sum --check --status; \
+      python3 -c 'import sys, zipfile; archive, destination = sys.argv[1:]; open(destination, "wb").write(zipfile.ZipFile(archive).read("liblwjgl64.so"))' \
+        "$legacyLwjglNativeArchive" /opt/portableminecraftclient/liblwjgl64.so; \
+      rm "$legacyLwjglNativeArchive"; \
       for lwjglVersion in 3.3.3 3.4.1; do \
         for lwjglModule in lwjgl lwjgl-freetype lwjgl-glfw lwjgl-jemalloc lwjgl-openal lwjgl-opengl lwjgl-stb lwjgl-tinyfd; do \
           lwjglLibraryDirectory="/root/.minecraft/libraries/org/lwjgl/$lwjglModule/$lwjglVersion"; \
@@ -158,7 +168,7 @@ RUN mkdir -p "$HOME/.minecraft" && touch "$HOME/.minecraft/options.txt"
 
 WORKDIR /app
 
-COPY --chmod=0755 list-minecraft-release-versions portablemc-dry-run-with-retries java-i686 /usr/local/bin/
+COPY --chmod=0755 list-minecraft-release-versions portablemc-dry-run-with-retries java-x86_64 /usr/local/bin/
 RUN ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 
 EXPOSE 80

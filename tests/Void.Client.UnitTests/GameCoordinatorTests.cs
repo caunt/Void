@@ -324,9 +324,10 @@ public sealed class GameCoordinatorTests
     }
 
     [Theory]
-    [InlineData(true, "client.process.out_of_memory")]
-    [InlineData(false, "client.process.exited")]
-    public async Task UnexpectedProcessExitDuringConnectIsReportedToCaller(bool wasOutOfMemoryKilled, string expectedCode)
+    [InlineData(137, true, "client.process.out_of_memory")]
+    [InlineData(137, false, "client.process.exited")]
+    [InlineData(0, false, "client.process.exited")]
+    public async Task UnexpectedProcessExitDuringConnectIsReportedToCaller(int exitCode, bool wasOutOfMemoryKilled, string expectedCode)
     {
         var runtime = new FakeGameRuntime { BlockConnect = true };
         using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
@@ -337,19 +338,39 @@ public sealed class GameCoordinatorTests
 
         var connect = coordinator.ConnectAsync(new("server", 25565), CancellationToken.None);
         await WaitForOperationAsync(coordinator, "connect");
-        runtime.ExitGame(137, wasOutOfMemoryKilled);
+        runtime.ExitGame(exitCode, wasOutOfMemoryKilled);
 
         var exception = await Assert.ThrowsAsync<GameProcessExitException>(() => connect);
         Assert.Equal(expectedCode, exception.Failure.Code);
-        Assert.Contains("exit code 137", exception.Message);
+        Assert.Contains($"exit code {exitCode}", exception.Message);
 
         if (wasOutOfMemoryKilled)
             Assert.Contains("configured maximum heap of 2048 MiB", exception.Message);
 
         await WaitForStateAsync(coordinator, GameState.Failed);
         Assert.Equal(GameState.Failed, coordinator.Status.State);
-        Assert.Equal(137, coordinator.Status.ExitCode);
+        Assert.Equal(exitCode, coordinator.Status.ExitCode);
         Assert.Equal(expectedCode, coordinator.Status.Failure?.Code);
+
+        await coordinator.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task SuccessfulProcessExitWithoutActiveOperationReturnsToIdle()
+    {
+        var runtime = new FakeGameRuntime();
+        using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
+        await coordinator.StartAsync(CancellationToken.None);
+        await coordinator.StartVanillaAsync(new("1.17", []), CancellationToken.None);
+        runtime.CompleteLaunch();
+        await WaitForStateAsync(coordinator, GameState.Ready);
+
+        runtime.ExitGame(0, false);
+
+        await WaitForStateAsync(coordinator, GameState.Idle);
+        Assert.Equal(OperationState.Succeeded, coordinator.Status.OperationState);
+        Assert.Equal(0, coordinator.Status.ExitCode);
+        Assert.Null(coordinator.Status.Failure);
 
         await coordinator.StopAsync(CancellationToken.None);
     }

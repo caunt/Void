@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-exec qemu-i386 /opt/zulu-8-i686/bin/java "$@"

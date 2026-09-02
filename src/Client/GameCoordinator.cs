@@ -545,7 +545,10 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             return;
         }
 
-        var processFailure = exited.ExitCode is 0 ? null : new GameProcessExitException(exited.ExitCode, exited.WasOutOfMemoryKilled, exited.MemoryMb);
+        var processExitedDuringOperation = _activeCancellation is not null || _connectWaiters.Count is not 0;
+        var processFailure = exited.ExitCode is not 0 || processExitedDuringOperation
+            ? new GameProcessExitException(exited.ExitCode, exited.WasOutOfMemoryKilled, exited.MemoryMb)
+            : null;
 
         _game.Process.Dispose();
         _game = null;
@@ -561,12 +564,12 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         _activeCancellation = null;
         Publish(Status with
         {
-            State = exited.ExitCode is 0 ? GameState.Idle : GameState.Failed,
-            OperationState = exited.ExitCode is 0 ? OperationState.Succeeded : OperationState.Failed,
+            State = processFailure is null ? GameState.Idle : GameState.Failed,
+            OperationState = processFailure is null ? OperationState.Succeeded : OperationState.Failed,
             ProcessId = null,
             ExitCode = exited.ExitCode,
             Server = null,
-            Message = exited.ExitCode is 0 ? "Game exited" : "Game exited unexpectedly",
+            Message = processFailure is null ? "Game exited" : "Game exited unexpectedly",
             Error = processFailure?.Message,
             Failure = processFailure?.Failure,
             UpdatedAt = DateTimeOffset.UtcNow

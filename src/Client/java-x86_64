@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+for argument in "$@"; do
+  case "$argument" in
+    -Djava.library.path=*)
+      native_library_directory="${argument#-Djava.library.path=}"
+
+      if [[ -f "$native_library_directory/liblwjgl64.so" ]]; then
+        cp /opt/portableminecraftclient/liblwjgl64.so "$native_library_directory/liblwjgl64.so"
+      fi
+      ;;
+  esac
+done
+
+exec qemu-x86_64 /opt/zulu-8-x86_64/bin/java "$@"

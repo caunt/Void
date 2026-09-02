@@ -24,8 +24,8 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
     private const string DisplayScreenWidth = "854";
     private const string DisplayScreenHeight = "480";
     private const string DisplayScreenResolution = $"{DisplayScreenWidth}x{DisplayScreenHeight}";
-    private const string PortableMinecraftLegacyJvmExecutablePath = "/opt/zulu-8-i686/bin/java";
-    private const string PortableMinecraftLegacyJvmPath = "/usr/local/bin/java-i686";
+    private const string PortableMinecraftLegacyJvmExecutablePath = "/opt/zulu-8-x86_64/bin/java";
+    private const string PortableMinecraftLegacyJvmPath = "/usr/local/bin/java-x86_64";
     private const string PortableMinecraftLauncherPath = "/usr/local/bin/launch-portableminecraftclient";
     private const string PortableMinecraftDryRunPath = "/usr/local/bin/portablemc-dry-run-with-retries";
     private const string PortableMinecraftJvmAttachPath = "/usr/bin/jattach";
@@ -340,7 +340,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
             {
                 var arguments = File.ReadAllText($"/proc/{processId}/cmdline").Split('\0', StringSplitOptions.RemoveEmptyEntries);
 
-                if (arguments.Any(argument => Path.GetFileName(argument) is "java" or "java-i686"))
+                if (arguments.Any(argument => Path.GetFileName(argument) is "java" or "java-x86_64"))
                     return processId;
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
