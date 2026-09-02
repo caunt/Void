@@ -131,24 +131,6 @@ internal sealed partial class GameRuntime
             return true;
         }
 
-        public bool TryFindConnectionFailureBackButton(out ScreenRectangle backButton)
-        {
-            var centeredWideButtons = FindButtons()
-                .Where(button => button.Width >= Width * 0.4 && IsHorizontallyCentered(button))
-                .ToArray();
-
-            if (centeredWideButtons.Length is 1
-                && centeredWideButtons[0].Top >= Height * 0.45
-                && centeredWideButtons[0].Top <= Height * 0.75)
-            {
-                backButton = centeredWideButtons[0];
-                return true;
-            }
-
-            backButton = default;
-            return false;
-        }
-
         public bool TryFindPauseMenuBackToGameButton(out ScreenRectangle backToGameButton)
         {
             var buttons = FindButtons();
@@ -216,12 +198,6 @@ internal sealed partial class GameRuntime
             var right = Math.Min(Width, textBounds.Right + horizontalPadding);
             var bottom = Math.Min(Height, textBounds.Bottom + verticalPadding);
             return new ScreenRectangle(left, top, right - left, bottom - top);
-        }
-
-        public bool TryFindServerAddressField(OcrRectangle joinServerTextBounds, out ScreenRectangle serverAddressField)
-        {
-            var joinButton = FindInteractionArea(joinServerTextBounds);
-            return TryFindServerAddressField(joinButton, out serverAddressField);
         }
 
         public double CalculateDifferenceRatio(ScreenImage other, ScreenRectangle area, byte channelDifferenceThreshold = 20)
@@ -650,15 +626,7 @@ internal sealed partial class GameRuntime
 
     readonly record struct DirectConnectionScreen(ScreenRectangle ServerAddressField, ScreenRectangle JoinButton, ScreenRectangle CancelButton);
 
-    readonly record struct NavigationScreenTarget(NavigationScreenKind Kind, ScreenRectangle Target);
-
-    enum NavigationScreenKind
-    {
-        MultiplayerServerList,
-        OnlinePlayWarning
-    }
-
-    sealed record ConnectionScreenObservation(ConnectionNavigationKind Kind, ScreenRectangle InteractionArea, ConnectionTextMatch TextMatch);
+    sealed record ConnectionScreenObservation(ConnectionNavigationKind Kind, ScreenRectangle InteractionArea, ConnectionTextMatch TextMatch, DirectConnectionScreen? DirectConnectionScreen = null);
 
     sealed record ConnectionScreenRecognition(IReadOnlyDictionary<ConnectionTextAction, ConnectionTextMatch> Matches, ConnectionScreenObservation? Observation);
 
