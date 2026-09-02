@@ -9,7 +9,7 @@ using Xunit.v3;
 #if GITHUB_ACTIONS
 [assembly: Parallelization(MaxThreads = 1)]
 #else
-[assembly: Parallelization(MaxThreads = 2)]
+[assembly: Parallelization(MaxThreads = 3)]
 #endif
 
 [assembly: AssemblyFixture(typeof(PaperFixture))]
