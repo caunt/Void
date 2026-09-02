@@ -68,6 +68,58 @@ public sealed class GameCoordinatorTests
         await coordinator.StopAsync(CancellationToken.None);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task NonPositiveMemoryIsRejectedBeforeRuntimeInvocation(int memoryMb)
+    {
+        var runtime = new FakeGameRuntime();
+        using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
+        await coordinator.StartAsync(CancellationToken.None);
+
+        var exception = await Assert.ThrowsAsync<GameCommandException>(() => coordinator.StartVanillaAsync(new("1.21.1", [], memoryMb), CancellationToken.None));
+
+        Assert.Equal(400, exception.StatusCode);
+        Assert.Equal(0, runtime.LaunchCount);
+        await coordinator.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task TypedMemoryCannotConflictWithRawMaximumHeapArgument()
+    {
+        var runtime = new FakeGameRuntime();
+        using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
+        await coordinator.StartAsync(CancellationToken.None);
+
+        var exception = await Assert.ThrowsAsync<GameCommandException>(() => coordinator.StartVanillaAsync(new("1.21.1", ["--jvm-arg=-Xmx1G"], 2048), CancellationToken.None));
+
+        Assert.Equal(400, exception.StatusCode);
+        Assert.Equal(0, runtime.LaunchCount);
+        await coordinator.StopAsync(CancellationToken.None);
+    }
+
+    [Theory]
+    [InlineData("vanilla")]
+    [InlineData("neoforge")]
+    [InlineData("curseforge")]
+    public async Task LaunchForwardsConfiguredMemory(string launchType)
+    {
+        var runtime = new FakeGameRuntime();
+        using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
+        await coordinator.StartAsync(CancellationToken.None);
+
+        _ = launchType switch
+        {
+            "vanilla" => await coordinator.StartVanillaAsync(new("1.21.1", [], 2048), CancellationToken.None),
+            "neoforge" => await coordinator.StartNeoForgeAsync(new("1.21.1", [], 2048), CancellationToken.None),
+            "curseforge" => await coordinator.StartCurseForgeAsync(new("test", 1, [], 2048), CancellationToken.None),
+            _ => throw new ArgumentOutOfRangeException(nameof(launchType), launchType, null)
+        };
+
+        Assert.Equal(2048, runtime.LastMemoryMb);
+        await coordinator.StopAsync(CancellationToken.None);
+    }
+
     [Fact]
     public async Task ConcurrentStopIsRejectedWithoutSupersedingTheAcceptedStop()
     {
@@ -271,6 +323,37 @@ public sealed class GameCoordinatorTests
         await coordinator.StopAsync(CancellationToken.None);
     }
 
+    [Theory]
+    [InlineData(true, "client.process.out_of_memory")]
+    [InlineData(false, "client.process.exited")]
+    public async Task UnexpectedProcessExitDuringConnectIsReportedToCaller(bool wasOutOfMemoryKilled, string expectedCode)
+    {
+        var runtime = new FakeGameRuntime { BlockConnect = true };
+        using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
+        await coordinator.StartAsync(CancellationToken.None);
+        await coordinator.StartVanillaAsync(new("1.17", [], 2048), CancellationToken.None);
+        runtime.CompleteLaunch();
+        await WaitForStateAsync(coordinator, GameState.Ready);
+
+        var connect = coordinator.ConnectAsync(new("server", 25565), CancellationToken.None);
+        await WaitForOperationAsync(coordinator, "connect");
+        runtime.ExitGame(137, wasOutOfMemoryKilled);
+
+        var exception = await Assert.ThrowsAsync<GameProcessExitException>(() => connect);
+        Assert.Equal(expectedCode, exception.Failure.Code);
+        Assert.Contains("exit code 137", exception.Message);
+
+        if (wasOutOfMemoryKilled)
+            Assert.Contains("configured maximum heap of 2048 MiB", exception.Message);
+
+        await WaitForStateAsync(coordinator, GameState.Failed);
+        Assert.Equal(GameState.Failed, coordinator.Status.State);
+        Assert.Equal(137, coordinator.Status.ExitCode);
+        Assert.Equal(expectedCode, coordinator.Status.Failure?.Code);
+
+        await coordinator.StopAsync(CancellationToken.None);
+    }
+
     private static async Task WaitForStateAsync(GameCoordinator coordinator, GameState expected)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -308,12 +391,13 @@ public sealed class GameCoordinatorTests
         public int StopCount { get; private set; }
         public int ConnectCount { get; private set; }
         public bool ConnectCancellationRequested { get; private set; }
+        public int? LastMemoryMb { get; private set; }
         public string? LastVanillaVersion { get; private set; }
         public string? LastNeoForgeVersion { get; private set; }
 
         public void CompleteLaunch()
         {
-            _process = new FakeManagedProcess(LaunchCount);
+            _process = new FakeManagedProcess(LaunchCount, LastMemoryMb);
             _launch.SetResult(new(_process, $"test:{LaunchCount}", DateTimeOffset.UtcNow, new("test.port", "token", null)));
         }
 
@@ -334,21 +418,32 @@ public sealed class GameCoordinatorTests
             _connect?.SetException(exception);
         }
 
+        public void ExitGame(int exitCode, bool wasOutOfMemoryKilled)
+        {
+            _process?.Exit(exitCode, wasOutOfMemoryKilled);
+        }
+
         public Task WriteOptionsAsync(string options, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        public Task<RunningGame> LaunchVanillaAsync(string version, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+        public Task<RunningGame> LaunchVanillaAsync(string version, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
         {
             LastVanillaVersion = version;
+            LastMemoryMb = memoryMb;
             return BeginLaunch(cancellationToken);
         }
 
-        public Task<RunningGame> LaunchNeoForgeAsync(string version, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+        public Task<RunningGame> LaunchNeoForgeAsync(string version, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
         {
             LastNeoForgeVersion = version;
+            LastMemoryMb = memoryMb;
             return BeginLaunch(cancellationToken);
         }
 
-        public Task<RunningGame> LaunchCurseForgeAsync(string slug, int fileId, IReadOnlyList<string> arguments, CancellationToken cancellationToken) => BeginLaunch(cancellationToken);
+        public Task<RunningGame> LaunchCurseForgeAsync(string slug, int fileId, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
+        {
+            LastMemoryMb = memoryMb;
+            return BeginLaunch(cancellationToken);
+        }
 
         public Task ConnectAsync(string host, int port, CancellationToken cancellationToken)
         {
@@ -406,22 +501,25 @@ public sealed class GameCoordinatorTests
         }
     }
 
-    private sealed class FakeManagedProcess(int id) : IManagedProcess
+    private sealed class FakeManagedProcess(int id, int? memoryMb) : IManagedProcess
     {
         private readonly TaskCompletionSource _exit = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public int Id { get; } = id;
         public bool HasExited { get; private set; }
         public int? ExitCode { get; private set; }
+        public int? MemoryMb { get; } = memoryMb;
+        public bool WasOutOfMemoryKilled { get; private set; }
 
         public Task WaitForExitAsync(CancellationToken cancellationToken) => _exit.Task.WaitAsync(cancellationToken);
 
-        public void KillTree() => Exit(137);
+        public void KillTree() => Exit(137, false);
 
-        public void Exit(int exitCode)
+        public void Exit(int exitCode, bool wasOutOfMemoryKilled = false)
         {
             HasExited = true;
             ExitCode = exitCode;
+            WasOutOfMemoryKilled = wasOutOfMemoryKilled;
             _exit.TrySetResult();
         }
 

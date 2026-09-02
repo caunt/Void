@@ -28,11 +28,11 @@ internal enum StopMode
     Forced
 }
 
-internal sealed record StartGameRequest(string? Version, string[]? Arguments);
+internal sealed record StartGameRequest(string? Version, string[]? Arguments, int? MemoryMb = null);
 
-internal sealed record StartNeoForgeGameRequest(string? Version, string[]? Arguments);
+internal sealed record StartNeoForgeGameRequest(string? Version, string[]? Arguments, int? MemoryMb = null);
 
-internal sealed record StartCurseForgeGameRequest(string? Slug, int FileId, string[]? Arguments);
+internal sealed record StartCurseForgeGameRequest(string? Slug, int FileId, string[]? Arguments, int? MemoryMb = null);
 
 internal sealed record ConnectGameRequest(string? Host, int Port);
 
@@ -94,6 +94,8 @@ internal interface IManagedProcess : IDisposable
     int Id { get; }
     bool HasExited { get; }
     int? ExitCode { get; }
+    int? MemoryMb { get; }
+    bool WasOutOfMemoryKilled { get; }
     Task WaitForExitAsync(CancellationToken cancellationToken);
     void KillTree();
 }
@@ -101,9 +103,9 @@ internal interface IManagedProcess : IDisposable
 internal interface IGameRuntime
 {
     Task WriteOptionsAsync(string options, CancellationToken cancellationToken);
-    Task<RunningGame> LaunchVanillaAsync(string version, IReadOnlyList<string> arguments, CancellationToken cancellationToken);
-    Task<RunningGame> LaunchNeoForgeAsync(string version, IReadOnlyList<string> arguments, CancellationToken cancellationToken);
-    Task<RunningGame> LaunchCurseForgeAsync(string slug, int fileId, IReadOnlyList<string> arguments, CancellationToken cancellationToken);
+    Task<RunningGame> LaunchVanillaAsync(string version, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken);
+    Task<RunningGame> LaunchNeoForgeAsync(string version, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken);
+    Task<RunningGame> LaunchCurseForgeAsync(string slug, int fileId, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken);
     Task ConnectAsync(string host, int port, CancellationToken cancellationToken);
     Task SendChatAsync(string message, CancellationToken cancellationToken);
     Task<byte[]> CaptureScreenshotAsync(CancellationToken cancellationToken);
@@ -119,6 +121,22 @@ internal sealed class GameCommandException(int statusCode, string message) : Exc
 internal class GameClientException(string code, string operation, string stage, string message, Exception? innerException = null) : Exception(message, innerException)
 {
     public ClientFailure Failure => new(code, operation, stage, Message, GetType().FullName ?? GetType().Name, ToString());
+}
+
+internal sealed class GameProcessExitException(int exitCode, bool wasOutOfMemoryKilled, int? memoryMb) : GameClientException(
+    wasOutOfMemoryKilled ? "client.process.out_of_memory" : "client.process.exited",
+    "process",
+    "exit",
+    CreateMessage(exitCode, wasOutOfMemoryKilled, memoryMb))
+{
+    private static string CreateMessage(int exitCode, bool wasOutOfMemoryKilled, int? memoryMb)
+    {
+        if (!wasOutOfMemoryKilled)
+            return $"Minecraft exited unexpectedly with exit code {exitCode}";
+
+        var memoryDescription = memoryMb is { } value ? $" with a configured maximum heap of {value} MiB" : "";
+        return $"Minecraft was killed by the operating system out-of-memory killer with exit code {exitCode}{memoryDescription}";
+    }
 }
 
 internal sealed class GamePlayersException : Exception

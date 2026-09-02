@@ -1,0 +1,33 @@
+using System.Globalization;
+
+namespace Void.Client;
+
+internal static class CgroupMemoryEvents
+{
+    private const string MemoryEventsPath = "/sys/fs/cgroup/memory.events";
+
+    public static long? ReadOutOfMemoryKillCount()
+    {
+        try
+        {
+            return ParseOutOfMemoryKillCount(File.ReadAllText(MemoryEventsPath));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    internal static long? ParseOutOfMemoryKillCount(string content)
+    {
+        foreach (var line in content.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            if (parts is ["oom_kill", var value] && long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var count))
+                return count;
+        }
+
+        return null;
+    }
+}

@@ -62,7 +62,7 @@ Start operations return this status with `202 Accepted` and a `Location: /api/ga
 Save its `operationId`, then poll until the same operation reports `ready` and `succeeded`.
 Stop polling with a failure if the identifier changes or the operation becomes `failed` or `canceled`.
 
-Runtime failures are also returned in the `failure` extension of HTTP Problem Details responses. Stack traces intentionally expose container implementation details and should not be forwarded to untrusted consumers.
+Runtime failures are also returned in the `failure` extension of HTTP Problem Details responses. An unexpected Minecraft process exit uses `client.process.exited`; a cgroup-confirmed OOM kill uses `client.process.out_of_memory` and reports the exit code and configured heap. Stack traces intentionally expose container implementation details and should not be forwarded to untrusted consumers.
 
 ## Live Players
 
@@ -115,7 +115,9 @@ The options are retained in the configured Minecraft directory and used by later
 
 ## Starting a Game
 
-Only one game can run at a time. Every start request accepts an optional `arguments` array containing PortableMC start arguments.
+Only one game can run at a time. Every start request accepts an optional `arguments` array containing PortableMC start arguments and an optional positive `memoryMb` integer. When provided, `memoryMb` sets the Minecraft JVM maximum heap through `-Xmx`; it does not limit total container memory. Do not also provide a raw `-Xmx` argument.
+
+Mojang used a 2 GiB default before 26.1 and changed it to 4 GiB for 26.1. See [**Minecraft Java Edition memory allocation**](https://help.minecraft.net/hc/en-us/articles/39083573916941) and the [**Minecraft Java Edition 26.1 release notes**](https://www.minecraft.net/en-us/article/minecraft-java-edition-26-1).
 
 ### Vanilla
 
@@ -125,7 +127,7 @@ Only one game can run at a time. Every start request accepts an optional `argume
 curl --fail-with-body \
   --request POST \
   --header 'Content-Type: application/json' \
-  --data '{"version":"1.21.8","arguments":["--username","TestPlayer"]}' \
+  --data '{"version":"1.21.8","memoryMb":2048,"arguments":["--username","TestPlayer"]}' \
   http://localhost:8080/api/game/start/vanilla
 ```
 
@@ -138,7 +140,7 @@ blank value, to resolve and start the latest stable NeoForge release:
 curl --fail-with-body \
   --request POST \
   --header 'Content-Type: application/json' \
-  --data '{"arguments":["--username","TestPlayer"]}' \
+  --data '{"memoryMb":4096,"arguments":["--username","TestPlayer"]}' \
   http://localhost:8080/api/game/start/neoforge
 ```
 
@@ -148,7 +150,7 @@ Supply it to start NeoForge for a specific Minecraft version instead:
 curl --fail-with-body \
   --request POST \
   --header 'Content-Type: application/json' \
-  --data '{"version":"1.21.1","arguments":["--username","TestPlayer"]}' \
+  --data '{"version":"1.21.1","memoryMb":2048,"arguments":["--username","TestPlayer"]}' \
   http://localhost:8080/api/game/start/neoforge
 ```
 
@@ -162,7 +164,7 @@ Provide a project `slug` and positive CurseForge `fileId`. The container must ha
 curl --fail-with-body \
   --request POST \
   --header 'Content-Type: application/json' \
-  --data '{"slug":"all-the-mods-10","fileId":1234567,"arguments":["--username","TestPlayer"]}' \
+  --data '{"slug":"all-the-mods-10","fileId":1234567,"memoryMb":4096,"arguments":["--username","TestPlayer"]}' \
   http://localhost:8080/api/game/start/curseforge
 ```
 

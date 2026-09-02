@@ -82,24 +82,24 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         }
     }
 
-    private async Task<RunningGame> LaunchPortableAsync(string portableMinecraftVersion, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    private async Task<RunningGame> LaunchPortableAsync(string portableMinecraftVersion, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
     {
         var minecraftDirectory = GetMinecraftDirectory();
         await PreparePortableMinecraftClientAsync(minecraftDirectory, portableMinecraftVersion, cancellationToken);
-        return await LaunchPreparedGameAsync(minecraftDirectory, portableMinecraftVersion, arguments, cancellationToken);
+        return await LaunchPreparedGameAsync(minecraftDirectory, portableMinecraftVersion, arguments, memoryMb, cancellationToken);
     }
 
-    public Task<RunningGame> LaunchVanillaAsync(string version, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    public Task<RunningGame> LaunchVanillaAsync(string version, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
     {
-        return LaunchPortableAsync($"mojang:{version}", arguments, cancellationToken);
+        return LaunchPortableAsync($"mojang:{version}", arguments, memoryMb, cancellationToken);
     }
 
-    public Task<RunningGame> LaunchNeoForgeAsync(string version, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    public Task<RunningGame> LaunchNeoForgeAsync(string version, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
     {
-        return LaunchPortableAsync($"neoforge:{version}", arguments, cancellationToken);
+        return LaunchPortableAsync($"neoforge:{version}", arguments, memoryMb, cancellationToken);
     }
 
-    public async Task<RunningGame> LaunchCurseForgeAsync(string slug, int fileId, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    public async Task<RunningGame> LaunchCurseForgeAsync(string slug, int fileId, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
     {
         var apiKey = Environment.GetEnvironmentVariable("CURSEFORGE_API_KEY");
 
@@ -108,7 +108,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
 
         var minecraftDirectory = GetMinecraftDirectory();
         var portableMinecraftVersion = await PrepareCurseForgeAsync(slug, fileId, apiKey, CreateCurseForgeApiBaseUri(), minecraftDirectory, cancellationToken);
-        return await LaunchPreparedGameAsync(minecraftDirectory, portableMinecraftVersion, arguments, cancellationToken);
+        return await LaunchPreparedGameAsync(minecraftDirectory, portableMinecraftVersion, arguments, memoryMb, cancellationToken);
     }
 
     public Task ConnectAsync(string host, int port, CancellationToken cancellationToken)
@@ -228,12 +228,15 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         }
     }
 
-    private async Task<RunningGame> LaunchPreparedGameAsync(string minecraftDirectory, string portableMinecraftVersion, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    private async Task<RunningGame> LaunchPreparedGameAsync(string minecraftDirectory, string portableMinecraftVersion, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
     {
         await PrepareDisplayAndWindowAsync(cancellationToken);
         Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portableMinecraftVersion}");
         var tracker = CreateTrackerConnection(FindUsername(arguments));
-        var launchArguments = arguments.Append($"--jvm-arg=-javaagent:{PortableMinecraftAgentPath}={CreateAgentArguments(tracker)}").Cast<string?>().ToArray();
+        var launchArguments = memoryMb is { } value
+            ? arguments.Append(CreateMaximumHeapArgument(value)).Append($"--jvm-arg=-javaagent:{PortableMinecraftAgentPath}={CreateAgentArguments(tracker)}").Cast<string?>().ToArray()
+            : arguments.Append($"--jvm-arg=-javaagent:{PortableMinecraftAgentPath}={CreateAgentArguments(tracker)}").Cast<string?>().ToArray();
+        var initialOutOfMemoryKillCount = CgroupMemoryEvents.ReadOutOfMemoryKillCount();
         Process process;
 
         try
@@ -248,16 +251,34 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
 
         try
         {
-            await WaitForPreparedLargestWindowAsync(Environment.GetEnvironmentVariable("DISPLAY") ?? DefaultDisplay, cancellationToken);
-            return new RunningGame(new ManagedProcess(process), portableMinecraftVersion, DateTimeOffset.UtcNow, tracker);
+            var managedProcess = new ManagedProcess(process, memoryMb, initialOutOfMemoryKillCount);
+            using var windowCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            var windowTask = WaitForPreparedLargestWindowAsync(Environment.GetEnvironmentVariable("DISPLAY") ?? DefaultDisplay, windowCancellationTokenSource.Token);
+            var processExitTask = managedProcess.WaitForExitAsync(CancellationToken.None);
+
+            if (await Task.WhenAny(windowTask, processExitTask) == processExitTask)
+            {
+                await windowCancellationTokenSource.CancelAsync();
+                await ((Task)windowTask).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+                throw new GameProcessExitException(process.ExitCode, managedProcess.WasOutOfMemoryKilled, memoryMb);
+            }
+
+            await windowTask;
+            return new RunningGame(managedProcess, portableMinecraftVersion, DateTimeOffset.UtcNow, tracker);
         }
         catch
         {
             KillProcess(process);
             await WaitForKilledProcessAsync(process);
+            process.Dispose();
             File.Delete(tracker.DescriptorPath);
             throw;
         }
+    }
+
+    internal static string CreateMaximumHeapArgument(int memoryMb)
+    {
+        return $"--jvm-arg=-Xmx{memoryMb.ToString(CultureInfo.InvariantCulture)}M";
     }
 
     private static GameTrackerConnection CreateTrackerConnection(string? expectedName)

@@ -21,6 +21,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
     private CancellationTokenSource? _activeCancellation;
     private ServerAddress? _connectingServer;
     private ConnectGameResponse? _connectedResponse;
+    private GameProcessExitException? _processExitFailure;
     private long? _connectOperationId;
     private long _nextOperationId;
     private CancellationToken _stoppingToken;
@@ -173,6 +174,8 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         var version = message.Request?.Version?.Trim();
         var neoForgeVersion = message.NeoForgeRequest?.Version?.Trim();
         var slug = message.CurseForgeRequest?.Slug?.Trim();
+        var arguments = message.Request?.Arguments ?? message.NeoForgeRequest?.Arguments ?? message.CurseForgeRequest?.Arguments ?? [];
+        var memoryMb = message.Request?.MemoryMb ?? message.NeoForgeRequest?.MemoryMb ?? message.CurseForgeRequest?.MemoryMb;
 
         if (message.Kind is "start-vanilla" && string.IsNullOrWhiteSpace(version))
         {
@@ -186,17 +189,30 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             return;
         }
 
+        if (memoryMb is <= 0)
+        {
+            message.Completion.SetException(BadRequest("memoryMb must be a positive integer"));
+            return;
+        }
+
+        if (memoryMb is not null && arguments.Any(IsMaximumHeapArgument))
+        {
+            message.Completion.SetException(BadRequest("memoryMb cannot be combined with an -Xmx JVM argument"));
+            return;
+        }
+
         var operationId = ++_nextOperationId;
         var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(_stoppingToken);
         _activeCancellation = operationCancellation;
         _connectedResponse = null;
+        _processExitFailure = null;
         Publish(new(GameState.Starting, operationId, message.Kind, OperationState.Running, null, null, null, "Game launch accepted", null, null, [], DateTimeOffset.UtcNow));
 
         Task<RunningGame> operation = message.Kind switch
         {
-            "start-vanilla" => runtime.LaunchVanillaAsync(version ?? "", message.Request?.Arguments ?? [], operationCancellation.Token),
-            "start-neoforge" => runtime.LaunchNeoForgeAsync(neoForgeVersion ?? "", message.NeoForgeRequest?.Arguments ?? [], operationCancellation.Token),
-            "start-curseforge" => runtime.LaunchCurseForgeAsync(slug ?? "", message.CurseForgeRequest?.FileId ?? 0, message.CurseForgeRequest?.Arguments ?? [], operationCancellation.Token),
+            "start-vanilla" => runtime.LaunchVanillaAsync(version ?? "", arguments, memoryMb, operationCancellation.Token),
+            "start-neoforge" => runtime.LaunchNeoForgeAsync(neoForgeVersion ?? "", arguments, memoryMb, operationCancellation.Token),
+            "start-curseforge" => runtime.LaunchCurseForgeAsync(slug ?? "", message.CurseForgeRequest?.FileId ?? 0, arguments, memoryMb, operationCancellation.Token),
             _ => throw new InvalidOperationException($"Unknown launch kind {message.Kind}")
         };
 
@@ -529,13 +545,20 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             return;
         }
 
+        var processFailure = exited.ExitCode is 0 ? null : new GameProcessExitException(exited.ExitCode, exited.WasOutOfMemoryKilled, exited.MemoryMb);
+
         _game.Process.Dispose();
         _game = null;
         _connectedResponse = null;
+        Volatile.Write(ref _processExitFailure, processFailure);
         _activeCancellation?.Cancel();
-        CancelConnectWaiters();
+
+        if (processFailure is null)
+            CancelConnectWaiters();
+        else
+            FailConnectWaiters(processFailure);
+
         _activeCancellation = null;
-        var processFailure = exited.ExitCode is 0 ? null : new InvalidOperationException($"Minecraft exited with code {exited.ExitCode}");
         Publish(Status with
         {
             State = exited.ExitCode is 0 ? GameState.Idle : GameState.Failed,
@@ -544,8 +567,8 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             ExitCode = exited.ExitCode,
             Server = null,
             Message = exited.ExitCode is 0 ? "Game exited" : "Game exited unexpectedly",
-            Error = exited.ExitCode is 0 ? null : $"Minecraft exited with code {exited.ExitCode}",
-            Failure = processFailure is null ? null : FailureFor(processFailure, "process", "exit"),
+            Error = processFailure?.Message,
+            Failure = processFailure?.Failure,
             UpdatedAt = DateTimeOffset.UtcNow
         });
     }
@@ -637,7 +660,10 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         }
         catch (OperationCanceledException exception) when (cancellation.IsCancellationRequested)
         {
-            await WriteCompletionAsync(new ScreenshotCompleted(operationId, null, exception, true, cancellation, completion));
+            if (Volatile.Read(ref _processExitFailure) is { } processExitFailure)
+                await WriteCompletionAsync(new ScreenshotCompleted(operationId, null, processExitFailure, false, cancellation, completion));
+            else
+                await WriteCompletionAsync(new ScreenshotCompleted(operationId, null, exception, true, cancellation, completion));
         }
         catch (Exception exception)
         {
@@ -657,7 +683,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         }
     }
 
-    private static async Task<(Exception? Error, bool Canceled)> ObserveAsync(Task operation, CancellationTokenSource cancellation)
+    private async Task<(Exception? Error, bool Canceled)> ObserveAsync(Task operation, CancellationTokenSource cancellation)
     {
         try
         {
@@ -666,7 +692,9 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         }
         catch (OperationCanceledException exception) when (cancellation.IsCancellationRequested)
         {
-            return (exception, true);
+            return Volatile.Read(ref _processExitFailure) is { } processExitFailure
+                ? (processExitFailure, false)
+                : (exception, true);
         }
         catch (Exception exception)
         {
@@ -677,7 +705,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
     private async Task MonitorProcessAsync(RunningGame game)
     {
         await game.Process.WaitForExitAsync(CancellationToken.None);
-        await WriteCompletionAsync(new ProcessExited(game.Process.Id, game.Process.ExitCode ?? -1));
+        await WriteCompletionAsync(new ProcessExited(game.Process.Id, game.Process.ExitCode ?? -1, game.Process.WasOutOfMemoryKilled, game.Process.MemoryMb));
     }
 
     private async Task CleanupSupersededGameAsync(RunningGame game)
@@ -733,6 +761,25 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         _connectOperationId = null;
     }
 
+    private void FailConnectWaiters(Exception exception)
+    {
+        foreach (var waiter in _connectWaiters)
+        {
+            waiter.CancellationRegistration.Dispose();
+            waiter.Completion.TrySetException(exception);
+        }
+
+        _connectWaiters.Clear();
+        _connectingServer = null;
+        _connectOperationId = null;
+    }
+
+    private static bool IsMaximumHeapArgument(string argument)
+    {
+        return argument.StartsWith("-Xmx", StringComparison.Ordinal)
+               || argument.StartsWith("--jvm-arg=-Xmx", StringComparison.Ordinal);
+    }
+
     private static GameCommandException BadRequest(string message) => new(StatusCodes.Status400BadRequest, message);
 
     private static GameCommandException Conflict(string message) => new(StatusCodes.Status409Conflict, message);
@@ -751,6 +798,6 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
     private sealed record ConnectCompleted(long OperationId, ServerAddress Server, Exception? Error, bool Canceled, CancellationTokenSource Cancellation) : Message;
     private sealed record VoidOperationCompleted(long OperationId, string Kind, Exception? Error, bool Canceled, CancellationTokenSource Cancellation, TaskCompletionSource<bool> Completion) : Message;
     private sealed record ScreenshotCompleted(long OperationId, byte[]? Image, Exception? Error, bool Canceled, CancellationTokenSource Cancellation, TaskCompletionSource<byte[]> Completion) : Message;
-    private sealed record ProcessExited(int ProcessId, int ExitCode) : Message;
+    private sealed record ProcessExited(int ProcessId, int ExitCode, bool WasOutOfMemoryKilled, int? MemoryMb) : Message;
     private sealed record ConnectWaiter(TaskCompletionSource<ConnectGameResponse> Completion, CancellationTokenRegistration CancellationRegistration);
 }

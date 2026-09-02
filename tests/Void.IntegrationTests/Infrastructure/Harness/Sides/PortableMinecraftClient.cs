@@ -241,9 +241,11 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
         private async Task StartVanillaAsync(CancellationToken cancellationToken = default)
         {
+            var memoryMb = ProtocolVersion >= ProtocolVersion.MINECRAFT_26_1 ? 4096 : 2048;
             var request = new
             {
                 version = ProtocolVersion.FirstRelease.ToString(),
+                memoryMb,
                 arguments = new[]
                 {
                     "--fetch-exclude-all",
