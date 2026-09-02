@@ -4,8 +4,10 @@ namespace Void.Client;
 
 internal sealed partial class GameRuntime
 {
-    sealed class ScreenImage : IDisposable
+    internal sealed class ScreenImage : IDisposable
     {
+        private const double ChatInputMinimumBrightness = 1;
+        private const double ChatInputBrightnessRatioThreshold = 0.7;
         private const int MinimumButtonWidth = 60;
         private const int MaximumButtonWidth = 430;
         private const int MinimumButtonHeight = 36;
@@ -53,6 +55,17 @@ internal sealed partial class GameRuntime
                 throw new InvalidOperationException("Screen capture pixel data is truncated");
 
             return new ScreenImage(imageBytes, pixelDataOffset, width, height);
+        }
+
+        public bool IsChatInputVisible()
+        {
+            if (Height is not 2)
+                throw new InvalidOperationException($"Chat input analysis requires exactly two pixel rows, but received {Height}");
+
+            var brightnessAboveInput = CalculateAverageLuminance(0);
+            var inputBrightness = CalculateAverageLuminance(1);
+            return brightnessAboveInput >= ChatInputMinimumBrightness
+                && inputBrightness / brightnessAboveInput <= ChatInputBrightnessRatioThreshold;
         }
 
         public bool TryFindMainMenuMultiplayerButton(out ScreenRectangle multiplayerButton)
@@ -228,6 +241,22 @@ internal sealed partial class GameRuntime
             }
 
             return comparedPixels is 0 ? 0 : (double)differentPixels / comparedPixels;
+        }
+
+        internal double CalculateAverageLuminance(int row)
+        {
+            if (row < 0 || row >= Height)
+                throw new ArgumentOutOfRangeException(nameof(row));
+
+            double totalLuminance = 0;
+
+            for (var x = 0; x < Width; x++)
+            {
+                var pixel = GetPixel(x, row);
+                totalLuminance += pixel.Red * 0.2126 + pixel.Green * 0.7152 + pixel.Blue * 0.0722;
+            }
+
+            return totalLuminance / Width / byte.MaxValue * 100;
         }
 
         public bool IsServerAddressFieldEmpty(ScreenRectangle serverAddressField)

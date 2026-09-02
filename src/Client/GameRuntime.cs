@@ -45,7 +45,6 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
     private const int UserInterfacePollDelayMilliseconds = 100;
     private const double ButtonStableDifferenceRatioThreshold = 0.01;
     private const double ServerAddressFieldDifferenceRatioThreshold = 0.01;
-    private const double ChatInputBrightnessRatioThreshold = 0.7;
     private const int DisplayProbeTimeoutMilliseconds = 1000;
     private const int ExternalProcessTimeoutMilliseconds = 5000;
     private const int ScreenCaptureTimeoutMilliseconds = 10000;
@@ -1541,56 +1540,22 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
 
     async Task<bool> IsChatInputVisibleAsync(string windowId, string display, CancellationToken cancellationToken = default)
     {
-        var screenshotPath = Path.Combine(Path.GetTempPath(), $"portable-minecraft-chat-{Guid.NewGuid():N}.png");
+        await Task.Delay(UserInterfacePollDelayMilliseconds, cancellationToken);
 
-        try
-        {
-            await Task.Delay(UserInterfacePollDelayMilliseconds, cancellationToken);
+        var captureResult = await RunScreenCaptureBytesAsync(
+            currentWindowId => CreateProcessInfo(
+                "import",
+                ["-window", currentWindowId, "-crop", ChatInputBrightnessCropGeometry, "+repage", "-depth", "8", "ppm:-"],
+                display: display),
+            windowId,
+            display,
+            cancellationToken);
 
-            var importResult = await RunScreenCaptureTextAsync(
-                currentWindowId => CreateProcessInfo("import", ["-window", currentWindowId, screenshotPath], display: display),
-                windowId,
-                display,
-                cancellationToken);
+        if (captureResult.ExitCode != 0)
+            throw new InvalidOperationException($"chat input capture failed: {captureResult.StandardError}");
 
-            if (importResult.ExitCode != 0)
-                throw new InvalidOperationException($"chat input capture failed: {importResult.StandardError}");
-
-            var convertProcessInfo = CreateProcessInfo("convert",
-            [
-                screenshotPath,
-            "-colorspace",
-            "Gray",
-            "-crop",
-            ChatInputBrightnessCropGeometry,
-            "+repage",
-            "-scale",
-            "1x2!",
-            "-format",
-            "%[fx:u.p{0,0}.r*100] %[fx:u.p{0,1}.r*100]",
-            "info:"
-            ]);
-            var convertResult = await RunProcessTextAsync(convertProcessInfo, TimeSpan.FromMilliseconds(ExternalProcessTimeoutMilliseconds), cancellationToken);
-
-            if (convertResult.ExitCode != 0)
-                throw new InvalidOperationException($"chat input analysis failed: {convertResult.StandardError}");
-
-            var brightnessValues = convertResult.StandardOutput.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-            if (brightnessValues.Length != 2
-                || !double.TryParse(brightnessValues[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var brightnessAboveInput)
-                || !double.TryParse(brightnessValues[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var inputBrightness))
-            {
-                throw new InvalidOperationException($"failed to parse chat input brightness values: '{convertResult.StandardOutput.Trim()}'");
-            }
-
-            return brightnessAboveInput >= 1 && inputBrightness / brightnessAboveInput <= ChatInputBrightnessRatioThreshold;
-        }
-        finally
-        {
-            if (File.Exists(screenshotPath))
-                File.Delete(screenshotPath);
-        }
+        using var screen = ScreenImage.LoadPortablePixmap(captureResult.StandardOutput);
+        return screen.IsChatInputVisible();
     }
 
     async Task<string?> FindLargestWindow(string display, CancellationToken cancellationToken = default)
@@ -1686,24 +1651,6 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         }
 
         return new ProcessTextResult(process.ExitCode, await standardOutputTask, await standardErrorTask);
-    }
-
-    async Task<ProcessTextResult> RunScreenCaptureTextAsync(Func<string, ProcessStartInfo> createProcessInfo, string windowId, string display, CancellationToken cancellationToken)
-    {
-        for (var attempt = 1; attempt <= ScreenCaptureMaximumAttempts; attempt++)
-        {
-            try
-            {
-                return await RunProcessTextAsync(createProcessInfo(windowId), TimeSpan.FromMilliseconds(ScreenCaptureTimeoutMilliseconds), cancellationToken);
-            }
-            catch (TimeoutException exception) when (attempt < ScreenCaptureMaximumAttempts)
-            {
-                Console.Error.WriteLine($"{exception.Message}; reacquiring the Minecraft window before screen capture attempt {attempt + 1}");
-                windowId = await WaitForPreparedLargestWindowAsync(display, cancellationToken);
-            }
-        }
-
-        throw new InvalidOperationException("Screen capture attempts were exhausted");
     }
 
     async Task<ProcessBytesResult> RunScreenCaptureBytesAsync(Func<string, ProcessStartInfo> createProcessInfo, string windowId, string display, CancellationToken cancellationToken)
