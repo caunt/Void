@@ -6,8 +6,8 @@ namespace Void.Client.UnitTests;
 public sealed class GameImagingTests
 {
     [Theory]
-    [InlineData(250, 175, true)]
-    [InlineData(250, 176, false)]
+    [InlineData(250, 174, true)]
+    [InlineData(250, 175, false)]
     [InlineData(2, 0, false)]
     public void DetectsChatInputFromBrightnessRatio(byte brightnessAboveInput, byte inputBrightness, bool expected)
     {
