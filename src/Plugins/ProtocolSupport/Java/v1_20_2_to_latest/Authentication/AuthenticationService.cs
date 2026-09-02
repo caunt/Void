@@ -32,6 +32,8 @@ namespace Void.Proxy.Plugins.ProtocolSupport.Java.v1_20_2_to_latest.Authenticati
 public class AuthenticationService(ILogger<AuthenticationService> logger, IEventService events, IPlayerService players, IServerService servers, IConsoleService console, IDependencyService dependencies) : AbstractAuthenticationService(events, players, servers, console, dependencies)
 #pragma warning restore CS9107 // Parameter is captured into the state of the enclosing type and its value is also passed to the base constructor. The value might be captured by the base class as well.
 {
+    private readonly Uuid _sessionId = Uuid.NewUuid();
+
     [Subscribe]
     public static void OnMessageReceived(MessageReceivedEvent @event)
     {
@@ -126,7 +128,7 @@ public class AuthenticationService(ILogger<AuthenticationService> logger, IEvent
         {
             GameProfile = profile,
             StrictErrorHandling = false,
-            SessionId = link.Player.ProtocolVersion >= ProtocolVersion.MINECRAFT_26_2 ? Uuid.NewUuid() : null
+            SessionId = link.Player.ProtocolVersion >= ProtocolVersion.MINECRAFT_26_2 ? _sessionId : null
         }, cancellationToken);
 
         await link.ReceivePacketAsync<LoginAcknowledgedPacket>(cancellationToken);
