@@ -193,7 +193,13 @@ public class ArgumentParserDefinitions
         ArgumentParserDefinition.From(new ArgumentSerializerMapping("minecraft:color",
             new()
             {
+                [ProtocolVersion.MINECRAFT_26_2] = -1,
                 [ProtocolVersion.MINECRAFT_1_19] = 16
+            })),
+        ArgumentParserDefinition.From(new ArgumentSerializerMapping("minecraft:team_color",
+            new()
+            {
+                [ProtocolVersion.MINECRAFT_26_2] = 16
             })),
         ArgumentParserDefinition.From(new ArgumentSerializerMapping("minecraft:component",
             new()

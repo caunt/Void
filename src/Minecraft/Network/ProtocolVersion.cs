@@ -121,6 +121,7 @@ public class ProtocolVersion : IComparable
     public static readonly ProtocolVersion MINECRAFT_1_21_11 = new(774, "1.21.11");
     /// <summary>Represents releases 26.1 through 26.1.2 using protocol <c>775</c>.</summary>
     public static readonly ProtocolVersion MINECRAFT_26_1 = new(775, "26.1", "26.1.1", "26.1.2");
+    public static readonly ProtocolVersion MINECRAFT_26_2 = new(776, "26.2");
 
     /// <summary>
     /// Initializes and globally registers a protocol version.
