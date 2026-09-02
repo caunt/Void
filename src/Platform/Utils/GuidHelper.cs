@@ -1,10 +1,7 @@
-﻿using System.Buffers.Binary;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
+﻿using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Void.Minecraft.Profiles;
 
 namespace Void.Proxy.Utils;
 
@@ -12,87 +9,22 @@ public static class GuidHelper
 {
     public static Guid FromStringHash(string text)
     {
-        ArgumentNullException.ThrowIfNull(text);
-
-        var i128 = new Int128();
-        var byteCount = Encoding.UTF8.GetByteCount(text);
-        Span<byte> utf8Bytes = stackalloc byte[byteCount];
-        Encoding.UTF8.GetBytes(text, utf8Bytes);
-        MD5.HashData(utf8Bytes, i128.AsSpan());
-
-        i128.version = (byte)((i128.version & 0x0f) | 0x30);
-        i128.variant = (byte)((i128.variant & 0x3f) | 0x80);
-
-        return Unsafe.As<Int128, Guid>(ref i128);
+        return Uuid.FromStringHash(text).AsGuid;
     }
 
     public static Guid FromLongs(long mostSig, long leastSig)
     {
-        Span<byte> bytes = stackalloc byte[16];
-        BinaryPrimitives.WriteInt64LittleEndian(bytes[..8], mostSig);
-        BinaryPrimitives.WriteInt64LittleEndian(bytes[8..], leastSig);
-
-        Span<byte> guidBytes =
-            //Is there a better way??
-            [
-                bytes[4],
-                bytes[5],
-                bytes[6],
-                bytes[7],
-                bytes[2],
-                bytes[3],
-                bytes[0],
-                bytes[1],
-                bytes[15],
-                bytes[14],
-                bytes[13],
-                bytes[12],
-                bytes[11],
-                bytes[10],
-                bytes[9],
-                bytes[8]
-            ];
-
-        return new Guid(guidBytes);
+        return Uuid.FromLongs(mostSig, leastSig).AsGuid;
     }
 
     public static int GetVersion(Guid guid)
     {
-        ref var i128 = ref Unsafe.As<Guid, Int128>(ref guid);
-        return i128.version >> 4;
+        return guid.Version;
     }
 
     public static int GetVariant(Guid guid)
     {
-        ref var i128 = ref Unsafe.As<Guid, Int128>(ref guid);
-        return (i128.variant >> 4) switch
-        {
-            <= 0b0111 => 0,
-            <= 0b1011 => 1,
-            <= 0b1101 => 2,
-            <= 0b1111 => 3,
-            _ => -1
-        };
-    }
-
-    [StructLayout(LayoutKind.Explicit, Size = 16)]
-    private struct Int128
-    {
-        [FieldOffset(0)] public int a;
-        [FieldOffset(4)] public int b;
-        [FieldOffset(8)] public int c;
-        [FieldOffset(12)] public int d;
-
-        [FieldOffset(0)] private byte _start;
-
-        [FieldOffset(7)] public byte version;
-        [FieldOffset(8)] public byte variant;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Span<byte> AsSpan()
-        {
-            return MemoryMarshal.CreateSpan(ref _start, 16);
-        }
+        return ((Uuid)guid).Variant;
     }
 }
 

@@ -1,7 +1,6 @@
 ﻿using System;
+using System.Buffers;
 using System.Buffers.Binary;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -14,8 +13,10 @@ namespace Void.Minecraft.Profiles;
 /// wire-format encodings used by the Java Edition protocol.
 /// </summary>
 [JsonConverter(typeof(UuidJsonConverter))]
-public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
+public readonly struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
 {
+    private const int MaxStackAllocatedByteCount = 256;
+
     /// <summary>
     /// Gets the zero UUID (<c>00000000-0000-0000-0000-000000000000</c>), wrapping <see cref="Guid.Empty"/>.
     /// </summary>
@@ -91,41 +92,24 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
     /// </remarks>
     /// <param name="parts">An array of exactly four <see langword="int"/> values representing the UUID.</param>
     /// <returns>The <see cref="Uuid"/> reconstructed from the four integer parts.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="parts"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
     /// <paramref name="parts"/> does not contain exactly four elements.
     /// </exception>
     public static Uuid Parse(params int[] parts)
     {
+        ArgumentNullException.ThrowIfNull(parts);
+
         if (parts.Length is not 4)
             throw new ArgumentException($"Expected 4 parts but got {parts.Length}. A UUID requires exactly 4 integer parts.", nameof(parts));
 
-        Span<byte> m0Bytes = stackalloc byte[4]; // m0: first 4 bytes (little-endian)
-        BinaryPrimitives.WriteInt32LittleEndian(m0Bytes, parts[0]);
-        Span<byte> m1Bytes = stackalloc byte[4]; // m1: next 4 bytes
-        BinaryPrimitives.WriteInt32LittleEndian(m1Bytes, parts[1]);
-        Span<byte> l0Bytes = stackalloc byte[4]; // l0: third int
-        BinaryPrimitives.WriteInt32LittleEndian(l0Bytes, parts[2]);
-        Span<byte> l1Bytes = stackalloc byte[4]; // l1: fourth int
-        BinaryPrimitives.WriteInt32LittleEndian(l1Bytes, parts[3]);
+        Span<byte> bytes = stackalloc byte[16];
+        BinaryPrimitives.WriteInt32BigEndian(bytes[..4], parts[0]);
+        BinaryPrimitives.WriteInt32BigEndian(bytes[4..8], parts[1]);
+        BinaryPrimitives.WriteInt32BigEndian(bytes[8..12], parts[2]);
+        BinaryPrimitives.WriteInt32BigEndian(bytes[12..], parts[3]);
 
-        return new Uuid(new Guid([
-            m0Bytes[0],
-            m0Bytes[1],
-            m0Bytes[2],
-            m0Bytes[3],
-            m1Bytes[2],
-            m1Bytes[3],
-            m1Bytes[0],
-            m1Bytes[1],
-            l0Bytes[3],
-            l0Bytes[2],
-            l0Bytes[1],
-            l0Bytes[0],
-            l1Bytes[3],
-            l1Bytes[2],
-            l1Bytes[1],
-            l1Bytes[0]
-        ]));
+        return new Uuid(new Guid(bytes, bigEndian: true));
     }
 
     /// <summary>
@@ -139,15 +123,28 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        var i128 = new Int128();
-        Span<byte> textBytes = stackalloc byte[Encoding.UTF8.GetByteCount(text)];
-        Encoding.UTF8.GetBytes(text, textBytes);
-        MD5.TryHashData(textBytes, i128.AsSpan(), out _);
+        var byteCount = Encoding.UTF8.GetByteCount(text);
+        byte[]? rentedBytes = null;
+        Span<byte> textBytes = byteCount <= MaxStackAllocatedByteCount
+            ? stackalloc byte[byteCount]
+            : (rentedBytes = ArrayPool<byte>.Shared.Rent(byteCount)).AsSpan(0, byteCount);
 
-        i128.version = (byte)(i128.version & 0x0f | 0x30);
-        i128.variant = (byte)(i128.variant & 0x3f | 0x80);
+        try
+        {
+            Encoding.UTF8.GetBytes(text, textBytes);
 
-        return new Uuid(Unsafe.As<Int128, Guid>(ref i128));
+            Span<byte> hash = stackalloc byte[MD5.HashSizeInBytes];
+            MD5.HashData(textBytes, hash);
+            hash[6] = (byte)(hash[6] & 0x0f | 0x30);
+            hash[8] = (byte)(hash[8] & 0x3f | 0x80);
+
+            return new Uuid(new Guid(hash, bigEndian: true));
+        }
+        finally
+        {
+            if (rentedBytes is not null)
+                ArrayPool<byte>.Shared.Return(rentedBytes, clearArray: true);
+        }
     }
 
     /// <summary>
@@ -164,30 +161,10 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
     public static Uuid FromLongs(long mostSig, long leastSig)
     {
         Span<byte> bytes = stackalloc byte[16];
-        var mostSigBytes = bytes[..8];
-        var leastSigBytes = bytes[8..];
+        BinaryPrimitives.WriteInt64BigEndian(bytes[..8], mostSig);
+        BinaryPrimitives.WriteInt64BigEndian(bytes[8..], leastSig);
 
-        BinaryPrimitives.WriteInt64LittleEndian(mostSigBytes, mostSig);
-        BinaryPrimitives.WriteInt64LittleEndian(leastSigBytes, leastSig);
-
-        return new Uuid(new Guid([
-            mostSigBytes[4],
-            mostSigBytes[5],
-            mostSigBytes[6],
-            mostSigBytes[7],
-            mostSigBytes[2],
-            mostSigBytes[3],
-            mostSigBytes[0],
-            mostSigBytes[1],
-            leastSigBytes[7],
-            leastSigBytes[6],
-            leastSigBytes[5],
-            leastSigBytes[4],
-            leastSigBytes[3],
-            leastSigBytes[2],
-            leastSigBytes[1],
-            leastSigBytes[0]
-        ]));
+        return new Uuid(new Guid(bytes, bigEndian: true));
     }
 
     /// <summary>
@@ -206,47 +183,29 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
     {
         ArgumentNullException.ThrowIfNull(name);
 
-        var i128 = new Int128();
-        var text = $"OfflinePlayer:{name}";
-        Span<byte> textBytes = stackalloc byte[Encoding.UTF8.GetByteCount(text)];
-        Encoding.UTF8.GetBytes(text, textBytes);
-        MD5.TryHashData(textBytes, i128.AsSpan(), out _);
-
-        i128.version = (byte)(i128.version & 0x0f | 0x30);
-        i128.variant = (byte)(i128.variant & 0x3f | 0x80);
-
-        return new Uuid(Unsafe.As<Int128, Guid>(ref i128));
+        return FromStringHash($"OfflinePlayer:{name}");
     }
 
     /// <summary>
-    /// Returns the UUID version number extracted from the version nibble of the underlying 128-bit value.
+    /// Gets the UUID version number extracted from the version nibble of the underlying 128-bit value.
     /// </summary>
-    /// <returns>An integer between 1 and 5 representing the UUID version field.</returns>
-    public int GetVersion()
-    {
-        ref var i128 = ref Unsafe.As<Guid, Int128>(ref guid);
-        return i128.version >> 4;
-    }
+    /// <value>An integer between 0 and 15 representing the UUID version field.</value>
+    public int Version => AsGuid.Version;
 
     /// <summary>
-    /// Returns the UUID variant as an integer decoded from the variant byte.
+    /// Gets the UUID variant using the values returned by Java's <c>UUID.variant()</c> method.
     /// </summary>
-    /// <returns>
-    /// <c>0</c> for NCS backward compatibility, <c>1</c> for RFC 4122, <c>2</c> for Microsoft,
-    /// <c>3</c> for future reserved, or <c>-1</c> if the variant byte is not in an expected range.
-    /// </returns>
-    public int GetVariant()
+    /// <value>
+    /// <c>0</c> for NCS backward compatibility, <c>2</c> for RFC 4122, <c>6</c> for Microsoft,
+    /// or <c>7</c> for future reserved.
+    /// </value>
+    public int Variant => AsGuid.Variant switch
     {
-        ref var i128 = ref Unsafe.As<Guid, Int128>(ref guid);
-        return (i128.variant >> 4) switch
-        {
-            <= 0b0111 => 0,
-            <= 0b1011 => 1,
-            <= 0b1101 => 2,
-            <= 0b1111 => 3,
-            _ => -1
-        };
-    }
+        <= 0b0111 => 0,
+        <= 0b1011 => 2,
+        <= 0b1101 => 6,
+        _ => 7
+    };
 
     /// <summary>
     /// Compares this UUID to <paramref name="other"/> using the underlying <see cref="Guid"/> comparison.
@@ -330,25 +289,5 @@ public struct Uuid(Guid guid) : IComparable<Uuid>, IEquatable<Uuid>
     public static implicit operator Uuid(Guid guid)
     {
         return new Uuid(guid);
-    }
-    
-    [StructLayout(LayoutKind.Explicit, Size = 16)]
-    private struct Int128
-    {
-        [FieldOffset(0)] public int a;
-        [FieldOffset(4)] public int b;
-        [FieldOffset(8)] public int c;
-        [FieldOffset(12)] public int d;
-
-        [FieldOffset(0)] private byte start;
-
-        [FieldOffset(7)] public byte version;
-        [FieldOffset(8)] public byte variant;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Span<byte> AsSpan()
-        {
-            return MemoryMarshal.CreateSpan(ref start, 16);
-        }
     }
 }

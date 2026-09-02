@@ -123,26 +123,40 @@ public class ReadMinecraftBufferExtensionsTests
     }
 
     [Fact]
-    public void ReadUuid_RoundTrips()
+    public void ReadUuid_UsesCanonicalProtocolBytes()
     {
-        Span<byte> data = stackalloc byte[32];
+        Span<byte> data = stackalloc byte[16];
         var buffer = new BufferSpan(data);
-        var uuid = Uuid.NewUuid();
+        var uuid = Uuid.Parse("11223344-5566-7788-99aa-bbccddeeff00");
+        ReadOnlySpan<byte> expected =
+        [
+            0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
+            0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00
+        ];
 
         buffer.WriteUuid(uuid);
+        Assert.True(data.SequenceEqual(expected));
+
         buffer.Position = 0;
 
         Assert.Equal(uuid, buffer.ReadUuid());
     }
 
     [Fact]
-    public void ReadUuidAsIntArray_RoundTrips()
+    public void ReadUuidAsIntArray_UsesCanonicalProtocolBytes()
     {
-        Span<byte> data = stackalloc byte[32];
+        Span<byte> data = stackalloc byte[16];
         var buffer = new BufferSpan(data);
-        var uuid = Uuid.NewUuid();
+        var uuid = Uuid.Parse("11223344-5566-7788-99aa-bbccddeeff00");
+        ReadOnlySpan<byte> expected =
+        [
+            0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
+            0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00
+        ];
 
         buffer.WriteUuidAsIntArray(uuid);
+        Assert.True(data.SequenceEqual(expected));
+
         buffer.Position = 0;
 
         Assert.Equal(uuid, buffer.ReadUuidAsIntArray());
