@@ -72,6 +72,9 @@ public record ArgumentSerializerMapping(string Identifier, Dictionary<ProtocolVe
     /// <returns><see langword="true"/> when a numeric mapping exists.</returns>
     public bool TryGetParserId(ProtocolVersion version, [MaybeNullWhen(false)] out int id)
     {
-        return VersionParserIdMapping.TryGetValue(version, out id);
+        if (!VersionParserIdMapping.TryGetValue(version, out id))
+            return false;
+
+        return id is not -1;
     }
 }
