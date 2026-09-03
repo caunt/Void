@@ -40,6 +40,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
     private const string ChatInputBrightnessCropGeometry = "854x2+0+451";
     private const int MinecraftGameId = 432;
     private const int CurseForgeFilesBatchSize = 50;
+    private const int ServerAddressClearBackspaceCount = 256;
     private const int UserInterfacePollDelayMilliseconds = 100;
     private const int DisplayProbeTimeoutMilliseconds = 1000;
     private const int ExternalProcessTimeoutMilliseconds = 5000;
@@ -905,7 +906,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
             1);
         await FocusMoveAndClickAsync(windowId, serverAddressInputTarget, cancellationToken);
         Console.Error.WriteLine($"Focused the input associated with OCR-recognized Server Address at {serverAddressInputTarget}");
-        await ClearTextWithoutDelayAsync(cancellationToken);
+        await ClearServerAddressWithoutDelayAsync(cancellationToken);
         await TypeTextWithoutDelayAsync(null, serverAddress, cancellationToken);
 
         while (true)
@@ -1285,6 +1286,12 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
     async Task ClearTextWithoutDelayAsync(CancellationToken cancellationToken)
     {
         await RunOrThrow(cancellationToken, "xdotool", "keydown", "ctrl", "key", "a", "keyup", "ctrl", "key", "BackSpace");
+    }
+
+    async Task ClearServerAddressWithoutDelayAsync(CancellationToken cancellationToken)
+    {
+        string[] command = ["xdotool", "key", "--clearmodifiers", "--delay", "0", "End", .. Enumerable.Repeat("BackSpace", ServerAddressClearBackspaceCount)];
+        await RunOrThrow(cancellationToken, command);
     }
 
     async Task<string?> OpenChatAsync(string windowId, string? preferredInputWindowId, string display, CancellationToken cancellationToken = default)
