@@ -906,8 +906,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
             1);
         await FocusMoveAndClickAsync(windowId, serverAddressInputTarget, cancellationToken);
         Console.Error.WriteLine($"Focused the input associated with OCR-recognized Server Address at {serverAddressInputTarget}");
-        await ClearServerAddressWithoutDelayAsync(cancellationToken);
-        await TypeTextWithoutDelayAsync(null, serverAddress, cancellationToken);
+        await ReplaceServerAddressWithoutDelayAsync(serverAddress, cancellationToken);
 
         while (true)
         {
@@ -1288,9 +1287,9 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         await RunOrThrow(cancellationToken, "xdotool", "keydown", "ctrl", "key", "a", "keyup", "ctrl", "key", "BackSpace");
     }
 
-    async Task ClearServerAddressWithoutDelayAsync(CancellationToken cancellationToken)
+    async Task ReplaceServerAddressWithoutDelayAsync(string serverAddress, CancellationToken cancellationToken)
     {
-        string[] command = ["xdotool", "key", "--clearmodifiers", "--delay", "0", "End", .. Enumerable.Repeat("BackSpace", ServerAddressClearBackspaceCount)];
+        string[] command = ["xdotool", "key", "--clearmodifiers", "--delay", "0", "End", .. Enumerable.Repeat("BackSpace", ServerAddressClearBackspaceCount), "type", "--clearmodifiers", "--", serverAddress];
         await RunOrThrow(cancellationToken, command);
     }
 
