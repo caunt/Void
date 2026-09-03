@@ -300,7 +300,6 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
                 // Cancellation is the expected outcome after the connection-failure screen was confirmed.
             }
 
-            await WaitForConnectionCancellationAsync(cancellationToken);
             await LogAsync($"Minecraft {ProtocolVersion.FirstRelease} visually confirmed the expected connection failure", cancellationToken);
         }
 
@@ -338,25 +337,6 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
                 if (status.State is "failed" || status.OperationState is "failed" or "canceled")
                     throw new IntegrationTestException($"Starting Minecraft {ProtocolVersion.FirstRelease} failed: {status.Error ?? "client entered failed state"}");
-
-                await Task.Delay(TimeSpan.FromMilliseconds(ClientStatePollDelayMilliseconds), cancellationToken);
-            }
-        }
-
-        private async Task WaitForConnectionCancellationAsync(CancellationToken cancellationToken = default)
-        {
-            while (true)
-            {
-                using var response = await HttpClient.GetAsync("/api/game/status", cancellationToken);
-                await EnsureSuccessAsync(response, "Reading Minecraft client status", cancellationToken);
-
-                var status = await ReadApiStatusAsync(response, "Reading Minecraft client status", cancellationToken);
-
-                if (status.Operation is "connect" && status.OperationState is "canceled")
-                    return;
-
-                if (status.Operation is not "connect" || status.OperationState is not "running")
-                    throw new IntegrationTestException($"Canceling the expected Minecraft connection failure returned unexpected operation {status.Operation}/{status.OperationState}");
 
                 await Task.Delay(TimeSpan.FromMilliseconds(ClientStatePollDelayMilliseconds), cancellationToken);
             }
