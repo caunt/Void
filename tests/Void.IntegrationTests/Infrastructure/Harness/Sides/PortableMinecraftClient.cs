@@ -54,7 +54,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
     public static async Task<PortableMinecraftClient> CreateAsync(CancellationToken cancellationToken = default)
     {
-        var builder = new ContainerBuilder("ghcr.io/caunt/portable-minecraft-client:offline")
+        var builder = new ContainerBuilder("ghcr.io/void-community/portable-minecraft-client:offline")
             .WithEnvironment("DISPLAY", Display)
             .WithPortBinding(port: ApiPort, assignRandomHostPort: true)
             .WithWaitStrategy(Wait.ForUnixContainer()
