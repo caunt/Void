@@ -40,7 +40,6 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
     private const string ChatInputBrightnessCropGeometry = "854x2+0+451";
     private const int MinecraftGameId = 432;
     private const int CurseForgeFilesBatchSize = 50;
-    private const int ServerAddressSelectionProbeByteCount = 8;
     private const int UserInterfacePollDelayMilliseconds = 100;
     private const int DisplayProbeTimeoutMilliseconds = 1000;
     private const int ExternalProcessTimeoutMilliseconds = 5000;
@@ -1192,14 +1191,6 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
             await RunOrThrow(cancellationToken, "xdotool", "type", "--clearmodifiers", "--window", windowId, "--delay", delay, "--", text);
     }
 
-    async Task TypeTextWithoutDelayAsync(string? windowId, string text, CancellationToken cancellationToken = default)
-    {
-        if (windowId is null)
-            await RunOrThrow(cancellationToken, "xdotool", "type", "--clearmodifiers", "--", text);
-        else
-            await RunOrThrow(cancellationToken, "xdotool", "type", "--clearmodifiers", "--window", windowId, "--", text);
-    }
-
     async Task PasteTextAsync(string? windowId, string text, string display, CancellationToken cancellationToken = default)
     {
         var processInfo = CreateProcessInfo("xclip", ["-selection", "clipboard", "-in", "-loops", "2", "-quiet"], display: display);
@@ -1245,32 +1236,44 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
 
     async Task ReplaceServerAddressWithAcknowledgedSelectionAsync(string serverAddress, string display, CancellationToken cancellationToken)
     {
-        var selectionProbe = CreateServerAddressSelectionProbe();
-        var clipboardMarker = $"clipboard{Convert.ToHexString(RandomNumberGenerator.GetBytes(ServerAddressSelectionProbeByteCount))}";
-        await TypeTextWithoutDelayAsync(null, selectionProbe, cancellationToken);
-        using var clipboardOwner = await StartClipboardOwnerAsync(clipboardMarker, display, cancellationToken);
-        var controlHeld = false;
+        await RunOrThrow(cancellationToken, CreateServerAddressClearCommand());
+        using var pasteOwner = await StartClipboardOwnerAsync(serverAddress, display, 2, cancellationToken);
 
         try
         {
-            await RunOrThrow(cancellationToken, "xdotool", "keydown", "ctrl");
-            controlHeld = true;
-            await RunOrThrow(cancellationToken, "xdotool", "key", "a", "c");
-            await WaitForProcessExitAsync(clipboardOwner, clipboardOwner.StartInfo.FileName, TimeSpan.FromMilliseconds(ExternalProcessTimeoutMilliseconds), cancellationToken);
-            var selectedText = await ReadClipboardTextAsync(display, cancellationToken);
+            await RunClipboardCommandUntilAcknowledgedAsync(pasteOwner, CreateServerAddressPasteCommand(), "Minecraft did not request the server address paste", cancellationToken);
 
-            if (!ClipboardContainsSelectionProbe(selectedText, selectionProbe))
-                throw new InvalidOperationException("Minecraft did not copy the complete server address selection");
+            if (pasteOwner.ExitCode is not 0)
+                throw new InvalidOperationException($"xclip exited with code {pasteOwner.ExitCode} while serving the server address paste");
 
-            Console.Error.WriteLine("Confirmed the complete server address selection through clipboard ownership");
-            await RunOrThrow(cancellationToken, CreateServerAddressReplacementCommand(serverAddress));
-            controlHeld = false;
+            var selectedText = await CopySelectedServerAddressTextAsync(serverAddress, display, cancellationToken);
+
+            if (!ClipboardMatchesServerAddress(selectedText, serverAddress))
+                throw new InvalidOperationException($"Minecraft copied {JsonSerializer.Serialize(selectedText)} instead of the expected server address {JsonSerializer.Serialize(serverAddress)}");
+
+            Console.Error.WriteLine("Confirmed the exact pasted server address through clipboard ownership");
         }
         finally
         {
-            if (controlHeld)
-                await TryReleaseControlAsync();
+            if (!pasteOwner.HasExited)
+            {
+                KillProcess(pasteOwner);
+                await WaitForKilledProcessAsync(pasteOwner);
+            }
+        }
+    }
 
+    async Task<string> CopySelectedServerAddressTextAsync(string serverAddress, string display, CancellationToken cancellationToken)
+    {
+        using var clipboardOwner = await StartClipboardOwnerAsync(serverAddress, display, 0, cancellationToken);
+
+        try
+        {
+            await RunClipboardCommandUntilAcknowledgedAsync(clipboardOwner, CreateServerAddressCopyCommand(), "Minecraft did not copy the selected server address", cancellationToken);
+            return await ReadClipboardTextAsync(display, cancellationToken);
+        }
+        finally
+        {
             if (!clipboardOwner.HasExited)
             {
                 KillProcess(clipboardOwner);
@@ -1279,9 +1282,20 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         }
     }
 
-    async Task<Process> StartClipboardOwnerAsync(string text, string display, CancellationToken cancellationToken)
+    async Task RunClipboardCommandUntilAcknowledgedAsync(Process clipboardOwner, string[] command, string failureMessage, CancellationToken cancellationToken)
     {
-        var processInfo = CreateProcessInfo("xclip", ["-selection", "clipboard", "-in", "-loops", "0", "-quiet"], display: display);
+        var deadline = DateTimeOffset.UtcNow.AddMilliseconds(ExternalProcessTimeoutMilliseconds);
+
+        while (!clipboardOwner.HasExited && DateTimeOffset.UtcNow < deadline)
+            await RunOrThrow(cancellationToken, command);
+
+        if (!clipboardOwner.HasExited)
+            throw new TimeoutException($"{failureMessage} within {ExternalProcessTimeoutMilliseconds / 1000.0:F1} seconds");
+    }
+
+    async Task<Process> StartClipboardOwnerAsync(string text, string display, int selectionRequestCount, CancellationToken cancellationToken)
+    {
+        var processInfo = CreateProcessInfo("xclip", ["-selection", "clipboard", "-in", "-loops", selectionRequestCount.ToString(CultureInfo.InvariantCulture), "-quiet"], display: display);
         processInfo.RedirectStandardInput = true;
         processInfo.RedirectStandardOutput = false;
         processInfo.RedirectStandardError = false;
@@ -1326,31 +1340,24 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         return result.ExitCode is 0 ? result.StandardOutput : null;
     }
 
-    async Task TryReleaseControlAsync()
+    internal static bool ClipboardMatchesServerAddress(string clipboardText, string serverAddress)
     {
-        try
-        {
-            await RunOrThrow(CancellationToken.None, "xdotool", "keyup", "ctrl");
-        }
-        catch (Exception exception)
-        {
-            Console.Error.WriteLine($"Releasing the Ctrl modifier during server address cleanup failed: {exception.Message}");
-        }
+        return string.Equals(clipboardText, serverAddress, StringComparison.Ordinal);
     }
 
-    internal static bool ClipboardContainsSelectionProbe(string clipboardText, string selectionProbe)
+    internal static string[] CreateServerAddressPasteCommand()
     {
-        return selectionProbe.Length > 0 && clipboardText.Contains(selectionProbe, StringComparison.Ordinal);
+        return ["xdotool", "key", "--clearmodifiers", "ctrl+a", "ctrl+v"];
     }
 
-    internal static string CreateServerAddressSelectionProbe()
+    internal static string[] CreateServerAddressClearCommand()
     {
-        return $"void{Convert.ToHexString(RandomNumberGenerator.GetBytes(ServerAddressSelectionProbeByteCount)).ToLowerInvariant()}";
+        return ["xdotool", "key", "--clearmodifiers", "BackSpace"];
     }
 
-    internal static string[] CreateServerAddressReplacementCommand(string serverAddress)
+    internal static string[] CreateServerAddressCopyCommand()
     {
-        return ["xdotool", "keyup", "ctrl", "key", "BackSpace", "type", "--clearmodifiers", "--", serverAddress];
+        return ["xdotool", "key", "--clearmodifiers", "ctrl+a", "ctrl+c"];
     }
 
     async Task PressKeyAsync(string? windowId, string key, CancellationToken cancellationToken = default)

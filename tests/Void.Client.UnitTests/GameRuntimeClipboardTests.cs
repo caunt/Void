@@ -5,30 +5,32 @@ namespace Void.Client.UnitTests;
 
 public sealed class GameRuntimeClipboardTests
 {
-    [Fact]
-    public void CreatesLowercaseServerAddressSelectionProbe()
-    {
-        Assert.Matches("^void[0-9a-f]{16}$", GameRuntime.CreateServerAddressSelectionProbe());
-    }
-
     [Theory]
-    [InlineData("existingvoid0123456789ABCDEF", "void0123456789ABCDEF", true)]
-    [InlineData("existingvoid0123456789ABCDEFaddress", "void0123456789ABCDEF", true)]
-    [InlineData("clipboard0123456789ABCDEF", "void0123456789ABCDEF", false)]
-    [InlineData("existingvoid0123456789ABCDE", "void0123456789ABCDEF", false)]
-    [InlineData("existing", "", false)]
-    public void RecognizesCompleteServerAddressSelection(string clipboardText, string selectionProbe, bool expected)
+    [InlineData("host.docker.internal:25565", "host.docker.internal:25565", true)]
+    [InlineData("host.docker.internal:2556", "host.docker.internal:25565", false)]
+    [InlineData("existinghost.docker.internal:25565", "host.docker.internal:25565", false)]
+    [InlineData("host.docker.internal:25565existing", "host.docker.internal:25565", false)]
+    [InlineData("", "host.docker.internal:25565", false)]
+    public void MatchesExactServerAddress(string clipboardText, string serverAddress, bool expected)
     {
-        Assert.Equal(expected, GameRuntime.ClipboardContainsSelectionProbe(clipboardText, selectionProbe));
+        Assert.Equal(expected, GameRuntime.ClipboardMatchesServerAddress(clipboardText, serverAddress));
     }
 
     [Fact]
-    public void CreatesOrderedServerAddressReplacementCommand()
+    public void CreatesOrderedServerAddressPasteCommand()
     {
-        const string serverAddress = "host.docker.internal:25565";
+        Assert.Equal(["xdotool", "key", "--clearmodifiers", "ctrl+a", "ctrl+v"], GameRuntime.CreateServerAddressPasteCommand());
+    }
 
-        Assert.Equal(
-            ["xdotool", "keyup", "ctrl", "key", "BackSpace", "type", "--clearmodifiers", "--", serverAddress],
-            GameRuntime.CreateServerAddressReplacementCommand(serverAddress));
+    [Fact]
+    public void CreatesOrderedServerAddressClearCommand()
+    {
+        Assert.Equal(["xdotool", "key", "--clearmodifiers", "BackSpace"], GameRuntime.CreateServerAddressClearCommand());
+    }
+
+    [Fact]
+    public void CreatesOrderedServerAddressCopyCommand()
+    {
+        Assert.Equal(["xdotool", "key", "--clearmodifiers", "ctrl+a", "ctrl+c"], GameRuntime.CreateServerAddressCopyCommand());
     }
 }
