@@ -197,12 +197,12 @@ internal sealed record ConnectionNavigationSelection(ConnectionNavigationKind Ki
 
 internal static class ConnectionNavigationSelector
 {
-    public static ConnectionNavigationSelection? Select(IReadOnlyDictionary<ConnectionTextAction, ConnectionTextMatch> matches, bool hasServerAddressField)
+    public static ConnectionNavigationSelection? Select(IReadOnlyDictionary<ConnectionTextAction, ConnectionTextMatch> matches)
     {
         if (matches.ContainsKey(ConnectionTextAction.BackToGame))
             return new(ConnectionNavigationKind.BackToGame, ConnectionTextAction.BackToGame);
 
-        if (hasServerAddressField && matches.ContainsKey(ConnectionTextAction.ServerAddress) && matches.ContainsKey(ConnectionTextAction.JoinServer))
+        if (matches.ContainsKey(ConnectionTextAction.ServerAddress) && matches.ContainsKey(ConnectionTextAction.JoinServer))
             return new(ConnectionNavigationKind.JoinServer, ConnectionTextAction.JoinServer);
 
         if (matches.ContainsKey(ConnectionTextAction.DirectConnection))
@@ -240,6 +240,11 @@ internal readonly record struct OcrRectangle(int Left, int Top, int Width, int H
     public int Bottom => Top + Height;
     public int CenterX => Left + Width / 2;
     public int CenterY => Top + Height / 2;
+
+    public override string ToString()
+    {
+        return $"({Left},{Top}) {Width}x{Height}";
+    }
 }
 
 internal static class ConnectionTextMatcher

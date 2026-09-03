@@ -35,32 +35,33 @@ public sealed class ConnectionTextMatcherTests
     }
 
     [Theory]
-    [InlineData("Multiplayer", false, "Multiplayer")]
-    [InlineData("Proceed", false, "Proceed")]
-    [InlineData("Direct Connection", false, "DirectConnection")]
-    [InlineData("Back", false, "Back")]
-    [InlineData("Back to Server List", false, "Back")]
-    [InlineData("Return to Server List", false, "Back")]
-    [InlineData("Back to Game", false, "BackToGame")]
-    public void SelectsActionFromCurrentScreenText(string text, bool hasServerAddressField, string expected)
+    [InlineData("Multiplayer", "Multiplayer")]
+    [InlineData("Proceed", "Proceed")]
+    [InlineData("Direct Connection", "DirectConnection")]
+    [InlineData("Back", "Back")]
+    [InlineData("Back to Server List", "Back")]
+    [InlineData("Return to Server List", "Back")]
+    [InlineData("Back to Game", "BackToGame")]
+    public void SelectsActionFromCurrentScreenText(string text, string expected)
     {
         var matches = ConnectionTextMatcher.Match([CreateRecognizedText(text, 0.99)]);
-        var selection = ConnectionNavigationSelector.Select(matches, hasServerAddressField);
+        var selection = ConnectionNavigationSelector.Select(matches);
 
         Assert.NotNull(selection);
         Assert.Equal(expected, selection.Kind.ToString());
     }
 
     [Fact]
-    public void SelectsJoinOnlyForDirectConnectionForm()
+    public void SelectsJoinOnlyWhenServerAddressIsRecognized()
     {
-        var matches = ConnectionTextMatcher.Match([
+        var joinOnly = ConnectionTextMatcher.Match([CreateRecognizedText("Join Server", 0.99)]);
+        var directConnectionForm = ConnectionTextMatcher.Match([
             CreateRecognizedText("Server Address", 0.99),
             CreateRecognizedText("Join Server", 0.99)
         ]);
 
-        Assert.Null(ConnectionNavigationSelector.Select(matches, hasServerAddressField: false));
-        Assert.Equal(ConnectionNavigationKind.JoinServer, ConnectionNavigationSelector.Select(matches, hasServerAddressField: true)?.Kind);
+        Assert.Null(ConnectionNavigationSelector.Select(joinOnly));
+        Assert.Equal(ConnectionNavigationKind.JoinServer, ConnectionNavigationSelector.Select(directConnectionForm)?.Kind);
     }
 
     [Fact]
@@ -71,7 +72,7 @@ public sealed class ConnectionTextMatcherTests
             CreateRecognizedText("Direct Connection", 0.99)
         ]);
 
-        Assert.Equal(ConnectionNavigationKind.DirectConnection, ConnectionNavigationSelector.Select(matches, hasServerAddressField: false)?.Kind);
+        Assert.Equal(ConnectionNavigationKind.DirectConnection, ConnectionNavigationSelector.Select(matches)?.Kind);
     }
 
     [Theory]

@@ -40,11 +40,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
     private const string ChatInputBrightnessCropGeometry = "854x2+0+451";
     private const int MinecraftGameId = 432;
     private const int CurseForgeFilesBatchSize = 50;
-    private const int UserInterfaceStableConfirmationCount = 2;
-    private const int ButtonStableConfirmationMilliseconds = 1000;
     private const int UserInterfacePollDelayMilliseconds = 100;
-    private const double ButtonStableDifferenceRatioThreshold = 0.01;
-    private const double ServerAddressFieldDifferenceRatioThreshold = 0.01;
     private const int DisplayProbeTimeoutMilliseconds = 1000;
     private const int ExternalProcessTimeoutMilliseconds = 5000;
     private const int ScreenCaptureTimeoutMilliseconds = 10000;
@@ -647,6 +643,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         var windowLease = await AcquirePreparedWindowLeaseAsync(display, cancellationToken);
         var serverAddress = $"{host}:{port}";
         var stage = "screen.capture";
+        ConnectionNavigationKind? clickedAction = null;
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -669,7 +666,13 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
                     continue;
                 }
 
-                Console.Error.WriteLine($"OCR selected {observation.Kind} at {observation.InteractionArea}");
+                if (clickedAction == observation.Kind)
+                {
+                    Console.Error.WriteLine($"OCR still sees {observation.Kind} after its click; waiting for a different recognized action");
+                    continue;
+                }
+
+                LogRecognizedConnectionAction(observation.Kind, observation.TextMatch);
 
                 if (observation.Kind is ConnectionNavigationKind.Back)
                     Console.Error.WriteLine("Visually confirmed that the connection failed; returning to the server list to retry");
@@ -677,25 +680,21 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
                 if (observation.Kind is ConnectionNavigationKind.JoinServer)
                 {
                     stage = "address.entry";
-                    var directConnectionScreen = observation.DirectConnectionScreen
-                                                 ?? throw new InvalidOperationException("The Join Server action has no direct connection form");
-                    var preparedResult = await EnterServerAddressAsync(windowLease.Id, display, serverAddress, directConnectionScreen, cancellationToken);
-                    using var preparedScreen = preparedResult.Screen;
-                    var preparedObservation = observation with
-                    {
-                        InteractionArea = preparedResult.DirectConnectionScreen.JoinButton,
-                        DirectConnectionScreen = preparedResult.DirectConnectionScreen
-                    };
+                    var serverAddressMatch = observation.ServerAddressMatch
+                                             ?? throw new InvalidOperationException("The Join Server action has no recognized Server Address field");
+                    var joinServerMatch = await EnterServerAddressAsync(windowLease.Id, display, serverAddress, serverAddressMatch, cancellationToken);
 
                     stage = "connection.submit";
-                    if (await TryClickCurrentConnectionActionAsync(preparedObservation, preparedScreen, windowLease.Id, display, cancellationToken))
-                        await WaitForDirectConnectionScreenToCloseAsync(windowLease.Id, display, cancellationToken);
+                    LogRecognizedConnectionAction(observation.Kind, joinServerMatch);
+                    await ClickRecognizedConnectionActionAsync(windowLease.Id, observation.Kind, joinServerMatch, cancellationToken);
                 }
                 else
                 {
                     stage = "action.click";
-                    _ = await TryClickCurrentConnectionActionAsync(observation, screen, windowLease.Id, display, cancellationToken);
+                    await ClickRecognizedConnectionActionAsync(windowLease.Id, observation.Kind, observation.TextMatch, cancellationToken);
                 }
+
+                clickedAction = observation.Kind;
             }
             catch (OperationCanceledException)
             {
@@ -731,7 +730,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
     {
         var recognizedTexts = await _textRecognizer.RecognizeAsync(screen.Bytes, OcrModelTier.Small, cancellationToken);
         var matches = ConnectionTextMatcher.Match(recognizedTexts);
-        var observation = CreateConnectionScreenObservation(screen, matches);
+        var observation = CreateConnectionScreenObservation(matches);
 
         if (ConnectionOcrFallbackPolicy.IsReliable(observation?.TextMatch))
             return new(matches, observation);
@@ -739,65 +738,30 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         Console.Error.WriteLine("Small OCR did not find a reliable connection action; retrying the current screen with medium OCR");
         recognizedTexts = await _textRecognizer.RecognizeAsync(screen.Bytes, OcrModelTier.Medium, cancellationToken);
         matches = ConnectionTextMatcher.Match(recognizedTexts);
-        observation = CreateConnectionScreenObservation(screen, matches);
+        observation = CreateConnectionScreenObservation(matches);
         return new(matches, observation);
     }
 
-    ConnectionScreenObservation? CreateConnectionScreenObservation(ScreenImage screen, IReadOnlyDictionary<ConnectionTextAction, ConnectionTextMatch> matches)
+    static ConnectionScreenObservation? CreateConnectionScreenObservation(IReadOnlyDictionary<ConnectionTextAction, ConnectionTextMatch> matches)
     {
-        DirectConnectionScreen? directConnectionScreen = screen.TryFindDirectConnectionScreen(out var detectedDirectConnectionScreen)
-            ? detectedDirectConnectionScreen
-            : null;
-        var hasServerAddressField = matches.ContainsKey(ConnectionTextAction.JoinServer) && directConnectionScreen is not null;
-        var selection = ConnectionNavigationSelector.Select(matches, hasServerAddressField);
+        var selection = ConnectionNavigationSelector.Select(matches);
 
         if (selection is null || !matches.TryGetValue(selection.TextAction, out var match))
             return null;
 
-        var interactionArea = FindConnectionInteractionArea(screen, selection.Kind, match, directConnectionScreen);
-
-        return interactionArea is null ? null : new(selection.Kind, interactionArea.Value, match, directConnectionScreen);
+        matches.TryGetValue(ConnectionTextAction.ServerAddress, out var serverAddressMatch);
+        return new(selection.Kind, match, serverAddressMatch);
     }
 
-    ScreenRectangle? FindConnectionInteractionArea(ScreenImage screen, ConnectionNavigationKind kind, ConnectionTextMatch match, DirectConnectionScreen? directConnectionScreen)
+    async Task ClickRecognizedConnectionActionAsync(string windowId, ConnectionNavigationKind kind, ConnectionTextMatch match, CancellationToken cancellationToken)
     {
-        return kind switch
-        {
-            ConnectionNavigationKind.Multiplayer when screen.TryFindMainMenuMultiplayerButton(out var multiplayerButton) => multiplayerButton,
-            ConnectionNavigationKind.Proceed when screen.TryFindOnlinePlayWarningProceedButton(out var proceedButton) => proceedButton,
-            ConnectionNavigationKind.DirectConnection when screen.TryFindMultiplayerScreenDirectConnectionButton(out var directConnectionButton) => directConnectionButton,
-            ConnectionNavigationKind.JoinServer when directConnectionScreen is { } form => form.JoinButton,
-            ConnectionNavigationKind.BackToGame when screen.TryFindPauseMenuBackToGameButton(out var backToGameButton) => backToGameButton,
-            ConnectionNavigationKind.Back => screen.FindInteractionArea(match.Bounds),
-            _ => null
-        };
+        await FocusMoveAndClickAsync(windowId, match.Bounds, cancellationToken);
+        Console.Error.WriteLine($"Clicked OCR-selected {kind} '{match.Text}' at {match.Bounds}");
     }
 
-    async Task<bool> TryClickCurrentConnectionActionAsync(ConnectionScreenObservation observation, ScreenImage baselineScreen, string windowId, string display, CancellationToken cancellationToken)
+    static void LogRecognizedConnectionAction(ConnectionNavigationKind kind, ConnectionTextMatch match)
     {
-        using var stableScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
-        DirectConnectionScreen? stableDirectConnectionScreen = stableScreen.TryFindDirectConnectionScreen(out var detectedDirectConnectionScreen)
-            ? detectedDirectConnectionScreen
-            : null;
-        var stableInteractionArea = FindConnectionInteractionArea(stableScreen, observation.Kind, observation.TextMatch, stableDirectConnectionScreen);
-
-        if (stableInteractionArea is null || !AreMatchingRectangles(stableInteractionArea.Value, observation.InteractionArea))
-        {
-            Console.Error.WriteLine($"OCR-selected {observation.Kind} target changed before click; rescanning");
-            return false;
-        }
-
-        var stableDifferenceRatio = baselineScreen.CalculateDifferenceRatio(stableScreen, stableInteractionArea.Value);
-
-        if (stableDifferenceRatio > ButtonStableDifferenceRatioThreshold)
-        {
-            Console.Error.WriteLine($"OCR-selected {observation.Kind} changed before click ({stableDifferenceRatio:P1}); rescanning");
-            return false;
-        }
-
-        await FocusMoveAndClickAsync(windowId, stableInteractionArea.Value, cancellationToken);
-        Console.Error.WriteLine($"Clicked OCR-selected {observation.Kind} at {stableInteractionArea.Value}");
-        return true;
+        Console.Error.WriteLine($"OCR selected {kind} '{match.Text}' at {match.Bounds} with {match.Confidence:P1} confidence and {match.Similarity:P1} similarity");
     }
 
     async Task<bool> TryConfirmInteractiveGameScreenAsync(string windowId, string display, CancellationToken cancellationToken)
@@ -847,21 +811,18 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
 
     async Task<string> ResumeGameIfPausedAsync(string windowId, string display, CancellationToken cancellationToken)
     {
-        using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
-
-        if (!screen.TryFindPauseMenuBackToGameButton(out _))
-            return windowId;
-
-        Console.Error.WriteLine("Visually confirmed the pause menu; returning to the game");
-        windowId = await VisuallyClickButtonAsync("Back to Game", windowId, display, currentScreen => currentScreen.TryFindPauseMenuBackToGameButton(out var button) ? button : null, cancellationToken);
-
         while (true)
         {
-            using var currentScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+            using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
+            var recognizedTexts = await _textRecognizer.RecognizeAsync(screen.Bytes, OcrModelTier.Small, cancellationToken);
+            var matches = ConnectionTextMatcher.Match(recognizedTexts);
 
-            if (!currentScreen.TryFindPauseMenuBackToGameButton(out _))
+            if (!matches.TryGetValue(ConnectionTextAction.BackToGame, out var backToGame))
                 return windowId;
 
+            Console.Error.WriteLine("OCR visually confirmed the pause menu; returning to the game");
+            LogRecognizedConnectionAction(ConnectionNavigationKind.BackToGame, backToGame);
+            await ClickRecognizedConnectionActionAsync(windowId, ConnectionNavigationKind.BackToGame, backToGame, cancellationToken);
         }
     }
 
@@ -934,205 +895,34 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         }
     }
 
-    async Task<string> VisuallyClickButtonAsync(string buttonName, string windowId, string display, Func<ScreenImage, ScreenRectangle?> locateButton, CancellationToken cancellationToken)
+    async Task<ConnectionTextMatch> EnterServerAddressAsync(string windowId, string display, string serverAddress, ConnectionTextMatch serverAddressMatch, CancellationToken cancellationToken)
     {
-        ScreenRectangle? previousButton = null;
-        var stableButtonStopwatch = Stopwatch.StartNew();
-        var attempt = 0;
-
-        while (true)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            try
-            {
-                await MoveMouseAsync(windowId, 2, 2, cancellationToken);
-                using var baselineScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
-                var button = locateButton(baselineScreen);
-
-                if (button is null)
-                {
-                    previousButton = null;
-                    stableButtonStopwatch.Restart();
-                    continue;
-                }
-
-                if (previousButton is null || !AreMatchingRectangles(previousButton.Value, button.Value))
-                {
-                    previousButton = button;
-                    stableButtonStopwatch.Restart();
-                    continue;
-                }
-
-                if (stableButtonStopwatch.ElapsedMilliseconds < ButtonStableConfirmationMilliseconds)
-                    continue;
-
-                using var confirmedBaselineScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
-                var confirmedButton = locateButton(confirmedBaselineScreen);
-
-                if (confirmedButton is null || !AreMatchingRectangles(button.Value, confirmedButton.Value))
-                {
-                    previousButton = confirmedButton;
-                    stableButtonStopwatch.Restart();
-                    continue;
-                }
-
-                attempt++;
-                await FocusMoveAndClickAsync(windowId, confirmedButton.Value, cancellationToken);
-                Console.Error.WriteLine($"Dispatched {buttonName} click on attempt {attempt} at {confirmedButton.Value}");
-                return windowId;
-            }
-            catch (Exception exception) when (exception is ExternalProcessException or InvalidOperationException)
-            {
-                var lease = new MinecraftWindowLease(windowId, Volatile.Read(ref _nextWindowGeneration));
-                var staleWindowFailure = await GetStaleWindowFailureAsync(lease, display, exception, cancellationToken);
-
-                if (staleWindowFailure is not null)
-                {
-                    windowId = await WaitForPreparedLargestWindowAsync(display, cancellationToken);
-                    previousButton = null;
-                    stableButtonStopwatch.Restart();
-                    Console.Error.WriteLine($"{staleWindowFailure.Message} while clicking {buttonName}; reacquired {windowId}");
-                    continue;
-                }
-
-                throw new GameClientException("client.action.failed", "ui", "click", $"Clicking {buttonName} failed: {exception.Message}", exception);
-            }
-        }
-    }
-
-    async Task<(ScreenImage Screen, DirectConnectionScreen DirectConnectionScreen)> EnterServerAddressAsync(string windowId, string display, string serverAddress, DirectConnectionScreen observedDirectConnectionScreen, CancellationToken cancellationToken)
-    {
-        await FocusMoveAndClickAsync(windowId, observedDirectConnectionScreen.ServerAddressField, cancellationToken);
-        var emptyResult = await ClearServerAddressFieldAsync(windowId, display, cancellationToken);
-        using var emptyScreen = emptyResult.Screen;
-        var emptyDirectConnectionScreen = emptyResult.DirectConnectionScreen;
+        Console.Error.WriteLine($"OCR confirmed Server Address '{serverAddressMatch.Text}' at {serverAddressMatch.Bounds} with {serverAddressMatch.Confidence:P1} confidence and {serverAddressMatch.Similarity:P1} similarity");
+        var serverAddressInputTarget = new OcrRectangle(
+            serverAddressMatch.Bounds.CenterX,
+            serverAddressMatch.Bounds.Bottom + serverAddressMatch.Bounds.Height,
+            1,
+            1);
+        await FocusMoveAndClickAsync(windowId, serverAddressInputTarget, cancellationToken);
+        Console.Error.WriteLine($"Focused the input associated with OCR-recognized Server Address at {serverAddressInputTarget}");
+        await ClearTextWithoutDelayAsync(cancellationToken);
         await TypeTextWithoutDelayAsync(null, serverAddress, cancellationToken);
-        ScreenImage? confirmedEnteredScreen = null;
-        DirectConnectionScreen confirmedDirectConnectionScreen = default;
-        var enteredConfirmationCount = 0;
 
-        try
-        {
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var enteredScreen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
-
-                if (!enteredScreen.TryFindDirectConnectionScreen(out var enteredDirectConnectionScreen)
-                    || enteredScreen.IsServerAddressFieldEmpty(enteredDirectConnectionScreen.ServerAddressField))
-                {
-                    enteredScreen.Dispose();
-                    enteredConfirmationCount = 0;
-                    confirmedEnteredScreen?.Dispose();
-                    confirmedEnteredScreen = null;
-                    continue;
-                }
-
-                var fieldDifferenceRatio = emptyScreen.CalculateDifferenceRatio(enteredScreen, emptyDirectConnectionScreen.ServerAddressField.Inset(3));
-
-                if (fieldDifferenceRatio < ServerAddressFieldDifferenceRatioThreshold)
-                {
-                    enteredScreen.Dispose();
-                    enteredConfirmationCount = 0;
-                    confirmedEnteredScreen?.Dispose();
-                    confirmedEnteredScreen = null;
-                    continue;
-                }
-
-                enteredConfirmationCount++;
-                confirmedEnteredScreen?.Dispose();
-                confirmedEnteredScreen = enteredScreen;
-                confirmedDirectConnectionScreen = enteredDirectConnectionScreen;
-
-                if (enteredConfirmationCount >= UserInterfaceStableConfirmationCount)
-                {
-                    Console.Error.WriteLine($"Visually confirmed server address entry ({fieldDifferenceRatio:P1} field change)");
-                    var result = (confirmedEnteredScreen, confirmedDirectConnectionScreen);
-                    confirmedEnteredScreen = null;
-                    return result;
-                }
-            }
-        }
-        finally
-        {
-            confirmedEnteredScreen?.Dispose();
-        }
-    }
-
-    async Task<(ScreenImage Screen, DirectConnectionScreen DirectConnectionScreen)> ClearServerAddressFieldAsync(string windowId, string display, CancellationToken cancellationToken)
-    {
-        ScreenImage? confirmedEmptyScreen = null;
-        var emptyConfirmationCount = 0;
-
-        try
-        {
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var screenResult = await WaitForDirectConnectionScreenImageAsync(windowId, display, cancellationToken);
-
-                if (screenResult.Screen.IsServerAddressFieldEmpty(screenResult.DirectConnectionScreen.ServerAddressField))
-                {
-                    emptyConfirmationCount++;
-                    confirmedEmptyScreen?.Dispose();
-                    confirmedEmptyScreen = screenResult.Screen;
-
-                    if (emptyConfirmationCount >= UserInterfaceStableConfirmationCount)
-                    {
-                        Console.Error.WriteLine("Visually confirmed an empty server address field");
-                        return (confirmedEmptyScreen, screenResult.DirectConnectionScreen);
-                    }
-
-                    continue;
-                }
-
-                emptyConfirmationCount = 0;
-                confirmedEmptyScreen?.Dispose();
-                confirmedEmptyScreen = null;
-                screenResult.Screen.Dispose();
-
-                await PressKeyAsync(null, "End", cancellationToken);
-                await PressKeyAsync(null, "BackSpace", cancellationToken);
-            }
-        }
-        catch
-        {
-            confirmedEmptyScreen?.Dispose();
-            throw;
-        }
-    }
-
-    async Task<(ScreenImage Screen, DirectConnectionScreen DirectConnectionScreen)> WaitForDirectConnectionScreenImageAsync(string windowId, string display, CancellationToken cancellationToken)
-    {
         while (true)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
-
-            if (screen.TryFindDirectConnectionScreen(out var directConnectionScreen))
-                return (screen, directConnectionScreen);
-
-            screen.Dispose();
-        }
-    }
-
-    async Task WaitForDirectConnectionScreenToCloseAsync(string windowId, string display, CancellationToken cancellationToken)
-    {
-        var closedConfirmationCount = 0;
-
-        while (closedConfirmationCount < UserInterfaceStableConfirmationCount)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
             using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
-            closedConfirmationCount = screen.TryFindDirectConnectionScreen(out _) ? 0 : closedConfirmationCount + 1;
-        }
+            var recognizedTexts = await _textRecognizer.RecognizeAsync(screen.Bytes, OcrModelTier.Small, cancellationToken);
+            var matches = ConnectionTextMatcher.Match(recognizedTexts);
 
-        Console.Error.WriteLine("Visually confirmed that the Join Server action closed the direct connection form");
+            if (matches.ContainsKey(ConnectionTextAction.ServerAddress)
+                && matches.TryGetValue(ConnectionTextAction.JoinServer, out var joinServerMatch))
+            {
+                Console.Error.WriteLine("OCR confirmed the direct connection form after server address entry");
+                return joinServerMatch;
+            }
+
+            Console.Error.WriteLine("OCR has not confirmed the direct connection form and Join Server action after address entry; rescanning");
+        }
     }
 
     async Task<ScreenImage> CaptureScreenImageAsync(string windowId, string display, CancellationToken cancellationToken)
@@ -1157,7 +947,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         await RunOrThrow(cancellationToken, "xdotool", "mousemove", "--window", windowId, x.ToString(CultureInfo.InvariantCulture), y.ToString(CultureInfo.InvariantCulture));
     }
 
-    async Task FocusMoveAndClickAsync(string windowId, ScreenRectangle target, CancellationToken cancellationToken)
+    async Task FocusMoveAndClickAsync(string windowId, OcrRectangle target, CancellationToken cancellationToken)
     {
         await RunOrThrow(
             cancellationToken,
@@ -1166,14 +956,6 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
             "mousemove", "--window", windowId, "2", "2",
             "mousemove", "--sync", "--window", windowId, target.CenterX.ToString(CultureInfo.InvariantCulture), target.CenterY.ToString(CultureInfo.InvariantCulture),
             "click", "1");
-    }
-
-    bool AreMatchingRectangles(ScreenRectangle left, ScreenRectangle right)
-    {
-        return Math.Abs(left.Left - right.Left) <= 3
-            && Math.Abs(left.Top - right.Top) <= 3
-            && Math.Abs(left.Right - right.Right) <= 3
-            && Math.Abs(left.Bottom - right.Bottom) <= 3;
     }
 
     Process LaunchPortableMinecraftClient(string directory, string version, string?[]? portableMinecraftArguments = null, CancellationToken cancellationToken = default)
