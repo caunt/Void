@@ -106,7 +106,7 @@ internal interface IGameRuntime
     Task<RunningGame> LaunchVanillaAsync(string version, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken);
     Task<RunningGame> LaunchNeoForgeAsync(string version, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken);
     Task<RunningGame> LaunchCurseForgeAsync(string slug, int fileId, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken);
-    Task ConnectAsync(string host, int port, CancellationToken cancellationToken);
+    Task ConnectAsync(RunningGame game, string host, int port, CancellationToken cancellationToken);
     Task SendChatAsync(string message, CancellationToken cancellationToken);
     Task<byte[]> CaptureScreenshotAsync(CancellationToken cancellationToken);
     Task<GamePlayers> ReadPlayersAsync(RunningGame game, CancellationToken cancellationToken);

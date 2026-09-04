@@ -107,9 +107,9 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         return await LaunchPreparedGameAsync(minecraftDirectory, portableMinecraftVersion, arguments, memoryMb, cancellationToken);
     }
 
-    public Task ConnectAsync(string host, int port, CancellationToken cancellationToken)
+    public Task ConnectAsync(RunningGame game, string host, int port, CancellationToken cancellationToken)
     {
-        return JoinServerOperationAsync(host, port, cancellationToken);
+        return JoinServerOperationAsync(game, host, port, cancellationToken);
     }
 
     public Task SendChatAsync(string message, CancellationToken cancellationToken)
@@ -124,14 +124,14 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
 
     public async Task<GamePlayers> ReadPlayersAsync(RunningGame game, CancellationToken cancellationToken)
     {
-        if (!File.Exists(game.Tracker.DescriptorPath))
-            await AttachPlayerTrackerAsync(game, cancellationToken);
-
         using var timeoutSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(PlayerReadTimeoutMilliseconds));
         using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token);
 
         try
         {
+            if (!File.Exists(game.Tracker.DescriptorPath))
+                await AttachAgentAsync(game, linkedSource.Token);
+
             if (!File.Exists(game.Tracker.DescriptorPath))
                 throw PlayersUnavailable("The Minecraft player tracker is not ready");
 
@@ -178,7 +178,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         {
             throw PlayersUnavailable("The Minecraft player tracker did not respond in time", "response.timeout");
         }
-        catch (Exception exception) when (exception is IOException or SocketException or JsonException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is IOException or SocketException or JsonException or UnauthorizedAccessException or InvalidOperationException)
         {
             throw PlayersUnavailable($"The Minecraft player tracker could not be read: {exception.Message}", "response.read", exception);
         }
@@ -289,12 +289,12 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         return tracker.ExpectedName is null ? arguments : $"{arguments};name={EncodeAgentArgument(tracker.ExpectedName)}";
     }
 
-    private async Task AttachPlayerTrackerAsync(RunningGame game, CancellationToken cancellationToken)
+    private async Task AttachAgentAsync(RunningGame game, CancellationToken cancellationToken)
     {
         var javaProcessId = FindJavaProcessId(game.Process.Id);
 
         if (javaProcessId is null)
-            throw PlayersUnavailable("The running Minecraft JVM could not be found");
+            throw new InvalidOperationException("The running Minecraft JVM could not be found");
 
         var agentPathAndArguments = $"{PortableMinecraftAgentPath}={CreateAgentArguments(game.Tracker)}";
         var result = await RunProcessTextAsync(CreateProcessInfo(PortableMinecraftJvmAttachPath,
@@ -302,7 +302,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
             TimeSpan.FromSeconds(10), cancellationToken);
 
         if (result.ExitCode is not 0)
-            throw PlayersUnavailable($"The Minecraft player tracker could not attach: {result.StandardError}");
+            throw new InvalidOperationException($"The Minecraft agent could not attach: {result.StandardError}");
     }
 
     private static int? FindJavaProcessId(int rootProcessId)
@@ -419,7 +419,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         return new(StatusCodes.Status503ServiceUnavailable, "client.players.unavailable", stage, message, innerException);
     }
 
-    private sealed record TrackerResponse(string? Status, string? Message, GamePlayer? Local, RemoteGamePlayer[]? Remote);
+    private sealed record TrackerResponse(string? Status, string? Stage, string? Message, string? Value, GamePlayer? Local, RemoteGamePlayer[]? Remote);
 
     private static string GetMinecraftDirectory()
     {
@@ -637,7 +637,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         await SubmitChatAsync(windowId, inputWindowId, display, cancellationToken);
     }
 
-    async Task JoinServerOperationAsync(string host, int port, CancellationToken cancellationToken)
+    async Task JoinServerOperationAsync(RunningGame game, string host, int port, CancellationToken cancellationToken)
     {
         var display = Environment.GetEnvironmentVariable("DISPLAY") ?? DefaultDisplay;
         var windowLease = await AcquirePreparedWindowLeaseAsync(display, cancellationToken);
@@ -679,14 +679,8 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
 
                 if (observation.Kind is ConnectionNavigationKind.JoinServer)
                 {
-                    stage = "address.entry";
-                    var serverAddressMatch = observation.ServerAddressMatch
-                                             ?? throw new InvalidOperationException("The Join Server action has no recognized Server Address field");
-                    var joinServerMatch = await EnterServerAddressAsync(windowLease.Id, display, serverAddress, serverAddressMatch, cancellationToken);
-
-                    stage = "connection.submit";
-                    LogRecognizedConnectionAction(observation.Kind, joinServerMatch);
-                    await ClickRecognizedConnectionActionAsync(windowLease.Id, observation.Kind, joinServerMatch, cancellationToken);
+                    stage = "agent.connect";
+                    await ConnectThroughAgentAsync(game, serverAddress, cancellationToken);
                 }
                 else
                 {
@@ -749,8 +743,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         if (selection is null || !matches.TryGetValue(selection.TextAction, out var match))
             return null;
 
-        matches.TryGetValue(ConnectionTextAction.ServerAddress, out var serverAddressMatch);
-        return new(selection.Kind, match, serverAddressMatch);
+        return new(selection.Kind, match);
     }
 
     async Task ClickRecognizedConnectionActionAsync(string windowId, ConnectionNavigationKind kind, ConnectionTextMatch match, CancellationToken cancellationToken)
@@ -895,32 +888,50 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         }
     }
 
-    async Task<ConnectionTextMatch> EnterServerAddressAsync(string windowId, string display, string serverAddress, ConnectionTextMatch serverAddressMatch, CancellationToken cancellationToken)
+    async Task ConnectThroughAgentAsync(RunningGame game, string serverAddress, CancellationToken cancellationToken)
     {
-        Console.Error.WriteLine($"OCR confirmed Server Address '{serverAddressMatch.Text}' at {serverAddressMatch.Bounds} with {serverAddressMatch.Confidence:P1} confidence and {serverAddressMatch.Similarity:P1} similarity");
-        var serverAddressInputTarget = new OcrRectangle(
-            serverAddressMatch.Bounds.CenterX,
-            serverAddressMatch.Bounds.Bottom + serverAddressMatch.Bounds.Height,
-            1,
-            1);
-        await FocusMoveAndClickAsync(windowId, serverAddressInputTarget, cancellationToken);
-        Console.Error.WriteLine($"Focused the input associated with OCR-recognized Server Address at {serverAddressInputTarget}");
-        await ReplaceServerAddressWithAcknowledgedSelectionAsync(serverAddress, display, cancellationToken);
+        if (!File.Exists(game.Tracker.DescriptorPath))
+            await AttachAgentAsync(game, cancellationToken);
 
-        while (true)
+        if (!File.Exists(game.Tracker.DescriptorPath))
+            throw new InvalidOperationException("The Minecraft agent is not ready");
+
+        var descriptor = await File.ReadAllTextAsync(game.Tracker.DescriptorPath, cancellationToken);
+
+        if (!int.TryParse(descriptor, NumberStyles.None, CultureInfo.InvariantCulture, out var port) || port is < 1 or > 65535)
+            throw new InvalidOperationException("The Minecraft agent published an invalid endpoint");
+
+        var encodedAddress = Convert.ToBase64String(Encoding.UTF8.GetBytes(serverAddress)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        using var timeoutSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(ExternalProcessTimeoutMilliseconds));
+        using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token);
+
+        try
         {
-            using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
-            var recognizedTexts = await _textRecognizer.RecognizeAsync(screen.Bytes, OcrModelTier.Small, cancellationToken);
-            var matches = ConnectionTextMatcher.Match(recognizedTexts);
+            using var client = new TcpClient();
+            await client.ConnectAsync(IPAddress.Loopback, port, linkedSource.Token);
+            await using var stream = client.GetStream();
+            await using var writer = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
+            using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
+            await writer.WriteLineAsync($"{game.Tracker.Token}\tconnect\t{encodedAddress}".AsMemory(), linkedSource.Token);
+            var responseJson = await reader.ReadLineAsync(linkedSource.Token);
 
-            if (matches.ContainsKey(ConnectionTextAction.ServerAddress)
-                && matches.TryGetValue(ConnectionTextAction.JoinServer, out var joinServerMatch))
-            {
-                Console.Error.WriteLine("OCR confirmed the direct connection form after server address entry");
-                return joinServerMatch;
-            }
+            if (string.IsNullOrWhiteSpace(responseJson))
+                throw new InvalidOperationException("The Minecraft agent returned an empty connection response");
 
-            Console.Error.WriteLine("OCR has not confirmed the direct connection form and Join Server action after address entry; rescanning");
+            var response = JsonSerializer.Deserialize<TrackerResponse>(responseJson, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+                           ?? throw new InvalidOperationException("The Minecraft agent returned a malformed connection response");
+
+            if (response.Status is not "ok")
+                throw new GameClientException("client.connect.failed", "connect", response.Stage ?? "agent.connect", response.Message ?? "The Minecraft agent returned no diagnostic");
+
+            if (!string.Equals(response.Value, serverAddress, StringComparison.Ordinal))
+                throw new GameClientException("client.connect.failed", "connect", "address.verify", $"Minecraft agent confirmed {JsonSerializer.Serialize(response.Value)} instead of {JsonSerializer.Serialize(serverAddress)}");
+
+            Console.Error.WriteLine($"Minecraft agent set the exact server address and invoked its submit callback: {JsonSerializer.Serialize(serverAddress)}");
+        }
+        catch (OperationCanceledException) when (timeoutSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            throw new InvalidOperationException($"The Minecraft agent did not submit the connection within {ExternalProcessTimeoutMilliseconds / 1000.0:F1} seconds");
         }
     }
 
@@ -1232,132 +1243,6 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
 
         if (process.ExitCode is not 0)
             throw new InvalidOperationException($"xclip exited with code {process.ExitCode}");
-    }
-
-    async Task ReplaceServerAddressWithAcknowledgedSelectionAsync(string serverAddress, string display, CancellationToken cancellationToken)
-    {
-        await RunOrThrow(cancellationToken, CreateServerAddressClearCommand());
-        using var pasteOwner = await StartClipboardOwnerAsync(serverAddress, display, 2, cancellationToken);
-
-        try
-        {
-            await RunClipboardCommandUntilAcknowledgedAsync(pasteOwner, CreateServerAddressPasteCommand(), "Minecraft did not request the server address paste", cancellationToken);
-
-            if (pasteOwner.ExitCode is not 0)
-                throw new InvalidOperationException($"xclip exited with code {pasteOwner.ExitCode} while serving the server address paste");
-
-            var selectedText = await CopySelectedServerAddressTextAsync(serverAddress, display, cancellationToken);
-
-            if (!ClipboardMatchesServerAddress(selectedText, serverAddress))
-                throw new InvalidOperationException($"Minecraft copied {JsonSerializer.Serialize(selectedText)} instead of the expected server address {JsonSerializer.Serialize(serverAddress)}");
-
-            Console.Error.WriteLine("Confirmed the exact pasted server address through clipboard ownership");
-        }
-        finally
-        {
-            if (!pasteOwner.HasExited)
-            {
-                KillProcess(pasteOwner);
-                await WaitForKilledProcessAsync(pasteOwner);
-            }
-        }
-    }
-
-    async Task<string> CopySelectedServerAddressTextAsync(string serverAddress, string display, CancellationToken cancellationToken)
-    {
-        using var clipboardOwner = await StartClipboardOwnerAsync(serverAddress, display, 0, cancellationToken);
-
-        try
-        {
-            await RunClipboardCommandUntilAcknowledgedAsync(clipboardOwner, CreateServerAddressCopyCommand(), "Minecraft did not copy the selected server address", cancellationToken);
-            return await ReadClipboardTextAsync(display, cancellationToken);
-        }
-        finally
-        {
-            if (!clipboardOwner.HasExited)
-            {
-                KillProcess(clipboardOwner);
-                await WaitForKilledProcessAsync(clipboardOwner);
-            }
-        }
-    }
-
-    async Task RunClipboardCommandUntilAcknowledgedAsync(Process clipboardOwner, string[] command, string failureMessage, CancellationToken cancellationToken)
-    {
-        var deadline = DateTimeOffset.UtcNow.AddMilliseconds(ExternalProcessTimeoutMilliseconds);
-
-        while (!clipboardOwner.HasExited && DateTimeOffset.UtcNow < deadline)
-            await RunOrThrow(cancellationToken, command);
-
-        if (!clipboardOwner.HasExited)
-            throw new TimeoutException($"{failureMessage} within {ExternalProcessTimeoutMilliseconds / 1000.0:F1} seconds");
-    }
-
-    async Task<Process> StartClipboardOwnerAsync(string text, string display, int selectionRequestCount, CancellationToken cancellationToken)
-    {
-        var processInfo = CreateProcessInfo("xclip", ["-selection", "clipboard", "-in", "-loops", selectionRequestCount.ToString(CultureInfo.InvariantCulture), "-quiet"], display: display);
-        processInfo.RedirectStandardInput = true;
-        processInfo.RedirectStandardOutput = false;
-        processInfo.RedirectStandardError = false;
-        var process = Process.Start(processInfo)
-                      ?? throw new InvalidOperationException("failed to start xclip");
-
-        try
-        {
-            await process.StandardInput.WriteAsync(text.AsMemory(), cancellationToken);
-            process.StandardInput.Close();
-            var clipboardDeadline = DateTimeOffset.UtcNow.AddMilliseconds(ExternalProcessTimeoutMilliseconds);
-
-            while (DateTimeOffset.UtcNow < clipboardDeadline)
-            {
-                if (await TryReadClipboardTextAsync(display, cancellationToken) == text)
-                    return process;
-            }
-
-            throw new InvalidOperationException("xclip did not acquire the clipboard selection");
-        }
-        catch
-        {
-            KillProcess(process);
-            await WaitForKilledProcessAsync(process);
-            process.Dispose();
-            throw;
-        }
-    }
-
-    async Task<string> ReadClipboardTextAsync(string display, CancellationToken cancellationToken)
-    {
-        var clipboardText = await TryReadClipboardTextAsync(display, cancellationToken);
-
-        return clipboardText
-               ?? throw new InvalidOperationException("Reading the X clipboard failed because no STRING target is available");
-    }
-
-    async Task<string?> TryReadClipboardTextAsync(string display, CancellationToken cancellationToken)
-    {
-        var result = await RunProcessTextAsync(CreateProcessInfo("xclip", ["-selection", "clipboard", "-out"], display: display), TimeSpan.FromMilliseconds(ExternalProcessTimeoutMilliseconds), cancellationToken);
-
-        return result.ExitCode is 0 ? result.StandardOutput : null;
-    }
-
-    internal static bool ClipboardMatchesServerAddress(string clipboardText, string serverAddress)
-    {
-        return string.Equals(clipboardText, serverAddress, StringComparison.Ordinal);
-    }
-
-    internal static string[] CreateServerAddressPasteCommand()
-    {
-        return ["xdotool", "key", "--clearmodifiers", "ctrl+a", "ctrl+v"];
-    }
-
-    internal static string[] CreateServerAddressClearCommand()
-    {
-        return ["xdotool", "key", "--clearmodifiers", "BackSpace"];
-    }
-
-    internal static string[] CreateServerAddressCopyCommand()
-    {
-        return ["xdotool", "key", "--clearmodifiers", "ctrl+a", "ctrl+c"];
     }
 
     async Task PressKeyAsync(string? windowId, string key, CancellationToken cancellationToken = default)

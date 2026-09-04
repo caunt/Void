@@ -18,14 +18,14 @@ public final class VoidClientAgent {
     }
 
     public static void premain(String arguments, Instrumentation instrumentation) {
-        start(arguments, instrumentation);
+        start(arguments, instrumentation, false);
     }
 
     public static void agentmain(String arguments, Instrumentation instrumentation) {
-        start(arguments, instrumentation);
+        start(arguments, instrumentation, true);
     }
 
-    private static synchronized void start(String arguments, Instrumentation instrumentation) {
+    private static synchronized void start(String arguments, Instrumentation instrumentation, boolean retransformLoadedClasses) {
         if (started)
             return;
 
@@ -33,17 +33,36 @@ public final class VoidClientAgent {
             AgentArguments parsedArguments = AgentArguments.parse(arguments);
             Tracker.initialize(instrumentation, parsedArguments.expectedName);
             instrumentation.addTransformer(new PlayerTransformer());
+            DirectConnectScreenTransformer directConnectTransformer = new DirectConnectScreenTransformer();
+            instrumentation.addTransformer(directConnectTransformer, true);
+
+            if (retransformLoadedClasses)
+                retransformLoadedClasses(instrumentation);
 
             ServerSocket serverSocket = new ServerSocket(0, 16, InetAddress.getLoopbackAddress());
             writeDescriptor(parsedArguments.descriptorPath, serverSocket.getLocalPort());
 
-            Thread serverThread = new Thread(new SnapshotServer(serverSocket, parsedArguments.token), "Void client state agent");
+            Thread serverThread = new Thread(new AgentServer(serverSocket, parsedArguments.token), "Void client state agent");
             serverThread.setDaemon(true);
             serverThread.setPriority(Thread.MIN_PRIORITY);
             serverThread.start();
             started = true;
         } catch (Throwable exception) {
             System.err.println("Void client state agent failed to start: " + exception.getMessage());
+        }
+    }
+
+    private static void retransformLoadedClasses(Instrumentation instrumentation) {
+        for (Class<?> type : instrumentation.getAllLoadedClasses()) {
+            if (!instrumentation.isModifiableClass(type) || type.isArray() || type.isPrimitive()
+                || !DirectConnectScreenTransformer.mightBeDirectConnectScreen(type))
+                continue;
+
+            try {
+                instrumentation.retransformClasses(type);
+            } catch (Throwable exception) {
+                // Some JVM-generated classes report as modifiable but cannot actually be retransformed.
+            }
         }
     }
 

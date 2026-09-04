@@ -65,6 +65,7 @@
                   <manifestEntries>
                     <Premain-Class>voidclient.agent.VoidClientAgent</Premain-Class>
                     <Agent-Class>voidclient.agent.VoidClientAgent</Agent-Class>
+                    <Can-Retransform-Classes>true</Can-Retransform-Classes>
                   </manifestEntries>
                 </transformer>
               </transformers>

@@ -89,7 +89,7 @@ internal sealed partial class GameRuntime
         }
     }
 
-    sealed record ConnectionScreenObservation(ConnectionNavigationKind Kind, ConnectionTextMatch TextMatch, ConnectionTextMatch? ServerAddressMatch = null);
+    sealed record ConnectionScreenObservation(ConnectionNavigationKind Kind, ConnectionTextMatch TextMatch);
 
     sealed record ConnectionScreenRecognition(IReadOnlyDictionary<ConnectionTextAction, ConnectionTextMatch> Matches, ConnectionScreenObservation? Observation);
 }

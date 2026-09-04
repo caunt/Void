@@ -239,6 +239,7 @@ public sealed class GameCoordinatorTests
         Assert.Equal(response, replay);
         Assert.Equal(GameState.Connected, coordinator.Status.State);
         Assert.Equal(1, runtime.ConnectCount);
+        Assert.Equal("test:1", runtime.LastConnectGame?.Version);
 
         var exception = await Assert.ThrowsAsync<GameCommandException>(() => coordinator.ConnectAsync(new("other-server", 25565), CancellationToken.None));
         Assert.Equal(409, exception.StatusCode);
@@ -415,6 +416,7 @@ public sealed class GameCoordinatorTests
         public int? LastMemoryMb { get; private set; }
         public string? LastVanillaVersion { get; private set; }
         public string? LastNeoForgeVersion { get; private set; }
+        public RunningGame? LastConnectGame { get; private set; }
 
         public void CompleteLaunch()
         {
@@ -466,9 +468,10 @@ public sealed class GameCoordinatorTests
             return BeginLaunch(cancellationToken);
         }
 
-        public Task ConnectAsync(string host, int port, CancellationToken cancellationToken)
+        public Task ConnectAsync(RunningGame game, string host, int port, CancellationToken cancellationToken)
         {
             ConnectCount++;
+            LastConnectGame = game;
 
             if (!BlockConnect)
                 return Task.CompletedTask;

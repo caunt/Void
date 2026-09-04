@@ -304,7 +304,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         _connectOperationId = operationId;
         AddConnectWaiter(message);
         Publish(Status with { OperationId = operationId, Operation = "connect", OperationState = OperationState.Running, Message = "connect running", Error = null, Failure = null, UpdatedAt = DateTimeOffset.UtcNow });
-        Own(ObserveConnectAsync(operationId, server, runtime.ConnectAsync(host, message.Request.Port, cancellation.Token), cancellation));
+        Own(ObserveConnectAsync(operationId, server, runtime.ConnectAsync(_game, host, message.Request.Port, cancellation.Token), cancellation));
     }
 
     private void AddConnectWaiter(ConnectMessage message)
