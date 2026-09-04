@@ -35,13 +35,14 @@ final class TransitionPlan {
     final boolean isStatic;
     final List<String> targetScreenNames;
     final boolean targetsParent;
+    final boolean targetsSelf;
     final String controlClassName;
     final String controlIdFieldName;
     final Integer controlId;
     final boolean enablesTransition;
 
     TransitionPlan(String owner, String methodName, String methodDescriptor, boolean isStatic,
-                   List<String> targetScreenNames, boolean targetsParent,
+                   List<String> targetScreenNames, boolean targetsParent, boolean targetsSelf,
                    String controlClassName, String controlIdFieldName, Integer controlId,
                    boolean enablesTransition) {
         this.owner = owner;
@@ -50,6 +51,7 @@ final class TransitionPlan {
         this.isStatic = isStatic;
         this.targetScreenNames = new ArrayList<String>(targetScreenNames);
         this.targetsParent = targetsParent;
+        this.targetsSelf = targetsSelf;
         this.controlClassName = controlClassName;
         this.controlIdFieldName = controlIdFieldName;
         this.controlId = controlId;
@@ -58,7 +60,7 @@ final class TransitionPlan {
 
     String describe() {
         return owner + '.' + methodName + methodDescriptor + " targets=" + targetScreenNames
-            + " parent=" + targetsParent + " controlId=" + controlId;
+            + " parent=" + targetsParent + " self=" + targetsSelf + " controlId=" + controlId;
     }
 }
 

@@ -322,22 +322,22 @@ final class GameAutomationIndex {
                         continue;
 
                     List<String> targets = new ArrayList<String>();
-                    boolean targetsParent = false;
                     AbstractInsnNode argument = previousReal(instruction);
+                    boolean possibleConstructedTarget = argument != null && argument.getOpcode() != Opcodes.ACONST_NULL
+                        && !isSelfReference(method, argument);
+                    TypeInsnNode constructed = possibleConstructedTarget
+                        ? findPreviousScreenNew(instruction, 48, superTypes, screenBaseName)
+                        : null;
+                    TransitionTargetKind targetKind = classifyTransitionTarget(method, argument, constructed);
 
-                    if (argument == null || argument.getOpcode() != Opcodes.ACONST_NULL) {
-                        TypeInsnNode constructed = findPreviousScreenNew(instruction, 48, superTypes, screenBaseName);
-
-                        if (constructed != null)
-                            targets.add(constructed.desc);
-                        else
-                            targetsParent = true;
-                    }
+                    if (constructed != null)
+                        targets.add(constructed.desc);
 
                     ControlCondition condition = discoverControlCondition(method, instruction);
                     boolean enablesTransition = writesTrueBoolean(method);
                     TransitionPlan transition = new TransitionPlan(type.name, method.name, method.desc,
-                        (method.access & Opcodes.ACC_STATIC) != 0, targets, targetsParent,
+                        (method.access & Opcodes.ACC_STATIC) != 0, targets,
+                        targetKind == TransitionTargetKind.PARENT, targetKind == TransitionTargetKind.SELF,
                         condition == null ? null : condition.owner,
                         condition == null ? null : condition.fieldName,
                         condition == null ? null : condition.id,
@@ -357,10 +357,29 @@ final class GameAutomationIndex {
         return result;
     }
 
+    static TransitionTargetKind classifyTransitionTarget(MethodNode method, AbstractInsnNode argument, TypeInsnNode constructed) {
+        if (argument != null && argument.getOpcode() == Opcodes.ACONST_NULL)
+            return TransitionTargetKind.GAME;
+
+        if (isSelfReference(method, argument))
+            return TransitionTargetKind.SELF;
+
+        return constructed == null ? TransitionTargetKind.PARENT : TransitionTargetKind.CONSTRUCTED;
+    }
+
+    private static boolean isSelfReference(MethodNode method, AbstractInsnNode argument) {
+        return (method.access & Opcodes.ACC_STATIC) == 0
+            && argument instanceof VarInsnNode
+            && argument.getOpcode() == Opcodes.ALOAD
+            && ((VarInsnNode) argument).var == 0;
+    }
+
     private static void mergeTransition(List<TransitionPlan> transitions, TransitionPlan candidate) {
         for (TransitionPlan transition : transitions) {
             if (transition.owner.equals(candidate.owner) && transition.methodName.equals(candidate.methodName)
                 && transition.methodDescriptor.equals(candidate.methodDescriptor)
+                && transition.targetsParent == candidate.targetsParent
+                && transition.targetsSelf == candidate.targetsSelf
                 && java.util.Objects.equals(transition.controlId, candidate.controlId)) {
                 for (String target : candidate.targetScreenNames) {
                     if (!transition.targetScreenNames.contains(target))
@@ -726,6 +745,13 @@ final class GameAutomationIndex {
             this.descriptor = descriptor;
             this.arguments = arguments;
         }
+    }
+
+    enum TransitionTargetKind {
+        GAME,
+        SELF,
+        CONSTRUCTED,
+        PARENT
     }
 
 }
