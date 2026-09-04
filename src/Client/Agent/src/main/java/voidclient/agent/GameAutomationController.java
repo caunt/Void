@@ -398,8 +398,7 @@ public final class GameAutomationController {
         ClassLoader loader = screen.getClass().getClassLoader();
         Class<?> owner = loadClass(loader, transition.owner);
         TypeArguments arguments = resolveArguments(loader, transition.methodDescriptor);
-        Method method = owner.getDeclaredMethod(transition.methodName, arguments.types);
-        method.setAccessible(true);
+        Method method = MethodResolver.resolve(owner, transition.methodName, arguments.types);
         Object control = transition.controlId == null ? null : findControl(screen, transition, 4,
             Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>()));
 
@@ -488,11 +487,9 @@ public final class GameAutomationController {
         ClassLoader loader = screen.getClass().getClassLoader();
         Field textField = declaredField(screen.getClass(), plan.textFieldName);
         Object widget = textField.get(screen);
-        Method setter = loadClass(loader, plan.textSetterOwner).getDeclaredMethod(plan.textSetterName, String.class);
-        setter.setAccessible(true);
+        Method setter = MethodResolver.resolve(loadClass(loader, plan.textSetterOwner), plan.textSetterName, String.class);
         setter.invoke(widget, message);
-        Method getter = loadClass(loader, plan.textGetterOwner).getDeclaredMethod(plan.textGetterName);
-        getter.setAccessible(true);
+        Method getter = MethodResolver.resolve(loadClass(loader, plan.textGetterOwner), plan.textGetterName);
         String exact = (String) getter.invoke(widget);
 
         if (!message.equals(exact))
@@ -507,8 +504,7 @@ public final class GameAutomationController {
                 arguments.values[index] = Boolean.TRUE;
         }
 
-        Method submit = loadClass(loader, plan.submitOwner).getDeclaredMethod(plan.submitName, arguments.types);
-        submit.setAccessible(true);
+        Method submit = MethodResolver.resolve(loadClass(loader, plan.submitOwner), plan.submitName, arguments.types);
         submit.invoke(screen, arguments.values);
     }
 
@@ -520,8 +516,7 @@ public final class GameAutomationController {
 
         ClassLoader loader = receiver.getClass().getClassLoader();
         Class<?> screenBase = loadClass(loader, plan.screenBaseName);
-        Method setter = loadClass(loader, plan.clientClassName).getDeclaredMethod(plan.screenSetterName, screenBase);
-        setter.setAccessible(true);
+        Method setter = MethodResolver.resolve(loadClass(loader, plan.clientClassName), plan.screenSetterName, screenBase);
         setter.invoke(receiver, screen);
     }
 
