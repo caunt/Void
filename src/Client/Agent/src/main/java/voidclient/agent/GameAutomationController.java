@@ -24,7 +24,6 @@ public final class GameAutomationController {
     private static final Map<ClassLoader, GameAutomationIndex.IndexedCode> LoaderIndexes = Collections.synchronizedMap(new java.util.WeakHashMap<ClassLoader, GameAutomationIndex.IndexedCode>());
     private static final Map<String, String> IndexFailures = new HashMap<String, String>();
     private static final ThreadLocal<Boolean> Applying = new ThreadLocal<Boolean>();
-    private static final ThreadLocal<Boolean> Dispatched = new ThreadLocal<Boolean>();
     private static volatile PendingOperation pending;
     private static WeakReference<Object> screenSetterReceiver = new WeakReference<Object>(null);
     private static Thread clientThread;
@@ -117,17 +116,11 @@ public final class GameAutomationController {
             final Object client = receiver;
             System.err.println("Void client agent dispatching " + operation.kind + " through the Minecraft client executor");
             try {
-                ((Executor) receiver).execute(new Runnable() {
+                ExecutorDispatchContext.execute((Executor) receiver, new Runnable() {
                     @Override
                     public void run() {
                         System.err.println("Void client agent executing dispatched " + operation.kind + " on " + Thread.currentThread().getName());
-                        Dispatched.set(Boolean.TRUE);
-
-                        try {
-                            applyClient(client);
-                        } finally {
-                            Dispatched.remove();
-                        }
+                        applyClient(client);
                     }
                 });
             } catch (Throwable exception) {
@@ -183,7 +176,7 @@ public final class GameAutomationController {
     }
 
     public static void applyClient(Object client) {
-        if (Boolean.TRUE.equals(Applying.get()))
+        if (Boolean.TRUE.equals(Applying.get()) || ExecutorDispatchContext.isSchedulingCallback())
             return;
 
         PendingOperation operation;
@@ -201,11 +194,11 @@ public final class GameAutomationController {
             if (operation == null)
                 return;
 
-            if ("chat".equals(operation.kind) && !Boolean.TRUE.equals(Dispatched.get())
+            if ("chat".equals(operation.kind) && !ExecutorDispatchContext.isExecuting()
                 && !isInstance(client, index.plan.chatDriverClassName))
                 return;
 
-            if (Boolean.TRUE.equals(Dispatched.get()))
+            if (ExecutorDispatchContext.isExecuting())
                 clientThread = Thread.currentThread();
             else if (clientThread == null)
                 clientThread = Thread.currentThread();
