@@ -13,10 +13,10 @@ using File = System.IO.File;
 namespace Void.Client;
 
 /// <summary>
-/// Owns the Linux, PortableMC, CurseForge, X11, and visual-automation details for one Minecraft game process.
+/// Owns the Linux, PortableMC, CurseForge, X11, and agent-automation details for one Minecraft game process.
 /// Lifecycle coordination deliberately lives in <see cref="GameCoordinator"/> so this class has no shared-state locks.
 /// </summary>
-internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
+internal sealed partial class GameRuntime : IGameRuntime
 {
     private const string DefaultMinecraftDirectory = "/root/.minecraft";
     private const string DefaultCurseForgeApiBaseUrl = "https://api.curseforge.com";
@@ -37,10 +37,8 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
     private const string PortableMinecraftArmLwjgl4ClassPath = "/opt/portableminecraftclient/lwjgl-3.4.1-unsafe.jar";
     private const string PortableMinecraftArmLwjgl4NativePath = "/opt/portableminecraftclient/lwjgl-3.4.1-natives-linux-arm64.jar";
     private const string PortableMinecraftArmVulkanLibrary = "org.lwjgl:lwjgl-vulkan:*:natives-linux-arm64";
-    private const string ChatInputBrightnessCropGeometry = "854x2+0+451";
     private const int MinecraftGameId = 432;
     private const int CurseForgeFilesBatchSize = 50;
-    private const int UserInterfacePollDelayMilliseconds = 100;
     private const int DisplayProbeTimeoutMilliseconds = 1000;
     private const int ExternalProcessTimeoutMilliseconds = 5000;
     private const int ScreenCaptureTimeoutMilliseconds = 10000;
@@ -48,17 +46,7 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
     private const int ProcessStopTimeoutMilliseconds = 10000;
     private const int CriticalProcessEarlyExitMilliseconds = 1000;
     private const int PlayerReadTimeoutMilliseconds = 2000;
-
-    private bool _chatInputTargetsWindow = true;
-    private bool _chatInputSupportsVisualConfirmation = true;
-    private readonly GameTextRecognizer _textRecognizer = new();
     private long _nextWindowGeneration;
-
-    public async ValueTask DisposeAsync()
-    {
-        await _textRecognizer.DisposeAsync();
-        GC.SuppressFinalize(this);
-    }
 
     public async Task WriteOptionsAsync(string options, CancellationToken cancellationToken)
     {
@@ -109,12 +97,12 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
 
     public Task ConnectAsync(RunningGame game, string host, int port, CancellationToken cancellationToken)
     {
-        return JoinServerOperationAsync(game, host, port, cancellationToken);
+        return ConnectThroughAgentAsync(game, $"{host}:{port}", cancellationToken);
     }
 
-    public Task SendChatAsync(string message, CancellationToken cancellationToken)
+    public Task SendChatAsync(RunningGame game, string message, CancellationToken cancellationToken)
     {
-        return SendChatOperationAsync(message, cancellationToken);
+        return SendChatThroughAgentAsync(game, message, cancellationToken);
     }
 
     public Task<byte[]> CaptureScreenshotAsync(CancellationToken cancellationToken)
@@ -615,207 +603,84 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         return portablemcVersion;
     }
 
-    async Task SendChatOperationAsync(string message, CancellationToken cancellationToken)
+    async Task ConnectThroughAgentAsync(RunningGame game, string serverAddress, CancellationToken cancellationToken)
     {
-        var display = Environment.GetEnvironmentVariable("DISPLAY") ?? DefaultDisplay;
-        var windowId = await FindLargestWindow(display, cancellationToken);
+        var response = await SendAgentCommandAsync(game, "connect", serverAddress, cancellationToken);
 
-        if (windowId is null)
-            throw new InvalidOperationException("no visible window found");
+        if (response.Status is not "ok")
+            throw new GameClientException("client.connect.failed", "connect", response.Stage ?? "agent.connect", response.Message ?? "The Minecraft agent returned no diagnostic");
 
-        var preferredInputWindowId = _chatInputTargetsWindow ? windowId : null;
-        await ResizeWindowToDisplayAsync(windowId, cancellationToken);
-        await RunOrThrow(cancellationToken, "xdotool", "windowfocus", "--sync", windowId);
-        windowId = await ResumeGameIfPausedAsync(windowId, display, cancellationToken);
-        var inputWindowId = await OpenChatAsync(windowId, preferredInputWindowId, display, cancellationToken);
+        if (!string.Equals(response.Value, serverAddress, StringComparison.Ordinal))
+            throw new GameClientException("client.connect.failed", "connect", "address.verify", $"Minecraft agent confirmed {JsonSerializer.Serialize(response.Value)} instead of {JsonSerializer.Serialize(serverAddress)}");
 
-        if (_chatInputTargetsWindow)
-            await PasteTextAsync(inputWindowId, message, display, cancellationToken);
-        else
-            await TypeTextAsync(inputWindowId, message, _chatInputSupportsVisualConfirmation ? 50 : 150, cancellationToken);
-
-        await SubmitChatAsync(windowId, inputWindowId, display, cancellationToken);
+        Console.Error.WriteLine($"Minecraft agent navigated to and joined {JsonSerializer.Serialize(serverAddress)} through discovered UI actions");
     }
 
-    async Task JoinServerOperationAsync(RunningGame game, string host, int port, CancellationToken cancellationToken)
+    async Task SendChatThroughAgentAsync(RunningGame game, string message, CancellationToken cancellationToken)
     {
-        var display = Environment.GetEnvironmentVariable("DISPLAY") ?? DefaultDisplay;
-        var windowLease = await AcquirePreparedWindowLeaseAsync(display, cancellationToken);
-        var serverAddress = $"{host}:{port}";
-        var stage = "screen.capture";
-        ConnectionNavigationKind? clickedAction = null;
+        var response = await SendAgentCommandAsync(game, "chat", message, cancellationToken);
 
-        while (!cancellationToken.IsCancellationRequested)
+        if (response.Status is not "ok")
+            throw new GameClientException("client.chat.failed", "send-chat", response.Stage ?? "agent.chat", response.Message ?? "The Minecraft agent returned no diagnostic");
+
+        if (!string.Equals(response.Value, message, StringComparison.Ordinal))
+            throw new GameClientException("client.chat.failed", "send-chat", "chat.verify", $"Minecraft agent confirmed {JsonSerializer.Serialize(response.Value)} instead of {JsonSerializer.Serialize(message)}");
+
+        Console.Error.WriteLine($"Minecraft agent submitted the exact chat input through Minecraft's UI handler: {JsonSerializer.Serialize(message)}");
+    }
+
+    async Task<TrackerResponse> SendAgentCommandAsync(RunningGame game, string command, string value, CancellationToken cancellationToken)
+    {
+        if (!File.Exists(game.Tracker.DescriptorPath))
+            await AttachAgentAsync(game, cancellationToken);
+
+        if (!File.Exists(game.Tracker.DescriptorPath))
+            throw new InvalidOperationException("The Minecraft agent is not ready");
+
+        var descriptor = await File.ReadAllTextAsync(game.Tracker.DescriptorPath, cancellationToken);
+
+        if (!int.TryParse(descriptor, NumberStyles.None, CultureInfo.InvariantCulture, out var port) || port is < 1 or > 65535)
+            throw new InvalidOperationException("The Minecraft agent published an invalid endpoint");
+
+        var requestId = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
+        var encodedValue = Convert.ToBase64String(Encoding.UTF8.GetBytes(value)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+        try
         {
-            try
-            {
-                stage = "screen.prepare";
-                await MoveMouseAsync(windowLease.Id, 2, 2, cancellationToken);
-                stage = "screen.capture";
-                using var screen = await CaptureScreenImageAsync(windowLease.Id, display, cancellationToken);
-                stage = "screen.recognition";
-                var recognition = await RecognizeConnectionScreenAsync(screen, cancellationToken);
-                var observation = recognition.Observation;
+            using var client = new TcpClient();
+            await client.ConnectAsync(IPAddress.Loopback, port, cancellationToken);
+            await using var stream = client.GetStream();
+            await using var writer = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
+            using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
+            await writer.WriteLineAsync($"{game.Tracker.Token}\t{command}\t{requestId}\t{encodedValue}".AsMemory(), cancellationToken);
+            var responseJson = await reader.ReadLineAsync(cancellationToken);
 
-                if (observation is null)
-                {
-                    stage = "game.confirmation";
-                    if (recognition.Matches.Count is 0 && await TryConfirmInteractiveGameScreenAsync(windowLease.Id, display, cancellationToken))
-                        return;
+            if (string.IsNullOrWhiteSpace(responseJson))
+                throw new InvalidOperationException("The Minecraft agent returned an empty response");
 
-                    continue;
-                }
-
-                if (clickedAction == observation.Kind)
-                {
-                    Console.Error.WriteLine($"OCR still sees {observation.Kind} after its click; waiting for a different recognized action");
-                    continue;
-                }
-
-                LogRecognizedConnectionAction(observation.Kind, observation.TextMatch);
-
-                if (observation.Kind is ConnectionNavigationKind.Back)
-                    Console.Error.WriteLine("Visually confirmed that the connection failed; returning to the server list to retry");
-
-                if (observation.Kind is ConnectionNavigationKind.JoinServer)
-                {
-                    stage = "agent.connect";
-                    await ConnectThroughAgentAsync(game, serverAddress, cancellationToken);
-                }
-                else
-                {
-                    stage = "action.click";
-                    await ClickRecognizedConnectionActionAsync(windowLease.Id, observation.Kind, observation.TextMatch, cancellationToken);
-                }
-
-                clickedAction = observation.Kind;
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (GameClientException)
-            {
-                throw;
-            }
-            catch (Exception exception) when (exception is ExternalProcessException or InvalidOperationException)
-            {
-                var staleWindowFailure = await GetStaleWindowFailureAsync(windowLease, display, exception, cancellationToken);
-
-                if (staleWindowFailure is not null)
-                {
-                    windowLease = await AcquirePreparedWindowLeaseAsync(display, cancellationToken);
-                    Console.Error.WriteLine($"{staleWindowFailure.Message} during {stage}; acquired lease {windowLease.Generation} ({windowLease.Id}) and restarted recognition");
-                    continue;
-                }
-
-                throw new GameClientException("client.connect.failed", "connect", stage, $"Minecraft client connection failed during {stage}: {exception.Message}", exception);
-            }
-            catch (Exception exception)
-            {
-                throw new GameClientException("client.connect.failed", "connect", stage, $"Minecraft client connection failed during {stage}: {exception.Message}", exception);
-            }
+            return JsonSerializer.Deserialize<TrackerResponse>(responseJson, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+                   ?? throw new InvalidOperationException("The Minecraft agent returned a malformed response");
         }
-
-        cancellationToken.ThrowIfCancellationRequested();
-    }
-
-    async Task<ConnectionScreenRecognition> RecognizeConnectionScreenAsync(ScreenImage screen, CancellationToken cancellationToken)
-    {
-        var recognizedTexts = await _textRecognizer.RecognizeAsync(screen.Bytes, OcrModelTier.Small, cancellationToken);
-        var matches = ConnectionTextMatcher.Match(recognizedTexts);
-        var observation = CreateConnectionScreenObservation(matches);
-
-        if (ConnectionOcrFallbackPolicy.IsReliable(observation?.TextMatch))
-            return new(matches, observation);
-
-        Console.Error.WriteLine("Small OCR did not find a reliable connection action; retrying the current screen with medium OCR");
-        recognizedTexts = await _textRecognizer.RecognizeAsync(screen.Bytes, OcrModelTier.Medium, cancellationToken);
-        matches = ConnectionTextMatcher.Match(recognizedTexts);
-        observation = CreateConnectionScreenObservation(matches);
-        return new(matches, observation);
-    }
-
-    static ConnectionScreenObservation? CreateConnectionScreenObservation(IReadOnlyDictionary<ConnectionTextAction, ConnectionTextMatch> matches)
-    {
-        var selection = ConnectionNavigationSelector.Select(matches);
-
-        if (selection is null || !matches.TryGetValue(selection.TextAction, out var match))
-            return null;
-
-        return new(selection.Kind, match);
-    }
-
-    async Task ClickRecognizedConnectionActionAsync(string windowId, ConnectionNavigationKind kind, ConnectionTextMatch match, CancellationToken cancellationToken)
-    {
-        await FocusMoveAndClickAsync(windowId, match.Bounds, cancellationToken);
-        Console.Error.WriteLine($"Clicked OCR-selected {kind} '{match.Text}' at {match.Bounds}");
-    }
-
-    static void LogRecognizedConnectionAction(ConnectionNavigationKind kind, ConnectionTextMatch match)
-    {
-        Console.Error.WriteLine($"OCR selected {kind} '{match.Text}' at {match.Bounds} with {match.Confidence:P1} confidence and {match.Similarity:P1} similarity");
-    }
-
-    async Task<bool> TryConfirmInteractiveGameScreenAsync(string windowId, string display, CancellationToken cancellationToken)
-    {
-        var preferredInputWindowId = _chatInputTargetsWindow ? windowId : null;
-
-        if (_chatInputSupportsVisualConfirmation)
+        catch (OperationCanceledException)
         {
-            if (await TryOpenAndCloseChatAsync(windowId, preferredInputWindowId, display, pressKeySlowly: false, key: "t", cancellationToken: cancellationToken))
-                return true;
-
-            if (preferredInputWindowId is not null && await TryOpenAndCloseChatAsync(windowId, null, display, pressKeySlowly: false, key: "t", cancellationToken: cancellationToken))
-                return true;
-
-            return false;
+            await TryCancelAgentCommandAsync(game.Tracker, port, requestId);
+            throw;
         }
-
-        return await TryOpenAndCloseChatAsync(windowId, null, display, pressKeySlowly: true, key: "t", cancellationToken: cancellationToken)
-            || await TryOpenAndCloseChatAsync(windowId, null, display, pressKeySlowly: true, key: "slash", cancellationToken: cancellationToken);
     }
 
-    async Task<bool> TryOpenAndCloseChatAsync(string windowId, string? inputWindowId, string display, bool pressKeySlowly, string key, CancellationToken cancellationToken)
+    static async Task TryCancelAgentCommandAsync(GameTrackerConnection tracker, int port, string requestId)
     {
-        if (pressKeySlowly)
-            await PressKeySlowlyAsync(inputWindowId, key, cancellationToken);
-        else
-            await PressKeyAsync(inputWindowId, key, cancellationToken);
-
-        if (!await IsChatInputVisibleAsync(windowId, display, cancellationToken))
-            return false;
-
-        await ClearChatInputAsync(pressKeysSlowly: pressKeySlowly, cancellationToken: cancellationToken);
-
-        if (!await IsChatInputVisibleAsync(windowId, display, cancellationToken))
-            return false;
-
-        await PressKeyAsync(null, "Escape", cancellationToken);
-
-        while (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
-            cancellationToken.ThrowIfCancellationRequested();
-
-        windowId = await ResumeGameIfPausedAsync(windowId, display, cancellationToken);
-
-        Console.Error.WriteLine("Visually confirmed an interactive in-game screen");
-        return true;
-    }
-
-    async Task<string> ResumeGameIfPausedAsync(string windowId, string display, CancellationToken cancellationToken)
-    {
-        while (true)
+        try
         {
-            using var screen = await CaptureScreenImageAsync(windowId, display, cancellationToken);
-            var recognizedTexts = await _textRecognizer.RecognizeAsync(screen.Bytes, OcrModelTier.Small, cancellationToken);
-            var matches = ConnectionTextMatcher.Match(recognizedTexts);
-
-            if (!matches.TryGetValue(ConnectionTextAction.BackToGame, out var backToGame))
-                return windowId;
-
-            Console.Error.WriteLine("OCR visually confirmed the pause menu; returning to the game");
-            LogRecognizedConnectionAction(ConnectionNavigationKind.BackToGame, backToGame);
-            await ClickRecognizedConnectionActionAsync(windowId, ConnectionNavigationKind.BackToGame, backToGame, cancellationToken);
+            using var client = new TcpClient();
+            await client.ConnectAsync(IPAddress.Loopback, port, CancellationToken.None);
+            await using var stream = client.GetStream();
+            await using var writer = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
+            await writer.WriteLineAsync($"{tracker.Token}\tcancel\t{requestId}".AsMemory(), CancellationToken.None);
+        }
+        catch
+        {
+            // Cancellation remains best effort because stopping the game also terminates its agent.
         }
     }
 
@@ -888,93 +753,11 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         }
     }
 
-    async Task ConnectThroughAgentAsync(RunningGame game, string serverAddress, CancellationToken cancellationToken)
-    {
-        if (!File.Exists(game.Tracker.DescriptorPath))
-            await AttachAgentAsync(game, cancellationToken);
-
-        if (!File.Exists(game.Tracker.DescriptorPath))
-            throw new InvalidOperationException("The Minecraft agent is not ready");
-
-        var descriptor = await File.ReadAllTextAsync(game.Tracker.DescriptorPath, cancellationToken);
-
-        if (!int.TryParse(descriptor, NumberStyles.None, CultureInfo.InvariantCulture, out var port) || port is < 1 or > 65535)
-            throw new InvalidOperationException("The Minecraft agent published an invalid endpoint");
-
-        var encodedAddress = Convert.ToBase64String(Encoding.UTF8.GetBytes(serverAddress)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
-        using var timeoutSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(ExternalProcessTimeoutMilliseconds));
-        using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token);
-
-        try
-        {
-            using var client = new TcpClient();
-            await client.ConnectAsync(IPAddress.Loopback, port, linkedSource.Token);
-            await using var stream = client.GetStream();
-            await using var writer = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
-            using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
-            await writer.WriteLineAsync($"{game.Tracker.Token}\tconnect\t{encodedAddress}".AsMemory(), linkedSource.Token);
-            var responseJson = await reader.ReadLineAsync(linkedSource.Token);
-
-            if (string.IsNullOrWhiteSpace(responseJson))
-                throw new InvalidOperationException("The Minecraft agent returned an empty connection response");
-
-            var response = JsonSerializer.Deserialize<TrackerResponse>(responseJson, new JsonSerializerOptions(JsonSerializerDefaults.Web))
-                           ?? throw new InvalidOperationException("The Minecraft agent returned a malformed connection response");
-
-            if (response.Status is not "ok")
-                throw new GameClientException("client.connect.failed", "connect", response.Stage ?? "agent.connect", response.Message ?? "The Minecraft agent returned no diagnostic");
-
-            if (!string.Equals(response.Value, serverAddress, StringComparison.Ordinal))
-                throw new GameClientException("client.connect.failed", "connect", "address.verify", $"Minecraft agent confirmed {JsonSerializer.Serialize(response.Value)} instead of {JsonSerializer.Serialize(serverAddress)}");
-
-            Console.Error.WriteLine($"Minecraft agent set the exact server address and invoked its submit callback: {JsonSerializer.Serialize(serverAddress)}");
-        }
-        catch (OperationCanceledException) when (timeoutSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
-        {
-            throw new InvalidOperationException($"The Minecraft agent did not submit the connection within {ExternalProcessTimeoutMilliseconds / 1000.0:F1} seconds");
-        }
-    }
-
-    async Task<ScreenImage> CaptureScreenImageAsync(string windowId, string display, CancellationToken cancellationToken)
-    {
-        await Task.Delay(UserInterfacePollDelayMilliseconds, cancellationToken);
-
-        var captureResult = await RunScreenCaptureBytesAsync(
-            currentWindowId => CreateProcessInfo("import", ["-window", currentWindowId, "-depth", "8", "ppm:-"], display: display),
-            windowId,
-            display,
-            cancellationToken);
-
-        if (captureResult.ExitCode is not 0)
-            throw new InvalidOperationException($"screen analysis capture failed: {captureResult.StandardError}");
-
-        return ScreenImage.LoadPortablePixmap(captureResult.StandardOutput);
-    }
-
-    async Task MoveMouseAsync(string windowId, int x, int y, CancellationToken cancellationToken)
-    {
-        await RunOrThrow(cancellationToken, "xdotool", "windowfocus", windowId);
-        await RunOrThrow(cancellationToken, "xdotool", "mousemove", "--window", windowId, x.ToString(CultureInfo.InvariantCulture), y.ToString(CultureInfo.InvariantCulture));
-    }
-
-    async Task FocusMoveAndClickAsync(string windowId, OcrRectangle target, CancellationToken cancellationToken)
-    {
-        await RunOrThrow(
-            cancellationToken,
-            "xdotool",
-            "windowfocus", windowId,
-            "mousemove", "--window", windowId, "2", "2",
-            "mousemove", "--sync", "--window", windowId, target.CenterX.ToString(CultureInfo.InvariantCulture), target.CenterY.ToString(CultureInfo.InvariantCulture),
-            "click", "1");
-    }
-
     Process LaunchPortableMinecraftClient(string directory, string version, string?[]? portableMinecraftArguments = null, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         portableMinecraftArguments ??= [];
         var requestedPortableMinecraftArguments = portableMinecraftArguments.OfType<string>().ToArray();
-        _chatInputTargetsWindow = !UsesActiveWindowChatInput(version);
-        _chatInputSupportsVisualConfirmation = !RequiresBlindChatInput(version);
 
         var process = StartGameProcess(processInfo =>
         {
@@ -1050,34 +833,6 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
             && int.TryParse(versionComponents[1], out var minorVersion)
             && majorVersion == 1
             && minorVersion <= 12;
-    }
-
-    bool UsesActiveWindowChatInput(string version)
-    {
-        if (!version.StartsWith("mojang:", StringComparison.Ordinal))
-            return false;
-
-        var versionComponents = version["mojang:".Length..].Split('.');
-
-        return versionComponents.Length >= 2
-            && int.TryParse(versionComponents[0], out var majorVersion)
-            && int.TryParse(versionComponents[1], out var minorVersion)
-            && majorVersion == 1
-            && minorVersion <= 12;
-    }
-
-    bool RequiresBlindChatInput(string version)
-    {
-        if (!version.StartsWith("mojang:", StringComparison.Ordinal))
-            return false;
-
-        var versionComponents = version["mojang:".Length..].Split('.');
-
-        return versionComponents.Length >= 2
-            && int.TryParse(versionComponents[0], out var majorVersion)
-            && int.TryParse(versionComponents[1], out var minorVersion)
-            && majorVersion == 1
-            && minorVersion == 7;
     }
 
     bool HasPortableMinecraftArgument(IEnumerable<string> arguments, string argumentName)
@@ -1190,177 +945,6 @@ internal sealed partial class GameRuntime : IGameRuntime, IAsyncDisposable
         {
             return false;
         }
-    }
-
-    async Task TypeTextAsync(string? windowId, string text, int delayMilliseconds, CancellationToken cancellationToken = default)
-    {
-        var delay = delayMilliseconds.ToString(CultureInfo.InvariantCulture);
-
-        if (windowId is null)
-            await RunOrThrow(cancellationToken, "xdotool", "type", "--clearmodifiers", "--delay", delay, "--", text);
-        else
-            await RunOrThrow(cancellationToken, "xdotool", "type", "--clearmodifiers", "--window", windowId, "--delay", delay, "--", text);
-    }
-
-    async Task PasteTextAsync(string? windowId, string text, string display, CancellationToken cancellationToken = default)
-    {
-        var processInfo = CreateProcessInfo("xclip", ["-selection", "clipboard", "-in", "-loops", "2", "-quiet"], display: display);
-        processInfo.RedirectStandardInput = true;
-        processInfo.RedirectStandardOutput = false;
-        processInfo.RedirectStandardError = false;
-
-        using var process = Process.Start(processInfo)
-                            ?? throw new InvalidOperationException("failed to start xclip");
-
-        try
-        {
-            await process.StandardInput.WriteAsync(text.AsMemory(), cancellationToken);
-            process.StandardInput.Close();
-            var clipboardDeadline = DateTimeOffset.UtcNow.AddMilliseconds(ExternalProcessTimeoutMilliseconds);
-            var clipboardMatches = false;
-
-            while (!clipboardMatches && DateTimeOffset.UtcNow < clipboardDeadline)
-            {
-                var clipboardResult = await RunProcessTextAsync(CreateProcessInfo("xclip", ["-selection", "clipboard", "-out"], display: display), TimeSpan.FromMilliseconds(ExternalProcessTimeoutMilliseconds), cancellationToken);
-                clipboardMatches = clipboardResult.ExitCode is 0 && clipboardResult.StandardOutput == text;
-
-                if (!clipboardMatches)
-                    await Task.Delay(25, cancellationToken);
-            }
-
-            if (!clipboardMatches)
-                throw new InvalidOperationException("xclip did not acquire the clipboard selection");
-
-            await PressKeyAsync(windowId, "ctrl+v", cancellationToken);
-            await WaitForProcessExitAsync(process, processInfo.FileName, TimeSpan.FromMilliseconds(ExternalProcessTimeoutMilliseconds), cancellationToken);
-        }
-        catch
-        {
-            KillProcess(process);
-            await WaitForKilledProcessAsync(process);
-            throw;
-        }
-
-        if (process.ExitCode is not 0)
-            throw new InvalidOperationException($"xclip exited with code {process.ExitCode}");
-    }
-
-    async Task PressKeyAsync(string? windowId, string key, CancellationToken cancellationToken = default)
-    {
-        if (windowId is null)
-            await RunOrThrow(cancellationToken, "xdotool", "key", "--clearmodifiers", key);
-        else
-            await RunOrThrow(cancellationToken, "xdotool", "key", "--clearmodifiers", "--window", windowId, key);
-    }
-
-    async Task PressKeySlowlyAsync(string? windowId, string key, CancellationToken cancellationToken = default)
-    {
-        if (windowId is null)
-            await RunOrThrow(cancellationToken, "xdotool", "keydown", "--clearmodifiers", key);
-        else
-            await RunOrThrow(cancellationToken, "xdotool", "keydown", "--clearmodifiers", "--window", windowId, key);
-
-        await Task.Delay(150, cancellationToken);
-
-        if (windowId is null)
-            await RunOrThrow(cancellationToken, "xdotool", "keyup", key);
-        else
-            await RunOrThrow(cancellationToken, "xdotool", "keyup", "--window", windowId, key);
-    }
-
-    async Task ClearChatInputAsync(bool pressKeysSlowly = false, CancellationToken cancellationToken = default)
-    {
-        if (pressKeysSlowly)
-        {
-            await SelectAllTextAsync(cancellationToken);
-            await PressKeySlowlyAsync(null, "BackSpace", cancellationToken);
-        }
-        else
-            await ClearTextWithoutDelayAsync(cancellationToken);
-    }
-
-    async Task SelectAllTextAsync(CancellationToken cancellationToken)
-    {
-        await RunOrThrow(cancellationToken, "xdotool", "keydown", "ctrl", "key", "a", "keyup", "ctrl");
-    }
-
-    async Task ClearTextWithoutDelayAsync(CancellationToken cancellationToken)
-    {
-        await RunOrThrow(cancellationToken, "xdotool", "keydown", "ctrl", "key", "a", "keyup", "ctrl", "key", "BackSpace");
-    }
-
-    async Task<string?> OpenChatAsync(string windowId, string? preferredInputWindowId, string display, CancellationToken cancellationToken = default)
-    {
-        if (!_chatInputSupportsVisualConfirmation)
-        {
-            var useChatKey = true;
-
-            while (true)
-            {
-                var chatKey = useChatKey ? "t" : "slash";
-                useChatKey = !useChatKey;
-                await PressKeySlowlyAsync(null, chatKey, cancellationToken);
-
-                if (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
-                {
-                    await ClearChatInputAsync(pressKeysSlowly: true, cancellationToken: cancellationToken);
-
-                    if (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
-                        return null;
-                }
-            }
-        }
-
-        while (true)
-        {
-            await PressKeyAsync(preferredInputWindowId, "t", cancellationToken);
-
-            while (!await IsChatInputVisibleAsync(windowId, display, cancellationToken))
-                cancellationToken.ThrowIfCancellationRequested();
-
-            await ClearChatInputAsync(cancellationToken: cancellationToken);
-
-            if (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
-                return null;
-        }
-    }
-
-    async Task SubmitChatAsync(string windowId, string? inputWindowId, string display, CancellationToken cancellationToken = default)
-    {
-        if (!_chatInputSupportsVisualConfirmation)
-        {
-            await PressKeyAsync(null, "Return", cancellationToken);
-
-            while (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
-                cancellationToken.ThrowIfCancellationRequested();
-
-            return;
-        }
-
-        await PressKeyAsync(inputWindowId, "Return", cancellationToken);
-
-        while (await IsChatInputVisibleAsync(windowId, display, cancellationToken))
-            cancellationToken.ThrowIfCancellationRequested();
-    }
-
-    async Task<bool> IsChatInputVisibleAsync(string windowId, string display, CancellationToken cancellationToken = default)
-    {
-        await Task.Delay(UserInterfacePollDelayMilliseconds, cancellationToken);
-
-        var captureResult = await RunScreenCaptureBytesAsync(
-            currentWindowId => CreateProcessInfo(
-                "import",
-                ["-window", currentWindowId, "-crop", ChatInputBrightnessCropGeometry, "+repage", "-depth", "8", "ppm:-"],
-                display: display),
-            windowId,
-            display,
-            cancellationToken);
-
-        if (captureResult.ExitCode != 0)
-            throw new InvalidOperationException($"chat input capture failed: {captureResult.StandardError}");
-
-        using var screen = ScreenImage.LoadPortablePixmap(captureResult.StandardOutput);
-        return screen.IsChatInputVisible();
     }
 
     async Task<string?> FindLargestWindow(string display, CancellationToken cancellationToken = default)

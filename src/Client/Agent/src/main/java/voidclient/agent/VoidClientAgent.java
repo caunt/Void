@@ -32,9 +32,9 @@ public final class VoidClientAgent {
         try {
             AgentArguments parsedArguments = AgentArguments.parse(arguments);
             Tracker.initialize(instrumentation, parsedArguments.expectedName);
+            GameAutomationController.initialize(instrumentation);
             instrumentation.addTransformer(new PlayerTransformer());
-            DirectConnectScreenTransformer directConnectTransformer = new DirectConnectScreenTransformer();
-            instrumentation.addTransformer(directConnectTransformer, true);
+            instrumentation.addTransformer(new GameAutomationTransformer(), true);
 
             if (retransformLoadedClasses)
                 retransformLoadedClasses(instrumentation);
@@ -54,12 +54,18 @@ public final class VoidClientAgent {
 
     private static void retransformLoadedClasses(Instrumentation instrumentation) {
         for (Class<?> type : instrumentation.getAllLoadedClasses()) {
-            if (!instrumentation.isModifiableClass(type) || type.isArray() || type.isPrimitive()
-                || !DirectConnectScreenTransformer.mightBeDirectConnectScreen(type))
+            if (!instrumentation.isModifiableClass(type) || type.isArray() || type.isPrimitive())
                 continue;
 
             try {
-                instrumentation.retransformClasses(type);
+                java.security.ProtectionDomain protectionDomain = type.getProtectionDomain();
+                java.security.CodeSource codeSource = protectionDomain == null ? null : protectionDomain.getCodeSource();
+                GameAutomationIndex.IndexedCode index = GameAutomationIndex.index(codeSource == null ? null : codeSource.getLocation());
+                String className = type.getName().replace('.', '/');
+
+                if (index != null && (index.plan.clientClassName.equals(className)
+                    || index.plan.chatDriverClassName.equals(className)))
+                    instrumentation.retransformClasses(type);
             } catch (Throwable exception) {
                 // Some JVM-generated classes report as modifiable but cannot actually be retransformed.
             }

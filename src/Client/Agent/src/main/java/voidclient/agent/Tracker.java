@@ -63,8 +63,10 @@ public final class Tracker {
     }
 
     public static void registerPlayer(Object value) {
-        if (value != null)
+        if (value != null) {
             ObservedPlayers.add(new WeakReference<Object>(value));
+            GameAutomationController.playerObserved(value);
+        }
     }
 
     static String snapshotJson() {

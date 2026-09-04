@@ -485,7 +485,7 @@ public sealed class GameCoordinatorTests
             return _connect.Task;
         }
 
-        public Task SendChatAsync(string message, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task SendChatAsync(RunningGame game, string message, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public Task<byte[]> CaptureScreenshotAsync(CancellationToken cancellationToken) => Task.FromResult(Array.Empty<byte>());
 

@@ -1,61 +1,15 @@
 package voidclient.agent;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.instrument.ClassFileTransformer;
-import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.List;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
 
-final class DirectConnectScreenTransformer implements ClassFileTransformer {
-    private static final String DirectConnectTranslationKey = "selectServer.direct";
-    private static final byte[] DirectConnectTranslationKeyBytes = DirectConnectTranslationKey.getBytes(java.nio.charset.StandardCharsets.US_ASCII);
-    private static final String ControllerName = "voidclient/agent/DirectConnectController";
-
-    @Override
-    public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classFileBuffer) {
-        if (className == null || className.startsWith("java/") || className.startsWith("voidclient/agent/"))
-            return null;
-
-        try {
-            ClassNode type = new ClassNode();
-            new ClassReader(classFileBuffer).accept(type, 0);
-
-            if (!containsDirectConnectTranslationKey(type))
-                return null;
-
-            DirectConnectPlan plan = discover(type);
-
-            if (plan == null) {
-                DirectConnectController.recordDiscoveryFailure(className, "No unique text/address/submit data flow was found");
-                return null;
-            }
-
-            DirectConnectController.registerPlan(plan);
-            boolean changed = instrumentRenderThreadEntries(type);
-
-            if (!changed)
-                return null;
-
-            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            type.accept(writer);
-            return writer.toByteArray();
-        } catch (Throwable exception) {
-            DirectConnectController.recordDiscoveryFailure(className, exception.getClass().getName() + ": " + exception.getMessage());
-            return null;
-        }
-    }
+final class DirectConnectDiscovery {
 
     static DirectConnectPlan discover(ClassNode type) {
         List<DirectConnectPlan> candidates = new ArrayList<DirectConnectPlan>();
@@ -99,56 +53,6 @@ final class DirectConnectScreenTransformer implements ClassFileTransformer {
         }
 
         return candidates.size() == 1 ? candidates.get(0) : null;
-    }
-
-    static boolean mightBeDirectConnectScreen(Class<?> type) {
-        String resourceName = '/' + type.getName().replace('.', '/') + ".class";
-        InputStream input = type.getResourceAsStream(resourceName);
-
-        if (input == null)
-            return false;
-
-        try {
-            byte[] buffer = new byte[8192];
-            int read;
-            int matched = 0;
-
-            while ((read = input.read(buffer)) >= 0) {
-                for (int offset = 0; offset < read; offset++) {
-                    byte value = buffer[offset];
-
-                    if (value == DirectConnectTranslationKeyBytes[matched]) {
-                        matched++;
-
-                        if (matched == DirectConnectTranslationKeyBytes.length)
-                            return true;
-                    } else {
-                        matched = value == DirectConnectTranslationKeyBytes[0] ? 1 : 0;
-                    }
-                }
-            }
-
-            return false;
-        } catch (IOException exception) {
-            return false;
-        } finally {
-            try {
-                input.close();
-            } catch (IOException exception) {
-                // The candidate probe is complete.
-            }
-        }
-    }
-
-    private static boolean containsDirectConnectTranslationKey(ClassNode type) {
-        for (MethodNode method : type.methods) {
-            for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null; instruction = instruction.getNext()) {
-                if (instruction instanceof LdcInsnNode && DirectConnectTranslationKey.equals(((LdcInsnNode) instruction).cst))
-                    return true;
-            }
-        }
-
-        return false;
     }
 
     private static MethodInsnNode findPreviousStringGetter(AbstractInsnNode start, int maximumInstructions) {
@@ -251,35 +155,4 @@ final class DirectConnectScreenTransformer implements ClassFileTransformer {
         return false;
     }
 
-    private static boolean instrumentRenderThreadEntries(ClassNode type) {
-        boolean changed = false;
-
-        for (MethodNode method : type.methods) {
-            if ("<init>".equals(method.name) || "<clinit>".equals(method.name)
-                || (method.access & (Opcodes.ACC_STATIC | Opcodes.ACC_ABSTRACT | Opcodes.ACC_NATIVE)) != 0
-                || alreadyInstrumented(method))
-                continue;
-
-            InsnList apply = new InsnList();
-            apply.add(new VarInsnNode(Opcodes.ALOAD, 0));
-            apply.add(new MethodInsnNode(Opcodes.INVOKESTATIC, ControllerName, "applyPending", "(Ljava/lang/Object;)V", false));
-            method.instructions.insert(apply);
-            changed = true;
-        }
-
-        return changed;
-    }
-
-    private static boolean alreadyInstrumented(MethodNode method) {
-        for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null; instruction = instruction.getNext()) {
-            if (instruction instanceof MethodInsnNode) {
-                MethodInsnNode call = (MethodInsnNode) instruction;
-
-                if (ControllerName.equals(call.owner) && "applyPending".equals(call.name))
-                    return true;
-            }
-        }
-
-        return false;
-    }
 }

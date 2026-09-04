@@ -1,6 +1,5 @@
 package voidclient.agent;
 
-import java.util.concurrent.FutureTask;
 import org.junit.Assert;
 import org.junit.Test;
 import org.objectweb.asm.Opcodes;
@@ -8,15 +7,14 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-public final class DirectConnectScreenTransformerTest {
+public final class DirectConnectDiscoveryTest {
     @Test
     public void discoversModernBooleanCallbackWithoutMemberNames() {
-        DirectConnectPlan plan = DirectConnectScreenTransformer.discover(createScreen("(Z)V"));
+        DirectConnectPlan plan = DirectConnectDiscovery.discover(createScreen("(Z)V"));
 
         Assert.assertNotNull(plan);
         Assert.assertEquals("synthetic/Screen", plan.screenClassName);
@@ -30,7 +28,7 @@ public final class DirectConnectScreenTransformerTest {
 
     @Test
     public void discoversLegacyBooleanAndIntegerCallback() {
-        DirectConnectPlan plan = DirectConnectScreenTransformer.discover(createScreen("(ZI)V"));
+        DirectConnectPlan plan = DirectConnectDiscovery.discover(createScreen("(ZI)V"));
 
         Assert.assertNotNull(plan);
         Assert.assertEquals("(ZI)V", plan.callbackDescriptor);
@@ -41,7 +39,7 @@ public final class DirectConnectScreenTransformerTest {
         ClassNode screen = createScreen("(Z)V");
         screen.methods.remove(screen.methods.size() - 1);
 
-        Assert.assertNull(DirectConnectScreenTransformer.discover(screen));
+        Assert.assertNull(DirectConnectDiscovery.discover(screen));
     }
 
     @Test
@@ -51,25 +49,13 @@ public final class DirectConnectScreenTransformerTest {
         String widgetName = RuntimeWidget.class.getName().replace('.', '/');
         String serverDataName = RuntimeServerData.class.getName().replace('.', '/');
         String callbackName = RuntimeCallback.class.getName().replace('.', '/');
-        DirectConnectController.registerPlan(new DirectConnectPlan(screenName,
+        DirectConnectPlan plan = new DirectConnectPlan(screenName,
             "text", "L" + widgetName + ";", widgetName, "set", widgetName, "get",
             "serverData", "L" + serverDataName + ";", serverDataName, "address",
-            "callback", "L" + callbackName + ";", callbackName, "accept", "(Z)V"));
+            "callback", "L" + callbackName + ";", callbackName, "accept", "(Z)V");
 
-        FutureTask<String> request = new FutureTask<String>(new java.util.concurrent.Callable<String>() {
-            @Override
-            public String call() {
-                return DirectConnectController.connectJson("example.test:25565");
-            }
-        });
-        Thread requestThread = new Thread(request);
-        requestThread.start();
-
-        while (!request.isDone())
-            DirectConnectController.applyPending(screen);
-
-        String response = request.get();
-        Assert.assertTrue(response, response.contains("\"status\":\"ok\""));
+        String response = DirectConnectAccess.connect(screen, plan, "example.test:25565");
+        Assert.assertEquals("example.test:25565", response);
         Assert.assertEquals("example.test:25565", screen.text.get());
         Assert.assertEquals("example.test:25565", screen.serverData.address);
         Assert.assertEquals(1, screen.callback.invocations);
@@ -86,8 +72,6 @@ public final class DirectConnectScreenTransformerTest {
         screen.fields.add(new FieldNode(Opcodes.ACC_PRIVATE, "callback", "Lsynthetic/Callback;", null, null));
 
         MethodNode initialize = new MethodNode(Opcodes.ACC_PUBLIC, "initialize", "()V", null, null);
-        initialize.instructions.add(new LdcInsnNode("selectServer.direct"));
-        initialize.instructions.add(new InsnNode(Opcodes.POP));
         initialize.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
         initialize.instructions.add(new FieldInsnNode(Opcodes.GETFIELD, screen.name, "text", "Lsynthetic/Widget;"));
         initialize.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));

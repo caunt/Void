@@ -59,7 +59,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     novnc \
     procps \
     python3 \
-    python3-venv \
     tk \
     tini \
     util-linux \
@@ -67,22 +66,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     x11-utils \
     x11-xserver-utils \
     x11vnc \
-    xclip \
     xdotool \
     xxd \
     xvfb \
     xfwm4 \
  && rm -rf /var/lib/apt/lists/*
-
-RUN python3 -m venv /opt/paddleocr \
- && /opt/paddleocr/bin/pip install --no-cache-dir \
-    onnxruntime==1.29.0 \
-    paddleocr==3.7.0 \
-    paddlex==3.7.2
-
-COPY ocr-worker.py /opt/portableminecraftclient/ocr-worker.py
-
-RUN /opt/paddleocr/bin/python /opt/portableminecraftclient/ocr-worker.py --warmup
 
 # Mojang does not publish ARM64 JVMs for every Java version required by older clients.
 RUN if [ "$TARGETARCH" = "arm64" ]; then \

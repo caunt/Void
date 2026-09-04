@@ -351,7 +351,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         }
 
         var (operationId, cancellation) = BeginConfirmedOperation("send-chat", message.RequestCancellation);
-        Own(ObserveVoidOperationAsync(operationId, "send-chat", runtime.SendChatAsync(text, cancellation.Token), cancellation, message.Completion));
+        Own(ObserveVoidOperationAsync(operationId, "send-chat", runtime.SendChatAsync(_game, text, cancellation.Token), cancellation, message.Completion));
     }
 
     private void HandleScreenshot(ScreenshotMessage message)
