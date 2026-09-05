@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using DotNet.Testcontainers.Images;
 using Void.IntegrationTests.Infrastructure.Exceptions;
 using Void.IntegrationTests.Infrastructure.Extensions;
 using Void.Minecraft.Network;
@@ -55,6 +56,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
     public static async Task<PortableMinecraftClient> CreateAsync(CancellationToken cancellationToken = default)
     {
         var builder = new ContainerBuilder("ghcr.io/void-community/portable-minecraft-client:offline")
+            .WithImagePullPolicy(PullPolicy.Always)
             .WithEnvironment("DISPLAY", Display)
             .WithPortBinding(port: ApiPort, assignRandomHostPort: true)
             .WithWaitStrategy(Wait.ForUnixContainer()
