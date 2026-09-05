@@ -73,7 +73,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
 # Mojang does not publish ARM64 JVMs for every Java version required by older clients.
-RUN if [ "$TARGETARCH" = "arm64" ]; then \
+RUN set -e; if [ "$TARGETARCH" = "arm64" ]; then \
+      mkdir -p /opt/portableminecraftclient; \
       dpkg --add-architecture amd64; \
       apt-get update; \
       apt-get install -y --no-install-recommends \
@@ -131,7 +132,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
           done; \
         done; \
       done; \
-      mkdir -p /opt/portableminecraftclient; \
       curl --fail --location --silent --show-error --retry 5 --retry-all-errors --connect-timeout 15 --max-time 300 \
         https://libraries.minecraft.net/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-unsafe.jar \
         --output /opt/portableminecraftclient/lwjgl-3.4.1-unsafe.jar; \
