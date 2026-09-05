@@ -33,6 +33,7 @@ public final class VoidClientAgent {
             AgentArguments parsedArguments = AgentArguments.parse(arguments);
             Tracker.initialize(instrumentation, parsedArguments.expectedName);
             GameAutomationController.initialize(instrumentation);
+            instrumentation.addTransformer(new NettyReadInterestTransformer(), true);
             instrumentation.addTransformer(new PlayerTransformer());
             instrumentation.addTransformer(new GameAutomationTransformer(), true);
 
@@ -58,6 +59,11 @@ public final class VoidClientAgent {
                 continue;
 
             try {
+                if (NettyReadInterestTransformer.ChannelName.equals(type.getName().replace('.', '/'))) {
+                    instrumentation.retransformClasses(type);
+                    continue;
+                }
+
                 java.security.ProtectionDomain protectionDomain = type.getProtectionDomain();
                 java.security.CodeSource codeSource = protectionDomain == null ? null : protectionDomain.getCodeSource();
                 GameAutomationIndex.IndexedCode index = GameAutomationIndex.index(codeSource == null ? null : codeSource.getLocation());

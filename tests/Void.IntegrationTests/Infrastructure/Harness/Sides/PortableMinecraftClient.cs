@@ -56,8 +56,9 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
     public static async Task<PortableMinecraftClient> CreateAsync(CancellationToken cancellationToken = default)
     {
-        var builder = new ContainerBuilder("ghcr.io/void-community/portable-minecraft-client:offline")
-            .WithImagePullPolicy(PullPolicy.Always)
+        var image = Environment.GetEnvironmentVariable("VOID_CLIENT_IMAGE");
+        var builder = new ContainerBuilder(image ?? "ghcr.io/void-community/portable-minecraft-client:offline")
+            .WithImagePullPolicy(image is null ? PullPolicy.Always : PullPolicy.Missing)
             .WithEnvironment("DISPLAY", Display)
             .WithPortBinding(port: ApiPort, assignRandomHostPort: true)
             .WithWaitStrategy(Wait.ForUnixContainer()
