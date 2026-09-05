@@ -35,6 +35,16 @@ public final class DirectConnectDiscoveryTest {
     }
 
     @Test
+    public void readsCallbackControlIdFromBytecodeRatherThanAssumingZero() {
+        MethodNode method = new MethodNode();
+        method.instructions.add(new InsnNode(Opcodes.ICONST_1));
+        method.instructions.add(new org.objectweb.asm.tree.IntInsnNode(Opcodes.BIPUSH, 37));
+        MethodInsnNode callback = new MethodInsnNode(Opcodes.INVOKEINTERFACE, "renamed/Callback", "apply", "(ZI)V", true);
+        method.instructions.add(callback);
+        Assert.assertArrayEquals(new Object[] { Boolean.TRUE, Integer.valueOf(37) }, DirectConnectDiscovery.callbackArguments(callback));
+    }
+
+    @Test
     public void rejectsScreenWithoutSubmitDataFlow() {
         ClassNode screen = createScreen("(Z)V");
         screen.methods.remove(screen.methods.size() - 1);
@@ -52,13 +62,14 @@ public final class DirectConnectDiscoveryTest {
         DirectConnectPlan plan = new DirectConnectPlan(screenName,
             "text", "L" + widgetName + ";", widgetName, "set", widgetName, "get",
             "serverData", "L" + serverDataName + ";", serverDataName, "address",
-            "callback", "L" + callbackName + ";", callbackName, "accept", "(Z)V");
+            "callback", "L" + callbackName + ";", callbackName, "accept", "(ZI)V", new Object[] { Boolean.TRUE, Integer.valueOf(37) });
 
         String response = DirectConnectAccess.connect(screen, plan, "example.test:25565");
         Assert.assertEquals("example.test:25565", response);
         Assert.assertEquals("example.test:25565", screen.text.get());
         Assert.assertEquals("example.test:25565", screen.serverData.address);
         Assert.assertEquals(1, screen.callback.invocations);
+        Assert.assertEquals(37, screen.callback.controlId);
     }
 
     private static ClassNode createScreen(String callbackDescriptor) {
@@ -125,8 +136,10 @@ public final class DirectConnectDiscoveryTest {
 
     public static final class RuntimeCallback {
         private int invocations;
+        private int controlId;
 
-        public void accept(boolean accepted) {
+        public void accept(boolean accepted, int controlId) {
+            this.controlId = controlId;
             if (accepted)
                 invocations++;
         }

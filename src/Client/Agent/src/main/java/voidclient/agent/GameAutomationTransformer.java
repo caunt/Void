@@ -2,6 +2,8 @@ package voidclient.agent;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.net.URL;
+import java.util.List;
+import java.util.Set;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import org.objectweb.asm.ClassReader;
@@ -10,6 +12,8 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -31,15 +35,17 @@ final class GameAutomationTransformer implements ClassFileTransformer {
                 return null;
 
             GameAutomationController.registerIndex(loader, index);
-            boolean client = index.plan.clientClassName.equals(className)
-                || index.plan.chatDriverClassName.equals(className);
+            boolean client = index.plan.frame.owner.equals(className);
 
-            if (!client)
+            List<String> rejections = index.plan.rejectionCallbacks.get(className);
+            if (!client && rejections == null)
                 return null;
 
             ClassNode type = new ClassNode();
             new ClassReader(classFileBuffer).accept(type, 0);
-            boolean changed = instrument(type, "applyClient");
+            boolean changed = client && instrument(type, index.plan.frame);
+            if (rejections != null)
+                changed |= instrumentRejections(type, rejections, index.plan.networkTypes);
 
             if (!changed)
                 return null;
@@ -56,19 +62,55 @@ final class GameAutomationTransformer implements ClassFileTransformer {
         }
     }
 
-    private static boolean instrument(ClassNode type, String controllerMethod) {
+    static boolean instrument(ClassNode type, FramePlan frame) {
         boolean changed = false;
 
         for (MethodNode method : type.methods) {
-            if ("<init>".equals(method.name) || "<clinit>".equals(method.name)
-                || (method.access & (Opcodes.ACC_STATIC | Opcodes.ACC_ABSTRACT | Opcodes.ACC_NATIVE)) != 0
-                || alreadyInstrumented(method, controllerMethod))
+            if (!frame.loopName.equals(method.name) || !frame.loopDescriptor.equals(method.desc)
+                || alreadyInstrumented(method, "applyClient"))
                 continue;
 
-            method.instructions.insert(controllerCall(controllerMethod));
-            changed = true;
+            for (AbstractInsnNode instruction : method.instructions.toArray()) {
+                if (!(instruction instanceof MethodInsnNode))
+                    continue;
+                MethodInsnNode call = (MethodInsnNode) instruction;
+                if (type.name.equals(call.owner) && frame.frameName.equals(call.name) && frame.frameDescriptor.equals(call.desc)) {
+                    method.instructions.insertBefore(call, controllerCall("applyClient"));
+                    changed = true;
+                }
+            }
         }
 
+        return changed;
+    }
+
+    static boolean instrumentRejections(ClassNode type, List<String> callbacks, Set<String> networkTypes) {
+        boolean changed = false;
+        for (MethodNode method : type.methods) {
+            if ("<init>".equals(method.name) && !alreadyInstrumented(method, "connectionListenerCreated")) {
+                for (AbstractInsnNode instruction : method.instructions.toArray()) {
+                    if (!(instruction instanceof FieldInsnNode) || instruction.getOpcode() != Opcodes.PUTFIELD)
+                        continue;
+                    FieldInsnNode field = (FieldInsnNode) instruction;
+                    if (!field.desc.startsWith("L") || !networkTypes.contains(field.desc.substring(1, field.desc.length() - 1)))
+                        continue;
+                    // Preserve the live receiver/value on the operand stack. Optimized
+                    // constructor stack maps can legally discard local zero before RETURN.
+                    method.instructions.insertBefore(instruction, new InsnNode(Opcodes.DUP2));
+                    method.instructions.insert(instruction, new MethodInsnNode(Opcodes.INVOKESTATIC, ControllerName,
+                        "connectionListenerCreated", "(Ljava/lang/Object;Ljava/lang/Object;)V", false));
+                    changed = true;
+                }
+            }
+            if (callbacks.contains(method.name + method.desc) && !alreadyInstrumented(method, "connectionRejected")) {
+                InsnList call = new InsnList();
+                call.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                call.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                call.add(new MethodInsnNode(Opcodes.INVOKESTATIC, ControllerName, "connectionRejected", "(Ljava/lang/Object;Ljava/lang/Object;)V", false));
+                method.instructions.insert(call);
+                changed = true;
+            }
+        }
         return changed;
     }
 

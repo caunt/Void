@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import org.objectweb.asm.Type;
 
 public final class GameAutomationController {
@@ -26,7 +25,6 @@ public final class GameAutomationController {
     private static final ThreadLocal<Boolean> Applying = new ThreadLocal<Boolean>();
     private static volatile PendingOperation pending;
     private static WeakReference<Object> screenSetterReceiver = new WeakReference<Object>(null);
-    private static Thread clientThread;
     private static volatile Object consumedScreen;
     private static String waitingScreenName;
     private static boolean waitingForPresentationOverlay;
@@ -49,9 +47,8 @@ public final class GameAutomationController {
         System.err.println("Void client agent indexed UI graph: direct=" + index.plan.directConnect.describe()
             + " chat=" + index.plan.chat.describe() + " overlay="
             + (index.plan.presentationOverlay == null ? "none" : index.plan.presentationOverlay.describe())
-            + " screens=" + index.plan.transitions.size());
-        retransformClientClass(index.plan.clientClassName);
-        retransformClientClass(index.plan.chatDriverClassName);
+            + " frame=" + index.plan.frame + " screens=" + index.plan.transitions.size());
+        retransformClientClass(index.plan.frame.owner);
     }
 
     private static void retransformClientClass(final String className) {
@@ -114,28 +111,6 @@ public final class GameAutomationController {
             waitingForPresentationOverlay = false;
         }
 
-        Object receiver = screenSetterReceiver.get();
-
-        if (receiver instanceof Executor) {
-            final Object client = receiver;
-            System.err.println("Void client agent dispatching " + operation.kind + " through the Minecraft client executor");
-            try {
-                ExecutorDispatchContext.execute((Executor) receiver, new Runnable() {
-                    @Override
-                    public void run() {
-                        System.err.println("Void client agent executing dispatched " + operation.kind + " on " + Thread.currentThread().getName());
-                        applyClient(client);
-                    }
-                });
-            } catch (Throwable exception) {
-                synchronized (GameAutomationController.class) {
-                    pending = null;
-                }
-
-                return error("ui.dispatch", exception.getClass().getName() + ": " + exception.getMessage());
-            }
-        }
-
         try {
             operation.completed.await();
             return operation.response;
@@ -154,7 +129,6 @@ public final class GameAutomationController {
         GameAutomationIndex.IndexedCode index = index(screen.getClass().getClassLoader());
 
         synchronized (GameAutomationController.class) {
-            clientThread = Thread.currentThread();
             if (index != null && screenSetterReceiver.get() == null)
                 screenSetterReceiver = new WeakReference<Object>(findObject(screen, index.plan.clientClassName, 3));
 
@@ -180,7 +154,20 @@ public final class GameAutomationController {
     }
 
     public static void applyClient(Object client) {
-        if (Boolean.TRUE.equals(Applying.get()) || ExecutorDispatchContext.isSchedulingCallback())
+        try {
+            advanceClient(client);
+        } catch (Throwable exception) {
+            PendingOperation operation = pending;
+            GameAutomationIndex.IndexedCode index = index(client.getClass().getClassLoader());
+            if (operation != null && index != null)
+                fail(operation, "ui.lifecycle", exception, index, null);
+            else
+                exception.printStackTrace(System.err);
+        }
+    }
+
+    private static void advanceClient(Object client) {
+        if (Boolean.TRUE.equals(Applying.get()))
             return;
 
         PendingOperation operation;
@@ -190,28 +177,13 @@ public final class GameAutomationController {
             return;
 
         synchronized (GameAutomationController.class) {
-            if (isInstance(client, index.plan.clientClassName))
-                screenSetterReceiver = new WeakReference<Object>(client);
+            screenSetterReceiver = new WeakReference<Object>(findObject(client, index.plan.clientClassName, 1));
+            Tracker.bindClient(client);
 
             operation = pending;
 
             if (operation == null)
                 return;
-
-            if ("chat".equals(operation.kind) && !ExecutorDispatchContext.isExecuting()
-                && !isInstance(client, index.plan.chatDriverClassName))
-                return;
-
-            if (ExecutorDispatchContext.isExecuting())
-                clientThread = Thread.currentThread();
-            else if (clientThread == null)
-                clientThread = Thread.currentThread();
-
-            if (Thread.currentThread() != clientThread)
-                return;
-
-            if (screenSetterReceiver.get() == null)
-                screenSetterReceiver = new WeakReference<Object>(findObject(client, index.plan.clientClassName, 3));
         }
 
         try {
@@ -238,11 +210,22 @@ public final class GameAutomationController {
         }
 
         if ("connect".equals(operation.kind)) {
+            if (operation.submitted) {
+                if (operation.rejection != null)
+                    complete(operation, error("connection.rejected", operation.rejection));
+                else if (Tracker.activePlayer(client) != null)
+                    complete(operation, "{\"status\":\"ok\",\"stage\":\"world.ready\",\"value\":" + quote(operation.value) + "}");
+                return;
+            }
             Object screen = findCurrentScreen(screenSetterReceiver.get(), index.plan.screenBaseName);
-
-            if (screen != null)
+            Set<Object> visited = Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
+            while (screen != null && visited.add(screen) && pending == operation && !operation.submitted) {
                 applyScreen(screen);
-
+                Object nextScreen = findCurrentScreen(screenSetterReceiver.get(), index.plan.screenBaseName);
+                if (nextScreen == screen)
+                    break;
+                screen = nextScreen;
+            }
             return;
         }
 
@@ -257,10 +240,6 @@ public final class GameAutomationController {
             submitChat(chatScreen, index.plan.chat, operation.value);
             setScreen(index.plan, null);
 
-            synchronized (GameAutomationController.class) {
-                pending = null;
-            }
-
             complete(operation, "{\"status\":\"ok\",\"stage\":\"chat.submit\",\"value\":" + quote(operation.value) + "}");
         } catch (Throwable exception) {
             fail(operation, "chat.submit", exception, index, null);
@@ -269,32 +248,51 @@ public final class GameAutomationController {
         }
     }
 
-    static synchronized void playerObserved(Object player) {
-        if (pending == null || !"connect".equals(pending.kind) || !pending.submitted)
+    public static synchronized void connectionListenerCreated(Object listener, Object connection) {
+        if (pending == null || !pending.submitted || pending.connection != null)
             return;
+        pending.connection = connection;
+    }
 
-        PendingOperation operation = pending;
-        pending = null;
-        clientThread = null;
-        complete(operation, "{\"status\":\"ok\",\"stage\":\"world.ready\",\"value\":" + quote(operation.value) + "}");
+    public static synchronized void connectionRejected(Object listener, Object reason) {
+        if (pending == null || !pending.submitted || pending.connection == null
+            || pending.connection != nativeConnection(listener))
+            return;
+        pending.rejection = String.valueOf(reason);
+    }
+
+    private static Object nativeConnection(Object listener) {
+        for (Class<?> type = listener.getClass(); type != null; type = type.getSuperclass())
+            for (Field field : type.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers()))
+                    continue;
+                for (Class<?> parent = field.getType(); parent != null; parent = parent.getSuperclass()) {
+                    if (!("." + parent.getName()).endsWith(".io.netty.channel.SimpleChannelInboundHandler")
+                        && !("." + parent.getName()).endsWith(".io.netty.channel.ChannelInboundHandlerAdapter"))
+                        continue;
+                    try {
+                        field.setAccessible(true);
+                        return field.get(listener);
+                    } catch (IllegalAccessException exception) {
+                        recordIndexFailure(type.getName(), exception.toString());
+                    }
+                }
+            }
+        return null;
     }
 
     private static void applyConnect(Object screen, GameAutomationIndex.IndexedCode index, PendingOperation operation) throws Exception {
         String className = screen.getClass().getName().replace('.', '/');
 
         if (index.plan.directScreenName.equals(className)) {
+            operation.submitted = true;
             String exact = DirectConnectAccess.connect(screen, index.plan.directConnect, operation.value);
 
             if (!operation.value.equals(exact)) {
-                synchronized (GameAutomationController.class) {
-                    pending = null;
-                }
-
                 complete(operation, error("address.verify", "Minecraft returned " + quote(exact) + " instead of " + quote(operation.value)));
                 return;
             }
 
-            operation.submitted = true;
             consumedScreen = screen;
             return;
         }
@@ -428,18 +426,66 @@ public final class GameAutomationController {
         for (int index = 0; index < arguments.values.length; index++) {
             Class<?> parameter = arguments.types[index];
 
+            // An unused parameter has no bearing on the native action. Required
+            // references must come from the live screen/control, never a guessed null.
+            if (!transition.usedArguments[index])
+                continue;
             if (parameter.isInstance(screen))
                 arguments.values[index] = screen;
             else if (control != null && parameter.isInstance(control))
                 arguments.values[index] = control;
             else if (parameter == Boolean.TYPE)
                 arguments.values[index] = Boolean.TRUE;
-            else if (parameter == Integer.TYPE)
-                arguments.values[index] = Integer.valueOf(0);
+            else if (parameter == Integer.TYPE && transition.controlId != null)
+                arguments.values[index] = transition.controlId;
+            else if (parameter != Boolean.TYPE)
+                throw new IllegalStateException("No native argument binding for " + transition.describe() + " parameter " + index);
         }
 
-        method.invoke(transition.isStatic ? null : screen, arguments.values);
+        Object receiver = owner.isInstance(screen) ? screen : findCallback(screen, owner);
+        if (!transition.isStatic && receiver == null)
+            return false;
+        method.invoke(transition.isStatic ? null : receiver, arguments.values);
         return true;
+    }
+
+    private static Object findCallback(Object screen, Class<?> owner) throws Exception {
+        Set<Object> visited = Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
+        List<Object> remaining = new ArrayList<Object>();
+        remaining.add(screen);
+        Object found = null;
+        for (int position = 0; position < remaining.size(); position++) {
+            Object value = remaining.get(position);
+            if (value == null || !visited.add(value))
+                continue;
+            if (owner.isInstance(value)) {
+                if (found != null && found != value)
+                    throw new IllegalStateException("Multiple live callbacks for " + owner.getName());
+                found = value;
+                continue;
+            }
+            if (value instanceof Collection<?>) {
+                remaining.addAll((Collection<?>) value);
+                continue;
+            }
+            if (value.getClass().isArray()) {
+                if (!value.getClass().getComponentType().isPrimitive())
+                    for (int index = 0; index < Array.getLength(value); index++)
+                        remaining.add(Array.get(value, index));
+                continue;
+            }
+            for (Class<?> type = value.getClass(); type != null && type != Object.class; type = type.getSuperclass())
+                for (Field field : type.getDeclaredFields()) {
+                    if (Modifier.isStatic(field.getModifiers()) || field.getType().isPrimitive())
+                        continue;
+                    if (!Collection.class.isAssignableFrom(field.getType()) && !field.getType().isArray()
+                        && !field.getType().isAssignableFrom(owner))
+                        continue;
+                    field.setAccessible(true);
+                    remaining.add(field.get(value));
+                }
+        }
+        return found;
     }
 
     private static Object findControl(Object value, TransitionPlan transition, int depth, Set<Object> visited) throws Exception {
@@ -718,12 +764,17 @@ public final class GameAutomationController {
                 pending = null;
         }
 
+        exception.printStackTrace(System.err);
         String screenName = screen == null ? "none" : screen.getClass().getName();
         complete(operation, error(stage, exception.getClass().getName() + ": " + exception.getMessage()
             + "; screen=" + screenName + "; direct=" + index.plan.directScreenName));
     }
 
-    private static void complete(PendingOperation operation, String response) {
+    private static synchronized void complete(PendingOperation operation, String response) {
+        if (operation.response != null)
+            return;
+        if (pending == operation)
+            pending = null;
         operation.response = response;
         operation.completed.countDown();
     }
@@ -765,6 +816,8 @@ public final class GameAutomationController {
         final CountDownLatch completed = new CountDownLatch(1);
         volatile String response;
         volatile boolean submitted;
+        volatile Object connection;
+        volatile String rejection;
 
         PendingOperation(String requestId, String kind, String value) {
             this.requestId = requestId;

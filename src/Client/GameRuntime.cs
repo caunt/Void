@@ -608,7 +608,7 @@ internal sealed partial class GameRuntime : IGameRuntime
         var response = await SendAgentCommandAsync(game, "connect", serverAddress, cancellationToken);
 
         if (response.Status is not "ok")
-            throw new GameClientException("client.connect.failed", "connect", response.Stage ?? "agent.connect", response.Message ?? "The Minecraft agent returned no diagnostic");
+            throw new GameClientException(response.Stage is "connection.rejected" ? "client.connect.rejected" : "client.connect.failed", "connect", response.Stage ?? "agent.connect", response.Message ?? "The Minecraft agent returned no diagnostic");
 
         if (!string.Equals(response.Value, serverAddress, StringComparison.Ordinal))
             throw new GameClientException("client.connect.failed", "connect", "address.verify", $"Minecraft agent confirmed {JsonSerializer.Serialize(response.Value)} instead of {JsonSerializer.Serialize(serverAddress)}");

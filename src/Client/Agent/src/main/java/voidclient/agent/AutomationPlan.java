@@ -8,18 +8,22 @@ final class AutomationPlan {
     final String clientClassName;
     final String screenSetterName;
     final String directScreenName;
-    final String chatDriverClassName;
+    final FramePlan frame;
+    final java.util.Map<String, List<String>> rejectionCallbacks;
+    final java.util.Set<String> networkTypes;
     final PresentationOverlayPlan presentationOverlay;
     final DirectConnectPlan directConnect;
     final ChatPlan chat;
     final java.util.Map<String, List<TransitionPlan>> transitions;
 
-    AutomationPlan(String screenBaseName, String clientClassName, String screenSetterName, String directScreenName, String chatDriverClassName, PresentationOverlayPlan presentationOverlay, DirectConnectPlan directConnect, ChatPlan chat, java.util.Map<String, List<TransitionPlan>> transitions) {
+    AutomationPlan(String screenBaseName, String clientClassName, String screenSetterName, String directScreenName, FramePlan frame, java.util.Map<String, List<String>> rejectionCallbacks, java.util.Set<String> networkTypes, PresentationOverlayPlan presentationOverlay, DirectConnectPlan directConnect, ChatPlan chat, java.util.Map<String, List<TransitionPlan>> transitions) {
         this.screenBaseName = screenBaseName;
         this.clientClassName = clientClassName;
         this.screenSetterName = screenSetterName;
         this.directScreenName = directScreenName;
-        this.chatDriverClassName = chatDriverClassName;
+        this.frame = frame;
+        this.rejectionCallbacks = rejectionCallbacks;
+        this.networkTypes = networkTypes;
         this.presentationOverlay = presentationOverlay;
         this.directConnect = directConnect;
         this.chat = chat;
@@ -56,11 +60,12 @@ final class TransitionPlan {
     final String controlIdFieldName;
     final Integer controlId;
     final boolean enablesTransition;
+    final boolean[] usedArguments;
 
     TransitionPlan(String owner, String methodName, String methodDescriptor, boolean isStatic,
                    List<String> targetScreenNames, boolean targetsParent, boolean targetsSelf,
                    String controlClassName, String controlIdFieldName, Integer controlId,
-                   boolean enablesTransition) {
+                   boolean enablesTransition, boolean[] usedArguments) {
         this.owner = owner;
         this.methodName = methodName;
         this.methodDescriptor = methodDescriptor;
@@ -72,6 +77,7 @@ final class TransitionPlan {
         this.controlIdFieldName = controlIdFieldName;
         this.controlId = controlId;
         this.enablesTransition = enablesTransition;
+        this.usedArguments = usedArguments;
     }
 
     String describe() {

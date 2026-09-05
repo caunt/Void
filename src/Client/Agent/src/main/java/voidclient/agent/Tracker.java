@@ -34,6 +34,7 @@ public final class Tracker {
     private static Instrumentation instrumentation;
     private static String expectedName;
     private static volatile Object localPlayerValue;
+    private static volatile WeakReference<Object> clientReference = new WeakReference<Object>(null);
 
     private Tracker() {
     }
@@ -65,8 +66,43 @@ public final class Tracker {
     public static void registerPlayer(Object value) {
         if (value != null) {
             ObservedPlayers.add(new WeakReference<Object>(value));
-            GameAutomationController.playerObserved(value);
         }
+    }
+
+    static void bindClient(Object client) {
+        if (clientReference.get() != client)
+            clientReference = new WeakReference<Object>(client);
+    }
+
+    static Object activePlayer(Object client) {
+        if (client == null)
+            return null;
+        List<Field> clientFields = fieldsOf(client.getClass());
+        for (Field field : clientFields) {
+            if (Modifier.isStatic(field.getModifiers()) || field.getType().isPrimitive())
+                continue;
+            Object player = readField(field, client);
+            Object profile = player == null ? null : findProfile(player);
+            if (profile == null || expectedName == null || !expectedName.equals(profileName(profile)))
+                continue;
+            for (Field playerField : fieldsOf(player.getClass())) {
+                if (Modifier.isStatic(playerField.getModifiers()) || playerField.getType().isPrimitive())
+                    continue;
+                Object world = readField(playerField, player);
+                if (world == null)
+                    continue;
+                boolean currentWorld = false;
+                for (Field clientField : clientFields)
+                    if (!Modifier.isStatic(clientField.getModifiers()) && readField(clientField, client) == world)
+                        currentWorld = true;
+                if (!currentWorld)
+                    continue;
+                for (Field worldField : fieldsOf(world.getClass()))
+                    if (!Modifier.isStatic(worldField.getModifiers()) && containsIdentity(valuesOf(readField(worldField, world)), player))
+                        return player;
+            }
+        }
+        return null;
     }
 
     static String snapshotJson() {
@@ -127,6 +163,14 @@ public final class Tracker {
 
     private static List<PlayerCandidate> collectCandidates() {
         List<PlayerCandidate> candidates = new ArrayList<PlayerCandidate>();
+        Object client = clientReference.get();
+        if (client != null) {
+            Object player = activePlayer(client);
+            PlayerCandidate candidate = player == null ? null : createCandidate(player);
+            if (candidate != null)
+                candidates.add(candidate);
+            return candidates;
+        }
         Object cachedLocalPlayer = localPlayerValue;
 
         if (cachedLocalPlayer != null) {

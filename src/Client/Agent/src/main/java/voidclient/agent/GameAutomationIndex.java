@@ -195,11 +195,15 @@ final class GameAutomationIndex {
             return null;
         }
 
-        String chatDriverClassName = discoverChatDriver(types, chat, screenSetter.owner);
+        FramePlan frame = ClientFrameDiscovery.discover(types, screenSetter.owner);
         PresentationOverlayPlan presentationOverlay = discoverPresentationOverlay(types, superTypes, screenSetter.owner, screenBaseName);
+        Set<String> networkTypes = new HashSet<String>();
+        for (String typeName : types.keySet())
+            if (ConnectionFailureDiscovery.isNetworkHandler(types, typeName))
+                networkTypes.add(typeName);
         AutomationPlan plan = new AutomationPlan(screenBaseName, screenSetter.owner, screenSetter.name,
             directCandidate.type.name,
-            chatDriverClassName == null ? screenSetter.owner : chatDriverClassName,
+            frame, ConnectionFailureDiscovery.discover(types), networkTypes,
             presentationOverlay, directCandidate.plan, chat, transitions);
         return new IndexedCode(plan, superTypes);
     }
@@ -345,30 +349,6 @@ final class GameAutomationIndex {
         return type.getSort() == Type.OBJECT ? type.getInternalName() : null;
     }
 
-    private static String discoverChatDriver(Map<String, ClassNode> types, ChatPlan chat, String clientClassName) {
-        ClassNode owner = types.get(chat.submitOwner);
-
-        if (owner == null)
-            return null;
-
-        for (MethodNode method : owner.methods) {
-            if (!chat.submitName.equals(method.name) || !chat.submitDescriptor.equals(method.desc))
-                continue;
-
-            for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null; instruction = instruction.getNext()) {
-                if (!(instruction instanceof FieldInsnNode) || instruction.getOpcode() != Opcodes.GETFIELD)
-                    continue;
-
-                FieldInsnNode field = (FieldInsnNode) instruction;
-
-                if (clientClassName.equals(field.owner) && field.desc.startsWith("L") && field.desc.endsWith(";"))
-                    return field.desc.substring(1, field.desc.length() - 1);
-            }
-        }
-
-        return null;
-    }
-
     private static int countFields(ClassNode type, String descriptor) {
         int count = 0;
 
@@ -441,14 +421,15 @@ final class GameAutomationIndex {
         return new ScreenSetter(parts[0], parts[1], parts[2]);
     }
 
-    private static Map<String, List<TransitionPlan>> discoverTransitions(Map<String, ClassNode> types,
+    static Map<String, List<TransitionPlan>> discoverTransitions(Map<String, ClassNode> types,
                                                                          Map<String, String> superTypes,
                                                                          String screenBaseName,
                                                                          ScreenSetter screenSetter) {
         Map<String, List<TransitionPlan>> result = new HashMap<String, List<TransitionPlan>>();
 
         for (ClassNode type : types.values()) {
-            if (!isScreen(type.name, superTypes, screenBaseName))
+            String screenOwner = owningScreen(type, superTypes, screenBaseName);
+            if (screenOwner == null)
                 continue;
 
             for (MethodNode method : type.methods) {
@@ -485,12 +466,12 @@ final class GameAutomationIndex {
                         condition == null ? null : condition.owner,
                         condition == null ? null : condition.fieldName,
                         condition == null ? null : condition.id,
-                        enablesTransition);
-                    List<TransitionPlan> typeTransitions = result.get(type.name);
+                        enablesTransition, usedArguments(method));
+                    List<TransitionPlan> typeTransitions = result.get(screenOwner);
 
                     if (typeTransitions == null) {
                         typeTransitions = new ArrayList<TransitionPlan>();
-                        result.put(type.name, typeTransitions);
+                        result.put(screenOwner, typeTransitions);
                     }
 
                     mergeTransition(typeTransitions, transition);
@@ -499,6 +480,35 @@ final class GameAutomationIndex {
         }
 
         return result;
+    }
+
+    private static String owningScreen(ClassNode type, Map<String, String> superTypes, String screenBaseName) {
+        if (isScreen(type.name, superTypes, screenBaseName))
+            return type.name;
+        String owner = null;
+        for (FieldNode field : type.fields) {
+            String fieldType = objectType(field.desc);
+            if ((field.access & Opcodes.ACC_SYNTHETIC) == 0 || !isScreen(fieldType, superTypes, screenBaseName))
+                continue;
+            if (owner != null && !owner.equals(fieldType))
+                throw new IllegalStateException("Ambiguous screen owner for callback " + type.name);
+            owner = fieldType;
+        }
+        return owner;
+    }
+
+    static boolean[] usedArguments(MethodNode method) {
+        Type[] arguments = Type.getArgumentTypes(method.desc);
+        boolean[] used = new boolean[arguments.length];
+        int slot = (method.access & Opcodes.ACC_STATIC) == 0 ? 1 : 0;
+        for (int index = 0; index < arguments.length; index++) {
+            for (AbstractInsnNode instruction : method.instructions)
+                if (instruction instanceof VarInsnNode && ((VarInsnNode) instruction).var == slot
+                    && instruction.getOpcode() >= Opcodes.ILOAD && instruction.getOpcode() <= Opcodes.ALOAD)
+                    used[index] = true;
+            slot += arguments[index].getSize();
+        }
+        return used;
     }
 
     static TransitionTargetKind classifyTransitionTarget(MethodNode method, AbstractInsnNode argument, TypeInsnNode constructed) {
@@ -857,7 +867,7 @@ final class GameAutomationIndex {
         }
     }
 
-    private static final class ScreenSetter {
+    static final class ScreenSetter {
         final String owner;
         final String name;
         final String descriptor;

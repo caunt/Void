@@ -25,10 +25,10 @@ final class DirectConnectAccess {
 
         if ("(Z)V".equals(plan.callbackDescriptor)) {
             callbackMethod = MethodResolver.resolve(loadClass(loader, plan.callbackOwner), plan.callbackName, Boolean.TYPE);
-            callbackMethod.invoke(callback, Boolean.TRUE);
+            callbackMethod.invoke(callback, plan.callbackArguments);
         } else if ("(ZI)V".equals(plan.callbackDescriptor)) {
             callbackMethod = MethodResolver.resolve(loadClass(loader, plan.callbackOwner), plan.callbackName, Boolean.TYPE, Integer.TYPE);
-            callbackMethod.invoke(callback, Boolean.TRUE, Integer.valueOf(0));
+            callbackMethod.invoke(callback, plan.callbackArguments);
         } else {
             throw new IllegalStateException("Unsupported callback descriptor " + plan.callbackDescriptor);
         }

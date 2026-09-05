@@ -17,12 +17,13 @@ final class DirectConnectPlan {
     final String callbackOwner;
     final String callbackName;
     final String callbackDescriptor;
+    final Object[] callbackArguments;
 
     DirectConnectPlan(String screenClassName, String textFieldName, String textFieldDescriptor,
                       String setterOwner, String setterName, String getterOwner, String getterName,
                       String serverDataFieldName, String serverDataFieldDescriptor, String addressOwner,
                       String addressFieldName, String callbackFieldName, String callbackFieldDescriptor,
-                      String callbackOwner, String callbackName, String callbackDescriptor) {
+                      String callbackOwner, String callbackName, String callbackDescriptor, Object[] callbackArguments) {
         this.screenClassName = screenClassName;
         this.textFieldName = textFieldName;
         this.textFieldDescriptor = textFieldDescriptor;
@@ -39,6 +40,7 @@ final class DirectConnectPlan {
         this.callbackOwner = callbackOwner;
         this.callbackName = callbackName;
         this.callbackDescriptor = callbackDescriptor;
+        this.callbackArguments = callbackArguments;
     }
 
     String describe() {

@@ -63,8 +63,7 @@ public final class VoidClientAgent {
                 GameAutomationIndex.IndexedCode index = GameAutomationIndex.index(codeSource == null ? null : codeSource.getLocation());
                 String className = type.getName().replace('.', '/');
 
-                if (index != null && (index.plan.clientClassName.equals(className)
-                    || index.plan.chatDriverClassName.equals(className)))
+                if (index != null && (index.plan.frame.owner.equals(className) || index.plan.rejectionCallbacks.containsKey(className)))
                     instrumentation.retransformClasses(type);
             } catch (Throwable exception) {
                 // Some JVM-generated classes report as modifiable but cannot actually be retransformed.

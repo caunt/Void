@@ -44,7 +44,7 @@ public class ProxiedAuthenticationTests(PortableMinecraftClientFixture portableM
                     Timeouts.SetupTimeoutToken);
                 var paperRejectionTask = paperServer.Container.ExpectTextAsync(ExpectedKickReason, game.StartedAt, Timeouts.SetupTimeoutToken);
 
-                await game.JoinServerExpectingFailureAsync(proxyEndPoint, Timeouts.SetupTimeoutToken);
+                await game.JoinServerExpectingFailureAsync(proxyEndPoint, ExpectedKickReason, Timeouts.SetupTimeoutToken);
 
                 await authenticationFailureTask;
                 await paperRejectionTask;

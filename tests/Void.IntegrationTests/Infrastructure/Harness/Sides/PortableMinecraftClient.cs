@@ -272,35 +272,16 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             await EnsureSuccessAsync(response, $"Navigating Minecraft {ProtocolVersion.FirstRelease} to {dockerHost}:{dockerPort}", cancellationToken);
         }
 
-        public async Task JoinServerExpectingFailureAsync(EndPoint endPoint, CancellationToken cancellationToken = default)
+        public async Task JoinServerExpectingFailureAsync(EndPoint endPoint, string expectedReason, CancellationToken cancellationToken = default)
         {
-            using var connectionCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            var connectionTask = JoinServerAsync(endPoint, connectionCancellation.Token);
+            var (dockerHost, dockerPort) = endPoint.AsDockerHostPort;
+            using var response = await HttpClient.PostAsJsonAsync("/api/game/connect", new { host = dockerHost, port = dockerPort }, cancellationToken);
+            var problem = await ReadProblemDetailsAsync(response, cancellationToken);
 
-            try
-            {
-                await Container.ExpectTextAsync("Visually confirmed that the connection failed", StartedAt, cancellationToken);
-            }
-            catch
-            {
-                await connectionCancellation.CancelAsync();
-                await connectionTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
-                throw;
-            }
+            if (response.IsSuccessStatusCode || problem?.Failure?.Code is not "client.connect.rejected" || problem.Detail?.Contains(expectedReason, StringComparison.Ordinal) is not true)
+                throw new IntegrationTestException($"Minecraft {ProtocolVersion.FirstRelease} did not report the expected native rejection {expectedReason}: HTTP {(int)response.StatusCode}, {JsonSerializer.Serialize(problem)}");
 
-            await connectionCancellation.CancelAsync();
-
-            try
-            {
-                await connectionTask;
-                throw new IntegrationTestException($"Minecraft {ProtocolVersion.FirstRelease} completed its connection attempt when a connection failure was expected");
-            }
-            catch (OperationCanceledException) when (connectionCancellation.IsCancellationRequested)
-            {
-                // Cancellation is the expected outcome after the connection-failure screen was confirmed.
-            }
-
-            await LogAsync($"Minecraft {ProtocolVersion.FirstRelease} visually confirmed the expected connection failure", cancellationToken);
+            await LogAsync($"Minecraft {ProtocolVersion.FirstRelease} confirmed the native connection rejection: {problem.Detail}", cancellationToken);
         }
 
         private async Task SendChatAsync(string text, CancellationToken cancellationToken = default)

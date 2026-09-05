@@ -3,9 +3,12 @@ package voidclient.agent;
 import java.util.ArrayList;
 import java.util.List;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.IntInsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -42,10 +45,14 @@ final class DirectConnectDiscovery {
                 if (setter == null)
                     continue;
 
+                Object[] callbackArguments = callbackArguments(callback);
+                if (callbackArguments == null)
+                    continue;
+
                 DirectConnectPlan candidate = new DirectConnectPlan(type.name, textField.name, textField.desc,
                     setter.owner, setter.name, getter.owner, getter.name, serverDataField.name, serverDataField.desc,
                     addressField.owner, addressField.name, callbackField.name, callbackField.desc,
-                    callback.owner, callback.name, callback.desc);
+                    callback.owner, callback.name, callback.desc, callbackArguments);
 
                 if (!containsEquivalent(candidates, candidate))
                     candidates.add(candidate);
@@ -53,6 +60,31 @@ final class DirectConnectDiscovery {
         }
 
         return candidates.size() == 1 ? candidates.get(0) : null;
+    }
+
+    static Object[] callbackArguments(MethodInsnNode callback) {
+        Type[] types = Type.getArgumentTypes(callback.desc);
+        Object[] values = new Object[types.length];
+        AbstractInsnNode instruction = callback.getPrevious();
+        for (int index = types.length - 1; index >= 0; index--) {
+            while (instruction != null && instruction.getOpcode() < 0)
+                instruction = instruction.getPrevious();
+            if (instruction == null)
+                return null;
+            Integer constant = null;
+            int opcode = instruction.getOpcode();
+            if (opcode >= Opcodes.ICONST_M1 && opcode <= Opcodes.ICONST_5)
+                constant = Integer.valueOf(opcode - Opcodes.ICONST_0);
+            else if (instruction instanceof IntInsnNode)
+                constant = Integer.valueOf(((IntInsnNode) instruction).operand);
+            else if (instruction instanceof LdcInsnNode && ((LdcInsnNode) instruction).cst instanceof Integer)
+                constant = (Integer) ((LdcInsnNode) instruction).cst;
+            if (constant == null)
+                return null;
+            values[index] = types[index].getSort() == Type.BOOLEAN ? Boolean.valueOf(constant.intValue() != 0) : (Object) constant;
+            instruction = instruction.getPrevious();
+        }
+        return values;
     }
 
     private static MethodInsnNode findPreviousStringGetter(AbstractInsnNode start, int maximumInstructions) {

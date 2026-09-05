@@ -324,6 +324,35 @@ public sealed class GameCoordinatorTests
         await coordinator.StopAsync(CancellationToken.None);
     }
 
+    [Fact]
+    public async Task NativeRejectionPreservesReasonAndAllowsAnotherConnection()
+    {
+        var runtime = new FakeGameRuntime { BlockConnect = true };
+        using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance);
+        await coordinator.StartAsync(CancellationToken.None);
+        await coordinator.StartVanillaAsync(new("1.21.4", []), CancellationToken.None);
+        runtime.CompleteLaunch();
+        await WaitForStateAsync(coordinator, GameState.Ready);
+
+        var connection = coordinator.ConnectAsync(new("full-server", 25565), CancellationToken.None);
+        await WaitForOperationAsync(coordinator, "connect");
+        runtime.FailConnect(new GameClientException("client.connect.rejected", "connect", "connection.rejected", "The server is full!"));
+        var rejection = await Assert.ThrowsAsync<GameClientException>(() => connection);
+
+        Assert.Equal("client.connect.rejected", rejection.Failure.Code);
+        Assert.Equal("The server is full!", coordinator.Status.Failure?.Message);
+        Assert.Equal(GameState.Ready, coordinator.Status.State);
+        Assert.Equal(OperationState.Failed, coordinator.Status.OperationState);
+
+        var nextConnection = coordinator.ConnectAsync(new("available-server", 25565), CancellationToken.None);
+        await WaitForOperationStateAsync(coordinator, OperationState.Running);
+        runtime.CompleteConnect();
+        Assert.Equal("available-server", (await nextConnection).Server.Host);
+        Assert.Equal(GameState.Connected, coordinator.Status.State);
+        await coordinator.StopGameAsync(CancellationToken.None);
+        await coordinator.StopAsync(CancellationToken.None);
+    }
+
     [Theory]
     [InlineData(137, true, "client.process.out_of_memory")]
     [InlineData(137, false, "client.process.exited")]
