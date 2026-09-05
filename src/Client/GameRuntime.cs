@@ -21,6 +21,7 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
     private const string DefaultMinecraftDirectory = "/root/.minecraft";
     private const string DefaultCurseForgeApiBaseUrl = "https://api.curseforge.com";
     private const string DefaultDisplay = ":99";
+    private const string LauncherSplashWindowTitle = "Void Client Startup";
     private const string DisplayScreenWidth = "854";
     private const string DisplayScreenHeight = "480";
     private const string DisplayScreenResolution = $"{DisplayScreenWidth}x{DisplayScreenHeight}";
@@ -1005,7 +1006,7 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
             var nameProcessInfo = CreateProcessInfo("xdotool", ["getwindowname", trimmedCandidateId], display: display);
             var nameResult = await RunProcessTextAsync(nameProcessInfo, TimeSpan.FromMilliseconds(ExternalProcessTimeoutMilliseconds), cancellationToken);
 
-            if (nameResult.ExitCode != 0 || string.IsNullOrWhiteSpace(nameResult.StandardOutput))
+            if (nameResult.ExitCode != 0 || string.IsNullOrWhiteSpace(nameResult.StandardOutput) || nameResult.StandardOutput.Trim() == LauncherSplashWindowTitle)
                 continue;
 
             var geometryProcessInfo = CreateProcessInfo("xdotool", ["getwindowgeometry", "--shell", trimmedCandidateId], display: display);
