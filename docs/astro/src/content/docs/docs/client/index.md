@@ -85,3 +85,14 @@ The container itself does not need to be recreated between game sessions.
 :::note[Demo Mode]
 Minecraft is always launched in demo mode.
 :::
+
+
+## Collect diagnostics for CI failures
+
+Save the `sessionId` returned by the start request. After the test, stop Minecraft and download `/api/game/diagnostics/{sessionId}` before removing the container. The ZIP retains the session's operation history, recent output, available Minecraft failure reports, and a failure screenshot when capture succeeds. It remains available when another Minecraft version starts in the same container, until retention limits expire it.
+
+See the [**diagnostics API reference**](/docs/client/api/#retained-diagnostics) for request examples, bundle contents, retention settings, and persistent-volume configuration.
+
+Void's integration harness downloads a bundle at every game teardown, including failed launches. This also preserves evidence for assertions that fail after the game has stopped. Each client's bundle is stored at `steps/<test>/<protocol>/<username>/client-diagnostics-<sessionId>.zip` alongside existing screenshots and server/proxy logs. Download the `integration-steps-<os>-<shard>` artifact from the GitHub Actions run to inspect it.
+
+Collection uses a separate timeout so a canceled test can still save evidence. If an older image lacks the endpoint, or the API cannot be reached, `client-diagnostics-error.txt` explains the collection failure without replacing the test's original error.

@@ -94,6 +94,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
     {
         private readonly string _workingDirectory = Path.Combine(Directory.GetCurrentDirectory(), "steps", TestName, ProtocolVersion.ToString(), Username);
         private ApiProblemDetails? _lastPlayersProblem;
+        private Guid? _sessionId;
         private int _step;
 
         public async ValueTask DisposeAsync()
@@ -113,7 +114,14 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             }
             finally
             {
-                await StopClientAsync(Timeouts.StepTimeoutToken);
+                try
+                {
+                    await StopClientAsync(Timeouts.StepTimeoutToken);
+                }
+                finally
+                {
+                    await ClientDiagnosticsDownloader.DownloadAsync(HttpClient, _sessionId, _workingDirectory);
+                }
             }
 
             GC.SuppressFinalize(this);
@@ -138,7 +146,18 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             catch
             {
                 await game.TryWriteLogsAsync(Timeouts.StepTimeoutToken);
-                await game.StopClientAsync(Timeouts.StepTimeoutToken);
+                try
+                {
+                    await game.StopClientAsync(Timeouts.StepTimeoutToken);
+                }
+                catch (Exception exception)
+                {
+                    await game.LogAsync($"Cleanup after launch failure failed: {exception}", CancellationToken.None);
+                }
+                finally
+                {
+                    await ClientDiagnosticsDownloader.DownloadAsync(httpClient, game._sessionId, game._workingDirectory);
+                }
                 throw;
             }
 
@@ -229,6 +248,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
                 {
                     version = ProtocolVersion.FirstRelease.ToString(),
                     username = Username,
+                    sessionId = _sessionId,
                     statusCode = (int)response.StatusCode,
                     status = TryDeserialize<ApiStatus>(statusContent),
                     rawStatus = statusContent,
@@ -261,6 +281,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
             await EnsureSuccessAsync(response, $"Starting Minecraft {ProtocolVersion.FirstRelease}", cancellationToken);
             var acceptedStatus = await ReadApiStatusAsync(response, $"Accepting Minecraft {ProtocolVersion.FirstRelease} launch", cancellationToken);
 
+            _sessionId = acceptedStatus.SessionId;
             await WaitForClientReadyAsync(acceptedStatus.OperationId, cancellationToken);
         }
 
@@ -454,7 +475,7 @@ public record PortableMinecraftClient(IContainer Container, HttpClient HttpClien
 
         private record ApiProblemDetails(string? Title, int? Status, string? Detail, ApiFailure? Failure);
 
-        private record ApiStatus(string State, long OperationId, string? Operation, string OperationState, int? ProcessId, int? ExitCode, string? Message, string? Error, ApiFailure? Failure, DateTimeOffset UpdatedAt);
+        private record ApiStatus(string State, long OperationId, string? Operation, string OperationState, int? ProcessId, int? ExitCode, string? Message, string? Error, ApiFailure? Failure, DateTimeOffset UpdatedAt, Guid? SessionId = null);
 
         private record StopGameResponse(string Mode, ApiStatus Status);
 

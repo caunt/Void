@@ -19,6 +19,18 @@ internal static class ClientApiEndpoints
             .WithName("GetGameStatus")
             .WithSummary("Returns the current game lifecycle and latest operation status.");
 
+        api.MapGet("/game/diagnostics", (SessionDiagnostics diagnostics) => Results.Ok(diagnostics.List()))
+            .WithName("ListGameDiagnostics")
+            .WithSummary("Lists retained Minecraft sessions and diagnostic download URLs.");
+
+        api.MapGet("/game/diagnostics/{sessionId:guid}", async Task<IResult> (Guid sessionId, SessionDiagnostics diagnostics, CancellationToken cancellationToken) =>
+        {
+            var archive = await diagnostics.DownloadAsync(sessionId, cancellationToken);
+            return archive is null ? Results.NotFound() : Results.File(archive, "application/zip", $"client-diagnostics-{sessionId}.zip");
+        })
+            .WithName("DownloadGameDiagnostics")
+            .WithSummary("Downloads retained evidence for a running or stopped Minecraft session.");
+
         api.MapGet("/game/players", async Task<IResult> (GameCoordinator coordinator, ILoggerFactory loggerFactory, CancellationToken cancellationToken) =>
             await ExecuteAsync("players", async () => Results.Ok(await coordinator.GetPlayersAsync(cancellationToken)), loggerFactory, cancellationToken))
             .WithName("GetGamePlayers")

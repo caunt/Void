@@ -405,6 +405,73 @@ public sealed class GameCoordinatorTests
         await coordinator.StopAsync(CancellationToken.None);
     }
 
+    [Fact]
+    public async Task DiagnosticsPreserveRejectedConnectionAfterStopAndRelaunch()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"void-coordinator-diagnostics-{Guid.NewGuid()}");
+        try
+        {
+            var diagnostics = new SessionDiagnostics(new DiagnosticsOptions { Directory = directory });
+            var runtime = new FakeGameRuntime { BlockConnect = true };
+            using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance, diagnostics);
+            await coordinator.StartAsync(CancellationToken.None);
+            var first = await coordinator.StartVanillaAsync(new("1.21", []), CancellationToken.None);
+            Assert.NotNull(first.SessionId);
+            runtime.CompleteLaunch();
+            await WaitForStateAsync(coordinator, GameState.Ready);
+            var connect = coordinator.ConnectAsync(new("limbo", 25565), CancellationToken.None);
+            await WaitForOperationAsync(coordinator, "connect");
+            runtime.FailConnect(new GameClientException("client.connect.rejected", "connect", "connection.rejected", "seven extra bytes"));
+            await Assert.ThrowsAsync<GameClientException>(() => connect);
+            var stopped = await coordinator.StopGameAsync(CancellationToken.None);
+            Assert.Equal(first.SessionId, stopped.Status.SessionId);
+            var second = await coordinator.StartVanillaAsync(new("1.21.1", []), CancellationToken.None);
+            Assert.NotEqual(first.SessionId, second.SessionId);
+            Assert.Equal("client.connect.rejected", diagnostics.List().Single(session => session.SessionId == first.SessionId).LastFailure?.Code);
+            Assert.NotEmpty(diagnostics.List().Single(session => session.SessionId == first.SessionId).Warnings);
+            await coordinator.StopGameAsync(CancellationToken.None);
+            await coordinator.StopAsync(CancellationToken.None);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DiagnosticsRetainEarlyLaunchFailureAndProcessExit(bool earlyFailure)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"void-coordinator-diagnostics-{Guid.NewGuid()}");
+        try
+        {
+            var diagnostics = new SessionDiagnostics(new DiagnosticsOptions { Directory = directory });
+            var runtime = new FakeGameRuntime();
+            using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance, diagnostics);
+            await coordinator.StartAsync(CancellationToken.None);
+            var launch = await coordinator.StartVanillaAsync(new("1.21", []), CancellationToken.None);
+            if (earlyFailure)
+                runtime.FailLaunch(new InvalidOperationException("preparation failed"));
+            else
+            {
+                runtime.CompleteLaunch();
+                await WaitForStateAsync(coordinator, GameState.Ready);
+                runtime.ExitGame(137, true);
+            }
+            await WaitForStateAsync(coordinator, GameState.Failed);
+            var session = Assert.Single(diagnostics.List());
+            Assert.Equal(launch.SessionId, session.SessionId);
+            Assert.NotNull(session.LastFailure);
+            Assert.NotNull(session.EndedAt);
+            await coordinator.StopAsync(CancellationToken.None);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static async Task WaitForStateAsync(GameCoordinator coordinator, GameState expected)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -446,6 +513,8 @@ public sealed class GameCoordinatorTests
         public string? LastVanillaVersion { get; private set; }
         public string? LastNeoForgeVersion { get; private set; }
         public RunningGame? LastConnectGame { get; private set; }
+
+        public void FailLaunch(Exception exception) => _launch.SetException(exception);
 
         public void CompleteLaunch()
         {

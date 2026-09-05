@@ -14,9 +14,9 @@ namespace Void.Client;
 
 /// <summary>
 /// Owns the Linux, PortableMC, CurseForge, X11, and agent-automation details for one Minecraft game process.
-/// Lifecycle coordination deliberately lives in <see cref="GameCoordinator"/> so this class has no shared-state locks.
+/// Lifecycle coordination lives in <see cref="GameCoordinator"/>; a window gate also protects diagnostic captures during cleanup.
 /// </summary>
-internal sealed partial class GameRuntime : IGameRuntime
+internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null) : IGameRuntime
 {
     private const string DefaultMinecraftDirectory = "/root/.minecraft";
     private const string DefaultCurseForgeApiBaseUrl = "https://api.curseforge.com";
@@ -47,6 +47,9 @@ internal sealed partial class GameRuntime : IGameRuntime
     private const int CriticalProcessEarlyExitMilliseconds = 1000;
     private const int PlayerReadTimeoutMilliseconds = 2000;
     private long _nextWindowGeneration;
+    private readonly SemaphoreSlim _windowOperations = new(1, 1);
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, Task> _outputTasks = new();
+    private Guid? _windowSessionId;
 
     public async Task WriteOptionsAsync(string options, CancellationToken cancellationToken)
     {
@@ -105,9 +108,30 @@ internal sealed partial class GameRuntime : IGameRuntime
         return SendChatThroughAgentAsync(game, message, cancellationToken);
     }
 
-    public Task<byte[]> CaptureScreenshotAsync(CancellationToken cancellationToken)
+    public async Task<byte[]> CaptureScreenshotAsync(CancellationToken cancellationToken)
     {
-        return CaptureScreenAsync(cancellationToken);
+        await _windowOperations.WaitAsync(cancellationToken);
+        try
+        {
+            return await CaptureScreenAsync(cancellationToken);
+        }
+        finally
+        {
+            _windowOperations.Release();
+        }
+    }
+
+    public async Task<byte[]?> CaptureFailureScreenshotAsync(Guid sessionId, CancellationToken cancellationToken)
+    {
+        await _windowOperations.WaitAsync(cancellationToken);
+        try
+        {
+            return _windowSessionId == sessionId ? await CaptureScreenAsync(cancellationToken) : null;
+        }
+        finally
+        {
+            _windowOperations.Release();
+        }
     }
 
     public async Task<GamePlayers> ReadPlayersAsync(RunningGame game, CancellationToken cancellationToken)
@@ -174,6 +198,25 @@ internal sealed partial class GameRuntime : IGameRuntime
 
     public async Task<StopMode> StopAsync(RunningGame? game, CancellationToken cancellationToken)
     {
+        await _windowOperations.WaitAsync(cancellationToken);
+        try
+        {
+            var mode = await StopGameCoreAsync(game, cancellationToken);
+            if (game is not null && game.Process.HasExited)
+                await game.Process.WaitForExitAsync(cancellationToken);
+            return mode;
+        }
+        finally
+        {
+            if (_windowSessionId is { } sessionId)
+                diagnostics?.Collect(sessionId);
+            _windowSessionId = null;
+            _windowOperations.Release();
+        }
+    }
+
+    private async Task<StopMode> StopGameCoreAsync(RunningGame? game, CancellationToken cancellationToken)
+    {
         if (game is null)
             return StopMode.AlreadyStopped;
 
@@ -214,9 +257,25 @@ internal sealed partial class GameRuntime : IGameRuntime
 
     private async Task<RunningGame> LaunchPreparedGameAsync(string minecraftDirectory, string portableMinecraftVersion, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
     {
+        await _windowOperations.WaitAsync(cancellationToken);
+        try
+        {
+            _windowSessionId = diagnostics?.CurrentSessionId;
+            return await LaunchPreparedGameCoreAsync(minecraftDirectory, portableMinecraftVersion, arguments, memoryMb, cancellationToken);
+        }
+        finally
+        {
+            _windowOperations.Release();
+        }
+    }
+
+    private async Task<RunningGame> LaunchPreparedGameCoreAsync(string minecraftDirectory, string portableMinecraftVersion, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
+    {
         await PrepareDisplayAndWindowAsync(cancellationToken);
         Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portableMinecraftVersion}");
         var tracker = CreateTrackerConnection(FindUsername(arguments));
+        diagnostics?.RegisterSecret(tracker.Token);
+        diagnostics?.RegisterSecret(EncodeAgentArgument(tracker.Token));
         var launchArguments = memoryMb is { } value
             ? arguments.Append(CreateMaximumHeapArgument(value)).Append($"--jvm-arg=-javaagent:{PortableMinecraftAgentPath}={CreateAgentArguments(tracker)}").Cast<string?>().ToArray()
             : arguments.Append($"--jvm-arg=-javaagent:{PortableMinecraftAgentPath}={CreateAgentArguments(tracker)}").Cast<string?>().ToArray();
@@ -235,7 +294,7 @@ internal sealed partial class GameRuntime : IGameRuntime
 
         try
         {
-            var managedProcess = new ManagedProcess(process, memoryMb, initialOutOfMemoryKillCount);
+            var managedProcess = new ManagedProcess(process, memoryMb, initialOutOfMemoryKillCount, DrainOutputAsync(process.Id));
             using var windowCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             var windowTask = WaitForPreparedLargestWindowAsync(Environment.GetEnvironmentVariable("DISPLAY") ?? DefaultDisplay, windowCancellationTokenSource.Token);
             var processExitTask = managedProcess.WaitForExitAsync(CancellationToken.None);
@@ -254,6 +313,7 @@ internal sealed partial class GameRuntime : IGameRuntime
         {
             KillProcess(process);
             await WaitForKilledProcessAsync(process);
+            await DrainOutputAsync(process.Id);
             process.Dispose();
             File.Delete(tracker.DescriptorPath);
             throw;
@@ -808,9 +868,6 @@ internal sealed partial class GameRuntime : IGameRuntime
                 processInfo.ArgumentList.Add(argument);
         });
 
-        if (process.WaitForExit(CriticalProcessEarlyExitMilliseconds))
-            throw new InvalidOperationException($"PortableMC exited immediately with code {process.ExitCode}");
-
         return process;
     }
 
@@ -1036,10 +1093,24 @@ internal sealed partial class GameRuntime : IGameRuntime
         {
             await IgnoreTaskAsync(standardOutputTask);
             await IgnoreTaskAsync(standardErrorTask);
+            if (diagnostics?.CurrentSessionId is { } failedSession)
+            {
+                if (standardOutputTask.IsCompletedSuccessfully)
+                    diagnostics.WriteOutput(failedSession, "preparation", standardOutputTask.Result);
+                if (standardErrorTask.IsCompletedSuccessfully)
+                    diagnostics.WriteOutput(failedSession, "preparation", standardErrorTask.Result);
+            }
             throw;
         }
 
-        return new ProcessTextResult(process.ExitCode, await standardOutputTask, await standardErrorTask);
+        var standardOutput = await standardOutputTask;
+        var standardError = await standardErrorTask;
+        if (diagnostics?.CurrentSessionId is { } sessionId)
+        {
+            diagnostics.WriteOutput(sessionId, "preparation", standardOutput);
+            diagnostics.WriteOutput(sessionId, "preparation", standardError);
+        }
+        return new ProcessTextResult(process.ExitCode, standardOutput, standardError);
     }
 
     async Task<ProcessBytesResult> RunScreenCaptureBytesAsync(Func<string, ProcessStartInfo> createProcessInfo, string windowId, string display, CancellationToken cancellationToken)
@@ -1156,13 +1227,67 @@ internal sealed partial class GameRuntime : IGameRuntime
     {
         var processInfo = new ProcessStartInfo("setsid")
         {
-            UseShellExecute = false
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
         };
         processInfo.ArgumentList.Add(PortableMinecraftLauncherPath);
         configure(processInfo);
 
-        return Process.Start(processInfo)
-               ?? throw new InvalidOperationException("Failed to start the PortableMC process group");
+        var process = Process.Start(processInfo)
+                      ?? throw new InvalidOperationException("Failed to start the PortableMC process group");
+        var sessionId = diagnostics?.CurrentSessionId;
+        _outputTasks[process.Id] = Task.WhenAll(
+            PumpOutputAsync(process.StandardOutput, Console.Out, sessionId, "stdout"),
+            PumpOutputAsync(process.StandardError, Console.Error, sessionId, "stderr"));
+        return process;
+    }
+
+    private async Task DrainOutputAsync(int processId)
+    {
+        if (_outputTasks.TryGetValue(processId, out var output))
+        {
+            await output;
+            _outputTasks.TryRemove(processId, out _);
+        }
+    }
+
+    internal async Task PumpOutputAsync(TextReader reader, TextWriter console, Guid? sessionId, string stream)
+    {
+        var buffer = new char[4096];
+        var pending = "";
+        try
+        {
+            while (true)
+            {
+                var count = await reader.ReadAsync(buffer.AsMemory());
+                if (count == 0)
+                    break;
+                var text = new string(buffer, 0, count);
+                await console.WriteAsync(text);
+                pending += text;
+                if (sessionId is { } identifier && diagnostics is not null)
+                {
+                    // Keep enough overlap to redact raw or encoded agent tokens split across reads.
+                    pending = diagnostics.Redact(identifier, pending);
+                    var length = Math.Max(0, pending.Length - 128);
+                    diagnostics.WriteOutput(identifier, stream, pending[..length]);
+                    pending = pending[length..];
+                }
+                else
+                    pending = "";
+            }
+        }
+        catch (Exception exception) when (exception is IOException or ObjectDisposedException)
+        {
+            if (sessionId is { } identifier)
+                diagnostics?.Warn(identifier, $"Console collection ended: {exception.Message}");
+        }
+        finally
+        {
+            if (sessionId is { } identifier)
+                diagnostics?.WriteOutput(identifier, stream, pending);
+        }
     }
 
     void DeleteDirectoryIfExists(string path)

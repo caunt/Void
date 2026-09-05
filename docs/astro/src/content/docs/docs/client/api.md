@@ -12,6 +12,8 @@ JSON property names and enum values use camel case.
 | :----- | :--- | :------ | :---------- |
 | `GET` | `/api/health` | `200` | Check whether the client service is ready. |
 | `GET` | `/api/game/status` | `200` | Read the game state and latest operation. |
+| `GET` | `/api/game/diagnostics` | `200` | List retained diagnostic sessions. |
+| `GET` | `/api/game/diagnostics/{sessionId}` | `200` | Download a session diagnostic ZIP. |
 | `GET` | `/api/game/players` | `200` | Read the live local player and client-tracked players. |
 | `PUT` | `/api/game/options` | `204` | Replace Minecraft `options.txt`. |
 | `POST` | `/api/game/start/vanilla` | `202` | Start a Mojang vanilla release. |
@@ -30,6 +32,7 @@ JSON property names and enum values use camel case.
 {
   "state": "ready",
   "operationId": 1,
+  "sessionId": "16721635-5993-47fc-827e-727262544c24",
   "operation": "start-vanilla",
   "operationState": "succeeded",
   "processId": 432,
@@ -47,6 +50,7 @@ JSON property names and enum values use camel case.
 | :---- | :---------- |
 | `state` | Game lifecycle: `idle`, `starting`, `ready`, `connected`, `stopping`, or `failed`. |
 | `operationId` | Increasing identifier for the latest accepted operation. |
+| `sessionId` | Diagnostic session identifier assigned to an accepted launch; `null` before the first launch. Retained after stop until another launch is accepted. |
 | `operation` | Latest operation: `start-vanilla`, `start-neoforge`, `start-curseforge`, `options`, `connect`, `send-chat`, `screenshot`, or `stop`; otherwise `null`. |
 | `operationState` | `none`, `running`, `succeeded`, `failed`, or `canceled`. |
 | `processId` | Minecraft process identifier while it is running. |
@@ -263,3 +267,83 @@ Errors use the standard Problem Details JSON format.
 | `500 Internal Server Error` | The operation failed unexpectedly. |
 | `503 Service Unavailable` | The client service is not ready. |
 | `504 Gateway Timeout` | A client operation exceeded its timeout. |
+
+
+## Retained diagnostics
+
+Each accepted launch creates a diagnostic session before preparation begins. A session includes early launch failures as well as evidence from a running game. Stopping Minecraft does not erase it, and subsequent launches receive different identifiers.
+
+### List sessions
+
+`GET /api/game/diagnostics` returns sessions newest first:
+
+```json
+[
+  {
+    "sessionId": "16721635-5993-47fc-827e-727262544c24",
+    "launch": "start-vanilla:1.21.1:",
+    "startedAt": "2026-09-05T12:00:00+00:00",
+    "endedAt": "2026-09-05T12:02:00+00:00",
+    "status": null,
+    "lastFailure": null,
+    "warnings": [],
+    "downloadUrl": "/api/game/diagnostics/16721635-5993-47fc-827e-727262544c24"
+  }
+]
+```
+
+`status` contains the latest game status recorded for that session when available. `lastFailure` preserves the most recent structured failure even when a successful stop has cleared the current status error. `warnings` describes missing, truncated, or unavailable evidence. `endedAt` is `null` until the session is finalized.
+
+### Download a session
+
+`GET /api/game/diagnostics/{sessionId}` returns `200 OK` with `Content-Type: application/zip` and a download filename. An unknown or expired session returns `404 Not Found`.
+
+Save the `sessionId` from the accepted start response and use that exact identifier during cleanup:
+
+```sh
+curl --fail --silent --show-error \
+  --request POST http://localhost:8080/api/game/start/vanilla \
+  --header 'Content-Type: application/json' \
+  --data '{"version":"1.21.1","arguments":["--username","TestPlayer"]}' \
+  --output launch.json
+
+client_session_id=$(jq -r '.sessionId' launch.json)
+
+# Poll readiness, connect, and perform the test before cleanup.
+curl --fail --request POST http://localhost:8080/api/game/stop
+curl --fail --silent --show-error \
+  "http://localhost:8080/api/game/diagnostics/$client_session_id" \
+  --output "client-diagnostics-$client_session_id.zip"
+```
+
+Download before removing the container. Downloads also work while Minecraft runs; they capture evidence available at that moment without changing the current operation or game state.
+
+The ZIP contains available evidence:
+
+| File | Contents |
+| :--- | :--- |
+| `session.json` | Session identity, launch description, timestamps, latest status, last failure, and collection warnings. |
+| `operations.jsonl` | Timestamped game status transitions and operation outcomes. |
+| `console-*.log` | Recent launcher, Minecraft, agent, and preparation output. |
+| `previous-*.log`, `previous-operations.jsonl` | Previous retained segment after output rotation. |
+| `logs-latest.log`, `logs-debug.log` | Recent Minecraft log contents changed during this session. |
+| `debug-disconnect-*.txt` | Minecraft disconnect reports from this session. |
+| `crash-reports-crash-*.txt` | Minecraft crash reports from this session. |
+| `failure-*.png` | Best-effort failure screenshot, when the matching game window remains available. |
+
+Missing reports or failed screenshots do not replace the original game error. Screenshot collection is limited to three seconds. Console output continues to appear in Docker logs. The bundle excludes credential stores and agent authentication tokens, but game logs and screenshots can still contain player names, server addresses, and chat.
+
+### Retention configuration
+
+Configure the container with Docker environment variables:
+
+| Variable | Default | Meaning |
+| :--- | :--- | :--- |
+| `Diagnostics__Directory` | `/var/lib/void-client/diagnostics` | Session evidence directory. |
+| `Diagnostics__MaximumSessions` | `10` | Maximum retained sessions; oldest completed sessions expire first. |
+| `Diagnostics__MaximumTotalMb` | `256` | Total storage budget in MiB. |
+| `Diagnostics__MaximumSessionMb` | `32` | Storage budget per session in MiB. |
+
+Limits must be positive and the total budget must accommodate one session. Individual evidence files are capped at 2 MiB; console and operation logs rotate to retain recent output. Collection warnings identify truncation and omitted evidence. Active sessions are protected from eviction, so reaching a storage limit can omit additional evidence until space becomes available.
+
+Storage survives game stop and start within the same container. For persistence after container removal, mount a volume at the diagnostics directory, for example `--volume client-diagnostics:/var/lib/void-client/diagnostics`. Stored sessions are discovered when the API starts again.

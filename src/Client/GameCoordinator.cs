@@ -6,7 +6,7 @@ namespace Void.Client;
 /// Serializes all lifecycle and X11 mutations through one channel. Status reads are lock-free because only the
 /// channel reader publishes immutable snapshots.
 /// </summary>
-internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordinator> logger) : BackgroundService
+internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordinator> logger, SessionDiagnostics? diagnostics = null) : BackgroundService
 {
     private readonly Channel<Message> _messages = Channel.CreateUnbounded<Message>(new UnboundedChannelOptions
     {
@@ -18,6 +18,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
     private readonly List<ConnectWaiter> _connectWaiters = [];
     private GameStatus _status = new(GameState.Idle, 0, null, OperationState.None, null, null, null, null, null, null, [], DateTimeOffset.UtcNow);
     private RunningGame? _game;
+    private Guid? _sessionId;
     private CancellationTokenSource? _activeCancellation;
     private ServerAddress? _connectingServer;
     private ConnectGameResponse? _connectedResponse;
@@ -109,11 +110,14 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             }
 
             await Task.WhenAll(_ownedTasks);
+            if (_sessionId is { } sessionId)
+                diagnostics?.Complete(sessionId);
         }
     }
 
     private void Handle(Message message)
     {
+        using var diagnosticContext = diagnostics?.Enter(_sessionId);
         switch (message)
         {
             case StartMessage start:
@@ -201,6 +205,10 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             return;
         }
 
+        if (_sessionId is { } previousSession)
+            diagnostics?.Complete(previousSession);
+        _sessionId = diagnostics?.Begin($"{message.Kind}:{version ?? neoForgeVersion ?? slug}:{message.CurseForgeRequest?.FileId}", Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? "/root/.minecraft");
+        using var diagnosticContext = diagnostics?.Enter(_sessionId);
         var operationId = ++_nextOperationId;
         var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(_stoppingToken);
         _activeCancellation = operationCancellation;
@@ -421,6 +429,8 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
                 Failure = completed.Canceled ? null : FailureFor(completed.Error, completed.Kind),
                 UpdatedAt = DateTimeOffset.UtcNow
             });
+            if (_sessionId is { } sessionId)
+                diagnostics?.Complete(sessionId);
             return;
         }
 
@@ -461,6 +471,8 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         _game = null;
         _connectedResponse = null;
         Publish(new(GameState.Idle, completed.OperationId, "stop", OperationState.Succeeded, null, exitCode, null, "Game stopped", null, null, [], DateTimeOffset.UtcNow));
+        if (_sessionId is { } sessionId)
+            diagnostics?.Complete(sessionId);
         completed.Completion.SetResult(new(completed.Mode, Status));
     }
 
@@ -574,6 +586,8 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             Failure = processFailure?.Failure,
             UpdatedAt = DateTimeOffset.UtcNow
         });
+        if (_sessionId is { } sessionId)
+            diagnostics?.Complete(sessionId);
     }
 
     private (long OperationId, CancellationTokenSource Cancellation) BeginConfirmedOperation(string operation, CancellationToken requestCancellation)
@@ -625,6 +639,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         }
         catch (Exception exception)
         {
+            await CaptureFailureAsync(operationId);
             await WriteCompletionAsync(new StartCompleted(operationId, kind, null, exception, false, cancellation));
         }
     }
@@ -644,13 +659,13 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
 
     private async Task ObserveConnectAsync(long operationId, ServerAddress server, Task operation, CancellationTokenSource cancellation)
     {
-        var (error, canceled) = await ObserveAsync(operation, cancellation);
+        var (error, canceled) = await ObserveAsync(operation, cancellation, operationId);
         await WriteCompletionAsync(new ConnectCompleted(operationId, server, error, canceled, cancellation));
     }
 
     private async Task ObserveVoidOperationAsync(long operationId, string kind, Task operation, CancellationTokenSource cancellation, TaskCompletionSource<bool> completion)
     {
-        var (error, canceled) = await ObserveAsync(operation, cancellation);
+        var (error, canceled) = await ObserveAsync(operation, cancellation, operationId);
         await WriteCompletionAsync(new VoidOperationCompleted(operationId, kind, error, canceled, cancellation, completion));
     }
 
@@ -686,7 +701,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         }
     }
 
-    private async Task<(Exception? Error, bool Canceled)> ObserveAsync(Task operation, CancellationTokenSource cancellation)
+    private async Task<(Exception? Error, bool Canceled)> ObserveAsync(Task operation, CancellationTokenSource cancellation, long operationId)
     {
         try
         {
@@ -701,8 +716,28 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         }
         catch (Exception exception)
         {
+            await CaptureFailureAsync(operationId);
             return (exception, false);
         }
+    }
+
+    private async Task CaptureFailureAsync(long operationId)
+    {
+        if (diagnostics?.CurrentSessionId is not { } sessionId)
+            return;
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        try
+        {
+            if (await runtime.CaptureFailureScreenshotAsync(sessionId, timeout.Token) is { } screenshot)
+                diagnostics.SaveScreenshot(sessionId, operationId, screenshot);
+            else
+                diagnostics.Warn(sessionId, "Failure screenshot unavailable: no matching game window");
+        }
+        catch (Exception exception)
+        {
+            diagnostics.Warn(sessionId, $"Failure screenshot unavailable: {exception.Message}");
+        }
+        diagnostics.Collect(sessionId);
     }
 
     private async Task MonitorProcessAsync(RunningGame game)
@@ -743,6 +778,8 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
 
     private void Publish(GameStatus status)
     {
+        status = status with { SessionId = _sessionId };
+        diagnostics?.Record(status);
         Volatile.Write(ref _status, status);
     }
 

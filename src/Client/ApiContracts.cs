@@ -67,7 +67,8 @@ internal sealed record GameStatus(
     string? Error,
     ClientFailure? Failure,
     IReadOnlyList<string> Warnings,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    Guid? SessionId = null);
 
 internal sealed record StopGameResponse(StopMode Mode, GameStatus Status);
 
@@ -109,6 +110,7 @@ internal interface IGameRuntime
     Task ConnectAsync(RunningGame game, string host, int port, CancellationToken cancellationToken);
     Task SendChatAsync(RunningGame game, string message, CancellationToken cancellationToken);
     Task<byte[]> CaptureScreenshotAsync(CancellationToken cancellationToken);
+    Task<byte[]?> CaptureFailureScreenshotAsync(Guid sessionId, CancellationToken cancellationToken) => Task.FromResult<byte[]?>(null);
     Task<GamePlayers> ReadPlayersAsync(RunningGame game, CancellationToken cancellationToken);
     Task<StopMode> StopAsync(RunningGame? game, CancellationToken cancellationToken);
 }

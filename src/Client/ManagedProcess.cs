@@ -3,7 +3,7 @@ using System.Diagnostics;
 namespace Void.Client;
 
 /// <summary>Adapts <see cref="Process"/> into the lifecycle surface owned by the coordinator.</summary>
-internal sealed class ManagedProcess(Process process, int? memoryMb, long? initialOutOfMemoryKillCount) : IManagedProcess
+internal sealed class ManagedProcess(Process process, int? memoryMb, long? initialOutOfMemoryKillCount, Task? outputCompletion = null) : IManagedProcess
 {
     private bool? _wasOutOfMemoryKilled;
 
@@ -28,9 +28,11 @@ internal sealed class ManagedProcess(Process process, int? memoryMb, long? initi
         }
     }
 
-    public Task WaitForExitAsync(CancellationToken cancellationToken)
+    public async Task WaitForExitAsync(CancellationToken cancellationToken)
     {
-        return process.WaitForExitAsync(cancellationToken);
+        await process.WaitForExitAsync(cancellationToken);
+        if (outputCompletion is not null)
+            await outputCompletion.WaitAsync(cancellationToken);
     }
 
     public void KillTree()

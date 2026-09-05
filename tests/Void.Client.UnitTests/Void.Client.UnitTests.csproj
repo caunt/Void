@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Void.IntegrationTests/Infrastructure/Harness/Sides/ClientDiagnosticsDownloader.cs" Link="ClientDiagnosticsDownloader.cs" />
     <ProjectReference Include="../../src/Client/PortableMinecraftClient.csproj" />
   </ItemGroup>
 </Project>
