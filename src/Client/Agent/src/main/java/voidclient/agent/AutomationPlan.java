@@ -9,23 +9,39 @@ final class AutomationPlan {
     final String screenSetterName;
     final String directScreenName;
     final String chatDriverClassName;
+    final PresentationOverlayPlan presentationOverlay;
     final DirectConnectPlan directConnect;
     final ChatPlan chat;
     final java.util.Map<String, List<TransitionPlan>> transitions;
 
-    AutomationPlan(String screenBaseName, String clientClassName, String screenSetterName,
-                   String directScreenName, String chatDriverClassName, DirectConnectPlan directConnect, ChatPlan chat,
-                   java.util.Map<String, List<TransitionPlan>> transitions) {
+    AutomationPlan(String screenBaseName, String clientClassName, String screenSetterName, String directScreenName, String chatDriverClassName, PresentationOverlayPlan presentationOverlay, DirectConnectPlan directConnect, ChatPlan chat, java.util.Map<String, List<TransitionPlan>> transitions) {
         this.screenBaseName = screenBaseName;
         this.clientClassName = clientClassName;
         this.screenSetterName = screenSetterName;
         this.directScreenName = directScreenName;
         this.chatDriverClassName = chatDriverClassName;
+        this.presentationOverlay = presentationOverlay;
         this.directConnect = directConnect;
         this.chat = chat;
         this.transitions = transitions;
     }
 
+}
+
+final class PresentationOverlayPlan {
+    final String owner;
+    final String fieldName;
+    final String fieldDescriptor;
+
+    PresentationOverlayPlan(String owner, String fieldName, String fieldDescriptor) {
+        this.owner = owner;
+        this.fieldName = fieldName;
+        this.fieldDescriptor = fieldDescriptor;
+    }
+
+    String describe() {
+        return owner + '.' + fieldName + ':' + fieldDescriptor;
+    }
 }
 
 final class TransitionPlan {

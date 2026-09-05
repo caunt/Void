@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -22,6 +23,7 @@ import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -194,11 +196,153 @@ final class GameAutomationIndex {
         }
 
         String chatDriverClassName = discoverChatDriver(types, chat, screenSetter.owner);
+        PresentationOverlayPlan presentationOverlay = discoverPresentationOverlay(types, superTypes, screenSetter.owner, screenBaseName);
         AutomationPlan plan = new AutomationPlan(screenBaseName, screenSetter.owner, screenSetter.name,
             directCandidate.type.name,
             chatDriverClassName == null ? screenSetter.owner : chatDriverClassName,
-            directCandidate.plan, chat, transitions);
+            presentationOverlay, directCandidate.plan, chat, transitions);
         return new IndexedCode(plan, superTypes);
+    }
+
+    static PresentationOverlayPlan discoverPresentationOverlay(Map<String, ClassNode> types, Map<String, String> superTypes, String clientClassName, String screenBaseName) {
+        ClassNode client = types.get(clientClassName);
+
+        if (client == null)
+            return null;
+
+        List<FieldNode> screenFields = new ArrayList<FieldNode>();
+
+        for (FieldNode field : client.fields) {
+            String fieldType = objectType(field.desc);
+
+            if ((field.access & Opcodes.ACC_STATIC) == 0 && fieldType != null && isScreen(fieldType, superTypes, screenBaseName))
+                screenFields.add(field);
+        }
+
+        if (screenFields.size() != 1)
+            throw new IllegalStateException("Expected one current-screen field in " + clientClassName + " but found " + screenFields.size());
+
+        FieldNode screenField = screenFields.get(0);
+        Set<String> screenInterfaces = interfacesOf(screenBaseName, types, new HashSet<String>());
+        List<PresentationOverlayPlan> candidates = new ArrayList<PresentationOverlayPlan>();
+
+        for (FieldNode field : client.fields) {
+            String fieldType = objectType(field.desc);
+
+            if ((field.access & Opcodes.ACC_STATIC) != 0 || fieldType == null
+                || field.name.equals(screenField.name) || isScreen(fieldType, superTypes, screenBaseName)
+                || !sharesInterface(fieldType, screenInterfaces, types)
+                || !hasTrivialSetter(client, field)
+                || countNullCheckedCoOccurrences(client, screenField, field) < 2)
+                continue;
+
+            candidates.add(new PresentationOverlayPlan(client.name, field.name, field.desc));
+        }
+
+        if (candidates.size() > 1) {
+            List<String> descriptions = new ArrayList<String>();
+
+            for (PresentationOverlayPlan candidate : candidates)
+                descriptions.add(candidate.describe());
+
+            throw new IllegalStateException("Expected at most one structural presentation overlay but found " + candidates.size() + ": " + descriptions);
+        }
+
+        return candidates.isEmpty() ? null : candidates.get(0);
+    }
+
+    private static int countNullCheckedCoOccurrences(ClassNode client, FieldNode screenField, FieldNode candidateField) {
+        int count = 0;
+
+        for (MethodNode method : client.methods) {
+            if (readsFieldBeforeNullCheck(method, client.name, screenField.name, screenField.desc)
+                && readsFieldBeforeNullCheck(method, client.name, candidateField.name, candidateField.desc))
+                count++;
+        }
+
+        return count;
+    }
+
+    private static boolean readsFieldBeforeNullCheck(MethodNode method, String owner, String name, String descriptor) {
+        for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null; instruction = instruction.getNext()) {
+            if (!(instruction instanceof FieldInsnNode) || instruction.getOpcode() != Opcodes.GETFIELD)
+                continue;
+
+            FieldInsnNode field = (FieldInsnNode) instruction;
+            AbstractInsnNode next = nextReal(instruction);
+
+            if (owner.equals(field.owner) && name.equals(field.name) && descriptor.equals(field.desc)
+                && next instanceof JumpInsnNode && (next.getOpcode() == Opcodes.IFNULL || next.getOpcode() == Opcodes.IFNONNULL))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static boolean hasTrivialSetter(ClassNode client, FieldNode field) {
+        String descriptor = '(' + field.desc + ")V";
+
+        for (MethodNode method : client.methods) {
+            if ((method.access & Opcodes.ACC_STATIC) != 0 || !descriptor.equals(method.desc))
+                continue;
+
+            int realInstructions = 0;
+            boolean writesField = false;
+
+            for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null; instruction = instruction.getNext()) {
+                if (instruction.getOpcode() < 0)
+                    continue;
+
+                realInstructions++;
+
+                if (instruction instanceof FieldInsnNode && instruction.getOpcode() == Opcodes.PUTFIELD) {
+                    FieldInsnNode writtenField = (FieldInsnNode) instruction;
+                    writesField = client.name.equals(writtenField.owner) && field.name.equals(writtenField.name)
+                        && field.desc.equals(writtenField.desc);
+                }
+            }
+
+            if (writesField && realInstructions == 4)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static boolean sharesInterface(String typeName, Set<String> screenInterfaces, Map<String, ClassNode> types) {
+        Set<String> candidateInterfaces = interfacesOf(typeName, types, new HashSet<String>());
+
+        for (String interfaceName : candidateInterfaces) {
+            if (!interfaceName.startsWith("java/") && screenInterfaces.contains(interfaceName))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static Set<String> interfacesOf(String typeName, Map<String, ClassNode> types, Set<String> visited) {
+        if (typeName == null || !visited.add(typeName))
+            return Collections.emptySet();
+
+        ClassNode type = types.get(typeName);
+
+        if (type == null)
+            return Collections.emptySet();
+
+        Set<String> result = new HashSet<String>();
+
+        for (String interfaceName : type.interfaces) {
+            result.add(interfaceName);
+            result.addAll(interfacesOf(interfaceName, types, visited));
+        }
+
+        result.addAll(interfacesOf(type.superName, types, visited));
+        return result;
+    }
+
+    private static String objectType(String descriptor) {
+        Type type = Type.getType(descriptor);
+        return type.getSort() == Type.OBJECT ? type.getInternalName() : null;
     }
 
     private static String discoverChatDriver(Map<String, ClassNode> types, ChatPlan chat, String clientClassName) {

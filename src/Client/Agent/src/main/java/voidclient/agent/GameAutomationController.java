@@ -29,6 +29,7 @@ public final class GameAutomationController {
     private static Thread clientThread;
     private static volatile Object consumedScreen;
     private static String waitingScreenName;
+    private static boolean waitingForPresentationOverlay;
     private static Instrumentation instrumentation;
 
     private GameAutomationController() {
@@ -46,7 +47,9 @@ public final class GameAutomationController {
             return;
 
         System.err.println("Void client agent indexed UI graph: direct=" + index.plan.directConnect.describe()
-            + " chat=" + index.plan.chat.describe() + " screens=" + index.plan.transitions.size());
+            + " chat=" + index.plan.chat.describe() + " overlay="
+            + (index.plan.presentationOverlay == null ? "none" : index.plan.presentationOverlay.describe())
+            + " screens=" + index.plan.transitions.size());
         retransformClientClass(index.plan.clientClassName);
         retransformClientClass(index.plan.chatDriverClassName);
     }
@@ -108,6 +111,7 @@ public final class GameAutomationController {
 
             pending = operation;
             consumedScreen = null;
+            waitingForPresentationOverlay = false;
         }
 
         Object receiver = screenSetterReceiver.get();
@@ -208,6 +212,29 @@ public final class GameAutomationController {
 
             if (screenSetterReceiver.get() == null)
                 screenSetterReceiver = new WeakReference<Object>(findObject(client, index.plan.clientClassName, 3));
+        }
+
+        try {
+            if (isPresentationOverlayActive(screenSetterReceiver.get(), index.plan.presentationOverlay)) {
+                synchronized (GameAutomationController.class) {
+                    if (!waitingForPresentationOverlay) {
+                        waitingForPresentationOverlay = true;
+                        System.err.println("Void client agent is waiting for the active presentation overlay to clear");
+                    }
+                }
+
+                return;
+            }
+
+            synchronized (GameAutomationController.class) {
+                if (waitingForPresentationOverlay) {
+                    waitingForPresentationOverlay = false;
+                    System.err.println("Void client agent observed the presentation overlay clear");
+                }
+            }
+        } catch (Throwable exception) {
+            fail(operation, "ui.readiness", exception, index, null);
+            return;
         }
 
         if ("connect".equals(operation.kind)) {
@@ -584,6 +611,14 @@ public final class GameAutomationController {
         }
 
         return null;
+    }
+
+    static boolean isPresentationOverlayActive(Object client, PresentationOverlayPlan overlay) throws Exception {
+        if (client == null || overlay == null)
+            return false;
+
+        Field field = declaredField(loadClass(client.getClass().getClassLoader(), overlay.owner), overlay.fieldName);
+        return field.get(client) != null;
     }
 
     private static GameAutomationIndex.IndexedCode index(ClassLoader loader) {
