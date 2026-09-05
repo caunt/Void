@@ -19,7 +19,7 @@ internal static class ClientApiEndpoints
             .WithName("GetGameStatus")
             .WithSummary("Returns the current game lifecycle and latest operation status.");
 
-        api.MapGet("/game/diagnostics", (SessionDiagnostics diagnostics) => Results.Ok(diagnostics.List()))
+        api.MapGet("/game/diagnostics", async (SessionDiagnostics diagnostics, CancellationToken cancellationToken) => Results.Ok(await diagnostics.ListAsync(cancellationToken)))
             .WithName("ListGameDiagnostics")
             .WithSummary("Lists retained Minecraft sessions and diagnostic download URLs.");
 

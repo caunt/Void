@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using Nito.AsyncEx;
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
@@ -34,48 +36,23 @@ internal sealed record DiagnosticSession(Guid SessionId, string Launch, DateTime
 internal sealed class SessionDiagnostics
 {
     private const int MaximumFileBytes = 2 * 1024 * 1024;
+    private const int ManifestReserveBytes = 256 * 1024;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
     };
-    private readonly object _gate = new();
+    private readonly AsyncLock _retentionLock = new();
     private readonly AsyncLocal<Guid?> _context = new();
-    private readonly Dictionary<Guid, Session> _sessions = [];
+    private readonly ConcurrentDictionary<Guid, Session> _sessions = new();
     private readonly DiagnosticsOptions _options;
+    private bool _initialized;
+    private long _storedBytes;
 
     public SessionDiagnostics(DiagnosticsOptions options)
     {
         if (options.MaximumSessions < 1 || options.MaximumSessionMb < 1 || options.MaximumTotalMb < options.MaximumSessionMb)
             throw new ArgumentException("Diagnostics limits must be positive and the total must accommodate one session", nameof(options));
-
         _options = options;
-        // Loading only our manifest-named directories also allows an optional persistent volume.
-        if (!System.IO.Directory.Exists(options.Directory))
-            return;
-
-        foreach (var directory in System.IO.Directory.EnumerateDirectories(options.Directory))
-        {
-            if (!Guid.TryParse(Path.GetFileName(directory), out var identifier) || IsLink(directory))
-                continue;
-
-            try
-            {
-                var manifest = Path.Combine(directory, "session.json");
-                if (IsLink(manifest))
-                    continue;
-                var metadata = JsonSerializer.Deserialize<DiagnosticSession>(File.ReadAllText(manifest), JsonOptions);
-                if (metadata is null || metadata.SessionId != identifier)
-                    continue;
-                var session = new Session(metadata with { EndedAt = metadata.EndedAt ?? DateTimeOffset.UtcNow }, directory, "");
-                _sessions.Add(identifier, session);
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
-            {
-                Console.Error.WriteLine($"Could not load diagnostic session {identifier}: {exception.Message}");
-            }
-        }
-
-        Prune();
     }
 
     public Guid? CurrentSessionId => _context.Value;
@@ -87,44 +64,46 @@ internal sealed class SessionDiagnostics
         return new ContextScope(() => _context.Value = previous);
     }
 
-    public Guid Begin(string launch, string minecraftDirectory)
+    public async Task<Guid> BeginAsync(string launch, string minecraftDirectory, CancellationToken cancellationToken = default)
     {
-        lock (_gate)
+        await InitializeAsync(cancellationToken);
+        // Retention always acquires its lock before any session lock. Session operations never acquire it.
+        await PruneAsync((long)_options.MaximumSessionMb * 1024 * 1024, cancellationToken);
+        var identifier = Guid.NewGuid();
+        var session = new Session(new(identifier, Limit(launch, 1024) ?? "", DateTimeOffset.UtcNow, null, null, null, []), Path.Combine(_options.Directory, identifier.ToString()), minecraftDirectory);
+        using (await session.Lock.LockAsync(cancellationToken))
         {
-            var identifier = Guid.NewGuid();
-            var session = new Session(new(identifier, Limit(launch, 1024) ?? "", DateTimeOffset.UtcNow, null, null, null, []), Path.Combine(_options.Directory, identifier.ToString()), minecraftDirectory);
-            _sessions.Add(identifier, session);
-            TryCollect(session, baseline: true);
-            SaveManifest(session);
-            Prune();
-            return identifier;
+            _sessions.TryAdd(identifier, session);
+            await CollectReportsAsync(session, baseline: true, cancellationToken);
+            await SaveManifestAsync(session, cancellationToken);
         }
+        await PruneAsync(0, cancellationToken);
+        return identifier;
     }
 
-    public void RegisterSecret(string secret)
+    public async Task RegisterSecretAsync(string secret, CancellationToken cancellationToken = default)
     {
-        lock (_gate)
-            if (CurrentSessionId is { } identifier && _sessions.TryGetValue(identifier, out var session))
-                session.Secrets.Add(secret);
+        if (CurrentSessionId is not { } identifier || !_sessions.TryGetValue(identifier, out var session))
+            return;
+        using (await session.Lock.LockAsync(cancellationToken))
+            session.Secrets.Add(secret);
     }
 
-    public string Redact(Guid identifier, string value)
+    public async Task<string> RedactAsync(Guid identifier, string value, CancellationToken cancellationToken = default)
     {
-        lock (_gate)
-        {
-            if (!_sessions.TryGetValue(identifier, out var session))
-                return value;
-            foreach (var secret in session.Secrets)
-                value = value.Replace(secret, "[redacted]", StringComparison.Ordinal);
+        if (!_sessions.TryGetValue(identifier, out var session))
             return value;
-        }
+        using (await session.Lock.LockAsync(cancellationToken))
+            return Redact(session, value);
     }
 
-    public void Record(GameStatus status)
+    public async Task RecordAsync(GameStatus status, CancellationToken cancellationToken = default)
     {
-        lock (_gate)
+        if (status.SessionId is not { } identifier || !_sessions.TryGetValue(identifier, out var session))
+            return;
+        using (await session.Lock.LockAsync(cancellationToken))
         {
-            if (status.SessionId is not { } identifier || !_sessions.TryGetValue(identifier, out var session))
+            if (!_sessions.ContainsKey(identifier))
                 return;
             var original = status;
             status = status with
@@ -136,81 +115,101 @@ internal sealed class SessionDiagnostics
             };
             if (original.Error != status.Error || original.Failure?.StackTrace != status.Failure?.StackTrace)
                 AddWarning(session, "Long failure details were truncated in retained metadata");
-            status = JsonSerializer.Deserialize<GameStatus>(Redact(identifier, JsonSerializer.Serialize(status, JsonOptions)), JsonOptions) ?? status;
+            status = JsonSerializer.Deserialize<GameStatus>(Redact(session, JsonSerializer.Serialize(status, JsonOptions)), JsonOptions) ?? status;
             session.Metadata = session.Metadata with { Status = status, LastFailure = status.Failure ?? session.Metadata.LastFailure };
-            Append(session, "operations.jsonl", Encoding.UTF8.GetBytes(Redact(identifier, JsonSerializer.Serialize(status, JsonOptions)) + "\n"));
-            SaveManifest(session);
+            await WriteFileAsync(session, "operations.jsonl", Encoding.UTF8.GetBytes(JsonSerializer.Serialize(status, JsonOptions) + "\n"), append: true, cancellationToken);
+            await SaveManifestAsync(session, cancellationToken);
         }
     }
 
-    public void WriteOutput(Guid identifier, string stream, string text)
+    public async Task WriteOutputAsync(Guid identifier, string stream, string text, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrEmpty(text))
+        if (string.IsNullOrEmpty(text) || !_sessions.TryGetValue(identifier, out var session))
             return;
-        lock (_gate)
-            if (_sessions.TryGetValue(identifier, out var session))
-                Append(session, $"console-{stream}.log", Encoding.UTF8.GetBytes(Redact(identifier, text)));
+        using (await session.Lock.LockAsync(cancellationToken))
+        {
+            if (!_sessions.ContainsKey(identifier))
+                return;
+            await WriteFileAsync(session, $"console-{stream}.log", Encoding.UTF8.GetBytes(Redact(session, text)), append: true, cancellationToken);
+        }
     }
 
-    public void Warn(Guid identifier, string warning)
+    public async Task WarnAsync(Guid identifier, string warning, CancellationToken cancellationToken = default)
     {
-        lock (_gate)
-            if (_sessions.TryGetValue(identifier, out var session))
-            {
-                AddWarning(session, warning);
-                SaveManifest(session);
-            }
+        if (!_sessions.TryGetValue(identifier, out var session))
+            return;
+        using (await session.Lock.LockAsync(cancellationToken))
+        {
+            if (!_sessions.ContainsKey(identifier))
+                return;
+            AddWarning(session, warning);
+            await SaveManifestAsync(session, cancellationToken);
+        }
     }
 
-    public void Collect(Guid identifier)
+    public async Task CollectAsync(Guid identifier, CancellationToken cancellationToken = default)
     {
-        lock (_gate)
-            if (_sessions.TryGetValue(identifier, out var session))
-            {
-                if (session.Metadata.EndedAt is null)
-                    TryCollect(session, baseline: false);
-                SaveManifest(session);
-            }
+        if (!_sessions.TryGetValue(identifier, out var session))
+            return;
+        using (await session.Lock.LockAsync(cancellationToken))
+        {
+            if (!_sessions.ContainsKey(identifier))
+                return;
+            if (session.Metadata.EndedAt is null)
+                await CollectReportsAsync(session, baseline: false, cancellationToken);
+            await SaveManifestAsync(session, cancellationToken);
+        }
     }
 
-    public void Complete(Guid identifier)
+    public async Task CompleteAsync(Guid identifier, CancellationToken cancellationToken = default)
     {
-        lock (_gate)
-            if (_sessions.TryGetValue(identifier, out var session))
-            {
-                if (session.Metadata.EndedAt is null)
-                    TryCollect(session, baseline: false);
-                session.Metadata = session.Metadata with { EndedAt = session.Metadata.EndedAt ?? DateTimeOffset.UtcNow };
-                SaveManifest(session);
-                Prune();
-            }
+        if (!_sessions.TryGetValue(identifier, out var session))
+            return;
+        using (await session.Lock.LockAsync(cancellationToken))
+        {
+            if (!_sessions.ContainsKey(identifier))
+                return;
+            if (session.Metadata.EndedAt is null)
+                await CollectReportsAsync(session, baseline: false, cancellationToken);
+            session.Metadata = session.Metadata with { EndedAt = session.Metadata.EndedAt ?? DateTimeOffset.UtcNow };
+            await SaveManifestAsync(session, cancellationToken);
+        }
+        await PruneAsync(0, cancellationToken);
     }
 
-    public void SaveScreenshot(Guid identifier, long operationId, byte[] screenshot)
+    public async Task SaveScreenshotAsync(Guid identifier, long operationId, byte[] screenshot, CancellationToken cancellationToken = default)
     {
-        lock (_gate)
-            if (_sessions.TryGetValue(identifier, out var session))
-            {
-                SaveFile(session, $"failure-{operationId}.png", screenshot);
-                SaveManifest(session);
-            }
+        if (!_sessions.TryGetValue(identifier, out var session))
+            return;
+        using (await session.Lock.LockAsync(cancellationToken))
+        {
+            if (!_sessions.ContainsKey(identifier))
+                return;
+            await WriteFileAsync(session, $"failure-{operationId}.png", screenshot, append: false, cancellationToken);
+            await SaveManifestAsync(session, cancellationToken);
+        }
     }
 
-    public IReadOnlyList<DiagnosticSession> List()
+    public async Task<IReadOnlyList<DiagnosticSession>> ListAsync(CancellationToken cancellationToken = default)
     {
-        lock (_gate)
-            return _sessions.Values.OrderByDescending(session => session.Metadata.StartedAt).Select(session => session.Metadata).ToArray();
+        await InitializeAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        // Immutable metadata snapshots do not need to wait for a session's file I/O.
+        return _sessions.Values.Select(session => session.Metadata).OrderByDescending(session => session.StartedAt).ToArray();
     }
 
     public async Task<byte[]?> DownloadAsync(Guid identifier, CancellationToken cancellationToken)
     {
+        await InitializeAsync(cancellationToken);
+        if (!_sessions.TryGetValue(identifier, out var session))
+            return null;
         Dictionary<string, byte[]> files = [];
-        lock (_gate)
+        using (await session.Lock.LockAsync(cancellationToken))
         {
-            if (!_sessions.TryGetValue(identifier, out var session))
+            if (!_sessions.ContainsKey(identifier))
                 return null;
             if (session.Metadata.EndedAt is null)
-                TryCollect(session, baseline: false);
+                await CollectReportsAsync(session, baseline: false, cancellationToken);
             try
             {
                 if (System.IO.Directory.Exists(session.Directory))
@@ -219,17 +218,16 @@ internal sealed class SessionDiagnostics
                         cancellationToken.ThrowIfCancellationRequested();
                         if (IsLink(file) || Path.GetFileName(file) == "session.json")
                             continue;
-                        files[Path.GetFileName(file)] = ReadTail(file, MaximumFileBytes);
+                        files[Path.GetFileName(file)] = await ReadTailAsync(file, MaximumFileBytes, cancellationToken);
                     }
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
                 AddWarning(session, $"Some evidence could not be read: {exception.Message}");
             }
-            files["session.json"] = Encoding.UTF8.GetBytes(Redact(identifier, JsonSerializer.Serialize(session.Metadata, JsonOptions)));
+            files["session.json"] = Encoding.UTF8.GetBytes(Redact(session, JsonSerializer.Serialize(session.Metadata, JsonOptions)));
         }
 
-        // Copy under the lock, then compress without holding up logging or lifecycle changes.
         using var output = new MemoryStream();
         using (var archive = new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true))
             foreach (var (name, content) in files)
@@ -240,7 +238,56 @@ internal sealed class SessionDiagnostics
         return output.ToArray();
     }
 
-    private void TryCollect(Session session, bool baseline)
+    private async Task InitializeAsync(CancellationToken cancellationToken)
+    {
+        if (Volatile.Read(ref _initialized))
+            return;
+        using (await _retentionLock.LockAsync(cancellationToken))
+        {
+            if (_initialized)
+                return;
+            try
+            {
+                if (System.IO.Directory.Exists(_options.Directory))
+                    foreach (var directory in System.IO.Directory.EnumerateDirectories(_options.Directory))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (!Guid.TryParse(Path.GetFileName(directory), out var identifier) || IsLink(directory) || _sessions.ContainsKey(identifier))
+                            continue;
+                        try
+                        {
+                            var manifest = Path.Combine(directory, "session.json");
+                            if (IsLink(manifest))
+                                continue;
+                            var metadata = JsonSerializer.Deserialize<DiagnosticSession>(await File.ReadAllTextAsync(manifest, cancellationToken), JsonOptions);
+                            if (metadata is null || metadata.SessionId != identifier)
+                                continue;
+                            var session = new Session(metadata with { EndedAt = metadata.EndedAt ?? DateTimeOffset.UtcNow }, directory, "");
+                            foreach (var file in System.IO.Directory.EnumerateFiles(directory).Where(file => !IsLink(file)))
+                            {
+                                cancellationToken.ThrowIfCancellationRequested();
+                                session.FileSizes[Path.GetFileName(file)] = new FileInfo(file).Length;
+                            }
+                            session.StoredBytes = session.FileSizes.Values.Sum();
+                            if (_sessions.TryAdd(identifier, session))
+                                Interlocked.Add(ref _storedBytes, session.StoredBytes);
+                        }
+                        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+                        {
+                            Console.Error.WriteLine($"Could not load diagnostic session {identifier}: {exception.Message}");
+                        }
+                    }
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                Console.Error.WriteLine($"Could not load diagnostic history: {exception.Message}");
+            }
+            Volatile.Write(ref _initialized, true);
+        }
+        await PruneAsync(0, cancellationToken);
+    }
+
+    private async Task CollectReportsAsync(Session session, bool baseline, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(session.MinecraftDirectory))
             return;
@@ -248,11 +295,13 @@ internal sealed class SessionDiagnostics
         {
             foreach (var directoryName in new[] { "logs", "debug", "crash-reports" })
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var directory = Path.Combine(session.MinecraftDirectory, directoryName);
                 if (!System.IO.Directory.Exists(directory) || IsLink(session.MinecraftDirectory) || IsLink(directory))
                     continue;
                 foreach (var file in System.IO.Directory.EnumerateFiles(directory))
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     var name = Path.GetFileName(file);
                     if (IsLink(file) || !(directoryName == "logs" && name is "latest.log" or "debug.log"
                         || directoryName == "debug" && name.StartsWith("disconnect-", StringComparison.Ordinal) && name.EndsWith(".txt", StringComparison.Ordinal)
@@ -269,7 +318,8 @@ internal sealed class SessionDiagnostics
                         continue;
                     if (information.Length > MaximumFileBytes)
                         AddWarning(session, $"Truncated {directoryName}/{name} to its last {MaximumFileBytes} bytes");
-                    SaveFile(session, $"{directoryName}-{name}", Encoding.UTF8.GetBytes(Redact(session.Metadata.SessionId, Encoding.UTF8.GetString(ReadTail(file, MaximumFileBytes)))));
+                    var content = await ReadTailAsync(file, MaximumFileBytes, cancellationToken);
+                    await WriteFileAsync(session, $"{directoryName}-{name}", Encoding.UTF8.GetBytes(Redact(session, Encoding.UTF8.GetString(content))), append: false, cancellationToken);
                 }
             }
         }
@@ -279,104 +329,125 @@ internal sealed class SessionDiagnostics
         }
     }
 
-    private void Append(Session session, string name, byte[] bytes)
+    private async Task WriteFileAsync(Session session, string name, byte[] bytes, bool append, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        long reservedBytes = 0;
+        var path = Path.Combine(session.Directory, name);
+        var originalLength = session.FileSizes.GetValueOrDefault(name);
         try
         {
-            EnsureDirectory(session);
-            var path = Path.Combine(session.Directory, name);
-            if (IsLink(path))
+            if (IsLink(session.Directory) || IsLink(path))
                 throw new IOException("Diagnostic output is a symbolic link");
+            System.IO.Directory.CreateDirectory(session.Directory);
             if (bytes.Length > MaximumFileBytes)
-                AddWarning(session, $"Truncated {name} to its last {MaximumFileBytes} bytes");
-            if (File.Exists(path) && new FileInfo(path).Length + bytes.Length > MaximumFileBytes)
             {
-                File.Move(path, Path.Combine(session.Directory, $"previous-{name}"), overwrite: true);
+                AddWarning(session, $"Omitted or truncated {name}: diagnostic file size limit");
+                if (!append)
+                    return;
+                bytes = bytes[^MaximumFileBytes..];
+            }
+            if (append && originalLength + bytes.Length > MaximumFileBytes && File.Exists(path))
+            {
+                var previousName = $"previous-{name}";
+                File.Move(path, Path.Combine(session.Directory, previousName), overwrite: true);
+                var removedBytes = session.FileSizes.GetValueOrDefault(previousName);
+                session.FileSizes[previousName] = originalLength;
+                session.FileSizes[name] = 0;
+                session.StoredBytes -= removedBytes;
+                Interlocked.Add(ref _storedBytes, -removedBytes);
+                originalLength = 0;
                 AddWarning(session, $"Older {name} output was rotated; only recent output is retained");
             }
-            if (!Fits(session, Math.Min(bytes.Length, MaximumFileBytes)))
-                return;
-            using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
-            stream.Write(bytes.AsSpan(Math.Max(0, bytes.Length - MaximumFileBytes)));
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            AddWarning(session, $"Could not store {name}: {exception.Message}");
-        }
-    }
-
-    private void SaveFile(Session session, string name, byte[] bytes)
-    {
-        try
-        {
-            EnsureDirectory(session);
-            var path = Path.Combine(session.Directory, name);
-            if (IsLink(path))
-                throw new IOException("Diagnostic output is a symbolic link");
-            var existingLength = File.Exists(path) ? new FileInfo(path).Length : 0;
-            if (bytes.Length > MaximumFileBytes || !Fits(session, bytes.Length - existingLength))
+            var additionalBytes = append ? bytes.Length : Math.Max(0, bytes.Length - originalLength);
+            var reserve = name == "session.json" ? 0 : ManifestReserveBytes;
+            if (session.StoredBytes + additionalBytes > (long)_options.MaximumSessionMb * 1024 * 1024 - reserve || !Reserve(additionalBytes, reserve, cancellationToken))
             {
-                AddWarning(session, $"Omitted {name}: diagnostic size limit");
+                AddWarning(session, "Diagnostic size limit reached; additional evidence was omitted");
                 return;
             }
-            File.WriteAllBytes(path, bytes);
+            reservedBytes = additionalBytes;
+            await using var stream = new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, 81920, useAsync: true);
+            await stream.WriteAsync(bytes, cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             AddWarning(session, $"Could not store {name}: {exception.Message}");
         }
-    }
-
-    private bool Fits(Session session, long additionalBytes)
-    {
-        // Reserve space for the manifest even after noisy output exhausts the evidence budget.
-        if (Size(session) + additionalBytes > (long)_options.MaximumSessionMb * 1024 * 1024 - 262144)
+        finally
         {
-            AddWarning(session, "Session size limit reached; additional evidence was omitted");
-            return false;
-        }
-        Prune(additionalBytes, session.Metadata.SessionId);
-        if (_sessions.Values.Sum(Size) + additionalBytes > (long)_options.MaximumTotalMb * 1024 * 1024 - 262144)
-        {
-            AddWarning(session, "Total size limit reached; additional evidence was omitted");
-            return false;
-        }
-        return true;
-    }
-
-    private void SaveManifest(Session session)
-    {
-        try
-        {
-            EnsureDirectory(session);
-            var path = Path.Combine(session.Directory, "session.json");
-            if (IsLink(path))
-                throw new IOException("Diagnostic manifest is a symbolic link");
-            File.WriteAllText(path, Redact(session.Metadata.SessionId, JsonSerializer.Serialize(session.Metadata, JsonOptions)));
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            AddWarning(session, $"Could not store session manifest: {exception.Message}");
-        }
-    }
-
-    private void Prune(long additionalBytes = 0, Guid? protectedSession = null)
-    {
-        foreach (var session in _sessions.Values.Where(session => session.Metadata.EndedAt is not null && session.Metadata.SessionId != protectedSession).OrderBy(session => session.Metadata.StartedAt).ToArray())
-        {
-            if (_sessions.Count <= _options.MaximumSessions && _sessions.Values.Sum(Size) + additionalBytes <= (long)_options.MaximumTotalMb * 1024 * 1024 - 262144)
-                break;
+            // Reconcile reservations even after cancellation or a partial write.
+            var actualLength = originalLength;
             try
             {
-                if (System.IO.Directory.Exists(session.Directory) && !IsLink(session.Directory))
-                    System.IO.Directory.Delete(session.Directory, recursive: true);
-                _sessions.Remove(session.Metadata.SessionId);
+                actualLength = File.Exists(path) && !IsLink(path) ? new FileInfo(path).Length : 0;
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
-                AddWarning(session, $"Could not expire session: {exception.Message}");
+                AddWarning(session, $"Could not measure {name}: {exception.Message}");
             }
+            var difference = actualLength - originalLength;
+            session.FileSizes[name] = actualLength;
+            session.StoredBytes += difference;
+            Interlocked.Add(ref _storedBytes, difference - reservedBytes);
         }
+    }
+
+    private bool Reserve(long bytes, int manifestReserve, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var total = Volatile.Read(ref _storedBytes);
+            if (total + bytes > (long)_options.MaximumTotalMb * 1024 * 1024 - manifestReserve)
+                return false;
+            if (Interlocked.CompareExchange(ref _storedBytes, total + bytes, total) == total)
+                return true;
+        }
+    }
+
+    private Task SaveManifestAsync(Session session, CancellationToken cancellationToken) => WriteFileAsync(session, "session.json", Encoding.UTF8.GetBytes(Redact(session, JsonSerializer.Serialize(session.Metadata, JsonOptions))), append: false, cancellationToken);
+
+    private async Task PruneAsync(long reserveBytes, CancellationToken cancellationToken)
+    {
+        using (await _retentionLock.LockAsync(cancellationToken))
+            foreach (var session in _sessions.Values.Where(session => session.Metadata.EndedAt is not null).OrderBy(session => session.Metadata.StartedAt).ToArray())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (_sessions.Count <= _options.MaximumSessions && Volatile.Read(ref _storedBytes) + reserveBytes <= (long)_options.MaximumTotalMb * 1024 * 1024)
+                    break;
+                using (await session.Lock.LockAsync(cancellationToken))
+                {
+                    try
+                    {
+                        if (System.IO.Directory.Exists(session.Directory) && !IsLink(session.Directory))
+                            foreach (var file in System.IO.Directory.EnumerateFiles(session.Directory))
+                            {
+                                cancellationToken.ThrowIfCancellationRequested();
+                                File.Delete(file);
+                                var removedBytes = session.FileSizes.GetValueOrDefault(Path.GetFileName(file));
+                                session.FileSizes.Remove(Path.GetFileName(file));
+                                session.StoredBytes -= removedBytes;
+                                Interlocked.Add(ref _storedBytes, -removedBytes);
+                            }
+                        if (System.IO.Directory.Exists(session.Directory) && !IsLink(session.Directory))
+                            System.IO.Directory.Delete(session.Directory);
+                        if (_sessions.TryRemove(session.Metadata.SessionId, out _))
+                            Interlocked.Add(ref _storedBytes, -session.StoredBytes);
+                    }
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+                    {
+                        AddWarning(session, $"Could not expire session: {exception.Message}");
+                    }
+                }
+            }
+    }
+
+    private static string Redact(Session session, string value)
+    {
+        foreach (var secret in session.Secrets)
+            value = value.Replace(secret, "[redacted]", StringComparison.Ordinal);
+        return value;
     }
 
     private static string? Limit(string? value, int maximumCharacters = 2048) => value?.Length > maximumCharacters ? value[..maximumCharacters] + " [truncated]" : value;
@@ -388,38 +459,17 @@ internal sealed class SessionDiagnostics
             session.Metadata = session.Metadata with { Warnings = [.. session.Metadata.Warnings, warning] };
     }
 
-    private static void EnsureDirectory(Session session)
-    {
-        if (IsLink(session.Directory))
-            throw new IOException("Diagnostic directory is a symbolic link");
-        System.IO.Directory.CreateDirectory(session.Directory);
-    }
-
     private static bool IsLink(string path) => (File.Exists(path) || System.IO.Directory.Exists(path)) && (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
 
-    private static long Size(Session session)
+    private static async Task<byte[]> ReadTailAsync(string path, int maximumBytes, CancellationToken cancellationToken)
     {
-        try
-        {
-            return System.IO.Directory.Exists(session.Directory)
-                ? System.IO.Directory.EnumerateFiles(session.Directory).Where(file => !IsLink(file)).Sum(file => new FileInfo(file).Length)
-                : 0;
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return 0;
-        }
-    }
-
-    private static byte[] ReadTail(string path, int maximumBytes)
-    {
-        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 81920, useAsync: true);
         stream.Seek(Math.Max(0, stream.Length - maximumBytes), SeekOrigin.Begin);
         var bytes = new byte[(int)Math.Min(maximumBytes, stream.Length)];
         var count = 0;
         while (count < bytes.Length)
         {
-            var read = stream.Read(bytes.AsSpan(count));
+            var read = await stream.ReadAsync(bytes.AsMemory(count), cancellationToken);
             if (read == 0)
                 break;
             count += read;
@@ -429,9 +479,17 @@ internal sealed class SessionDiagnostics
 
     private sealed class Session(DiagnosticSession metadata, string directory, string minecraftDirectory)
     {
-        public DiagnosticSession Metadata { get; set; } = metadata;
+        private DiagnosticSession _metadata = metadata;
+        public AsyncLock Lock { get; } = new();
+        public DiagnosticSession Metadata
+        {
+            get => Volatile.Read(ref _metadata);
+            set => Volatile.Write(ref _metadata, value);
+        }
         public string Directory { get; } = directory;
         public string MinecraftDirectory { get; } = minecraftDirectory;
+        public long StoredBytes { get; set; }
+        public Dictionary<string, long> FileSizes { get; } = [];
         public Dictionary<string, (long, DateTime)> Baseline { get; } = [];
         public List<string> Secrets { get; } = [];
     }

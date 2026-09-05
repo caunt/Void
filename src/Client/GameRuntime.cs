@@ -88,10 +88,10 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
 
     public async Task<RunningGame> LaunchCurseForgeAsync(string slug, int fileId, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
     {
-        var apiKey = Environment.GetEnvironmentVariable("VOID_CURSEFORGE_API_KEY");
+        var apiKey = Environment.GetEnvironmentVariable("CURSEFORGE_API_KEY");
 
         if (string.IsNullOrWhiteSpace(apiKey))
-            throw new InvalidOperationException("VOID_CURSEFORGE_API_KEY is not set");
+            throw new InvalidOperationException("CURSEFORGE_API_KEY is not set");
 
         var minecraftDirectory = GetMinecraftDirectory();
         var portableMinecraftVersion = await PrepareCurseForgeAsync(slug, fileId, apiKey, CreateCurseForgeApiBaseUri(), minecraftDirectory, cancellationToken);
@@ -234,7 +234,7 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
                 if (game is not null)
                     File.Delete(game.Tracker.DescriptorPath);
                 if (_windowSessionId is { } sessionId)
-                    diagnostics?.Collect(sessionId);
+                    await (diagnostics?.CollectAsync(sessionId, cancellationToken) ?? Task.CompletedTask);
             }
             finally
             {
@@ -253,8 +253,8 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
             await PrepareDisplayAndWindowAsync(cancellationToken);
             Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portableMinecraftVersion}");
             var tracker = CreateTrackerConnection(FindUsername(arguments));
-            diagnostics?.RegisterSecret(tracker.Token);
-            diagnostics?.RegisterSecret(EncodeAgentArgument(tracker.Token));
+            await (diagnostics?.RegisterSecretAsync(tracker.Token, cancellationToken) ?? Task.CompletedTask);
+            await (diagnostics?.RegisterSecretAsync(EncodeAgentArgument(tracker.Token), cancellationToken) ?? Task.CompletedTask);
             var launchArguments = memoryMb is { } value
                 ? arguments.Append(CreateMaximumHeapArgument(value)).Append($"--jvm-arg=-javaagent:{PortableMinecraftAgentPath}={CreateAgentArguments(tracker)}").Cast<string?>().ToArray()
                 : arguments.Append($"--jvm-arg=-javaagent:{PortableMinecraftAgentPath}={CreateAgentArguments(tracker)}").Cast<string?>().ToArray();
@@ -455,7 +455,7 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
 
     private static string GetMinecraftDirectory()
     {
-        return Environment.GetEnvironmentVariable("VOID_MINECRAFT_DIRECTORY") ?? DefaultMinecraftDirectory;
+        return Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? DefaultMinecraftDirectory;
     }
 
     private static async Task WaitForProcessGroupExitAsync(int processGroupId, TimeSpan timeout, CancellationToken cancellationToken)
@@ -883,7 +883,7 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
 
     Uri CreateCurseForgeApiBaseUri()
     {
-        var configuredBaseUrl = Environment.GetEnvironmentVariable("VOID_CURSEFORGE_API_BASE_URL");
+        var configuredBaseUrl = Environment.GetEnvironmentVariable("CURSEFORGE_API_BASE_URL");
         var baseUrl = string.IsNullOrWhiteSpace(configuredBaseUrl)
             ? DefaultCurseForgeApiBaseUrl
             : configuredBaseUrl.Trim();
@@ -891,7 +891,7 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
         if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri)
             || baseUri.Scheme != Uri.UriSchemeHttp && baseUri.Scheme != Uri.UriSchemeHttps)
         {
-            throw new InvalidOperationException("VOID_CURSEFORGE_API_BASE_URL must be an absolute HTTP or HTTPS URL");
+            throw new InvalidOperationException("CURSEFORGE_API_BASE_URL must be an absolute HTTP or HTTPS URL");
         }
 
         var path = baseUri.AbsolutePath.TrimEnd('/');
@@ -1079,10 +1079,18 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
             await IgnoreTaskAsync(standardErrorTask);
             if (diagnostics?.CurrentSessionId is { } failedSession)
             {
-                if (standardOutputTask.IsCompletedSuccessfully)
-                    diagnostics.WriteOutput(failedSession, "preparation", standardOutputTask.Result);
-                if (standardErrorTask.IsCompletedSuccessfully)
-                    diagnostics.WriteOutput(failedSession, "preparation", standardErrorTask.Result);
+                using var diagnosticTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                try
+                {
+                    if (standardOutputTask.IsCompletedSuccessfully)
+                        await diagnostics.WriteOutputAsync(failedSession, "preparation", standardOutputTask.Result, diagnosticTimeout.Token);
+                    if (standardErrorTask.IsCompletedSuccessfully)
+                        await diagnostics.WriteOutputAsync(failedSession, "preparation", standardErrorTask.Result, diagnosticTimeout.Token);
+                }
+                catch (OperationCanceledException) when (diagnosticTimeout.IsCancellationRequested)
+                {
+                    Console.Error.WriteLine("Timed out collecting preparation output");
+                }
             }
             throw;
         }
@@ -1091,8 +1099,8 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
         var standardError = await standardErrorTask;
         if (diagnostics?.CurrentSessionId is { } sessionId)
         {
-            diagnostics.WriteOutput(sessionId, "preparation", standardOutput);
-            diagnostics.WriteOutput(sessionId, "preparation", standardError);
+            await diagnostics.WriteOutputAsync(sessionId, "preparation", standardOutput, cancellationToken);
+            await diagnostics.WriteOutputAsync(sessionId, "preparation", standardError, cancellationToken);
         }
         return new ProcessTextResult(process.ExitCode, standardOutput, standardError);
     }
@@ -1236,7 +1244,7 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
         }
     }
 
-    internal async Task PumpOutputAsync(TextReader reader, TextWriter console, Guid? sessionId, string stream)
+    internal async Task PumpOutputAsync(TextReader reader, TextWriter console, Guid? sessionId, string stream, CancellationToken cancellationToken = default)
     {
         var buffer = new char[4096];
         var pending = "";
@@ -1244,7 +1252,7 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
         {
             while (true)
             {
-                var count = await reader.ReadAsync(buffer.AsMemory());
+                var count = await reader.ReadAsync(buffer.AsMemory(), cancellationToken);
                 if (count == 0)
                     break;
                 var text = new string(buffer, 0, count);
@@ -1253,9 +1261,9 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
                 if (sessionId is { } identifier && diagnostics is not null)
                 {
                     // Keep enough overlap to redact raw or encoded agent tokens split across reads.
-                    pending = diagnostics.Redact(identifier, pending);
+                    pending = await diagnostics.RedactAsync(identifier, pending, cancellationToken);
                     var length = Math.Max(0, pending.Length - 128);
-                    diagnostics.WriteOutput(identifier, stream, pending[..length]);
+                    await diagnostics.WriteOutputAsync(identifier, stream, pending[..length], cancellationToken);
                     pending = pending[length..];
                 }
                 else
@@ -1265,12 +1273,12 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
         catch (Exception exception) when (exception is IOException or ObjectDisposedException)
         {
             if (sessionId is { } identifier)
-                diagnostics?.Warn(identifier, $"Console collection ended: {exception.Message}");
+                await (diagnostics?.WarnAsync(identifier, $"Console collection ended: {exception.Message}", cancellationToken) ?? Task.CompletedTask);
         }
         finally
         {
             if (sessionId is { } identifier)
-                diagnostics?.WriteOutput(identifier, stream, pending);
+                await (diagnostics?.WriteOutputAsync(identifier, stream, pending, cancellationToken) ?? Task.CompletedTask);
         }
     }
 

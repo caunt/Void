@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
-using Void.IntegrationTests.Infrastructure.Harness.Sides;
+using Void.IntegrationTests.Infrastructure.IO;
 using Xunit;
 
 namespace Void.Client.UnitTests;

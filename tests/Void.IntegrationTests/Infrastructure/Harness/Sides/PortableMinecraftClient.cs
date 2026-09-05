@@ -14,6 +14,7 @@ using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 using DotNet.Testcontainers.Images;
 using Void.IntegrationTests.Infrastructure.Exceptions;
+using Void.IntegrationTests.Infrastructure.IO;
 using Void.IntegrationTests.Infrastructure.Extensions;
 using Void.Minecraft.Network;
 

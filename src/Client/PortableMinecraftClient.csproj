@@ -5,4 +5,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Void.Client</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Nito.AsyncEx" Version="5.1.2" />
+  </ItemGroup>
 </Project>

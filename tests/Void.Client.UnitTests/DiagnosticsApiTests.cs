@@ -19,9 +19,9 @@ public class DiagnosticsApiTests
     {
         var directory = Path.Combine(Path.GetTempPath(), $"void-api-diagnostics-{Guid.NewGuid()}");
         var diagnostics = new SessionDiagnostics(new DiagnosticsOptions { Directory = directory });
-        var identifier = diagnostics.Begin("vanilla:1.21", "");
-        diagnostics.WriteOutput(identifier, "stdout", "Minecraft output");
-        diagnostics.Complete(identifier);
+        var identifier = await diagnostics.BeginAsync("vanilla:1.21", "", TestContext.Current.CancellationToken);
+        await diagnostics.WriteOutputAsync(identifier, "stdout", "Minecraft output", TestContext.Current.CancellationToken);
+        await diagnostics.CompleteAsync(identifier, TestContext.Current.CancellationToken);
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Logging.ClearProviders();

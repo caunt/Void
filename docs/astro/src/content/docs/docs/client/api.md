@@ -162,7 +162,7 @@ Sodium is installed automatically when Modrinth provides a compatible NeoForge b
 
 ### CurseForge
 
-Provide a project `slug` and positive CurseForge `fileId`. The container must have `VOID_CURSEFORGE_API_KEY` configured.
+Provide a project `slug` and positive CurseForge `fileId`. The container must have `CURSEFORGE_API_KEY` configured.
 
 ```bash
 curl --fail-with-body \

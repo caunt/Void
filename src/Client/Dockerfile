@@ -161,7 +161,7 @@ RUN ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 
 EXPOSE 80
 ENV ASPNETCORE_URLS=http://127.0.0.1:8081
-ENV VOID_CURSEFORGE_API_BASE_URL=https://api.curseforge.com
+ENV CURSEFORGE_API_BASE_URL=https://api.curseforge.com
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 CMD curl --fail --silent --output /dev/null http://127.0.0.1/api/health || exit 1
 ENTRYPOINT ["tini", "--", "portableminecraftclient-entrypoint"]

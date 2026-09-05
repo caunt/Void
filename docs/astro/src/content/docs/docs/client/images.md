@@ -62,32 +62,30 @@ docker run --name void-client --rm -d -p 8080:80 \
   ghcr.io/caunt/portable-minecraft-client:latest
 ```
 
-Use `VOID_MINECRAFT_DIRECTORY` when mounting the data at another container path:
+Use `MINECRAFT_DIRECTORY` when mounting the data at another container path:
 
 ```bash
 docker run --name void-client --rm -d -p 8080:80 \
-  --env VOID_MINECRAFT_DIRECTORY=/minecraft \
+  --env MINECRAFT_DIRECTORY=/minecraft \
   --volume void-client-minecraft:/minecraft \
   ghcr.io/caunt/portable-minecraft-client:latest
 ```
 
 ## CurseForge Configuration
 
-Starting a CurseForge modpack requires `VOID_CURSEFORGE_API_KEY`:
+Starting a CurseForge modpack requires `CURSEFORGE_API_KEY`:
 
 ```bash
 docker run --name void-client --rm -d -p 8080:80 \
-  --env VOID_CURSEFORGE_API_KEY=your-api-key \
+  --env CURSEFORGE_API_KEY=your-api-key \
   ghcr.io/caunt/portable-minecraft-client:latest
 ```
 
-`VOID_CURSEFORGE_API_BASE_URL` optionally replaces the default `https://api.curseforge.com` API base URL.
+`CURSEFORGE_API_BASE_URL` optionally replaces the default `https://api.curseforge.com` API base URL.
 
 
 ## Launcher Retry Configuration
 
-`VOID_PORTABLEMC_DRY_RUN_ATTEMPTS` controls preparation attempts and defaults to `5`. It must be a positive integer. `VOID_PORTABLEMC_DRY_RUN_RETRY_DELAY_SECONDS` sets the base retry delay, defaults to `5`, and accepts non-negative integers.
-
-Client-specific environment variables use uppercase names prefixed with `VOID_`. Update existing container configuration to these names when upgrading; the previous unprefixed names and double-underscore diagnostics names are no longer read. Standard runtime variables such as `DISPLAY`, `PATH`, and `ASPNETCORE_URLS` retain their upstream names.
+`PORTABLEMC_DRY_RUN_ATTEMPTS` controls preparation attempts and defaults to `5`. It must be a positive integer. `PORTABLEMC_DRY_RUN_RETRY_DELAY_SECONDS` sets the base retry delay, defaults to `5`, and accepts non-negative integers.
 
 For diagnostic storage and retention variables, see the [**diagnostics configuration**](/docs/client/api/#retention-configuration).

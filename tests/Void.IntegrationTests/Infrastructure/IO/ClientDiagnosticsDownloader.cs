@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Void.IntegrationTests.Infrastructure.Harness.Sides;
+namespace Void.IntegrationTests.Infrastructure.IO;
 
 internal static class ClientDiagnosticsDownloader
 {

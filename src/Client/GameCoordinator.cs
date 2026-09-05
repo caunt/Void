@@ -85,7 +85,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         try
         {
             await foreach (var message in _messages.Reader.ReadAllAsync(stoppingToken))
-                Handle(message);
+                await HandleAsync(message);
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
@@ -111,63 +111,63 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
 
             await Task.WhenAll(_ownedTasks);
             if (_sessionId is { } sessionId)
-                diagnostics?.Complete(sessionId);
+                await (diagnostics?.CompleteAsync(sessionId, CancellationToken.None) ?? Task.CompletedTask);
         }
     }
 
-    private void Handle(Message message)
+    private async Task HandleAsync(Message message)
     {
         using var diagnosticContext = diagnostics?.Enter(_sessionId);
         switch (message)
         {
             case StartMessage start:
-                HandleStart(start);
+                await HandleStartAsync(start);
                 break;
             case StopMessage stop:
-                HandleStop(stop);
+                await HandleStopAsync(stop);
                 break;
             case ConnectMessage connect:
-                HandleConnect(connect);
+                await HandleConnectAsync(connect);
                 break;
             case ConnectWaiterCanceled canceled:
                 HandleConnectWaiterCanceled(canceled);
                 break;
             case SendChatMessage chat:
-                HandleSendChat(chat);
+                await HandleSendChatAsync(chat);
                 break;
             case ScreenshotMessage screenshot:
-                HandleScreenshot(screenshot);
+                await HandleScreenshotAsync(screenshot);
                 break;
             case PlayersMessage players:
                 HandlePlayers(players);
                 break;
             case OptionsMessage options:
-                HandleOptions(options);
+                await HandleOptionsAsync(options);
                 break;
             case StartCompleted completed:
-                HandleStartCompleted(completed);
+                await HandleStartCompletedAsync(completed);
                 break;
             case StopCompleted completed:
-                HandleStopCompleted(completed);
+                await HandleStopCompletedAsync(completed);
                 break;
             case ConnectCompleted completed:
-                HandleConnectCompleted(completed);
+                await HandleConnectCompletedAsync(completed);
                 break;
             case VoidOperationCompleted completed:
-                HandleVoidOperationCompleted(completed);
+                await HandleVoidOperationCompletedAsync(completed);
                 break;
             case ScreenshotCompleted completed:
-                HandleScreenshotCompleted(completed);
+                await HandleScreenshotCompletedAsync(completed);
                 break;
             case ProcessExited exited:
-                HandleProcessExited(exited);
+                await HandleProcessExitedAsync(exited);
                 break;
             default:
                 throw new InvalidOperationException($"Unknown coordinator message type {message.GetType().Name}");
         }
     }
 
-    private void HandleStart(StartMessage message)
+    private async Task HandleStartAsync(StartMessage message)
     {
         if (_activeCancellation is not null || _game is not null || Status.State is not (GameState.Idle or GameState.Failed))
         {
@@ -206,15 +206,15 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         }
 
         if (_sessionId is { } previousSession)
-            diagnostics?.Complete(previousSession);
-        _sessionId = diagnostics?.Begin($"{message.Kind}:{version ?? neoForgeVersion ?? slug}:{message.CurseForgeRequest?.FileId}", Environment.GetEnvironmentVariable("VOID_MINECRAFT_DIRECTORY") ?? "/root/.minecraft");
+            await (diagnostics?.CompleteAsync(previousSession, _stoppingToken) ?? Task.CompletedTask);
+        _sessionId = diagnostics is null ? null : await diagnostics.BeginAsync($"{message.Kind}:{version ?? neoForgeVersion ?? slug}:{message.CurseForgeRequest?.FileId}", Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? "/root/.minecraft", _stoppingToken);
         using var diagnosticContext = diagnostics?.Enter(_sessionId);
         var operationId = ++_nextOperationId;
         var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(_stoppingToken);
         _activeCancellation = operationCancellation;
         _connectedResponse = null;
         _processExitFailure = null;
-        Publish(new(GameState.Starting, operationId, message.Kind, OperationState.Running, null, null, null, "Game launch accepted", null, null, [], DateTimeOffset.UtcNow));
+        await PublishAsync(new(GameState.Starting, operationId, message.Kind, OperationState.Running, null, null, null, "Game launch accepted", null, null, [], DateTimeOffset.UtcNow));
 
         Task<RunningGame> operation = message.Kind switch
         {
@@ -228,7 +228,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         message.Completion.SetResult(Status);
     }
 
-    private void HandleStop(StopMessage message)
+    private async Task HandleStopAsync(StopMessage message)
     {
         if (Status.State is GameState.Stopping)
         {
@@ -241,7 +241,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         var operationId = ++_nextOperationId;
         var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(_stoppingToken);
         _activeCancellation = operationCancellation;
-        Publish(Status with
+        await PublishAsync(Status with
         {
             State = GameState.Stopping,
             OperationId = operationId,
@@ -255,7 +255,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         Own(ObserveStopAsync(operationId, runtime.StopAsync(_game, operationCancellation.Token), operationCancellation, message.Completion));
     }
 
-    private void HandleConnect(ConnectMessage message)
+    private async Task HandleConnectAsync(ConnectMessage message)
     {
         var host = message.Request.Host?.Trim();
 
@@ -311,7 +311,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         _connectingServer = server;
         _connectOperationId = operationId;
         AddConnectWaiter(message);
-        Publish(Status with { OperationId = operationId, Operation = "connect", OperationState = OperationState.Running, Message = "connect running", Error = null, Failure = null, UpdatedAt = DateTimeOffset.UtcNow });
+        await PublishAsync(Status with { OperationId = operationId, Operation = "connect", OperationState = OperationState.Running, Message = "connect running", Error = null, Failure = null, UpdatedAt = DateTimeOffset.UtcNow });
         Own(ObserveConnectAsync(operationId, server, runtime.ConnectAsync(_game, host, message.Request.Port, cancellation.Token), cancellation));
     }
 
@@ -336,7 +336,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         // cancellation of the background operation.
     }
 
-    private void HandleSendChat(SendChatMessage message)
+    private async Task HandleSendChatAsync(SendChatMessage message)
     {
         var text = message.Request.Message;
 
@@ -358,11 +358,11 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             return;
         }
 
-        var (operationId, cancellation) = BeginConfirmedOperation("send-chat", message.RequestCancellation);
+        var (operationId, cancellation) = await BeginConfirmedOperationAsync("send-chat", message.RequestCancellation);
         Own(ObserveVoidOperationAsync(operationId, "send-chat", runtime.SendChatAsync(_game, text, cancellation.Token), cancellation, message.Completion));
     }
 
-    private void HandleScreenshot(ScreenshotMessage message)
+    private async Task HandleScreenshotAsync(ScreenshotMessage message)
     {
         if (_game is null || Status.State is not (GameState.Ready or GameState.Connected))
         {
@@ -376,7 +376,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             return;
         }
 
-        var (operationId, cancellation) = BeginConfirmedOperation("screenshot", message.RequestCancellation);
+        var (operationId, cancellation) = await BeginConfirmedOperationAsync("screenshot", message.RequestCancellation);
         Own(ObserveScreenshotAsync(operationId, runtime.CaptureScreenshotAsync(cancellation.Token), cancellation, message.Completion));
     }
 
@@ -391,7 +391,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         Own(ObservePlayersAsync(runtime.ReadPlayersAsync(_game, message.RequestCancellation), message.Completion));
     }
 
-    private void HandleOptions(OptionsMessage message)
+    private async Task HandleOptionsAsync(OptionsMessage message)
     {
         if (_activeCancellation is not null)
         {
@@ -399,11 +399,11 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             return;
         }
 
-        var (operationId, cancellation) = BeginConfirmedOperation("options", message.RequestCancellation);
+        var (operationId, cancellation) = await BeginConfirmedOperationAsync("options", message.RequestCancellation);
         Own(ObserveVoidOperationAsync(operationId, "options", runtime.WriteOptionsAsync(message.Options, cancellation.Token), cancellation, message.Completion));
     }
 
-    private void HandleStartCompleted(StartCompleted completed)
+    private async Task HandleStartCompletedAsync(StartCompleted completed)
     {
         completed.Cancellation.Dispose();
 
@@ -420,7 +420,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         if (completed.Error is not null)
         {
             logger.LogError(completed.Error, "{Operation} failed", completed.Kind);
-            Publish(Status with
+            await PublishAsync(Status with
             {
                 State = completed.Canceled ? GameState.Idle : GameState.Failed,
                 OperationState = completed.Canceled ? OperationState.Canceled : OperationState.Failed,
@@ -430,12 +430,12 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
                 UpdatedAt = DateTimeOffset.UtcNow
             });
             if (_sessionId is { } sessionId)
-                diagnostics?.Complete(sessionId);
+                await (diagnostics?.CompleteAsync(sessionId, _stoppingToken) ?? Task.CompletedTask);
             return;
         }
 
         _game = completed.Game ?? throw new InvalidOperationException("A successful launch did not return a game process");
-        Publish(Status with
+        await PublishAsync(Status with
         {
             State = GameState.Ready,
             OperationState = OperationState.Succeeded,
@@ -449,7 +449,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         Own(MonitorProcessAsync(_game));
     }
 
-    private void HandleStopCompleted(StopCompleted completed)
+    private async Task HandleStopCompletedAsync(StopCompleted completed)
     {
         completed.Cancellation.Dispose();
 
@@ -461,7 +461,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         if (completed.Error is not null)
         {
             logger.LogError(completed.Error, "Game stop failed");
-            Publish(Status with { State = GameState.Failed, OperationState = OperationState.Failed, Error = completed.Error.Message, Failure = FailureFor(completed.Error, "stop"), Message = "Game stop failed", UpdatedAt = DateTimeOffset.UtcNow });
+            await PublishAsync(Status with { State = GameState.Failed, OperationState = OperationState.Failed, Error = completed.Error.Message, Failure = FailureFor(completed.Error, "stop"), Message = "Game stop failed", UpdatedAt = DateTimeOffset.UtcNow });
             completed.Completion.SetException(completed.Error);
             return;
         }
@@ -470,13 +470,13 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         _game?.Process.Dispose();
         _game = null;
         _connectedResponse = null;
-        Publish(new(GameState.Idle, completed.OperationId, "stop", OperationState.Succeeded, null, exitCode, null, "Game stopped", null, null, [], DateTimeOffset.UtcNow));
+        await PublishAsync(new(GameState.Idle, completed.OperationId, "stop", OperationState.Succeeded, null, exitCode, null, "Game stopped", null, null, [], DateTimeOffset.UtcNow));
         if (_sessionId is { } sessionId)
-            diagnostics?.Complete(sessionId);
+            await (diagnostics?.CompleteAsync(sessionId, _stoppingToken) ?? Task.CompletedTask);
         completed.Completion.SetResult(new(completed.Mode, Status));
     }
 
-    private void HandleConnectCompleted(ConnectCompleted completed)
+    private async Task HandleConnectCompletedAsync(ConnectCompleted completed)
     {
         completed.Cancellation.Dispose();
 
@@ -505,7 +505,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         if (completed.Error is not null)
         {
             var operationState = completed.Canceled ? OperationState.Canceled : OperationState.Failed;
-            Publish(Status with { OperationState = operationState, Message = $"connect {operationState.ToString().ToLowerInvariant()}", Error = completed.Canceled ? null : completed.Error.Message, Failure = completed.Canceled ? null : FailureFor(completed.Error, "connect"), UpdatedAt = DateTimeOffset.UtcNow });
+            await PublishAsync(Status with { OperationState = operationState, Message = $"connect {operationState.ToString().ToLowerInvariant()}", Error = completed.Canceled ? null : completed.Error.Message, Failure = completed.Canceled ? null : FailureFor(completed.Error, "connect"), UpdatedAt = DateTimeOffset.UtcNow });
 
             foreach (var waiter in waiters)
             {
@@ -519,33 +519,33 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         }
 
         _connectedResponse = new(completed.Server, DateTimeOffset.UtcNow);
-        Publish(Status with { State = GameState.Connected, Server = completed.Server, OperationState = OperationState.Succeeded, Message = "Interactive game connection confirmed", Error = null, Failure = null, UpdatedAt = DateTimeOffset.UtcNow });
+        await PublishAsync(Status with { State = GameState.Connected, Server = completed.Server, OperationState = OperationState.Succeeded, Message = "Interactive game connection confirmed", Error = null, Failure = null, UpdatedAt = DateTimeOffset.UtcNow });
 
         foreach (var waiter in waiters)
             waiter.Completion.TrySetResult(_connectedResponse);
     }
 
-    private void HandleVoidOperationCompleted(VoidOperationCompleted completed)
+    private async Task HandleVoidOperationCompletedAsync(VoidOperationCompleted completed)
     {
         completed.Cancellation.Dispose();
 
-        if (!CompleteConfirmedOperation(completed.OperationId, completed.Kind, completed.Error, completed.Canceled, completed.Completion))
+        if (!await CompleteConfirmedOperationAsync(completed.OperationId, completed.Kind, completed.Error, completed.Canceled, completed.Completion))
             return;
 
         completed.Completion.SetResult(true);
     }
 
-    private void HandleScreenshotCompleted(ScreenshotCompleted completed)
+    private async Task HandleScreenshotCompletedAsync(ScreenshotCompleted completed)
     {
         completed.Cancellation.Dispose();
 
-        if (!CompleteConfirmedOperation(completed.OperationId, "screenshot", completed.Error, completed.Canceled, completed.Completion))
+        if (!await CompleteConfirmedOperationAsync(completed.OperationId, "screenshot", completed.Error, completed.Canceled, completed.Completion))
             return;
 
         completed.Completion.SetResult(completed.Image ?? throw new InvalidOperationException("Screen capture returned no image"));
     }
 
-    private void HandleProcessExited(ProcessExited exited)
+    private async Task HandleProcessExitedAsync(ProcessExited exited)
     {
         if (_game?.Process.Id != exited.ProcessId)
             return;
@@ -553,7 +553,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         // Stop completion owns final state and disposal so an expected exit cannot race it into a false failure.
         if (Status.State is GameState.Stopping)
         {
-            Publish(Status with { ProcessId = null, ExitCode = exited.ExitCode, UpdatedAt = DateTimeOffset.UtcNow });
+            await PublishAsync(Status with { ProcessId = null, ExitCode = exited.ExitCode, UpdatedAt = DateTimeOffset.UtcNow });
             return;
         }
 
@@ -574,7 +574,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             FailConnectWaiters(processFailure);
 
         _activeCancellation = null;
-        Publish(Status with
+        await PublishAsync(Status with
         {
             State = processFailure is null ? GameState.Idle : GameState.Failed,
             OperationState = processFailure is null ? OperationState.Succeeded : OperationState.Failed,
@@ -587,19 +587,19 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
             UpdatedAt = DateTimeOffset.UtcNow
         });
         if (_sessionId is { } sessionId)
-            diagnostics?.Complete(sessionId);
+            await (diagnostics?.CompleteAsync(sessionId, _stoppingToken) ?? Task.CompletedTask);
     }
 
-    private (long OperationId, CancellationTokenSource Cancellation) BeginConfirmedOperation(string operation, CancellationToken requestCancellation)
+    private async Task<(long OperationId, CancellationTokenSource Cancellation)> BeginConfirmedOperationAsync(string operation, CancellationToken requestCancellation)
     {
         var operationId = ++_nextOperationId;
         var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_stoppingToken, requestCancellation);
         _activeCancellation = cancellation;
-        Publish(Status with { OperationId = operationId, Operation = operation, OperationState = OperationState.Running, Message = $"{operation} running", Error = null, Failure = null, UpdatedAt = DateTimeOffset.UtcNow });
+        await PublishAsync(Status with { OperationId = operationId, Operation = operation, OperationState = OperationState.Running, Message = $"{operation} running", Error = null, Failure = null, UpdatedAt = DateTimeOffset.UtcNow });
         return (operationId, cancellation);
     }
 
-    private bool CompleteConfirmedOperation<T>(long operationId, string operation, Exception? error, bool canceled, TaskCompletionSource<T> completion)
+    private async Task<bool> CompleteConfirmedOperationAsync<T>(long operationId, string operation, Exception? error, bool canceled, TaskCompletionSource<T> completion)
     {
         if (operationId != Status.OperationId)
         {
@@ -611,12 +611,12 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
 
         if (error is null)
         {
-            Publish(Status with { OperationState = OperationState.Succeeded, Message = $"{operation} succeeded", Error = null, Failure = null, UpdatedAt = DateTimeOffset.UtcNow });
+            await PublishAsync(Status with { OperationState = OperationState.Succeeded, Message = $"{operation} succeeded", Error = null, Failure = null, UpdatedAt = DateTimeOffset.UtcNow });
             return true;
         }
 
         var operationState = canceled ? OperationState.Canceled : OperationState.Failed;
-        Publish(Status with { OperationState = operationState, Message = $"{operation} {operationState.ToString().ToLowerInvariant()}", Error = canceled ? null : error.Message, Failure = canceled ? null : FailureFor(error, operation), UpdatedAt = DateTimeOffset.UtcNow });
+        await PublishAsync(Status with { OperationState = operationState, Message = $"{operation} {operationState.ToString().ToLowerInvariant()}", Error = canceled ? null : error.Message, Failure = canceled ? null : FailureFor(error, operation), UpdatedAt = DateTimeOffset.UtcNow });
 
         if (canceled)
             completion.SetCanceled();
@@ -729,13 +729,13 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         try
         {
             var screenshot = await runtime.CaptureScreenshotAsync(timeout.Token);
-            diagnostics.SaveScreenshot(sessionId, operationId, screenshot);
+            await diagnostics.SaveScreenshotAsync(sessionId, operationId, screenshot, timeout.Token);
         }
         catch (Exception exception)
         {
-            diagnostics.Warn(sessionId, $"Failure screenshot unavailable: {exception.Message}");
+            await diagnostics.WarnAsync(sessionId, $"Failure screenshot unavailable: {exception.Message}", _stoppingToken);
         }
-        diagnostics.Collect(sessionId);
+        await diagnostics.CollectAsync(sessionId, _stoppingToken);
     }
 
     private async Task MonitorProcessAsync(RunningGame game)
@@ -774,10 +774,10 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         _ownedTasks.Add(task);
     }
 
-    private void Publish(GameStatus status)
+    private async Task PublishAsync(GameStatus status)
     {
         status = status with { SessionId = _sessionId };
-        diagnostics?.Record(status);
+        await (diagnostics?.RecordAsync(status, _stoppingToken) ?? Task.CompletedTask);
         Volatile.Write(ref _status, status);
     }
 
