@@ -7,7 +7,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 });
-builder.Services.AddSingleton(new SessionDiagnostics(builder.Configuration.GetSection("Diagnostics").Get<DiagnosticsOptions>() ?? new DiagnosticsOptions()));
+builder.Services.AddSingleton(new SessionDiagnostics(DiagnosticsOptions.FromConfiguration(builder.Configuration)));
 builder.Services.AddSingleton<IGameRuntime, GameRuntime>();
 builder.Services.AddSingleton<GameCoordinator>();
 builder.Services.AddHostedService(serviceProvider => serviceProvider.GetRequiredService<GameCoordinator>());

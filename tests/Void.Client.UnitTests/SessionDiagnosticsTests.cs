@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 using Void.Client;
 using Xunit;
 
@@ -17,6 +18,36 @@ public class SessionDiagnosticsTests : IDisposable
         MaximumSessionMb = maximumSessionMb,
         MaximumTotalMb = maximumTotalMb
     });
+
+    [Fact]
+    public void ConfigurationUsesPrefixedUppercaseNames()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["VOID_DIAGNOSTICS_DIRECTORY"] = _directory,
+            ["VOID_DIAGNOSTICS_MAXIMUM_SESSIONS"] = "5",
+            ["VOID_DIAGNOSTICS_MAXIMUM_TOTAL_MB"] = "128",
+            ["VOID_DIAGNOSTICS_MAXIMUM_SESSION_MB"] = "16"
+        }).Build();
+
+        var options = DiagnosticsOptions.FromConfiguration(configuration);
+
+        Assert.Equal(_directory, options.Directory);
+        Assert.Equal(5, options.MaximumSessions);
+        Assert.Equal(128, options.MaximumTotalMb);
+        Assert.Equal(16, options.MaximumSessionMb);
+    }
+
+    [Fact]
+    public void MissingConfigurationPreservesRetentionDefaults()
+    {
+        var options = DiagnosticsOptions.FromConfiguration(new ConfigurationBuilder().Build());
+
+        Assert.Equal("/var/lib/void-client/diagnostics", options.Directory);
+        Assert.Equal(10, options.MaximumSessions);
+        Assert.Equal(256, options.MaximumTotalMb);
+        Assert.Equal(32, options.MaximumSessionMb);
+    }
 
     [Fact]
     public async Task ReportsAndFailureSurviveStopAndAnotherLaunchWithoutMixingSessions()

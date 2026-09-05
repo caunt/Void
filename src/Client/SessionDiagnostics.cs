@@ -11,6 +11,18 @@ internal sealed class DiagnosticsOptions
     public int MaximumSessions { get; set; } = 10;
     public int MaximumTotalMb { get; set; } = 256;
     public int MaximumSessionMb { get; set; } = 32;
+
+    public static DiagnosticsOptions FromConfiguration(IConfiguration configuration)
+    {
+        var defaults = new DiagnosticsOptions();
+        return new DiagnosticsOptions
+        {
+            Directory = configuration.GetValue<string>("VOID_DIAGNOSTICS_DIRECTORY") ?? defaults.Directory,
+            MaximumSessions = configuration.GetValue("VOID_DIAGNOSTICS_MAXIMUM_SESSIONS", defaults.MaximumSessions),
+            MaximumTotalMb = configuration.GetValue("VOID_DIAGNOSTICS_MAXIMUM_TOTAL_MB", defaults.MaximumTotalMb),
+            MaximumSessionMb = configuration.GetValue("VOID_DIAGNOSTICS_MAXIMUM_SESSION_MB", defaults.MaximumSessionMb)
+        };
+    }
 }
 
 internal sealed record DiagnosticSession(Guid SessionId, string Launch, DateTimeOffset StartedAt, DateTimeOffset? EndedAt, GameStatus? Status, ClientFailure? LastFailure, IReadOnlyList<string> Warnings)

@@ -162,7 +162,7 @@ Sodium is installed automatically when Modrinth provides a compatible NeoForge b
 
 ### CurseForge
 
-Provide a project `slug` and positive CurseForge `fileId`. The container must have `CURSEFORGE_API_KEY` configured.
+Provide a project `slug` and positive CurseForge `fileId`. The container must have `VOID_CURSEFORGE_API_KEY` configured.
 
 ```bash
 curl --fail-with-body \
@@ -339,10 +339,10 @@ Configure the container with Docker environment variables:
 
 | Variable | Default | Meaning |
 | :--- | :--- | :--- |
-| `Diagnostics__Directory` | `/var/lib/void-client/diagnostics` | Session evidence directory. |
-| `Diagnostics__MaximumSessions` | `10` | Maximum retained sessions; oldest completed sessions expire first. |
-| `Diagnostics__MaximumTotalMb` | `256` | Total storage budget in MiB. |
-| `Diagnostics__MaximumSessionMb` | `32` | Storage budget per session in MiB. |
+| `VOID_DIAGNOSTICS_DIRECTORY` | `/var/lib/void-client/diagnostics` | Session evidence directory. |
+| `VOID_DIAGNOSTICS_MAXIMUM_SESSIONS` | `10` | Maximum retained sessions; oldest completed sessions expire first. |
+| `VOID_DIAGNOSTICS_MAXIMUM_TOTAL_MB` | `256` | Total storage budget in MiB. |
+| `VOID_DIAGNOSTICS_MAXIMUM_SESSION_MB` | `32` | Storage budget per session in MiB. |
 
 Limits must be positive and the total budget must accommodate one session. Individual evidence files are capped at 2 MiB; console and operation logs rotate to retain recent output. Collection warnings identify truncation and omitted evidence. Active sessions are protected from eviction, so reaching a storage limit can omit additional evidence until space becomes available.
 

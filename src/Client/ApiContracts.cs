@@ -110,7 +110,6 @@ internal interface IGameRuntime
     Task ConnectAsync(RunningGame game, string host, int port, CancellationToken cancellationToken);
     Task SendChatAsync(RunningGame game, string message, CancellationToken cancellationToken);
     Task<byte[]> CaptureScreenshotAsync(CancellationToken cancellationToken);
-    Task<byte[]?> CaptureFailureScreenshotAsync(Guid sessionId, CancellationToken cancellationToken) => Task.FromResult<byte[]?>(null);
     Task<GamePlayers> ReadPlayersAsync(RunningGame game, CancellationToken cancellationToken);
     Task<StopMode> StopAsync(RunningGame? game, CancellationToken cancellationToken);
 }

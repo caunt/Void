@@ -207,7 +207,7 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
 
         if (_sessionId is { } previousSession)
             diagnostics?.Complete(previousSession);
-        _sessionId = diagnostics?.Begin($"{message.Kind}:{version ?? neoForgeVersion ?? slug}:{message.CurseForgeRequest?.FileId}", Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? "/root/.minecraft");
+        _sessionId = diagnostics?.Begin($"{message.Kind}:{version ?? neoForgeVersion ?? slug}:{message.CurseForgeRequest?.FileId}", Environment.GetEnvironmentVariable("VOID_MINECRAFT_DIRECTORY") ?? "/root/.minecraft");
         using var diagnosticContext = diagnostics?.Enter(_sessionId);
         var operationId = ++_nextOperationId;
         var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(_stoppingToken);
@@ -728,10 +728,8 @@ internal sealed class GameCoordinator(IGameRuntime runtime, ILogger<GameCoordina
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
         try
         {
-            if (await runtime.CaptureFailureScreenshotAsync(sessionId, timeout.Token) is { } screenshot)
-                diagnostics.SaveScreenshot(sessionId, operationId, screenshot);
-            else
-                diagnostics.Warn(sessionId, "Failure screenshot unavailable: no matching game window");
+            var screenshot = await runtime.CaptureScreenshotAsync(timeout.Token);
+            diagnostics.SaveScreenshot(sessionId, operationId, screenshot);
         }
         catch (Exception exception)
         {

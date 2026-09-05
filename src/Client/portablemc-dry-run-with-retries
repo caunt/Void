@@ -8,16 +8,16 @@ fi
 
 portablemc_version="$1"
 shift
-attempts="${PORTABLEMC_DRY_RUN_ATTEMPTS:-5}"
-retry_delay_seconds="${PORTABLEMC_DRY_RUN_RETRY_DELAY_SECONDS:-5}"
+attempts="${VOID_PORTABLEMC_DRY_RUN_ATTEMPTS:-5}"
+retry_delay_seconds="${VOID_PORTABLEMC_DRY_RUN_RETRY_DELAY_SECONDS:-5}"
 
 if [[ ! "$attempts" =~ ^[1-9][0-9]*$ ]]; then
-  echo "PORTABLEMC_DRY_RUN_ATTEMPTS must be a positive integer." >&2
+  echo "VOID_PORTABLEMC_DRY_RUN_ATTEMPTS must be a positive integer." >&2
   exit 1
 fi
 
 if [[ ! "$retry_delay_seconds" =~ ^[0-9]+$ ]]; then
-  echo "PORTABLEMC_DRY_RUN_RETRY_DELAY_SECONDS must be a non-negative integer." >&2
+  echo "VOID_PORTABLEMC_DRY_RUN_RETRY_DELAY_SECONDS must be a non-negative integer." >&2
   exit 1
 fi
 

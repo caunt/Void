@@ -73,7 +73,7 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
     {
         var minecraftDirectory = GetMinecraftDirectory();
         await PreparePortableMinecraftClientAsync(minecraftDirectory, portableMinecraftVersion, cancellationToken);
-        return await LaunchPreparedGameAsync(minecraftDirectory, portableMinecraftVersion, arguments, memoryMb, cancellationToken);
+        return await LaunchGameAsync(minecraftDirectory, portableMinecraftVersion, arguments, memoryMb, cancellationToken);
     }
 
     public Task<RunningGame> LaunchVanillaAsync(string version, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
@@ -88,14 +88,14 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
 
     public async Task<RunningGame> LaunchCurseForgeAsync(string slug, int fileId, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
     {
-        var apiKey = Environment.GetEnvironmentVariable("CURSEFORGE_API_KEY");
+        var apiKey = Environment.GetEnvironmentVariable("VOID_CURSEFORGE_API_KEY");
 
         if (string.IsNullOrWhiteSpace(apiKey))
-            throw new InvalidOperationException("CURSEFORGE_API_KEY is not set");
+            throw new InvalidOperationException("VOID_CURSEFORGE_API_KEY is not set");
 
         var minecraftDirectory = GetMinecraftDirectory();
         var portableMinecraftVersion = await PrepareCurseForgeAsync(slug, fileId, apiKey, CreateCurseForgeApiBaseUri(), minecraftDirectory, cancellationToken);
-        return await LaunchPreparedGameAsync(minecraftDirectory, portableMinecraftVersion, arguments, memoryMb, cancellationToken);
+        return await LaunchGameAsync(minecraftDirectory, portableMinecraftVersion, arguments, memoryMb, cancellationToken);
     }
 
     public Task ConnectAsync(RunningGame game, string host, int port, CancellationToken cancellationToken)
@@ -113,20 +113,10 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
         await _windowOperations.WaitAsync(cancellationToken);
         try
         {
-            return await CaptureScreenAsync(cancellationToken);
-        }
-        finally
-        {
-            _windowOperations.Release();
-        }
-    }
+            if (diagnostics?.CurrentSessionId is { } sessionId && _windowSessionId != sessionId)
+                throw new InvalidOperationException("No matching Minecraft session is available for a screenshot");
 
-    public async Task<byte[]?> CaptureFailureScreenshotAsync(Guid sessionId, CancellationToken cancellationToken)
-    {
-        await _windowOperations.WaitAsync(cancellationToken);
-        try
-        {
-            return _windowSessionId == sessionId ? await CaptureScreenAsync(cancellationToken) : null;
+            return await CaptureScreenAsync(cancellationToken);
         }
         finally
         {
@@ -201,42 +191,27 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
         await _windowOperations.WaitAsync(cancellationToken);
         try
         {
-            var mode = await StopGameCoreAsync(game, cancellationToken);
-            if (game is not null && game.Process.HasExited)
-                await game.Process.WaitForExitAsync(cancellationToken);
-            return mode;
-        }
-        finally
-        {
-            if (_windowSessionId is { } sessionId)
-                diagnostics?.Collect(sessionId);
-            _windowSessionId = null;
-            _windowOperations.Release();
-        }
-    }
+            if (game is null)
+                return StopMode.AlreadyStopped;
 
-    private async Task<StopMode> StopGameCoreAsync(RunningGame? game, CancellationToken cancellationToken)
-    {
-        if (game is null)
-            return StopMode.AlreadyStopped;
-
-        try
-        {
             var launcherHasExited = game.Process.HasExited;
             var terminateResult = await RunProcessTextAsync(CreateProcessInfo("kill", ["-TERM", "--", $"-{game.Process.Id}"]), TimeSpan.FromSeconds(5), cancellationToken);
 
             if (terminateResult.ExitCode is not 0)
             {
                 if ((launcherHasExited || game.Process.HasExited) && !IsProcessGroupRunning(game.Process.Id))
+                {
+                    await game.Process.WaitForExitAsync(cancellationToken);
                     return StopMode.AlreadyStopped;
+                }
 
                 throw new InvalidOperationException($"kill -TERM failed with code {terminateResult.ExitCode}: {terminateResult.StandardError}");
             }
 
+            var mode = StopMode.Graceful;
             try
             {
                 await WaitForProcessGroupExitAsync(game.Process.Id, TimeSpan.FromMilliseconds(ProcessStopTimeoutMilliseconds), cancellationToken);
-                return StopMode.Graceful;
             }
             catch (TimeoutException)
             {
@@ -246,77 +221,86 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
                     throw new InvalidOperationException($"kill -KILL failed with code {killResult.ExitCode}: {killResult.StandardError}");
 
                 await WaitForProcessGroupExitAsync(game.Process.Id, TimeSpan.FromMilliseconds(ProcessStopTimeoutMilliseconds), CancellationToken.None);
-                return StopMode.Forced;
+                mode = StopMode.Forced;
             }
+
+            await game.Process.WaitForExitAsync(cancellationToken);
+            return mode;
         }
         finally
         {
-            File.Delete(game.Tracker.DescriptorPath);
+            try
+            {
+                if (game is not null)
+                    File.Delete(game.Tracker.DescriptorPath);
+                if (_windowSessionId is { } sessionId)
+                    diagnostics?.Collect(sessionId);
+            }
+            finally
+            {
+                _windowSessionId = null;
+                _windowOperations.Release();
+            }
         }
     }
 
-    private async Task<RunningGame> LaunchPreparedGameAsync(string minecraftDirectory, string portableMinecraftVersion, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
+    private async Task<RunningGame> LaunchGameAsync(string minecraftDirectory, string portableMinecraftVersion, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
     {
         await _windowOperations.WaitAsync(cancellationToken);
         try
         {
             _windowSessionId = diagnostics?.CurrentSessionId;
-            return await LaunchPreparedGameCoreAsync(minecraftDirectory, portableMinecraftVersion, arguments, memoryMb, cancellationToken);
+            await PrepareDisplayAndWindowAsync(cancellationToken);
+            Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portableMinecraftVersion}");
+            var tracker = CreateTrackerConnection(FindUsername(arguments));
+            diagnostics?.RegisterSecret(tracker.Token);
+            diagnostics?.RegisterSecret(EncodeAgentArgument(tracker.Token));
+            var launchArguments = memoryMb is { } value
+                ? arguments.Append(CreateMaximumHeapArgument(value)).Append($"--jvm-arg=-javaagent:{PortableMinecraftAgentPath}={CreateAgentArguments(tracker)}").Cast<string?>().ToArray()
+                : arguments.Append($"--jvm-arg=-javaagent:{PortableMinecraftAgentPath}={CreateAgentArguments(tracker)}").Cast<string?>().ToArray();
+            var initialOutOfMemoryKillCount = CgroupMemoryEvents.ReadOutOfMemoryKillCount();
+            Process process;
+
+            try
+            {
+                process = LaunchPortableMinecraftClient(minecraftDirectory, portableMinecraftVersion, launchArguments, cancellationToken);
+            }
+            catch
+            {
+                File.Delete(tracker.DescriptorPath);
+                throw;
+            }
+
+            try
+            {
+                var managedProcess = new ManagedProcess(process, memoryMb, initialOutOfMemoryKillCount, DrainOutputAsync(process.Id));
+                using var windowCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                var windowTask = WaitForPreparedLargestWindowAsync(Environment.GetEnvironmentVariable("DISPLAY") ?? DefaultDisplay, windowCancellationTokenSource.Token);
+                var processExitTask = managedProcess.WaitForExitAsync(CancellationToken.None);
+
+                if (await Task.WhenAny(windowTask, processExitTask) == processExitTask)
+                {
+                    await windowCancellationTokenSource.CancelAsync();
+                    await ((Task)windowTask).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+                    throw new GameProcessExitException(process.ExitCode, managedProcess.WasOutOfMemoryKilled, memoryMb);
+                }
+
+                await windowTask;
+                return new RunningGame(managedProcess, portableMinecraftVersion, DateTimeOffset.UtcNow, tracker);
+            }
+            catch
+            {
+                KillProcess(process);
+                await WaitForKilledProcessAsync(process);
+                await DrainOutputAsync(process.Id);
+                process.Dispose();
+                File.Delete(tracker.DescriptorPath);
+                throw;
+            }
         }
         finally
         {
             _windowOperations.Release();
-        }
-    }
-
-    private async Task<RunningGame> LaunchPreparedGameCoreAsync(string minecraftDirectory, string portableMinecraftVersion, IReadOnlyList<string> arguments, int? memoryMb, CancellationToken cancellationToken)
-    {
-        await PrepareDisplayAndWindowAsync(cancellationToken);
-        Console.Error.WriteLine($"Launching Minecraft with PortableMC version: {portableMinecraftVersion}");
-        var tracker = CreateTrackerConnection(FindUsername(arguments));
-        diagnostics?.RegisterSecret(tracker.Token);
-        diagnostics?.RegisterSecret(EncodeAgentArgument(tracker.Token));
-        var launchArguments = memoryMb is { } value
-            ? arguments.Append(CreateMaximumHeapArgument(value)).Append($"--jvm-arg=-javaagent:{PortableMinecraftAgentPath}={CreateAgentArguments(tracker)}").Cast<string?>().ToArray()
-            : arguments.Append($"--jvm-arg=-javaagent:{PortableMinecraftAgentPath}={CreateAgentArguments(tracker)}").Cast<string?>().ToArray();
-        var initialOutOfMemoryKillCount = CgroupMemoryEvents.ReadOutOfMemoryKillCount();
-        Process process;
-
-        try
-        {
-            process = LaunchPortableMinecraftClient(minecraftDirectory, portableMinecraftVersion, launchArguments, cancellationToken);
-        }
-        catch
-        {
-            File.Delete(tracker.DescriptorPath);
-            throw;
-        }
-
-        try
-        {
-            var managedProcess = new ManagedProcess(process, memoryMb, initialOutOfMemoryKillCount, DrainOutputAsync(process.Id));
-            using var windowCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            var windowTask = WaitForPreparedLargestWindowAsync(Environment.GetEnvironmentVariable("DISPLAY") ?? DefaultDisplay, windowCancellationTokenSource.Token);
-            var processExitTask = managedProcess.WaitForExitAsync(CancellationToken.None);
-
-            if (await Task.WhenAny(windowTask, processExitTask) == processExitTask)
-            {
-                await windowCancellationTokenSource.CancelAsync();
-                await ((Task)windowTask).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
-                throw new GameProcessExitException(process.ExitCode, managedProcess.WasOutOfMemoryKilled, memoryMb);
-            }
-
-            await windowTask;
-            return new RunningGame(managedProcess, portableMinecraftVersion, DateTimeOffset.UtcNow, tracker);
-        }
-        catch
-        {
-            KillProcess(process);
-            await WaitForKilledProcessAsync(process);
-            await DrainOutputAsync(process.Id);
-            process.Dispose();
-            File.Delete(tracker.DescriptorPath);
-            throw;
         }
     }
 
@@ -471,7 +455,7 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
 
     private static string GetMinecraftDirectory()
     {
-        return Environment.GetEnvironmentVariable("MINECRAFT_DIRECTORY") ?? DefaultMinecraftDirectory;
+        return Environment.GetEnvironmentVariable("VOID_MINECRAFT_DIRECTORY") ?? DefaultMinecraftDirectory;
     }
 
     private static async Task WaitForProcessGroupExitAsync(int processGroupId, TimeSpan timeout, CancellationToken cancellationToken)
@@ -899,7 +883,7 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
 
     Uri CreateCurseForgeApiBaseUri()
     {
-        var configuredBaseUrl = Environment.GetEnvironmentVariable("CURSEFORGE_API_BASE_URL");
+        var configuredBaseUrl = Environment.GetEnvironmentVariable("VOID_CURSEFORGE_API_BASE_URL");
         var baseUrl = string.IsNullOrWhiteSpace(configuredBaseUrl)
             ? DefaultCurseForgeApiBaseUrl
             : configuredBaseUrl.Trim();
@@ -907,7 +891,7 @@ internal sealed partial class GameRuntime(SessionDiagnostics? diagnostics = null
         if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri)
             || baseUri.Scheme != Uri.UriSchemeHttp && baseUri.Scheme != Uri.UriSchemeHttps)
         {
-            throw new InvalidOperationException("CURSEFORGE_API_BASE_URL must be an absolute HTTP or HTTPS URL");
+            throw new InvalidOperationException("VOID_CURSEFORGE_API_BASE_URL must be an absolute HTTP or HTTPS URL");
         }
 
         var path = baseUri.AbsolutePath.TrimEnd('/');

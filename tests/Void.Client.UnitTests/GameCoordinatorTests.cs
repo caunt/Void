@@ -412,7 +412,7 @@ public sealed class GameCoordinatorTests
         try
         {
             var diagnostics = new SessionDiagnostics(new DiagnosticsOptions { Directory = directory });
-            var runtime = new FakeGameRuntime { BlockConnect = true };
+            var runtime = new FakeGameRuntime { BlockConnect = true, FailScreenshot = true };
             using var coordinator = new GameCoordinator(runtime, NullLogger<GameCoordinator>.Instance, diagnostics);
             await coordinator.StartAsync(CancellationToken.None);
             var first = await coordinator.StartVanillaAsync(new("1.21", []), CancellationToken.None);
@@ -505,6 +505,7 @@ public sealed class GameCoordinatorTests
 
         public bool BlockStop { get; init; }
         public bool BlockConnect { get; init; }
+        public bool FailScreenshot { get; init; }
         public int LaunchCount { get; private set; }
         public int StopCount { get; private set; }
         public int ConnectCount { get; private set; }
@@ -585,7 +586,9 @@ public sealed class GameCoordinatorTests
 
         public Task SendChatAsync(RunningGame game, string message, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        public Task<byte[]> CaptureScreenshotAsync(CancellationToken cancellationToken) => Task.FromResult(Array.Empty<byte>());
+        public Task<byte[]> CaptureScreenshotAsync(CancellationToken cancellationToken) => FailScreenshot
+            ? Task.FromException<byte[]>(new InvalidOperationException("Screenshot unavailable"))
+            : Task.FromResult(Array.Empty<byte>());
 
         public Task<GamePlayers> ReadPlayersAsync(RunningGame game, CancellationToken cancellationToken)
         {
